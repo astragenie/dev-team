@@ -6,11 +6,11 @@ import { listClaims } from "./claims.mjs";
 import { readDeploymentGuidanceSummary } from "./deployment-guidance.mjs";
 import { loadWorkflowState, summarizeWorkflowState } from "./workflow-state.mjs";
 
-const RUNS_DIR = [".claude", "artifacts", "engineering-os", "runs"];
-const HANDOFFS_DIR = [".claude", "artifacts", "engineering-os", "handoffs"];
-const REVIEWS_DIR = [".claude", "artifacts", "engineering-os", "reviews"];
-const VALIDATIONS_DIR = [".claude", "artifacts", "engineering-os", "validations"];
-const DEPLOYMENTS_DIR = [".claude", "artifacts", "engineering-os", "deployments"];
+const RUNS_DIR = [".claude", "artifacts", "crew", "runs"];
+const HANDOFFS_DIR = [".claude", "artifacts", "crew", "handoffs"];
+const REVIEWS_DIR = [".claude", "artifacts", "crew", "reviews"];
+const VALIDATIONS_DIR = [".claude", "artifacts", "crew", "validations"];
+const DEPLOYMENTS_DIR = [".claude", "artifacts", "crew", "deployments"];
 const EVENTS_PATH = [".claude", "logs", "events.jsonl"];
 const HISTORY_PATH = [".claude", "state", "engineering-os", "history.jsonl"];
 const SPRINT_PATH = [".claude", "state", "engineering-os", "sprint.json"];
