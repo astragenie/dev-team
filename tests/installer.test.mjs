@@ -133,7 +133,7 @@ test("init creates a new repo harness and audit sees it", async () => {
   assert.equal(audit.hasWorkflowState, true);
 });
 
-test("bootstrap installs a soft git gate reminder hook", { skip: "Windows-only: assertion checks the POSIX exec bit (mode & 0o111) which Windows fs.chmod does not set. Reinstate when the test runs on POSIX-only CI or the assertion is platform-gated." }, async () => {
+test("bootstrap installs a soft git gate reminder hook", async () => {
   const repoPath = await makeTempDir("engineering-os-git-gate-hook-");
   await fs.writeFile(path.join(repoPath, "CLAUDE.md"), "# Repo\n");
 
@@ -150,7 +150,9 @@ test("bootstrap installs a soft git gate reminder hook", { skip: "Windows-only: 
 
   const hookPath = path.join(repoPath, ".claude", "hooks", "check_git_gate.sh");
   const hookStat = await fs.stat(hookPath);
-  assert.ok((hookStat.mode & 0o111) !== 0);
+  if (process.platform !== "win32") {
+    assert.ok((hookStat.mode & 0o111) !== 0);
+  }
 
   const workflowPath = path.join(
     repoPath,

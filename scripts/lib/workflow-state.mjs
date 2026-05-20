@@ -1,8 +1,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-const STATE_DIR = [".claude", "state", "engineering-os"];
+const STATE_DIR = [".claude", "state", "crew"];
 const WORKFLOW_STATE_PATH = [...STATE_DIR, "workflow-state.json"];
+// Legacy path retained for read-side fallback so repos installed before the
+// engineering-os -> crew rename still pick up their existing workflow state.
+// Saves always go to the new path; the installer migration (Step 3) cleans
+// the legacy file up.
+const LEGACY_WORKFLOW_STATE_PATH = [".claude", "state", "engineering-os", "workflow-state.json"];
 const MAX_RECENT_RUNS = 5;
 
 function nowIso() {
@@ -38,27 +43,45 @@ export async function ensureWorkflowStateScaffold(repoPath) {
   );
 }
 
-async function workflowStateExists(repoPath) {
+async function pathReadable(filePath) {
   try {
-    await fs.access(path.join(repoPath, ...WORKFLOW_STATE_PATH));
+    await fs.access(filePath);
     return true;
   } catch {
     return false;
   }
 }
 
+async function workflowStateExists(repoPath) {
+  if (await pathReadable(path.join(repoPath, ...WORKFLOW_STATE_PATH))) {
+    return true;
+  }
+  return pathReadable(path.join(repoPath, ...LEGACY_WORKFLOW_STATE_PATH));
+}
+
 export async function loadWorkflowState(repoPath, options = {}) {
-  if (options.createIfMissing === false && !(await workflowStateExists(repoPath))) {
+  const workflowPath = path.join(repoPath, ...WORKFLOW_STATE_PATH);
+  if (await pathReadable(workflowPath)) {
+    return JSON.parse(await fs.readFile(workflowPath, "utf8"));
+  }
+
+  const legacyPath = path.join(repoPath, ...LEGACY_WORKFLOW_STATE_PATH);
+  if (await pathReadable(legacyPath)) {
+    return JSON.parse(await fs.readFile(legacyPath, "utf8"));
+  }
+
+  if (options.createIfMissing === false) {
     return defaultWorkflowState();
   }
+
   await ensureWorkflowStateScaffold(repoPath);
-  const workflowPath = path.join(repoPath, ...WORKFLOW_STATE_PATH);
   return JSON.parse(await fs.readFile(workflowPath, "utf8"));
 }
 
 async function saveWorkflowState(repoPath, state) {
   const workflowPath = path.join(repoPath, ...WORKFLOW_STATE_PATH);
   state.updatedAt = nowIso();
+  await ensureDir(path.dirname(workflowPath));
   await fs.writeFile(workflowPath, `${JSON.stringify(state, null, 2)}\n`);
 }
 

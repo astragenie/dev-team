@@ -1,7 +1,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-const DEPLOYMENT_GUIDANCE_PATH = [".claude", "engineering-os", "deployment.md"];
+const DEPLOYMENT_GUIDANCE_PATH = [".claude", "crew", "deployment.md"];
+// Legacy path retained for read-side fallback so repos installed before the
+// engineering-os -> crew rename still surface their deployment guidance.
+// Writes always go to the new path; installer migration cleans the legacy
+// file up.
+const LEGACY_DEPLOYMENT_GUIDANCE_PATH = [".claude", "engineering-os", "deployment.md"];
 const MAX_CLUES = 30;
 const MAX_DEPTH = 3;
 const IGNORED_DIRS = new Set([
@@ -162,6 +167,18 @@ function guidancePath(repoPath) {
   return path.join(repoPath, ...DEPLOYMENT_GUIDANCE_PATH);
 }
 
+async function readableGuidancePath(repoPath) {
+  const primary = guidancePath(repoPath);
+  if (await pathExists(primary)) {
+    return primary;
+  }
+  const legacy = path.join(repoPath, ...LEGACY_DEPLOYMENT_GUIDANCE_PATH);
+  if (await pathExists(legacy)) {
+    return legacy;
+  }
+  return null;
+}
+
 function extractField(body, label) {
   const match = body.match(new RegExp(`^- ${label}:\\s*(.+)$`, "m"));
   return match ? match[1].trim() : "";
@@ -179,8 +196,8 @@ export async function discoverDeploymentClues(repoPath) {
 }
 
 export async function readDeploymentGuidanceSummary(repoPath) {
-  const filePath = guidancePath(repoPath);
-  if (!(await pathExists(filePath))) {
+  const filePath = await readableGuidancePath(repoPath);
+  if (!filePath) {
     return null;
   }
 

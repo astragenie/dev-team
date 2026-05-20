@@ -12,8 +12,14 @@ const REVIEWS_DIR = [".claude", "artifacts", "crew", "reviews"];
 const VALIDATIONS_DIR = [".claude", "artifacts", "crew", "validations"];
 const DEPLOYMENTS_DIR = [".claude", "artifacts", "crew", "deployments"];
 const EVENTS_PATH = [".claude", "logs", "events.jsonl"];
-const HISTORY_PATH = [".claude", "state", "engineering-os", "history.jsonl"];
-const SPRINT_PATH = [".claude", "state", "engineering-os", "sprint.json"];
+const HISTORY_PATH = [".claude", "state", "crew", "history.jsonl"];
+const SPRINT_PATH = [".claude", "state", "crew", "sprint.json"];
+// Legacy paths kept as read-only fallbacks for repos installed before the
+// engineering-os -> crew rename. Installer migration moves these forward.
+const LEGACY_HISTORY_PATH = [".claude", "state", "engineering-os", "history.jsonl"];
+const LEGACY_SPRINT_PATH = [".claude", "state", "engineering-os", "sprint.json"];
+const LEGACY_REPO_GUIDES_DIR = [".claude", "engineering-os"];
+const REPO_GUIDES_DIR = [".claude", "crew"];
 
 const RECENT_EVENTS_LIMIT = 3;
 const RECENT_HISTORY_LIMIT = 3;
@@ -120,9 +126,24 @@ async function latestArtifactByPrefix(repoPath, subdir, prefix) {
   };
 }
 
+async function collectGuideFiles(dirPath, guides) {
+  if (!(await pathExists(dirPath))) {
+    return;
+  }
+  const entries = await fs.readdir(dirPath);
+  for (const entry of entries.sort()) {
+    if (!entry.endsWith(".md")) {
+      continue;
+    }
+    guides.push({
+      path: path.join(dirPath, entry),
+      kind: "repo-guide"
+    });
+  }
+}
+
 async function listRepoGuidance(repoPath) {
   const claudePath = path.join(repoPath, "CLAUDE.md");
-  const repoGuidesDir = path.join(repoPath, ".claude", "engineering-os");
   const guides = [];
 
   if (await pathExists(claudePath)) {
@@ -132,18 +153,10 @@ async function listRepoGuidance(repoPath) {
     });
   }
 
-  if (await pathExists(repoGuidesDir)) {
-    const entries = await fs.readdir(repoGuidesDir);
-    for (const entry of entries.sort()) {
-      if (!entry.endsWith(".md")) {
-        continue;
-      }
-      guides.push({
-        path: path.join(repoGuidesDir, entry),
-        kind: "repo-guide"
-      });
-    }
-  }
+  await collectGuideFiles(path.join(repoPath, ...REPO_GUIDES_DIR), guides);
+  // Fallback for unmigrated repos: surface legacy guides until the installer
+  // moves them. Step 3 migration relocates them under .claude/crew/.
+  await collectGuideFiles(path.join(repoPath, ...LEGACY_REPO_GUIDES_DIR), guides);
 
   return guides;
 }
@@ -254,7 +267,9 @@ export async function buildWakeUpBrief(repoPath, options = {}) {
     await Promise.all([
       listApprovals(repoPath, { status: "open", createIfMissing: !readOnly }),
       listClaims(repoPath, { createIfMissing: !readOnly }),
-      readJson(path.join(repoPath, ...SPRINT_PATH)),
+      readJson((await pathExists(path.join(repoPath, ...SPRINT_PATH)))
+        ? path.join(repoPath, ...SPRINT_PATH)
+        : path.join(repoPath, ...LEGACY_SPRINT_PATH)),
       loadWorkflowState(repoPath, { createIfMissing: !readOnly }),
       readDeploymentGuidanceSummary(repoPath),
       latestArtifactByPrefix(repoPath, RUNS_DIR, "run-brief"),
@@ -266,9 +281,18 @@ export async function buildWakeUpBrief(repoPath, options = {}) {
       latestArtifactByPrefix(repoPath, DEPLOYMENTS_DIR, "deployment-check")
     ]);
 
+  const historyPath = path.join(repoPath, ...HISTORY_PATH);
+  const resolvedHistoryPath = (await pathExists(historyPath))
+    ? historyPath
+    : path.join(repoPath, ...LEGACY_HISTORY_PATH);
+  const sprintPath = path.join(repoPath, ...SPRINT_PATH);
+  const resolvedSprintPath = (await pathExists(sprintPath))
+    ? sprintPath
+    : path.join(repoPath, ...LEGACY_SPRINT_PATH);
+
   const [recentEventsRaw, recentClaimHistory, archiveCounts] = await Promise.all([
     readRecentJsonl(path.join(repoPath, ...EVENTS_PATH), RECENT_EVENTS_LIMIT),
-    readRecentJsonl(path.join(repoPath, ...HISTORY_PATH), RECENT_HISTORY_LIMIT),
+    readRecentJsonl(resolvedHistoryPath, RECENT_HISTORY_LIMIT),
     countArchive(repoPath)
   ]);
   const repoMemory = await listRepoGuidance(repoPath);
