@@ -4,7 +4,7 @@
 
 The Crew plugin (formerly Engineering OS) is a Claude Code plugin for multi-agent engineering workflows. A May 2026 audit fixed several runtime bugs (A, B, C, E) and ships with a regression test suite. This document lists the next set of improvements to consider, ranked by impact-to-effort ratio.
 
-**Current state on Windows:** 26/31 tests pass. 5 failures are pre-existing (3 namespace-rename inconsistencies in installer; 2 Windows-tooling assumptions in tests). Plugin runtime is stable for solo development.
+**Current state on Windows:** 32/32 tests pass (May 19 2026 update — all P1.1/1.2/1.3/2.2/3.1 items closed below). Plugin runtime is stable for solo development.
 
 **Path conventions:**
 - Plugin source: `C:\work\claude plugins\engineering-os\` (custom marketplace)

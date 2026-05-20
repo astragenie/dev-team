@@ -8,6 +8,7 @@ import {
 } from "./lib/deployment-guidance.mjs";
 import { buildBriefingReport } from "./lib/briefing.mjs";
 import { auditRepo, bootstrapRepo, initRepo, installGlobal } from "./lib/installer.mjs";
+import { installWigginBridge, backfillWigginBridge } from "./lib/bridge-installer.mjs";
 import { listApprovals, requestApproval, resolveApproval } from "./lib/approvals.mjs";
 import { claimFiles, inspectClaims, listClaims, releaseFiles } from "./lib/claims.mjs";
 import { buildWakeUpBrief } from "./lib/wakeup.mjs";
@@ -366,7 +367,9 @@ function usage(target = null) {
     "write-validation-plan": "  node scripts/crew.mjs write-validation-plan --repo <path> --title <text> [--validator <role>] [--environment <name>]",
     "write-validation-result": "  node scripts/crew.mjs write-validation-result --repo <path> --title <text> [--validator <role>] [--environment <name>] [--decision <decision>]",
     "write-deployment-check": "  node scripts/crew.mjs write-deployment-check --repo <path> --title <text> [--deployer <role>] [--environment dev|prod] [--resource <name>] [--url <service-url>] [--revision <id>] [--decision <decision>]",
-    "write-final-synthesis": "  node scripts/crew.mjs write-final-synthesis --repo <path> --title <text> [--summary <text>] [--files <a,b>]"
+    "write-final-synthesis": "  node scripts/crew.mjs write-final-synthesis --repo <path> --title <text> [--summary <text>] [--files <a,b>]",
+    "install-wiggin-bridge": "  node scripts/crew.mjs install-wiggin-bridge --repo <path>",
+    "backfill-wiggin-bridge": "  node scripts/crew.mjs backfill-wiggin-bridge --repo <path>"
   };
 
   if (target && subcommands[target]) {
@@ -386,9 +389,24 @@ function usage(target = null) {
   ].join("\n");
 }
 
+// Normalize an MSYS / Git Bash POSIX path like `/c/work/foo` to a Windows
+// path `C:/work/foo` when running on win32. Node's path.resolve treats a
+// leading "/" as drive-relative, so `/c/work` becomes `C:\c\work` (a phantom
+// nested dir). This converter restores the intended drive-letter form.
+function normalizeMsysPath(value) {
+  if (!value || process.platform !== "win32") {
+    return value;
+  }
+  const match = value.match(/^\/([a-zA-Z])\/(.*)$/);
+  if (!match) {
+    return value;
+  }
+  return `${match[1].toUpperCase()}:/${match[2]}`;
+}
+
 async function main() {
   const { command, helpTarget, flags, positionals } = parseArgs(process.argv.slice(2));
-  const repoPath = path.resolve(flags.repo);
+  const repoPath = path.resolve(normalizeMsysPath(flags.repo));
 
   if (command === "help") {
     console.log(usage(helpTarget));
@@ -404,6 +422,10 @@ async function main() {
     result = await bootstrapRepo(repoPath);
   } else if (command === "init") {
     result = await initRepo(repoPath, { allowExisting: flags.allowExisting });
+  } else if (command === "install-wiggin-bridge") {
+    result = await installWigginBridge(repoPath);
+  } else if (command === "backfill-wiggin-bridge") {
+    result = await backfillWigginBridge(repoPath);
   } else if (command === "claim") {
     result = await claimFiles(repoPath, positionals, { owner: flags.owner || "lead-session" });
   } else if (command === "release") {
