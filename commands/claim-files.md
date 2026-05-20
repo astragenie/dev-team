@@ -9,8 +9,11 @@ Use this when you want to reserve specific files for the current run before edit
 
 Workflow:
 
-1. Run:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" claim --repo "$PWD" $ARGUMENTS`
+1. Run (splits `$ARGUMENTS` on whitespace into separate path args without re-evaluating shell metacharacters):
+   ```bash
+   read -ra _args <<< "$ARGUMENTS"
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" claim --repo "$PWD" "${_args[@]}"
+   ```
 2. Treat successful claims as the current owned scope.
 3. If a conflict is reported, do not edit those files until ownership is clarified.
 4. Summarize:

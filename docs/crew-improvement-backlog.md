@@ -113,6 +113,10 @@ node scripts/crew.mjs claim --owner builder -- "${ARGS[@]}"
 
 **Note on `--`:** The first snippet above (`-- "$ARGUMENTS"`) passes the whole `$ARGUMENTS` value as a single shell argument. If the command expects multiple args (e.g., several file paths), use the `read -ra` form instead, otherwise multi-arg invocations will silently break.
 
+**Also:** The current `scripts/crew.mjs` arg parser throws on `--` as "Unknown argument". Until that parser learns to skip `--` (treat as option-terminator), the safe pattern is quoting via `read -ra` + `"${_args[@]}"` without `--`. Closes shell injection; does not defend against filenames literally starting with `-`.
+
+**Status:** Closed by commit on May 2026. `claim-files.md`, `release-files.md`, `show-conflicts.md` now use the `read -ra` + quoted expansion form.
+
 ---
 
 ## Priority 2 — High value, medium risk
