@@ -1,13 +1,5 @@
-// Tests for the Wiggin Loop bridge installer + backfill (scripts/lib/bridge-installer.mjs).
-//
-// These cover what the WigginHarnes smoke test already proved manually,
-// plus regressions worth catching automatically:
-//   - installer writes the post-commit + PostToolUse hook + README + settings
-//   - settings.json merge preserves existing PostToolUse entries
-//   - install is idempotent (re-running is a no-op or content-stable)
-//   - install errors when the target is not a git repo
-//   - backfill picks up SLICE-pattern commits, skips non-matching ones
-//   - backfill produces one Crew review-result artifact per matched commit
+// Tests for the generic Crew commit bridge installer + backfill
+// (scripts/lib/bridge-installer.mjs), plus the wiggin-loop compat alias.
 
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -17,9 +9,18 @@ import assert from "node:assert/strict";
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
 
-import { installWigginBridge, backfillWigginBridge } from "../scripts/lib/bridge-installer.mjs";
+import {
+  installCommitBridge,
+  installWigginBridge,
+  backfillCommitBridge,
+  backfillWigginBridge,
+  listBridgePresets
+} from "../scripts/lib/bridge-installer.mjs";
 
 const execFile = promisify(execFileCallback);
+
+const BRIDGE_DESCRIPTION = "crew:commit-bridge";
+const BRIDGE_HOOK_FILE = "commit_bridge.sh";
 
 async function makeTempDir(prefix) {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
@@ -35,7 +36,6 @@ async function initGitRepo(prefix) {
 }
 
 async function commit(repoPath, subject, body = "") {
-  // Touch a unique file so each commit has a real change.
   const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const filePath = path.join(repoPath, `f-${stamp}.txt`);
   await fs.writeFile(filePath, stamp);
@@ -54,19 +54,22 @@ async function pathExists(p) {
   }
 }
 
-test("install-wiggin-bridge writes hook + bridge + README and registers settings", async () => {
-  const repoPath = await initGitRepo("crew-bridge-install-");
+test("install-commit-bridge with default preset writes hooks, README, settings", async () => {
+  const repoPath = await initGitRepo("crew-bridge-default-");
 
-  const result = await installWigginBridge(repoPath);
+  const result = await installCommitBridge(repoPath);
 
-  assert.equal(result.mode, "install-wiggin-bridge");
+  assert.equal(result.mode, "install-commit-bridge");
+  assert.equal(result.preset, "wiggin-loop");
+  assert.match(result.commitPattern, /SLICE_/);
+  assert.equal(result.triggerFilename, "completed-slices.md");
   assert.ok(result.writes.some((p) => p.includes("post-commit")));
-  assert.ok(result.writes.some((p) => p.includes("wiggin_loop_bridge.sh")));
+  assert.ok(result.writes.some((p) => p.includes(BRIDGE_HOOK_FILE)));
   assert.ok(result.writes.some((p) => p.includes("README.md")));
   assert.ok(result.writes.some((p) => p.endsWith("settings.json")));
 
   assert.ok(await pathExists(path.join(repoPath, ".git", "hooks", "post-commit")));
-  assert.ok(await pathExists(path.join(repoPath, ".claude", "hooks", "wiggin_loop_bridge.sh")));
+  assert.ok(await pathExists(path.join(repoPath, ".claude", "hooks", BRIDGE_HOOK_FILE)));
   assert.ok(await pathExists(path.join(repoPath, ".claude", "hooks", "README.md")));
 
   const settings = JSON.parse(
@@ -75,13 +78,55 @@ test("install-wiggin-bridge writes hook + bridge + README and registers settings
   const postToolUse = settings.hooks?.PostToolUse || [];
   assert.equal(postToolUse.length, 1);
   assert.equal(postToolUse[0].matcher, "Edit|Write|MultiEdit");
-  assert.equal(postToolUse[0].hooks[0].description, "crew:wiggin-loop-bridge");
+  assert.equal(postToolUse[0].hooks[0].description, BRIDGE_DESCRIPTION);
 });
 
-test("install-wiggin-bridge preserves existing PostToolUse hooks", async () => {
+test("install-commit-bridge with --preset conventional-commits applies that preset", async () => {
+  const repoPath = await initGitRepo("crew-bridge-conv-");
+
+  const result = await installCommitBridge(repoPath, { preset: "conventional-commits" });
+
+  assert.equal(result.preset, "conventional-commits");
+  assert.equal(result.triggerFilename, "CHANGELOG.md");
+  assert.equal(result.reviewerLabel, "conventional-commits");
+
+  // Generated hook script embeds the pattern.
+  const hook = await fs.readFile(path.join(repoPath, ".git", "hooks", "post-commit"), "utf8");
+  assert.match(hook, /feat\|fix\|refactor\|perf/);
+});
+
+test("install-commit-bridge accepts explicit overrides on top of a preset", async () => {
+  const repoPath = await initGitRepo("crew-bridge-overrides-");
+
+  const result = await installCommitBridge(repoPath, {
+    commitPattern: "^EPIC_[0-9]+",
+    triggerFilename: "epics-done.md",
+    reviewerLabel: "epic-tracker"
+  });
+
+  assert.equal(result.commitPattern, "^EPIC_[0-9]+");
+  assert.equal(result.triggerFilename, "epics-done.md");
+  assert.equal(result.reviewerLabel, "epic-tracker");
+
+  const hook = await fs.readFile(path.join(repoPath, ".git", "hooks", "post-commit"), "utf8");
+  assert.match(hook, /\^EPIC_\[0-9\]\+/);
+  assert.match(hook, /epic-tracker/);
+
+  const bridge = await fs.readFile(path.join(repoPath, ".claude", "hooks", BRIDGE_HOOK_FILE), "utf8");
+  assert.match(bridge, /epics-done\.md/);
+});
+
+test("install-commit-bridge throws on unknown preset", async () => {
+  const repoPath = await initGitRepo("crew-bridge-bad-preset-");
+  await assert.rejects(
+    () => installCommitBridge(repoPath, { preset: "nope" }),
+    /Unknown preset "nope"/
+  );
+});
+
+test("install-commit-bridge preserves existing PostToolUse hooks", async () => {
   const repoPath = await initGitRepo("crew-bridge-preserve-");
 
-  // Seed settings.json with an unrelated PostToolUse hook the user already has.
   const settingsPath = path.join(repoPath, ".claude", "settings.json");
   await fs.mkdir(path.dirname(settingsPath), { recursive: true });
   await fs.writeFile(
@@ -108,35 +153,73 @@ test("install-wiggin-bridge preserves existing PostToolUse hooks", async () => {
     )}\n`
   );
 
-  await installWigginBridge(repoPath);
+  await installCommitBridge(repoPath);
 
   const settings = JSON.parse(await fs.readFile(settingsPath, "utf8"));
   const postToolUse = settings.hooks.PostToolUse;
-  assert.equal(postToolUse.length, 2, "user's existing hook should still be present alongside the bridge");
+  assert.equal(postToolUse.length, 2);
   const descriptions = postToolUse.flatMap((entry) => entry.hooks.map((h) => h.description));
   assert.ok(descriptions.includes("user:read-tracker"));
-  assert.ok(descriptions.includes("crew:wiggin-loop-bridge"));
+  assert.ok(descriptions.includes(BRIDGE_DESCRIPTION));
 });
 
-test("install-wiggin-bridge is idempotent (re-running does not duplicate the bridge entry)", async () => {
+test("install-commit-bridge is idempotent and migrates legacy crew:wiggin-loop-bridge registrations", async () => {
   const repoPath = await initGitRepo("crew-bridge-idempotent-");
 
-  await installWigginBridge(repoPath);
-  await installWigginBridge(repoPath);
+  // First, seed a legacy registration from the old wiggin-only installer.
+  const settingsPath = path.join(repoPath, ".claude", "settings.json");
+  await fs.mkdir(path.dirname(settingsPath), { recursive: true });
+  await fs.writeFile(
+    settingsPath,
+    `${JSON.stringify(
+      {
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: "Edit|Write|MultiEdit",
+              hooks: [
+                {
+                  type: "command",
+                  command: "${PWD}/.claude/hooks/wiggin_loop_bridge.sh",
+                  description: "crew:wiggin-loop-bridge"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      null,
+      2
+    )}\n`
+  );
+  // Also seed the legacy hook file so the cleanup path is exercised.
+  await fs.mkdir(path.join(repoPath, ".claude", "hooks"), { recursive: true });
+  await fs.writeFile(path.join(repoPath, ".claude", "hooks", "wiggin_loop_bridge.sh"), "#legacy\n");
 
-  const settings = JSON.parse(
-    await fs.readFile(path.join(repoPath, ".claude", "settings.json"), "utf8")
+  await installCommitBridge(repoPath);
+  await installCommitBridge(repoPath);
+
+  const settings = JSON.parse(await fs.readFile(settingsPath, "utf8"));
+  const descriptions = (settings.hooks.PostToolUse || []).flatMap((entry) =>
+    entry.hooks.map((h) => h.description)
   );
-  const bridgeEntries = (settings.hooks.PostToolUse || []).flatMap((entry) =>
-    entry.hooks.filter((h) => h.description === "crew:wiggin-loop-bridge")
+  assert.deepEqual(
+    descriptions,
+    [BRIDGE_DESCRIPTION],
+    "legacy crew:wiggin-loop-bridge should be replaced by crew:commit-bridge and not duplicated on re-run"
   );
-  assert.equal(bridgeEntries.length, 1, "second install should not append a duplicate bridge hook");
+
+  assert.equal(
+    await pathExists(path.join(repoPath, ".claude", "hooks", "wiggin_loop_bridge.sh")),
+    false,
+    "legacy wiggin_loop_bridge.sh should be removed in favor of commit_bridge.sh"
+  );
 });
 
-test("install-wiggin-bridge throws when target is not a git repo", async () => {
+test("install-commit-bridge throws when target is not a git repo", async () => {
   const tmpPath = await makeTempDir("crew-bridge-no-git-");
   await assert.rejects(
-    () => installWigginBridge(tmpPath),
+    () => installCommitBridge(tmpPath),
     /Not a git repository/
   );
 });
@@ -151,18 +234,67 @@ test("backfill picks up SLICE-pattern commits, skips non-matching commits", asyn
   await commit(repoPath, "merge: LoopBrain all 3 slices into main");
   await commit(repoPath, "fix: tweak");
 
-  const result = await backfillWigginBridge(repoPath);
+  const result = await backfillCommitBridge(repoPath);
 
-  assert.equal(result.mode, "backfill-wiggin-bridge");
-  assert.equal(result.count, 3, "should pick up slice-00, SLICE_01, and 'all 3 slices' merge");
+  assert.equal(result.mode, "backfill-commit-bridge");
+  assert.equal(result.count, 3);
   assert.equal(result.skippedOrFailed, 0);
-  assert.equal(result.artifacts.length, 3);
 
   const reviewsDir = path.join(repoPath, ".claude", "artifacts", "crew", "reviews");
   const entries = await fs.readdir(reviewsDir);
-  assert.equal(entries.length, 3, "one review-result artifact per matching commit");
+  assert.equal(entries.length, 3);
 
-  // Spot-check that the artifact references the commit subject.
   const sliceArtifact = entries.find((name) => name.includes("slice-00"));
-  assert.ok(sliceArtifact, "slice-00 commit should have produced a matching artifact filename");
+  assert.ok(sliceArtifact);
+});
+
+test("backfill with --preset conventional-commits matches feat/fix-style commits", async () => {
+  const repoPath = await initGitRepo("crew-bridge-backfill-conv-");
+
+  await commit(repoPath, "chore: scaffold");
+  await commit(repoPath, "feat(api): add endpoint");
+  await commit(repoPath, "fix: bug");
+  await commit(repoPath, "docs: README");
+
+  const result = await backfillCommitBridge(repoPath, { preset: "conventional-commits" });
+  assert.equal(result.count, 2, "should match feat(api) and fix; ignore chore and docs");
+});
+
+test("backfill with explicit --commit-pattern overrides the preset", async () => {
+  const repoPath = await initGitRepo("crew-bridge-backfill-pattern-");
+
+  await commit(repoPath, "EPIC_001: foo");
+  await commit(repoPath, "feat: nothing");
+  await commit(repoPath, "EPIC_002: bar");
+
+  const result = await backfillCommitBridge(repoPath, {
+    commitPattern: "^EPIC_[0-9]+",
+    reviewerLabel: "epic-tracker"
+  });
+  assert.equal(result.count, 2);
+});
+
+test("listBridgePresets returns built-in presets with required fields", () => {
+  const presets = listBridgePresets();
+  assert.ok(presets.length >= 2);
+  const wiggin = presets.find((p) => p.name === "wiggin-loop");
+  assert.ok(wiggin);
+  assert.ok(wiggin.commitPattern);
+  assert.ok(wiggin.triggerFilename);
+  assert.ok(wiggin.reviewerLabel);
+});
+
+test("installWigginBridge alias still works and uses the wiggin-loop preset", async () => {
+  const repoPath = await initGitRepo("crew-bridge-wiggin-alias-");
+  const result = await installWigginBridge(repoPath);
+  assert.equal(result.preset, "wiggin-loop");
+});
+
+test("backfillWigginBridge alias still works and uses the wiggin-loop preset", async () => {
+  const repoPath = await initGitRepo("crew-bridge-wiggin-backfill-alias-");
+  await commit(repoPath, "feat: SLICE_00 init");
+  await commit(repoPath, "chore: setup");
+  const result = await backfillWigginBridge(repoPath);
+  assert.equal(result.preset, "wiggin-loop");
+  assert.equal(result.count, 1);
 });

@@ -1,22 +1,71 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-// Templates for the Wiggin Loop <-> Crew bridge. See commands/install-wiggin-bridge.md
-// for the user-facing description. These hooks are best-effort and never block
-// commits or tool output.
+// Generic commit-and-edit-signal bridge between an existing methodology
+// (Wiggin Loop, Conventional Commits, custom slice schemes, etc.) and Crew's
+// artifact pipeline. Installed per-repo via /crew:install-commit-bridge.
+//
+// The bridge has two hooks:
+//   1. .git/hooks/post-commit: when a commit subject matches `commitPattern`,
+//      write a Crew review-result artifact with `reviewerLabel` as reviewer.
+//   2. .claude/hooks/commit_bridge.sh (PostToolUse): when Claude edits a file
+//      whose name matches `triggerFilename`, write a Crew final-synthesis
+//      artifact.
+//
+// Both hooks are best-effort and silently no-op on failure so they never
+// block a commit or a tool call. The bridge is purely additive observability.
 
-const POST_COMMIT_TEMPLATE = `#!/usr/bin/env bash
-# Crew <-> Wiggin Loop bridge: SLICE commits write a review-result artifact.
+const BRIDGE_DESCRIPTION = "crew:commit-bridge";
+const BRIDGE_HOOK_FILE = "commit_bridge.sh";
+
+// Built-in presets. Choose at install time with --preset or override fields
+// individually with --commit-pattern / --trigger-filename / --reviewer-label.
+const PRESETS = {
+  "wiggin-loop": {
+    description: "LoopBrain / Wiggin Loop slice methodology",
+    commitPattern: "(SLICE_[0-9]+|slice-[0-9]+|all [0-9]+ slices)",
+    triggerFilename: "completed-slices.md",
+    reviewerLabel: "wiggin-loop"
+  },
+  "conventional-commits": {
+    description: "Conventional Commits — feat/fix/refactor commits become review artifacts",
+    commitPattern: "^(feat|fix|refactor|perf)(\\([^)]+\\))?!?:",
+    triggerFilename: "CHANGELOG.md",
+    reviewerLabel: "conventional-commits"
+  }
+};
+
+const DEFAULT_PRESET = "wiggin-loop";
+
+function escapeForSingleQuoteShell(value) {
+  // The pattern lands inside single quotes in the generated bash hook.
+  // Escape any single quotes by closing, escaping, and reopening.
+  return String(value).replace(/'/g, `'\\''`);
+}
+
+function escapeForJsLiteral(value) {
+  // The filename lands inside a JS string literal in the embedded Node block.
+  return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+function renderPostCommitTemplate({ commitPattern, reviewerLabel, presetName }) {
+  const safePattern = escapeForSingleQuoteShell(commitPattern);
+  const safeReviewer = escapeForSingleQuoteShell(reviewerLabel);
+  return `#!/usr/bin/env bash
+# Crew commit bridge (preset: ${presetName}) — matching commits write a review-result artifact.
 #
-# Why this exists: repos following the Wiggin Loop methodology record
-# evidence inline in commit messages and docs rather than via Crew's
-# write-* commands. Without this hook, .claude/artifacts/crew/ stays
-# empty even though real reviewed work is happening on every SLICE
-# commit. This hook closes the gap so Crew's brief-me, wake-up, and
-# memory buckets surface the slice trail.
+# Why this exists: repos that record evidence inline in commit messages
+# instead of via Crew's write-* commands end up with an empty
+# .claude/artifacts/crew/. This hook closes the gap by turning each
+# commit whose subject matches the configured pattern into a Crew
+# review-result artifact so brief-me, wake-up, and memory buckets
+# surface the commit trail.
 #
-# Fires for any commit whose subject matches a SLICE pattern (SLICE_NN,
-# slice-NN, "all N slices" for merges). Silent no-op for anything else.
+# Pattern: ${commitPattern}
+# Reviewer label: ${reviewerLabel}
+#
+# Silent no-op for any commit that does not match. Best-effort; never
+# blocks a commit on failure.
 
 set -euo pipefail
 
@@ -27,7 +76,7 @@ subject="$(git log -1 --pretty=%s)"
 sha="$(git log -1 --pretty=%h)"
 body="$(git log -1 --pretty=%b)"
 
-if ! printf '%s' "$subject" | grep -qiE '(SLICE_[0-9]+|slice-[0-9]+|all [0-9]+ slices)'; then
+if ! printf '%s' "$subject" | grep -qiE '${safePattern}'; then
   exit 0
 fi
 
@@ -46,22 +95,27 @@ fi
 node "$crew_cli" write-review-result \\
   --repo "$repo_root" \\
   --title "$subject" \\
-  --reviewer "wiggin-loop" \\
+  --reviewer '${safeReviewer}' \\
   --decision passed \\
   --summary "$summary" >/dev/null || {
   echo "crew bridge: write-review-result failed for commit $sha; continuing" >&2
   exit 0
 }
 `;
+}
 
-const POST_TOOL_USE_BRIDGE_TEMPLATE = `#!/usr/bin/env bash
-# Crew <-> Wiggin Loop bridge: completed-slices.md edits write a final-synthesis artifact.
+function renderPostToolUseTemplate({ triggerFilename, presetName }) {
+  const safeFilename = escapeForJsLiteral(triggerFilename.toLowerCase());
+  return `#!/usr/bin/env bash
+# Crew commit bridge (preset: ${presetName}) — edits to ${triggerFilename} write a final-synthesis artifact.
 #
 # Triggered as a PostToolUse hook from .claude/settings.json. Only fires
-# when Claude Code itself edited completed-slices.md via the Edit, Write,
-# or MultiEdit tool. External edits (e.g. someone editing the file in
-# VS Code outside a Claude session) won't fire this; the git post-commit
-# hook is the safety net for SLICE commits.
+# when Claude Code itself edited the configured trigger file via the
+# Edit, Write, or MultiEdit tool. External edits (e.g. someone editing
+# the file in VS Code outside a Claude session) won't fire this; the
+# git post-commit hook is the safety net for commit-based signals.
+#
+# Trigger filename: ${triggerFilename}
 
 set -euo pipefail
 
@@ -74,6 +128,8 @@ const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 const os = require("node:os");
 
+const TRIGGER_FILENAME = "${safeFilename}";
+
 const input = JSON.parse(process.env.HOOK_PAYLOAD || "{}");
 if (input.hook_event_name !== "PostToolUse") process.exit(0);
 
@@ -81,7 +137,7 @@ const tool = input.tool_name || "";
 if (!["Edit", "Write", "MultiEdit"].includes(tool)) process.exit(0);
 
 const filePath = input.tool_input?.file_path || input.tool_input?.filePath || "";
-if (!filePath.toLowerCase().endsWith("completed-slices.md")) process.exit(0);
+if (!filePath.toLowerCase().endsWith(TRIGGER_FILENAME)) process.exit(0);
 
 const cwd = input.cwd || process.cwd();
 
@@ -98,11 +154,11 @@ try {
 }
 if (!crewCli) process.exit(0);
 
-let title = "Wiggin Loop slice completion";
+let title = \`Commit-bridge sync from \${TRIGGER_FILENAME}\`;
 try {
   const body = fs.readFileSync(filePath, "utf8");
   const match = body.match(/^##\\s+(.+?)$/m);
-  if (match) title = \`Slice complete: \${match[1].trim()}\`;
+  if (match) title = \`Synthesized: \${match[1].trim()}\`;
 } catch {
   // fall back to generic title
 }
@@ -113,15 +169,17 @@ try {
     "write-final-synthesis",
     "--repo", cwd,
     "--title", title,
-    "--summary", "completed-slices.md updated; synthesized via Wiggin Loop bridge"
+    "--summary", \`\${TRIGGER_FILENAME} updated; synthesized via Crew commit bridge\`
   ], { stdio: "ignore" });
 } catch {
   // best-effort; never block tool output on bridge failure
 }
 NODE
 `;
+}
 
-const HOOKS_README_TEMPLATE = `# Crew Hooks
+function renderHooksReadme({ presetName, commitPattern, triggerFilename, reviewerLabel }) {
+  return `# Crew Hooks
 
 This repo runs two hook layers:
 
@@ -129,59 +187,85 @@ This repo runs two hook layers:
    - \`log_event.sh\` — append-only event log to \`.claude/logs/events.jsonl\`
    - \`check_git_gate.sh\` — soft warning on \`git commit\` when Crew workflow gates are pending
 
-2. **Wiggin Loop bridge** (installed by \`/crew:install-wiggin-bridge\`):
-   - \`wiggin_loop_bridge.sh\` — PostToolUse hook. When Claude edits
-     \`completed-slices.md\` anywhere in the repo, writes a Crew
-     \`final-synthesis\` artifact so brief-me and wake-up see the slice
-     completion.
+2. **Crew commit bridge** (installed by \`/crew:install-commit-bridge\`, preset: \`${presetName}\`):
+   - \`${BRIDGE_HOOK_FILE}\` — PostToolUse hook. When Claude edits a file
+     whose name ends with \`${triggerFilename}\`, writes a Crew
+     \`final-synthesis\` artifact so brief-me and wake-up see the update.
    - \`../../.git/hooks/post-commit\` — git hook. When any commit subject
-     matches a SLICE pattern (\`SLICE_NN\`, \`slice-NN\`, "all N slices"),
-     writes a Crew \`review-result\` artifact. Catches commits made outside
-     Claude Code as well as in-session commits.
+     matches the configured pattern, writes a Crew \`review-result\` artifact.
+     Catches commits made outside Claude Code as well as in-session commits.
+
+## Bridge configuration
+
+| Field | Value |
+|---|---|
+| Preset | \`${presetName}\` |
+| Commit pattern | \`${commitPattern}\` |
+| Trigger filename | \`${triggerFilename}\` |
+| Reviewer label | \`${reviewerLabel}\` |
+
+To change configuration, re-run \`/crew:install-commit-bridge\` with the
+appropriate \`--preset\` or explicit flags. The installer is idempotent
+and overwrites these files in place.
 
 ## Why the bridge exists
 
-Repos following the Wiggin Loop methodology record evidence inline in
-commit messages and docs rather than via Crew's \`write-*\` commands.
-Without the bridge, \`.claude/artifacts/crew/\` stays effectively empty
-even though substantial reviewed work is happening every slice. The
-bridge translates Wiggin Loop signals into Crew artifacts so the two
-methodologies coexist without one being dead weight.
+Repos that record evidence inline (commit messages, slice docs, changelogs)
+instead of via Crew's \`write-*\` commands end up with
+\`.claude/artifacts/crew/\` effectively empty even though substantial
+reviewed work is happening. The bridge translates the repo's existing
+signals into Crew artifacts so the two methodologies coexist without one
+being dead weight.
 
 ## What it doesn't do
 
 - Doesn't enforce anything — both hooks are best-effort and silently
   no-op on any failure so they cannot block work
-- Doesn't trigger validation or deployment artifacts — Wiggin Loop has
-  no canonical signal for those events
-- Doesn't backfill historical commits — fires forward from install
-- Doesn't handle non-Wiggin-Loop repos — the SLICE regex and the
-  \`completed-slices.md\` filename are Wiggin-Loop-specific
+- Doesn't trigger validation or deployment artifacts — most methodologies
+  have no canonical signal for those events
+- Doesn't backfill historical commits — fires forward from install.
+  Use \`crew backfill-commit-bridge --repo <path>\` for a one-time sweep.
 
 ## Testing
-
-Discover the Crew CLI under \`~/.claude/plugins/cache/crew-dev/crew/*/scripts/crew.mjs\`.
 
 \`\`\`bash
 # Trigger the git hook against the current HEAD:
 .git/hooks/post-commit
 
-# Trigger the PostToolUse hook with a fixture payload:
-printf '{"hook_event_name":"PostToolUse","tool_name":"Edit","cwd":"<repo-abs-path>","tool_input":{"file_path":"<repo-abs-path>/<some-dir>/completed-slices.md"}}' \\
-  | .claude/hooks/wiggin_loop_bridge.sh
+# Trigger the PostToolUse hook with a fixture payload (substitute the real path):
+printf '{"hook_event_name":"PostToolUse","tool_name":"Edit","cwd":"<repo-abs-path>","tool_input":{"file_path":"<repo-abs-path>/some/path/${triggerFilename}"}}' \\
+  | .claude/hooks/${BRIDGE_HOOK_FILE}
 \`\`\`
 `;
+}
 
-const BRIDGE_POST_TOOL_USE_HOOK = {
-  matcher: "Edit|Write|MultiEdit",
-  hooks: [
-    {
-      type: "command",
-      command: "${PWD}/.claude/hooks/wiggin_loop_bridge.sh",
-      description: "crew:wiggin-loop-bridge"
-    }
-  ]
-};
+function resolveConfig(options = {}) {
+  const presetName = options.preset || DEFAULT_PRESET;
+  const preset = PRESETS[presetName];
+  if (!preset) {
+    const known = Object.keys(PRESETS).join(", ");
+    throw new Error(`Unknown preset "${presetName}". Known presets: ${known}`);
+  }
+  return {
+    presetName,
+    commitPattern: options.commitPattern || preset.commitPattern,
+    triggerFilename: options.triggerFilename || preset.triggerFilename,
+    reviewerLabel: options.reviewerLabel || preset.reviewerLabel
+  };
+}
+
+function bridgePostToolUseEntry() {
+  return {
+    matcher: "Edit|Write|MultiEdit",
+    hooks: [
+      {
+        type: "command",
+        command: `\${PWD}/.claude/hooks/${BRIDGE_HOOK_FILE}`,
+        description: BRIDGE_DESCRIPTION
+      }
+    ]
+  };
+}
 
 async function pathExists(targetPath) {
   try {
@@ -203,39 +287,55 @@ async function writeFileWithMode(filePath, contents, mode) {
 
 // Merge the bridge PostToolUse registration into an existing settings.json.
 // Preserves any other PostToolUse hooks the user has and avoids duplicates.
+// Also strips any old crew:wiggin-loop-bridge entry from earlier installs
+// so the registration ends up using the current BRIDGE_DESCRIPTION.
 function mergeBridgeHook(currentSettings) {
   const next = { ...(currentSettings || {}) };
   next.hooks = { ...(next.hooks || {}) };
   const current = Array.isArray(next.hooks.PostToolUse) ? next.hooks.PostToolUse : [];
   const filtered = current.filter((entry) => {
     const hooks = Array.isArray(entry?.hooks) ? entry.hooks : [];
-    return !hooks.some((hook) => (hook?.description || "") === "crew:wiggin-loop-bridge");
+    return !hooks.some((hook) => {
+      const description = hook?.description || "";
+      return description === BRIDGE_DESCRIPTION || description === "crew:wiggin-loop-bridge";
+    });
   });
-  next.hooks.PostToolUse = [...filtered, BRIDGE_POST_TOOL_USE_HOOK];
+  next.hooks.PostToolUse = [...filtered, bridgePostToolUseEntry()];
   return next;
 }
 
-export async function installWigginBridge(repoPath) {
+// Cleanup of legacy filenames from earlier installs (when only the Wiggin
+// Loop bridge existed and used wiggin_loop_bridge.sh).
+async function removeLegacyBridgeArtifacts(repoPath) {
+  const legacy = path.join(repoPath, ".claude", "hooks", "wiggin_loop_bridge.sh");
+  if (await pathExists(legacy)) {
+    await fs.unlink(legacy);
+  }
+}
+
+export async function installCommitBridge(repoPath, options = {}) {
   if (!(await pathExists(repoPath))) {
     throw new Error(`Repository path does not exist: ${repoPath}`);
   }
-  const gitDir = path.join(repoPath, ".git");
-  if (!(await pathExists(gitDir))) {
+  if (!(await pathExists(path.join(repoPath, ".git")))) {
     throw new Error(`Not a git repository (missing .git): ${repoPath}`);
   }
 
+  const config = resolveConfig(options);
   const writes = [];
 
+  await removeLegacyBridgeArtifacts(repoPath);
+
   const postCommitPath = path.join(repoPath, ".git", "hooks", "post-commit");
-  await writeFileWithMode(postCommitPath, POST_COMMIT_TEMPLATE, 0o755);
+  await writeFileWithMode(postCommitPath, renderPostCommitTemplate(config), 0o755);
   writes.push(path.relative(repoPath, postCommitPath));
 
-  const bridgeHookPath = path.join(repoPath, ".claude", "hooks", "wiggin_loop_bridge.sh");
-  await writeFileWithMode(bridgeHookPath, POST_TOOL_USE_BRIDGE_TEMPLATE, 0o755);
+  const bridgeHookPath = path.join(repoPath, ".claude", "hooks", BRIDGE_HOOK_FILE);
+  await writeFileWithMode(bridgeHookPath, renderPostToolUseTemplate(config), 0o755);
   writes.push(path.relative(repoPath, bridgeHookPath));
 
   const readmePath = path.join(repoPath, ".claude", "hooks", "README.md");
-  await writeFileWithMode(readmePath, HOOKS_README_TEMPLATE);
+  await writeFileWithMode(readmePath, renderHooksReadme(config));
   writes.push(path.relative(repoPath, readmePath));
 
   const settingsPath = path.join(repoPath, ".claude", "settings.json");
@@ -250,27 +350,35 @@ export async function installWigginBridge(repoPath) {
   }
 
   return {
-    mode: "install-wiggin-bridge",
+    mode: "install-commit-bridge",
+    preset: config.presetName,
+    commitPattern: config.commitPattern,
+    triggerFilename: config.triggerFilename,
+    reviewerLabel: config.reviewerLabel,
     repoPath,
     writes
   };
 }
 
-// One-time backfill: walk git history, find commits matching the SLICE
-// pattern, and emit a Crew review-result artifact for each. Intended to be
-// run once on repos that already have a slice history when the bridge is
-// installed late. Forward-firing commits are handled by the post-commit hook.
-export async function backfillWigginBridge(repoPath, options = {}) {
+// Backwards-compat alias. Always installs the wiggin-loop preset.
+export async function installWigginBridge(repoPath) {
+  return installCommitBridge(repoPath, { preset: "wiggin-loop" });
+}
+
+// One-time backfill: walk git history, find commits matching the configured
+// pattern, and emit a Crew review-result artifact for each. Run once on
+// repos that already have history when the bridge is installed late.
+export async function backfillCommitBridge(repoPath, options = {}) {
   if (!(await pathExists(path.join(repoPath, ".git")))) {
     throw new Error(`Not a git repository (missing .git): ${repoPath}`);
   }
 
+  const config = resolveConfig(options);
   const { writeArtifact } = await import("./artifacts.mjs");
   const { execFile: execFileCb } = await import("node:child_process");
   const { promisify } = await import("node:util");
   const execFile = promisify(execFileCb);
 
-  // %H sha, %s subject, %b body, separated by NUL bytes; commits separated by a record sentinel.
   const recordSep = "<<<CREW-COMMIT>>>";
   const fieldSep = "<<<CREW-FIELD>>>";
   const { stdout } = await execFile(
@@ -289,12 +397,12 @@ export async function backfillWigginBridge(repoPath, options = {}) {
     .map((chunk) => chunk.trim())
     .filter(Boolean);
 
-  const slicePattern = /(SLICE_[0-9]+|slice-[0-9]+|all [0-9]+ slices)/i;
+  const pattern = new RegExp(config.commitPattern, "i");
   const written = [];
 
   for (const record of records) {
     const [sha = "", subject = "", body = ""] = record.split(fieldSep);
-    if (!slicePattern.test(subject)) {
+    if (!pattern.test(subject)) {
       continue;
     }
 
@@ -309,7 +417,7 @@ export async function backfillWigginBridge(repoPath, options = {}) {
     try {
       const result = await writeArtifact(repoPath, "review-result", {
         title: subject,
-        reviewer: "wiggin-loop",
+        reviewer: config.reviewerLabel,
         decision: "passed",
         summary
       });
@@ -323,10 +431,21 @@ export async function backfillWigginBridge(repoPath, options = {}) {
   }
 
   return {
-    mode: "backfill-wiggin-bridge",
+    mode: "backfill-commit-bridge",
+    preset: config.presetName,
+    commitPattern: config.commitPattern,
     repoPath,
     count: written.filter((entry) => !entry.error).length,
     skippedOrFailed: written.filter((entry) => entry.error).length,
     artifacts: written
   };
+}
+
+// Backwards-compat alias. Always uses the wiggin-loop preset.
+export async function backfillWigginBridge(repoPath, options = {}) {
+  return backfillCommitBridge(repoPath, { ...options, preset: "wiggin-loop" });
+}
+
+export function listBridgePresets() {
+  return Object.entries(PRESETS).map(([name, value]) => ({ name, ...value }));
 }

@@ -8,7 +8,13 @@ import {
 } from "./lib/deployment-guidance.mjs";
 import { buildBriefingReport } from "./lib/briefing.mjs";
 import { auditRepo, bootstrapRepo, initRepo, installGlobal } from "./lib/installer.mjs";
-import { installWigginBridge, backfillWigginBridge } from "./lib/bridge-installer.mjs";
+import {
+  installCommitBridge,
+  installWigginBridge,
+  backfillCommitBridge,
+  backfillWigginBridge,
+  listBridgePresets
+} from "./lib/bridge-installer.mjs";
 import { listApprovals, requestApproval, resolveApproval } from "./lib/approvals.mjs";
 import { claimFiles, inspectClaims, listClaims, releaseFiles } from "./lib/claims.mjs";
 import { buildWakeUpBrief } from "./lib/wakeup.mjs";
@@ -65,7 +71,11 @@ function parseArgs(argv) {
     resource: null,
     url: null,
     revision: null,
-    badge: null
+    badge: null,
+    preset: null,
+    commitPattern: null,
+    triggerFilename: null,
+    reviewerLabel: null
   };
   const positionals = [];
 
@@ -325,6 +335,26 @@ function parseArgs(argv) {
       index += 1;
       continue;
     }
+    if (value === "--preset") {
+      flags.preset = rest[index + 1];
+      index += 1;
+      continue;
+    }
+    if (value === "--commit-pattern") {
+      flags.commitPattern = rest[index + 1];
+      index += 1;
+      continue;
+    }
+    if (value === "--trigger-filename") {
+      flags.triggerFilename = rest[index + 1];
+      index += 1;
+      continue;
+    }
+    if (value === "--reviewer-label") {
+      flags.reviewerLabel = rest[index + 1];
+      index += 1;
+      continue;
+    }
     if (value.startsWith("--")) {
       throw new Error(`Unknown argument: ${value}`);
     }
@@ -368,8 +398,11 @@ function usage(target = null) {
     "write-validation-result": "  node scripts/crew.mjs write-validation-result --repo <path> --title <text> [--validator <role>] [--environment <name>] [--decision <decision>]",
     "write-deployment-check": "  node scripts/crew.mjs write-deployment-check --repo <path> --title <text> [--deployer <role>] [--environment dev|prod] [--resource <name>] [--url <service-url>] [--revision <id>] [--decision <decision>]",
     "write-final-synthesis": "  node scripts/crew.mjs write-final-synthesis --repo <path> --title <text> [--summary <text>] [--files <a,b>]",
-    "install-wiggin-bridge": "  node scripts/crew.mjs install-wiggin-bridge --repo <path>",
-    "backfill-wiggin-bridge": "  node scripts/crew.mjs backfill-wiggin-bridge --repo <path>"
+    "install-commit-bridge": "  node scripts/crew.mjs install-commit-bridge --repo <path> [--preset wiggin-loop|conventional-commits] [--commit-pattern <regex>] [--trigger-filename <name>] [--reviewer-label <name>]",
+    "backfill-commit-bridge": "  node scripts/crew.mjs backfill-commit-bridge --repo <path> [--preset wiggin-loop|conventional-commits] [--commit-pattern <regex>] [--reviewer-label <name>]",
+    "list-bridge-presets": "  node scripts/crew.mjs list-bridge-presets",
+    "install-wiggin-bridge": "  node scripts/crew.mjs install-wiggin-bridge --repo <path>   (alias: install-commit-bridge --preset wiggin-loop)",
+    "backfill-wiggin-bridge": "  node scripts/crew.mjs backfill-wiggin-bridge --repo <path> (alias: backfill-commit-bridge --preset wiggin-loop)"
   };
 
   if (target && subcommands[target]) {
@@ -422,6 +455,21 @@ async function main() {
     result = await bootstrapRepo(repoPath);
   } else if (command === "init") {
     result = await initRepo(repoPath, { allowExisting: flags.allowExisting });
+  } else if (command === "install-commit-bridge") {
+    result = await installCommitBridge(repoPath, {
+      preset: flags.preset,
+      commitPattern: flags.commitPattern,
+      triggerFilename: flags.triggerFilename,
+      reviewerLabel: flags.reviewerLabel
+    });
+  } else if (command === "backfill-commit-bridge") {
+    result = await backfillCommitBridge(repoPath, {
+      preset: flags.preset,
+      commitPattern: flags.commitPattern,
+      reviewerLabel: flags.reviewerLabel
+    });
+  } else if (command === "list-bridge-presets") {
+    result = { presets: listBridgePresets() };
   } else if (command === "install-wiggin-bridge") {
     result = await installWigginBridge(repoPath);
   } else if (command === "backfill-wiggin-bridge") {
