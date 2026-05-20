@@ -12,7 +12,7 @@ Workflow:
 1. Run (splits `$ARGUMENTS` on whitespace into separate path args without re-evaluating shell metacharacters):
    ```bash
    read -ra _args <<< "$ARGUMENTS"
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" show-conflicts --repo "$PWD" "${_args[@]}"
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" show-conflicts --repo "$PWD" -- "${_args[@]}"
    ```
 2. Treat results in three buckets:
    - `owned`: already claimed by the current session, safe to keep editing

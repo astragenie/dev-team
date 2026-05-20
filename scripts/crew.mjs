@@ -70,6 +70,12 @@ function parseArgs(argv) {
 
   for (let index = 0; index < rest.length; index += 1) {
     const value = rest[index];
+    if (value === "--") {
+      for (let tail = index + 1; tail < rest.length; tail += 1) {
+        positionals.push(rest[tail]);
+      }
+      break;
+    }
     if (value === "--help" || value === "-h") {
       flags.help = true;
       continue;
