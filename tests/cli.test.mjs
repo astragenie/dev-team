@@ -27,7 +27,7 @@ test("CLI init creates a harnessed repo", async () => {
   assert.ok(result.welcome.commands.includes("/crew:brief-me"));
 
   const claudeMd = await fs.readFile(path.join(repoPath, "CLAUDE.md"), "utf8");
-  assert.match(claudeMd, /engineering-os:start/);
+  assert.match(claudeMd, /crew:start/);
 });
 
 test("CLI bootstrap preserves existing CLAUDE.md content", async () => {
@@ -42,7 +42,7 @@ test("CLI bootstrap preserves existing CLAUDE.md content", async () => {
   assert.match(result.welcome.headline, /Crew/);
   assert.ok(result.welcome.commands.includes("/crew:build"));
   assert.match(claudeMd, /# Existing/);
-  assert.match(claudeMd, /engineering-os:start/);
+  assert.match(claudeMd, /crew:start/);
 });
 
 test("CLI claim and release manage repo-local claims", async () => {

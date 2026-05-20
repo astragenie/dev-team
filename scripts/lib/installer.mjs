@@ -3,16 +3,24 @@ import path from "node:path";
 
 const GLOBAL_MEMORY_VERSION = "1.1";
 const GLOBAL_METADATA_TEMPLATE = {
-  managedBy: "engineering-os",
+  managedBy: "crew",
   version: GLOBAL_MEMORY_VERSION,
   files: ["constitution.md", "workflow.md"]
 };
 
+// Marker block injected into repo CLAUDE.md. The repo-local constitution is
+// imported via @-syntax so it shows up in agent context automatically. The
+// workflow.md is deliberately NOT imported — agents read workflow via the
+// commands and brief-me memory bucket, not by stuffing it into CLAUDE.md.
 const CLAUDE_IMPORT_BLOCK = [
-  "<!-- engineering-os:start -->",
-  "<!-- Engineering OS global memory lives in ~/.claude/engineering-os/. Run /crew:install after plugin updates that change framework memory. -->",
-  "<!-- engineering-os:end -->"
+  "<!-- crew:start -->",
+  "<!-- Crew framework memory. Run /crew:install after plugin updates that change framework memory. -->",
+  "@.claude/crew/constitution.md",
+  "<!-- crew:end -->"
 ].join("\n");
+// Legacy marker retained for upgrade detection (see updateClaudeMd).
+const LEGACY_CLAUDE_MARKER_START = "<!-- engineering-os:start -->";
+const LEGACY_CLAUDE_MARKER_END = "<!-- engineering-os:end -->";
 
 const CONSTITUTION_TEMPLATE = `# Engineering OS Constitution
 
@@ -44,20 +52,20 @@ The user depends on artifacts to resume work after compaction, across sessions, 
 Substantial work should start from bounded repo memory:
 
 - \`CLAUDE.md\`
-- \`.claude/engineering-os/*.md\`
+- \`.claude/crew/*.md\`
 - latest relevant wake-up context and artifacts
 
 Substantial work should leave inspectable artifacts under:
 
-- \`.claude/artifacts/engineering-os/runs/\`
-- \`.claude/artifacts/engineering-os/handoffs/\`
-- \`.claude/artifacts/engineering-os/reviews/\`
-- \`.claude/artifacts/engineering-os/validations/\`
-- \`.claude/artifacts/engineering-os/deployments/\`
+- \`.claude/artifacts/crew/runs/\`
+- \`.claude/artifacts/crew/handoffs/\`
+- \`.claude/artifacts/crew/reviews/\`
+- \`.claude/artifacts/crew/validations/\`
+- \`.claude/artifacts/crew/deployments/\`
 
 For shipping work, keep durable repo deployment guidance in:
 
-- \`.claude/engineering-os/deployment.md\`
+- \`.claude/crew/deployment.md\`
 
 ## Scope Discipline
 
@@ -115,11 +123,82 @@ Every substantial handoff should include:
 - confidence level
 - risks or open questions
 - suggested next handoff
+
+## Ownership And Tests
+
+Builder owns code-bearing tasks, including tests for changed behavior when practical. Reviewer
+owns independent change review. Validator owns behavior validation when behavior can be exercised
+meaningfully. Deployer owns environment evidence when shipping through dev or prod.
 `;
 
-const ARTIFACT_README_TEMPLATE = `# Engineering OS Artifacts
+const PROTOCOL_TEMPLATE = `# Crew Agent Protocol
 
-This directory stores inspectable run artifacts for the Engineering OS harness.
+This document captures the shape of the structured communication artifacts agents leave behind
+so the next agent or session can resume without rediscovery.
+
+## Run Brief
+
+Created at the start of a substantial run. Captures:
+
+- title, goal, mode
+- in-scope and out-of-scope summary
+- first bounded work chunk
+- whether tests were added or updated as part of this run
+- next responsible step
+
+## Handoff
+
+Created whenever ownership changes or a teammate hands work back. Captures:
+
+- objective and owner
+- allowed scope and forbidden scope
+- deliverable and changed files or evidence
+- confidence level and open risks
+- suggested next handoff
+
+## Review Result
+
+Created immediately when independent review materially completes. Captures:
+
+- artifact or change reviewed
+- standards applied (repo standards, language standards, configured review skills)
+- decision: passed, failed, or skipped with a reason
+- findings, risks, and required follow-ups
+- whether tests were added or updated alongside the change
+
+## Validation Plan And Validation Result
+
+A validation plan describes the scenario, the environment, and the evidence to collect.
+A validation result records what actually happened:
+
+- scenario exercised
+- evidence gathered (logs, screenshots, telemetry)
+- decision: passed, failed, or skipped with a reason
+- residual risk and the next responsible step
+
+## Deployment Result
+
+Created when an environment transition produces meaningful evidence. Captures:
+
+- target environment (dev or prod)
+- resource or service identity (URL, image, revision)
+- decision: passed, failed, or skipped with a reason
+- log or telemetry pointer for the change
+- post-deploy validation status and the next responsible step
+
+## Final Synthesis
+
+Created at the end of a substantial run. Captures:
+
+- what changed and why
+- what was reviewed, validated, and deployed
+- residual risk and the next recommended step
+- whether tests were added or updated as part of this run
+`;
+
+const ARTIFACT_README_TEMPLATE = `# Crew Artifacts
+
+This directory stores inspectable run artifacts for the Crew harness.
 
 - \`runs/\` for run briefs and final syntheses
 - \`handoffs/\` for task ownership and completion notes
@@ -128,7 +207,7 @@ This directory stores inspectable run artifacts for the Engineering OS harness.
 - \`deployments/\` for deployment checks and environment evidence
 `;
 
-const STATE_README_TEMPLATE = `# Engineering OS State
+const STATE_README_TEMPLATE = `# Crew State
 
 This directory stores lightweight repo-local coordination state.
 
@@ -150,7 +229,7 @@ const SPRINT_TEMPLATE = {
   focus: "P1",
   notes: [
     "Replace or remove this file if you do not use sprint-style priorities.",
-    "Engineering OS keeps this repo-local so coordination remains inspectable."
+    "Crew keeps this repo-local so coordination remains inspectable."
   ]
 };
 
@@ -174,7 +253,7 @@ else
   cat > "$payload_path"
 fi
 
-printf '{"schemaVersion":"1.0","source":"engineering-os","timestamp":"%s","event":"%s","repoPath":"%s","payloadPath":"%s"}\\n' \\
+printf '{"schemaVersion":"1.0","source":"crew","timestamp":"%s","event":"%s","repoPath":"%s","payloadPath":"%s"}\\n' \\
   "$timestamp" \\
   "$event_name" \\
   "$project_dir" \\
@@ -299,8 +378,12 @@ if (!isCommit && !isPr) {
 }
 
 const cwd = input.cwd || process.cwd();
-const workflowPath = path.join(cwd, ".claude", "state", "engineering-os", "workflow-state.json");
-if (!fs.existsSync(workflowPath)) {
+const crewWorkflowPath = path.join(cwd, ".claude", "state", "crew", "workflow-state.json");
+const legacyWorkflowPath = path.join(cwd, ".claude", "state", "engineering-os", "workflow-state.json");
+const workflowPath = fs.existsSync(crewWorkflowPath)
+  ? crewWorkflowPath
+  : (fs.existsSync(legacyWorkflowPath) ? legacyWorkflowPath : null);
+if (!workflowPath) {
   process.exit(0);
 }
 
@@ -344,7 +427,7 @@ const DEFAULT_SETTINGS = {
           {
             type: "command",
             command: "${PWD}/.claude/hooks/log_event.sh session_start",
-            description: "engineering-os:session-start"
+            description: "crew:session-start"
           }
         ]
       }
@@ -355,7 +438,7 @@ const DEFAULT_SETTINGS = {
           {
             type: "command",
             command: "${PWD}/.claude/hooks/log_event.sh task_created",
-            description: "engineering-os:task-created"
+            description: "crew:task-created"
           }
         ]
       }
@@ -366,7 +449,7 @@ const DEFAULT_SETTINGS = {
           {
             type: "command",
             command: "${PWD}/.claude/hooks/log_event.sh task_completed",
-            description: "engineering-os:task-completed"
+            description: "crew:task-completed"
           }
         ]
       }
@@ -377,7 +460,7 @@ const DEFAULT_SETTINGS = {
           {
             type: "command",
             command: "${PWD}/.claude/hooks/log_event.sh subagent_start",
-            description: "engineering-os:subagent-start"
+            description: "crew:subagent-start"
           }
         ]
       }
@@ -388,7 +471,7 @@ const DEFAULT_SETTINGS = {
           {
             type: "command",
             command: "${PWD}/.claude/hooks/log_event.sh subagent_stop",
-            description: "engineering-os:subagent-stop"
+            description: "crew:subagent-stop"
           }
         ]
       }
@@ -400,7 +483,7 @@ const DEFAULT_SETTINGS = {
           {
             type: "command",
             command: "${PWD}/.claude/hooks/check_git_gate.sh",
-            description: "engineering-os:git-gate-reminder"
+            description: "crew:git-gate-reminder"
           }
         ]
       }
@@ -435,13 +518,16 @@ async function writeFileIfChanged(filePath, contents, options = {}) {
   return true;
 }
 
-function isEngineeringOsHook(entry) {
+function isCrewHook(entry) {
   const hooks = Array.isArray(entry?.hooks) ? entry.hooks : [];
   return hooks.some((hook) => {
     const command = hook?.command || "";
     const description = hook?.description || "";
     return command.includes(".claude/hooks/log_event.sh")
       || command.includes(".claude/hooks/check_git_gate.sh")
+      // Detect both current ("crew:") and legacy ("engineering-os:") namespaces so
+      // mergeHooks replaces legacy registrations cleanly after the rename.
+      || description.startsWith("crew:")
       || description.startsWith("engineering-os:");
   });
 }
@@ -450,7 +536,7 @@ function mergeHooks(existingHooks = {}, desiredHooks = {}) {
   const result = { ...existingHooks };
   for (const [eventName, hookDefs] of Object.entries(desiredHooks)) {
     const current = Array.isArray(result[eventName]) ? result[eventName] : [];
-    const preserved = current.filter((entry) => !isEngineeringOsHook(entry));
+    const preserved = current.filter((entry) => !isCrewHook(entry));
     const nextEntries = [...preserved];
     const seen = new Set(nextEntries.map((item) => JSON.stringify(item)));
     for (const hookDef of hookDefs) {
@@ -465,6 +551,24 @@ function mergeHooks(existingHooks = {}, desiredHooks = {}) {
   return result;
 }
 
+function replaceLegacyMarkerBlock(existing) {
+  // Replace the entire legacy `<!-- engineering-os:start -->...<!-- engineering-os:end -->`
+  // block with the new crew marker block. Preserves CLAUDE.md content outside the block.
+  const startIndex = existing.indexOf(LEGACY_CLAUDE_MARKER_START);
+  const endIndex = existing.indexOf(LEGACY_CLAUDE_MARKER_END);
+  if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) {
+    return null;
+  }
+  const before = existing.slice(0, startIndex).trimEnd();
+  const after = existing.slice(endIndex + LEGACY_CLAUDE_MARKER_END.length).trimStart();
+  const middle = `${CLAUDE_IMPORT_BLOCK}`;
+  const parts = [before, middle];
+  if (after) {
+    parts.push(after);
+  }
+  return `${parts.join("\n\n")}\n`;
+}
+
 async function updateClaudeMd(repoPath, writes) {
   const claudePath = path.join(repoPath, "CLAUDE.md");
   const existing = await fs.readFile(claudePath, "utf8").catch(() => null);
@@ -473,7 +577,7 @@ async function updateClaudeMd(repoPath, writes) {
     const contents = [
       "# Repo Instructions",
       "",
-      "This repository uses the Engineering OS harness.",
+      "This repository uses the Crew harness.",
       "",
       CLAUDE_IMPORT_BLOCK,
       ""
@@ -483,10 +587,22 @@ async function updateClaudeMd(repoPath, writes) {
     return;
   }
 
-  if (existing.includes("<!-- engineering-os:start -->")) {
+  // Already on the new marker — leave alone (idempotency).
+  if (existing.includes("<!-- crew:start -->")) {
     return;
   }
 
+  // Legacy marker present — upgrade the block in place.
+  if (existing.includes(LEGACY_CLAUDE_MARKER_START)) {
+    const upgraded = replaceLegacyMarkerBlock(existing);
+    if (upgraded !== null) {
+      await writeFileIfChanged(claudePath, upgraded);
+      writes.push(path.relative(repoPath, claudePath));
+      return;
+    }
+  }
+
+  // No marker block yet — append.
   const next = `${existing.trimEnd()}\n\n${CLAUDE_IMPORT_BLOCK}\n`;
   await writeFileIfChanged(claudePath, next);
   writes.push(path.relative(repoPath, claudePath));
@@ -507,40 +623,28 @@ async function updateSettings(repoPath, writes) {
   }
 }
 
+// Like writeFileIfChanged but only writes when the file does not yet exist.
+// Used for stateful seeds (claims, history, workflow-state) so a migrated
+// legacy file is not clobbered by the default template.
+async function writeSeedIfMissing(filePath, contents, options = {}) {
+  if (await pathExists(filePath)) {
+    return false;
+  }
+  await ensureDir(path.dirname(filePath));
+  await fs.writeFile(filePath, contents, options);
+  return true;
+}
+
 async function writeHarnessFiles(repoPath, writes) {
-  const files = [
+  // README and hook scripts are template files — always refresh to the latest.
+  const refreshFiles = [
     [
-      path.join(repoPath, ".claude", "artifacts", "engineering-os", "README.md"),
+      path.join(repoPath, ".claude", "artifacts", "crew", "README.md"),
       `${ARTIFACT_README_TEMPLATE}\n`
     ],
     [
-      path.join(repoPath, ".claude", "state", "engineering-os", "README.md"),
+      path.join(repoPath, ".claude", "state", "crew", "README.md"),
       `${STATE_README_TEMPLATE}\n`
-    ],
-    [
-      path.join(repoPath, ".claude", "state", "engineering-os", "claims.json"),
-      `${JSON.stringify(CLAIMS_TEMPLATE, null, 2)}\n`
-    ],
-    [
-      path.join(repoPath, ".claude", "state", "engineering-os", "history.jsonl"),
-      ""
-    ],
-    [
-      path.join(repoPath, ".claude", "state", "engineering-os", "approvals.jsonl"),
-      ""
-    ],
-    [
-      path.join(repoPath, ".claude", "state", "engineering-os", "workflow-state.json"),
-      `${JSON.stringify({
-        version: "1.0",
-        updatedAt: "2026-01-01T00:00:00.000Z",
-        currentRun: null,
-        recentRuns: []
-      }, null, 2)}\n`
-    ],
-    [
-      path.join(repoPath, ".claude", "state", "engineering-os", "sprint.json"),
-      `${JSON.stringify(SPRINT_TEMPLATE, null, 2)}\n`
     ],
     [
       path.join(repoPath, ".claude", "hooks", "log_event.sh"),
@@ -552,7 +656,7 @@ async function writeHarnessFiles(repoPath, writes) {
     ]
   ];
 
-  for (const [filePath, contents] of files) {
+  for (const [filePath, contents] of refreshFiles) {
     const isHookScript = filePath.endsWith("log_event.sh") || filePath.endsWith("check_git_gate.sh");
     const changed = await writeFileIfChanged(
       filePath,
@@ -564,17 +668,154 @@ async function writeHarnessFiles(repoPath, writes) {
     }
   }
 
+  // State seeds — only write when missing, so a migrated legacy file keeps its data.
+  const seedFiles = [
+    [
+      path.join(repoPath, ".claude", "state", "crew", "claims.json"),
+      `${JSON.stringify(CLAIMS_TEMPLATE, null, 2)}\n`
+    ],
+    [
+      path.join(repoPath, ".claude", "state", "crew", "history.jsonl"),
+      ""
+    ],
+    [
+      path.join(repoPath, ".claude", "state", "crew", "approvals.jsonl"),
+      ""
+    ],
+    [
+      path.join(repoPath, ".claude", "state", "crew", "workflow-state.json"),
+      `${JSON.stringify({
+        version: "1.0",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+        currentRun: null,
+        recentRuns: []
+      }, null, 2)}\n`
+    ],
+    [
+      path.join(repoPath, ".claude", "state", "crew", "sprint.json"),
+      `${JSON.stringify(SPRINT_TEMPLATE, null, 2)}\n`
+    ]
+  ];
+
+  for (const [filePath, contents] of seedFiles) {
+    const changed = await writeSeedIfMissing(filePath, contents);
+    if (changed) {
+      writes.push(path.relative(repoPath, filePath));
+    }
+  }
+
   const directories = [
-    path.join(repoPath, ".claude", "artifacts", "engineering-os", "runs"),
-    path.join(repoPath, ".claude", "artifacts", "engineering-os", "handoffs"),
-    path.join(repoPath, ".claude", "artifacts", "engineering-os", "reviews"),
-    path.join(repoPath, ".claude", "artifacts", "engineering-os", "validations"),
-    path.join(repoPath, ".claude", "artifacts", "engineering-os", "deployments"),
+    path.join(repoPath, ".claude", "artifacts", "crew", "runs"),
+    path.join(repoPath, ".claude", "artifacts", "crew", "handoffs"),
+    path.join(repoPath, ".claude", "artifacts", "crew", "reviews"),
+    path.join(repoPath, ".claude", "artifacts", "crew", "validations"),
+    path.join(repoPath, ".claude", "artifacts", "crew", "deployments"),
     path.join(repoPath, ".claude", "logs"),
-    path.join(repoPath, ".claude", "state", "engineering-os")
+    path.join(repoPath, ".claude", "state", "crew")
   ];
   for (const directory of directories) {
     await ensureDir(directory);
+  }
+}
+
+// Writes the repo-local framework memory files under .claude/crew/. These are
+// repo-scoped copies of the framework constitution and workflow so the harness
+// is self-contained in the repo (the global copies under ~/.claude/engineering-os/
+// remain authoritative for users who set them up globally).
+async function writeRepoLocalGuides(repoPath, writes) {
+  const guides = [
+    [path.join(repoPath, ".claude", "crew", "constitution.md"), `${CONSTITUTION_TEMPLATE}\n`],
+    [path.join(repoPath, ".claude", "crew", "workflow.md"), `${WORKFLOW_TEMPLATE}\n`],
+    [path.join(repoPath, ".claude", "crew", "protocol.md"), `${PROTOCOL_TEMPLATE}\n`]
+  ];
+  for (const [filePath, contents] of guides) {
+    const changed = await writeFileIfChanged(filePath, contents);
+    if (changed) {
+      writes.push(path.relative(repoPath, filePath));
+    }
+  }
+}
+
+// Step 3: destructive migration. Moves every file under each .claude/.../engineering-os/
+// legacy directory into the equivalent .claude/.../crew/ path. When both files exist,
+// the newer mtime wins (crew/ is preferred on tie). Empty legacy directories are then
+// removed so the repo ends in a clean single-namespace state.
+async function migrateLegacyHarness(repoPath, writes) {
+  const moves = [
+    [
+      path.join(repoPath, ".claude", "engineering-os"),
+      path.join(repoPath, ".claude", "crew")
+    ],
+    [
+      path.join(repoPath, ".claude", "state", "engineering-os"),
+      path.join(repoPath, ".claude", "state", "crew")
+    ],
+    [
+      path.join(repoPath, ".claude", "artifacts", "engineering-os"),
+      path.join(repoPath, ".claude", "artifacts", "crew")
+    ]
+  ];
+
+  for (const [legacyRoot, targetRoot] of moves) {
+    if (!(await pathExists(legacyRoot))) {
+      continue;
+    }
+    await migrateDirectoryTree(legacyRoot, targetRoot, repoPath, writes);
+    await removeEmptyTree(legacyRoot);
+  }
+}
+
+async function migrateDirectoryTree(legacyDir, targetDir, repoPath, writes) {
+  const entries = await fs.readdir(legacyDir, { withFileTypes: true });
+  for (const entry of entries) {
+    const legacyPath = path.join(legacyDir, entry.name);
+    const targetPath = path.join(targetDir, entry.name);
+    if (entry.isDirectory()) {
+      await ensureDir(targetPath);
+      await migrateDirectoryTree(legacyPath, targetPath, repoPath, writes);
+      continue;
+    }
+    if (!entry.isFile()) {
+      continue;
+    }
+    await migrateOneFile(legacyPath, targetPath, repoPath, writes);
+  }
+}
+
+async function migrateOneFile(legacyPath, targetPath, repoPath, writes) {
+  const targetExists = await pathExists(targetPath);
+  if (!targetExists) {
+    await ensureDir(path.dirname(targetPath));
+    const data = await fs.readFile(legacyPath);
+    await fs.writeFile(targetPath, data);
+    writes.push(path.relative(repoPath, targetPath));
+    await fs.unlink(legacyPath);
+    return;
+  }
+
+  // Both exist — newer mtime wins. Tie goes to the new (crew/) path.
+  const [legacyStat, targetStat] = await Promise.all([fs.stat(legacyPath), fs.stat(targetPath)]);
+  if (legacyStat.mtimeMs > targetStat.mtimeMs) {
+    const data = await fs.readFile(legacyPath);
+    await fs.writeFile(targetPath, data);
+    writes.push(path.relative(repoPath, targetPath));
+  }
+  await fs.unlink(legacyPath);
+}
+
+async function removeEmptyTree(dirPath) {
+  if (!(await pathExists(dirPath))) {
+    return;
+  }
+  const entries = await fs.readdir(dirPath, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      await removeEmptyTree(path.join(dirPath, entry.name));
+    }
+  }
+  const remaining = await fs.readdir(dirPath);
+  if (remaining.length === 0) {
+    await fs.rmdir(dirPath);
   }
 }
 
@@ -586,9 +827,9 @@ export async function auditRepo(repoPath) {
     hasClaudeMd: await pathExists(path.join(repoPath, "CLAUDE.md")),
     hasDotClaude: await pathExists(path.join(repoPath, ".claude")),
     hasSettings: await pathExists(path.join(repoPath, ".claude", "settings.json")),
-    hasHarnessLayer: await pathExists(path.join(repoPath, ".claude", "artifacts", "engineering-os")),
-    hasStateLayer: await pathExists(path.join(repoPath, ".claude", "state", "engineering-os", "claims.json")),
-    hasWorkflowState: await pathExists(path.join(repoPath, ".claude", "state", "engineering-os", "workflow-state.json")),
+    hasHarnessLayer: await pathExists(path.join(repoPath, ".claude", "artifacts", "crew")),
+    hasStateLayer: await pathExists(path.join(repoPath, ".claude", "state", "crew", "claims.json")),
+    hasWorkflowState: await pathExists(path.join(repoPath, ".claude", "state", "crew", "workflow-state.json")),
     global
   };
 }
@@ -619,8 +860,12 @@ export async function bootstrapRepo(repoPath) {
   }
 
   const writes = [];
+  // Migrate first so writeHarnessFiles uses missing-only semantics on top of
+  // whatever the legacy tree provides (Step 3 of the P3.1 namespace rename).
+  await migrateLegacyHarness(repoPath, writes);
   await updateClaudeMd(repoPath, writes);
   await writeHarnessFiles(repoPath, writes);
+  await writeRepoLocalGuides(repoPath, writes);
   await updateSettings(repoPath, writes);
 
   return {

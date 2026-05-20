@@ -14,7 +14,7 @@ async function makeTempDir(prefix) {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
 }
 
-test("bootstrap adds harness files to an existing repo and preserves CLAUDE.md", { skip: "Blocked by backlog P3.1 namespace rename: installer writes .claude/state/engineering-os/ while runtime expects .claude/state/crew/. Migration deferred pending dry-run tool + per-repo backup strategy." }, async () => {
+test("bootstrap adds harness files to an existing repo and preserves CLAUDE.md", async () => {
   const repoPath = await makeTempDir("crew-bootstrap-");
   await fs.writeFile(
     path.join(repoPath, "CLAUDE.md"),
@@ -56,7 +56,7 @@ test("bootstrap adds harness files to an existing repo and preserves CLAUDE.md",
   assert.deepEqual(claimsState.claims, {});
 });
 
-test("bootstrap is idempotent for CLAUDE.md imports", { skip: "Blocked by backlog P3.1 namespace rename (engineering-os/ vs crew/ state path). Migration deferred." }, async () => {
+test("bootstrap is idempotent for CLAUDE.md imports", async () => {
   const repoPath = await makeTempDir("crew-idempotent-");
   await fs.writeFile(path.join(repoPath, "CLAUDE.md"), "# Repo\n");
 
@@ -68,7 +68,7 @@ test("bootstrap is idempotent for CLAUDE.md imports", { skip: "Blocked by backlo
   assert.equal(occurrences.length, 1);
 });
 
-test("bootstrap upgrades legacy harness paths and CLAUDE import block", { skip: "Blocked by backlog P3.1 namespace rename. Asserts on .claude/state/crew/claims.json which the current installer does not write." }, async () => {
+test("bootstrap upgrades legacy harness paths and CLAUDE import block", async () => {
   const repoPath = await makeTempDir("crew-legacy-upgrade-");
   await fs.mkdir(path.join(repoPath, ".claude", "engineering-os"), { recursive: true });
   await fs.mkdir(path.join(repoPath, ".claude", "artifacts", "engineering-os", "runs"), {
@@ -158,7 +158,7 @@ test("bootstrap installs a soft git gate reminder hook", async () => {
     repoPath,
     ".claude",
     "state",
-    "engineering-os",
+    "crew",
     "workflow-state.json"
   );
   await fs.writeFile(
@@ -218,7 +218,7 @@ test("bootstrap git gate reminder also warns when a completed phase is missing i
     repoPath,
     ".claude",
     "state",
-    "engineering-os",
+    "crew",
     "workflow-state.json"
   );
   await fs.writeFile(
@@ -307,7 +307,7 @@ test("installGlobal writes one managed global memory copy and is idempotent", as
     const metadata = JSON.parse(
       await fs.readFile(path.join(homePath, ".claude", "engineering-os", "metadata.json"), "utf8")
     );
-    assert.equal(metadata.managedBy, "engineering-os");
+    assert.equal(metadata.managedBy, "crew");
 
     const second = await installGlobal();
     assert.deepEqual(second.writes, []);
