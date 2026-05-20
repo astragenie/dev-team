@@ -19,6 +19,7 @@ It also ensures global `~/.claude/CLAUDE.md` imports the constitution and workfl
 Run:
 
 ```bash
+set -euo pipefail
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" install-global
 ```
 

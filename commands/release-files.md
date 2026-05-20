@@ -11,6 +11,7 @@ Workflow:
 
 1. Run (splits `$ARGUMENTS` on whitespace into separate path args without re-evaluating shell metacharacters):
    ```bash
+   set -euo pipefail
    read -ra _args <<< "$ARGUMENTS"
    node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" release --repo "$PWD" -- "${_args[@]}"
    ```
