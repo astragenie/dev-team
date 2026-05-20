@@ -109,7 +109,9 @@ function fileLooksLikeDeploymentClue(relativePath) {
     return true;
   }
 
-  const segments = relativePath.split(path.sep);
+  // relativePath is normalized to forward slashes in collectDeploymentClues,
+  // so split on "/" rather than path.sep.
+  const segments = relativePath.split("/");
   const underDeploymentDir = segments.some((segment) => DEPLOYMENT_DIR_HINTS.has(segment));
   if (!underDeploymentDir) {
     return false;
@@ -134,7 +136,14 @@ async function collectDeploymentClues(repoPath, relativeDir, depth, out) {
       return;
     }
 
-    const relativePath = relativeDir ? path.join(relativeDir, entry.name) : entry.name;
+    // Normalize to forward slashes so classification and output are
+    // platform-agnostic. On Windows, path.join produces backslashes which
+    // would break the startsWith(".github/workflows/") and startsWith(".circleci/")
+    // checks in fileLooksLikeDeploymentClue, and would return non-POSIX
+    // clue strings that downstream consumers (tests, guidance docs) don't
+    // expect. Matches the convention used by claims.mjs:toRepoRelative.
+    const rawRelativePath = relativeDir ? path.join(relativeDir, entry.name) : entry.name;
+    const relativePath = rawRelativePath.split(path.sep).join("/");
     if (entry.isDirectory()) {
       if (IGNORED_DIRS.has(entry.name)) {
         continue;

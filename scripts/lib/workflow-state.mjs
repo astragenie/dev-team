@@ -345,6 +345,10 @@ export async function registerWorkflowArtifact(repoPath, artifact, fields = {}) 
   const state = await loadWorkflowState(repoPath);
 
   if (artifact.kind === "run-brief") {
+    // BUG-B fix: archive the existing run instead of silently overwriting.
+    // Pre-fix behavior destroyed pending gates (e.g. review_required) and
+    // never populated recentRuns. archiveRun safely no-ops on null.
+    archiveRun(state, state.currentRun);
     state.currentRun = createRun({
       title: fields.title,
       goal: fields.goal,

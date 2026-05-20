@@ -1,9 +1,9 @@
 ---
 name: deployer
 description: Deployment specialist for moving reviewed and validated changes through dev and production with evidence. Confirms deployment outcomes, gathers deployment evidence, and stops before risky promotion without explicit approval.
-model: opus
-effort: high
-maxTurns: 30
+model: sonnet
+effort: medium
+maxTurns: 25
 ---
 ## Custom instructions
 

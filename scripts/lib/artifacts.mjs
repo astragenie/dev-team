@@ -212,53 +212,6 @@ function resolveArtifactConfig(kind) {
     };
   }
 
-  if (kind === "validation-result") {
-    return {
-      directory: "validations",
-      prefix: "validation-result",
-      render(fields) {
-        return [
-          `# Validation Result: ${fields.title || "Untitled"}`,
-          "",
-          renderField("Created", nowIso()),
-          renderField("Validator", fields.validator || fields.owner),
-          renderField("Environment", fields.environment),
-          renderField("Scenario", fields.scenario),
-          renderField("Decision", fields.decision || "passed"),
-          renderField("Summary", fields.summary),
-          renderListField("Executed Evidence", fields.executedEvidence),
-          renderField("Inferred Confidence", fields.inferredConfidence),
-          renderField("Risks Or Blockers", fields.risks),
-          renderField("Recommended Next Step", fields.next),
-          ""
-        ].join("\n");
-      }
-    };
-  }
-
-  if (kind === "deployment-result") {
-    return {
-      directory: "deployments",
-      prefix: "deployment-result",
-      render(fields) {
-        return [
-          `# Deployment Result: ${fields.title || "Untitled"}`,
-          "",
-          renderField("Created", nowIso()),
-          renderField("Deployer", fields.deployer || fields.owner),
-          renderField("Environment", fields.environment),
-          renderField("Target", fields.target || fields.to),
-          renderField("Outcome", fields.decision || "verified"),
-          renderField("Summary", fields.summary),
-          renderListField("Evidence Checked", fields.evidence),
-          renderField("Risks Or Blockers", fields.risks),
-          renderField("Recommended Next Step", fields.next),
-          ""
-        ].join("\n");
-      }
-    };
-  }
-
   throw new Error(`Unsupported artifact kind: ${kind}`);
 }
 

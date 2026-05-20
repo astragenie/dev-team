@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/log_event.sh session_start"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/log_event.sh\" session_start"
           }
         ]
       }
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/log_event.sh task_created"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/log_event.sh\" task_created"
           }
         ]
       }
@@ -26,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/log_event.sh task_completed"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/log_event.sh\" task_completed"
           }
         ]
       }
@@ -36,7 +36,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/log_event.sh subagent_start"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/log_event.sh\" subagent_start"
           }
         ]
       }
@@ -46,7 +46,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/log_event.sh subagent_stop"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/log_event.sh\" subagent_stop"
           }
         ]
       }
@@ -56,7 +56,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/log_event.sh teammate_idle"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/log_event.sh\" teammate_idle"
           }
         ]
       }

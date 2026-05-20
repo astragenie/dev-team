@@ -1,9 +1,9 @@
 ---
 name: validator
 description: Behavior-validation specialist for runnable, observable, or user-visible changes. Executes validation scenarios and returns evidence-based pass or fail results.
-model: opus
-effort: high
-maxTurns: 30
+model: sonnet
+effort: low
+maxTurns: 20
 disallowedTools: Write, Edit
 ---
 ## Custom instructions

@@ -3,7 +3,7 @@ name: lead
 description: User-facing coordinator for task framing, bounded delegation, quality gates, memory discipline, and synthesis across a Claude Code team.
 model: opus
 effort: high
-maxTurns: 40
+maxTurns: 30
 ---
 ## Custom instructions
 

@@ -4,6 +4,10 @@ import path from "node:path";
 const STATE_DIR = [".claude", "state", "crew"];
 const CLAIMS_PATH = [...STATE_DIR, "claims.json"];
 const HISTORY_PATH = [...STATE_DIR, "history.jsonl"];
+const LOCK_SUFFIX = ".lock";
+const LOCK_RETRY_MS = 25;
+const LOCK_TIMEOUT_MS = 5000;
+const LOCK_STALE_MS = 30_000;
 
 function nowIso() {
   return new Date().toISOString();
@@ -38,6 +42,60 @@ function toRepoRelative(repoPath, inputPath) {
     throw new Error(`Claim path must stay inside the repo: ${inputPath}`);
   }
   return relative.split(path.sep).join("/");
+}
+
+// BUG-A fix: serialize read-modify-write on claims.json using a lock file.
+// `wx` flag is fs's name for O_CREAT|O_EXCL|O_WRONLY which is atomic on
+// POSIX and Windows. If the lock file already exists, the open fails and
+// we retry. A stale lock (older than LOCK_STALE_MS) is forcibly cleared
+// to recover from crashed processes.
+async function acquireClaimsLock(repoPath) {
+  const claimsPath = path.join(repoPath, ...CLAIMS_PATH);
+  const lockPath = `${claimsPath}${LOCK_SUFFIX}`;
+  await ensureDir(path.dirname(lockPath));
+  const deadline = Date.now() + LOCK_TIMEOUT_MS;
+  for (;;) {
+    try {
+      const handle = await fs.open(lockPath, "wx");
+      await handle.write(`${process.pid}\n`);
+      await handle.close();
+      return lockPath;
+    } catch (err) {
+      if (err.code !== "EEXIST") {
+        throw err;
+      }
+      // Check for a stale lock and reap it.
+      try {
+        const stat = await fs.stat(lockPath);
+        if (Date.now() - stat.mtimeMs > LOCK_STALE_MS) {
+          await fs.unlink(lockPath).catch(() => {});
+          continue;
+        }
+      } catch {
+        // Lock disappeared between EEXIST and stat — race with a releaser. Retry.
+        continue;
+      }
+      if (Date.now() >= deadline) {
+        throw new Error(
+          `Timed out acquiring claims lock at ${lockPath} after ${LOCK_TIMEOUT_MS}ms`
+        );
+      }
+      await new Promise((resolve) => setTimeout(resolve, LOCK_RETRY_MS));
+    }
+  }
+}
+
+async function releaseClaimsLock(lockPath) {
+  await fs.unlink(lockPath).catch(() => {});
+}
+
+async function withClaimsLock(repoPath, fn) {
+  const lockPath = await acquireClaimsLock(repoPath);
+  try {
+    return await fn();
+  } finally {
+    await releaseClaimsLock(lockPath);
+  }
 }
 
 async function saveClaimsState(repoPath, state) {
@@ -82,77 +140,83 @@ export async function loadClaimsState(repoPath, options = {}) {
 export async function claimFiles(repoPath, filePaths, options = {}) {
   const owner = options.owner || "lead-session";
   const note = options.note || "";
-  const state = await loadClaimsState(repoPath);
-  const claimed = [];
-  const alreadyOwned = [];
-  const conflicts = [];
 
-  for (const inputPath of filePaths) {
-    const repoRelativePath = toRepoRelative(repoPath, inputPath);
-    const existing = state.claims[repoRelativePath];
+  return withClaimsLock(repoPath, async () => {
+    const state = await loadClaimsState(repoPath);
+    const claimed = [];
+    const alreadyOwned = [];
+    const conflicts = [];
 
-    if (!existing) {
-      state.claims[repoRelativePath] = {
-        owner,
-        createdAt: nowIso(),
-        note
-      };
-      claimed.push(repoRelativePath);
-      continue;
+    for (const inputPath of filePaths) {
+      const repoRelativePath = toRepoRelative(repoPath, inputPath);
+      const existing = state.claims[repoRelativePath];
+
+      if (!existing) {
+        state.claims[repoRelativePath] = {
+          owner,
+          createdAt: nowIso(),
+          note
+        };
+        claimed.push(repoRelativePath);
+        continue;
+      }
+
+      if (existing.owner === owner) {
+        alreadyOwned.push(repoRelativePath);
+        continue;
+      }
+
+      conflicts.push({
+        path: repoRelativePath,
+        owner: existing.owner,
+        createdAt: existing.createdAt,
+        note: existing.note || ""
+      });
     }
 
-    if (existing.owner === owner) {
-      alreadyOwned.push(repoRelativePath);
-      continue;
+    await saveClaimsState(repoPath, state);
+    if (claimed.length > 0) {
+      await appendHistoryEvent(repoPath, { event: "claim", owner, files: claimed, note });
     }
 
-    conflicts.push({
-      path: repoRelativePath,
-      owner: existing.owner,
-      createdAt: existing.createdAt,
-      note: existing.note || ""
-    });
-  }
-
-  await saveClaimsState(repoPath, state);
-  if (claimed.length > 0) {
-    await appendHistoryEvent(repoPath, { event: "claim", owner, files: claimed, note });
-  }
-
-  return { owner, claimed, alreadyOwned, conflicts };
+    return { owner, claimed, alreadyOwned, conflicts };
+  });
 }
 
 export async function releaseFiles(repoPath, filePaths = [], options = {}) {
   const owner = options.owner || null;
-  const state = await loadClaimsState(repoPath);
-  const released = [];
-  const skipped = [];
 
-  const targets = filePaths.length > 0
-    ? filePaths.map((inputPath) => toRepoRelative(repoPath, inputPath))
-    : Object.keys(state.claims);
+  return withClaimsLock(repoPath, async () => {
+    const state = await loadClaimsState(repoPath);
+    const released = [];
+    const skipped = [];
 
-  for (const repoRelativePath of targets) {
-    const existing = state.claims[repoRelativePath];
-    if (!existing) {
-      skipped.push({ path: repoRelativePath, reason: "not_claimed" });
-      continue;
+    const targets = filePaths.length > 0
+      ? filePaths.map((inputPath) => toRepoRelative(repoPath, inputPath))
+      : Object.keys(state.claims);
+
+    for (const repoRelativePath of targets) {
+      const existing = state.claims[repoRelativePath];
+      if (!existing) {
+        skipped.push({ path: repoRelativePath, reason: "not_claimed" });
+        continue;
+      }
+      if (owner && existing.owner !== owner) {
+        skipped.push({ path: repoRelativePath, reason: "owned_by_other", owner: existing.owner });
+        continue;
+      }
+
+      delete state.claims[repoRelativePath];
+      released.push(repoRelativePath);
     }
-    if (owner && existing.owner !== owner) {
-      skipped.push({ path: repoRelativePath, reason: "owned_by_other", owner: existing.owner });
-      continue;
+
+    await saveClaimsState(repoPath, state);
+    if (released.length > 0) {
+      await appendHistoryEvent(repoPath, { event: "release", owner, files: released });
     }
 
-    delete state.claims[repoRelativePath];
-    released.push(repoRelativePath);
-  }
-
-  await saveClaimsState(repoPath, state);
-  if (released.length > 0) {
-    await appendHistoryEvent(repoPath, { event: "release", owner, files: released });
-  }
-
-  return { owner, released, skipped };
+    return { owner, released, skipped };
+  });
 }
 
 export async function listClaims(repoPath, options = {}) {
