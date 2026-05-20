@@ -15,6 +15,15 @@
       "author": {
         "name": "Aradaev"
       }
+    },
+    {
+      "name": "autonomous-loop",
+      "description": "Wiggin-Loop methodology layer for Claude Code with HARD RULE blocks, slice scaffold, and phase-gate runner. Depends on `crew` for artifact writers.",
+      "version": "0.1.0",
+      "source": "../hero-crew-autonomous-loop",
+      "author": {
+        "name": "shishkosv"
+      }
     }
   ]
 }
