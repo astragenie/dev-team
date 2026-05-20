@@ -506,11 +506,41 @@ function buildSecondaryOptions(wakeUpBrief, deploymentClues, gitActivity) {
   return options.slice(0, 3);
 }
 
+// Best-effort lookup of the autonomous-loop plugin CLI from the Claude Code
+// plugin cache. Returns null if not installed. The brief integration is
+// optional — crew works fine without the plugin present.
+async function findAutonomousLoopCli() {
+  const home = process.env.HOME || process.env.USERPROFILE;
+  if (!home) return null;
+  const candidates = [
+    `${home}/.claude/plugins/cache/autonomous-loop-dev/autonomous-loop/0.1.0/scripts/autonomous-loop.mjs`,
+    `${home}/.claude/plugins/cache/autonomous-loop/autonomous-loop/0.1.0/scripts/autonomous-loop.mjs`
+  ];
+  for (const candidate of candidates) {
+    if (await pathExists(candidate)) return candidate;
+  }
+  return null;
+}
+
+async function fetchAutonomousLoopBrief(repoPath) {
+  try {
+    const cli = await findAutonomousLoopCli();
+    if (!cli) return null;
+    const { stdout } = await execFile("node", [cli, "brief", "--repo", repoPath], {
+      maxBuffer: 1024 * 1024
+    });
+    return JSON.parse(stdout);
+  } catch {
+    return null;
+  }
+}
+
 export async function buildBriefingReport(repoPath) {
-  const [wakeUpBrief, gitActivity, deploymentClues] = await Promise.all([
+  const [wakeUpBrief, gitActivity, deploymentClues, autonomousLoopBrief] = await Promise.all([
     buildWakeUpBrief(repoPath, { readOnly: true }),
     collectGitActivity(repoPath),
-    discoverDeploymentClues(repoPath)
+    discoverDeploymentClues(repoPath),
+    fetchAutonomousLoopBrief(repoPath)
   ]);
 
   const artifacts = await collectRelevantArtifacts(wakeUpBrief);
@@ -549,7 +579,9 @@ export async function buildBriefingReport(repoPath) {
       pendingWorkflowBadges: wakeUpBrief.workflow.pendingBadges,
       hasRecentArtifacts: artifacts.length > 0,
       hasDeploymentGuidance: Boolean(wakeUpBrief.repoGuidance?.deployment),
-      discoveredDeploymentClues: deploymentClues.clues.length
-    }
+      discoveredDeploymentClues: deploymentClues.clues.length,
+      autonomousLoopInstalled: Boolean(autonomousLoopBrief)
+    },
+    autonomousLoop: autonomousLoopBrief
   };
 }
