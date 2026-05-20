@@ -6,6 +6,11 @@ description: Preferred short entry point for adopting an existing repo into the 
 
 Prepare the current repository for the Crew workflow.
 
+Before running for the first time on a repo that already has a pre-P3.1 install
+(legacy `.claude/engineering-os/` paths, `<!-- engineering-os:start -->`
+markers, etc.), read `docs/adoption-checklist.md` for what gets created,
+migrated, modified, and how to roll back.
+
 For what counts as "substantial" below, see the canonical definition in `constitution.md` (`What "Substantial" Means`).
 
 Goals:
