@@ -1,10 +1,10 @@
 ---
-description: Internal setup/debug command to inspect whether the Engineering OS harness is already present.
+description: Internal setup/debug command to inspect whether the Crew harness is already present.
 ---
 
-# Audit Repo For Engineering OS
+# Audit Repo For Crew
 
-Use this workflow before bootstrapping when you want to understand the current repo state.
+Use this workflow before adopting when you want to understand the current repo state.
 
 Workflow:
 
@@ -14,12 +14,12 @@ Workflow:
    - `CLAUDE.md`
    - `.claude/`
    - `.claude/settings.json`
-   - `.claude/artifacts/engineering-os/`
-   - `.claude/state/engineering-os/`
-   - global Engineering OS memory in `~/.claude/engineering-os/`
+   - `.claude/artifacts/crew/`
+   - `.claude/state/crew/`
+   - global Crew memory in `~/.claude/engineering-os/`
 3. If the harness is incomplete, recommend either:
-   - `/bootstrap-repo` for adoption into this repo
-   - `/init-repo` for a fresh repo instead
+   - `/crew:adopt` for adoption into this repo
+   - `/crew:init` for a fresh repo instead
 
 Deliverable:
 
