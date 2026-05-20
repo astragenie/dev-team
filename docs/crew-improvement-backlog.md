@@ -7,7 +7,7 @@ The Crew plugin (formerly Engineering OS) is a Claude Code plugin for multi-agen
 **Current state on Windows:** 32/32 tests pass (May 19 2026 update — all P1.1/1.2/1.3/2.2/3.1 items closed below). Plugin runtime is stable for solo development.
 
 **Path conventions:**
-- Plugin source: `C:\work\claude plugins\engineering-os\` (custom marketplace)
+- Plugin source: `C:\work\mega\hero-crew\` (custom marketplace)
 - Plugin cache (what Claude Code actually reads): `~\.claude\plugins\cache\crew-dev\crew\0.1.0\`
 - User-level overrides: `~\.claude\commands\` and `~\.claude\agents\` (highest precedence, survive plugin updates)
 
@@ -20,7 +20,7 @@ If you edit files in the marketplace source folder, those changes don't take eff
 Check whether your existing edits are live:
 
 ```powershell
-$src = "C:\work\claude plugins\engineering-os"
+$src = "C:\work\mega\hero-crew"
 $cache = "$env:USERPROFILE\.claude\plugins\cache\crew-dev\crew\0.1.0"
 
 # Compare all command files
@@ -154,7 +154,7 @@ The simpler fix is `set -euo pipefail` at the top of every bash block. Catches b
 
 ### 3.1 Namespace rename (`engineering-os/` → `crew/`)
 
-**Status:** Already deferred. Real bug (installer writes `.claude/state/engineering-os/`, runtime writes `.claude/state/crew/`) but migration of existing repos has real complexity — overlapping artifact directories in production repos with content created under both naming schemes.
+**Status:** Already deferred. Real bug (installer writes `.claude/state/crew/`, runtime writes `.claude/state/crew/`) but migration of existing repos has real complexity — overlapping artifact directories in production repos with content created under both naming schemes.
 
 **Don't do this without:**
 - Backing up `.claude/` in every affected repo

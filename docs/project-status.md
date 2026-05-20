@@ -103,10 +103,10 @@ Supported commands:
 Behavior:
 
 - creates or extends `CLAUDE.md`
-- writes `.claude/engineering-os/constitution.md`
-- writes `.claude/engineering-os/workflow.md`
+- writes `.claude/crew/constitution.md`
+- writes `.claude/crew/workflow.md`
 - writes `.claude/hooks/log_event.sh`
-- creates `.claude/artifacts/engineering-os/`
+- creates `.claude/artifacts/crew/`
 - merges `.claude/settings.json` hook config conservatively
 
 ### Tests
@@ -141,8 +141,8 @@ Current release guidance:
 Completed in this thread:
 
 - added a temporary local marketplace from a copied plugin path under `/tmp`
-- moved the dev install to a stable path at `~/Desktop/Projects/engineering-os-plugin`
-- reinstalled `engineering-os@engineering-os-dev` at user scope from the stable marketplace
+- moved the dev install to a stable path at `C:/work/mega/hero-crew`
+- reinstalled `crew@crew-dev` at user scope from the stable marketplace
 
 Important note:
 
@@ -305,7 +305,7 @@ Candidate repos worth deeper local inspection:
 
 Move the local plugin development copy out of `/tmp` and into a stable path such as:
 
-- `~/Desktop/Projects/engineering-os-plugin`
+- `C:/work/mega/hero-crew`
 
 Then:
 

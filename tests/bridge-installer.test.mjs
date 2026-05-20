@@ -290,6 +290,26 @@ test("installWigginBridge alias still works and uses the wiggin-loop preset", as
   assert.equal(result.preset, "wiggin-loop");
 });
 
+test("generated hooks discover the CLI via the marketplace + plugin names from manifests", async () => {
+  const repoPath = await initGitRepo("crew-bridge-identity-");
+  await installCommitBridge(repoPath);
+
+  const { getPluginIdentity } = await import("../scripts/lib/plugin-identity.mjs");
+  const identity = await getPluginIdentity();
+
+  const postCommit = await fs.readFile(path.join(repoPath, ".git", "hooks", "post-commit"), "utf8");
+  const bridge = await fs.readFile(path.join(repoPath, ".claude", "hooks", BRIDGE_HOOK_FILE), "utf8");
+  const readme = await fs.readFile(path.join(repoPath, ".claude", "hooks", "README.md"), "utf8");
+
+  // Marketplace + plugin names should be substituted into the cache discovery
+  // paths in every generated artifact, not hardcoded as "crew-dev"/"crew".
+  const cacheFragment = `${identity.marketplaceName}/${identity.pluginName}`;
+  assert.ok(postCommit.includes(cacheFragment), "post-commit hook should embed marketplace/plugin from manifests");
+  assert.ok(bridge.includes(identity.marketplaceName), "PostToolUse hook should embed marketplace from manifests");
+  assert.ok(bridge.includes(identity.pluginName), "PostToolUse hook should embed plugin name from manifests");
+  assert.ok(readme.includes(cacheFragment), "README should document the resolved cache path");
+});
+
 test("backfillWigginBridge alias still works and uses the wiggin-loop preset", async () => {
   const repoPath = await initGitRepo("crew-bridge-wiggin-backfill-alias-");
   await commit(repoPath, "feat: SLICE_00 init");

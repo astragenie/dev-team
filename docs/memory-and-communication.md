@@ -4,7 +4,7 @@
 
 This document defines how Crew agents should recover context, build new memory, and communicate with each other.
 
-For the smaller product-oriented memory policy and roadmap, see [memory-system.md](/Users/aradaev/Documents/Playground/docs/memory-system.md).
+For the smaller product-oriented memory policy and roadmap, see [memory-system.md](./memory-system.md).
 
 The goal is to avoid hidden or mushy agent memory and replace it with explicit, inspectable working memory.
 

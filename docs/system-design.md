@@ -12,7 +12,7 @@ It defines:
 - how those components interact
 - what to build first
 
-Supporting docs like [product-roadmap.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/product-roadmap.md), [validation-loop.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/validation-loop.md), and [memory-system.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/memory-system.md) should be treated as subsystem notes derived from this design.
+Supporting docs like [product-roadmap.md](./product-roadmap.md), [validation-loop.md](./validation-loop.md), and [memory-system.md](./memory-system.md) should be treated as subsystem notes derived from this design.
 
 ## Product Thesis
 
@@ -112,14 +112,20 @@ What they mean:
 - `/crew:adopt`
   Bootstrap an existing repo conservatively into the Crew workflow.
 - `/crew:install`
-  Install or update the one managed global Crew memory copy under `~/.claude/engineering-os/`.
+  Install or update the one managed global Crew memory copy under `~/.claude/crew/`.
 
 But the lead should also infer these workflows from ordinary conversation when the intent is clear.
 In particular, the lead should notice when work is ready to move into PR, dev, or production, and nudge the user toward `ship` without waiting for the perfect command.
 
 Commands are accelerators, not prerequisites.
 
-For compatibility, some internal storage paths and scripts still use `engineering-os` for now. The user-facing product and command namespace should be `crew`.
+Repo-local storage paths and scripts now use the `crew` namespace
+(`.claude/state/crew/`, `.claude/artifacts/crew/`, `.claude/crew/`); the
+installer migrates legacy `engineering-os` paths on the next `/crew:adopt`.
+The managed global framework memory still lives under `~/.claude/engineering-os/`
+to avoid breaking existing users' global `CLAUDE.md` imports; that rename is
+queued as a separate change. The user-facing product and command namespace is
+`crew` everywhere.
 
 Some workflows are distinct enough that the lead should treat them as workflow variants, not just ordinary `build` or `ship` runs.
 
@@ -454,7 +460,7 @@ Current structure:
 
 - plugin-owned framework logic
   This is the built-in Crew behavior: role prompts, workflow rules, default gate policy, artifact formats, and command behavior. It changes when the plugin changes.
-- one managed global framework memory copy under `~/.claude/engineering-os/`
+- one managed global framework memory copy under `~/.claude/crew/`
   This is the stable user-machine layer. Its main job is to give Claude one global import surface for shared framework memory instead of copying framework docs into every repo.
 - repo-owned `CLAUDE.md`
   This is the repo's durable local guidance: architecture notes, conventions, test commands, domain rules, repo-specific review expectations, and anything else that should stay true for this codebase.
@@ -476,7 +482,7 @@ Before this is formalized, deployment understanding should progress in three ste
 1. today:
    deployer may inspect CI/CD, infra, and deployment files directly when needed
 2. next:
-   deployer or lead writes durable repo deployment guidance after discovery, for example in `.claude/engineering-os/deployment.md`
+   deployer or lead writes durable repo deployment guidance after discovery, for example in `.claude/crew/deployment.md`
    this guidance should distinguish `repo-derived`, `partial`, and `live-verified` understanding
 3. later:
    Crew formalizes that understanding into stable repo environment configuration

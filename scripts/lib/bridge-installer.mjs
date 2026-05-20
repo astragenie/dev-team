@@ -1,6 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import { getPluginIdentity } from "./plugin-identity.mjs";
+
 // Generic commit-and-edit-signal bridge between an existing methodology
 // (Wiggin Loop, Conventional Commits, custom slice schemes, etc.) and Crew's
 // artifact pipeline. Installed per-repo via /crew:install-commit-bridge.
@@ -48,9 +50,10 @@ function escapeForJsLiteral(value) {
   return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
-function renderPostCommitTemplate({ commitPattern, reviewerLabel, presetName }) {
+function renderPostCommitTemplate({ commitPattern, reviewerLabel, presetName, marketplaceName, pluginName }) {
   const safePattern = escapeForSingleQuoteShell(commitPattern);
   const safeReviewer = escapeForSingleQuoteShell(reviewerLabel);
+  const cliGlob = `"$HOME"/.claude/plugins/cache/${marketplaceName}/${pluginName}/*/scripts/crew.mjs`;
   return `#!/usr/bin/env bash
 # Crew commit bridge (preset: ${presetName}) — matching commits write a review-result artifact.
 #
@@ -80,9 +83,9 @@ if ! printf '%s' "$subject" | grep -qiE '${safePattern}'; then
   exit 0
 fi
 
-crew_cli="$(ls -dt "$HOME"/.claude/plugins/cache/crew-dev/crew/*/scripts/crew.mjs 2>/dev/null | head -1 || true)"
+crew_cli="$(ls -dt ${cliGlob} 2>/dev/null | head -1 || true)"
 if [ -z "$crew_cli" ] || [ ! -f "$crew_cli" ]; then
-  echo "crew bridge: crew CLI not found under ~/.claude/plugins/cache/crew-dev/crew/*/scripts/crew.mjs; skipping artifact write" >&2
+  echo "crew bridge: crew CLI not found under ~/.claude/plugins/cache/${marketplaceName}/${pluginName}/*/scripts/crew.mjs; skipping artifact write" >&2
   exit 0
 fi
 
@@ -104,8 +107,10 @@ node "$crew_cli" write-review-result \\
 `;
 }
 
-function renderPostToolUseTemplate({ triggerFilename, presetName }) {
+function renderPostToolUseTemplate({ triggerFilename, presetName, marketplaceName, pluginName }) {
   const safeFilename = escapeForJsLiteral(triggerFilename.toLowerCase());
+  const safeMarketplace = escapeForJsLiteral(marketplaceName);
+  const safePlugin = escapeForJsLiteral(pluginName);
   return `#!/usr/bin/env bash
 # Crew commit bridge (preset: ${presetName}) — edits to ${triggerFilename} write a final-synthesis artifact.
 #
@@ -141,7 +146,7 @@ if (!filePath.toLowerCase().endsWith(TRIGGER_FILENAME)) process.exit(0);
 
 const cwd = input.cwd || process.cwd();
 
-const cacheGlob = path.join(os.homedir(), ".claude", "plugins", "cache", "crew-dev", "crew");
+const cacheGlob = path.join(os.homedir(), ".claude", "plugins", "cache", "${safeMarketplace}", "${safePlugin}");
 let crewCli = null;
 try {
   const versions = fs.readdirSync(cacheGlob).sort().reverse();
@@ -178,7 +183,7 @@ NODE
 `;
 }
 
-function renderHooksReadme({ presetName, commitPattern, triggerFilename, reviewerLabel }) {
+function renderHooksReadme({ presetName, commitPattern, triggerFilename, reviewerLabel, marketplaceName, pluginName }) {
   return `# Crew Hooks
 
 This repo runs two hook layers:
@@ -203,6 +208,7 @@ This repo runs two hook layers:
 | Commit pattern | \`${commitPattern}\` |
 | Trigger filename | \`${triggerFilename}\` |
 | Reviewer label | \`${reviewerLabel}\` |
+| CLI discovery glob | \`~/.claude/plugins/cache/${marketplaceName}/${pluginName}/*/scripts/crew.mjs\` |
 
 To change configuration, re-run \`/crew:install-commit-bridge\` with the
 appropriate \`--preset\` or explicit flags. The installer is idempotent
@@ -322,20 +328,26 @@ export async function installCommitBridge(repoPath, options = {}) {
   }
 
   const config = resolveConfig(options);
+  const identity = await getPluginIdentity();
+  const renderContext = {
+    ...config,
+    marketplaceName: identity.marketplaceName,
+    pluginName: identity.pluginName
+  };
   const writes = [];
 
   await removeLegacyBridgeArtifacts(repoPath);
 
   const postCommitPath = path.join(repoPath, ".git", "hooks", "post-commit");
-  await writeFileWithMode(postCommitPath, renderPostCommitTemplate(config), 0o755);
+  await writeFileWithMode(postCommitPath, renderPostCommitTemplate(renderContext), 0o755);
   writes.push(path.relative(repoPath, postCommitPath));
 
   const bridgeHookPath = path.join(repoPath, ".claude", "hooks", BRIDGE_HOOK_FILE);
-  await writeFileWithMode(bridgeHookPath, renderPostToolUseTemplate(config), 0o755);
+  await writeFileWithMode(bridgeHookPath, renderPostToolUseTemplate(renderContext), 0o755);
   writes.push(path.relative(repoPath, bridgeHookPath));
 
   const readmePath = path.join(repoPath, ".claude", "hooks", "README.md");
-  await writeFileWithMode(readmePath, renderHooksReadme(config));
+  await writeFileWithMode(readmePath, renderHooksReadme(renderContext));
   writes.push(path.relative(repoPath, readmePath));
 
   const settingsPath = path.join(repoPath, ".claude", "settings.json");

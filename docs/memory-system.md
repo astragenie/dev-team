@@ -1,6 +1,6 @@
 # Memory System
 
-This document is a subsystem note for [system-design.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/system-design.md).
+This document is a subsystem note for [system-design.md](./system-design.md).
 
 ## Why This Exists
 
@@ -48,8 +48,8 @@ At session start or workflow start, Engineering OS should load only:
 
 - stable repo memory
   - `CLAUDE.md`
-  - `.claude/engineering-os/*.md`
-  - especially durable repo guides like `.claude/engineering-os/deployment.md` when they matter
+  - `.claude/crew/*.md`
+  - especially durable repo guides like `.claude/crew/deployment.md` when they matter
 - current live state
   - active claims
   - open approvals

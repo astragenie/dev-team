@@ -1,10 +1,10 @@
 # Product Roadmap
 
-This document is a build-order and product-shaping companion to [system-design.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/system-design.md).
+This document is a build-order and product-shaping companion to [system-design.md](./system-design.md).
 
 Use `system-design.md` for the main system definition.
 
-Use [implementation-commitments.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/implementation-commitments.md) for deferred-but-committed work we explicitly plan to build later.
+Use [implementation-commitments.md](./implementation-commitments.md) for deferred-but-committed work we explicitly plan to build later.
 
 ## Current Read
 
@@ -181,7 +181,7 @@ The validator should:
 - report pass/fail with evidence
 - state what remains unverified
 
-For the detailed validation model, see [validation-loop.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/validation-loop.md).
+For the detailed validation model, see [validation-loop.md](./validation-loop.md).
 
 ## Review Phase
 
@@ -246,7 +246,7 @@ The intended progression is:
 1. today:
    inspect CI/CD, infra, and deployment files directly when needed
 2. next:
-   write durable repo deployment guidance after discovery, for example in `.claude/engineering-os/deployment.md`
+   write durable repo deployment guidance after discovery, for example in `.claude/crew/deployment.md`
    distinguish `repo-derived`, `partial`, and `live-verified` guidance
    if repo files are opaque, resolve live infrastructure identifiers when feasible
 3. later:
@@ -361,11 +361,11 @@ Validation and deployment need repo-specific configuration.
 
 Possible future file:
 
-- `.claude/engineering-os/environments.md`
+- `.claude/crew/environments.md`
 
 or:
 
-- `.claude/engineering-os/environments.json`
+- `.claude/crew/environments.json`
 
 It should define:
 
@@ -388,7 +388,7 @@ Move to JSON only when automation needs structure.
 
 Keep the managed global memory direction:
 
-- one global framework memory copy in `~/.claude/engineering-os/`
+- one global framework memory copy in `~/.claude/crew/`
 - no per-repo constitution/workflow copies
 - repo `CLAUDE.md` stays repo-specific
 - rerun `/crew:install` after plugin updates that change framework memory
@@ -401,14 +401,14 @@ Later improvement:
 
 When we explicitly agree that something should be built later, but not now, record it in:
 
-- [implementation-commitments.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/implementation-commitments.md)
+- [implementation-commitments.md](./implementation-commitments.md)
 
 This prevents "yes, later" decisions from being lost across sessions.
 
 Memory details:
 
-- [memory-system.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/memory-system.md)
-- [memory-and-communication.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/memory-and-communication.md)
+- [memory-system.md](./memory-system.md)
+- [memory-and-communication.md](./memory-and-communication.md)
 
 ## Build Order
 

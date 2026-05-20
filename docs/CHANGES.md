@@ -51,7 +51,7 @@ Rationale: when these are eventually built, future-you reading commitments will 
 
 ### Dead absolute-path links
 
-**Replaced 25 instances** of `/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/...` and `/Users/aradaev/Documents/Playground/docs/...` with sibling-relative paths (`./<filename>.md`).
+**Replaced 25 instances** of `./...` and `./...` with sibling-relative paths (`./<filename>.md`).
 
 Affected files: `implementation-commitments.md`, `memory-and-communication.md` (later replaced by `agent-protocol.md`), `memory-system.md` (later rewritten), `product-roadmap.md`, `project-status.md`, `reference-repo-plan.md`, `system-design.md`, `validation-loop.md`.
 
@@ -189,7 +189,7 @@ Worth being explicit about scope:
 - **No agent files in `agents/` were modified.** Those were addressed in the earlier revised-agents zip.
 - **No command files in `commands/` were modified.**
 - **No scripts in `scripts/` were modified.** The bug fixes for BUG-A through BUG-D are pending and tracked in `project-status.md` and `implementation-commitments.md`.
-- **No installer template content was modified.** The CONSTITUTION_TEMPLATE and WORKFLOW_TEMPLATE strings in `installer.mjs` (which generate `.claude/engineering-os/constitution.md` and `workflow.md` for end-user repos) are separate from these design docs and unchanged.
+- **No installer template content was modified.** The CONSTITUTION_TEMPLATE and WORKFLOW_TEMPLATE strings in `installer.mjs` (which generate `.claude/crew/constitution.md` and `workflow.md` for end-user repos) are separate from these design docs and unchanged.
 - **CRLF line endings preserved.** The original docs use Windows line endings; I kept that to minimize diff noise when you merge.
 
 ---

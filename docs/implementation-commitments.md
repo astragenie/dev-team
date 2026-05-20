@@ -24,7 +24,7 @@ For each committed-later item, capture:
 
 When starting a new product-development slice for Crew:
 
-1. read [system-design.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/system-design.md)
+1. read [system-design.md](./system-design.md)
 2. check this file for deferred commitments that may now be ripe
 3. choose intentionally, instead of relying on memory
 
@@ -40,7 +40,7 @@ When starting a new product-development slice for Crew:
 - Done enough:
   deployer agent exists, `/crew:ship` exists, deployment checks are artifacts, and the lead can move work through dev/prod with evidence and explicit approval gates
 - Source:
-  [system-design.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/system-design.md), [validation-loop.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/validation-loop.md)
+  [system-design.md](./system-design.md), [validation-loop.md](./validation-loop.md)
 
 ### 2. Deployment Discovery To Durable Repo Guidance
 
@@ -56,7 +56,7 @@ When starting a new product-development slice for Crew:
   - write durable repo deployment guidance after discovery
   - later prefer a stable repo environment/deployment config over repeated rediscovery
 - Source:
-  deployment discussion, [system-design.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/system-design.md)
+  deployment discussion, [system-design.md](./system-design.md)
 
 ### 3. Repo Environment Configuration
 
@@ -75,7 +75,7 @@ When starting a new product-development slice for Crew:
   - alerts/incidents
   - telemetry/events
 - Source:
-  [system-design.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/system-design.md), [product-roadmap.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/product-roadmap.md)
+  [system-design.md](./system-design.md), [product-roadmap.md](./product-roadmap.md)
 
 ### 4. Observability Surface Split
 
@@ -91,7 +91,7 @@ When starting a new product-development slice for Crew:
   - alerting / incidents
   - telemetry / product or domain events
 - Source:
-  deployment/validation discussion, [validation-loop.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/validation-loop.md)
+  deployment/validation discussion, [validation-loop.md](./validation-loop.md)
 
 ### 5. Subtask-Level Gate State
 
@@ -103,19 +103,25 @@ When starting a new product-development slice for Crew:
 - Done enough:
   review/validation/deployment badges can attach to bounded work chunks, not just the overall run
 - Source:
-  [system-design.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/system-design.md)
+  [system-design.md](./system-design.md)
 
 ### 6. Internal Namespace Migration
 
-- Status: deferred
-- Why deferred:
-  public rename to Crew is live, but internal paths still use `engineering-os` for compatibility
-- Unlock:
-  after we decide the migration story for existing repos and global memory
+- Status: repo-local complete, global memory deferred
+- What landed (May 2026):
+  repo-local storage paths and scripts moved to `.claude/state/crew/`,
+  `.claude/artifacts/crew/`, and `.claude/crew/`. The installer migrates
+  legacy `engineering-os` paths on `/crew:adopt`, runtime modules read
+  legacy paths as a fallback during the transition.
+- What is still deferred:
+  managed global memory at `~/.claude/engineering-os/`. Renaming it would
+  break existing users' global `~/.claude/CLAUDE.md` imports, so it needs
+  paired migration logic in `installGlobal` first.
 - Done enough:
-  storage paths, CLI filenames, and managed global memory can migrate safely without stranding existing users
+  global memory migrates without stranding existing users (back-compat
+  shim or import rewrite in `installGlobal`).
 - Source:
-  rename work and [system-design.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/system-design.md)
+  rename work and [system-design.md](./system-design.md)
 
 ### 7. Greenfield Development Workflow Variant
 
@@ -134,7 +140,7 @@ When starting a new product-development slice for Crew:
   - scaffolding
   - first vertical slice delivery
 - Source:
-  greenfield discussion, [system-design.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/system-design.md)
+  greenfield discussion, [system-design.md](./system-design.md)
 
 ### 8. Initial Deployment Workflow Variant
 
@@ -151,4 +157,4 @@ When starting a new product-development slice for Crew:
   - first post-deploy validation
   - first monitoring/evidence loop
 - Source:
-  initial deployment discussion, [system-design.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/system-design.md)
+  initial deployment discussion, [system-design.md](./system-design.md)

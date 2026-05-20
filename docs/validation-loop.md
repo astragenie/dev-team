@@ -1,6 +1,6 @@
 # Validation Loop
 
-This document is a subsystem note for [system-design.md](/Users/aradaev/Desktop/projects/engineering-os-plugin/docs/system-design.md).
+This document is a subsystem note for [system-design.md](./system-design.md).
 
 ## Why This Matters
 
