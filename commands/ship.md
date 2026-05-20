@@ -6,6 +6,8 @@ description: Preferred short entry point for moving work through merge, deployme
 
 This is the preferred short entry point for moving reviewed work through dev and production with evidence.
 
+For what counts as "substantial" below, see the canonical definition in `constitution.md` (`What "Substantial" Means`).
+
 Before substantial shipping work:
 
 - `pwd`

@@ -6,6 +6,8 @@ description: Internal coordination command for cases where parallel ownership ge
 
 Use this when parallelism helps and ownership can stay clean.
 
+For what counts as "substantial" below, see the canonical definition in `constitution.md` (`What "Substantial" Means`).
+
 Rules:
 
 1. Do not spawn a team just because it sounds impressive.

@@ -8,6 +8,8 @@ This is the preferred short entry point for the validation phase.
 
 Use it when behavior can be exercised meaningfully after implementation and review.
 
+For what counts as "substantial" below, see the canonical definition in `constitution.md` (`What "Substantial" Means`).
+
 Expected shape:
 
 1. verify the repo and read bounded wake-up context

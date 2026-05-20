@@ -4,25 +4,49 @@ description: Preferred short entry point for adopting an existing repo into the 
 
 # Adopt This Repo For Crew
 
-This is the preferred short entry point for existing repositories.
+Prepare the current repository for the Crew workflow.
 
-Use the same conservative bootstrap workflow as `bootstrap-repo`:
+For what counts as "substantial" below, see the canonical definition in `constitution.md` (`What "Substantial" Means`).
 
-1. run the bootstrap installer for the current repo
-2. preserve repo-owned guidance and improve it conservatively
-3. keep framework-owned behavior isolated from repo-owned behavior
-4. add only the repo-local harness pieces that are actually useful
-5. scan the repo for obvious runtime and deployment clues:
+Goals:
+
+- inspect existing Claude Code files before writing anything
+- preserve repo-owned instructions and conventions
+- create only the smallest framework-specific additions
+- keep framework constitution and workflow in the one global managed copy
+- make the result easy to inspect and easy to remove
+
+Workflow:
+
+1. Run the installer:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" bootstrap --repo "$PWD"`
+2. Inspect `CLAUDE.md`, `.claude/`, `.mcp.json`, and other repo guidance before making additional changes.
+3. If `CLAUDE.md` does not exist, create it.
+4. If `CLAUDE.md` already exists, improve it conservatively and prefer `@path` imports instead of rewriting large sections.
+5. Add repo-local framework files only where useful:
+   - `.claude/agents/`
+   - `.claude/commands/`
+   - `.claude/hooks/`
+   - `.claude/settings.json`
+6. Keep framework-owned instructions isolated from repo-owned instructions.
+7. Inspect obvious runtime and deployment clues that will matter later:
    - `README`
    - `.github/workflows/`
    - Docker / compose / infra files
-6. if deployment clues are clear enough, write initial deployment guidance in `.claude/engineering-os/deployment.md`
-   - mark it as `repo-derived` unless live infrastructure has actually been checked
-7. if the deployment picture is only partial, record what is known and what still needs live verification instead of guessing
-8. recommend `/crew:install` if the managed global memory is missing or stale
-9. end with a short welcome message:
+8. If the repo already reveals useful deployment clues, write initial deployment guidance:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" discover-deployment --repo "$PWD"`
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-deployment-guidance --repo "$PWD" --title "<short title>" --discovery-status repo-derived ...`
+9. If deployment is only partly clear, record the known build/deploy path and what still needs live verification instead of guessing.
+10. If the installer reports missing or stale global memory, recommend `/crew:install`.
+11. Explain any assumptions before editing if the repo shape makes the bootstrap risky.
+12. End with a short welcome message:
    - congratulate the user on the suspiciously good choice of bringing this repo into Crew
    - keep it brief and slightly tongue-in-cheek
    - show the main commands to start with: `/crew:brief-me`, `/crew:build`, `/crew:fix`, and `/crew:ship`
 
-Follow the detailed workflow and command examples from `bootstrap-repo`.
+Deliverable:
+
+- a short summary of what was added
+- file references for all changes
+- initial deployment guidance when discoverable
+- any follow-up needed to enable team mode or optional integrations

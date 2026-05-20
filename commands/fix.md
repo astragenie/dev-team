@@ -4,44 +4,78 @@ description: Preferred short entry point for investigating and fixing broken beh
 
 # Fix With The Lead Workflow
 
-This is the preferred short entry point for bug work.
+Act as the lead for a debugging run with strong observability and bounded parallelism.
 
-Use the same lead-owned workflow as `investigate-bug`:
+For what counts as "substantial" below, see the canonical definition in `constitution.md` (`What "Substantial" Means`).
 
-1. verify the current workspace path with `pwd`
-2. read the repo wake-up brief:
+Workflow:
+
+1. First verify the current workspace path:
+   - `pwd`
+2. Start by reading the repo wake-up brief:
    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" wake-up --repo "$PWD"`
-3. explicitly confirm the returned `repoPath` matches the current working directory before trusting the brief
-   - for substantial work, do not start implementation until this step is complete
-4. frame the bug, expected behavior, and likely repro path
-5. identify the smallest credible work chunk that can investigate or fix the issue
-6. choose the execution shape that fits the work:
+3. Explicitly confirm the returned `repoPath` matches the current working directory. If it does not, stop and correct the repo context before proceeding.
+   For substantial work, do not start implementation until this step is complete.
+4. Follow this phase order:
+   - frame
+   - investigate
+   - implement fix if needed
+   - review if code changed
+   - validate if the bug path or changed behavior can be exercised meaningfully
+   - synthesize
+5. Restate the bug and frame the task:
+   - current symptoms
+   - expected behavior
+   - known evidence or likely repro path
+   - what is in scope
+   - whether the work should stay whole or be split into bounded sub-tasks
+6. Choose one of:
    - `single-session`
    - `assisted single-session`
    - `team run`
-7. write a run brief for substantial work
-   - treat deployable or production-code fixes as substantial by default
-   - use "substantial" mainly to decide run-brief and fuller artifact weight, not whether review is required
-8. investigate and implement the smallest credible fix
-9. if the work produced a substantial non-code deliverable, do not stop at implementation or a draft:
-   - substantial non-code deliverables should normally be reviewed before being treated as done
-10. if code changed, do not stop at implementation or tests:
-   - mark `review_required`
-   - run independent review unless an unusual skip is explicitly justified and recorded
-   - write the review result artifact immediately when review completes, before moving on
-11. if the bug path or changed behavior can be exercised meaningfully, validation is expected after review unless explicitly skipped with a reason
-12. write the matching artifacts and workflow badges as the run progresses, not batched at the end
-13. do not end with only “tests pass” or “ready to commit”
-14. end with root cause, evidence, residual risk, and a concrete next recommended step
-
-Before you declare the fix done, explicitly check:
-
-- did code change?
-- if yes, is review resolved or explicitly skipped?
-- if no, did a substantial non-code deliverable still get an appropriate review or explicit skip?
-- did the bug path or changed behavior get exercised?
-- if yes, is validation resolved or explicitly skipped?
-- did the run leave the artifact trail it should?
-- what is the next responsible step?
-
-Follow the detailed workflow and command examples from `investigate-bug`.
+7. If the investigation is substantial enough that future wake-up context will matter, immediately write a run brief with:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-run-brief --repo "$PWD" --title "<short title>" --goal "<goal>" --mode "<mode>"`
+8. If using `single-session`, do the investigation directly and do not spawn helpers.
+9. Use `assisted single-session` when a bounded helper can compare code paths, gather evidence, or validate a likely fix without becoming a communicating team.
+10. Use a `team run` only when multiple independent hypotheses or surfaces can be investigated in parallel.
+11. Typical `team run` split:
+   - researcher traces code paths and prior behavior
+   - builder attempts the smallest credible fix once the problem is clear
+   - reviewer checks the code change for regression risk and test coverage
+   - validator exercises the bug path and expected behavior when it can be run
+12. Use claims only when multiple people may touch overlapping files, and use approvals only for destructive or scope-expanding decisions.
+13. Require every teammate or helper to report scope, deliverable, evidence, risks, confidence, and next handoff.
+14. If the work produces a code fix, make that code-bearing change independently reviewable. Review should happen before the fix is treated as complete.
+15. Substantial non-code deliverables should normally be reviewed before being treated as done.
+16. For code fixes, independent review is the default. When code work is complete and waiting for review, record that gate in workflow state:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge review_required`
+17. If you skip review, say so explicitly and record it in workflow state with a reason:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge review_skipped --note "<reason>"`
+18. When a helper or teammate returns meaningful evidence or ownership changes, write a handoff artifact if the run is substantial:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-handoff --repo "$PWD" --title "<short title>" ...`
+19. When review materially checks the bug fix, write a review artifact immediately before you move on:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-review-result --repo "$PWD" --title "<short title>" ...`
+20. If the bug path or changed behavior can be exercised meaningfully, run validation after review. When validation is expected, record that gate in workflow state:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge validation_expected`
+21. When the scenario is substantial enough to preserve, write a validation plan:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-validation-plan --repo "$PWD" --title "<short title>" ...`
+22. If you skip validation, say so explicitly and record it in workflow state with a reason:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge validation_skipped --note "<reason>"`
+23. When a validator materially checks behavior, write a validation artifact immediately before you move on:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-validation-result --repo "$PWD" --title "<short title>" ...`
+24. End with:
+   - likely root cause
+   - evidence
+   - fix status
+   - what was reviewed
+   - what was validated
+   - residual risk
+    Use this pre-done checkpoint before you call the fix complete:
+    - did code change?
+    - if yes, is review resolved or explicitly skipped?
+    - if no, did a substantial non-code deliverable still get an appropriate review or explicit skip?
+    - did the bug path or changed behavior get exercised?
+    - if yes, is validation resolved or explicitly skipped?
+    - did the run leave the artifact trail it should?
+25. For substantial work, write a final synthesis artifact:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-final-synthesis --repo "$PWD" --title "<short title>" --summary "<summary>"`

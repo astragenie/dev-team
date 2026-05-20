@@ -4,50 +4,79 @@ description: Preferred short entry point for building or extending capability in
 
 # Build With The Lead Workflow
 
-This is the preferred short entry point for feature work.
+Act as the lead for a bounded feature delivery run.
 
-Use the same lead-owned workflow as `build-feature`:
+For what counts as "substantial" below, see the canonical definition in `constitution.md` (`What "Substantial" Means`).
 
-1. verify the current workspace path with `pwd`
-2. read the repo wake-up brief:
+Workflow:
+
+1. First verify the current workspace path:
+   - `pwd`
+2. Start by reading the repo wake-up brief:
    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" wake-up --repo "$PWD"`
-3. explicitly confirm the returned `repoPath` matches the current working directory before trusting the brief
-   - for substantial work, do not start implementation until this step is complete
-   - in an established same-repo session, do this quietly unless there is a mismatch or repo switch
-4. frame the task clearly:
+3. Explicitly confirm the returned `repoPath` matches the current working directory. If it does not, stop and correct the repo context before proceeding.
+   For substantial work, do not start implementation until this step is complete.
+   In an established same-repo session, do this quietly unless there is an actual mismatch or repo switch.
+4. Follow this phase order:
+   - frame
+   - implement
+   - review if code changed
+   - validate if behavior can be exercised meaningfully
+   - synthesize
+5. Restate the feature goal and frame the task:
    - what the user wants
    - what is in scope
    - what is out of scope
    - what repo or external context matters
-   - what the first bounded work chunk is
-   - if this is a continuation of the current workstream, do not restate the whole framing block unless scope materially changed
-5. choose the execution shape that fits the work:
+   - whether the work should stay whole or be split into bounded sub-tasks
+   If this is a continuation of the same workstream, do not re-state the whole framing block unless scope materially changed.
+6. Choose one of:
    - `single-session`
    - `assisted single-session`
    - `team run`
-6. write a run brief for substantial work
-   - treat deployable or production-code changes as substantial by default
-   - use "substantial" mainly to decide run-brief and fuller artifact weight, not whether review is required
-7. implement directly or through bounded sub-tasks
-8. if the work produced a substantial non-code deliverable, do not stop at implementation or a draft:
-   - substantial non-code deliverables should normally be reviewed before being treated as done
-9. if code changed, do not stop at implementation or tests:
-   - mark `review_required`
-   - run independent review unless an unusual skip is explicitly justified and recorded
-   - write the review result artifact immediately when review completes, before moving on
-10. if behavior can be exercised meaningfully, validation is expected after review unless explicitly skipped with a reason
-11. write the matching artifacts and workflow badges as the run progresses, not batched at the end
-12. do not end with only “tests pass” or “ready to commit”
-13. end with a clear synthesis and a concrete next recommended step
-
-Before you declare the work done, explicitly check:
-
-- did code change?
-- if yes, is review resolved or explicitly skipped?
-- if no, did a substantial non-code deliverable still get an appropriate review or explicit skip?
-- did behavior change?
-- if yes, is validation resolved or explicitly skipped?
-- did the run leave the artifact trail it should?
-- what is the next responsible step?
-
-Follow the detailed workflow and command examples from `build-feature`.
+7. If the task is substantial enough that future wake-up context will matter, immediately write a run brief with:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-run-brief --repo "$PWD" --title "<short title>" --goal "<goal>" --mode "<mode>"`
+8. If using `single-session`, do the work directly and do not spawn helpers.
+9. Use `assisted single-session` when a helper can reduce uncertainty or validate work without becoming a communicating team.
+10. Only use a `team run` when ownership can be split cleanly.
+11. If using a `team run`, claim files only when parallel work might collide, and open approvals only when scope or ownership boundaries must be crossed.
+12. If using a `team run`, assign bounded work to:
+   - builder for implementation
+   - reviewer for change review
+   - validator for behavior checks when behavior can be exercised
+   - researcher for uncertainty reduction if needed
+13. Keep ownership explicit and avoid same-file parallel editing.
+14. Require structured acknowledgements and completion reports from every teammate or helper.
+15. If the implementation is split into code-bearing sub-tasks, make those sub-tasks independently reviewable and review them where practical before treating them as complete.
+16. Substantial non-code deliverables should normally be reviewed before being treated as done.
+17. For implementation work that changes code, independent review is the default. When code work is complete and waiting for review, record that gate in workflow state:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge review_required`
+18. If you skip review, say so explicitly and record it in workflow state with a reason:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge review_skipped --note "<reason>"`
+19. When a helper or teammate hands work back, write a handoff artifact if the run is substantial:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-handoff --repo "$PWD" --title "<short title>" ...`
+20. When a reviewer materially reviews the change, write a review artifact immediately before you move on:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-review-result --repo "$PWD" --title "<short title>" ...`
+21. If the changed behavior can be exercised meaningfully, define the validation scenario and run validation after review. When validation is expected, record that gate in workflow state:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge validation_expected`
+22. When the scenario is substantial enough to preserve, write a validation plan:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-validation-plan --repo "$PWD" --title "<short title>" ...`
+23. If you skip validation, say so explicitly and record it in workflow state with a reason:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge validation_skipped --note "<reason>"`
+24. When a validator materially checks behavior, write a validation artifact immediately before you move on:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-validation-result --repo "$PWD" --title "<short title>" ...`
+25. End with a clear synthesis for the user:
+   - what changed
+   - what was reviewed
+   - what was validated
+   - risks or open questions
+   - what happens next
+    Use this pre-done checkpoint before you call the work complete:
+    - did code change?
+    - if yes, is review resolved or explicitly skipped?
+    - if no, did a substantial non-code deliverable still get an appropriate review or explicit skip?
+    - did behavior change?
+    - if yes, is validation resolved or explicitly skipped?
+    - did the run leave the artifact trail it should?
+26. For substantial work, write a final synthesis artifact:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-final-synthesis --repo "$PWD" --title "<short title>" --summary "<summary>"`

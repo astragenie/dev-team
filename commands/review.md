@@ -8,6 +8,8 @@ This is the preferred short entry point for the review phase.
 
 Use it when code-bearing work or a substantial non-code deliverable is complete and needs independent review.
 
+For what counts as "substantial" below, see the canonical definition in `constitution.md` (`What "Substantial" Means`).
+
 Expected shape:
 
 1. verify the current workspace path with `pwd`
