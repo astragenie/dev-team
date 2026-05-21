@@ -562,20 +562,76 @@ async function collectRecentCosts(repoPath, limit = 5) {
   for (const { f } of sorted) {
     try {
       const text = await fs.readFile(f, "utf8");
-      const runTitle = text.match(/^- Run Title:\s*(.+)$/m)?.[1]?.trim();
-      const usdMatch = text.match(/^- Total USD:\s*\$([\d.]+)/m);
-      const usd = usdMatch ? Number(usdMatch[1]) : null;
-      const windowStart = text.match(/^- Window Start:\s*(.+)$/m)?.[1]?.trim();
-      const windowEnd = text.match(/^- Window End:\s*(.+)$/m)?.[1]?.trim();
+
+      // Frontmatter fields (newer cost-reports). Falls through to body
+      // patterns when missing, so reports written before the schema
+      // change still parse.
+      const fmMatch = text.match(/^---\n([\s\S]*?)\n---/);
+      const fm = {};
+      if (fmMatch) {
+        for (const line of fmMatch[1].split(/\r?\n/)) {
+          const kv = line.match(/^([\w_]+):\s*(.*)$/);
+          if (kv) fm[kv[1]] = kv[2].trim();
+        }
+      }
+
+      const runTitle = (fm.run_title || text.match(/^- Run Title:\s*(.+)$/m)?.[1] || "")
+        .replace(/^"|"$/g, "").trim() || null;
+      const usd = fm.usd != null
+        ? Number(fm.usd)
+        : Number(text.match(/^- Total USD:\s*\$([\d.]+)/m)?.[1] || 0) || null;
+      const windowStart = text.match(/^- Window Start:\s*(.+)$/m)?.[1]?.trim() || null;
+      const windowEnd = text.match(/^- Window End:\s*(.+)$/m)?.[1]?.trim() || null;
+      const durationMs = fm.duration_ms ? Number(fm.duration_ms)
+        : (windowStart && windowEnd ? Date.parse(windowEnd) - Date.parse(windowStart) : 0);
       const messages = Number(text.match(/^- Assistant Messages Counted:\s*(\d+)/m)?.[1] || 0);
+      const totalTokens = fm.total_tokens
+        ? Number(fm.total_tokens)
+        : Number(text.match(/^- Total Tokens:\s*([\d,]+)/m)?.[1]?.replace(/,/g, "") || 0);
+      const cacheHitPct = fm.cache_hit_pct
+        ? Number(fm.cache_hit_pct)
+        : Number(text.match(/^- Cache Hit %:\s*([\d.]+)/m)?.[1] || 0);
+
+      const num = (re) => Number(text.match(re)?.[1]?.replace(/,/g, "") || 0);
+      const inputTokens = num(/^- input:\s*([\d,]+)/m);
+      const outputTokens = num(/^- output:\s*([\d,]+)/m);
+      const cacheReadTokens = num(/^- cache_read:\s*([\d,]+)/m);
+      const cacheCreate1h = num(/^- cache_create_1h:\s*([\d,]+)/m);
+      const cacheCreate5m = num(/^- cache_create_5m:\s*([\d,]+)/m);
+
+      // Model Mix lines: `- <model> (priced as <key>): <N> msgs (<msgPct>%), $<usd> (<usdPct>%)`
+      const modelMix = [];
+      const mixSection = text.split(/^##\s+/m).find((s) => s.startsWith("Model Mix"));
+      if (mixSection) {
+        for (const line of mixSection.split(/\r?\n/)) {
+          const m = line.match(/^-\s+(\S+)\s+\(priced as\s+\S+\):\s+(\d+)\s+msgs\s+\(([\d.]+)%\),\s+\$([\d.]+)\s+\(([\d.]+)%\)/);
+          if (m) modelMix.push({
+            model: m[1],
+            messages: Number(m[2]),
+            msgPct: Number(m[3]),
+            usd: Number(m[4]),
+            usdPct: Number(m[5])
+          });
+        }
+      }
+
       if (usd != null) totalUsd += usd;
       recent.push({
         path: f,
-        runTitle: runTitle || null,
+        runTitle,
         usd,
-        windowStart: windowStart || null,
-        windowEnd: windowEnd || null,
-        messages
+        windowStart,
+        windowEnd,
+        durationMs,
+        durationMin: durationMs ? Number((durationMs / 60000).toFixed(1)) : 0,
+        messages,
+        totalTokens,
+        cacheHitPct,
+        inputTokens,
+        outputTokens,
+        cacheReadTokens,
+        cacheCreateTokens: cacheCreate5m + cacheCreate1h,
+        modelMix
       });
     } catch {
       // skip unreadable file
