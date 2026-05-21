@@ -196,20 +196,69 @@ function resolveArtifactConfig(kind) {
       prefix: "cost-report",
       render(fields) {
         const breakdown = fields.cost;
+        const outcome = fields.outcome || null;
+        const durationMs = breakdown?.window?.durationMs || 0;
+        const durationMin = (durationMs / 60000).toFixed(1);
+        const totalTokens = breakdown?.totals
+          ? Object.values(breakdown.totals).reduce((a, b) => a + b, 0)
+          : 0;
+        const promptTokens = breakdown?.totals
+          ? breakdown.totals.input + breakdown.totals.cache_create_5m
+            + breakdown.totals.cache_create_1h + breakdown.totals.cache_read
+          : 0;
+        const cacheHitPct = promptTokens > 0
+          ? ((breakdown.totals.cache_read / promptTokens) * 100).toFixed(1)
+          : "-";
+
+        // Frontmatter — machine-readable outcome linkage
+        const fmLines = ["---"];
+        fmLines.push(`kind: cost-report`);
+        if (outcome?.sliceId) fmLines.push(`slice: ${outcome.sliceId}`);
+        fmLines.push(`run_title: ${JSON.stringify(fields.runTitle || "")}`);
+        if (breakdown?.usd != null) fmLines.push(`usd: ${breakdown.usd}`);
+        if (durationMs) fmLines.push(`duration_ms: ${durationMs}`);
+        if (totalTokens) fmLines.push(`total_tokens: ${totalTokens}`);
+        if (cacheHitPct !== "-") fmLines.push(`cache_hit_pct: ${cacheHitPct}`);
+        if (outcome?.gradeAvg != null) fmLines.push(`grade_avg: ${outcome.gradeAvg}`);
+        if (outcome?.reviewDecision) fmLines.push(`review_decision: ${outcome.reviewDecision}`);
+        if (outcome?.validationDecision) fmLines.push(`validation_decision: ${outcome.validationDecision}`);
+        fmLines.push(`created_at: ${nowIso()}`);
+        fmLines.push("---");
+
         const lines = [
+          ...fmLines,
+          "",
           `# Cost Report: ${fields.title || "Untitled"}`,
           "",
           renderField("Created", nowIso()),
           renderField("Run Title", fields.runTitle),
           renderField("Window Start", breakdown?.window?.start),
           renderField("Window End", breakdown?.window?.end),
+          renderField("Duration", durationMs ? `${durationMin} min (${durationMs} ms)` : "-"),
           renderField("Sessions Scanned", String(breakdown?.sessionsScanned ?? 0)),
           renderField("Assistant Messages Counted", String(breakdown?.messagesCounted ?? 0)),
+          renderField("Total Tokens", totalTokens ? totalTokens.toLocaleString() : "-"),
+          renderField("Cache Hit %", cacheHitPct !== "-" ? `${cacheHitPct}%` : "-"),
           renderField("Total USD", breakdown ? `$${breakdown.usd.toFixed(4)}` : "-"),
-          "",
-          "## Tokens (totals)",
           ""
         ];
+
+        if (outcome?.sliceId) {
+          lines.push("## Outcome Linkage", "");
+          lines.push(renderField("Slice", outcome.sliceId));
+          lines.push(renderField("Grade Avg", outcome.gradeAvg != null ? String(outcome.gradeAvg) : "-"));
+          lines.push(renderField("Review Decision", outcome.reviewDecision || "-"));
+          lines.push(renderField("Validation Decision", outcome.validationDecision || "-"));
+          if (outcome.scores) {
+            lines.push("- Scores:");
+            for (const [k, v] of Object.entries(outcome.scores)) {
+              lines.push(`  - ${k}: ${v}`);
+            }
+          }
+          lines.push("");
+        }
+
+        lines.push("## Tokens (totals)", "");
         if (breakdown?.totals) {
           for (const [k, v] of Object.entries(breakdown.totals)) {
             lines.push(`- ${k}: ${v.toLocaleString()}`);
@@ -217,7 +266,57 @@ function resolveArtifactConfig(kind) {
         } else {
           lines.push("- (none)");
         }
-        lines.push("", "## By Model", "");
+
+        lines.push("", "## Model Mix", "");
+        if (breakdown?.modelMix?.length) {
+          for (const m of breakdown.modelMix) {
+            lines.push(`- ${m.model} (priced as ${m.pricedAs}): ${m.messages} msgs (${m.msgPct}%), $${m.usd.toFixed(4)} (${m.usdPct}%)`);
+          }
+        } else {
+          lines.push("- (none)");
+        }
+
+        lines.push("", "## Conversation Shape", "");
+        const conv = breakdown?.conversation || {};
+        lines.push(`- user_msg_count: ${conv.userMsgCount ?? 0}`);
+        lines.push(`- user_msg_avg_len: ${conv.userMsgAvgLen ?? 0}`);
+        lines.push(`- turns_before_first_tool: ${conv.turnsBeforeFirstTool ?? 0}`);
+        lines.push(`- compaction_count: ${conv.compactionCount ?? 0}`);
+        lines.push(`- skill_invocations: ${conv.skillInvocations ?? 0}`);
+        lines.push(`- subagent_dispatches: ${conv.subagentDispatches ?? 0}`);
+
+        lines.push("", "## Tool Usage", "");
+        if (breakdown?.toolUsage?.length) {
+          for (const t of breakdown.toolUsage) {
+            const failStr = t.failures > 0 ? ` (${t.failures} failed)` : "";
+            lines.push(`- ${t.name}: ${t.count}${failStr}`);
+          }
+        } else {
+          lines.push("- (none)");
+        }
+
+        lines.push("", "## Tool Result Sizes (bytes)", "");
+        const trs = breakdown?.toolResultSizes;
+        if (trs && trs.count > 0) {
+          lines.push(`- count: ${trs.count}`);
+          lines.push(`- sum: ${trs.sumBytes.toLocaleString()}`);
+          lines.push(`- p50: ${trs.p50Bytes.toLocaleString()}`);
+          lines.push(`- p90: ${trs.p90Bytes.toLocaleString()}`);
+          lines.push(`- max: ${trs.maxBytes.toLocaleString()}`);
+        } else {
+          lines.push("- (none)");
+        }
+
+        lines.push("", "## File Re-reads", "");
+        lines.push(`- redundant_read_count: ${breakdown?.fileReReadCount ?? 0}`);
+        if (breakdown?.fileReReadTopPaths?.length) {
+          lines.push("- top paths:");
+          for (const p of breakdown.fileReReadTopPaths) {
+            lines.push(`  - ${p.reads}× ${p.path}`);
+          }
+        }
+
+        lines.push("", "## By Model (token detail)", "");
         if (breakdown?.byModel && Object.keys(breakdown.byModel).length) {
           for (const [model, info] of Object.entries(breakdown.byModel)) {
             lines.push(`### ${model} (priced as ${info.pricedAs})`);
@@ -228,9 +327,8 @@ function resolveArtifactConfig(kind) {
             }
             lines.push("");
           }
-        } else {
-          lines.push("- (none)");
         }
+
         if (fields.notes) {
           lines.push("## Notes", "", fields.notes, "");
         }

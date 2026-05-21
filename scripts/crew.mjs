@@ -20,6 +20,8 @@ import { claimFiles, inspectClaims, listClaims, releaseFiles } from "./lib/claim
 import { buildWakeUpBrief } from "./lib/wakeup.mjs";
 import { loadWorkflowState, markWorkflowBadge, summarizeWorkflowState } from "./lib/workflow-state.mjs";
 import { computeSessionCost } from "./lib/session-cost.mjs";
+import { collectOutcomeLinkage } from "./lib/outcome-linkage.mjs";
+import { buildCostAdvisor, renderCostAdvisorMarkdown } from "./lib/cost-advisor.mjs";
 
 function parseArgs(argv) {
   const [command, ...rest] = argv;
@@ -418,6 +420,7 @@ function usage(target = null) {
     "write-deployment-check": "  node scripts/crew.mjs write-deployment-check --repo <path> --title <text> [--deployer <role>] [--environment dev|prod] [--resource <name>] [--url <service-url>] [--revision <id>] [--decision <decision>]",
     "write-final-synthesis": "  node scripts/crew.mjs write-final-synthesis --repo <path> --title <text> [--summary <text>] [--files <a,b>]",
     "cost-slice": "  node scripts/crew.mjs cost-slice --repo <path> [--started-at <iso>] [--completed-at <iso>] [--run-title <text>]",
+    "cost-advise": "  node scripts/crew.mjs cost-advise --repo <path>",
     "install-commit-bridge": "  node scripts/crew.mjs install-commit-bridge --repo <path> [--preset wiggin-loop|conventional-commits] [--commit-pattern <regex>] [--trigger-filename <name>] [--reviewer-label <name>]",
     "backfill-commit-bridge": "  node scripts/crew.mjs backfill-commit-bridge --repo <path> [--preset wiggin-loop|conventional-commits] [--commit-pattern <regex>] [--reviewer-label <name>]",
     "list-bridge-presets": "  node scripts/crew.mjs list-bridge-presets",
@@ -442,6 +445,19 @@ function usage(target = null) {
   ].join("\n");
 }
 
+async function writeCostAdviseArtifact(repoPath, md, advisor) {
+  const fs = await import("node:fs/promises");
+  const pathMod = await import("node:path");
+  const dir = pathMod.join(repoPath, ".claude", "artifacts", "crew", "runs");
+  await fs.mkdir(dir, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z");
+  const slug = (advisor?.target?.sliceId || advisor?.target?.runTitle || "advise")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
+  const file = pathMod.join(dir, `${stamp}-cost-advise-${slug}.md`);
+  await fs.writeFile(file, md + "\n");
+  return file;
+}
+
 // Auto-emit a cost-report artifact when a run window is available. Designed
 // to be called immediately after write-final-synthesis. Failures here are
 // non-fatal: they return null so the synthesis result still surfaces.
@@ -456,10 +472,12 @@ async function maybeEmitCostReport(repoPath, { runTitle } = {}) {
       completedAt
     });
     const title = runTitle || run.title || "cost-report";
+    const outcome = await collectOutcomeLinkage(repoPath, title);
     return await writeArtifact(repoPath, "cost-report", {
       title: `Cost — ${title}`,
       runTitle: title,
-      cost
+      cost,
+      outcome
     });
   } catch (err) {
     return { error: err.message };
@@ -687,6 +705,18 @@ async function main() {
     if (costArtifact) {
       result = { synthesis: result, costReport: costArtifact };
     }
+  } else if (command === "cost-advise") {
+    const advisor = await buildCostAdvisor(repoPath, { limit: 10 });
+    const md = renderCostAdvisorMarkdown(advisor);
+    const writePath = await writeCostAdviseArtifact(repoPath, md, advisor);
+    result = {
+      target: advisor.target?.sliceId || advisor.target?.runTitle || null,
+      recommendations: advisor.recommendations,
+      aggregateFlags: advisor.aggregateFlags || [],
+      baseline: advisor.baseline,
+      reportsAnalyzed: advisor.reports.length,
+      artifactPath: writePath
+    };
   } else if (command === "cost-slice") {
     const state = await loadWorkflowState(repoPath);
     const run = state?.currentRun || null;
@@ -697,13 +727,16 @@ async function main() {
       throw new Error("cost-slice requires --started-at or an active/last run with startedAt");
     }
     const cost = await computeSessionCost(repoPath, { startedAt, completedAt });
+    const outcome = await collectOutcomeLinkage(repoPath, runTitle);
     result = await writeArtifact(repoPath, "cost-report", {
       title: `Cost — ${runTitle}`,
       runTitle,
       cost,
+      outcome,
       notes: flags.summary || null
     });
     result.cost = cost;
+    result.outcome = outcome;
   } else {
     throw new Error(`Unknown command: ${command}`);
   }
