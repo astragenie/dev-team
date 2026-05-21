@@ -616,6 +616,22 @@ async function collectRecentCosts(repoPath, limit = 5) {
       }
 
       if (usd != null) totalUsd += usd;
+
+      const cacheCreateTokens = cacheCreate5m + cacheCreate1h;
+      const cacheRWTokens = cacheReadTokens + cacheCreateTokens;
+      const ioTokens = inputTokens + outputTokens;
+      const toM = (n) => Number((n / 1_000_000).toFixed(3));
+
+      // Dominant model = top entry of modelMix (already sorted by usd desc
+      // upstream). Skip the synthetic / unknown sentinel models so the
+      // headline reflects a real LLM choice.
+      const dominantEntry = modelMix.find((m) => !/^<|unknown/i.test(m.model)) || modelMix[0] || null;
+      const dominantModel = dominantEntry ? {
+        model: dominantEntry.model,
+        msgPct: dominantEntry.msgPct,
+        usdPct: dominantEntry.usdPct
+      } : null;
+
       recent.push({
         path: f,
         runTitle,
@@ -630,7 +646,12 @@ async function collectRecentCosts(repoPath, limit = 5) {
         inputTokens,
         outputTokens,
         cacheReadTokens,
-        cacheCreateTokens: cacheCreate5m + cacheCreate1h,
+        cacheCreateTokens,
+        cacheRWTokens,
+        cacheRWMillions: toM(cacheRWTokens),
+        ioTokens,
+        ioMillions: toM(ioTokens),
+        dominantModel,
         modelMix
       });
     } catch {
