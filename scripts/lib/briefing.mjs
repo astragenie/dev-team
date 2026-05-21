@@ -673,7 +673,7 @@ async function collectRecentCosts(repoPath, limit = 5) {
       if (compactionCount > 0) flags.push(`compact:${compactionCount}`);
       if (subagentDispatches > 3) flags.push(`subagent:${subagentDispatches}`);
       if (fileReReadCount > 5) flags.push(`reread:${fileReReadCount}`);
-      if (toolFailures > 0) flags.push(`fails:${toolFailures}`);
+      if (toolFailures > 3) flags.push(`fails:${toolFailures}`);
       if (toolResultP90 > 8000) flags.push(`p90:${toolResultP90}b`);
       if (turnsBeforeFirstTool > 5) flags.push(`preamble:${turnsBeforeFirstTool}`);
       if (gradeAvg != null && gradeAvg < 0.75) flags.push(`grade:${gradeAvg}`);
