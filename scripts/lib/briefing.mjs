@@ -617,19 +617,17 @@ async function collectRecentCosts(repoPath, limit = 5) {
 
       if (usd != null) totalUsd += usd;
 
-      const cacheCreateTokens = cacheCreate5m + cacheCreate1h;
-      const cacheRWTokens = cacheReadTokens + cacheCreateTokens;
-      const ioTokens = inputTokens + outputTokens;
+      const cacheWriteTokens = cacheCreate5m + cacheCreate1h;
       const toM = (n) => Number((n / 1_000_000).toFixed(3));
 
-      // Dominant model = top entry of modelMix (already sorted by usd desc
-      // upstream). Skip the synthetic / unknown sentinel models so the
-      // headline reflects a real LLM choice.
+      // Dominant model = highest-spend real LLM in the mix. Skip
+      // synthetic/unknown sentinel entries (auto-injected, no LLM call).
+      // Surface a single percentage — msgPct — to avoid the "199%" confusion
+      // that comes from reading msgPct/usdPct as one number.
       const dominantEntry = modelMix.find((m) => !/^<|unknown/i.test(m.model)) || modelMix[0] || null;
       const dominantModel = dominantEntry ? {
         model: dominantEntry.model,
-        msgPct: dominantEntry.msgPct,
-        usdPct: dominantEntry.usdPct
+        pct: dominantEntry.msgPct
       } : null;
 
       recent.push({
@@ -643,14 +641,17 @@ async function collectRecentCosts(repoPath, limit = 5) {
         messages,
         totalTokens,
         cacheHitPct,
+        // raw token counts
         inputTokens,
         outputTokens,
         cacheReadTokens,
-        cacheCreateTokens,
-        cacheRWTokens,
-        cacheRWMillions: toM(cacheRWTokens),
-        ioTokens,
-        ioMillions: toM(ioTokens),
+        cacheWriteTokens,
+        // millions: separate axes so callers can render input/output and
+        // cache_read/cache_write side-by-side instead of summed.
+        inputMillions: toM(inputTokens),
+        outputMillions: toM(outputTokens),
+        cacheReadMillions: toM(cacheReadTokens),
+        cacheWriteMillions: toM(cacheWriteTokens),
         dominantModel,
         modelMix
       });
