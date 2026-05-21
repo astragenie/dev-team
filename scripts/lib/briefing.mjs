@@ -635,6 +635,51 @@ async function collectRecentCosts(repoPath, limit = 5) {
       const cacheReadM = toM(cacheReadTokens);
       const cacheWriteM = toM(cacheWriteTokens);
 
+      // Diagnostic counters from the cost-report body. These mirror the
+      // signals the cost-advisor uses but are surfaced here too so the
+      // brief-me consumer can render a diagnostics table without a second
+      // CLI call.
+      const compactionCount = num(/^- compaction_count:\s*(\d+)/m);
+      const subagentDispatches = num(/^- subagent_dispatches:\s*(\d+)/m);
+      const skillInvocations = num(/^- skill_invocations:\s*(\d+)/m);
+      const turnsBeforeFirstTool = num(/^- turns_before_first_tool:\s*(\d+)/m);
+      const userMsgAvgLen = num(/^- user_msg_avg_len:\s*(\d+)/m);
+      const fileReReadCount = num(/^- redundant_read_count:\s*(\d+)/m);
+      const sessionsScanned = num(/^- Sessions Scanned:\s*(\d+)/m);
+      const toolResultP90 = num(/##\s+Tool Result Sizes[\s\S]*?-\s+p90:\s*([\d,]+)/);
+
+      // Tool usage block: sum all counts + failures.
+      let toolCalls = 0;
+      let toolFailures = 0;
+      const toolSection = text.split(/^##\s+/m).find((s) => s.startsWith("Tool Usage"));
+      if (toolSection) {
+        for (const line of toolSection.split(/\r?\n/)) {
+          const m = line.match(/^-\s+\S+:\s*([\d,]+)(?:\s*\((\d+)\s+failed\))?/);
+          if (m) {
+            toolCalls += Number(m[1].replace(/,/g, ""));
+            if (m[2]) toolFailures += Number(m[2]);
+          }
+        }
+      }
+      const toolFailureRate = toolCalls > 0 ? Number((toolFailures / toolCalls * 100).toFixed(1)) : 0;
+
+      // Outcome from frontmatter
+      const gradeAvg = fm.grade_avg != null ? Number(fm.grade_avg) : null;
+      const reviewDecision = fm.review_decision || null;
+      const validationDecision = fm.validation_decision || null;
+
+      // Flag thresholds — empty flags array = clean slice
+      const flags = [];
+      if (compactionCount > 0) flags.push(`compact:${compactionCount}`);
+      if (subagentDispatches > 3) flags.push(`subagent:${subagentDispatches}`);
+      if (fileReReadCount > 5) flags.push(`reread:${fileReReadCount}`);
+      if (toolFailures > 0) flags.push(`fails:${toolFailures}`);
+      if (toolResultP90 > 8000) flags.push(`p90:${toolResultP90}b`);
+      if (turnsBeforeFirstTool > 5) flags.push(`preamble:${turnsBeforeFirstTool}`);
+      if (gradeAvg != null && gradeAvg < 0.75) flags.push(`grade:${gradeAvg}`);
+      if (reviewDecision === "rejected") flags.push("review:rejected");
+      if (validationDecision === "failed") flags.push("validation:failed");
+
       recent.push({
         path: f,
         runTitle,
@@ -663,7 +708,25 @@ async function collectRecentCosts(repoPath, limit = 5) {
         cacheRWMillionsStr: `${cacheReadM} / ${cacheWriteM}`,
         dominantModel,
         dominantModelStr: dominantModel ? `${dominantModel.model} ${dominantModel.pct}%` : "-",
-        modelMix
+        modelMix,
+        // diagnostics block — for the second 'diagnostics' table in brief-me
+        compactionCount,
+        subagentDispatches,
+        skillInvocations,
+        turnsBeforeFirstTool,
+        userMsgAvgLen,
+        fileReReadCount,
+        sessionsScanned,
+        toolCalls,
+        toolFailures,
+        toolFailureRate,
+        toolResultP90,
+        gradeAvg,
+        reviewDecision,
+        validationDecision,
+        flags,
+        flagsStr: flags.join(" / "),
+        hasFlags: flags.length > 0
       });
     } catch {
       // skip unreadable file
@@ -671,11 +734,13 @@ async function collectRecentCosts(repoPath, limit = 5) {
   }
 
   const avgUsd = recent.length ? Number((totalUsd / recent.length).toFixed(4)) : 0;
+  const diagnostics = recent.filter((r) => r.hasFlags);
   return {
     recent,
     totalReports: files.length,
     sumUsdRecent: Number(totalUsd.toFixed(4)),
-    avgUsdRecent: avgUsd
+    avgUsdRecent: avgUsd,
+    diagnostics
   };
 }
 
