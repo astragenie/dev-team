@@ -645,6 +645,7 @@ async function collectRecentCosts(repoPath, limit = 5) {
         durationMin: durationMs ? Number((durationMs / 60000).toFixed(1)) : 0,
         messages,
         totalTokens,
+        totalMillions: toM(totalTokens),
         cacheHitPct,
         // raw token counts
         inputTokens,
