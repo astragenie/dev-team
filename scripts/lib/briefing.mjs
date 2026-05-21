@@ -630,6 +630,11 @@ async function collectRecentCosts(repoPath, limit = 5) {
         pct: dominantEntry.msgPct
       } : null;
 
+      const inputM = toM(inputTokens);
+      const outputM = toM(outputTokens);
+      const cacheReadM = toM(cacheReadTokens);
+      const cacheWriteM = toM(cacheWriteTokens);
+
       recent.push({
         path: f,
         runTitle,
@@ -646,13 +651,17 @@ async function collectRecentCosts(repoPath, limit = 5) {
         outputTokens,
         cacheReadTokens,
         cacheWriteTokens,
-        // millions: separate axes so callers can render input/output and
-        // cache_read/cache_write side-by-side instead of summed.
-        inputMillions: toM(inputTokens),
-        outputMillions: toM(outputTokens),
-        cacheReadMillions: toM(cacheReadTokens),
-        cacheWriteMillions: toM(cacheWriteTokens),
+        // millions: split axes for callers that want raw numbers
+        inputMillions: inputM,
+        outputMillions: outputM,
+        cacheReadMillions: cacheReadM,
+        cacheWriteMillions: cacheWriteM,
+        // formatted string pairs for single-cell renderers
+        // e.g. "0.024 / 0.077" — input M / output M
+        ioMillionsStr: `${inputM} / ${outputM}`,
+        cacheRWMillionsStr: `${cacheReadM} / ${cacheWriteM}`,
         dominantModel,
+        dominantModelStr: dominantModel ? `${dominantModel.model} ${dominantModel.pct}%` : "-",
         modelMix
       });
     } catch {
