@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import path from "node:path";
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
 
@@ -522,6 +523,74 @@ async function findAutonomousLoopCli() {
   return null;
 }
 
+// Scan .claude/artifacts/crew/runs/ for cost-report-*.md files and parse
+// their headers into a compact summary. Best-effort: corrupted or partial
+// reports are skipped silently.
+async function collectRecentCosts(repoPath, limit = 5) {
+  const dir = path.join(repoPath, ".claude", "artifacts", "crew", "runs");
+  if (!(await pathExists(dir))) {
+    return { recent: [], totalReports: 0 };
+  }
+  let entries;
+  try {
+    entries = await fs.readdir(dir, { withFileTypes: true });
+  } catch {
+    return { recent: [], totalReports: 0 };
+  }
+  const files = entries
+    .filter((e) => e.isFile() && /-cost-report-.+\.md$/.test(e.name))
+    .map((e) => path.join(dir, e.name));
+  if (files.length === 0) return { recent: [], totalReports: 0 };
+
+  const stats = await Promise.all(
+    files.map(async (f) => {
+      try {
+        const s = await fs.stat(f);
+        return { f, mtime: s.mtimeMs };
+      } catch {
+        return null;
+      }
+    })
+  );
+  const sorted = stats
+    .filter(Boolean)
+    .sort((a, b) => b.mtime - a.mtime)
+    .slice(0, limit);
+
+  const recent = [];
+  let totalUsd = 0;
+  for (const { f } of sorted) {
+    try {
+      const text = await fs.readFile(f, "utf8");
+      const runTitle = text.match(/^- Run Title:\s*(.+)$/m)?.[1]?.trim();
+      const usdMatch = text.match(/^- Total USD:\s*\$([\d.]+)/m);
+      const usd = usdMatch ? Number(usdMatch[1]) : null;
+      const windowStart = text.match(/^- Window Start:\s*(.+)$/m)?.[1]?.trim();
+      const windowEnd = text.match(/^- Window End:\s*(.+)$/m)?.[1]?.trim();
+      const messages = Number(text.match(/^- Assistant Messages Counted:\s*(\d+)/m)?.[1] || 0);
+      if (usd != null) totalUsd += usd;
+      recent.push({
+        path: f,
+        runTitle: runTitle || null,
+        usd,
+        windowStart: windowStart || null,
+        windowEnd: windowEnd || null,
+        messages
+      });
+    } catch {
+      // skip unreadable file
+    }
+  }
+
+  const avgUsd = recent.length ? Number((totalUsd / recent.length).toFixed(4)) : 0;
+  return {
+    recent,
+    totalReports: files.length,
+    sumUsdRecent: Number(totalUsd.toFixed(4)),
+    avgUsdRecent: avgUsd
+  };
+}
+
 async function fetchAutonomousLoopBrief(repoPath) {
   try {
     const cli = await findAutonomousLoopCli();
@@ -536,12 +605,20 @@ async function fetchAutonomousLoopBrief(repoPath) {
 }
 
 export async function buildBriefingReport(repoPath) {
-  const [wakeUpBrief, gitActivity, deploymentClues, autonomousLoopBrief] = await Promise.all([
+  const [wakeUpBrief, gitActivity, deploymentClues, autonomousLoopBrief, costs] = await Promise.all([
     buildWakeUpBrief(repoPath, { readOnly: true }),
     collectGitActivity(repoPath),
     discoverDeploymentClues(repoPath),
-    fetchAutonomousLoopBrief(repoPath)
+    fetchAutonomousLoopBrief(repoPath),
+    collectRecentCosts(repoPath, 5)
   ]);
+
+  // Attach cost summary to autonomous-loop block when the plugin is installed,
+  // so the user-facing "Autonomous Loop" section in brief-me renders it
+  // alongside backlog counts and grades. Also expose top-level for non-loop users.
+  if (autonomousLoopBrief && costs.recent.length > 0) {
+    autonomousLoopBrief.costs = costs;
+  }
 
   const artifacts = await collectRelevantArtifacts(wakeUpBrief);
   const currentObjective = buildCurrentObjective(wakeUpBrief, artifacts);
@@ -580,8 +657,12 @@ export async function buildBriefingReport(repoPath) {
       hasRecentArtifacts: artifacts.length > 0,
       hasDeploymentGuidance: Boolean(wakeUpBrief.repoGuidance?.deployment),
       discoveredDeploymentClues: deploymentClues.clues.length,
-      autonomousLoopInstalled: Boolean(autonomousLoopBrief)
+      autonomousLoopInstalled: Boolean(autonomousLoopBrief),
+      costReports: costs.totalReports,
+      recentCostUsdSum: costs.sumUsdRecent || 0,
+      recentCostUsdAvg: costs.avgUsdRecent || 0
     },
-    autonomousLoop: autonomousLoopBrief
+    autonomousLoop: autonomousLoopBrief,
+    costs
   };
 }

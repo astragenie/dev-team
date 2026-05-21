@@ -190,6 +190,55 @@ function resolveArtifactConfig(kind) {
     };
   }
 
+  if (kind === "cost-report") {
+    return {
+      directory: "runs",
+      prefix: "cost-report",
+      render(fields) {
+        const breakdown = fields.cost;
+        const lines = [
+          `# Cost Report: ${fields.title || "Untitled"}`,
+          "",
+          renderField("Created", nowIso()),
+          renderField("Run Title", fields.runTitle),
+          renderField("Window Start", breakdown?.window?.start),
+          renderField("Window End", breakdown?.window?.end),
+          renderField("Sessions Scanned", String(breakdown?.sessionsScanned ?? 0)),
+          renderField("Assistant Messages Counted", String(breakdown?.messagesCounted ?? 0)),
+          renderField("Total USD", breakdown ? `$${breakdown.usd.toFixed(4)}` : "-"),
+          "",
+          "## Tokens (totals)",
+          ""
+        ];
+        if (breakdown?.totals) {
+          for (const [k, v] of Object.entries(breakdown.totals)) {
+            lines.push(`- ${k}: ${v.toLocaleString()}`);
+          }
+        } else {
+          lines.push("- (none)");
+        }
+        lines.push("", "## By Model", "");
+        if (breakdown?.byModel && Object.keys(breakdown.byModel).length) {
+          for (const [model, info] of Object.entries(breakdown.byModel)) {
+            lines.push(`### ${model} (priced as ${info.pricedAs})`);
+            lines.push(`- messages: ${info.messages}`);
+            lines.push(`- usd: $${info.usd.toFixed(4)}`);
+            for (const [k, v] of Object.entries(info.tokens)) {
+              lines.push(`- ${k}: ${v.toLocaleString()}`);
+            }
+            lines.push("");
+          }
+        } else {
+          lines.push("- (none)");
+        }
+        if (fields.notes) {
+          lines.push("## Notes", "", fields.notes, "");
+        }
+        return lines.join("\n");
+      }
+    };
+  }
+
   if (kind === "final-synthesis") {
     return {
       directory: "runs",
@@ -232,7 +281,11 @@ export async function writeArtifact(repoPath, kind, fields = {}) {
     title: fields.title || "Untitled"
   };
 
-  await registerWorkflowArtifact(repoPath, artifact, fields);
+  // cost-report is purely informational evidence; it must not touch
+  // workflow-state badges or create a spurious currentRun.
+  if (kind !== "cost-report") {
+    await registerWorkflowArtifact(repoPath, artifact, fields);
+  }
 
   return artifact;
 }

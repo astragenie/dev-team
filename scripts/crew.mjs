@@ -19,6 +19,7 @@ import { listApprovals, requestApproval, resolveApproval } from "./lib/approvals
 import { claimFiles, inspectClaims, listClaims, releaseFiles } from "./lib/claims.mjs";
 import { buildWakeUpBrief } from "./lib/wakeup.mjs";
 import { loadWorkflowState, markWorkflowBadge, summarizeWorkflowState } from "./lib/workflow-state.mjs";
+import { computeSessionCost } from "./lib/session-cost.mjs";
 
 function parseArgs(argv) {
   const [command, ...rest] = argv;
@@ -75,7 +76,10 @@ function parseArgs(argv) {
     preset: null,
     commitPattern: null,
     triggerFilename: null,
-    reviewerLabel: null
+    reviewerLabel: null,
+    startedAt: null,
+    completedAt: null,
+    runTitle: null
   };
   const positionals = [];
 
@@ -355,6 +359,21 @@ function parseArgs(argv) {
       index += 1;
       continue;
     }
+    if (value === "--started-at") {
+      flags.startedAt = rest[index + 1];
+      index += 1;
+      continue;
+    }
+    if (value === "--completed-at") {
+      flags.completedAt = rest[index + 1];
+      index += 1;
+      continue;
+    }
+    if (value === "--run-title") {
+      flags.runTitle = rest[index + 1];
+      index += 1;
+      continue;
+    }
     if (value.startsWith("--")) {
       throw new Error(`Unknown argument: ${value}`);
     }
@@ -398,6 +417,7 @@ function usage(target = null) {
     "write-validation-result": "  node scripts/crew.mjs write-validation-result --repo <path> --title <text> [--validator <role>] [--environment <name>] [--decision <decision>]",
     "write-deployment-check": "  node scripts/crew.mjs write-deployment-check --repo <path> --title <text> [--deployer <role>] [--environment dev|prod] [--resource <name>] [--url <service-url>] [--revision <id>] [--decision <decision>]",
     "write-final-synthesis": "  node scripts/crew.mjs write-final-synthesis --repo <path> --title <text> [--summary <text>] [--files <a,b>]",
+    "cost-slice": "  node scripts/crew.mjs cost-slice --repo <path> [--started-at <iso>] [--completed-at <iso>] [--run-title <text>]",
     "install-commit-bridge": "  node scripts/crew.mjs install-commit-bridge --repo <path> [--preset wiggin-loop|conventional-commits] [--commit-pattern <regex>] [--trigger-filename <name>] [--reviewer-label <name>]",
     "backfill-commit-bridge": "  node scripts/crew.mjs backfill-commit-bridge --repo <path> [--preset wiggin-loop|conventional-commits] [--commit-pattern <regex>] [--reviewer-label <name>]",
     "list-bridge-presets": "  node scripts/crew.mjs list-bridge-presets",
@@ -420,6 +440,30 @@ function usage(target = null) {
     "Usage:",
     ...Object.values(subcommands)
   ].join("\n");
+}
+
+// Auto-emit a cost-report artifact when a run window is available. Designed
+// to be called immediately after write-final-synthesis. Failures here are
+// non-fatal: they return null so the synthesis result still surfaces.
+async function maybeEmitCostReport(repoPath, { runTitle } = {}) {
+  try {
+    const state = await loadWorkflowState(repoPath);
+    const run = state?.currentRun || null;
+    if (!run?.startedAt) return null;
+    const completedAt = run.completedAt || new Date().toISOString();
+    const cost = await computeSessionCost(repoPath, {
+      startedAt: run.startedAt,
+      completedAt
+    });
+    const title = runTitle || run.title || "cost-report";
+    return await writeArtifact(repoPath, "cost-report", {
+      title: `Cost — ${title}`,
+      runTitle: title,
+      cost
+    });
+  } catch (err) {
+    return { error: err.message };
+  }
 }
 
 // Normalize an MSYS / Git Bash POSIX path like `/c/work/foo` to a Windows
@@ -637,6 +681,29 @@ async function main() {
       risks: flags.risks,
       next: flags.next
     });
+    const costArtifact = await maybeEmitCostReport(repoPath, {
+      runTitle: flags.title || positionals.join(" ") || null
+    });
+    if (costArtifact) {
+      result = { synthesis: result, costReport: costArtifact };
+    }
+  } else if (command === "cost-slice") {
+    const state = await loadWorkflowState(repoPath);
+    const run = state?.currentRun || null;
+    const startedAt = flags.startedAt || run?.startedAt;
+    const completedAt = flags.completedAt || run?.completedAt || null;
+    const runTitle = flags.runTitle || flags.title || run?.title || "manual-cost-slice";
+    if (!startedAt) {
+      throw new Error("cost-slice requires --started-at or an active/last run with startedAt");
+    }
+    const cost = await computeSessionCost(repoPath, { startedAt, completedAt });
+    result = await writeArtifact(repoPath, "cost-report", {
+      title: `Cost — ${runTitle}`,
+      runTitle,
+      cost,
+      notes: flags.summary || null
+    });
+    result.cost = cost;
   } else {
     throw new Error(`Unknown command: ${command}`);
   }

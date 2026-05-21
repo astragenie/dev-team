@@ -25,7 +25,8 @@ Workflow:
    - `Important Reminders`
    - `Recommended Next Step`
    - `Secondary Options`
-   - `Autonomous Loop` — only if the report's `autonomousLoop` field is non-null. Render: backlog counts by state, top-priority triaged features (next to slice), in-flight features with linked slices, specs awaiting decomposition, last 5 grade averages + per-dimension snapshot if any are below 0.80, decision tallies, pattern alerts.
+   - `Autonomous Loop` — only if the report's `autonomousLoop` field is non-null. Render: backlog counts by state, top-priority triaged features (next to slice), in-flight features with linked slices, specs awaiting decomposition, last 5 grade averages + per-dimension snapshot if any are below 0.80, decision tallies, pattern alerts. If `autonomousLoop.costs.recent` is non-empty, also render `Recent Costs (last 5)`: per-entry slice/run title, USD, assistant-message count; followed by `Total $`, `Avg $` from `autonomousLoop.costs.sumUsdRecent` / `avgUsdRecent`.
+   - `Recent Costs` — render when `autonomousLoop` is null but `costs.recent` is non-empty (cost reporting works without the autonomous-loop plugin). Same fields as the autonomousLoop costs block.
 6. keep the report concise, concrete, and evidence-backed
 7. use the git activity, artifact trail, workflow state, and repo memory to produce one clear next-step recommendation
 8. in `Recent Activity`, include the most relevant repo-memory starting points or retrieval hints, not just git or artifact counts
