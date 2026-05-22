@@ -3,6 +3,20 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.1.14 — 2026-05-21
+
+### Changed
+- Plugin and marketplace `author`/`owner` updated to `shishkosv` to match
+  repo owner and the companion `autonomous-loop` plugin.
+
+### Fixed
+- README local-development clone URL pointed to the legacy
+  `alex-radaev/engineering-os` repo; corrected to
+  `sergeymilashico/hero-crew`.
+- `docs/reference-repo-plan.md` replaced hard-coded
+  `/Users/aradaev/Desktop/Projects/` paths with `<reference-repos-dir>`
+  placeholders.
+
 ## v0.1.13 — 2026-05-21
 
 ### Fixed

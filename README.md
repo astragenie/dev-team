@@ -92,7 +92,7 @@ claude plugin install crew
 For local development, clone and register as a directory marketplace:
 
 ```
-git clone https://github.com/alex-radaev/engineering-os.git
+git clone https://github.com/sergeymilashico/hero-crew.git
 ```
 
 Then add it as a local marketplace in `~/.claude/plugins/known_marketplaces.json`.

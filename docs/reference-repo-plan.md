@@ -6,10 +6,10 @@ This document captures what we learned from four local reference repos and trans
 
 Reference repos inspected locally:
 
-- `/Users/aradaev/Desktop/Projects/claude-code-workflow-orchestration`
-- `/Users/aradaev/Desktop/Projects/conductor-protocol`
-- `/Users/aradaev/Desktop/Projects/agent-flow`
-- `/Users/aradaev/Desktop/Projects/agent-conductor`
+- ``<reference-repos-dir>`/claude-code-workflow-orchestration`
+- ``<reference-repos-dir>`/conductor-protocol`
+- ``<reference-repos-dir>`/agent-flow`
+- ``<reference-repos-dir>`/agent-conductor`
 
 Additional reference repos to use as pattern libraries:
 
