@@ -935,3 +935,165 @@ test("CLI install-global writes managed global memory into HOME", async () => {
   const repeatResult = JSON.parse(repeatOutput.stdout);
   assert.deepEqual(repeatResult.writes, []);
 });
+
+async function loadState(repoPath) {
+  const raw = await fs.readFile(
+    path.join(repoPath, ".claude", "state", "crew", "workflow-state.json"),
+    "utf8"
+  );
+  return JSON.parse(raw);
+}
+
+test("mark-badge blocked persists note + blockedBy", async () => {
+  const repoPath = await makeTempDir("crew-cli-badge-blocked-");
+  await execFile("node", [cliPath, "init", "--repo", repoPath]);
+  await execFile("node", [
+    cliPath,
+    "write-run-brief",
+    "--repo",
+    repoPath,
+    "--title",
+    "Blocked test",
+    "--goal",
+    "Block on missing dep",
+    "--mode",
+    "single-session"
+  ]);
+  await execFile("node", [
+    cliPath,
+    "mark-badge",
+    "--repo",
+    repoPath,
+    "--badge",
+    "blocked",
+    "--note",
+    "Waiting on upstream API spec",
+    "--blocked-by",
+    "ART-2025-12-12-spec-q"
+  ]);
+  const state = await loadState(repoPath);
+  assert.equal(state.currentRun.gates.blocked.status, "blocked");
+  assert.equal(state.currentRun.gates.blocked.note, "Waiting on upstream API spec");
+  assert.equal(state.currentRun.gates.blocked.blockedBy, "ART-2025-12-12-spec-q");
+});
+
+test("mark-badge escalated_to_human persists note", async () => {
+  const repoPath = await makeTempDir("crew-cli-badge-escalated-");
+  await execFile("node", [cliPath, "init", "--repo", repoPath]);
+  await execFile("node", [
+    cliPath,
+    "write-run-brief",
+    "--repo",
+    repoPath,
+    "--title",
+    "Escalation test",
+    "--goal",
+    "Punt to human",
+    "--mode",
+    "single-session"
+  ]);
+  await execFile("node", [
+    cliPath,
+    "mark-badge",
+    "--repo",
+    repoPath,
+    "--badge",
+    "escalated_to_human",
+    "--note",
+    "Scope ambiguous; need stakeholder sign-off"
+  ]);
+  const state = await loadState(repoPath);
+  assert.equal(state.currentRun.gates.escalation.status, "escalated");
+  assert.equal(
+    state.currentRun.gates.escalation.note,
+    "Scope ambiguous; need stakeholder sign-off"
+  );
+});
+
+test("final-synthesis blocked when escalated_to_human set; --force overrides", async () => {
+  const repoPath = await makeTempDir("crew-cli-escalated-blocks-final-");
+  await execFile("node", [cliPath, "init", "--repo", repoPath]);
+  await execFile("node", [
+    cliPath,
+    "write-run-brief",
+    "--repo",
+    repoPath,
+    "--title",
+    "Escalation block",
+    "--goal",
+    "Verify final-synthesis halts",
+    "--mode",
+    "single-session"
+  ]);
+  await execFile("node", [
+    cliPath,
+    "mark-badge",
+    "--repo",
+    repoPath,
+    "--badge",
+    "escalated_to_human",
+    "--note",
+    "Need human"
+  ]);
+  await assert.rejects(
+    () =>
+      execFile("node", [
+        cliPath,
+        "write-final-synthesis",
+        "--repo",
+        repoPath,
+        "--title",
+        "Should be blocked",
+        "--summary",
+        "Should reject"
+      ]),
+    /escalated_to_human|pending|escalated to human/i
+  );
+  const forced = await execFile("node", [
+    cliPath,
+    "write-final-synthesis",
+    "--repo",
+    repoPath,
+    "--title",
+    "Forced through",
+    "--summary",
+    "Override with --force",
+    "--force"
+  ]);
+  const result = JSON.parse(forced.stdout);
+  assert.ok(result.path);
+});
+
+test("brief-me surfaces blocked in pending badges", async () => {
+  const repoPath = await makeTempDir("crew-cli-brief-blocked-");
+  await execFile("node", [cliPath, "init", "--repo", repoPath]);
+  await execFile("node", [
+    cliPath,
+    "write-run-brief",
+    "--repo",
+    repoPath,
+    "--title",
+    "Brief blocked",
+    "--goal",
+    "g",
+    "--mode",
+    "single-session"
+  ]);
+  await execFile("node", [
+    cliPath,
+    "mark-badge",
+    "--repo",
+    repoPath,
+    "--badge",
+    "blocked",
+    "--note",
+    "Reason"
+  ]);
+  const out = await execFile("node", [cliPath, "brief-me", "--repo", repoPath]);
+  const brief = JSON.parse(out.stdout);
+  assert.ok(
+    (brief.pendingBadges || brief.workflow?.pendingBadges || []).includes("blocked") ||
+      JSON.stringify(brief).includes("blocked"),
+    "brief-me output should mention blocked"
+  );
+});

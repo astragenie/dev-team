@@ -28,10 +28,13 @@ const FLAG_SPEC = {
   "--allow-existing": { key: "allowExisting", boolean: true },
   "--help": { key: "help", boolean: true },
   "-h": { key: "help", boolean: true },
+  "--force": { key: "force", boolean: true },
+  "--aggregate-all": { key: "aggregateAll", boolean: true },
   // Value-consuming flags.
   "--alerts": { key: "alerts" },
   "--approver": { key: "approver" },
   "--badge": { key: "badge" },
+  "--blocked-by": { key: "blockedBy" },
   "--build": { key: "build" },
   "--clues": { key: "clues" },
   "--commit-pattern": { key: "commitPattern" },
@@ -72,7 +75,6 @@ const FLAG_SPEC = {
   "--risks": { key: "risks" },
   "--run-title": { key: "runTitle" },
   "--source-project": { key: "sourceProject" },
-  "--aggregate-all": { key: "aggregateAll", boolean: true },
   "--scope": { key: "scope" },
   "--severity": { key: "severity" },
   "--started-at": { key: "startedAt" },
@@ -94,6 +96,7 @@ function parseArgs(argv) {
     repo: process.cwd(),
     allowExisting: false,
     help: false,
+    force: false,
     owner: null,
     requester: null,
     approver: null,
@@ -147,7 +150,8 @@ function parseArgs(argv) {
     startedAt: null,
     completedAt: null,
     runTitle: null,
-    sourceProject: null
+    sourceProject: null,
+    blockedBy: null
   };
   const positionals = [];
 
@@ -207,7 +211,7 @@ function usage(target = null) {
       "  node scripts/crew.mjs write-deployment-guidance --repo <path> --title <text> [--discovery-status repo-derived|partial|live-verified] [--verified-from <a,b>] [--missing <a,b>] [--summary <text>] [--build <text>] [--deploy <text>]",
     "show-workflow-state": "  node scripts/crew.mjs show-workflow-state --repo <path>",
     "mark-badge":
-      "  node scripts/crew.mjs mark-badge --repo <path> --badge review_required|review_passed|review_failed|review_skipped|validation_expected|validation_passed|validation_failed|validation_skipped|dev_deploy_expected|dev_checked|dev_failed|dev_skipped|prod_deploy_expected|prod_checked|prod_failed|prod_skipped [--note <text>]",
+      "  node scripts/crew.mjs mark-badge --repo <path> --badge review_required|review_passed|review_failed|review_skipped|validation_expected|validation_passed|validation_failed|validation_skipped|dev_deploy_expected|dev_checked|dev_failed|dev_skipped|prod_deploy_expected|prod_checked|prod_failed|prod_skipped|blocked|escalated_to_human [--note <text>] [--blocked-by <artifact-id>]",
     "write-run-brief":
       "  node scripts/crew.mjs write-run-brief --repo <path> --title <text> [--goal <text>] [--mode <mode>] [--pace <pace>]",
     "write-handoff":
@@ -221,7 +225,7 @@ function usage(target = null) {
     "write-deployment-check":
       "  node scripts/crew.mjs write-deployment-check --repo <path> --title <text> [--deployer <role>] [--environment dev|prod] [--resource <name>] [--url <service-url>] [--revision <id>] [--decision <decision>]",
     "write-final-synthesis":
-      "  node scripts/crew.mjs write-final-synthesis --repo <path> --title <text> [--summary <text>] [--files <a,b>]",
+      "  node scripts/crew.mjs write-final-synthesis --repo <path> --title <text> [--summary <text>] [--files <a,b>] [--force]",
     "cost-slice":
       "  node scripts/crew.mjs cost-slice --repo <path> [--started-at <iso>] [--completed-at <iso>] [--run-title <text>] [--source-project <slug>] [--aggregate-all]",
     "cost-advise": "  node scripts/crew.mjs cost-advise --repo <path>"
@@ -384,6 +388,7 @@ const COMMANDS = {
     const currentRun = await markWorkflowBadge(repoPath, {
       badge: flags.badge,
       note: flags.note || flags.reason || "",
+      blockedBy: flags.blockedBy,
       title: flags.title,
       goal: flags.goal,
       mode: flags.mode,
@@ -483,7 +488,8 @@ const COMMANDS = {
       files: flags.files,
       evidence: flags.evidence,
       risks: flags.risks,
-      next: flags.next
+      next: flags.next,
+      force: flags.force
     });
     const costArtifact = await maybeEmitCostReport(repoPath, {
       runTitle: flags.title || positionals.join(" ") || null

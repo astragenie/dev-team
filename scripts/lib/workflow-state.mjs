@@ -90,7 +90,7 @@ function archiveRun(state, run) {
     status: run.status || "completed",
     startedAt: run.startedAt || run.updatedAt || nowIso(),
     completedAt: run.completedAt || run.updatedAt || nowIso(),
-    gates: run.gates || { review: null, validation: null }
+    gates: run.gates || { review: null, validation: null, blocked: null, escalation: null }
   };
 
   state.recentRuns = [archived, ...(state.recentRuns || [])].slice(0, MAX_RECENT_RUNS);
@@ -111,7 +111,9 @@ function createRun(fields = {}) {
       deployment: {
         dev: null,
         prod: null
-      }
+      },
+      blocked: null,
+      escalation: null
     },
     artifacts: {
       runBrief: fields.path || null,
@@ -145,7 +147,9 @@ const PENDING_GATE_CHECKS = [
   (run) => run?.gates?.review?.status === "required",
   (run) => run?.gates?.validation?.status === "expected",
   (run) => run?.gates?.deployment?.dev?.status === "expected",
-  (run) => run?.gates?.deployment?.prod?.status === "expected"
+  (run) => run?.gates?.deployment?.prod?.status === "expected",
+  (run) => run?.gates?.blocked?.status === "blocked",
+  (run) => run?.gates?.escalation?.status === "escalated"
 ];
 
 function hasPendingGates(run) {
@@ -325,16 +329,32 @@ const BADGE_TABLE = {
   prod_deploy_expected: { selector: (run) => [run.gates.deployment, "prod"], status: "expected" },
   prod_checked: { selector: (run) => [run.gates.deployment, "prod"], status: "passed" },
   prod_failed: { selector: (run) => [run.gates.deployment, "prod"], status: "failed" },
-  prod_skipped: { selector: (run) => [run.gates.deployment, "prod"], status: "skipped" }
+  prod_skipped: { selector: (run) => [run.gates.deployment, "prod"], status: "skipped" },
+  blocked: { selector: (run) => [run.gates, "blocked"], status: "blocked", custom: true },
+  escalated_to_human: {
+    selector: (run) => [run.gates, "escalation"],
+    status: "escalated",
+    custom: true
+  }
 };
 
-function applyBadge(run, badge, note = "") {
+function applyBadge(run, badge, note = "", blockedBy = null) {
   const spec = BADGE_TABLE[badge];
   if (!spec) {
     throw new Error(`Unsupported workflow badge: ${badge}`);
   }
   const [parent, key] = spec.selector(run);
-  parent[key] = { status: spec.status, updatedAt: nowIso(), note };
+
+  if (spec.custom) {
+    // Custom badges (blocked, escalation) need special handling for their fields
+    const gateObj = { status: spec.status, updatedAt: nowIso(), note };
+    if (badge === "blocked" && blockedBy !== null) {
+      gateObj.blockedBy = blockedBy;
+    }
+    parent[key] = gateObj;
+  } else {
+    parent[key] = { status: spec.status, updatedAt: nowIso(), note };
+  }
 }
 
 export async function markWorkflowBadge(repoPath, options = {}) {
@@ -350,7 +370,7 @@ export async function markWorkflowBadge(repoPath, options = {}) {
     mode: options.mode || "",
     next: options.next || ""
   });
-  applyBadge(run, badge, options.note || "");
+  applyBadge(run, badge, options.note || "", options.blockedBy || null);
   run.updatedAt = nowIso();
   if (options.next) {
     run.next = options.next;
@@ -398,10 +418,16 @@ const ARTIFACT_HANDLERS = {
   },
   "final-synthesis"(run, artifact, fields) {
     const pendingBadges = summarizeWorkflowState({ currentRun: run }).pendingBadges;
-    if (pendingBadges.length > 0) {
+    const hasEscalation = run?.gates?.escalation?.status === "escalated";
+    const force = fields.force === true;
+
+    if (pendingBadges.length > 0 && !force) {
       throw new Error(
         `Cannot finalize run while workflow badges are still pending: ${pendingBadges.join(", ")}`
       );
+    }
+    if (hasEscalation && !force) {
+      throw new Error("Cannot finalize run while escalated to human. Use --force to override.");
     }
     run.artifacts.finalSynthesis = artifact.path;
     run.status = fields.status || "completed";
@@ -465,7 +491,9 @@ const PENDING_BADGE_SPECS = [
   {
     badge: "prod_deploy_expected",
     check: (run) => run.gates?.deployment?.prod?.status === "expected"
-  }
+  },
+  { badge: "blocked", check: (run) => run.gates?.blocked?.status === "blocked" },
+  { badge: "escalated_to_human", check: (run) => run.gates?.escalation?.status === "escalated" }
 ];
 
 function collectPendingBadges(currentRun) {
