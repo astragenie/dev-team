@@ -153,40 +153,53 @@ export function buildBlockedOrMissing(wakeUpBrief, deploymentClues, gitActivity)
   ];
 }
 
-export function buildImportantReminders(wakeUpBrief, deploymentClues, gitActivity) {
-  const reminders = [];
-  const missingWrites = new Set(wakeUpBrief.workflow?.missingArtifactWrites || []);
-
-  if (gitActivity.isGitRepo && gitActivity.workingTree.hasChanges) {
-    reminders.push(
-      `Working tree has ${gitActivity.workingTree.stagedCount} staged, ${gitActivity.workingTree.modifiedCount} modified, and ${gitActivity.workingTree.untrackedCount} untracked path(s).`
-    );
-  }
-  if (!wakeUpBrief.summary.hasRecentRunMemory) {
-    reminders.push("No recent run artifacts are recorded for this repo yet.");
-  }
-  if (!wakeUpBrief.repoGuidance?.deployment && deploymentClues.clues.length > 0) {
-    reminders.push(
-      `Deployment clues were found in ${deploymentClues.clues.slice(0, 3).join(", ")}${deploymentClues.clues.length > 3 ? ", ..." : ""}.`
-    );
-  }
-  if (wakeUpBrief.claims.length > 0) {
-    reminders.push(
-      `${wakeUpBrief.claims.length} active claim(s) are still present in repo-local state.`
-    );
-  }
-  if (wakeUpBrief.repoMemory.length <= 1) {
-    reminders.push(
+const REMINDER_RULES = [
+  {
+    when: (ctx) => ctx.gitActivity.isGitRepo && ctx.gitActivity.workingTree.hasChanges,
+    message: (ctx) =>
+      `Working tree has ${ctx.gitActivity.workingTree.stagedCount} staged, ${ctx.gitActivity.workingTree.modifiedCount} modified, and ${ctx.gitActivity.workingTree.untrackedCount} untracked path(s).`
+  },
+  {
+    when: (ctx) => !ctx.wakeUpBrief.summary.hasRecentRunMemory,
+    message: () => "No recent run artifacts are recorded for this repo yet."
+  },
+  {
+    when: (ctx) =>
+      !ctx.wakeUpBrief.repoGuidance?.deployment && ctx.deploymentClues.clues.length > 0,
+    message: (ctx) =>
+      `Deployment clues were found in ${ctx.deploymentClues.clues.slice(0, 3).join(", ")}${ctx.deploymentClues.clues.length > 3 ? ", ..." : ""}.`
+  },
+  {
+    when: (ctx) => ctx.wakeUpBrief.claims.length > 0,
+    message: (ctx) =>
+      `${ctx.wakeUpBrief.claims.length} active claim(s) are still present in repo-local state.`
+  },
+  {
+    when: (ctx) => ctx.wakeUpBrief.repoMemory.length <= 1,
+    message: () =>
       "Repo-specific memory is still thin; keep durable guidance and lessons learned up to date."
-    );
-  }
-  if (missingWrites.size > 0) {
-    reminders.push(
+  },
+  {
+    when: (ctx) => ctx.missingWrites.size > 0,
+    message: () =>
       "A workflow phase appears complete, but the matching artifact write-back is still missing."
-    );
+  },
+  {
+    when: (ctx) => ctx.routingTable?.present && ctx.routingTable.stale,
+    message: (ctx) =>
+      `Routing table (docs/routing-table.md) is ${ctx.routingTable.ageDays} days stale. Review against the last ~30 runs and refresh signal → role rows.`
   }
+];
 
-  return reminders;
+export function buildImportantReminders(wakeUpBrief, deploymentClues, gitActivity, routingTable) {
+  const ctx = {
+    wakeUpBrief,
+    deploymentClues,
+    gitActivity,
+    routingTable,
+    missingWrites: new Set(wakeUpBrief.workflow?.missingArtifactWrites || [])
+  };
+  return REMINDER_RULES.filter((rule) => rule.when(ctx)).map((rule) => rule.message(ctx));
 }
 
 // Returns a message for whichever repo/git/deployment state warrants a

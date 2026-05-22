@@ -1,11 +1,12 @@
 ---
 id: FEAT-004
-status: pending
+status: done
 priority: P0
 category: docs
 target_release: v0.2.0
 created: 2026-05-22
 updated: 2026-05-22
+completed: 2026-05-22
 depends_on: []
 slices: []
 derived_from: null

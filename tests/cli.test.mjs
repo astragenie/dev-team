@@ -1097,3 +1097,45 @@ test("brief-me surfaces blocked in pending badges", async () => {
     "brief-me output should mention blocked"
   );
 });
+
+test("brief-me reports routingTableStale=false when file recent or absent", async () => {
+  const repoPath = await makeTempDir("crew-cli-routing-fresh-");
+  await execFile("node", [cliPath, "init", "--repo", repoPath]);
+  // file absent
+  const out1 = await execFile("node", [cliPath, "brief-me", "--repo", repoPath]);
+  const brief1 = JSON.parse(out1.stdout);
+  const summary1 = brief1.summary || {};
+  assert.equal(summary1.routingTablePresent, false);
+  assert.equal(summary1.routingTableStale, false);
+
+  // file present + fresh
+  await fs.mkdir(path.join(repoPath, "docs"), { recursive: true });
+  await fs.writeFile(path.join(repoPath, "docs", "routing-table.md"), "# Routing table\n");
+  const out2 = await execFile("node", [cliPath, "brief-me", "--repo", repoPath]);
+  const brief2 = JSON.parse(out2.stdout);
+  const summary2 = brief2.summary || {};
+  assert.equal(summary2.routingTablePresent, true);
+  assert.equal(summary2.routingTableStale, false);
+});
+
+test("brief-me reports routingTableStale=true when mtime > 30 days old", async () => {
+  const repoPath = await makeTempDir("crew-cli-routing-stale-");
+  await execFile("node", [cliPath, "init", "--repo", repoPath]);
+  await fs.mkdir(path.join(repoPath, "docs"), { recursive: true });
+  const filePath = path.join(repoPath, "docs", "routing-table.md");
+  await fs.writeFile(filePath, "# Routing table\n");
+  const oldTime = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000);
+  await fs.utimes(filePath, oldTime, oldTime);
+
+  const out = await execFile("node", [cliPath, "brief-me", "--repo", repoPath]);
+  const brief = JSON.parse(out.stdout);
+  const summary = brief.summary || {};
+  assert.equal(summary.routingTableStale, true);
+  assert.ok(summary.routingTableAgeDays >= 30);
+
+  const reminders = brief.sections?.importantReminders || [];
+  assert.ok(
+    reminders.some((r) => r.includes("Routing table") && r.includes("stale")),
+    "reminders should mention routing-table staleness"
+  );
+});

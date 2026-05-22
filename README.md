@@ -32,6 +32,10 @@ The next product direction is an evidence-gated validation loop: local validatio
 
 For the broader implementation order and rename plan, see [docs/architecture/product-roadmap.md](docs/architecture/product-roadmap.md).
 
+For the Engineering OS design (composition formula, skill tiers, routing, memory tiers, anti-patterns), see [docs/architecture/architecture.md](docs/architecture/architecture.md).
+
+For ownership, prompt size bar, lessons-to-standards pipeline, and the three-test rule for specialist agents, see [docs/governance.md](docs/governance.md).
+
 ## Install
 
 Add the marketplace and install the plugin in Claude Code:

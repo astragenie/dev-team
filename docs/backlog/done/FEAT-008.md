@@ -1,11 +1,12 @@
 ---
 id: FEAT-008
-status: pending
+status: done
 priority: P2
 category: governance
 target_release: v0.3.0
 created: 2026-05-22
 updated: 2026-05-22
+completed: 2026-05-22
 depends_on: [FEAT-002]
 slices: []
 derived_from: null
