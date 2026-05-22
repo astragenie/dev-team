@@ -253,7 +253,7 @@ function usage(target = null) {
 async function writeCostAdviseArtifact(repoPath, md, advisor) {
   const fs = await import("node:fs/promises");
   const pathMod = await import("node:path");
-  const dir = pathMod.join(repoPath, ".claude", "artifacts", "crew", "runs");
+  const dir = pathMod.join(repoPath, ".claude", "artifacts", "crew", "cost-insights");
   await fs.mkdir(dir, { recursive: true });
   const stamp = new Date()
     .toISOString()

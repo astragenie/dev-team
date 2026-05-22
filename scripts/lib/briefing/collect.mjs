@@ -342,10 +342,13 @@ function deriveFlags(metrics) {
   return flags;
 }
 
-function parseCostReportText(filePath, text) {
-  const fm = parseFrontmatterBlock(text);
-  const num = (re) => Number(text.match(re)?.[1]?.replace(/,/g, "") || 0);
+function bodyNum(text, re) {
+  return Number(text.match(re)?.[1]?.replace(/,/g, "") || 0);
+}
 
+// Header/window fields. Frontmatter wins when present; falls through to
+// body markdown patterns for pre-frontmatter cost-reports.
+function parseHeaderFields(text, fm) {
   const runTitle =
     (fm.run_title || text.match(/^- Run Title:\s*(.+)$/m)?.[1] || "")
       .replace(/^"|"$/g, "")
@@ -361,47 +364,97 @@ function parseCostReportText(filePath, text) {
     : windowStart && windowEnd
       ? Date.parse(windowEnd) - Date.parse(windowStart)
       : 0;
-  const messages = Number(text.match(/^- Assistant Messages Counted:\s*(\d+)/m)?.[1] || 0);
+  return { runTitle, usd, windowStart, windowEnd, durationMs };
+}
+
+function parseTokenFields(text, fm) {
   const totalTokens = fm.total_tokens
     ? Number(fm.total_tokens)
-    : num(/^- Total Tokens:\s*([\d,]+)/m);
+    : bodyNum(text, /^- Total Tokens:\s*([\d,]+)/m);
   const cacheHitPct = fm.cache_hit_pct
     ? Number(fm.cache_hit_pct)
     : Number(text.match(/^- Cache Hit %:\s*([\d.]+)/m)?.[1] || 0);
+  const inputTokens = bodyNum(text, /^- input:\s*([\d,]+)/m);
+  const outputTokens = bodyNum(text, /^- output:\s*([\d,]+)/m);
+  const cacheReadTokens = bodyNum(text, /^- cache_read:\s*([\d,]+)/m);
+  const cacheCreate1h = bodyNum(text, /^- cache_create_1h:\s*([\d,]+)/m);
+  const cacheCreate5m = bodyNum(text, /^- cache_create_5m:\s*([\d,]+)/m);
+  return {
+    totalTokens,
+    cacheHitPct,
+    inputTokens,
+    outputTokens,
+    cacheReadTokens,
+    cacheWriteTokens: cacheCreate5m + cacheCreate1h
+  };
+}
 
-  const inputTokens = num(/^- input:\s*([\d,]+)/m);
-  const outputTokens = num(/^- output:\s*([\d,]+)/m);
-  const cacheReadTokens = num(/^- cache_read:\s*([\d,]+)/m);
-  const cacheCreate1h = num(/^- cache_create_1h:\s*([\d,]+)/m);
-  const cacheCreate5m = num(/^- cache_create_5m:\s*([\d,]+)/m);
-  const cacheWriteTokens = cacheCreate5m + cacheCreate1h;
+function parseDiagnosticFields(text) {
+  return {
+    compactionCount: bodyNum(text, /^- compaction_count:\s*(\d+)/m),
+    subagentDispatches: bodyNum(text, /^- subagent_dispatches:\s*(\d+)/m),
+    skillInvocations: bodyNum(text, /^- skill_invocations:\s*(\d+)/m),
+    turnsBeforeFirstTool: bodyNum(text, /^- turns_before_first_tool:\s*(\d+)/m),
+    userMsgAvgLen: bodyNum(text, /^- user_msg_avg_len:\s*(\d+)/m),
+    fileReReadCount: bodyNum(text, /^- redundant_read_count:\s*(\d+)/m),
+    sessionsScanned: bodyNum(text, /^- Sessions Scanned:\s*(\d+)/m),
+    toolResultP90: bodyNum(text, /##\s+Tool Result Sizes[\s\S]*?-\s+p90:\s*([\d,]+)/),
+    messages: Number(text.match(/^- Assistant Messages Counted:\s*(\d+)/m)?.[1] || 0)
+  };
+}
 
+function parseOutcomeFields(fm) {
+  return {
+    gradeAvg: fm.grade_avg != null ? Number(fm.grade_avg) : null,
+    reviewDecision: fm.review_decision || null,
+    validationDecision: fm.validation_decision || null,
+    sourceProject: fm.source_project || null,
+    autoDetected: String(fm.auto_detected || "").toLowerCase() === "true",
+    aggregateAll: String(fm.aggregate_all || "").toLowerCase() === "true",
+    sourceCount: fm.source_count ? Number(fm.source_count) : 0
+  };
+}
+
+function parseCostReportText(filePath, text) {
+  const fm = parseFrontmatterBlock(text);
+  const header = parseHeaderFields(text, fm);
+  const tokens = parseTokenFields(text, fm);
+  const diag = parseDiagnosticFields(text);
+  const outcome = parseOutcomeFields(fm);
   const modelMix = parseModelMix(text);
   const dominantModel = computeDominantModel(modelMix);
-  const toM = (n) => Number((n / 1_000_000).toFixed(3));
-  const inputM = toM(inputTokens);
-  const outputM = toM(outputTokens);
-  const cacheReadM = toM(cacheReadTokens);
-  const cacheWriteM = toM(cacheWriteTokens);
-
-  const compactionCount = num(/^- compaction_count:\s*(\d+)/m);
-  const subagentDispatches = num(/^- subagent_dispatches:\s*(\d+)/m);
-  const skillInvocations = num(/^- skill_invocations:\s*(\d+)/m);
-  const turnsBeforeFirstTool = num(/^- turns_before_first_tool:\s*(\d+)/m);
-  const userMsgAvgLen = num(/^- user_msg_avg_len:\s*(\d+)/m);
-  const fileReReadCount = num(/^- redundant_read_count:\s*(\d+)/m);
-  const sessionsScanned = num(/^- Sessions Scanned:\s*(\d+)/m);
-  const toolResultP90 = num(/##\s+Tool Result Sizes[\s\S]*?-\s+p90:\s*([\d,]+)/);
   const { toolCalls, toolFailures } = parseToolUsage(text);
   const toolFailureRate = toolCalls > 0 ? Number(((toolFailures / toolCalls) * 100).toFixed(1)) : 0;
 
-  const gradeAvg = fm.grade_avg != null ? Number(fm.grade_avg) : null;
-  const reviewDecision = fm.review_decision || null;
-  const validationDecision = fm.validation_decision || null;
-  const sourceProject = fm.source_project || null;
-  const autoDetected = String(fm.auto_detected || "").toLowerCase() === "true";
-  const aggregateAll = String(fm.aggregate_all || "").toLowerCase() === "true";
-  const sourceCount = fm.source_count ? Number(fm.source_count) : 0;
+  const toM = (n) => Number((n / 1_000_000).toFixed(3));
+  const inputM = toM(tokens.inputTokens);
+  const outputM = toM(tokens.outputTokens);
+  const cacheReadM = toM(tokens.cacheReadTokens);
+  const cacheWriteM = toM(tokens.cacheWriteTokens);
+
+  const { runTitle, usd, windowStart, windowEnd, durationMs } = header;
+  const {
+    compactionCount,
+    subagentDispatches,
+    skillInvocations,
+    turnsBeforeFirstTool,
+    userMsgAvgLen,
+    fileReReadCount,
+    sessionsScanned,
+    toolResultP90,
+    messages
+  } = diag;
+  const {
+    gradeAvg,
+    reviewDecision,
+    validationDecision,
+    sourceProject,
+    autoDetected,
+    aggregateAll,
+    sourceCount
+  } = outcome;
+  const { totalTokens, cacheHitPct, inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens } =
+    tokens;
 
   const flags = deriveFlags({
     compactionCount,
@@ -468,19 +521,25 @@ function parseCostReportText(filePath, text) {
   };
 }
 
-async function listCostReportFilesByMtime(dir, limit) {
-  if (!(await pathExists(dir))) return [];
-  let entries;
-  try {
-    entries = await fs.readdir(dir, { withFileTypes: true });
-  } catch {
-    return [];
+async function listCostReportFilesByMtime(dirs, limit) {
+  // Accept either a single dir (legacy) or an array of dirs to merge.
+  const dirList = Array.isArray(dirs) ? dirs : [dirs];
+  const files = [];
+  for (const dir of dirList) {
+    if (!(await pathExists(dir))) continue;
+    let entries;
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const e of entries) {
+      if (e.isFile() && /-cost-report-.+\.md$/.test(e.name)) {
+        files.push(path.join(dir, e.name));
+      }
+    }
   }
-  const files = entries
-    .filter((e) => e.isFile() && /-cost-report-.+\.md$/.test(e.name))
-    .map((e) => path.join(dir, e.name));
   if (files.length === 0) return [];
-
   const stats = await Promise.all(
     files.map(async (f) => {
       try {
@@ -498,9 +557,13 @@ async function listCostReportFilesByMtime(dir, limit) {
     .map((entry) => entry.f);
 }
 
+
 export async function collectRecentCosts(repoPath, limit = 5) {
-  const dir = path.join(repoPath, ".claude", "artifacts", "crew", "runs");
-  const sorted = await listCostReportFilesByMtime(dir, limit);
+  const dirs = [
+    path.join(repoPath, ".claude", "artifacts", "crew", "cost"),
+    path.join(repoPath, ".claude", "artifacts", "crew", "runs") // legacy fallback
+  ];
+  const sorted = await listCostReportFilesByMtime(dirs, limit);
   if (sorted.length === 0) return { recent: [], totalReports: 0 };
 
   const recent = [];

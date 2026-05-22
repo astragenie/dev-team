@@ -1,7 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-const REPORTS_DIR_PARTS = [".claude", "artifacts", "crew", "runs"];
+// Cost reports now land in cost/ (Item 1 split). Older reports may still
+// live in the legacy runs/ dir, so loadReports scans both for backward compat.
+const REPORTS_DIR_PARTS = [".claude", "artifacts", "crew", "cost"];
+const LEGACY_REPORTS_DIR_PARTS = [".claude", "artifacts", "crew", "runs"];
 
 function parseFrontmatter(text) {
   if (!text.startsWith("---")) return { fm: null, body: text };
@@ -90,14 +93,23 @@ function percentile(arr, p) {
 }
 
 async function loadReports(repoPath, limit = 20) {
-  const dir = path.join(repoPath, ...REPORTS_DIR_PARTS);
-  let entries;
-  try {
-    entries = await fs.readdir(dir);
-  } catch {
-    return [];
+  // Scan new cost/ dir first, then legacy runs/ dir for backward compat.
+  const dirs = [
+    path.join(repoPath, ...REPORTS_DIR_PARTS),
+    path.join(repoPath, ...LEGACY_REPORTS_DIR_PARTS)
+  ];
+  const files = [];
+  for (const dir of dirs) {
+    let entries;
+    try {
+      entries = await fs.readdir(dir);
+    } catch {
+      continue;
+    }
+    for (const e of entries) {
+      if (/-cost-report-.+\.md$/.test(e)) files.push(path.join(dir, e));
+    }
   }
-  const files = entries.filter((f) => /-cost-report-.+\.md$/.test(f)).map((f) => path.join(dir, f));
   const stats = await Promise.all(
     files.map(async (f) => {
       try {

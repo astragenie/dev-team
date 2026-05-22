@@ -195,24 +195,32 @@ const SIMPLE_RENDERERS = {
 // --- cost-report: complex, multi-section renderer split into helpers ---
 
 function renderCostReportFrontmatter(fields, breakdown, outcome, totalTokens, cacheHitPct) {
-  const lines = ["---", "kind: cost-report"];
-  if (outcome?.sliceId) lines.push(`slice: ${outcome.sliceId}`);
-  lines.push(`run_title: ${JSON.stringify(fields.runTitle || "")}`);
-  if (breakdown?.usd != null) lines.push(`usd: ${breakdown.usd}`);
   const durationMs = breakdown?.window?.durationMs || 0;
-  if (durationMs) lines.push(`duration_ms: ${durationMs}`);
-  if (totalTokens) lines.push(`total_tokens: ${totalTokens}`);
-  if (cacheHitPct !== "-") lines.push(`cache_hit_pct: ${cacheHitPct}`);
-  if (outcome?.gradeAvg != null) lines.push(`grade_avg: ${outcome.gradeAvg}`);
-  if (outcome?.reviewDecision) lines.push(`review_decision: ${outcome.reviewDecision}`);
-  if (outcome?.validationDecision) lines.push(`validation_decision: ${outcome.validationDecision}`);
-  if (breakdown?.sourceProject) lines.push(`source_project: ${breakdown.sourceProject}`);
-  if (breakdown?.autoDetected) lines.push(`auto_detected: true`);
-  if (breakdown?.aggregateAll) lines.push(`aggregate_all: true`);
-  if (breakdown?.sources?.length) lines.push(`source_count: ${breakdown.sources.length}`);
-  lines.push(`created_at: ${nowIso()}`);
-  lines.push("---");
-  return lines;
+  // [predicate, line]. Truthy predicate emits the line. Defers evaluation of
+  // the line string until we know it's emitted; keeps complexity flat instead
+  // of nesting if-pushes.
+  const optional = [
+    [outcome?.sliceId, () => `slice: ${outcome.sliceId}`],
+    [true, () => `run_title: ${JSON.stringify(fields.runTitle || "")}`],
+    [breakdown?.usd != null, () => `usd: ${breakdown.usd}`],
+    [durationMs, () => `duration_ms: ${durationMs}`],
+    [totalTokens, () => `total_tokens: ${totalTokens}`],
+    [cacheHitPct !== "-", () => `cache_hit_pct: ${cacheHitPct}`],
+    [outcome?.gradeAvg != null, () => `grade_avg: ${outcome.gradeAvg}`],
+    [outcome?.reviewDecision, () => `review_decision: ${outcome.reviewDecision}`],
+    [outcome?.validationDecision, () => `validation_decision: ${outcome.validationDecision}`],
+    [breakdown?.sourceProject, () => `source_project: ${breakdown.sourceProject}`],
+    [breakdown?.autoDetected, () => `auto_detected: true`],
+    [breakdown?.aggregateAll, () => `aggregate_all: true`],
+    [breakdown?.sources?.length, () => `source_count: ${breakdown.sources.length}`]
+  ];
+  return [
+    "---",
+    "kind: cost-report",
+    ...optional.filter(([cond]) => cond).map(([, build]) => build()),
+    `created_at: ${nowIso()}`,
+    "---"
+  ];
 }
 
 function renderCostReportSources(breakdown) {
@@ -225,9 +233,29 @@ function renderCostReportSources(breakdown) {
   return lines;
 }
 
+function formatDuration(durationMs) {
+  if (!durationMs) return "-";
+  return `${(durationMs / 60000).toFixed(1)} min (${durationMs} ms)`;
+}
+
+function formatTokens(totalTokens) {
+  return totalTokens ? totalTokens.toLocaleString() : "-";
+}
+
+function formatCacheHit(cacheHitPct) {
+  return cacheHitPct !== "-" ? `${cacheHitPct}%` : "-";
+}
+
+function formatUsd(breakdown) {
+  return breakdown ? `$${breakdown.usd.toFixed(4)}` : "-";
+}
+
+function formatBool(value) {
+  return value ? "yes" : "no";
+}
+
 function renderCostReportHeader(fields, breakdown, totalTokens, cacheHitPct) {
   const durationMs = breakdown?.window?.durationMs || 0;
-  const durationMin = (durationMs / 60000).toFixed(1);
   return [
     `# Cost Report: ${fields.title || "Untitled"}`,
     "",
@@ -235,15 +263,15 @@ function renderCostReportHeader(fields, breakdown, totalTokens, cacheHitPct) {
     renderField("Run Title", fields.runTitle),
     renderField("Window Start", breakdown?.window?.start),
     renderField("Window End", breakdown?.window?.end),
-    renderField("Duration", durationMs ? `${durationMin} min (${durationMs} ms)` : "-"),
+    renderField("Duration", formatDuration(durationMs)),
     renderField("Sessions Scanned", String(breakdown?.sessionsScanned ?? 0)),
     renderField("Assistant Messages Counted", String(breakdown?.messagesCounted ?? 0)),
-    renderField("Total Tokens", totalTokens ? totalTokens.toLocaleString() : "-"),
-    renderField("Cache Hit %", cacheHitPct !== "-" ? `${cacheHitPct}%` : "-"),
-    renderField("Total USD", breakdown ? `$${breakdown.usd.toFixed(4)}` : "-"),
+    renderField("Total Tokens", formatTokens(totalTokens)),
+    renderField("Cache Hit %", formatCacheHit(cacheHitPct)),
+    renderField("Total USD", formatUsd(breakdown)),
     renderField("Source Project", breakdown?.sourceProject),
-    renderField("Auto-detected", breakdown?.autoDetected ? "yes" : "no"),
-    renderField("Aggregate All", breakdown?.aggregateAll ? "yes" : "no"),
+    renderField("Auto-detected", formatBool(breakdown?.autoDetected)),
+    renderField("Aggregate All", formatBool(breakdown?.aggregateAll)),
     ""
   ];
 }
@@ -396,7 +424,7 @@ function renderCostReport(fields) {
 
 function resolveArtifactConfig(kind) {
   if (kind === "cost-report") {
-    return { directory: "runs", prefix: "cost-report", render: renderCostReport };
+    return { directory: "cost", prefix: "cost-report", render: renderCostReport };
   }
   const config = SIMPLE_RENDERERS[kind];
   if (!config) {
