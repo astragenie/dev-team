@@ -16,6 +16,7 @@ import {
 import { computeSessionCost } from "./lib/session-cost.mjs";
 import { collectOutcomeLinkage } from "./lib/outcome-linkage.mjs";
 import { buildCostAdvisor, renderCostAdvisorMarkdown } from "./lib/cost-advisor.mjs";
+import { buildFleetReport } from "./lib/fleet.mjs";
 
 // Flag schema. Each entry maps a CLI flag to the flags-object key and the
 // arity (whether it consumes a value). Aliases (e.g. `--verdict` → `decision`)
@@ -30,6 +31,7 @@ const FLAG_SPEC = {
   "-h": { key: "help", boolean: true },
   "--force": { key: "force", boolean: true },
   "--aggregate-all": { key: "aggregateAll", boolean: true },
+  "--no-self": { key: "noSelf", boolean: true },
   // Value-consuming flags.
   "--alerts": { key: "alerts" },
   "--approver": { key: "approver" },
@@ -48,6 +50,7 @@ const FLAG_SPEC = {
   "--environment": { key: "environment" },
   "--environments": { key: "environments" },
   "--evidence": { key: "evidence" },
+  "--extra-root": { key: "extraRoot" },
   "--files": { key: "files" },
   "--from": { key: "from" },
   "--goal": { key: "goal" },
@@ -359,6 +362,11 @@ const COMMANDS = {
 
   "wake-up": ({ repoPath }) => buildWakeUpBrief(repoPath),
   "brief-me": ({ repoPath }) => buildBriefingReport(repoPath),
+  fleet: ({ repoPath, flags }) =>
+    buildFleetReport(repoPath, {
+      extraRoots: flags.extraRoot ? [flags.extraRoot] : [],
+      includeSelf: !flags.noSelf
+    }),
   "discover-deployment": ({ repoPath }) => discoverDeploymentClues(repoPath),
   "write-deployment-guidance": ({ repoPath, flags, positionals }) =>
     writeDeploymentGuidance(repoPath, {
