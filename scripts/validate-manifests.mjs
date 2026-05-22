@@ -22,43 +22,44 @@ async function readJson(p) {
   return JSON.parse(await fs.readFile(p, "utf8"));
 }
 
-export async function validateManifests(repoRoot) {
-  const failures = [];
-  const fail = (msg) => failures.push(msg);
+function isMissing(value) {
+  return value === undefined || value === null || value === "";
+}
 
-  const plugin = await readJson(path.join(repoRoot, ".claude-plugin", "plugin.json"));
-  const marketplace = await readJson(path.join(repoRoot, ".claude-plugin", "marketplace.json"));
-  const pkg = await readJson(path.join(repoRoot, "package.json"));
-
-  for (const [label, manifest, requiredFields] of [
-    ["plugin.json", plugin, ["name", "version", "description", "author", "license"]],
-    ["marketplace.json", marketplace, ["name", "owner", "plugins"]]
-  ]) {
-    for (const field of requiredFields) {
-      if (manifest[field] === undefined || manifest[field] === null || manifest[field] === "") {
-        fail(`${label}: missing required field "${field}"`);
-      }
+function checkRequiredFields(manifest, label, requiredFields, fail) {
+  for (const field of requiredFields) {
+    if (isMissing(manifest[field])) {
+      fail(`${label}: missing required field "${field}"`);
     }
   }
+}
 
-  if (!SEMVER_RE.test(plugin.version))
+function checkVersions(plugin, pkg, fail) {
+  if (!SEMVER_RE.test(plugin.version)) {
     fail(`plugin.json: version "${plugin.version}" is not parseable semver`);
-  if (!SEMVER_RE.test(pkg.version))
+  }
+  if (!SEMVER_RE.test(pkg.version)) {
     fail(`package.json: version "${pkg.version}" is not parseable semver`);
-
+  }
   if (plugin.version !== pkg.version) {
     fail(`version drift: plugin.json=${plugin.version}, package.json=${pkg.version}`);
   }
+}
 
+function checkOwnMarketplaceEntry(plugin, marketplace, fail) {
   const ownEntry = marketplace.plugins.find((entry) => entry.name === plugin.name);
   if (!ownEntry) {
     fail(`marketplace.json: no entry for own plugin name "${plugin.name}"`);
-  } else if (ownEntry.version !== plugin.version) {
+    return;
+  }
+  if (ownEntry.version !== plugin.version) {
     fail(
       `marketplace.json: entry "${plugin.name}" version=${ownEntry.version} but plugin.json=${plugin.version}`
     );
   }
+}
 
+function checkMarketplaceEntries(marketplace, fail) {
   for (const entry of marketplace.plugins) {
     if (!entry.name) fail(`marketplace.json: a plugins[] entry is missing "name"`);
     if (!entry.version || !SEMVER_RE.test(entry.version)) {
@@ -68,6 +69,26 @@ export async function validateManifests(repoRoot) {
     }
     if (!entry.source) fail(`marketplace.json: entry "${entry.name}" missing "source"`);
   }
+}
+
+export async function validateManifests(repoRoot) {
+  const failures = [];
+  const fail = (msg) => failures.push(msg);
+
+  const plugin = await readJson(path.join(repoRoot, ".claude-plugin", "plugin.json"));
+  const marketplace = await readJson(path.join(repoRoot, ".claude-plugin", "marketplace.json"));
+  const pkg = await readJson(path.join(repoRoot, "package.json"));
+
+  checkRequiredFields(
+    plugin,
+    "plugin.json",
+    ["name", "version", "description", "author", "license"],
+    fail
+  );
+  checkRequiredFields(marketplace, "marketplace.json", ["name", "owner", "plugins"], fail);
+  checkVersions(plugin, pkg, fail);
+  checkOwnMarketplaceEntry(plugin, marketplace, fail);
+  checkMarketplaceEntries(marketplace, fail);
 
   return { ok: failures.length === 0, failures, plugin, marketplace, pkg };
 }

@@ -348,23 +348,34 @@ function bodyNum(text, re) {
 
 // Header/window fields. Frontmatter wins when present; falls through to
 // body markdown patterns for pre-frontmatter cost-reports.
+function parseRunTitle(text, fm) {
+  const raw = fm.run_title || text.match(/^- Run Title:\s*(.+)$/m)?.[1] || "";
+  const stripped = raw.replace(/^"|"$/g, "").trim();
+  return stripped || null;
+}
+
+function parseUsd(text, fm) {
+  if (fm.usd != null) return Number(fm.usd);
+  const fromBody = Number(text.match(/^- Total USD:\s*\$([\d.]+)/m)?.[1] || 0);
+  return fromBody || null;
+}
+
+function parseDurationMs(fm, windowStart, windowEnd) {
+  if (fm.duration_ms) return Number(fm.duration_ms);
+  if (windowStart && windowEnd) return Date.parse(windowEnd) - Date.parse(windowStart);
+  return 0;
+}
+
 function parseHeaderFields(text, fm) {
-  const runTitle =
-    (fm.run_title || text.match(/^- Run Title:\s*(.+)$/m)?.[1] || "")
-      .replace(/^"|"$/g, "")
-      .trim() || null;
-  const usd =
-    fm.usd != null
-      ? Number(fm.usd)
-      : Number(text.match(/^- Total USD:\s*\$([\d.]+)/m)?.[1] || 0) || null;
   const windowStart = text.match(/^- Window Start:\s*(.+)$/m)?.[1]?.trim() || null;
   const windowEnd = text.match(/^- Window End:\s*(.+)$/m)?.[1]?.trim() || null;
-  const durationMs = fm.duration_ms
-    ? Number(fm.duration_ms)
-    : windowStart && windowEnd
-      ? Date.parse(windowEnd) - Date.parse(windowStart)
-      : 0;
-  return { runTitle, usd, windowStart, windowEnd, durationMs };
+  return {
+    runTitle: parseRunTitle(text, fm),
+    usd: parseUsd(text, fm),
+    windowStart,
+    windowEnd,
+    durationMs: parseDurationMs(fm, windowStart, windowEnd)
+  };
 }
 
 function parseTokenFields(text, fm) {

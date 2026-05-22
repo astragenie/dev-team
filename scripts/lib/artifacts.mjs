@@ -254,18 +254,22 @@ function formatBool(value) {
   return value ? "yes" : "no";
 }
 
+function formatCount(value) {
+  return String(value ?? 0);
+}
+
 function renderCostReportHeader(fields, breakdown, totalTokens, cacheHitPct) {
-  const durationMs = breakdown?.window?.durationMs || 0;
+  const window = breakdown?.window || {};
   return [
     `# Cost Report: ${fields.title || "Untitled"}`,
     "",
     renderField("Created", nowIso()),
     renderField("Run Title", fields.runTitle),
-    renderField("Window Start", breakdown?.window?.start),
-    renderField("Window End", breakdown?.window?.end),
-    renderField("Duration", formatDuration(durationMs)),
-    renderField("Sessions Scanned", String(breakdown?.sessionsScanned ?? 0)),
-    renderField("Assistant Messages Counted", String(breakdown?.messagesCounted ?? 0)),
+    renderField("Window Start", window.start),
+    renderField("Window End", window.end),
+    renderField("Duration", formatDuration(window.durationMs || 0)),
+    renderField("Sessions Scanned", formatCount(breakdown?.sessionsScanned)),
+    renderField("Assistant Messages Counted", formatCount(breakdown?.messagesCounted)),
     renderField("Total Tokens", formatTokens(totalTokens)),
     renderField("Cache Hit %", formatCacheHit(cacheHitPct)),
     renderField("Total USD", formatUsd(breakdown)),

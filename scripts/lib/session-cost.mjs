@@ -502,6 +502,73 @@ function handleUserTurn(obj, ctx) {
   }
 }
 
+// Prices every model's accumulated tokens in place and returns the total USD.
+function priceByModel(byModel, pricing) {
+  let totalUsd = 0;
+  for (const model of Object.keys(byModel)) {
+    const key = matchModelKey(model, pricing);
+    const rates = pricing.models[key] || pricing.models[pricing.fallback];
+    const usd = priceTokens(byModel[model].tokens, rates);
+    byModel[model].usd = Number(usd.toFixed(4));
+    byModel[model].pricedAs = key;
+    totalUsd += usd;
+  }
+  return totalUsd;
+}
+
+// Per-source USD breakdown, sorted by usd desc.
+function computeSourceBreakdown(perSourceState, pricing) {
+  const out = [];
+  for (const [slug, s] of perSourceState.entries()) {
+    if (!s.touched) continue;
+    let usd = 0;
+    for (const [model, tokens] of Object.entries(s.modelTokens)) {
+      const key = matchModelKey(model, pricing);
+      const rates = pricing.models[key] || pricing.models[pricing.fallback];
+      usd += priceTokens(tokens, rates);
+    }
+    out.push({ slug, messages: s.messages, usd: Number(usd.toFixed(4)) });
+  }
+  return out.sort((a, b) => b.usd - a.usd);
+}
+
+function buildModelMix(byModel, messagesCounted, totalUsd) {
+  return Object.entries(byModel)
+    .map(([model, info]) => ({
+      model,
+      pricedAs: info.pricedAs,
+      messages: info.messages,
+      msgPct:
+        messagesCounted > 0 ? Number(((info.messages / messagesCounted) * 100).toFixed(2)) : 0,
+      usd: info.usd,
+      usdPct: totalUsd > 0 ? Number(((info.usd / totalUsd) * 100).toFixed(2)) : 0
+    }))
+    .sort((a, b) => b.usd - a.usd);
+}
+
+function computeSizeStats(toolResultSizes) {
+  toolResultSizes.sort((a, b) => a - b);
+  return {
+    count: toolResultSizes.length,
+    sumBytes: toolResultSizes.reduce((a, b) => a + b, 0),
+    p50Bytes: percentile(toolResultSizes, 50),
+    p90Bytes: percentile(toolResultSizes, 90),
+    maxBytes: toolResultSizes[toolResultSizes.length - 1] || 0
+  };
+}
+
+function collectFileReReadEntries(filesRead) {
+  return Object.entries(filesRead)
+    .filter(([, c]) => c > 1)
+    .sort((a, b) => b[1] - a[1]);
+}
+
+function buildToolUsage(toolUseCounts, toolFailureCounts) {
+  return Object.entries(toolUseCounts)
+    .map(([name, count]) => ({ name, count, failures: toolFailureCounts[name] || 0 }))
+    .sort((a, b) => b.count - a.count);
+}
+
 export async function computeSessionCost(
   repoPath,
   { startedAt, completedAt, sourceProject = null, autoDetect = true, aggregateAll = false } = {}
@@ -559,69 +626,13 @@ export async function computeSessionCost(
   } = scan;
   const sources = [];
 
-  let totalUsd = 0;
-  for (const model of Object.keys(byModel)) {
-    const key = matchModelKey(model, pricing);
-    const rates = pricing.models[key] || pricing.models[pricing.fallback];
-    const usd = priceTokens(byModel[model].tokens, rates);
-    byModel[model].usd = Number(usd.toFixed(4));
-    byModel[model].pricedAs = key;
-    totalUsd += usd;
-  }
-
-  // Per-source USD: price each source's model-token map and sum.
-  for (const [slug, s] of perSourceState.entries()) {
-    if (!s.touched) continue;
-    let usd = 0;
-    for (const [model, tokens] of Object.entries(s.modelTokens)) {
-      const key = matchModelKey(model, pricing);
-      const rates = pricing.models[key] || pricing.models[pricing.fallback];
-      usd += priceTokens(tokens, rates);
-    }
-    sources.push({ slug, messages: s.messages, usd: Number(usd.toFixed(4)) });
-  }
-  sources.sort((a, b) => b.usd - a.usd);
-
-  // Model mix: % of priced assistant messages per model, sorted by usd desc.
-  const modelMix = [];
-  for (const [model, info] of Object.entries(byModel)) {
-    modelMix.push({
-      model,
-      pricedAs: info.pricedAs,
-      messages: info.messages,
-      msgPct:
-        messagesCounted > 0 ? Number(((info.messages / messagesCounted) * 100).toFixed(2)) : 0,
-      usd: info.usd,
-      usdPct: totalUsd > 0 ? Number(((info.usd / totalUsd) * 100).toFixed(2)) : 0
-    });
-  }
-  modelMix.sort((a, b) => b.usd - a.usd);
-
-  // Tool result size distribution
-  toolResultSizes.sort((a, b) => a - b);
-  const sizeStats = {
-    count: toolResultSizes.length,
-    sumBytes: toolResultSizes.reduce((a, b) => a + b, 0),
-    p50Bytes: percentile(toolResultSizes, 50),
-    p90Bytes: percentile(toolResultSizes, 90),
-    maxBytes: toolResultSizes[toolResultSizes.length - 1] || 0
-  };
-
-  // File re-reads (paths read > 1)
-  const fileReReadEntries = Object.entries(filesRead)
-    .filter(([, c]) => c > 1)
-    .sort((a, b) => b[1] - a[1]);
+  const totalUsd = priceByModel(byModel, pricing);
+  sources.push(...computeSourceBreakdown(perSourceState, pricing));
+  const modelMix = buildModelMix(byModel, messagesCounted, totalUsd);
+  const sizeStats = computeSizeStats(toolResultSizes);
+  const fileReReadEntries = collectFileReReadEntries(filesRead);
   const fileReReadCount = fileReReadEntries.reduce((a, [, c]) => a + (c - 1), 0);
-
-  // Tool usage rollup, sorted by count desc
-  const toolUsage = Object.entries(toolUseCounts)
-    .map(([name, count]) => ({
-      name,
-      count,
-      failures: toolFailureCounts[name] || 0
-    }))
-    .sort((a, b) => b.count - a.count);
-
+  const toolUsage = buildToolUsage(toolUseCounts, toolFailureCounts);
   const conversation = {
     userMsgCount,
     userMsgAvgLen: userMsgCount > 0 ? Math.round(userMsgTotalLen / userMsgCount) : 0,

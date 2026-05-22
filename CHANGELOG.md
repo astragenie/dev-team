@@ -3,6 +3,34 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.1.25 — 2026-05-22
+
+### Changed
+Final lint-cleanup pass. **Lint warning count: 8 → 0.**
+
+- `validate-manifests.mjs::validateManifests` 16 → off list. Extracted
+  `isMissing`, `checkRequiredFields`, `checkVersions`,
+  `checkOwnMarketplaceEntry`, `checkMarketplaceEntries`.
+- `briefing/collect.mjs::parseHeaderFields` 18 → off list via
+  `parseRunTitle`, `parseUsd`, `parseDurationMs` helpers.
+- `artifacts.mjs::renderCostReportHeader` 16 → off list via
+  `formatCount` helper.
+- `briefing/render.mjs::buildBlockedOrMissing` 18 → off list. Static
+  `PENDING_BADGE_MESSAGES` + `MISSING_WRITE_MESSAGES` maps + extracted
+  `collectGateFailureMessages` + `collectRepoStateMessages`.
+- `briefing/render.mjs::recommendedNextStep` 19 → off list. Same
+  pattern — `NEXT_STEP_FROM_PENDING` / `NEXT_STEP_FROM_MISSING` maps,
+  `GATE_NEXT_STEP_SPECS` + `collectGateFailureNextStep`,
+  `repoStateNextStep` probe helper.
+- `wakeup.mjs::buildWakeUpBrief` 124 lines → off list. Summary block
+  extracted into `buildWakeUpSummary`.
+- `session-cost.mjs::computeSessionCost` 22 / 146 lines → off list.
+  Extracted `priceByModel`, `computeSourceBreakdown`, `buildModelMix`,
+  `computeSizeStats`, `collectFileReReadEntries`, `buildToolUsage`.
+
+### Notes
+- Lint output is now clean. All 49 tests pass.
+
 ## v0.1.24 — 2026-05-22
 
 ### Changed

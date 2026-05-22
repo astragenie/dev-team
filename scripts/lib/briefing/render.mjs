@@ -82,89 +82,75 @@ function gateFailureMessage(label, gate) {
   return `${label}${gate?.note ? `: ${gate.note}` : "."}`;
 }
 
+// Static maps for the simple "if-badge-then-message" cases. Keeps the
+// dynamic builder below short.
+const PENDING_BADGE_MESSAGES = {
+  review_required: "Independent review is still required before commit, PR, or final completion.",
+  validation_expected: "Validation evidence is still expected for the current run.",
+  dev_deploy_expected: "Dev deployment evidence is still missing for the current run.",
+  prod_deploy_expected: "Production deployment evidence is still missing for the current run."
+};
+const MISSING_WRITE_MESSAGES = {
+  review_result_missing:
+    "Independent review appears complete, but the review artifact write-back is still missing.",
+  validation_result_missing:
+    "Validation appears complete, but the validation-result artifact write-back is still missing.",
+  dev_deployment_check_missing:
+    "Dev deployment evidence exists in workflow state, but the deployment-check artifact is still missing.",
+  prod_deployment_check_missing:
+    "Production deployment evidence exists in workflow state, but the deployment-check artifact is still missing.",
+  run_brief_missing:
+    "This run has meaningful progress, but the run-brief artifact is still missing.",
+  final_synthesis_missing:
+    "Meaningful workflow phases completed, but the final synthesis artifact is still missing."
+};
+const GATE_FAILURE_SPECS = [
+  { label: "Independent review failed", gate: (g) => g.review },
+  { label: "Validation failed", gate: (g) => g.validation },
+  { label: "Dev deployment checks failed", gate: (g) => g.deployment?.dev },
+  { label: "Production deployment checks failed", gate: (g) => g.deployment?.prod }
+];
+
+function collectGateFailureMessages(gates) {
+  return GATE_FAILURE_SPECS.filter((spec) => spec.gate(gates)?.status === "failed").map((spec) =>
+    gateFailureMessage(spec.label, spec.gate(gates))
+  );
+}
+
+function collectRepoStateMessages(wakeUpBrief, deploymentClues, gitActivity) {
+  const out = [];
+  if (wakeUpBrief.openApprovals.length > 0) {
+    out.push(`${wakeUpBrief.openApprovals.length} open approval(s) still need a decision.`);
+  }
+  if (!wakeUpBrief.hasClaudeMd) {
+    out.push("This repo is not fully adopted into Crew yet.");
+  }
+  if (
+    !wakeUpBrief.repoGuidance?.deployment &&
+    deploymentClues.clues.length > 0 &&
+    !wakeUpBrief.workflow?.hasActiveRun
+  ) {
+    out.push("Deployment clues exist, but durable deployment guidance has not been recorded yet.");
+  }
+  if (gitActivity.workingTree.behind > 0) {
+    out.push(
+      `Current branch is behind ${gitActivity.workingTree.upstream || "upstream"} by ${gitActivity.workingTree.behind} commit(s).`
+    );
+  }
+  return out;
+}
+
 export function buildBlockedOrMissing(wakeUpBrief, deploymentClues, gitActivity) {
-  const pending = new Set(wakeUpBrief.workflow?.pendingBadges || []);
-  const missingWrites = new Set(wakeUpBrief.workflow?.missingArtifactWrites || []);
+  const pending = wakeUpBrief.workflow?.pendingBadges || [];
+  const missingWrites = wakeUpBrief.workflow?.missingArtifactWrites || [];
   const gates = wakeUpBrief.workflow?.currentRun?.gates || {};
 
-  // [condition, message-or-message-thunk]. Thunks defer string interpolation
-  // until we know the condition is true, so we don't read undefined fields.
-  const rules = [
-    [
-      pending.has("review_required"),
-      "Independent review is still required before commit, PR, or final completion."
-    ],
-    [
-      gates.review?.status === "failed",
-      () => gateFailureMessage("Independent review failed", gates.review)
-    ],
-    [
-      pending.has("validation_expected"),
-      "Validation evidence is still expected for the current run."
-    ],
-    [
-      gates.validation?.status === "failed",
-      () => gateFailureMessage("Validation failed", gates.validation)
-    ],
-    [
-      pending.has("dev_deploy_expected"),
-      "Dev deployment evidence is still missing for the current run."
-    ],
-    [
-      gates.deployment?.dev?.status === "failed",
-      () => gateFailureMessage("Dev deployment checks failed", gates.deployment.dev)
-    ],
-    [
-      pending.has("prod_deploy_expected"),
-      "Production deployment evidence is still missing for the current run."
-    ],
-    [
-      gates.deployment?.prod?.status === "failed",
-      () => gateFailureMessage("Production deployment checks failed", gates.deployment.prod)
-    ],
-    [
-      missingWrites.has("review_result_missing"),
-      "Independent review appears complete, but the review artifact write-back is still missing."
-    ],
-    [
-      missingWrites.has("validation_result_missing"),
-      "Validation appears complete, but the validation-result artifact write-back is still missing."
-    ],
-    [
-      missingWrites.has("dev_deployment_check_missing"),
-      "Dev deployment evidence exists in workflow state, but the deployment-check artifact is still missing."
-    ],
-    [
-      missingWrites.has("prod_deployment_check_missing"),
-      "Production deployment evidence exists in workflow state, but the deployment-check artifact is still missing."
-    ],
-    [
-      missingWrites.has("run_brief_missing"),
-      "This run has meaningful progress, but the run-brief artifact is still missing."
-    ],
-    [
-      missingWrites.has("final_synthesis_missing"),
-      "Meaningful workflow phases completed, but the final synthesis artifact is still missing."
-    ],
-    [
-      wakeUpBrief.openApprovals.length > 0,
-      () => `${wakeUpBrief.openApprovals.length} open approval(s) still need a decision.`
-    ],
-    [!wakeUpBrief.hasClaudeMd, "This repo is not fully adopted into Crew yet."],
-    [
-      !wakeUpBrief.repoGuidance?.deployment &&
-        deploymentClues.clues.length > 0 &&
-        !wakeUpBrief.workflow?.hasActiveRun,
-      "Deployment clues exist, but durable deployment guidance has not been recorded yet."
-    ],
-    [
-      gitActivity.workingTree.behind > 0,
-      () =>
-        `Current branch is behind ${gitActivity.workingTree.upstream || "upstream"} by ${gitActivity.workingTree.behind} commit(s).`
-    ]
+  return [
+    ...pending.map((b) => PENDING_BADGE_MESSAGES[b]).filter(Boolean),
+    ...collectGateFailureMessages(gates),
+    ...missingWrites.map((w) => MISSING_WRITE_MESSAGES[w]).filter(Boolean),
+    ...collectRepoStateMessages(wakeUpBrief, deploymentClues, gitActivity)
   ];
-
-  return rules.filter(([cond]) => cond).map(([, msg]) => (typeof msg === "function" ? msg() : msg));
 }
 
 export function buildImportantReminders(wakeUpBrief, deploymentClues, gitActivity) {
@@ -203,101 +189,110 @@ export function buildImportantReminders(wakeUpBrief, deploymentClues, gitActivit
   return reminders;
 }
 
+// Returns a message for whichever repo/git/deployment state warrants a
+// nudge, or null when none apply. Same priority order as the original
+// if-chain; first match wins.
+function repoStateNextStep(wakeUpBrief, deploymentClues, gitActivity) {
+  const probes = [
+    {
+      cond: !wakeUpBrief.hasClaudeMd,
+      msg: "Run /crew:adopt so the repo has the Crew harness, repo guidance, and local workflow state."
+    },
+    {
+      cond: wakeUpBrief.openApprovals.length > 0,
+      msg: "Resolve the open approval queue before pushing the workflow forward."
+    },
+    {
+      cond: !wakeUpBrief.repoGuidance?.deployment && deploymentClues.clues.length > 0,
+      msg: "Capture durable deployment guidance next so ship work can reuse repo-specific environment knowledge."
+    },
+    {
+      cond: gitActivity.workingTree.behind > 0,
+      msg: `Review or pull the ${gitActivity.workingTree.behind} upstream commit(s) before starting the next work chunk.`
+    },
+    {
+      cond: gitActivity.workingTree.hasChanges,
+      msg: "Decide whether the current uncommitted changes belong in the active work chunk or should be reviewed and split."
+    }
+  ];
+  return probes.find((p) => p.cond)?.msg || null;
+}
+
 export function recommendedNextStep(wakeUpBrief, deploymentClues, gitActivity) {
-  const pending = new Set(wakeUpBrief.workflow?.pendingBadges || []);
-  const missingWrites = new Set(wakeUpBrief.workflow?.missingArtifactWrites || []);
+  const pending = wakeUpBrief.workflow?.pendingBadges || [];
+  const missingWrites = wakeUpBrief.workflow?.missingArtifactWrites || [];
   const currentRun = wakeUpBrief.workflow?.currentRun || null;
   const gates = currentRun?.gates || {};
 
-  // Ordered priority rules. First matching condition wins. Messages that
-  // need runtime data go through a thunk so they're only built on hit.
-  const rules = [
-    [
-      !wakeUpBrief.hasClaudeMd,
-      "Run /crew:adopt so the repo has the Crew harness, repo guidance, and local workflow state."
-    ],
-    [
-      pending.has("review_required"),
-      "Run independent review next before committing, opening a PR, or calling the work done."
-    ],
-    [
-      gates.review?.status === "failed",
-      "Address the failed review findings before moving the work forward."
-    ],
-    [
-      pending.has("validation_expected"),
-      "Run validation next and record the evidence before moving the work forward."
-    ],
-    [
-      gates.validation?.status === "failed",
-      "Investigate the failed validation evidence and fix the issue before continuing."
-    ],
-    [
-      pending.has("dev_deploy_expected"),
-      "Use /crew:ship to gather dev deployment evidence and verify the environment transition."
-    ],
-    [
-      gates.deployment?.dev?.status === "failed",
-      "Investigate the failed dev deployment checks before attempting another rollout."
-    ],
-    [
-      pending.has("prod_deploy_expected"),
-      "Decide whether production promotion is appropriate, then use /crew:ship to collect prod evidence."
-    ],
-    [
-      gates.deployment?.prod?.status === "failed",
-      "Investigate the failed production checks immediately before any further promotion work."
-    ],
-    [
-      missingWrites.has("review_result_missing"),
-      "Write the review-result artifact now so the run has an inspectable review gate record."
-    ],
-    [
-      missingWrites.has("validation_result_missing"),
-      "Write the validation-result artifact now so the run keeps the evidence it already collected."
-    ],
-    [
-      missingWrites.has("dev_deployment_check_missing"),
-      "Write the dev deployment-check artifact now so the environment evidence is recoverable next time."
-    ],
-    [
-      missingWrites.has("prod_deployment_check_missing"),
-      "Write the production deployment-check artifact now so the rollout evidence is preserved."
-    ],
-    [
-      missingWrites.has("run_brief_missing"),
-      "Write the run-brief artifact now so this workstream has a bounded starting point for recovery."
-    ],
-    [
-      missingWrites.has("final_synthesis_missing"),
-      "Write the final synthesis now so the completed work and next step are preserved before you move on."
-    ],
-    [
-      wakeUpBrief.openApprovals.length > 0,
-      "Resolve the open approval queue before pushing the workflow forward."
-    ],
-    [Boolean(currentRun?.next), () => currentRun.next],
-    [
-      !wakeUpBrief.repoGuidance?.deployment && deploymentClues.clues.length > 0,
-      "Capture durable deployment guidance next so ship work can reuse repo-specific environment knowledge."
-    ],
-    [
-      gitActivity.workingTree.behind > 0,
-      () =>
-        `Review or pull the ${gitActivity.workingTree.behind} upstream commit(s) before starting the next work chunk.`
-    ],
-    [
-      gitActivity.workingTree.hasChanges,
-      "Decide whether the current uncommitted changes belong in the active work chunk or should be reviewed and split."
-    ]
+  // Priority chain (first match wins): repo-not-adopted → pending gate →
+  // failed gate → missing artifact → open approval → user-supplied next →
+  // repo/git state nudges → default.
+  const repoNotAdopted = !wakeUpBrief.hasClaudeMd
+    ? "Run /crew:adopt so the repo has the Crew harness, repo guidance, and local workflow state."
+    : null;
+  const ordered = [
+    repoNotAdopted,
+    NEXT_STEP_FROM_PENDING[pending[0]],
+    collectGateFailureNextStep(gates),
+    NEXT_STEP_FROM_MISSING[missingWrites[0]],
+    currentRun?.next || null,
+    repoStateNextStep(wakeUpBrief, deploymentClues, gitActivity)
   ];
+  return (
+    ordered.find(Boolean) ||
+    "Start the next work chunk with /crew:build or /crew:fix, or just describe the task to the lead."
+  );
+}
 
-  const hit = rules.find(([cond]) => cond);
-  if (hit) {
-    const [, msg] = hit;
-    return typeof msg === "function" ? msg() : msg;
+const NEXT_STEP_FROM_PENDING = {
+  review_required:
+    "Run independent review next before committing, opening a PR, or calling the work done.",
+  validation_expected:
+    "Run validation next and record the evidence before moving the work forward.",
+  dev_deploy_expected:
+    "Use /crew:ship to gather dev deployment evidence and verify the environment transition.",
+  prod_deploy_expected:
+    "Decide whether production promotion is appropriate, then use /crew:ship to collect prod evidence."
+};
+
+const NEXT_STEP_FROM_MISSING = {
+  review_result_missing:
+    "Write the review-result artifact now so the run has an inspectable review gate record.",
+  validation_result_missing:
+    "Write the validation-result artifact now so the run keeps the evidence it already collected.",
+  dev_deployment_check_missing:
+    "Write the dev deployment-check artifact now so the environment evidence is recoverable next time.",
+  prod_deployment_check_missing:
+    "Write the production deployment-check artifact now so the rollout evidence is preserved.",
+  run_brief_missing:
+    "Write the run-brief artifact now so this workstream has a bounded starting point for recovery.",
+  final_synthesis_missing:
+    "Write the final synthesis now so the completed work and next step are preserved before you move on."
+};
+
+const GATE_NEXT_STEP_SPECS = [
+  {
+    gate: (g) => g.review,
+    message: "Address the failed review findings before moving the work forward."
+  },
+  {
+    gate: (g) => g.validation,
+    message: "Investigate the failed validation evidence and fix the issue before continuing."
+  },
+  {
+    gate: (g) => g.deployment?.dev,
+    message: "Investigate the failed dev deployment checks before attempting another rollout."
+  },
+  {
+    gate: (g) => g.deployment?.prod,
+    message:
+      "Investigate the failed production checks immediately before any further promotion work."
   }
-  return "Start the next work chunk with /crew:build or /crew:fix, or just describe the task to the lead.";
+];
+
+function collectGateFailureNextStep(gates) {
+  const hit = GATE_NEXT_STEP_SPECS.find((spec) => spec.gate(gates)?.status === "failed");
+  return hit ? hit.message : null;
 }
 
 export function buildSecondaryOptions(wakeUpBrief, deploymentClues, gitActivity) {

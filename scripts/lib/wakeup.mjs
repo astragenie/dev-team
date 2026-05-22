@@ -337,44 +337,48 @@ export async function buildWakeUpBrief(repoPath, options = {}) {
     claims,
     openApprovals,
     workflow,
-    repoGuidance: {
-      deployment: latestDeploymentGuidance
-    },
+    repoGuidance: { deployment: latestDeploymentGuidance },
     repoMemory,
     recentClaimHistory,
     recentEvents,
     latestArtifacts,
     workflowState,
     memory,
-    summary: {
-      memoryPolicy: memory.policy,
-      activeClaims: claims.length,
-      openApprovals: openApprovals.length,
-      hasActiveWorkflow: workflow.hasActiveRun,
-      pendingWorkflowBadges: workflow.pendingBadges,
-      hasDeploymentGuidance: Boolean(latestDeploymentGuidance),
-      repoMemoryFiles: repoMemory.length,
-      hasRecentRunMemory: Boolean(
-        latestRunBrief ||
-        latestFinalSynthesis ||
-        latestHandoff ||
-        latestReview ||
-        latestValidationPlan ||
-        latestValidationResult ||
-        latestDeploymentCheck
-      ),
-      latestArtifact: summarizeLatestArtifact(
-        newestOf(
-          latestFinalSynthesis,
-          latestRunBrief,
-          latestHandoff,
-          latestReview,
-          latestValidationPlan,
-          latestValidationResult,
-          latestDeploymentCheck
-        )
-      ),
+    summary: buildWakeUpSummary({
+      memory,
+      claims,
+      openApprovals,
+      workflow,
+      latestDeploymentGuidance,
+      repoMemory,
+      latestArtifacts,
       archiveCounts
-    }
+    })
+  };
+}
+
+function buildWakeUpSummary({
+  memory,
+  claims,
+  openApprovals,
+  workflow,
+  latestDeploymentGuidance,
+  repoMemory,
+  latestArtifacts,
+  archiveCounts
+}) {
+  const recentArtifactList = Object.values(latestArtifacts);
+  const newest = newestOf(...recentArtifactList);
+  return {
+    memoryPolicy: memory.policy,
+    activeClaims: claims.length,
+    openApprovals: openApprovals.length,
+    hasActiveWorkflow: workflow.hasActiveRun,
+    pendingWorkflowBadges: workflow.pendingBadges,
+    hasDeploymentGuidance: Boolean(latestDeploymentGuidance),
+    repoMemoryFiles: repoMemory.length,
+    hasRecentRunMemory: recentArtifactList.some(Boolean),
+    latestArtifact: summarizeLatestArtifact(newest),
+    archiveCounts
   };
 }
