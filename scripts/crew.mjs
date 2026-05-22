@@ -703,7 +703,7 @@ async function main() {
       runTitle: flags.title || positionals.join(" ") || null
     });
     if (costArtifact) {
-      result = { synthesis: result, costReport: costArtifact };
+      result = { ...result, costReport: costArtifact };
     }
   } else if (command === "cost-advise") {
     const advisor = await buildCostAdvisor(repoPath, { limit: 10 });
