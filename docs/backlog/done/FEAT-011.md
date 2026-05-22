@@ -1,11 +1,12 @@
 ---
 id: FEAT-011
-status: pending
+status: done
 priority: P1
 category: workflow
 target_release: v0.2.0
 created: 2026-05-22
 updated: 2026-05-22
+completed: 2026-05-22
 depends_on: []
 slices: []
 derived_from: null

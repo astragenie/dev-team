@@ -1,11 +1,12 @@
 ---
 id: FEAT-003
-status: pending
+status: done
 priority: P0
 category: foundation
 target_release: v0.2.0
 created: 2026-05-22
 updated: 2026-05-22
+completed: 2026-05-22
 depends_on: [FEAT-001, FEAT-002]
 slices: []
 derived_from: null

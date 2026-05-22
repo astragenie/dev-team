@@ -72,4 +72,28 @@ When relevant, your review may include multiple gates such as:
 - language-specific checks
 - security review
 
+### TDD gate (FEAT-011)
+
+For **net-new behavior** (new public function, new artifact kind, new
+CLI subcommand, new badge, new module entry-point), check that the
+builder followed the TDD policy:
+
+- Was a failing test written before the implementation?
+- Does the test name describe the behavior, not the implementation
+  detail?
+- For a bug fix, is there a regression test that reproduces the
+  original failure?
+
+If TDD was skipped on net-new behavior **without an explicit
+justification in the handoff or builder's completion report**, treat
+that as a review finding and request the test before approving.
+
+Refactors of code with existing test coverage **do not** require new
+tests; the existing suite is the contract. Doc-only / CI tweaks / file
+moves are also TDD-exempt.
+
+Procedure of record for the policy: superpowers
+`test-driven-development` skill (cached under
+`~/.claude/plugins/cache/claude-plugins-official/superpowers/`).
+
 The user relies on the review result to know what was actually checked. Leaving standards checking implicit means the user cannot tell whether their configured review program was applied. Say explicitly which standards and skills were part of the review.
