@@ -2,6 +2,9 @@
 name: review-gates
 tier: workflow
 description: Use before declaring implementation work done to separate task-compliance review from code-quality review and make approval criteria explicit.
+owner: sergeymilashico
+last_reviewed: 2026-05-22
+triggers: ["review", "PR", "mark-badge review_required", "approval"]
 ---
 
 # Review Gates

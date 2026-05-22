@@ -38,6 +38,44 @@ Rules:
 4. Repo overrides plugin on conflict.
 5. Task skills never persist.
 
+## Skill quality bar
+
+Enforced by `scripts/validate-skills.mjs` (CI step).
+
+**Required frontmatter** (errors):
+
+```yaml
+---
+name: <kebab-case slug; must match directory name>
+tier: universal | workflow | domain | meta
+description: <one-line summary used for skill discovery>
+---
+```
+
+**Recommended frontmatter** (warnings, non-fatal):
+
+```yaml
+owner: <github handle or team>
+last_reviewed: YYYY-MM-DD       # warns when older than 180 days
+triggers: [glob, signal, keyword...]
+stack: <only for domain skills>  # e.g. "dotnet", "flutter"
+```
+
+**Hard rules** (errors):
+
+- SKILL.md ≤ 200 lines.
+- Directory name matches the `name` field.
+- No duplicate skill names across the tree.
+- `tier` must be one of the four listed above.
+
+**Soft conventions** (warnings, encourage but do not enforce):
+
+- A "Trigger / When to Use" heading section so the lead can quickly
+  decide whether to suggest the skill.
+- A "Done / Acceptance / Stop when" heading so the consumer knows when
+  the skill's work is complete.
+- One concrete example.
+
 ## Routing
 
 Hybrid: prescriptive heuristics in `docs/routing-table.md` + lead judgment for ambiguous cases. No LLM classifier. No pure config map.
