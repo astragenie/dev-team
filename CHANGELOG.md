@@ -3,6 +3,30 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.1.21 — 2026-05-22
+
+### Changed
+- **installer.mjs full split (Tier #10)**: extracted 5 more cohesive
+  submodules from the residual installer.mjs. Now 11 files total under
+  `scripts/lib/installer/`, each ≤ 110 lines and single-concern:
+  - `claude-md.mjs` (67) — CLAUDE.md create / legacy-marker upgrade /
+    idempotent re-run / append-on-no-marker.
+  - `gitignore.mjs` (38) — `# crew:start`/`# crew:end` block create or
+    in-place replace.
+  - `harness-files.mjs` (90) — README + hook script refresh + state
+    seed-if-missing + artifact / log directory tree.
+  - `repo-guides.mjs` (28) — `.claude/crew/constitution.md` +
+    `workflow.md` + `protocol.md` write.
+  - `welcome.mjs` (30) — post-install message shape, pure data.
+  - `audit.mjs` (24) — read-only repo + global presence check.
+  - `global.mjs` (110) — `inspectGlobalInstall` + `installGlobal` +
+    `GLOBAL_IMPORT_LINES` + `globalPaths`.
+- `scripts/lib/installer.mjs` is now 72 lines (was 397; was 1040 before
+  the Tier B-5 splits started). Just the public API:
+  `bootstrapRepo`, `initRepo` + re-exports for `auditRepo` and
+  `installGlobal`.
+- Public surface unchanged. All 49 tests pass.
+
 ## v0.1.20 — 2026-05-22
 
 ### Changed
