@@ -244,7 +244,7 @@ export async function computeSessionCost(
   // - sourceProject explicit override: scan only that dir.
   // - default: scan repo-derived dir, fall back to busiest if empty.
   let effectiveSlug = sourceProject || slugifyRepoPath(repoPath);
-  let sessionsBySource = new Map(); // slug -> [files]
+  const sessionsBySource = new Map(); // slug -> [files]
   let autoDetected = false;
 
   if (aggregateAll) {
@@ -323,7 +323,12 @@ export async function computeSessionCost(
   const perSourceState = new Map(); // slug -> { messages, tokens, usd, touched }
   function ensureSource(slug) {
     if (!perSourceState.has(slug)) {
-      perSourceState.set(slug, { messages: 0, tokens: emptyTotals(), modelTokens: {}, touched: false });
+      perSourceState.set(slug, {
+        messages: 0,
+        tokens: emptyTotals(),
+        modelTokens: {},
+        touched: false
+      });
     }
     return perSourceState.get(slug);
   }

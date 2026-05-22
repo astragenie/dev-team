@@ -3,6 +3,36 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.1.22 — 2026-05-22
+
+### Changed
+- **artifacts.mjs `render` complexity 79 → split.** `resolveArtifactConfig`
+  now dispatches off a `SIMPLE_RENDERERS` table (7 entries) and the heavy
+  cost-report renderer is split into 9 named helpers
+  (`renderCostReportFrontmatter`, `renderCostReportHeader`,
+  `renderCostReportOutcome`, `renderCostReportTokens`,
+  `renderCostReportModelMix`, `renderCostReportConversation`,
+  `renderCostReportToolUsage`, `renderCostReportToolResultSizes`,
+  `renderCostReportFileReReads`, `renderCostReportByModel`).
+- **`briefing/render.mjs`** — `buildBlockedOrMissing` (complexity 41 → 18)
+  and `recommendedNextStep` (38 → 20) refactored to `[condition, message]`
+  rule tables. Messages that need runtime data go through thunks so
+  expressions are only evaluated when the condition fires.
+- **`briefing/collect.mjs::collectRecentCosts`** (193 lines, complexity 64)
+  split into focused helpers: `parseFrontmatterBlock`, `parseModelMix`,
+  `parseToolUsage`, `computeDominantModel`, `deriveFlags`,
+  `parseCostReportText`, `listCostReportFilesByMtime`. Orchestrator now
+  fits in ~25 lines.
+- **`workflow-state.mjs::registerWorkflowArtifact`** (complexity 28) →
+  per-kind dispatch via `ARTIFACT_HANDLERS` table.
+- **`workflow-state.mjs::summarizeWorkflowState`** (complexity 18) →
+  pending-badge specs in `PENDING_BADGE_SPECS` table; `collectPendingBadges`
+  helper.
+
+### Notes
+- Lint warning count: 18 → 15.
+- All 49 tests pass.
+
 ## v0.1.21 — 2026-05-22
 
 ### Changed

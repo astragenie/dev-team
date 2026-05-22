@@ -76,90 +76,95 @@ export function buildCurrentObjective(wakeUpBrief, artifacts) {
   };
 }
 
+// Formats a gate failure message: prefer the operator-supplied note when
+// present, otherwise terminate with a period.
+function gateFailureMessage(label, gate) {
+  return `${label}${gate?.note ? `: ${gate.note}` : "."}`;
+}
+
 export function buildBlockedOrMissing(wakeUpBrief, deploymentClues, gitActivity) {
-  const blocked = [];
   const pending = new Set(wakeUpBrief.workflow?.pendingBadges || []);
   const missingWrites = new Set(wakeUpBrief.workflow?.missingArtifactWrites || []);
   const gates = wakeUpBrief.workflow?.currentRun?.gates || {};
 
-  if (pending.has("review_required")) {
-    blocked.push("Independent review is still required before commit, PR, or final completion.");
-  }
-  if (gates.review?.status === "failed") {
-    blocked.push(`Independent review failed${gates.review.note ? `: ${gates.review.note}` : "."}`);
-  }
-  if (pending.has("validation_expected")) {
-    blocked.push("Validation evidence is still expected for the current run.");
-  }
-  if (gates.validation?.status === "failed") {
-    blocked.push(`Validation failed${gates.validation.note ? `: ${gates.validation.note}` : "."}`);
-  }
-  if (pending.has("dev_deploy_expected")) {
-    blocked.push("Dev deployment evidence is still missing for the current run.");
-  }
-  if (gates.deployment?.dev?.status === "failed") {
-    blocked.push(
-      `Dev deployment checks failed${gates.deployment.dev.note ? `: ${gates.deployment.dev.note}` : "."}`
-    );
-  }
-  if (pending.has("prod_deploy_expected")) {
-    blocked.push("Production deployment evidence is still missing for the current run.");
-  }
-  if (gates.deployment?.prod?.status === "failed") {
-    blocked.push(
-      `Production deployment checks failed${gates.deployment.prod.note ? `: ${gates.deployment.prod.note}` : "."}`
-    );
-  }
-  if (missingWrites.has("review_result_missing")) {
-    blocked.push(
+  // [condition, message-or-message-thunk]. Thunks defer string interpolation
+  // until we know the condition is true, so we don't read undefined fields.
+  const rules = [
+    [
+      pending.has("review_required"),
+      "Independent review is still required before commit, PR, or final completion."
+    ],
+    [
+      gates.review?.status === "failed",
+      () => gateFailureMessage("Independent review failed", gates.review)
+    ],
+    [
+      pending.has("validation_expected"),
+      "Validation evidence is still expected for the current run."
+    ],
+    [
+      gates.validation?.status === "failed",
+      () => gateFailureMessage("Validation failed", gates.validation)
+    ],
+    [
+      pending.has("dev_deploy_expected"),
+      "Dev deployment evidence is still missing for the current run."
+    ],
+    [
+      gates.deployment?.dev?.status === "failed",
+      () => gateFailureMessage("Dev deployment checks failed", gates.deployment.dev)
+    ],
+    [
+      pending.has("prod_deploy_expected"),
+      "Production deployment evidence is still missing for the current run."
+    ],
+    [
+      gates.deployment?.prod?.status === "failed",
+      () => gateFailureMessage("Production deployment checks failed", gates.deployment.prod)
+    ],
+    [
+      missingWrites.has("review_result_missing"),
       "Independent review appears complete, but the review artifact write-back is still missing."
-    );
-  }
-  if (missingWrites.has("validation_result_missing")) {
-    blocked.push(
+    ],
+    [
+      missingWrites.has("validation_result_missing"),
       "Validation appears complete, but the validation-result artifact write-back is still missing."
-    );
-  }
-  if (missingWrites.has("dev_deployment_check_missing")) {
-    blocked.push(
+    ],
+    [
+      missingWrites.has("dev_deployment_check_missing"),
       "Dev deployment evidence exists in workflow state, but the deployment-check artifact is still missing."
-    );
-  }
-  if (missingWrites.has("prod_deployment_check_missing")) {
-    blocked.push(
+    ],
+    [
+      missingWrites.has("prod_deployment_check_missing"),
       "Production deployment evidence exists in workflow state, but the deployment-check artifact is still missing."
-    );
-  }
-  if (missingWrites.has("run_brief_missing")) {
-    blocked.push("This run has meaningful progress, but the run-brief artifact is still missing.");
-  }
-  if (missingWrites.has("final_synthesis_missing")) {
-    blocked.push(
+    ],
+    [
+      missingWrites.has("run_brief_missing"),
+      "This run has meaningful progress, but the run-brief artifact is still missing."
+    ],
+    [
+      missingWrites.has("final_synthesis_missing"),
       "Meaningful workflow phases completed, but the final synthesis artifact is still missing."
-    );
-  }
-  if (wakeUpBrief.openApprovals.length > 0) {
-    blocked.push(`${wakeUpBrief.openApprovals.length} open approval(s) still need a decision.`);
-  }
-  if (!wakeUpBrief.hasClaudeMd) {
-    blocked.push("This repo is not fully adopted into Crew yet.");
-  }
-  if (
-    !wakeUpBrief.repoGuidance?.deployment &&
-    deploymentClues.clues.length > 0 &&
-    !wakeUpBrief.workflow?.hasActiveRun
-  ) {
-    blocked.push(
+    ],
+    [
+      wakeUpBrief.openApprovals.length > 0,
+      () => `${wakeUpBrief.openApprovals.length} open approval(s) still need a decision.`
+    ],
+    [!wakeUpBrief.hasClaudeMd, "This repo is not fully adopted into Crew yet."],
+    [
+      !wakeUpBrief.repoGuidance?.deployment &&
+        deploymentClues.clues.length > 0 &&
+        !wakeUpBrief.workflow?.hasActiveRun,
       "Deployment clues exist, but durable deployment guidance has not been recorded yet."
-    );
-  }
-  if (gitActivity.workingTree.behind > 0) {
-    blocked.push(
-      `Current branch is behind ${gitActivity.workingTree.upstream || "upstream"} by ${gitActivity.workingTree.behind} commit(s).`
-    );
-  }
+    ],
+    [
+      gitActivity.workingTree.behind > 0,
+      () =>
+        `Current branch is behind ${gitActivity.workingTree.upstream || "upstream"} by ${gitActivity.workingTree.behind} commit(s).`
+    ]
+  ];
 
-  return blocked;
+  return rules.filter(([cond]) => cond).map(([, msg]) => (typeof msg === "function" ? msg() : msg));
 }
 
 export function buildImportantReminders(wakeUpBrief, deploymentClues, gitActivity) {
@@ -204,65 +209,93 @@ export function recommendedNextStep(wakeUpBrief, deploymentClues, gitActivity) {
   const currentRun = wakeUpBrief.workflow?.currentRun || null;
   const gates = currentRun?.gates || {};
 
-  if (!wakeUpBrief.hasClaudeMd) {
-    return "Run /crew:adopt so the repo has the Crew harness, repo guidance, and local workflow state.";
-  }
-  if (pending.has("review_required")) {
-    return "Run independent review next before committing, opening a PR, or calling the work done.";
-  }
-  if (gates.review?.status === "failed") {
-    return "Address the failed review findings before moving the work forward.";
-  }
-  if (pending.has("validation_expected")) {
-    return "Run validation next and record the evidence before moving the work forward.";
-  }
-  if (gates.validation?.status === "failed") {
-    return "Investigate the failed validation evidence and fix the issue before continuing.";
-  }
-  if (pending.has("dev_deploy_expected")) {
-    return "Use /crew:ship to gather dev deployment evidence and verify the environment transition.";
-  }
-  if (gates.deployment?.dev?.status === "failed") {
-    return "Investigate the failed dev deployment checks before attempting another rollout.";
-  }
-  if (pending.has("prod_deploy_expected")) {
-    return "Decide whether production promotion is appropriate, then use /crew:ship to collect prod evidence.";
-  }
-  if (gates.deployment?.prod?.status === "failed") {
-    return "Investigate the failed production checks immediately before any further promotion work.";
-  }
-  if (missingWrites.has("review_result_missing")) {
-    return "Write the review-result artifact now so the run has an inspectable review gate record.";
-  }
-  if (missingWrites.has("validation_result_missing")) {
-    return "Write the validation-result artifact now so the run keeps the evidence it already collected.";
-  }
-  if (missingWrites.has("dev_deployment_check_missing")) {
-    return "Write the dev deployment-check artifact now so the environment evidence is recoverable next time.";
-  }
-  if (missingWrites.has("prod_deployment_check_missing")) {
-    return "Write the production deployment-check artifact now so the rollout evidence is preserved.";
-  }
-  if (missingWrites.has("run_brief_missing")) {
-    return "Write the run-brief artifact now so this workstream has a bounded starting point for recovery.";
-  }
-  if (missingWrites.has("final_synthesis_missing")) {
-    return "Write the final synthesis now so the completed work and next step are preserved before you move on.";
-  }
-  if (wakeUpBrief.openApprovals.length > 0) {
-    return "Resolve the open approval queue before pushing the workflow forward.";
-  }
-  if (currentRun?.next) {
-    return currentRun.next;
-  }
-  if (!wakeUpBrief.repoGuidance?.deployment && deploymentClues.clues.length > 0) {
-    return "Capture durable deployment guidance next so ship work can reuse repo-specific environment knowledge.";
-  }
-  if (gitActivity.workingTree.behind > 0) {
-    return `Review or pull the ${gitActivity.workingTree.behind} upstream commit(s) before starting the next work chunk.`;
-  }
-  if (gitActivity.workingTree.hasChanges) {
-    return "Decide whether the current uncommitted changes belong in the active work chunk or should be reviewed and split.";
+  // Ordered priority rules. First matching condition wins. Messages that
+  // need runtime data go through a thunk so they're only built on hit.
+  const rules = [
+    [
+      !wakeUpBrief.hasClaudeMd,
+      "Run /crew:adopt so the repo has the Crew harness, repo guidance, and local workflow state."
+    ],
+    [
+      pending.has("review_required"),
+      "Run independent review next before committing, opening a PR, or calling the work done."
+    ],
+    [
+      gates.review?.status === "failed",
+      "Address the failed review findings before moving the work forward."
+    ],
+    [
+      pending.has("validation_expected"),
+      "Run validation next and record the evidence before moving the work forward."
+    ],
+    [
+      gates.validation?.status === "failed",
+      "Investigate the failed validation evidence and fix the issue before continuing."
+    ],
+    [
+      pending.has("dev_deploy_expected"),
+      "Use /crew:ship to gather dev deployment evidence and verify the environment transition."
+    ],
+    [
+      gates.deployment?.dev?.status === "failed",
+      "Investigate the failed dev deployment checks before attempting another rollout."
+    ],
+    [
+      pending.has("prod_deploy_expected"),
+      "Decide whether production promotion is appropriate, then use /crew:ship to collect prod evidence."
+    ],
+    [
+      gates.deployment?.prod?.status === "failed",
+      "Investigate the failed production checks immediately before any further promotion work."
+    ],
+    [
+      missingWrites.has("review_result_missing"),
+      "Write the review-result artifact now so the run has an inspectable review gate record."
+    ],
+    [
+      missingWrites.has("validation_result_missing"),
+      "Write the validation-result artifact now so the run keeps the evidence it already collected."
+    ],
+    [
+      missingWrites.has("dev_deployment_check_missing"),
+      "Write the dev deployment-check artifact now so the environment evidence is recoverable next time."
+    ],
+    [
+      missingWrites.has("prod_deployment_check_missing"),
+      "Write the production deployment-check artifact now so the rollout evidence is preserved."
+    ],
+    [
+      missingWrites.has("run_brief_missing"),
+      "Write the run-brief artifact now so this workstream has a bounded starting point for recovery."
+    ],
+    [
+      missingWrites.has("final_synthesis_missing"),
+      "Write the final synthesis now so the completed work and next step are preserved before you move on."
+    ],
+    [
+      wakeUpBrief.openApprovals.length > 0,
+      "Resolve the open approval queue before pushing the workflow forward."
+    ],
+    [Boolean(currentRun?.next), () => currentRun.next],
+    [
+      !wakeUpBrief.repoGuidance?.deployment && deploymentClues.clues.length > 0,
+      "Capture durable deployment guidance next so ship work can reuse repo-specific environment knowledge."
+    ],
+    [
+      gitActivity.workingTree.behind > 0,
+      () =>
+        `Review or pull the ${gitActivity.workingTree.behind} upstream commit(s) before starting the next work chunk.`
+    ],
+    [
+      gitActivity.workingTree.hasChanges,
+      "Decide whether the current uncommitted changes belong in the active work chunk or should be reviewed and split."
+    ]
+  ];
+
+  const hit = rules.find(([cond]) => cond);
+  if (hit) {
+    const [, msg] = hit;
+    return typeof msg === "function" ? msg() : msg;
   }
   return "Start the next work chunk with /crew:build or /crew:fix, or just describe the task to the lead.";
 }

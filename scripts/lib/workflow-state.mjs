@@ -339,6 +339,63 @@ export async function markWorkflowBadge(repoPath, options = {}) {
   return state.currentRun;
 }
 
+// Per-artifact-kind handlers used by registerWorkflowArtifact. Each takes
+// (run, artifact, fields) and mutates run in place. Centralizing the
+// dispatch keeps registerWorkflowArtifact below the complexity budget
+// and makes adding a new artifact kind a one-entry change.
+const ARTIFACT_HANDLERS = {
+  handoff(run, artifact) {
+    run.artifacts.handoffs = [...(run.artifacts.handoffs || []), artifact.path].slice(-10);
+  },
+  "review-result"(run, artifact, fields) {
+    run.artifacts.reviewResult = artifact.path;
+    applyBadge(
+      run,
+      fields.decision === "rejected" ? "review_failed" : "review_passed",
+      fields.summary || ""
+    );
+  },
+  "validation-plan"(run, artifact, fields) {
+    run.artifacts.validationPlan = artifact.path;
+    applyBadge(run, "validation_expected", fields.summary || fields.goal || "");
+  },
+  "validation-result"(run, artifact, fields) {
+    run.artifacts.validationResult = artifact.path;
+    applyBadge(
+      run,
+      fields.decision === "failed" ? "validation_failed" : "validation_passed",
+      fields.summary || fields.goal || ""
+    );
+  },
+  "deployment-check"(run, artifact, fields) {
+    const environment = fields.environment === "prod" ? "prod" : "dev";
+    run.artifacts.deploymentChecks[environment] = artifact.path;
+    applyBadge(
+      run,
+      fields.decision === "failed" ? `${environment}_failed` : `${environment}_checked`,
+      fields.summary || fields.goal || ""
+    );
+  },
+  "final-synthesis"(run, artifact, fields) {
+    const pendingBadges = summarizeWorkflowState({ currentRun: run }).pendingBadges;
+    if (pendingBadges.length > 0) {
+      throw new Error(
+        `Cannot finalize run while workflow badges are still pending: ${pendingBadges.join(", ")}`
+      );
+    }
+    run.artifacts.finalSynthesis = artifact.path;
+    run.status = fields.status || "completed";
+    run.completedAt = nowIso();
+  }
+};
+
+function applyArtifactToRun(run, artifact, fields) {
+  const handler = ARTIFACT_HANDLERS[artifact.kind];
+  if (handler) {
+    handler(run, artifact, fields);
+  }
+}
+
 export async function registerWorkflowArtifact(repoPath, artifact, fields = {}) {
   const state = await loadWorkflowState(repoPath);
 
@@ -365,44 +422,7 @@ export async function registerWorkflowArtifact(repoPath, artifact, fields = {}) 
     next: fields.next || ""
   });
 
-  if (artifact.kind === "handoff") {
-    run.artifacts.handoffs = [...(run.artifacts.handoffs || []), artifact.path].slice(-10);
-  } else if (artifact.kind === "review-result") {
-    run.artifacts.reviewResult = artifact.path;
-    applyBadge(
-      run,
-      fields.decision === "rejected" ? "review_failed" : "review_passed",
-      fields.summary || ""
-    );
-  } else if (artifact.kind === "validation-plan") {
-    run.artifacts.validationPlan = artifact.path;
-    applyBadge(run, "validation_expected", fields.summary || fields.goal || "");
-  } else if (artifact.kind === "validation-result") {
-    run.artifacts.validationResult = artifact.path;
-    applyBadge(
-      run,
-      fields.decision === "failed" ? "validation_failed" : "validation_passed",
-      fields.summary || fields.goal || ""
-    );
-  } else if (artifact.kind === "deployment-check") {
-    const environment = fields.environment === "prod" ? "prod" : "dev";
-    run.artifacts.deploymentChecks[environment] = artifact.path;
-    applyBadge(
-      run,
-      fields.decision === "failed" ? `${environment}_failed` : `${environment}_checked`,
-      fields.summary || fields.goal || ""
-    );
-  } else if (artifact.kind === "final-synthesis") {
-    const pendingBadges = summarizeWorkflowState({ currentRun: run }).pendingBadges;
-    if (pendingBadges.length > 0) {
-      throw new Error(
-        `Cannot finalize run while workflow badges are still pending: ${pendingBadges.join(", ")}`
-      );
-    }
-    run.artifacts.finalSynthesis = artifact.path;
-    run.status = fields.status || "completed";
-    run.completedAt = nowIso();
-  }
+  applyArtifactToRun(run, artifact, fields);
 
   run.updatedAt = nowIso();
   if (fields.next) {
@@ -410,6 +430,26 @@ export async function registerWorkflowArtifact(repoPath, artifact, fields = {}) 
   }
   await saveWorkflowState(repoPath, state);
   return state.currentRun;
+}
+
+// Pending-badge specs: each maps the runtime gate-status check to the
+// badge name emitted in the workflow summary. Keeping these as data lets
+// summarizeWorkflowState stay small enough to read at a glance.
+const PENDING_BADGE_SPECS = [
+  { badge: "review_required", check: (run) => run.gates?.review?.status === "required" },
+  { badge: "validation_expected", check: (run) => run.gates?.validation?.status === "expected" },
+  {
+    badge: "dev_deploy_expected",
+    check: (run) => run.gates?.deployment?.dev?.status === "expected"
+  },
+  {
+    badge: "prod_deploy_expected",
+    check: (run) => run.gates?.deployment?.prod?.status === "expected"
+  }
+];
+
+function collectPendingBadges(currentRun) {
+  return PENDING_BADGE_SPECS.filter((spec) => spec.check(currentRun)).map((spec) => spec.badge);
 }
 
 export function summarizeWorkflowState(state) {
@@ -423,19 +463,7 @@ export function summarizeWorkflowState(state) {
     };
   }
 
-  const pendingBadges = [];
-  if (currentRun.gates?.review?.status === "required") {
-    pendingBadges.push("review_required");
-  }
-  if (currentRun.gates?.validation?.status === "expected") {
-    pendingBadges.push("validation_expected");
-  }
-  if (currentRun.gates?.deployment?.dev?.status === "expected") {
-    pendingBadges.push("dev_deploy_expected");
-  }
-  if (currentRun.gates?.deployment?.prod?.status === "expected") {
-    pendingBadges.push("prod_deploy_expected");
-  }
+  const pendingBadges = collectPendingBadges(currentRun);
   const missingArtifactWrites = summarizeMissingArtifactWritesForRun(currentRun);
 
   return {

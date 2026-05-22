@@ -205,8 +205,7 @@ function renderCostReportFrontmatter(fields, breakdown, outcome, totalTokens, ca
   if (cacheHitPct !== "-") lines.push(`cache_hit_pct: ${cacheHitPct}`);
   if (outcome?.gradeAvg != null) lines.push(`grade_avg: ${outcome.gradeAvg}`);
   if (outcome?.reviewDecision) lines.push(`review_decision: ${outcome.reviewDecision}`);
-  if (outcome?.validationDecision)
-    lines.push(`validation_decision: ${outcome.validationDecision}`);
+  if (outcome?.validationDecision) lines.push(`validation_decision: ${outcome.validationDecision}`);
   if (breakdown?.sourceProject) lines.push(`source_project: ${breakdown.sourceProject}`);
   if (breakdown?.autoDetected) lines.push(`auto_detected: true`);
   if (breakdown?.aggregateAll) lines.push(`aggregate_all: true`);

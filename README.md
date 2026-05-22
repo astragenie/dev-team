@@ -47,7 +47,7 @@ The companion `autonomous-loop` plugin lives in the same marketplace:
 /plugin install autonomous-loop@crew-dev
 ```
 
-Verify locally with `npm test`. Pinned release: `v0.1.21`.
+Verify locally with `npm test`. Pinned release: `v0.1.22`.
 
 Optional per-repo follow-up — install the commit bridge if you want
 Crew artifacts produced from matching commits:

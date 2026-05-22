@@ -269,21 +269,217 @@ async function findAutonomousLoopCli() {
 // Scan .claude/artifacts/crew/runs/ for cost-report-*.md files and parse
 // their headers into a compact summary. Best-effort: corrupted or partial
 // reports are skipped silently.
-export async function collectRecentCosts(repoPath, limit = 5) {
-  const dir = path.join(repoPath, ".claude", "artifacts", "crew", "runs");
-  if (!(await pathExists(dir))) {
-    return { recent: [], totalReports: 0 };
+// --- cost-report parsing helpers used by collectRecentCosts ---
+
+function parseFrontmatterBlock(text) {
+  const match = text.match(/^---\n([\s\S]*?)\n---/);
+  const fm = {};
+  if (match) {
+    for (const line of match[1].split(/\r?\n/)) {
+      const kv = line.match(/^([\w_]+):\s*(.*)$/);
+      if (kv) fm[kv[1]] = kv[2].trim();
+    }
   }
+  return fm;
+}
+
+function parseModelMix(text) {
+  const out = [];
+  const section = text.split(/^##\s+/m).find((s) => s.startsWith("Model Mix"));
+  if (!section) return out;
+  for (const line of section.split(/\r?\n/)) {
+    const m = line.match(
+      /^-\s+(\S+)\s+\(priced as\s+\S+\):\s+(\d+)\s+msgs\s+\(([\d.]+)%\),\s+\$([\d.]+)\s+\(([\d.]+)%\)/
+    );
+    if (m)
+      out.push({
+        model: m[1],
+        messages: Number(m[2]),
+        msgPct: Number(m[3]),
+        usd: Number(m[4]),
+        usdPct: Number(m[5])
+      });
+  }
+  return out;
+}
+
+function parseToolUsage(text) {
+  let toolCalls = 0;
+  let toolFailures = 0;
+  const section = text.split(/^##\s+/m).find((s) => s.startsWith("Tool Usage"));
+  if (section) {
+    for (const line of section.split(/\r?\n/)) {
+      const m = line.match(/^-\s+\S+:\s*([\d,]+)(?:\s*\((\d+)\s+failed\))?/);
+      if (m) {
+        toolCalls += Number(m[1].replace(/,/g, ""));
+        if (m[2]) toolFailures += Number(m[2]);
+      }
+    }
+  }
+  return { toolCalls, toolFailures };
+}
+
+function computeDominantModel(modelMix) {
+  const dominantEntry = modelMix.find((m) => !/^<|unknown/i.test(m.model)) || modelMix[0] || null;
+  if (!dominantEntry) return null;
+  return { model: dominantEntry.model, pct: dominantEntry.msgPct };
+}
+
+function deriveFlags(metrics) {
+  const flags = [];
+  if (metrics.compactionCount > 0) flags.push(`compact:${metrics.compactionCount}`);
+  if (metrics.subagentDispatches > 3) flags.push(`subagent:${metrics.subagentDispatches}`);
+  if (metrics.fileReReadCount > 5) flags.push(`reread:${metrics.fileReReadCount}`);
+  if (metrics.toolFailures > 3) flags.push(`fails:${metrics.toolFailures}`);
+  if (metrics.toolResultP90 > 8000) flags.push(`p90:${metrics.toolResultP90}b`);
+  if (metrics.turnsBeforeFirstTool > 5) flags.push(`preamble:${metrics.turnsBeforeFirstTool}`);
+  if (metrics.gradeAvg != null && metrics.gradeAvg < 0.75) flags.push(`grade:${metrics.gradeAvg}`);
+  if (metrics.reviewDecision === "rejected") flags.push("review:rejected");
+  if (metrics.validationDecision === "failed") flags.push("validation:failed");
+  if (metrics.autoDetected && metrics.sourceProject) flags.push(`xrepo:${metrics.sourceProject}`);
+  if (metrics.aggregateAll && metrics.sourceCount > 1)
+    flags.push(`multi-src:${metrics.sourceCount}`);
+  return flags;
+}
+
+function parseCostReportText(filePath, text) {
+  const fm = parseFrontmatterBlock(text);
+  const num = (re) => Number(text.match(re)?.[1]?.replace(/,/g, "") || 0);
+
+  const runTitle =
+    (fm.run_title || text.match(/^- Run Title:\s*(.+)$/m)?.[1] || "")
+      .replace(/^"|"$/g, "")
+      .trim() || null;
+  const usd =
+    fm.usd != null
+      ? Number(fm.usd)
+      : Number(text.match(/^- Total USD:\s*\$([\d.]+)/m)?.[1] || 0) || null;
+  const windowStart = text.match(/^- Window Start:\s*(.+)$/m)?.[1]?.trim() || null;
+  const windowEnd = text.match(/^- Window End:\s*(.+)$/m)?.[1]?.trim() || null;
+  const durationMs = fm.duration_ms
+    ? Number(fm.duration_ms)
+    : windowStart && windowEnd
+      ? Date.parse(windowEnd) - Date.parse(windowStart)
+      : 0;
+  const messages = Number(text.match(/^- Assistant Messages Counted:\s*(\d+)/m)?.[1] || 0);
+  const totalTokens = fm.total_tokens
+    ? Number(fm.total_tokens)
+    : num(/^- Total Tokens:\s*([\d,]+)/m);
+  const cacheHitPct = fm.cache_hit_pct
+    ? Number(fm.cache_hit_pct)
+    : Number(text.match(/^- Cache Hit %:\s*([\d.]+)/m)?.[1] || 0);
+
+  const inputTokens = num(/^- input:\s*([\d,]+)/m);
+  const outputTokens = num(/^- output:\s*([\d,]+)/m);
+  const cacheReadTokens = num(/^- cache_read:\s*([\d,]+)/m);
+  const cacheCreate1h = num(/^- cache_create_1h:\s*([\d,]+)/m);
+  const cacheCreate5m = num(/^- cache_create_5m:\s*([\d,]+)/m);
+  const cacheWriteTokens = cacheCreate5m + cacheCreate1h;
+
+  const modelMix = parseModelMix(text);
+  const dominantModel = computeDominantModel(modelMix);
+  const toM = (n) => Number((n / 1_000_000).toFixed(3));
+  const inputM = toM(inputTokens);
+  const outputM = toM(outputTokens);
+  const cacheReadM = toM(cacheReadTokens);
+  const cacheWriteM = toM(cacheWriteTokens);
+
+  const compactionCount = num(/^- compaction_count:\s*(\d+)/m);
+  const subagentDispatches = num(/^- subagent_dispatches:\s*(\d+)/m);
+  const skillInvocations = num(/^- skill_invocations:\s*(\d+)/m);
+  const turnsBeforeFirstTool = num(/^- turns_before_first_tool:\s*(\d+)/m);
+  const userMsgAvgLen = num(/^- user_msg_avg_len:\s*(\d+)/m);
+  const fileReReadCount = num(/^- redundant_read_count:\s*(\d+)/m);
+  const sessionsScanned = num(/^- Sessions Scanned:\s*(\d+)/m);
+  const toolResultP90 = num(/##\s+Tool Result Sizes[\s\S]*?-\s+p90:\s*([\d,]+)/);
+  const { toolCalls, toolFailures } = parseToolUsage(text);
+  const toolFailureRate = toolCalls > 0 ? Number(((toolFailures / toolCalls) * 100).toFixed(1)) : 0;
+
+  const gradeAvg = fm.grade_avg != null ? Number(fm.grade_avg) : null;
+  const reviewDecision = fm.review_decision || null;
+  const validationDecision = fm.validation_decision || null;
+  const sourceProject = fm.source_project || null;
+  const autoDetected = String(fm.auto_detected || "").toLowerCase() === "true";
+  const aggregateAll = String(fm.aggregate_all || "").toLowerCase() === "true";
+  const sourceCount = fm.source_count ? Number(fm.source_count) : 0;
+
+  const flags = deriveFlags({
+    compactionCount,
+    subagentDispatches,
+    fileReReadCount,
+    toolFailures,
+    toolResultP90,
+    turnsBeforeFirstTool,
+    gradeAvg,
+    reviewDecision,
+    validationDecision,
+    autoDetected,
+    sourceProject,
+    aggregateAll,
+    sourceCount
+  });
+
+  return {
+    path: filePath,
+    runTitle,
+    usd,
+    windowStart,
+    windowEnd,
+    durationMs,
+    durationMin: durationMs ? Number((durationMs / 60000).toFixed(1)) : 0,
+    messages,
+    totalTokens,
+    totalMillions: toM(totalTokens),
+    cacheHitPct,
+    inputTokens,
+    outputTokens,
+    cacheReadTokens,
+    cacheWriteTokens,
+    inputMillions: inputM,
+    outputMillions: outputM,
+    cacheReadMillions: cacheReadM,
+    cacheWriteMillions: cacheWriteM,
+    ioMillionsStr: `${inputM} / ${outputM}`,
+    cacheRWMillionsStr: `${cacheReadM} / ${cacheWriteM}`,
+    dominantModel,
+    dominantModelStr: dominantModel ? `${dominantModel.model} ${dominantModel.pct}%` : "-",
+    modelMix,
+    compactionCount,
+    subagentDispatches,
+    skillInvocations,
+    turnsBeforeFirstTool,
+    userMsgAvgLen,
+    sourceProject,
+    autoDetected,
+    aggregateAll,
+    sourceCount,
+    fileReReadCount,
+    sessionsScanned,
+    toolCalls,
+    toolFailures,
+    toolFailureRate,
+    toolResultP90,
+    gradeAvg,
+    reviewDecision,
+    validationDecision,
+    flags,
+    flagsStr: flags.join(" / "),
+    hasFlags: flags.length > 0
+  };
+}
+
+async function listCostReportFilesByMtime(dir, limit) {
+  if (!(await pathExists(dir))) return [];
   let entries;
   try {
     entries = await fs.readdir(dir, { withFileTypes: true });
   } catch {
-    return { recent: [], totalReports: 0 };
+    return [];
   }
   const files = entries
     .filter((e) => e.isFile() && /-cost-report-.+\.md$/.test(e.name))
     .map((e) => path.join(dir, e.name));
-  if (files.length === 0) return { recent: [], totalReports: 0 };
+  if (files.length === 0) return [];
 
   const stats = await Promise.all(
     files.map(async (f) => {
@@ -295,219 +491,38 @@ export async function collectRecentCosts(repoPath, limit = 5) {
       }
     })
   );
-  const sorted = stats
+  return stats
     .filter(Boolean)
     .sort((a, b) => b.mtime - a.mtime)
-    .slice(0, limit);
+    .slice(0, limit)
+    .map((entry) => entry.f);
+}
+
+export async function collectRecentCosts(repoPath, limit = 5) {
+  const dir = path.join(repoPath, ".claude", "artifacts", "crew", "runs");
+  const sorted = await listCostReportFilesByMtime(dir, limit);
+  if (sorted.length === 0) return { recent: [], totalReports: 0 };
 
   const recent = [];
   let totalUsd = 0;
-  for (const { f } of sorted) {
+  for (const filePath of sorted) {
     try {
-      const text = await fs.readFile(f, "utf8");
-
-      // Frontmatter fields (newer cost-reports). Falls through to body
-      // patterns when missing, so reports written before the schema
-      // change still parse.
-      const fmMatch = text.match(/^---\n([\s\S]*?)\n---/);
-      const fm = {};
-      if (fmMatch) {
-        for (const line of fmMatch[1].split(/\r?\n/)) {
-          const kv = line.match(/^([\w_]+):\s*(.*)$/);
-          if (kv) fm[kv[1]] = kv[2].trim();
-        }
-      }
-
-      const runTitle =
-        (fm.run_title || text.match(/^- Run Title:\s*(.+)$/m)?.[1] || "")
-          .replace(/^"|"$/g, "")
-          .trim() || null;
-      const usd =
-        fm.usd != null
-          ? Number(fm.usd)
-          : Number(text.match(/^- Total USD:\s*\$([\d.]+)/m)?.[1] || 0) || null;
-      const windowStart = text.match(/^- Window Start:\s*(.+)$/m)?.[1]?.trim() || null;
-      const windowEnd = text.match(/^- Window End:\s*(.+)$/m)?.[1]?.trim() || null;
-      const durationMs = fm.duration_ms
-        ? Number(fm.duration_ms)
-        : windowStart && windowEnd
-          ? Date.parse(windowEnd) - Date.parse(windowStart)
-          : 0;
-      const messages = Number(text.match(/^- Assistant Messages Counted:\s*(\d+)/m)?.[1] || 0);
-      const totalTokens = fm.total_tokens
-        ? Number(fm.total_tokens)
-        : Number(text.match(/^- Total Tokens:\s*([\d,]+)/m)?.[1]?.replace(/,/g, "") || 0);
-      const cacheHitPct = fm.cache_hit_pct
-        ? Number(fm.cache_hit_pct)
-        : Number(text.match(/^- Cache Hit %:\s*([\d.]+)/m)?.[1] || 0);
-
-      const num = (re) => Number(text.match(re)?.[1]?.replace(/,/g, "") || 0);
-      const inputTokens = num(/^- input:\s*([\d,]+)/m);
-      const outputTokens = num(/^- output:\s*([\d,]+)/m);
-      const cacheReadTokens = num(/^- cache_read:\s*([\d,]+)/m);
-      const cacheCreate1h = num(/^- cache_create_1h:\s*([\d,]+)/m);
-      const cacheCreate5m = num(/^- cache_create_5m:\s*([\d,]+)/m);
-
-      // Model Mix lines: `- <model> (priced as <key>): <N> msgs (<msgPct>%), $<usd> (<usdPct>%)`
-      const modelMix = [];
-      const mixSection = text.split(/^##\s+/m).find((s) => s.startsWith("Model Mix"));
-      if (mixSection) {
-        for (const line of mixSection.split(/\r?\n/)) {
-          const m = line.match(
-            /^-\s+(\S+)\s+\(priced as\s+\S+\):\s+(\d+)\s+msgs\s+\(([\d.]+)%\),\s+\$([\d.]+)\s+\(([\d.]+)%\)/
-          );
-          if (m)
-            modelMix.push({
-              model: m[1],
-              messages: Number(m[2]),
-              msgPct: Number(m[3]),
-              usd: Number(m[4]),
-              usdPct: Number(m[5])
-            });
-        }
-      }
-
-      if (usd != null) totalUsd += usd;
-
-      const cacheWriteTokens = cacheCreate5m + cacheCreate1h;
-      const toM = (n) => Number((n / 1_000_000).toFixed(3));
-
-      // Dominant model = highest-spend real LLM in the mix. Skip
-      // synthetic/unknown sentinel entries (auto-injected, no LLM call).
-      // Surface a single percentage — msgPct — to avoid the "199%" confusion
-      // that comes from reading msgPct/usdPct as one number.
-      const dominantEntry =
-        modelMix.find((m) => !/^<|unknown/i.test(m.model)) || modelMix[0] || null;
-      const dominantModel = dominantEntry
-        ? {
-            model: dominantEntry.model,
-            pct: dominantEntry.msgPct
-          }
-        : null;
-
-      const inputM = toM(inputTokens);
-      const outputM = toM(outputTokens);
-      const cacheReadM = toM(cacheReadTokens);
-      const cacheWriteM = toM(cacheWriteTokens);
-
-      // Diagnostic counters from the cost-report body. These mirror the
-      // signals the cost-advisor uses but are surfaced here too so the
-      // brief-me consumer can render a diagnostics table without a second
-      // CLI call.
-      const compactionCount = num(/^- compaction_count:\s*(\d+)/m);
-      const subagentDispatches = num(/^- subagent_dispatches:\s*(\d+)/m);
-      const skillInvocations = num(/^- skill_invocations:\s*(\d+)/m);
-      const turnsBeforeFirstTool = num(/^- turns_before_first_tool:\s*(\d+)/m);
-      const userMsgAvgLen = num(/^- user_msg_avg_len:\s*(\d+)/m);
-      const fileReReadCount = num(/^- redundant_read_count:\s*(\d+)/m);
-      const sessionsScanned = num(/^- Sessions Scanned:\s*(\d+)/m);
-      const toolResultP90 = num(/##\s+Tool Result Sizes[\s\S]*?-\s+p90:\s*([\d,]+)/);
-
-      // Tool usage block: sum all counts + failures.
-      let toolCalls = 0;
-      let toolFailures = 0;
-      const toolSection = text.split(/^##\s+/m).find((s) => s.startsWith("Tool Usage"));
-      if (toolSection) {
-        for (const line of toolSection.split(/\r?\n/)) {
-          const m = line.match(/^-\s+\S+:\s*([\d,]+)(?:\s*\((\d+)\s+failed\))?/);
-          if (m) {
-            toolCalls += Number(m[1].replace(/,/g, ""));
-            if (m[2]) toolFailures += Number(m[2]);
-          }
-        }
-      }
-      const toolFailureRate =
-        toolCalls > 0 ? Number(((toolFailures / toolCalls) * 100).toFixed(1)) : 0;
-
-      // Outcome from frontmatter
-      const gradeAvg = fm.grade_avg != null ? Number(fm.grade_avg) : null;
-      const reviewDecision = fm.review_decision || null;
-      const validationDecision = fm.validation_decision || null;
-
-      // Flag thresholds — empty flags array = clean slice
-      const flags = [];
-      if (compactionCount > 0) flags.push(`compact:${compactionCount}`);
-      if (subagentDispatches > 3) flags.push(`subagent:${subagentDispatches}`);
-      if (fileReReadCount > 5) flags.push(`reread:${fileReReadCount}`);
-      if (toolFailures > 3) flags.push(`fails:${toolFailures}`);
-      if (toolResultP90 > 8000) flags.push(`p90:${toolResultP90}b`);
-      if (turnsBeforeFirstTool > 5) flags.push(`preamble:${turnsBeforeFirstTool}`);
-      if (gradeAvg != null && gradeAvg < 0.75) flags.push(`grade:${gradeAvg}`);
-      if (reviewDecision === "rejected") flags.push("review:rejected");
-      if (validationDecision === "failed") flags.push("validation:failed");
-      // Cross-repo attribution signals.
-      const sourceProject = fm.source_project || null;
-      const autoDetected = String(fm.auto_detected || "").toLowerCase() === "true";
-      const aggregateAll = String(fm.aggregate_all || "").toLowerCase() === "true";
-      const sourceCount = fm.source_count ? Number(fm.source_count) : 0;
-      if (autoDetected && sourceProject) flags.push(`xrepo:${sourceProject}`);
-      if (aggregateAll && sourceCount > 1) flags.push(`multi-src:${sourceCount}`);
-
-      recent.push({
-        path: f,
-        runTitle,
-        usd,
-        windowStart,
-        windowEnd,
-        durationMs,
-        durationMin: durationMs ? Number((durationMs / 60000).toFixed(1)) : 0,
-        messages,
-        totalTokens,
-        totalMillions: toM(totalTokens),
-        cacheHitPct,
-        // raw token counts
-        inputTokens,
-        outputTokens,
-        cacheReadTokens,
-        cacheWriteTokens,
-        // millions: split axes for callers that want raw numbers
-        inputMillions: inputM,
-        outputMillions: outputM,
-        cacheReadMillions: cacheReadM,
-        cacheWriteMillions: cacheWriteM,
-        // formatted string pairs for single-cell renderers
-        // e.g. "0.024 / 0.077" — input M / output M
-        ioMillionsStr: `${inputM} / ${outputM}`,
-        cacheRWMillionsStr: `${cacheReadM} / ${cacheWriteM}`,
-        dominantModel,
-        dominantModelStr: dominantModel ? `${dominantModel.model} ${dominantModel.pct}%` : "-",
-        modelMix,
-        // diagnostics block — for the second 'diagnostics' table in brief-me
-        compactionCount,
-        subagentDispatches,
-        skillInvocations,
-        turnsBeforeFirstTool,
-        userMsgAvgLen,
-        sourceProject,
-        autoDetected,
-        aggregateAll,
-        sourceCount,
-        fileReReadCount,
-        sessionsScanned,
-        toolCalls,
-        toolFailures,
-        toolFailureRate,
-        toolResultP90,
-        gradeAvg,
-        reviewDecision,
-        validationDecision,
-        flags,
-        flagsStr: flags.join(" / "),
-        hasFlags: flags.length > 0
-      });
+      const text = await fs.readFile(filePath, "utf8");
+      const report = parseCostReportText(filePath, text);
+      if (report.usd != null) totalUsd += report.usd;
+      recent.push(report);
     } catch {
       // skip unreadable file
     }
   }
 
   const avgUsd = recent.length ? Number((totalUsd / recent.length).toFixed(4)) : 0;
-  const diagnostics = recent.filter((r) => r.hasFlags);
   return {
     recent,
-    totalReports: files.length,
+    totalReports: sorted.length,
     sumUsdRecent: Number(totalUsd.toFixed(4)),
     avgUsdRecent: avgUsd,
-    diagnostics
+    diagnostics: recent.filter((r) => r.hasFlags)
   };
 }
 
