@@ -3,6 +3,17 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.1.13 — 2026-05-21
+
+### Fixed
+- `bootstrapRepo` / `init` now seed `.gitignore` with a marker-bracketed
+  `# crew:start`/`# crew:end` block. User lines outside the block are
+  preserved; the block is replaced in place on re-install. Closes the
+  e2e-smoke regression and lets the CI step run as a blocking gate.
+
+### Infrastructure
+- `e2e-smoke` promoted from `continue-on-error` to blocking in CI.
+
 ## v0.1.12 — 2026-05-21
 
 First tagged release after accumulated 0.1.0 → 0.1.12 work.
