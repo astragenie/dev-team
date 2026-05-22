@@ -127,6 +127,9 @@ async function countInWindowAssistantTurns(dir, startMs, endMs) {
   return count;
 }
 
+/**
+ * @param {{ startedAt?: string, completedAt?: string }} [options]
+ */
 export async function autoDetectSourceProject({ startedAt, completedAt } = {}) {
   if (!startedAt) return null;
   const endIso = completedAt || new Date().toISOString();
@@ -580,6 +583,16 @@ function buildToolUsage(toolUseCounts, toolFailureCounts) {
     .sort((a, b) => b.count - a.count);
 }
 
+/**
+ * @param {string} repoPath
+ * @param {{
+ *   startedAt?: string,
+ *   completedAt?: string,
+ *   sourceProject?: string | null,
+ *   autoDetect?: boolean,
+ *   aggregateAll?: boolean
+ * }} [options]
+ */
 export async function computeSessionCost(
   repoPath,
   { startedAt, completedAt, sourceProject = null, autoDetect = true, aggregateAll = false } = {}

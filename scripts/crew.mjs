@@ -256,7 +256,8 @@ async function writeCostAdviseArtifact(repoPath, md, advisor) {
 // Auto-emit a cost-report artifact when a run window is available. Designed
 // to be called immediately after write-final-synthesis. Failures here are
 // non-fatal: they return null so the synthesis result still surfaces.
-async function maybeEmitCostReport(repoPath, { runTitle } = {}) {
+async function maybeEmitCostReport(repoPath, options = {}) {
+  const { runTitle } = /** @type {{ runTitle?: string | null }} */ (options);
   try {
     const state = await loadWorkflowState(repoPath);
     const run = state?.currentRun || null;

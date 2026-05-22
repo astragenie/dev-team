@@ -22,6 +22,12 @@ managed by the `autonomous-loop` plugin's backlog CLI.
 | FEAT-005 | First domain skill — dotnet/csharp-conventions     | **no** — review |
 | (more)   | Add one per real friction point — do NOT pre-author| **no**          |
 
+## Phase 2 — TDD + standards
+
+| ID       | Title                                              | Autonomous-safe |
+|----------|----------------------------------------------------|-----------------|
+| FEAT-011 | TDD discipline (scoped, not universal)             | **no** — review |
+
 ## Phase 3 — Workflow state polish
 
 | ID       | Title                                              | Autonomous-safe |

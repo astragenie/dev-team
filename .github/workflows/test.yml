@@ -17,5 +17,6 @@ jobs:
       - run: node ./scripts/validate-manifests.mjs
       - run: npm run lint
       - run: npm run format:check
+      - run: npm run typecheck
       - run: node --test
       - run: node ./scripts/e2e-smoke.mjs

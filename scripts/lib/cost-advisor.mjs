@@ -243,6 +243,16 @@ function summarizeReport(r) {
   };
 }
 
+/**
+ * @typedef {object} CostRule
+ * @property {string} id
+ * @property {(target: any, baseline?: any, ctx?: any) => boolean} trigger
+ * @property {(target: any, baseline?: any, ctx?: any) => string} severity
+ * @property {(target: any, baseline?: any, ctx?: any) => string} message
+ * @property {string} suggestion
+ */
+
+/** @type {CostRule[]} */
 const RULES = [
   {
     id: "cache-busted",
