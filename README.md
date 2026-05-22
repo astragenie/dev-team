@@ -51,7 +51,7 @@ The companion `autonomous-loop` plugin lives in the same marketplace:
 /plugin install autonomous-loop@crew-dev
 ```
 
-Verify locally with `npm test`. Pinned release: `v0.1.26`.
+Verify locally with `npm test`. Pinned release: `v0.2.0`.
 
 ## Commands
 

@@ -3,6 +3,107 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.2.0 — 2026-05-22 — Phase 1 (Engineering OS) complete
+
+Closes the Phase-1 backlog defined in `docs/architecture/architecture.md`.
+Nine of eleven FEATs shipped; the remaining two (FEAT-005, FEAT-009)
+are correctly deferred behind explicit "when X observed" triggers.
+
+### Skill taxonomy (FEAT-001, FEAT-007)
+
+- `skills/` split into four tiers: `universal/`, `workflow/`,
+  `domain/`, `meta/`. Existing crew skills relocated; tier field
+  added to frontmatter.
+- New `scripts/validate-skills.mjs` enforces the quality bar
+  (required: name, tier, description; recommended: owner,
+  last_reviewed, triggers; hard caps: ≤200 lines, directory matches
+  name, no duplicate names, tier in enum). Wired into CI between
+  validate-manifests and lint. Local: `npm run validate:skills`.
+- All 4 existing skills brought up to spec.
+
+### Routing (FEAT-002)
+
+- Authoritative `docs/routing-table.md` (14 rows derived from real
+  history). Lead consults at session start.
+- Production-promotion row explicitly requires human approval — no
+  automation.
+- FEAT-008: brief-me surfaces a reminder when the routing-table
+  mtime exceeds 30 days. Encourages a monthly review.
+
+### Workflow state (FEAT-006)
+
+- New `blocked` + `escalated_to_human` workflow badges with
+  `--note <reason>` and `--blocked-by <artifact-id>` flags.
+- `write-final-synthesis` refuses to run while escalated unless
+  `--force`.
+- `brief-me` + `summarizeWorkflowState` surface both as pending
+  badges. AL plugin (v0.1.21) consumes these signals end-to-end.
+
+### Lead, builder, reviewer prompts (FEAT-003, FEAT-011)
+
+- `agents/lead.md` rewritten — 196 → 169 lines (under 200-line cap).
+  New "Composition formula" + "Where to load specifics" sections
+  point at the durable docs/skills rather than restating discipline
+  inline.
+- `agents/builder.md` (FEAT-011) gains a TDD policy table:
+  required on net-new behavior + bug reproducers; optional on
+  refactors of tested code; skipping silently is a review finding.
+  Procedure of record: superpowers `test-driven-development` skill.
+- `agents/reviewer.md` (FEAT-011) gains a TDD gate section that
+  enforces failing-test-first on net-new behavior.
+
+### Docs (FEAT-004, FEAT-010)
+
+- `docs/architecture/architecture.md` polished: Phase 1 status
+  table, autonomous-loop sync line, tooling-gates section.
+- New `docs/governance.md`: skill ownership, agent prompt size bar,
+  routing-table review cadence, artifact retention, lessons →
+  standards pipeline, three-test rule for specialist-agent
+  admission, defer-by-default.
+- `docs/` directory namespaced into `architecture/`, `process/`,
+  `history/`, `standards/`, `backlog/` to match Astragenie.Standards
+  shape. 19 flat doc files moved via `git mv`; all internal refs
+  rewritten.
+
+### Tooling (cross-cutting)
+
+- `tsconfig.json` added with `checkJs: true` / `noEmit`; `npm run
+  typecheck` wired into CI between format:check and tests. JSDoc
+  annotations added on session-cost, cost-advisor, crew.mjs entry
+  points to satisfy tsc.
+- `superpowers` plugin verified enabled in `~/.claude/settings.json`
+  for global TDD + systematic-debugging + verification-before-
+  completion skill discovery.
+
+### Companion plugin sync
+
+| Capability                                   | crew   | autonomous-loop |
+|----------------------------------------------|--------|-----------------|
+| blocked + escalated_to_human (writer)        | ≥0.2.0 | —               |
+| Honors crew gates in slice flow (reader)     | —      | ≥0.1.21         |
+| Iteration cap + cost-alert + snapshot loop   | —      | ≥0.1.20         |
+
+Pin both together; older AL against newer crew silently misses the
+new gate signals.
+
+### Tests + gates
+
+- 41/41 tests pass (35 → 41, six added across FEAT-006 + FEAT-008).
+- typecheck + lint + format + validate-skills + validate-manifests
+  + e2e-smoke all clean on every push.
+
+### Backlog after Phase 1
+
+Closed: FEAT-001 / FEAT-002 / FEAT-003 / FEAT-004 / FEAT-006 /
+FEAT-007 / FEAT-008 / FEAT-010 / FEAT-011.
+
+Intentionally deferred:
+
+- **FEAT-005** (dotnet/csharp-conventions domain skill) — build when
+  the first .cs work appears.
+- **FEAT-009** (artifact index file) — build when artifact-tree
+  grep exceeds ~2s.
+
 ## v0.1.26 — 2026-05-22
 
 ### Removed
