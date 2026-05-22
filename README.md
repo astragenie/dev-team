@@ -1,5 +1,9 @@
 # Crew
 
+[![test](https://github.com/sergeymilashico/hero-crew/actions/workflows/test.yml/badge.svg)](https://github.com/sergeymilashico/hero-crew/actions/workflows/test.yml)
+[![release](https://img.shields.io/github/v/tag/sergeymilashico/hero-crew?label=release&sort=semver)](https://github.com/sergeymilashico/hero-crew/releases)
+[![license](https://img.shields.io/github/license/sergeymilashico/hero-crew)](LICENSE)
+
 A Claude Code plugin for lead-guided engineering work with bounded subagents, quality gates, and inspectable handoffs.
 
 ## What it does
@@ -43,7 +47,7 @@ The companion `autonomous-loop` plugin lives in the same marketplace:
 /plugin install autonomous-loop@crew-dev
 ```
 
-Verify locally with `npm test`. Pinned release: `v0.1.15`.
+Verify locally with `npm test`. Pinned release: `v0.1.16`.
 
 Optional per-repo follow-up — install the commit bridge if you want
 Crew artifacts produced from matching commits:

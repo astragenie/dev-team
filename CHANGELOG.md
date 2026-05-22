@@ -3,6 +3,32 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.1.16 — 2026-05-22
+
+### Added
+- `scripts/validate-manifests.mjs`: lightweight CI gate verifying
+  `plugin.json` / `marketplace.json` / `package.json` required fields,
+  semver parseability, and version-drift between the three files.
+  Catches the class of regression that `marketplace.json` version drift
+  already caused once.
+- CI: validate-manifests step runs before tests on every push/PR.
+- README: test / release / license badges.
+- `/crew:adopt`: explicit step 12 instructs the lead to inspect repo
+  commit conventions and recommend `/crew:install-commit-bridge` when
+  a matching preset applies. Stays opt-in; never auto-installs.
+
+### Notes (not changed)
+- `.gitignore` install block intentionally does NOT ignore
+  `.claude/artifacts/` — artifacts are the durable record per the
+  constitution and should be committed in target repos.
+- Hooks audit: `log_event.sh` and the generated `commit_bridge.sh`
+  are fail-closed at the shell layer (`set -euo pipefail`),
+  fail-open at the JS layer (best-effort, never blocks tool output),
+  use `execFileSync` (no shell) with `escapeForJsLiteral` on all
+  template substitutions. No injection surface. Minor follow-up:
+  `log_event.sh` has no payload-dir rotation.
+- No `package-lock.json` added: zero runtime deps (Node built-ins only).
+
 ## v0.1.15 — 2026-05-22
 
 ### Changed

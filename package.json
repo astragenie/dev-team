@@ -1,10 +1,11 @@
 {
   "name": "crew-plugin",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "node --test",
+    "validate:manifests": "node ./scripts/validate-manifests.mjs",
     "installer:install-global": "node ./scripts/crew.mjs install-global",
     "installer:bootstrap": "node ./scripts/crew.mjs bootstrap",
     "installer:init": "node ./scripts/crew.mjs init",

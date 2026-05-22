@@ -328,7 +328,7 @@ Adopt a lighter startup model inspired by Barkain.
 Behavior:
 
 - SessionStart loads a small constitution layer
-- heavy orchestration stays opt-in via commands like `/build-feature`, `/parallel-review`, `/investigate-bug`
+- heavy orchestration stays opt-in via commands like `/crew:build`, `/crew:parallel-review`, `/crew:fix`
 
 Why:
 
