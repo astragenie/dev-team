@@ -439,13 +439,24 @@ function attributeCachePrime(ctx, usage) {
   }
 }
 
+// `<synthetic>` is a Claude-Code-internal sentinel for system-injected
+// assistant messages with no real LLM call. They show $0 cost but pollute
+// byModel/modelMix output. Filter them out at capture time.
+const SYNTHETIC_MODEL_PREFIXES = ["<synthetic>", "<", "synthetic"];
+function isSyntheticModel(model) {
+  if (!model) return false;
+  return SYNTHETIC_MODEL_PREFIXES.some((p) => model.startsWith(p));
+}
+
 function handleAssistantTurn(obj, file, fileToSlug, ctx) {
   const usage = obj?.message?.usage;
   const touched = Boolean(usage);
   if (usage) {
     const model = obj?.message?.model || "unknown";
-    recordTokenUsage(ctx, model, tokensFromUsage(usage), file, fileToSlug);
-    attributeCachePrime(ctx, usage);
+    if (!isSyntheticModel(model)) {
+      recordTokenUsage(ctx, model, tokensFromUsage(usage), file, fileToSlug);
+      attributeCachePrime(ctx, usage);
+    }
   }
   const insp = inspectContent(obj?.message?.content);
   if (insp.toolUses.length === 0 && !ctx.flags.sawFirstTool) {
