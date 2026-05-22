@@ -435,6 +435,13 @@ export async function collectRecentCosts(repoPath, limit = 5) {
       if (gradeAvg != null && gradeAvg < 0.75) flags.push(`grade:${gradeAvg}`);
       if (reviewDecision === "rejected") flags.push("review:rejected");
       if (validationDecision === "failed") flags.push("validation:failed");
+      // Cross-repo attribution signals.
+      const sourceProject = fm.source_project || null;
+      const autoDetected = String(fm.auto_detected || "").toLowerCase() === "true";
+      const aggregateAll = String(fm.aggregate_all || "").toLowerCase() === "true";
+      const sourceCount = fm.source_count ? Number(fm.source_count) : 0;
+      if (autoDetected && sourceProject) flags.push(`xrepo:${sourceProject}`);
+      if (aggregateAll && sourceCount > 1) flags.push(`multi-src:${sourceCount}`);
 
       recent.push({
         path: f,
@@ -471,6 +478,10 @@ export async function collectRecentCosts(repoPath, limit = 5) {
         skillInvocations,
         turnsBeforeFirstTool,
         userMsgAvgLen,
+        sourceProject,
+        autoDetected,
+        aggregateAll,
+        sourceCount,
         fileReReadCount,
         sessionsScanned,
         toolCalls,

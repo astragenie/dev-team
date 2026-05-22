@@ -186,9 +186,48 @@ function inspectContent(content) {
   return out;
 }
 
+// Build a list of project dirs that have at least one in-window assistant
+// turn. Used by aggregateAll mode to scope summation to relevant dirs only
+// (skips unrelated ambient sessions).
+async function listActiveProjectDirs({ startMs, endMs }) {
+  let entries;
+  try {
+    entries = await fs.readdir(PROJECTS_ROOT, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  const active = [];
+  for (const e of entries) {
+    if (!e.isDirectory()) continue;
+    const slug = e.name;
+    const dir = path.join(PROJECTS_ROOT, slug);
+    let files;
+    try {
+      files = (await fs.readdir(dir)).filter((f) => f.endsWith(".jsonl"));
+    } catch {
+      continue;
+    }
+    let any = false;
+    for (const f of files) {
+      const full = path.join(dir, f);
+      for await (const obj of readJsonlLines(full)) {
+        if (obj?.type !== "assistant") continue;
+        const tsMs = obj.timestamp ? Date.parse(obj.timestamp) : NaN;
+        if (Number.isNaN(tsMs) || tsMs < startMs || tsMs > endMs) continue;
+        if (!obj?.message?.usage) continue;
+        any = true;
+        break;
+      }
+      if (any) break;
+    }
+    if (any) active.push({ slug, dir });
+  }
+  return active;
+}
+
 export async function computeSessionCost(
   repoPath,
-  { startedAt, completedAt, sourceProject = null, autoDetect = true } = {}
+  { startedAt, completedAt, sourceProject = null, autoDetect = true, aggregateAll = false } = {}
 ) {
   if (!startedAt) throw new Error("computeSessionCost requires startedAt");
   const endIso = completedAt || new Date().toISOString();
@@ -200,35 +239,51 @@ export async function computeSessionCost(
 
   const pricing = await loadPricing();
 
-  // Resolve the source project: explicit override > repo-derived slug,
-  // with optional auto-detect fallback when the repo-derived dir has no
-  // activity in the window (handles cross-repo work).
+  // Resolve sources to scan.
+  // - aggregateAll: every project dir with in-window activity contributes.
+  // - sourceProject explicit override: scan only that dir.
+  // - default: scan repo-derived dir, fall back to busiest if empty.
   let effectiveSlug = sourceProject || slugifyRepoPath(repoPath);
-  let sessions = await listProjectSessions(repoPath, effectiveSlug);
+  let sessionsBySource = new Map(); // slug -> [files]
   let autoDetected = false;
-  if (!sourceProject && autoDetect) {
-    // Probe the repo-derived dir for any in-window assistant turn; if zero,
-    // fall back to scanning all project dirs for the busiest one.
-    let hasActivity = false;
-    for (const file of sessions) {
-      for await (const obj of readJsonlLines(file)) {
-        if (obj?.type !== "assistant") continue;
-        const tsMs = obj.timestamp ? Date.parse(obj.timestamp) : NaN;
-        if (Number.isNaN(tsMs) || tsMs < startMs || tsMs > endMs) continue;
-        if (!obj?.message?.usage) continue;
-        hasActivity = true;
-        break;
-      }
-      if (hasActivity) break;
+
+  if (aggregateAll) {
+    const active = await listActiveProjectDirs({ startMs, endMs });
+    for (const { slug, dir } of active) {
+      const files = (await fs.readdir(dir))
+        .filter((f) => f.endsWith(".jsonl"))
+        .map((f) => path.join(dir, f));
+      sessionsBySource.set(slug, files);
     }
-    if (!hasActivity) {
-      const detected = await autoDetectSourceProject({ startedAt, completedAt: endIso });
-      if (detected && detected !== effectiveSlug) {
-        effectiveSlug = detected;
-        sessions = await listProjectSessions(repoPath, effectiveSlug);
-        autoDetected = true;
+    effectiveSlug = "aggregate";
+  } else {
+    // Single-source path. Start with repo-derived (or explicit override).
+    let initialFiles = await listProjectSessions(repoPath, effectiveSlug);
+    if (!sourceProject && autoDetect) {
+      // Probe the repo-derived dir for any in-window assistant turn; if zero,
+      // fall back to scanning all project dirs for the busiest one.
+      let hasActivity = false;
+      for (const file of initialFiles) {
+        for await (const obj of readJsonlLines(file)) {
+          if (obj?.type !== "assistant") continue;
+          const tsMs = obj.timestamp ? Date.parse(obj.timestamp) : NaN;
+          if (Number.isNaN(tsMs) || tsMs < startMs || tsMs > endMs) continue;
+          if (!obj?.message?.usage) continue;
+          hasActivity = true;
+          break;
+        }
+        if (hasActivity) break;
+      }
+      if (!hasActivity) {
+        const detected = await autoDetectSourceProject({ startedAt, completedAt: endIso });
+        if (detected && detected !== effectiveSlug) {
+          effectiveSlug = detected;
+          initialFiles = await listProjectSessions(repoPath, effectiveSlug);
+          autoDetected = true;
+        }
       }
     }
+    sessionsBySource.set(effectiveSlug, initialFiles);
   }
 
   const totals = emptyTotals();
@@ -251,6 +306,28 @@ export async function computeSessionCost(
   // Map tool_use_id -> tool name, so we can attribute failures to a tool.
   const toolNameById = new Map();
 
+  // Per-source breakdown for aggregate mode. Even in single-source mode this
+  // gets one entry, which keeps the artifact shape uniform.
+  const sources = []; // [{ slug, messages, tokens, usd }]
+
+  // Flatten Map<slug, files[]> into a flat list while remembering which slug
+  // owns each file, so per-source attribution stays correct.
+  const fileToSlug = new Map();
+  const sessions = [];
+  for (const [slug, files] of sessionsBySource.entries()) {
+    for (const f of files) {
+      fileToSlug.set(f, slug);
+      sessions.push(f);
+    }
+  }
+  const perSourceState = new Map(); // slug -> { messages, tokens, usd, touched }
+  function ensureSource(slug) {
+    if (!perSourceState.has(slug)) {
+      perSourceState.set(slug, { messages: 0, tokens: emptyTotals(), modelTokens: {}, touched: false });
+    }
+    return perSourceState.get(slug);
+  }
+
   for (const file of sessions) {
     let touched = false;
     for await (const obj of readJsonlLines(file)) {
@@ -270,6 +347,16 @@ export async function computeSessionCost(
           byModel[model].messages += 1;
           messagesCounted += 1;
           touched = true;
+          // Per-source attribution
+          const srcSlug = fileToSlug.get(file);
+          if (srcSlug) {
+            const s = ensureSource(srcSlug);
+            addTotals(s.tokens, tokens);
+            if (!s.modelTokens[model]) s.modelTokens[model] = emptyTotals();
+            addTotals(s.modelTokens[model], tokens);
+            s.messages += 1;
+            s.touched = true;
+          }
         }
         const insp = inspectContent(obj?.message?.content);
         if (insp.toolUses.length === 0 && !sawFirstTool) {
@@ -325,6 +412,19 @@ export async function computeSessionCost(
     byModel[model].pricedAs = key;
     totalUsd += usd;
   }
+
+  // Per-source USD: price each source's model-token map and sum.
+  for (const [slug, s] of perSourceState.entries()) {
+    if (!s.touched) continue;
+    let usd = 0;
+    for (const [model, tokens] of Object.entries(s.modelTokens)) {
+      const key = matchModelKey(model, pricing);
+      const rates = pricing.models[key] || pricing.models[pricing.fallback];
+      usd += priceTokens(tokens, rates);
+    }
+    sources.push({ slug, messages: s.messages, usd: Number(usd.toFixed(4)) });
+  }
+  sources.sort((a, b) => b.usd - a.usd);
 
   // Model mix: % of priced assistant messages per model, sorted by usd desc.
   const modelMix = [];
@@ -387,6 +487,8 @@ export async function computeSessionCost(
     sessionsAvailable: sessions.length,
     sourceProject: effectiveSlug,
     autoDetected,
+    aggregateAll,
+    sources,
     pricingFallback: pricing.fallback,
     toolUsage,
     toolResultSizes: sizeStats,

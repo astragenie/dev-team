@@ -226,6 +226,12 @@ function resolveArtifactConfig(kind) {
         if (outcome?.reviewDecision) fmLines.push(`review_decision: ${outcome.reviewDecision}`);
         if (outcome?.validationDecision)
           fmLines.push(`validation_decision: ${outcome.validationDecision}`);
+        if (breakdown?.sourceProject)
+          fmLines.push(`source_project: ${breakdown.sourceProject}`);
+        if (breakdown?.autoDetected) fmLines.push(`auto_detected: true`);
+        if (breakdown?.aggregateAll) fmLines.push(`aggregate_all: true`);
+        if (breakdown?.sources?.length)
+          fmLines.push(`source_count: ${breakdown.sources.length}`);
         fmLines.push(`created_at: ${nowIso()}`);
         fmLines.push("---");
 
@@ -244,8 +250,19 @@ function resolveArtifactConfig(kind) {
           renderField("Total Tokens", totalTokens ? totalTokens.toLocaleString() : "-"),
           renderField("Cache Hit %", cacheHitPct !== "-" ? `${cacheHitPct}%` : "-"),
           renderField("Total USD", breakdown ? `$${breakdown.usd.toFixed(4)}` : "-"),
+          renderField("Source Project", breakdown?.sourceProject),
+          renderField("Auto-detected", breakdown?.autoDetected ? "yes" : "no"),
+          renderField("Aggregate All", breakdown?.aggregateAll ? "yes" : "no"),
           ""
         ];
+
+        if (breakdown?.sources?.length > 1) {
+          lines.push("## Sources (aggregated)", "");
+          for (const src of breakdown.sources) {
+            lines.push(`- ${src.slug}: ${src.messages} msgs, $${src.usd.toFixed(4)}`);
+          }
+          lines.push("");
+        }
 
         if (outcome?.sliceId) {
           lines.push("## Outcome Linkage", "");

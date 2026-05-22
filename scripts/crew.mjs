@@ -79,6 +79,7 @@ const FLAG_SPEC = {
   "--risks": { key: "risks" },
   "--run-title": { key: "runTitle" },
   "--source-project": { key: "sourceProject" },
+  "--aggregate-all": { key: "aggregateAll", boolean: true },
   "--scope": { key: "scope" },
   "--severity": { key: "severity" },
   "--started-at": { key: "startedAt" },
@@ -229,7 +230,7 @@ function usage(target = null) {
     "write-final-synthesis":
       "  node scripts/crew.mjs write-final-synthesis --repo <path> --title <text> [--summary <text>] [--files <a,b>]",
     "cost-slice":
-      "  node scripts/crew.mjs cost-slice --repo <path> [--started-at <iso>] [--completed-at <iso>] [--run-title <text>]",
+      "  node scripts/crew.mjs cost-slice --repo <path> [--started-at <iso>] [--completed-at <iso>] [--run-title <text>] [--source-project <slug>] [--aggregate-all]",
     "cost-advise": "  node scripts/crew.mjs cost-advise --repo <path>",
     "install-commit-bridge":
       "  node scripts/crew.mjs install-commit-bridge --repo <path> [--preset wiggin-loop|conventional-commits] [--commit-pattern <regex>] [--trigger-filename <name>] [--reviewer-label <name>]",
@@ -543,7 +544,8 @@ const COMMANDS = {
     const cost = await computeSessionCost(repoPath, {
       startedAt,
       completedAt,
-      sourceProject: flags.sourceProject
+      sourceProject: flags.sourceProject,
+      aggregateAll: flags.aggregateAll === true
     });
     const outcome = await collectOutcomeLinkage(repoPath, runTitle);
     const artifact = await writeArtifact(repoPath, "cost-report", {
