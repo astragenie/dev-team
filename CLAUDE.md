@@ -52,14 +52,58 @@ Repo-local overrides live in each consumer repo's `.claude/skills/`.
 
 ## CI gates
 
-GitHub Actions runs on every push and PR:
+GitHub Actions (`.github/workflows/test.yml`) runs on every push to `main`
+and every PR. All steps are blocking; lint must stay zero-warning.
 
 1. `npm ci`
 2. `node ./scripts/validate-manifests.mjs`
-3. `npm run lint`
-4. `npm run format:check`
-5. `node --test`
-6. `node ./scripts/e2e-smoke.mjs`
+3. `node ./scripts/validate-skills.mjs`
+4. `npm run lint`
+5. `npm run format:check`
+6. `npm run typecheck`
+7. `node --test`
+8. `node ./scripts/e2e-smoke.mjs`
+
+## Release & deployment
+
+This plugin has no server, no container, and no hosted runtime. "Deploying"
+means **cutting a versioned release that consumer installs can pin to**.
+Source of truth for what users actually receive is the marketplace manifest.
+
+### Release workflow
+
+1. CI green on `main` (all eight gates above).
+2. Update `CHANGELOG.md` — new top section, dated, grouped by FEAT.
+3. Bump `version` in:
+   - `package.json`
+   - `.claude-plugin/marketplace.json` → `plugins[name=crew].version`
+4. Commit: `chore(release): vX.Y.Z — <one-line summary>`.
+5. Tag annotated: `git tag -a vX.Y.Z -m "vX.Y.Z"`.
+6. Push both: `git push origin main --follow-tags`.
+7. Verify the tag appears on GitHub and the marketplace manifest is reachable.
+
+### Versioning
+
+Pre-1.0 semver-ish (see `CHANGELOG.md` header):
+
+- **Minor** (`0.X.0`): closes a backlog phase or introduces new commands/skills.
+- **Patch** (`0.X.Y`): bugfix, doc polish, skill quality bar updates.
+- Bumping `package.json` without bumping `marketplace.json` is a release bug.
+
+### Companion plugin (`autonomous-loop`)
+
+Lives in a separate repo
+(`https://github.com/sergeymilashico/hero-crew-autonomous-loop`) and is
+referenced from this repo's `marketplace.json` by version only. To pick up
+an AL release, bump `plugins[name=autonomous-loop].version` here and commit
+under `chore(marketplace): bump autonomous-loop to <ver>`.
+
+### Hard rules
+
+- Never force-push `main`. Never delete tags. Never skip hooks (`--no-verify`).
+- Never publish a release with failing CI, even locally green.
+- No auto-publish hook; releases are user-triggered.
+- Pinned-release callout in `README.md` must reference the latest tag.
 
 ## Repo rules
 
@@ -89,3 +133,36 @@ when picked by the autonomous-loop.
 
 Never commit secrets. Never disable hooks (`--no-verify`) without
 explicit user request. Never force-push to `main`.
+
+## v0.2.0 baseline addendum
+
+Phase 1 (Engineering OS) is closed at `v0.2.0` (2026-05-22). Treat the
+following as the assumed baseline; consult `CHANGELOG.md` for full detail
+and `docs/routing-table.md` for current routing.
+
+- **Skill taxonomy live.** Four tiers (`universal/`, `workflow/`, `domain/`,
+  `meta/`) enforced by `scripts/validate-skills.mjs` (quality bar:
+  name/tier/description required; ≤200 lines; tier in enum). Add tier to
+  frontmatter on every new skill.
+- **Routing-table authoritative.** `docs/routing-table.md` is consulted by
+  the lead at session start. `brief-me` surfaces a stale-check reminder if
+  mtime exceeds 30 days.
+- **Workflow badges.** `blocked` and `escalated_to_human` are first-class
+  workflow states with `--note` / `--blocked-by` flags. `write-final-synthesis`
+  refuses to run while escalated unless `--force`.
+- **Crew Fleet.** `crew fleet` command surfaces parallel-worktree visibility
+  across sibling worktrees. Use before claiming files in multi-tree work.
+- **TDD policy on builder/reviewer.** FEAT-011 wired test-first guidance
+  into builder and reviewer agent prompts. Reviewer enforces test presence
+  on runnable changes.
+- **Governance.** `docs/governance.md` records decision tallies + revert
+  policy. Phase 1 governance applies to all new work until Phase 2 opens.
+- **Cost telemetry.** Cost reports land in `.claude/artifacts/crew/cost/`
+  per slice and feed `brief-me` cost tables. Average ~$40/slice on
+  opus-4-7 with 99.9% cache hit is the current normal.
+
+### Open Phase 1 deferrals
+
+- **FEAT-005** (snapshot telemetry beyond AL plugin) and **FEAT-009** are
+  intentionally deferred behind explicit "when X observed" triggers; do
+  not pick them up without the trigger.

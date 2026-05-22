@@ -1,6 +1,6 @@
 ---
 id: FEAT-005
-status: pending
+status: done
 priority: P1
 category: skill
 target_release: v0.2.0
@@ -41,3 +41,9 @@ Pattern this skill so future domain skills can copy its shape
 ## Why not autonomous-safe
 
 Skill authorship is creative; needs human review of voice + accuracy.
+
+## Done
+
+`skills/domain/dotnet/csharp-conventions/SKILL.md` created 2026-05-22.
+Distilled from `Astragenie.Standards/docs/csharp/coding-conventions.md`.
+Pattern established for follow-on domain skills (FEAT-012…FEAT-015).
