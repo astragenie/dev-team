@@ -3,6 +3,25 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.1.19 — 2026-05-22
+
+### Changed
+- **briefing.mjs split (Tier B-7)**: 821-line module split along the
+  natural data / render boundary.
+  - `scripts/lib/briefing/collect.mjs` (515 lines): pure I/O —
+    `collectGitActivity`, `collectRelevantArtifacts`,
+    `collectRecentCosts`, `fetchAutonomousLoopBrief`.
+  - `scripts/lib/briefing/render.mjs` (299 lines): pure data → string
+    — `buildRetrievalGuide`, `buildCurrentObjective`,
+    `buildBlockedOrMissing`, `buildImportantReminders`,
+    `recommendedNextStep`, `buildSecondaryOptions`.
+  - `scripts/lib/briefing.mjs` (88 lines, was 821): thin orchestrator.
+  Public API `buildBriefingReport` unchanged.
+- **marketplace**: autonomous-loop entry bumped to v0.1.15 to pick up
+  the slice-linker + phase-gate splits shipped there.
+
+Tests: 49/49 pass.
+
 ## v0.1.18 — 2026-05-22
 
 ### Changed
