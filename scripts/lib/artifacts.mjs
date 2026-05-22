@@ -374,6 +374,23 @@ function renderCostReportFileReReads(breakdown) {
   return lines;
 }
 
+function renderCostReportCachePriming(breakdown) {
+  if (!breakdown?.toolCachePrime?.length) return [];
+  const lines = ["", "## Cache Priming (per tool, approximate)", ""];
+  lines.push(
+    "Attribution: each tool's tool_result size weighted against the NEXT assistant turn's cache_create tokens. Numbers are directional, not precise — system-prompt drift and prior-turn re-injection inflate ratios."
+  );
+  lines.push("");
+  for (const t of breakdown.toolCachePrime) {
+    const ratio = t.ratio != null ? `${t.ratio}×` : "—";
+    lines.push(
+      `- ${t.name}: ${t.calls} calls, ${t.totalResultBytes.toLocaleString()}B results, ~${t.attributedCacheCreate.toLocaleString()} cache_create tok (${ratio})`
+    );
+  }
+  lines.push("");
+  return lines;
+}
+
 function renderCostReportByModel(breakdown) {
   const lines = ["", "## By Model (token detail)", ""];
   if (breakdown?.byModel && Object.keys(breakdown.byModel).length) {
@@ -417,6 +434,7 @@ function renderCostReport(fields) {
     ...renderCostReportToolUsage(breakdown),
     ...renderCostReportToolResultSizes(breakdown),
     ...renderCostReportFileReReads(breakdown),
+    ...renderCostReportCachePriming(breakdown),
     ...renderCostReportByModel(breakdown),
     ...(fields.notes ? ["## Notes", "", fields.notes, ""] : [])
   ].join("\n");

@@ -136,6 +136,30 @@ async function loadReports(repoPath, limit = 20) {
   return reports;
 }
 
+// Parse the "## Cache Priming (per tool, approximate)" block. Lines look
+// like: "- Bash: 7 calls, 5,190B results, ~18,601 cache_create tok (3.58×)".
+function extractCachePriming(body) {
+  const section = body.split(/^##\s+/m).find((s) => s.startsWith("Cache Priming"));
+  if (!section) return [];
+  const out = [];
+  for (const line of section.split(/\r?\n/)) {
+    const m = line.match(
+      /^-\s+([\w-]+):\s+(\d+)\s+calls,\s+([\d,]+)B\s+results,\s+~([\d,]+)\s+cache_create\s+tok\s+\(([\d.]+|—)/
+    );
+    if (m) {
+      const ratio = m[5] === "—" ? null : Number(m[5]);
+      out.push({
+        name: m[1],
+        calls: Number(m[2]),
+        resultBytes: Number(m[3].replace(/,/g, "")),
+        cacheCreateTokens: Number(m[4].replace(/,/g, "")),
+        ratio
+      });
+    }
+  }
+  return out;
+}
+
 // Parse the "## Sources (aggregated)" block out of a cost-report body.
 // Lines look like: "- C--work-mega: 14 msgs, $9.5937".
 function extractSources(body) {
@@ -219,7 +243,8 @@ function summarizeReport(r) {
     autoDetected: String(r.fm.auto_detected || "").toLowerCase() === "true",
     aggregateAll: String(r.fm.aggregate_all || "").toLowerCase() === "true",
     sourceCount: r.fm.source_count ? Number(r.fm.source_count) : 0,
-    sources: extractSources(body)
+    sources: extractSources(body),
+    cachePriming: extractCachePriming(body)
   };
 }
 
@@ -360,6 +385,47 @@ const RULES = [
       `Slice spend spread across ${s.sourceCount} different Claude sessions. Hard to reason about; cache reuse is fragmented.`,
     suggestion:
       "Scope sessions per slice. Open one Claude Code session in the target repo and stay there until the slice closes."
+  },
+  // ---- Item 3: cache-priming rules (approximate signals) ----
+  {
+    id: "bash-bloat",
+    trigger: (s) => {
+      const bash = s.cachePriming?.find((t) => t.name === "Bash");
+      if (!bash || bash.calls < 5) return false;
+      const avgBytes = bash.resultBytes / bash.calls;
+      return avgBytes > 8000;
+    },
+    severity: (s) => {
+      const bash = s.cachePriming?.find((t) => t.name === "Bash");
+      const avg = bash ? bash.resultBytes / bash.calls : 0;
+      return avg > 30000 ? "high" : "medium";
+    },
+    message: (s) => {
+      const bash = s.cachePriming?.find((t) => t.name === "Bash");
+      const avg = bash ? Math.round(bash.resultBytes / bash.calls) : 0;
+      return `Bash result size averages ${avg.toLocaleString()}B over ${bash?.calls || 0} calls. Big Bash output inflates cache_create.`;
+    },
+    suggestion:
+      "Prefer Grep with head_limit, or pipe Bash through `| head -N`, or read a narrower file slice. Each broad Bash result is fresh cache_create on the next turn."
+  },
+  {
+    id: "dead-weight-skill",
+    trigger: (s) => {
+      const skill = s.cachePriming?.find((t) => t.name === "Skill");
+      if (!skill || skill.calls < 2) return false;
+      // Approximate "dead weight": ratio > 5× means skill prose dominated
+      // cache_create relative to its own result size, and (heuristically)
+      // wasn't reused enough to amortize. Combine with low cache hit on
+      // the slice to filter false positives.
+      return skill.ratio != null && skill.ratio > 5 && s.cacheHitPct > 0 && s.cacheHitPct < 95;
+    },
+    severity: () => "medium",
+    message: (s) => {
+      const skill = s.cachePriming?.find((t) => t.name === "Skill");
+      return `Skill invocations have a ${skill?.ratio}× cache_create-to-result ratio while slice cache hit is only ${s.cacheHitPct}%. Skill prose is being injected but not amortized.`;
+    },
+    suggestion:
+      "Audit which skills auto-load. Heavy skills (caveman, crew, superpowers) inject 2-10KB of prose each — if they're not used in subsequent turns, disable autoload."
   }
 ];
 

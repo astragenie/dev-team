@@ -369,7 +369,8 @@ async function scanSessions({ sessions, fileToSlug, startMs, endMs }) {
     skillInvocations: counters.skillInvocations,
     subagentDispatches: counters.subagentDispatches,
     turnsBeforeFirstTool: counters.turnsBeforeFirstTool,
-    perSourceState
+    perSourceState,
+    toolCachePrime
   };
 }
 
@@ -414,12 +415,37 @@ function recordToolUse(ctx, tu) {
   }
 }
 
+function attributeCachePrime(ctx, usage) {
+  // Attribute this turn's cache_create_* tokens to the tool_uses from the
+  // PRIOR assistant turn, weighted by their tool_result sizes. Approximate:
+  // ignores interleaved system content, prompt re-injection, etc.
+  const pending = ctx.cachePrimeState.pendingToolUses;
+  if (!pending.length || !usage) return;
+  const cc = usage.cache_creation;
+  const cacheCreate = cc
+    ? (cc.ephemeral_5m_input_tokens || 0) + (cc.ephemeral_1h_input_tokens || 0)
+    : usage.cache_creation_input_tokens || 0;
+  if (cacheCreate <= 0) return;
+  const sizes = pending.map((tu) => ctx.cachePrimeState.pendingResultSizes[tu.id] || 0);
+  const totalSize = sizes.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < pending.length; i += 1) {
+    const tu = pending[i];
+    const weight = totalSize > 0 ? sizes[i] / totalSize : 1 / pending.length;
+    const attributed = cacheCreate * weight;
+    if (!ctx.toolCachePrime[tu.name]) {
+      ctx.toolCachePrime[tu.name] = { calls: 0, totalResultBytes: 0, attributedCacheCreate: 0 };
+    }
+    ctx.toolCachePrime[tu.name].attributedCacheCreate += attributed;
+  }
+}
+
 function handleAssistantTurn(obj, file, fileToSlug, ctx) {
   const usage = obj?.message?.usage;
   const touched = Boolean(usage);
   if (usage) {
     const model = obj?.message?.model || "unknown";
     recordTokenUsage(ctx, model, tokensFromUsage(usage), file, fileToSlug);
+    attributeCachePrime(ctx, usage);
   }
   const insp = inspectContent(obj?.message?.content);
   if (insp.toolUses.length === 0 && !ctx.flags.sawFirstTool) {
@@ -427,6 +453,12 @@ function handleAssistantTurn(obj, file, fileToSlug, ctx) {
   }
   for (const tu of insp.toolUses) {
     recordToolUse(ctx, tu);
+  }
+  // Update pending state: this turn's tool_uses become the candidates for
+  // next turn's cache_create attribution.
+  if (insp.toolUses.length > 0) {
+    ctx.cachePrimeState.pendingToolUses = insp.toolUses.map((tu) => ({ id: tu.id, name: tu.name }));
+    ctx.cachePrimeState.pendingResultSizes = {};
   }
   return touched;
 }
@@ -444,9 +476,24 @@ function handleUserTurn(obj, ctx) {
   if (insp.toolResults.length > 0) {
     for (const tr of insp.toolResults) {
       ctx.toolResultSizes.push(tr.size);
+      // Capture result size for cache-prime attribution on the NEXT turn.
+      if (tr.id) ctx.cachePrimeState.pendingResultSizes[tr.id] = tr.size;
+      // Per-tool result-size bookkeeping (used by the priming summary).
+      const toolName = tr.id ? ctx.toolNameById.get(tr.id) : null;
+      if (toolName) {
+        if (!ctx.toolCachePrime[toolName]) {
+          ctx.toolCachePrime[toolName] = {
+            calls: 0,
+            totalResultBytes: 0,
+            attributedCacheCreate: 0
+          };
+        }
+        ctx.toolCachePrime[toolName].calls += 1;
+        ctx.toolCachePrime[toolName].totalResultBytes += tr.size || 0;
+      }
       if (tr.isError && tr.id) {
-        const toolName = ctx.toolNameById.get(tr.id) || "unknown";
-        ctx.toolFailureCounts[toolName] = (ctx.toolFailureCounts[toolName] || 0) + 1;
+        const errToolName = ctx.toolNameById.get(tr.id) || "unknown";
+        ctx.toolFailureCounts[errToolName] = (ctx.toolFailureCounts[errToolName] || 0) + 1;
       }
     }
   } else {
@@ -507,7 +554,8 @@ export async function computeSessionCost(
     skillInvocations,
     subagentDispatches,
     turnsBeforeFirstTool,
-    perSourceState
+    perSourceState,
+    toolCachePrime
   } = scan;
   const sources = [];
 
@@ -602,6 +650,25 @@ export async function computeSessionCost(
     toolResultSizes: sizeStats,
     fileReReadCount,
     fileReReadTopPaths: fileReReadEntries.slice(0, 5).map(([p, c]) => ({ path: p, reads: c })),
-    conversation
+    conversation,
+    // Per-tool cache priming (approximate). For each tool, totalResultBytes
+    // is the sum of bytes its tool_results returned across the window;
+    // attributedCacheCreate is the share of the next assistant turn's
+    // cache_create tokens attributed to that tool, weighted by result size.
+    // Ratio >1 means the tool's result generated more cache content than
+    // its own bytes (system prompt drift, framework prose, prior-turn
+    // re-injection). Ratio <1 means content compressed in cache.
+    toolCachePrime: Object.entries(toolCachePrime)
+      .map(([name, v]) => ({
+        name,
+        calls: v.calls,
+        totalResultBytes: v.totalResultBytes,
+        attributedCacheCreate: Math.round(v.attributedCacheCreate),
+        ratio:
+          v.totalResultBytes > 0
+            ? Number((v.attributedCacheCreate / v.totalResultBytes).toFixed(2))
+            : null
+      }))
+      .sort((a, b) => b.attributedCacheCreate - a.attributedCacheCreate)
   };
 }
