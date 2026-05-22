@@ -24,6 +24,75 @@ import { computeSessionCost } from "./lib/session-cost.mjs";
 import { collectOutcomeLinkage } from "./lib/outcome-linkage.mjs";
 import { buildCostAdvisor, renderCostAdvisorMarkdown } from "./lib/cost-advisor.mjs";
 
+// Flag schema. Each entry maps a CLI flag to the flags-object key and the
+// arity (whether it consumes a value). Aliases (e.g. `--verdict` → `decision`)
+// are supported by giving two entries the same target key. parseArgs() drives
+// off this table instead of a 350-line if-chain.
+//
+// Keep entries alphabetized within each arity group for diffability.
+const FLAG_SPEC = {
+  // Boolean flags (no value).
+  "--allow-existing": { key: "allowExisting", boolean: true },
+  "--help": { key: "help", boolean: true },
+  "-h": { key: "help", boolean: true },
+  // Value-consuming flags.
+  "--alerts": { key: "alerts" },
+  "--approver": { key: "approver" },
+  "--badge": { key: "badge" },
+  "--build": { key: "build" },
+  "--clues": { key: "clues" },
+  "--commit-pattern": { key: "commitPattern" },
+  "--completed-at": { key: "completedAt" },
+  "--confidence": { key: "confidence" },
+  "--decision": { key: "decision" },
+  "--deliverable": { key: "deliverable" },
+  "--deploy": { key: "deploy" },
+  "--deployer": { key: "deployer" },
+  "--discovery-status": { key: "discoveryStatus" },
+  "--environment": { key: "environment" },
+  "--environments": { key: "environments" },
+  "--evidence": { key: "evidence" },
+  "--files": { key: "files" },
+  "--from": { key: "from" },
+  "--goal": { key: "goal" },
+  "--id": { key: "id" },
+  "--kind": { key: "kind" },
+  "--logs": { key: "logs" },
+  "--metrics": { key: "metrics" },
+  "--missing": { key: "missing" },
+  "--mode": { key: "mode" },
+  "--next": { key: "next" },
+  "--note": { key: "note" },
+  "--out-of-scope": { key: "outOfScope" },
+  "--owner": { key: "owner" },
+  "--pace": { key: "pace" },
+  "--preset": { key: "preset" },
+  "--reason": { key: "reason" },
+  "--refresh-when": { key: "refreshWhen" },
+  "--repo": { key: "repo" },
+  "--requester": { key: "requester" },
+  "--resolver": { key: "resolver" },
+  "--resource": { key: "resource" },
+  "--revision": { key: "revision" },
+  "--reviewer": { key: "reviewer" },
+  "--reviewer-label": { key: "reviewerLabel" },
+  "--risks": { key: "risks" },
+  "--run-title": { key: "runTitle" },
+  "--scope": { key: "scope" },
+  "--severity": { key: "severity" },
+  "--started-at": { key: "startedAt" },
+  "--status": { key: "status" },
+  "--summary": { key: "summary" },
+  "--telemetry": { key: "telemetry" },
+  "--title": { key: "title" },
+  "--to": { key: "to" },
+  "--trigger-filename": { key: "triggerFilename" },
+  "--url": { key: "url" },
+  "--validator": { key: "validator" },
+  "--verdict": { key: "decision" }, // alias of --decision
+  "--verified-from": { key: "verifiedFrom" }
+};
+
 function parseArgs(argv) {
   const [command, ...rest] = argv;
   const flags = {
@@ -94,287 +163,14 @@ function parseArgs(argv) {
       }
       break;
     }
-    if (value === "--help" || value === "-h") {
-      flags.help = true;
-      continue;
-    }
-    if (value === "--repo") {
-      flags.repo = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--allow-existing") {
-      flags.allowExisting = true;
-      continue;
-    }
-    if (value === "--owner") {
-      flags.owner = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--requester") {
-      flags.requester = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--approver") {
-      flags.approver = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--resolver") {
-      flags.resolver = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--kind") {
-      flags.kind = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--severity") {
-      flags.severity = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--summary") {
-      flags.summary = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--reason") {
-      flags.reason = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--note") {
-      flags.note = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--status") {
-      flags.status = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--id") {
-      flags.id = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--decision") {
-      flags.decision = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--verdict") {
-      flags.decision = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--title") {
-      flags.title = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--goal") {
-      flags.goal = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--mode") {
-      flags.mode = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--pace") {
-      flags.pace = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--scope") {
-      flags.scope = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--out-of-scope") {
-      flags.outOfScope = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--files") {
-      flags.files = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--evidence") {
-      flags.evidence = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--risks") {
-      flags.risks = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--next") {
-      flags.next = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--from") {
-      flags.from = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--to") {
-      flags.to = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--deliverable") {
-      flags.deliverable = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--confidence") {
-      flags.confidence = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--reviewer") {
-      flags.reviewer = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--validator") {
-      flags.validator = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--deployer") {
-      flags.deployer = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--environment") {
-      flags.environment = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--build") {
-      flags.build = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--deploy") {
-      flags.deploy = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--environments") {
-      flags.environments = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--logs") {
-      flags.logs = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--metrics") {
-      flags.metrics = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--alerts") {
-      flags.alerts = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--telemetry") {
-      flags.telemetry = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--clues") {
-      flags.clues = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--discovery-status") {
-      flags.discoveryStatus = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--verified-from") {
-      flags.verifiedFrom = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--missing") {
-      flags.missing = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--refresh-when") {
-      flags.refreshWhen = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--resource") {
-      flags.resource = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--url") {
-      flags.url = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--revision") {
-      flags.revision = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--badge") {
-      flags.badge = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--preset") {
-      flags.preset = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--commit-pattern") {
-      flags.commitPattern = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--trigger-filename") {
-      flags.triggerFilename = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--reviewer-label") {
-      flags.reviewerLabel = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--started-at") {
-      flags.startedAt = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--completed-at") {
-      flags.completedAt = rest[index + 1];
-      index += 1;
-      continue;
-    }
-    if (value === "--run-title") {
-      flags.runTitle = rest[index + 1];
-      index += 1;
+    const spec = FLAG_SPEC[value];
+    if (spec) {
+      if (spec.boolean) {
+        flags[spec.key] = true;
+      } else {
+        flags[spec.key] = rest[index + 1];
+        index += 1;
+      }
       continue;
     }
     if (value.startsWith("--")) {
@@ -386,14 +182,11 @@ function parseArgs(argv) {
   if (!command || command === "--help" || command === "-h") {
     return { command: "help", helpTarget: null, flags, positionals };
   }
-
   if (flags.help) {
     return { command: "help", helpTarget: command, flags, positionals };
   }
-
   return { command, helpTarget: null, flags, positionals };
 }
-
 function usage(target = null) {
   const subcommands = {
     "install-global": "  node scripts/crew.mjs install-global",
@@ -514,79 +307,65 @@ function normalizeMsysPath(value) {
   return `${match[1].toUpperCase()}:/${match[2]}`;
 }
 
-async function main() {
-  const { command, helpTarget, flags, positionals } = parseArgs(process.argv.slice(2));
-  const repoPath = path.resolve(normalizeMsysPath(flags.repo));
+// Command registry. Each entry is `(ctx) => Promise<result>` where
+// `ctx = { repoPath, flags, positionals }`. main() dispatches by name; the
+// table replaces a 240-line else-if chain. Adding a command = one entry.
+const COMMANDS = {
+  "install-global": () => installGlobal(),
+  audit: ({ repoPath }) => auditRepo(repoPath),
+  bootstrap: ({ repoPath }) => bootstrapRepo(repoPath),
+  init: ({ repoPath, flags }) => initRepo(repoPath, { allowExisting: flags.allowExisting }),
 
-  if (command === "help") {
-    console.log(usage(helpTarget));
-    return;
-  }
-
-  let result;
-  if (command === "install-global") {
-    result = await installGlobal();
-  } else if (command === "audit") {
-    result = await auditRepo(repoPath);
-  } else if (command === "bootstrap") {
-    result = await bootstrapRepo(repoPath);
-  } else if (command === "init") {
-    result = await initRepo(repoPath, { allowExisting: flags.allowExisting });
-  } else if (command === "install-commit-bridge") {
-    result = await installCommitBridge(repoPath, {
+  "install-commit-bridge": ({ repoPath, flags }) =>
+    installCommitBridge(repoPath, {
       preset: flags.preset,
       commitPattern: flags.commitPattern,
       triggerFilename: flags.triggerFilename,
       reviewerLabel: flags.reviewerLabel
-    });
-  } else if (command === "backfill-commit-bridge") {
-    result = await backfillCommitBridge(repoPath, {
+    }),
+  "backfill-commit-bridge": ({ repoPath, flags }) =>
+    backfillCommitBridge(repoPath, {
       preset: flags.preset,
       commitPattern: flags.commitPattern,
       reviewerLabel: flags.reviewerLabel
-    });
-  } else if (command === "list-bridge-presets") {
-    result = { presets: listBridgePresets() };
-  } else if (command === "install-wiggin-bridge") {
-    result = await installWigginBridge(repoPath);
-  } else if (command === "backfill-wiggin-bridge") {
-    result = await backfillWigginBridge(repoPath);
-  } else if (command === "claim") {
-    result = await claimFiles(repoPath, positionals, { owner: flags.owner || "lead-session" });
-  } else if (command === "release") {
-    result = await releaseFiles(repoPath, positionals, { owner: flags.owner });
-  } else if (command === "show-claims") {
-    result = { claims: await listClaims(repoPath) };
-  } else if (command === "show-conflicts") {
-    result = await inspectClaims(repoPath, positionals, { owner: flags.owner || "lead-session" });
-  } else if (command === "request-approval") {
-    result = await requestApproval(repoPath, {
+    }),
+  "list-bridge-presets": () => Promise.resolve({ presets: listBridgePresets() }),
+  "install-wiggin-bridge": ({ repoPath }) => installWigginBridge(repoPath),
+  "backfill-wiggin-bridge": ({ repoPath }) => backfillWigginBridge(repoPath),
+
+  claim: ({ repoPath, flags, positionals }) =>
+    claimFiles(repoPath, positionals, { owner: flags.owner || "lead-session" }),
+  release: ({ repoPath, flags, positionals }) =>
+    releaseFiles(repoPath, positionals, { owner: flags.owner }),
+  "show-claims": async ({ repoPath }) => ({ claims: await listClaims(repoPath) }),
+  "show-conflicts": ({ repoPath, flags, positionals }) =>
+    inspectClaims(repoPath, positionals, { owner: flags.owner || "lead-session" }),
+
+  "request-approval": ({ repoPath, flags, positionals }) =>
+    requestApproval(repoPath, {
       requester: flags.requester || "lead-session",
       approver: flags.approver,
       kind: flags.kind || "scope_change",
       severity: flags.severity || "medium",
       summary: flags.summary || positionals.join(" ") || "Approval requested",
       reason: flags.reason || ""
-    });
-  } else if (command === "show-approvals") {
-    result = {
-      approvals: await listApprovals(repoPath, { status: flags.status, approver: flags.approver })
-    };
-  } else if (command === "resolve-approval") {
-    result = await resolveApproval(repoPath, {
+    }),
+  "show-approvals": async ({ repoPath, flags }) => ({
+    approvals: await listApprovals(repoPath, { status: flags.status, approver: flags.approver })
+  }),
+  "resolve-approval": ({ repoPath, flags }) =>
+    resolveApproval(repoPath, {
       id: flags.id,
       decision: flags.decision,
       resolver: flags.resolver || "lead-session",
       note: flags.note || ""
-    });
-  } else if (command === "wake-up") {
-    result = await buildWakeUpBrief(repoPath);
-  } else if (command === "brief-me") {
-    result = await buildBriefingReport(repoPath);
-  } else if (command === "discover-deployment") {
-    result = await discoverDeploymentClues(repoPath);
-  } else if (command === "write-deployment-guidance") {
-    result = await writeDeploymentGuidance(repoPath, {
+    }),
+
+  "wake-up": ({ repoPath }) => buildWakeUpBrief(repoPath),
+  "brief-me": ({ repoPath }) => buildBriefingReport(repoPath),
+  "discover-deployment": ({ repoPath }) => discoverDeploymentClues(repoPath),
+  "write-deployment-guidance": ({ repoPath, flags, positionals }) =>
+    writeDeploymentGuidance(repoPath, {
       title: flags.title || positionals.join(" ") || "Repo Deployment Model",
       owner: flags.owner || "lead-session",
       summary: flags.summary,
@@ -603,14 +382,13 @@ async function main() {
       missing: flags.missing,
       refreshWhen: flags.refreshWhen,
       next: flags.next
-    });
-  } else if (command === "show-workflow-state") {
+    }),
+
+  "show-workflow-state": async ({ repoPath }) => {
     const workflowState = await loadWorkflowState(repoPath);
-    result = {
-      workflowState,
-      summary: summarizeWorkflowState(workflowState)
-    };
-  } else if (command === "mark-badge") {
+    return { workflowState, summary: summarizeWorkflowState(workflowState) };
+  },
+  "mark-badge": async ({ repoPath, flags }) => {
     const currentRun = await markWorkflowBadge(repoPath, {
       badge: flags.badge,
       note: flags.note || flags.reason || "",
@@ -619,12 +397,11 @@ async function main() {
       mode: flags.mode,
       next: flags.next
     });
-    result = {
-      badge: flags.badge,
-      currentRun
-    };
-  } else if (command === "write-run-brief") {
-    result = await writeArtifact(repoPath, "run-brief", {
+    return { badge: flags.badge, currentRun };
+  },
+
+  "write-run-brief": ({ repoPath, flags, positionals }) =>
+    writeArtifact(repoPath, "run-brief", {
       title: flags.title || positionals.join(" ") || "Run Brief",
       goal: flags.goal,
       mode: flags.mode,
@@ -636,9 +413,9 @@ async function main() {
       outOfScope: flags.outOfScope,
       files: flags.files,
       next: flags.next
-    });
-  } else if (command === "write-handoff") {
-    result = await writeArtifact(repoPath, "handoff", {
+    }),
+  "write-handoff": ({ repoPath, flags, positionals }) =>
+    writeArtifact(repoPath, "handoff", {
       title: flags.title || positionals.join(" ") || "Task Handoff",
       from: flags.from || flags.owner || "lead-session",
       to: flags.to,
@@ -651,9 +428,9 @@ async function main() {
       confidence: flags.confidence,
       risks: flags.risks,
       next: flags.next
-    });
-  } else if (command === "write-review-result") {
-    result = await writeArtifact(repoPath, "review-result", {
+    }),
+  "write-review-result": ({ repoPath, flags, positionals }) =>
+    writeArtifact(repoPath, "review-result", {
       title: flags.title || positionals.join(" ") || "Review Result",
       reviewer: flags.reviewer || flags.owner || "reviewer",
       decision: flags.decision,
@@ -662,9 +439,9 @@ async function main() {
       files: flags.files,
       risks: flags.risks,
       next: flags.next
-    });
-  } else if (command === "write-validation-plan") {
-    result = await writeArtifact(repoPath, "validation-plan", {
+    }),
+  "write-validation-plan": ({ repoPath, flags, positionals }) =>
+    writeArtifact(repoPath, "validation-plan", {
       title: flags.title || positionals.join(" ") || "Validation Plan",
       validator: flags.validator || flags.owner || "validator",
       owner: flags.owner || "lead-session",
@@ -675,9 +452,9 @@ async function main() {
       outOfScope: flags.outOfScope,
       evidence: flags.evidence,
       next: flags.next
-    });
-  } else if (command === "write-validation-result") {
-    result = await writeArtifact(repoPath, "validation-result", {
+    }),
+  "write-validation-result": ({ repoPath, flags, positionals }) =>
+    writeArtifact(repoPath, "validation-result", {
       title: flags.title || positionals.join(" ") || "Validation Result",
       validator: flags.validator || flags.owner || "validator",
       environment: flags.environment,
@@ -688,9 +465,9 @@ async function main() {
       files: flags.files,
       risks: flags.risks,
       next: flags.next
-    });
-  } else if (command === "write-deployment-check") {
-    result = await writeArtifact(repoPath, "deployment-check", {
+    }),
+  "write-deployment-check": ({ repoPath, flags, positionals }) =>
+    writeArtifact(repoPath, "deployment-check", {
       title: flags.title || positionals.join(" ") || "Deployment Check",
       deployer: flags.deployer || flags.owner || "deployer",
       environment: flags.environment,
@@ -704,9 +481,9 @@ async function main() {
       files: flags.files,
       risks: flags.risks,
       next: flags.next
-    });
-  } else if (command === "write-final-synthesis") {
-    result = await writeArtifact(repoPath, "final-synthesis", {
+    }),
+  "write-final-synthesis": async ({ repoPath, flags, positionals }) => {
+    const synthesis = await writeArtifact(repoPath, "final-synthesis", {
       title: flags.title || positionals.join(" ") || "Final Synthesis",
       owner: flags.owner || "lead-session",
       status: flags.status === "open" ? "completed" : flags.status,
@@ -719,14 +496,14 @@ async function main() {
     const costArtifact = await maybeEmitCostReport(repoPath, {
       runTitle: flags.title || positionals.join(" ") || null
     });
-    if (costArtifact) {
-      result = { ...result, costReport: costArtifact };
-    }
-  } else if (command === "cost-advise") {
+    return costArtifact ? { ...synthesis, costReport: costArtifact } : synthesis;
+  },
+
+  "cost-advise": async ({ repoPath }) => {
     const advisor = await buildCostAdvisor(repoPath, { limit: 10 });
     const md = renderCostAdvisorMarkdown(advisor);
     const writePath = await writeCostAdviseArtifact(repoPath, md, advisor);
-    result = {
+    return {
       target: advisor.target?.sliceId || advisor.target?.runTitle || null,
       recommendations: advisor.recommendations,
       aggregateFlags: advisor.aggregateFlags || [],
@@ -734,7 +511,8 @@ async function main() {
       reportsAnalyzed: advisor.reports.length,
       artifactPath: writePath
     };
-  } else if (command === "cost-slice") {
+  },
+  "cost-slice": async ({ repoPath, flags }) => {
     const state = await loadWorkflowState(repoPath);
     const run = state?.currentRun || null;
     const startedAt = flags.startedAt || run?.startedAt;
@@ -745,19 +523,34 @@ async function main() {
     }
     const cost = await computeSessionCost(repoPath, { startedAt, completedAt });
     const outcome = await collectOutcomeLinkage(repoPath, runTitle);
-    result = await writeArtifact(repoPath, "cost-report", {
+    const artifact = await writeArtifact(repoPath, "cost-report", {
       title: `Cost — ${runTitle}`,
       runTitle,
       cost,
       outcome,
       notes: flags.summary || null
     });
-    result.cost = cost;
-    result.outcome = outcome;
-  } else {
+    artifact.cost = cost;
+    artifact.outcome = outcome;
+    return artifact;
+  }
+};
+
+async function main() {
+  const { command, helpTarget, flags, positionals } = parseArgs(process.argv.slice(2));
+  const repoPath = path.resolve(normalizeMsysPath(flags.repo));
+
+  if (command === "help") {
+    console.log(usage(helpTarget));
+    return;
+  }
+
+  const handler = COMMANDS[command];
+  if (!handler) {
     throw new Error(`Unknown command: ${command}`);
   }
 
+  const result = await handler({ repoPath, flags, positionals });
   console.log(JSON.stringify(result, null, 2));
 }
 
