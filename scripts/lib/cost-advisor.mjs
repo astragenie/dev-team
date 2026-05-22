@@ -94,6 +94,10 @@ function percentile(arr, p) {
 
 async function loadReports(repoPath, limit = 20) {
   // Scan new cost/ dir first, then legacy runs/ dir for backward compat.
+  // Filenames carry a timestamp prefix (YYYYMMDDTHHMMSSZ-...) so lexicographic
+  // sort is chronological. We exploit that to skip an N-wide fs.stat batch:
+  // sort by basename desc and read only the top N. Cheaper than the previous
+  // "stat every file then sort by mtime" path, especially on large dirs.
   const dirs = [
     path.join(repoPath, ...REPORTS_DIR_PARTS),
     path.join(repoPath, ...LEGACY_REPORTS_DIR_PARTS)
@@ -107,24 +111,15 @@ async function loadReports(repoPath, limit = 20) {
       continue;
     }
     for (const e of entries) {
-      if (/-cost-report-.+\.md$/.test(e)) files.push(path.join(dir, e));
+      if (/-cost-report-.+\.md$/.test(e)) files.push({ dir, name: e });
     }
   }
-  const stats = await Promise.all(
-    files.map(async (f) => {
-      try {
-        return { f, m: (await fs.stat(f)).mtimeMs };
-      } catch {
-        return null;
-      }
-    })
-  );
-  const sorted = stats
-    .filter(Boolean)
-    .sort((a, b) => b.m - a.m)
-    .slice(0, limit);
+  // Sort by basename desc (newest first via timestamp prefix), then slice.
+  files.sort((a, b) => b.name.localeCompare(a.name));
+  const top = files.slice(0, limit);
   const reports = [];
-  for (const { f } of sorted) {
+  for (const { dir, name } of top) {
+    const f = path.join(dir, name);
     try {
       const text = await fs.readFile(f, "utf8");
       const { fm, body } = parseFrontmatter(text);
@@ -331,11 +326,11 @@ const RULES = [
     id: "exploration-heavy",
     trigger: (s) =>
       Number.isFinite(s.explorationRatio) && s.explorationRatio > 4 && s.totalToolCalls >= 10,
-    severity: () => "low",
+    severity: (s) => (s.explorationRatio > 8 ? "high" : "medium"),
     message: (s) =>
       `Exploration:execution tool ratio is ${s.explorationRatio.toFixed(1)}:1 (Reads/Greps/Bashes vs Edits/Writes).`,
     suggestion:
-      "Lots of looking, little doing. Decide on the change after the second pass of exploration; do not keep grepping."
+      "Lots of looking, little doing. After the second exploration pass, write the plan down and start editing; do not keep grepping. Prefer LSP for code-symbol lookups (see `docs/grep-guidance.md` in hero-crew); use Grep only for prose, configs, or regex hunts."
   },
   {
     id: "expensive-failure",
