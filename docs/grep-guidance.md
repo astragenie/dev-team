@@ -95,6 +95,48 @@ When one of these fires, this doc is the playbook.
 
 In those cases Grep is correct. Just bundle the calls.
 
+## Sweep pattern — one table, many commits
+
+When a slice does the same operation on N items (reconcile backlog,
+batch-rename files, sweep a config across repos), the cheap shape is:
+
+1. **One enumeration** — `Glob` to list every input. ONE call.
+2. **One matching table** — compute the input→target map upfront.
+3. **One loop** — drive the work from the table.
+
+Anti-pattern observed in real slices: re-enumerating per batch.
+A FEAT→SLICE reconcile that ran 4 separate batches re-listed
+`triaged/` + `completed/` each time. ~12 redundant scans for what
+should've been 1 upfront + 4 commit-time loops.
+
+## Commit-message tightness
+
+Each commit-message body adds output tokens AND ends up in the next
+turn's input as part of `git log`. Routine commits should be ≤6 lines:
+
+```
+feat(area): subject ≤50 chars
+
+Why this needed (one line if non-obvious from diff).
+```
+
+Skip recap of what files changed — `git log -p` shows it. Skip
+"verified by running X" — that lives in the validation artifact.
+
+## CRLF / line-ending noise
+
+On Windows, `git add` of LF-content files emits "LF will be replaced
+by CRLF" warnings on every staged file. Repo-level `.gitattributes`
+suppresses these:
+
+```
+* text=auto eol=lf
+*.{cmd,bat,ps1} text eol=crlf
+```
+
+Drop into `.gitattributes` at repo root. Cuts session tool_result
+noise by ~5-10 lines per commit.
+
 ## Tool selection cheatsheet
 
 | Tool | Cheap | Expensive | Avoid when |

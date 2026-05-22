@@ -1,0 +1,20 @@
+# Force LF for text files repo-wide. Suppresses the "LF will be replaced
+# by CRLF" warnings on every Windows `git add` and keeps diffs clean
+# across platforms.
+* text=auto eol=lf
+
+# Windows-only files keep CRLF.
+*.cmd  text eol=crlf
+*.bat  text eol=crlf
+*.ps1  text eol=crlf
+
+# Binary types — never normalise.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.zip  binary
+*.gz   binary
+*.exe  binary
