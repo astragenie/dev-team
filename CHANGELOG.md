@@ -3,6 +3,30 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.1.23 — 2026-05-22
+
+### Changed
+- **`session-cost.mjs::computeSessionCost`** — 235 lines / complexity 85
+  cut to 133 lines / complexity 22.
+  - `scanSessions` extracted: drives the per-session JSONL loop and
+    returns the full accumulator bundle (totals, byModel, tool stats,
+    file reads, conversation counters, perSourceState).
+  - `handleAssistantTurn` + `handleUserTurn` extracted: the assistant
+    branch handles usage / tool-use; the user branch handles
+    tool_result sizing, compaction signals, and user message shape.
+  - `resolveScanSources` extracted: encapsulates the three-mode source
+    selection (aggregateAll / explicit / repo-derived with auto-detect
+    fallback).
+  - `sessionsHaveInWindowAssistantTurns` extracted: short-circuit
+    activity probe used by the auto-detect fallback path.
+- **`cost-advisor.mjs::summarizeReport`** — complexity 27 cut by
+  extracting `summarizeToolStats` + `computeExplorationRatio` +
+  `toolCount` helpers. summarizeReport now reads as a flat data shape.
+
+### Notes
+- Lint warning count: 18 → 15.
+- All 49 tests pass.
+
 ## v0.1.22 — 2026-05-22
 
 ### Changed

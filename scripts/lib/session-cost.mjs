@@ -225,6 +225,225 @@ async function listActiveProjectDirs({ startMs, endMs }) {
   return active;
 }
 
+// Decides which `~/.claude/projects/<slug>/` directories to scan.
+// Three modes:
+//   - aggregateAll: every project dir with in-window activity.
+//   - explicit sourceProject: scan only that dir.
+//   - default: scan the repo-derived dir; if empty + autoDetect enabled,
+//     fall back to the busiest in-window project.
+async function resolveScanSources({
+  aggregateAll,
+  sourceProject,
+  autoDetect,
+  repoPath,
+  startedAt,
+  endIso,
+  startMs,
+  endMs
+}) {
+  const sessionsBySource = new Map();
+  let effectiveSlug = sourceProject || slugifyRepoPath(repoPath);
+  let autoDetected = false;
+
+  if (aggregateAll) {
+    const active = await listActiveProjectDirs({ startMs, endMs });
+    for (const { slug, dir } of active) {
+      const files = (await fs.readdir(dir))
+        .filter((f) => f.endsWith(".jsonl"))
+        .map((f) => path.join(dir, f));
+      sessionsBySource.set(slug, files);
+    }
+    return { sessionsBySource, effectiveSlug: "aggregate", autoDetected };
+  }
+
+  let initialFiles = await listProjectSessions(repoPath, effectiveSlug);
+  if (!sourceProject && autoDetect) {
+    const hasActivity = await sessionsHaveInWindowAssistantTurns(initialFiles, startMs, endMs);
+    if (!hasActivity) {
+      const detected = await autoDetectSourceProject({ startedAt, completedAt: endIso });
+      if (detected && detected !== effectiveSlug) {
+        effectiveSlug = detected;
+        initialFiles = await listProjectSessions(repoPath, effectiveSlug);
+        autoDetected = true;
+      }
+    }
+  }
+  sessionsBySource.set(effectiveSlug, initialFiles);
+  return { sessionsBySource, effectiveSlug, autoDetected };
+}
+
+// True iff any .jsonl session file has at least one assistant turn with
+// usage data inside [startMs, endMs]. Short-circuits as soon as one match
+// is found.
+async function sessionsHaveInWindowAssistantTurns(files, startMs, endMs) {
+  for (const file of files) {
+    for await (const obj of readJsonlLines(file)) {
+      if (obj?.type !== "assistant") continue;
+      const tsMs = obj.timestamp ? Date.parse(obj.timestamp) : NaN;
+      if (Number.isNaN(tsMs) || tsMs < startMs || tsMs > endMs) continue;
+      if (!obj?.message?.usage) continue;
+      return true;
+    }
+  }
+  return false;
+}
+
+// Scans every .jsonl session file, accumulating token usage, tool stats,
+// conversation-shape counters, and per-source attribution. Pulled out of
+// computeSessionCost so the orchestrator stays small and so this loop can
+// be unit-tested in isolation in the future.
+async function scanSessions({ sessions, fileToSlug, startMs, endMs }) {
+  const totals = emptyTotals();
+  const byModel = {};
+  const toolUseCounts = {};
+  const toolFailureCounts = {};
+  const toolResultSizes = [];
+  const filesRead = {};
+  const toolNameById = new Map();
+  const perSourceState = new Map();
+  const counters = {
+    messagesCounted: 0,
+    sessionsScanned: 0,
+    compactionCount: 0,
+    userMsgCount: 0,
+    userMsgTotalLen: 0,
+    skillInvocations: 0,
+    subagentDispatches: 0,
+    turnsBeforeFirstTool: 0
+  };
+  const flags = { sawFirstTool: false };
+
+  const ensureSource = (slug) => {
+    if (!perSourceState.has(slug)) {
+      perSourceState.set(slug, {
+        messages: 0,
+        tokens: emptyTotals(),
+        modelTokens: {},
+        touched: false
+      });
+    }
+    return perSourceState.get(slug);
+  };
+
+  const ctx = {
+    totals,
+    byModel,
+    toolUseCounts,
+    toolFailureCounts,
+    toolResultSizes,
+    filesRead,
+    toolNameById,
+    counters,
+    flags,
+    ensureSource
+  };
+
+  for (const file of sessions) {
+    let touched = false;
+    for await (const obj of readJsonlLines(file)) {
+      const ts = obj?.timestamp;
+      const tsMs = ts ? Date.parse(ts) : NaN;
+      if (Number.isNaN(tsMs) || tsMs < startMs || tsMs > endMs) continue;
+
+      if (obj?.type === "assistant") {
+        touched = handleAssistantTurn(obj, file, fileToSlug, ctx) || touched;
+        continue;
+      }
+      if (obj?.type === "user") {
+        handleUserTurn(obj, ctx);
+      }
+    }
+    if (touched) counters.sessionsScanned += 1;
+  }
+
+  return {
+    totals,
+    byModel,
+    messagesCounted: counters.messagesCounted,
+    sessionsScanned: counters.sessionsScanned,
+    toolUseCounts,
+    toolFailureCounts,
+    toolResultSizes,
+    filesRead,
+    compactionCount: counters.compactionCount,
+    userMsgCount: counters.userMsgCount,
+    userMsgTotalLen: counters.userMsgTotalLen,
+    skillInvocations: counters.skillInvocations,
+    subagentDispatches: counters.subagentDispatches,
+    turnsBeforeFirstTool: counters.turnsBeforeFirstTool,
+    perSourceState
+  };
+}
+
+// Updates ctx with token usage + tool-use stats from one assistant turn.
+// Returns true when the turn produced billable activity (used by the outer
+// scan to count `sessionsScanned`).
+function handleAssistantTurn(obj, file, fileToSlug, ctx) {
+  let touched = false;
+  const usage = obj?.message?.usage;
+  if (usage) {
+    const model = obj?.message?.model || "unknown";
+    const tokens = tokensFromUsage(usage);
+    addTotals(ctx.totals, tokens);
+    if (!ctx.byModel[model]) {
+      ctx.byModel[model] = { tokens: emptyTotals(), usd: 0, messages: 0 };
+    }
+    addTotals(ctx.byModel[model].tokens, tokens);
+    ctx.byModel[model].messages += 1;
+    ctx.counters.messagesCounted += 1;
+    touched = true;
+    const srcSlug = fileToSlug.get(file);
+    if (srcSlug) {
+      const s = ctx.ensureSource(srcSlug);
+      addTotals(s.tokens, tokens);
+      if (!s.modelTokens[model]) s.modelTokens[model] = emptyTotals();
+      addTotals(s.modelTokens[model], tokens);
+      s.messages += 1;
+      s.touched = true;
+    }
+  }
+  const insp = inspectContent(obj?.message?.content);
+  if (insp.toolUses.length === 0 && !ctx.flags.sawFirstTool) {
+    ctx.counters.turnsBeforeFirstTool += 1;
+  }
+  for (const tu of insp.toolUses) {
+    ctx.flags.sawFirstTool = true;
+    ctx.toolUseCounts[tu.name] = (ctx.toolUseCounts[tu.name] || 0) + 1;
+    if (tu.id) ctx.toolNameById.set(tu.id, tu.name);
+    if (tu.name === "Skill") ctx.counters.skillInvocations += 1;
+    if (tu.name === "Agent") ctx.counters.subagentDispatches += 1;
+    if (tu.name === "Read") {
+      const p = tu.input?.file_path;
+      if (p) ctx.filesRead[p] = (ctx.filesRead[p] || 0) + 1;
+    }
+  }
+  return touched;
+}
+
+// Updates ctx with tool-result sizes/failures, conversation-shape counters,
+// and compaction signals from one user turn.
+function handleUserTurn(obj, ctx) {
+  if (obj.isMeta) {
+    // Meta-injected user messages = compaction summaries, skill activations,
+    // hook injections. Treated as compaction signal.
+    ctx.counters.compactionCount += 1;
+    return;
+  }
+  const insp = inspectContent(obj?.message?.content);
+  if (insp.toolResults.length > 0) {
+    for (const tr of insp.toolResults) {
+      ctx.toolResultSizes.push(tr.size);
+      if (tr.isError && tr.id) {
+        const toolName = ctx.toolNameById.get(tr.id) || "unknown";
+        ctx.toolFailureCounts[toolName] = (ctx.toolFailureCounts[toolName] || 0) + 1;
+      }
+    }
+  } else {
+    ctx.counters.userMsgCount += 1;
+    ctx.counters.userMsgTotalLen += insp.textLen;
+  }
+}
+
 export async function computeSessionCost(
   repoPath,
   { startedAt, completedAt, sourceProject = null, autoDetect = true, aggregateAll = false } = {}
@@ -239,79 +458,19 @@ export async function computeSessionCost(
 
   const pricing = await loadPricing();
 
-  // Resolve sources to scan.
-  // - aggregateAll: every project dir with in-window activity contributes.
-  // - sourceProject explicit override: scan only that dir.
-  // - default: scan repo-derived dir, fall back to busiest if empty.
-  let effectiveSlug = sourceProject || slugifyRepoPath(repoPath);
-  const sessionsBySource = new Map(); // slug -> [files]
-  let autoDetected = false;
+  const resolved = await resolveScanSources({
+    aggregateAll,
+    sourceProject,
+    autoDetect,
+    repoPath,
+    startedAt,
+    endIso,
+    startMs,
+    endMs
+  });
+  const { sessionsBySource } = resolved;
+  const { effectiveSlug, autoDetected } = resolved;
 
-  if (aggregateAll) {
-    const active = await listActiveProjectDirs({ startMs, endMs });
-    for (const { slug, dir } of active) {
-      const files = (await fs.readdir(dir))
-        .filter((f) => f.endsWith(".jsonl"))
-        .map((f) => path.join(dir, f));
-      sessionsBySource.set(slug, files);
-    }
-    effectiveSlug = "aggregate";
-  } else {
-    // Single-source path. Start with repo-derived (or explicit override).
-    let initialFiles = await listProjectSessions(repoPath, effectiveSlug);
-    if (!sourceProject && autoDetect) {
-      // Probe the repo-derived dir for any in-window assistant turn; if zero,
-      // fall back to scanning all project dirs for the busiest one.
-      let hasActivity = false;
-      for (const file of initialFiles) {
-        for await (const obj of readJsonlLines(file)) {
-          if (obj?.type !== "assistant") continue;
-          const tsMs = obj.timestamp ? Date.parse(obj.timestamp) : NaN;
-          if (Number.isNaN(tsMs) || tsMs < startMs || tsMs > endMs) continue;
-          if (!obj?.message?.usage) continue;
-          hasActivity = true;
-          break;
-        }
-        if (hasActivity) break;
-      }
-      if (!hasActivity) {
-        const detected = await autoDetectSourceProject({ startedAt, completedAt: endIso });
-        if (detected && detected !== effectiveSlug) {
-          effectiveSlug = detected;
-          initialFiles = await listProjectSessions(repoPath, effectiveSlug);
-          autoDetected = true;
-        }
-      }
-    }
-    sessionsBySource.set(effectiveSlug, initialFiles);
-  }
-
-  const totals = emptyTotals();
-  const byModel = {};
-  let messagesCounted = 0;
-  let sessionsScanned = 0;
-
-  // Conversation-shape + tool-depth metrics
-  const toolUseCounts = {};
-  const toolFailureCounts = {};
-  const toolResultSizes = [];
-  const filesRead = {};
-  let compactionCount = 0;
-  let userMsgCount = 0;
-  let userMsgTotalLen = 0;
-  let skillInvocations = 0;
-  let subagentDispatches = 0;
-  let turnsBeforeFirstTool = 0;
-  let sawFirstTool = false;
-  // Map tool_use_id -> tool name, so we can attribute failures to a tool.
-  const toolNameById = new Map();
-
-  // Per-source breakdown for aggregate mode. Even in single-source mode this
-  // gets one entry, which keeps the artifact shape uniform.
-  const sources = []; // [{ slug, messages, tokens, usd }]
-
-  // Flatten Map<slug, files[]> into a flat list while remembering which slug
-  // owns each file, so per-source attribution stays correct.
   const fileToSlug = new Map();
   const sessions = [];
   for (const [slug, files] of sessionsBySource.entries()) {
@@ -320,93 +479,26 @@ export async function computeSessionCost(
       sessions.push(f);
     }
   }
-  const perSourceState = new Map(); // slug -> { messages, tokens, usd, touched }
-  function ensureSource(slug) {
-    if (!perSourceState.has(slug)) {
-      perSourceState.set(slug, {
-        messages: 0,
-        tokens: emptyTotals(),
-        modelTokens: {},
-        touched: false
-      });
-    }
-    return perSourceState.get(slug);
-  }
 
-  for (const file of sessions) {
-    let touched = false;
-    for await (const obj of readJsonlLines(file)) {
-      const ts = obj?.timestamp;
-      const tsMs = ts ? Date.parse(ts) : NaN;
-      if (Number.isNaN(tsMs) || tsMs < startMs || tsMs > endMs) continue;
-
-      // --- assistant turns: cost + tool_use ---
-      if (obj?.type === "assistant") {
-        const usage = obj?.message?.usage;
-        if (usage) {
-          const model = obj?.message?.model || "unknown";
-          const tokens = tokensFromUsage(usage);
-          addTotals(totals, tokens);
-          if (!byModel[model]) byModel[model] = { tokens: emptyTotals(), usd: 0, messages: 0 };
-          addTotals(byModel[model].tokens, tokens);
-          byModel[model].messages += 1;
-          messagesCounted += 1;
-          touched = true;
-          // Per-source attribution
-          const srcSlug = fileToSlug.get(file);
-          if (srcSlug) {
-            const s = ensureSource(srcSlug);
-            addTotals(s.tokens, tokens);
-            if (!s.modelTokens[model]) s.modelTokens[model] = emptyTotals();
-            addTotals(s.modelTokens[model], tokens);
-            s.messages += 1;
-            s.touched = true;
-          }
-        }
-        const insp = inspectContent(obj?.message?.content);
-        if (insp.toolUses.length === 0 && !sawFirstTool) {
-          turnsBeforeFirstTool += 1;
-        }
-        for (const tu of insp.toolUses) {
-          sawFirstTool = true;
-          toolUseCounts[tu.name] = (toolUseCounts[tu.name] || 0) + 1;
-          if (tu.id) toolNameById.set(tu.id, tu.name);
-          if (tu.name === "Skill") skillInvocations += 1;
-          if (tu.name === "Agent") subagentDispatches += 1;
-          if (tu.name === "Read") {
-            const p = tu.input?.file_path;
-            if (p) filesRead[p] = (filesRead[p] || 0) + 1;
-          }
-        }
-        continue;
-      }
-
-      // --- user turns: tool_result sizes/failures, msg shape, compactions ---
-      if (obj?.type === "user") {
-        if (obj.isMeta) {
-          // Meta-injected user messages = compaction summaries, skill
-          // activations, hook injections. Treated as compaction signal.
-          compactionCount += 1;
-          continue;
-        }
-        const insp = inspectContent(obj?.message?.content);
-        if (insp.toolResults.length > 0) {
-          for (const tr of insp.toolResults) {
-            toolResultSizes.push(tr.size);
-            if (tr.isError && tr.id) {
-              const toolName = toolNameById.get(tr.id) || "unknown";
-              toolFailureCounts[toolName] = (toolFailureCounts[toolName] || 0) + 1;
-            }
-          }
-        } else {
-          // True user-typed message (no tool result block)
-          userMsgCount += 1;
-          userMsgTotalLen += insp.textLen;
-        }
-      }
-    }
-    if (touched) sessionsScanned += 1;
-  }
+  const scan = await scanSessions({ sessions, fileToSlug, startMs, endMs });
+  const {
+    totals,
+    byModel,
+    messagesCounted,
+    sessionsScanned,
+    toolUseCounts,
+    toolFailureCounts,
+    toolResultSizes,
+    filesRead,
+    compactionCount,
+    userMsgCount,
+    userMsgTotalLen,
+    skillInvocations,
+    subagentDispatches,
+    turnsBeforeFirstTool,
+    perSourceState
+  } = scan;
+  const sources = [];
 
   let totalUsd = 0;
   for (const model of Object.keys(byModel)) {

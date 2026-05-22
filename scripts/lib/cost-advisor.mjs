@@ -144,27 +144,41 @@ function repoOwnSlug(repoPath) {
   return repoPath.replace(/[^A-Za-z0-9]/g, "-");
 }
 
+function toolCount(tools, name) {
+  return tools.find((t) => t.name === name)?.count || 0;
+}
+
+function computeExplorationRatio(tools) {
+  const exploration =
+    toolCount(tools, "Read") + toolCount(tools, "Grep") + toolCount(tools, "Bash");
+  const execution = toolCount(tools, "Write") + toolCount(tools, "Edit");
+  if (execution > 0) return exploration / execution;
+  return exploration > 0 ? Infinity : 0;
+}
+
+function summarizeToolStats(body) {
+  const tools = extractToolUsage(body);
+  const totalToolCalls = tools.reduce((a, t) => a + t.count, 0);
+  const totalToolFailures = tools.reduce((a, t) => a + t.failures, 0);
+  return {
+    totalToolCalls,
+    totalToolFailures,
+    toolFailureRate: totalToolCalls > 0 ? totalToolFailures / totalToolCalls : 0,
+    readCount: toolCount(tools, "Read"),
+    bashCount: toolCount(tools, "Bash"),
+    grepCount: toolCount(tools, "Grep"),
+    writeCount: toolCount(tools, "Write"),
+    editCount: toolCount(tools, "Edit"),
+    explorationRatio: computeExplorationRatio(tools)
+  };
+}
+
 function summarizeReport(r) {
   const body = r.body;
   const opusShare = extractModelMix(body)
     .filter((m) => /opus/i.test(m.model))
     .reduce((a, b) => a + b.usdPct, 0);
-  const tools = extractToolUsage(body);
-  const totalToolCalls = tools.reduce((a, t) => a + t.count, 0);
-  const totalToolFailures = tools.reduce((a, t) => a + t.failures, 0);
-  const readCount = tools.find((t) => t.name === "Read")?.count || 0;
-  const bashCount = tools.find((t) => t.name === "Bash")?.count || 0;
-  const grepCount = tools.find((t) => t.name === "Grep")?.count || 0;
-  const writeCount = tools.find((t) => t.name === "Write")?.count || 0;
-  const editCount = tools.find((t) => t.name === "Edit")?.count || 0;
-  const explorationTokens = readCount + grepCount + bashCount;
-  const executionTokens = writeCount + editCount;
-  const explorationRatio =
-    executionTokens > 0
-      ? explorationTokens / executionTokens
-      : explorationTokens > 0
-        ? Infinity
-        : 0;
+  const tool = summarizeToolStats(body);
 
   return {
     path: r.path,
@@ -178,15 +192,7 @@ function summarizeReport(r) {
     reviewDecision: r.fm.review_decision || null,
     validationDecision: r.fm.validation_decision || null,
     opusUsdPct: opusShare,
-    totalToolCalls,
-    totalToolFailures,
-    toolFailureRate: totalToolCalls > 0 ? totalToolFailures / totalToolCalls : 0,
-    readCount,
-    bashCount,
-    grepCount,
-    writeCount,
-    editCount,
-    explorationRatio,
+    ...tool,
     msgCount: extractCounter(body, "Assistant Messages Counted"),
     userMsgCount: extractCounter(body, "user_msg_count"),
     userMsgAvgLen: extractCounter(body, "user_msg_avg_len"),
