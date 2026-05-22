@@ -246,10 +246,10 @@ function summarizeReport(r) {
 const RULES = [
   {
     id: "cache-busted",
-    trigger: (s) => s.cacheHitPct > 0 && s.cacheHitPct < 85,
-    severity: (s) => (s.cacheHitPct < 60 ? "high" : "medium"),
+    trigger: (s) => s.cacheHitPct > 0 && s.cacheHitPct < 95,
+    severity: (s) => (s.cacheHitPct < 60 ? "high" : s.cacheHitPct < 85 ? "medium" : "low"),
     message: (s) =>
-      `Cache hit ${s.cacheHitPct}% is below the 85% target. Repeated cache rebuilds are dominating cost.`,
+      `Cache hit ${s.cacheHitPct}% is below the 95% amortisation sweet spot. Below 85% = cache rebuilds dominate cost.`,
     suggestion:
       "Front-load file reads in the first 1-2 turns then iterate; avoid interleaving big Bash output with code edits since fresh tool results invalidate the cache."
   },
@@ -273,8 +273,8 @@ const RULES = [
   },
   {
     id: "file-rereads",
-    trigger: (s) => s.fileRereadCount >= 5,
-    severity: (s) => (s.fileRereadCount >= 15 ? "high" : "medium"),
+    trigger: (s) => s.fileRereadCount >= 3,
+    severity: (s) => (s.fileRereadCount >= 15 ? "high" : s.fileRereadCount >= 5 ? "medium" : "low"),
     message: (s) =>
       `${s.fileRereadCount} redundant Read calls of files already loaded this session.`,
     suggestion:
@@ -282,16 +282,17 @@ const RULES = [
   },
   {
     id: "large-tool-output",
-    trigger: (s) => s.toolResultP90 > 8000,
-    severity: (s) => (s.toolResultP90 > 30000 ? "high" : "medium"),
+    trigger: (s) => s.toolResultP90 > 4000,
+    severity: (s) => (s.toolResultP90 > 30000 ? "high" : s.toolResultP90 > 8000 ? "medium" : "low"),
     message: (s) => `90th-percentile tool result is ${s.toolResultP90.toLocaleString()} bytes.`,
     suggestion:
       "Prefer Grep with head_limit, Bash | head -N, or narrower file Read offsets over broad output. Big tool results inflate cache_create."
   },
   {
     id: "subagent-overuse",
-    trigger: (s) => s.subagentDispatches > 3,
-    severity: (s) => (s.subagentDispatches > 6 ? "high" : "medium"),
+    trigger: (s) => s.subagentDispatches > 2,
+    severity: (s) =>
+      s.subagentDispatches > 6 ? "high" : s.subagentDispatches > 3 ? "medium" : "low",
     message: (s) => `${s.subagentDispatches} subagent dispatches.`,
     suggestion:
       "Subagents cold-start with no cache reuse — each one re-derives session context. Reserve for genuinely independent parallel work."
@@ -307,16 +308,17 @@ const RULES = [
   },
   {
     id: "preamble",
-    trigger: (s) => s.turnsBeforeFirstTool > 5,
-    severity: () => "low",
+    trigger: (s) => s.turnsBeforeFirstTool > 3,
+    severity: (s) => (s.turnsBeforeFirstTool > 6 ? "medium" : "low"),
     message: (s) => `${s.turnsBeforeFirstTool} assistant turns before the first tool call.`,
     suggestion:
       "Long narration before action wastes output tokens. Skip narration on routine slices; act first, summarise after."
   },
   {
     id: "tool-failure-rate",
-    trigger: (s) => s.totalToolCalls >= 10 && s.toolFailureRate > 0.1,
-    severity: (s) => (s.toolFailureRate > 0.25 ? "high" : "medium"),
+    trigger: (s) => s.totalToolCalls >= 10 && s.toolFailureRate > 0.05,
+    severity: (s) =>
+      s.toolFailureRate > 0.25 ? "high" : s.toolFailureRate > 0.1 ? "medium" : "low",
     message: (s) =>
       `${(s.toolFailureRate * 100).toFixed(1)}% tool failure rate (${s.totalToolFailures}/${s.totalToolCalls}).`,
     suggestion:
@@ -388,12 +390,12 @@ const RULES = [
       const bash = s.cachePriming?.find((t) => t.name === "Bash");
       if (!bash || bash.calls < 5) return false;
       const avgBytes = bash.resultBytes / bash.calls;
-      return avgBytes > 8000;
+      return avgBytes > 5000;
     },
     severity: (s) => {
       const bash = s.cachePriming?.find((t) => t.name === "Bash");
       const avg = bash ? bash.resultBytes / bash.calls : 0;
-      return avg > 30000 ? "high" : "medium";
+      return avg > 15000 ? "high" : avg > 8000 ? "medium" : "low";
     },
     message: (s) => {
       const bash = s.cachePriming?.find((t) => t.name === "Bash");
