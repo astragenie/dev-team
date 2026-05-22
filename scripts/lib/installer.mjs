@@ -22,6 +22,21 @@ const CLAUDE_IMPORT_BLOCK = [
 const LEGACY_CLAUDE_MARKER_START = "<!-- engineering-os:start -->";
 const LEGACY_CLAUDE_MARKER_END = "<!-- engineering-os:end -->";
 
+// Marker-bracketed block injected into the repo's .gitignore. Lines outside
+// the block belong to the user and are preserved across re-runs; lines inside
+// are owned by this plugin and refresh on each install.
+const GITIGNORE_MARKER_START = "# crew:start";
+const GITIGNORE_MARKER_END = "# crew:end";
+const GITIGNORE_BLOCK = [
+  GITIGNORE_MARKER_START,
+  "# Crew framework local state. Generated; do not edit between markers.",
+  ".claude/logs/",
+  ".claude/state/crew/history.jsonl",
+  ".claude/state/crew/approvals.jsonl",
+  ".claude.backup.*",
+  GITIGNORE_MARKER_END
+].join("\n");
+
 const CONSTITUTION_TEMPLATE = `# Engineering OS Constitution
 
 This repository uses the Engineering OS harness for structured software work inside Claude Code.
@@ -608,6 +623,35 @@ async function updateClaudeMd(repoPath, writes) {
   writes.push(path.relative(repoPath, claudePath));
 }
 
+async function updateGitignore(repoPath, writes) {
+  const ignorePath = path.join(repoPath, ".gitignore");
+  const existing = await fs.readFile(ignorePath, "utf8").catch(() => null);
+
+  if (existing === null) {
+    const contents = `${GITIGNORE_BLOCK}\n`;
+    await writeFileIfChanged(ignorePath, contents);
+    writes.push(path.relative(repoPath, ignorePath));
+    return;
+  }
+
+  // Replace the marker block in place when present; else append.
+  const startIdx = existing.indexOf(GITIGNORE_MARKER_START);
+  const endIdx = existing.indexOf(GITIGNORE_MARKER_END);
+  let next;
+  if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+    const before = existing.slice(0, startIdx);
+    const after = existing.slice(endIdx + GITIGNORE_MARKER_END.length);
+    next = `${before}${GITIGNORE_BLOCK}${after}`;
+  } else {
+    next = `${existing.trimEnd()}\n\n${GITIGNORE_BLOCK}\n`;
+  }
+
+  const changed = await writeFileIfChanged(ignorePath, next);
+  if (changed) {
+    writes.push(path.relative(repoPath, ignorePath));
+  }
+}
+
 async function updateSettings(repoPath, writes) {
   const settingsPath = path.join(repoPath, ".claude", "settings.json");
   const existing = await fs.readFile(settingsPath, "utf8").catch(() => null);
@@ -864,6 +908,7 @@ export async function bootstrapRepo(repoPath) {
   // whatever the legacy tree provides (Step 3 of the P3.1 namespace rename).
   await migrateLegacyHarness(repoPath, writes);
   await updateClaudeMd(repoPath, writes);
+  await updateGitignore(repoPath, writes);
   await writeHarnessFiles(repoPath, writes);
   await writeRepoLocalGuides(repoPath, writes);
   await updateSettings(repoPath, writes);

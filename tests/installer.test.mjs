@@ -56,6 +56,40 @@ test("bootstrap adds harness files to an existing repo and preserves CLAUDE.md",
   assert.deepEqual(claimsState.claims, {});
 });
 
+test("bootstrap creates .gitignore with marker block and preserves user lines", async () => {
+  const repoPath = await makeTempDir("crew-gitignore-new-");
+  await fs.writeFile(path.join(repoPath, "CLAUDE.md"), "# Repo\n");
+  await bootstrapRepo(repoPath);
+
+  const ignore = await fs.readFile(path.join(repoPath, ".gitignore"), "utf8");
+  assert.match(ignore, /# crew:start/);
+  assert.match(ignore, /# crew:end/);
+  assert.match(ignore, /\.claude\/logs\//);
+});
+
+test("bootstrap merges marker block into existing .gitignore without losing user lines", async () => {
+  const repoPath = await makeTempDir("crew-gitignore-merge-");
+  await fs.writeFile(path.join(repoPath, "CLAUDE.md"), "# Repo\n");
+  await fs.writeFile(path.join(repoPath, ".gitignore"), "node_modules/\nmy-secret.env\n");
+  await bootstrapRepo(repoPath);
+
+  const ignore = await fs.readFile(path.join(repoPath, ".gitignore"), "utf8");
+  assert.match(ignore, /node_modules\//);
+  assert.match(ignore, /my-secret\.env/);
+  assert.match(ignore, /# crew:start[\s\S]*# crew:end/);
+});
+
+test("bootstrap is idempotent for .gitignore marker block", async () => {
+  const repoPath = await makeTempDir("crew-gitignore-idem-");
+  await fs.writeFile(path.join(repoPath, "CLAUDE.md"), "# Repo\n");
+  await bootstrapRepo(repoPath);
+  await bootstrapRepo(repoPath);
+
+  const ignore = await fs.readFile(path.join(repoPath, ".gitignore"), "utf8");
+  const starts = ignore.match(/# crew:start/g) ?? [];
+  assert.equal(starts.length, 1);
+});
+
 test("bootstrap is idempotent for CLAUDE.md imports", async () => {
   const repoPath = await makeTempDir("crew-idempotent-");
   await fs.writeFile(path.join(repoPath, "CLAUDE.md"), "# Repo\n");
