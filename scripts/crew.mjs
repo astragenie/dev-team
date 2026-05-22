@@ -78,6 +78,7 @@ const FLAG_SPEC = {
   "--reviewer-label": { key: "reviewerLabel" },
   "--risks": { key: "risks" },
   "--run-title": { key: "runTitle" },
+  "--source-project": { key: "sourceProject" },
   "--scope": { key: "scope" },
   "--severity": { key: "severity" },
   "--started-at": { key: "startedAt" },
@@ -151,7 +152,8 @@ function parseArgs(argv) {
     reviewerLabel: null,
     startedAt: null,
     completedAt: null,
-    runTitle: null
+    runTitle: null,
+    sourceProject: null
   };
   const positionals = [];
 
@@ -538,7 +540,11 @@ const COMMANDS = {
     if (!startedAt) {
       throw new Error("cost-slice requires --started-at or an active/last run with startedAt");
     }
-    const cost = await computeSessionCost(repoPath, { startedAt, completedAt });
+    const cost = await computeSessionCost(repoPath, {
+      startedAt,
+      completedAt,
+      sourceProject: flags.sourceProject
+    });
     const outcome = await collectOutcomeLinkage(repoPath, runTitle);
     const artifact = await writeArtifact(repoPath, "cost-report", {
       title: `Cost — ${runTitle}`,

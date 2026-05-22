@@ -67,8 +67,12 @@ function priceTokens(tokens, modelRates) {
   return usd;
 }
 
-async function listProjectSessions(repoPath) {
-  const slug = slugifyRepoPath(repoPath);
+async function listProjectSessions(repoPath, sourceProjectSlug = null) {
+  // sourceProjectSlug overrides the repo-derived slug so callers can attribute
+  // cost to a Claude session that ran in a different repo (e.g. multi-repo
+  // work where the human is in repo-A but the work targets repo-B). When
+  // unset, the default behaviour resolves the session dir from repoPath.
+  const slug = sourceProjectSlug || slugifyRepoPath(repoPath);
   const dir = path.join(PROJECTS_ROOT, slug);
   let entries;
   try {
@@ -80,6 +84,53 @@ async function listProjectSessions(repoPath) {
   return entries
     .filter((e) => e.isFile() && e.name.endsWith(".jsonl"))
     .map((e) => path.join(dir, e.name));
+}
+
+// Auto-detect the Claude project dir that actually has activity in the
+// target window. Useful when the caller doesn't know which slug to pass —
+// the dir with the most assistant turns in the window wins. Returns the
+// slug of the winning dir, or null if no project dir has any activity.
+export async function autoDetectSourceProject({ startedAt, completedAt } = {}) {
+  if (!startedAt) return null;
+  const endIso = completedAt || new Date().toISOString();
+  const startMs = Date.parse(startedAt);
+  const endMs = Date.parse(endIso);
+  if (Number.isNaN(startMs) || Number.isNaN(endMs)) return null;
+
+  let projectDirs;
+  try {
+    projectDirs = await fs.readdir(PROJECTS_ROOT, { withFileTypes: true });
+  } catch {
+    return null;
+  }
+
+  let best = null;
+  for (const e of projectDirs) {
+    if (!e.isDirectory()) continue;
+    const slug = e.name;
+    const dir = path.join(PROJECTS_ROOT, slug);
+    let files;
+    try {
+      files = (await fs.readdir(dir)).filter((f) => f.endsWith(".jsonl"));
+    } catch {
+      continue;
+    }
+    let count = 0;
+    for (const f of files) {
+      const full = path.join(dir, f);
+      for await (const obj of readJsonlLines(full)) {
+        if (obj?.type !== "assistant") continue;
+        const tsMs = obj.timestamp ? Date.parse(obj.timestamp) : NaN;
+        if (Number.isNaN(tsMs) || tsMs < startMs || tsMs > endMs) continue;
+        if (!obj?.message?.usage) continue;
+        count += 1;
+      }
+    }
+    if (count > 0 && (!best || count > best.count)) {
+      best = { slug, count };
+    }
+  }
+  return best ? best.slug : null;
 }
 
 async function* readJsonlLines(file) {
@@ -135,7 +186,7 @@ function inspectContent(content) {
   return out;
 }
 
-export async function computeSessionCost(repoPath, { startedAt, completedAt } = {}) {
+export async function computeSessionCost(repoPath, { startedAt, completedAt, sourceProject = null, autoDetect = true } = {}) {
   if (!startedAt) throw new Error("computeSessionCost requires startedAt");
   const endIso = completedAt || new Date().toISOString();
   const startMs = Date.parse(startedAt);
@@ -145,7 +196,37 @@ export async function computeSessionCost(repoPath, { startedAt, completedAt } = 
   }
 
   const pricing = await loadPricing();
-  const sessions = await listProjectSessions(repoPath);
+
+  // Resolve the source project: explicit override > repo-derived slug,
+  // with optional auto-detect fallback when the repo-derived dir has no
+  // activity in the window (handles cross-repo work).
+  let effectiveSlug = sourceProject || slugifyRepoPath(repoPath);
+  let sessions = await listProjectSessions(repoPath, effectiveSlug);
+  let autoDetected = false;
+  if (!sourceProject && autoDetect) {
+    // Probe the repo-derived dir for any in-window assistant turn; if zero,
+    // fall back to scanning all project dirs for the busiest one.
+    let hasActivity = false;
+    for (const file of sessions) {
+      for await (const obj of readJsonlLines(file)) {
+        if (obj?.type !== "assistant") continue;
+        const tsMs = obj.timestamp ? Date.parse(obj.timestamp) : NaN;
+        if (Number.isNaN(tsMs) || tsMs < startMs || tsMs > endMs) continue;
+        if (!obj?.message?.usage) continue;
+        hasActivity = true;
+        break;
+      }
+      if (hasActivity) break;
+    }
+    if (!hasActivity) {
+      const detected = await autoDetectSourceProject({ startedAt, completedAt: endIso });
+      if (detected && detected !== effectiveSlug) {
+        effectiveSlug = detected;
+        sessions = await listProjectSessions(repoPath, effectiveSlug);
+        autoDetected = true;
+      }
+    }
+  }
 
   const totals = emptyTotals();
   const byModel = {};
@@ -301,6 +382,8 @@ export async function computeSessionCost(repoPath, { startedAt, completedAt } = 
     messagesCounted,
     sessionsScanned,
     sessionsAvailable: sessions.length,
+    sourceProject: effectiveSlug,
+    autoDetected,
     pricingFallback: pricing.fallback,
     toolUsage,
     toolResultSizes: sizeStats,
