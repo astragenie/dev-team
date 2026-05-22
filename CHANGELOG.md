@@ -3,6 +3,27 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.1.17 — 2026-05-22
+
+### Changed
+- **Tooling**: ESLint 9 (flat config) + Prettier 3 added. CI now runs
+  `npm ci`, `validate-manifests`, `lint`, `format:check`, `node --test`,
+  `e2e-smoke` as separate gates. devDependencies pinned via
+  `package-lock.json`.
+- **Code style swept**: prettier --write across `scripts/**/*.mjs` and
+  `tests/**/*.mjs`; no semantic changes.
+- **CLI registry refactor** (`scripts/crew.mjs`):
+  - 58 hand-written `if (value === "--foo") { ... }` flag branches
+    collapsed into a single `FLAG_SPEC` table.
+  - 30-branch command `else if` chain collapsed into a `COMMANDS`
+    registry of `(ctx) => Promise<result>` handlers.
+  - File size: 767 → 560 lines (-207). Same flags, same outputs,
+    same error messages. Adding a new command/flag is now one entry.
+
+### Fixed
+- `scripts/lib/cost-advisor.mjs`: empty `catch {}` blocks now carry
+  intent comments (ESLint `no-empty`).
+
 ## v0.1.16 — 2026-05-22
 
 ### Added
