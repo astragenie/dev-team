@@ -557,7 +557,6 @@ async function listCostReportFilesByMtime(dirs, limit) {
     .map((entry) => entry.f);
 }
 
-
 export async function collectRecentCosts(repoPath, limit = 5) {
   const dirs = [
     path.join(repoPath, ".claude", "artifacts", "crew", "cost"),

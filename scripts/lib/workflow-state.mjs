@@ -137,13 +137,19 @@ function hasAnyWorkflowGate(run) {
   );
 }
 
+// Pending-gate predicates. Each maps a gate-status field on the run to its
+// pending sentinel value. The shared PENDING_BADGE_SPECS table cannot be
+// reused here because it accepts `currentRun.gates?.foo` while this helper
+// is called with `run` from contexts where gates may be missing entirely.
+const PENDING_GATE_CHECKS = [
+  (run) => run?.gates?.review?.status === "required",
+  (run) => run?.gates?.validation?.status === "expected",
+  (run) => run?.gates?.deployment?.dev?.status === "expected",
+  (run) => run?.gates?.deployment?.prod?.status === "expected"
+];
+
 function hasPendingGates(run) {
-  return Boolean(
-    run?.gates?.review?.status === "required" ||
-    run?.gates?.validation?.status === "expected" ||
-    run?.gates?.deployment?.dev?.status === "expected" ||
-    run?.gates?.deployment?.prod?.status === "expected"
-  );
+  return PENDING_GATE_CHECKS.some((check) => check(run));
 }
 
 // Artifact-shape helpers shared by progress/substance/evidence checks.
@@ -201,56 +207,71 @@ function isGateResolved(status) {
   return Boolean(status) && RESOLVED_GATE_STATUSES.has(status);
 }
 
+// Gate-status accessors used to test "is any gate resolved?".
+const GATE_STATUS_GETTERS = [
+  (gates) => gates.review?.status,
+  (gates) => gates.validation?.status,
+  (gates) => gates.deployment?.dev?.status,
+  (gates) => gates.deployment?.prod?.status
+];
+
+// Closed-artifact accessors used to test "is any phase artifact written?".
+const PHASE_ARTIFACT_GETTERS = [
+  (artifacts) => artifacts.reviewResult,
+  (artifacts) => artifacts.validationResult,
+  (artifacts) => artifacts.deploymentChecks?.dev,
+  (artifacts) => artifacts.deploymentChecks?.prod
+];
+
 function hasCompletedPhaseEvidence(run) {
   if (!run) return false;
-
   const gates = run.gates || {};
-  const anyGateResolved =
-    isGateResolved(gates.review?.status) ||
-    isGateResolved(gates.validation?.status) ||
-    isGateResolved(gates.deployment?.dev?.status) ||
-    isGateResolved(gates.deployment?.prod?.status);
-
   const artifacts = run.artifacts || {};
-  const anyArtifactWritten = Boolean(
-    artifacts.reviewResult ||
-    artifacts.validationResult ||
-    artifacts.deploymentChecks?.dev ||
-    artifacts.deploymentChecks?.prod
-  );
-
+  const anyGateResolved = GATE_STATUS_GETTERS.some((get) => isGateResolved(get(gates)));
+  const anyArtifactWritten = PHASE_ARTIFACT_GETTERS.some((get) => Boolean(get(artifacts)));
   return anyGateResolved || anyArtifactWritten;
 }
 
-function summarizeMissingArtifactWritesForRun(run) {
-  if (!run) {
-    return [];
+// "Decided" means the gate was explicitly closed pass/fail (not pending,
+// not skipped). A decided gate without its corresponding artifact is a
+// missing write-back.
+function isDecided(status) {
+  return status === "passed" || status === "failed";
+}
+
+// Spec table mapping each gate to its expected artifact slot and the
+// missing-code emitted when the gate is decided but the artifact is absent.
+const MISSING_WRITE_SPECS = [
+  {
+    code: "review_result_missing",
+    gate: (g) => g.review?.status,
+    artifact: (a) => a.reviewResult
+  },
+  {
+    code: "validation_result_missing",
+    gate: (g) => g.validation?.status,
+    artifact: (a) => a.validationResult
+  },
+  {
+    code: "dev_deployment_check_missing",
+    gate: (g) => g.deployment?.dev?.status,
+    artifact: (a) => a.deploymentChecks?.dev
+  },
+  {
+    code: "prod_deployment_check_missing",
+    gate: (g) => g.deployment?.prod?.status,
+    artifact: (a) => a.deploymentChecks?.prod
   }
+];
 
-  // "Decided" means the gate was explicitly closed pass/fail (not pending,
-  // not skipped). A decided gate without its corresponding artifact is a
-  // missing write-back.
-  const isDecided = (status) => status === "passed" || status === "failed";
-
+function summarizeMissingArtifactWritesForRun(run) {
+  if (!run) return [];
   const gates = run.gates || {};
   const artifacts = run.artifacts || {};
-  const checks = [
-    [isDecided(gates.review?.status) && !artifacts.reviewResult, "review_result_missing"],
-    [
-      isDecided(gates.validation?.status) && !artifacts.validationResult,
-      "validation_result_missing"
-    ],
-    [
-      isDecided(gates.deployment?.dev?.status) && !artifacts.deploymentChecks?.dev,
-      "dev_deployment_check_missing"
-    ],
-    [
-      isDecided(gates.deployment?.prod?.status) && !artifacts.deploymentChecks?.prod,
-      "prod_deployment_check_missing"
-    ]
-  ];
 
-  const missing = checks.filter(([cond]) => cond).map(([, code]) => code);
+  const missing = MISSING_WRITE_SPECS.filter(
+    (spec) => isDecided(spec.gate(gates)) && !spec.artifact(artifacts)
+  ).map((spec) => spec.code);
 
   const substantialRun = isSubstantialRunHint(run);
   if (substantialRun && hasMeaningfulProgress(run) && !artifacts.runBrief) {
@@ -264,7 +285,6 @@ function summarizeMissingArtifactWritesForRun(run) {
   ) {
     missing.push("final_synthesis_missing");
   }
-
   return missing;
 }
 

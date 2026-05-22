@@ -90,6 +90,43 @@ async function listProjectSessions(repoPath, sourceProjectSlug = null) {
 // target window. Useful when the caller doesn't know which slug to pass —
 // the dir with the most assistant turns in the window wins. Returns the
 // slug of the winning dir, or null if no project dir has any activity.
+// Lists .jsonl files in a single project dir, or empty array on any error.
+async function listJsonlInDir(dir) {
+  try {
+    return (await fs.readdir(dir)).filter((f) => f.endsWith(".jsonl"));
+  } catch {
+    return [];
+  }
+}
+
+// Iterates project dir subdirectories. Filters non-dir entries up-front.
+async function listProjectDirEntries() {
+  try {
+    const entries = await fs.readdir(PROJECTS_ROOT, { withFileTypes: true });
+    return entries.filter((e) => e.isDirectory()).map((e) => e.name);
+  } catch {
+    return [];
+  }
+}
+
+// Counts assistant turns with billable usage inside [startMs, endMs] across
+// every .jsonl file in `dir`.
+async function countInWindowAssistantTurns(dir, startMs, endMs) {
+  const files = await listJsonlInDir(dir);
+  let count = 0;
+  for (const f of files) {
+    const full = path.join(dir, f);
+    for await (const obj of readJsonlLines(full)) {
+      if (obj?.type !== "assistant") continue;
+      const tsMs = obj.timestamp ? Date.parse(obj.timestamp) : NaN;
+      if (Number.isNaN(tsMs) || tsMs < startMs || tsMs > endMs) continue;
+      if (!obj?.message?.usage) continue;
+      count += 1;
+    }
+  }
+  return count;
+}
+
 export async function autoDetectSourceProject({ startedAt, completedAt } = {}) {
   if (!startedAt) return null;
   const endIso = completedAt || new Date().toISOString();
@@ -97,35 +134,10 @@ export async function autoDetectSourceProject({ startedAt, completedAt } = {}) {
   const endMs = Date.parse(endIso);
   if (Number.isNaN(startMs) || Number.isNaN(endMs)) return null;
 
-  let projectDirs;
-  try {
-    projectDirs = await fs.readdir(PROJECTS_ROOT, { withFileTypes: true });
-  } catch {
-    return null;
-  }
-
+  const slugs = await listProjectDirEntries();
   let best = null;
-  for (const e of projectDirs) {
-    if (!e.isDirectory()) continue;
-    const slug = e.name;
-    const dir = path.join(PROJECTS_ROOT, slug);
-    let files;
-    try {
-      files = (await fs.readdir(dir)).filter((f) => f.endsWith(".jsonl"));
-    } catch {
-      continue;
-    }
-    let count = 0;
-    for (const f of files) {
-      const full = path.join(dir, f);
-      for await (const obj of readJsonlLines(full)) {
-        if (obj?.type !== "assistant") continue;
-        const tsMs = obj.timestamp ? Date.parse(obj.timestamp) : NaN;
-        if (Number.isNaN(tsMs) || tsMs < startMs || tsMs > endMs) continue;
-        if (!obj?.message?.usage) continue;
-        count += 1;
-      }
-    }
+  for (const slug of slugs) {
+    const count = await countInWindowAssistantTurns(path.join(PROJECTS_ROOT, slug), startMs, endMs);
     if (count > 0 && (!best || count > best.count)) {
       best = { slug, count };
     }
@@ -190,37 +202,12 @@ function inspectContent(content) {
 // turn. Used by aggregateAll mode to scope summation to relevant dirs only
 // (skips unrelated ambient sessions).
 async function listActiveProjectDirs({ startMs, endMs }) {
-  let entries;
-  try {
-    entries = await fs.readdir(PROJECTS_ROOT, { withFileTypes: true });
-  } catch {
-    return [];
-  }
+  const slugs = await listProjectDirEntries();
   const active = [];
-  for (const e of entries) {
-    if (!e.isDirectory()) continue;
-    const slug = e.name;
+  for (const slug of slugs) {
     const dir = path.join(PROJECTS_ROOT, slug);
-    let files;
-    try {
-      files = (await fs.readdir(dir)).filter((f) => f.endsWith(".jsonl"));
-    } catch {
-      continue;
-    }
-    let any = false;
-    for (const f of files) {
-      const full = path.join(dir, f);
-      for await (const obj of readJsonlLines(full)) {
-        if (obj?.type !== "assistant") continue;
-        const tsMs = obj.timestamp ? Date.parse(obj.timestamp) : NaN;
-        if (Number.isNaN(tsMs) || tsMs < startMs || tsMs > endMs) continue;
-        if (!obj?.message?.usage) continue;
-        any = true;
-        break;
-      }
-      if (any) break;
-    }
-    if (any) active.push({ slug, dir });
+    const count = await countInWindowAssistantTurns(dir, startMs, endMs);
+    if (count > 0) active.push({ slug, dir });
   }
   return active;
 }
@@ -312,6 +299,15 @@ async function scanSessions({ sessions, fileToSlug, startMs, endMs }) {
     turnsBeforeFirstTool: 0
   };
   const flags = { sawFirstTool: false };
+  // Cache priming attribution (Item 3, approximate). Tracks per-tool
+  // contribution to cache_create on the NEXT assistant turn after a
+  // tool_use → tool_result pair. State lives across turns inside the
+  // scanner loop.
+  const toolCachePrime = {}; // { toolName: { calls, totalResultBytes, attributedCacheCreate } }
+  const cachePrimeState = {
+    pendingToolUses: [], // [{ id, name }] from the previous assistant turn
+    pendingResultSizes: {} // { tool_use_id: bytes } from the next user turn
+  };
 
   const ensureSource = (slug) => {
     if (!perSourceState.has(slug)) {
@@ -335,7 +331,9 @@ async function scanSessions({ sessions, fileToSlug, startMs, endMs }) {
     toolNameById,
     counters,
     flags,
-    ensureSource
+    ensureSource,
+    toolCachePrime,
+    cachePrimeState
   };
 
   for (const file of sessions) {
@@ -378,44 +376,57 @@ async function scanSessions({ sessions, fileToSlug, startMs, endMs }) {
 // Updates ctx with token usage + tool-use stats from one assistant turn.
 // Returns true when the turn produced billable activity (used by the outer
 // scan to count `sessionsScanned`).
+function recordTokenUsage(ctx, model, tokens, file, fileToSlug) {
+  addTotals(ctx.totals, tokens);
+  if (!ctx.byModel[model]) {
+    ctx.byModel[model] = { tokens: emptyTotals(), usd: 0, messages: 0 };
+  }
+  addTotals(ctx.byModel[model].tokens, tokens);
+  ctx.byModel[model].messages += 1;
+  ctx.counters.messagesCounted += 1;
+
+  const srcSlug = fileToSlug.get(file);
+  if (srcSlug) {
+    const s = ctx.ensureSource(srcSlug);
+    addTotals(s.tokens, tokens);
+    if (!s.modelTokens[model]) s.modelTokens[model] = emptyTotals();
+    addTotals(s.modelTokens[model], tokens);
+    s.messages += 1;
+    s.touched = true;
+  }
+}
+
+// Maps tool-use names to the counter they bump on the context. Adding a new
+// tracked tool = one entry.
+const TOOL_COUNTERS = {
+  Skill: (ctx) => (ctx.counters.skillInvocations += 1),
+  Agent: (ctx) => (ctx.counters.subagentDispatches += 1)
+};
+
+function recordToolUse(ctx, tu) {
+  ctx.flags.sawFirstTool = true;
+  ctx.toolUseCounts[tu.name] = (ctx.toolUseCounts[tu.name] || 0) + 1;
+  if (tu.id) ctx.toolNameById.set(tu.id, tu.name);
+  TOOL_COUNTERS[tu.name]?.(ctx);
+  if (tu.name === "Read") {
+    const p = tu.input?.file_path;
+    if (p) ctx.filesRead[p] = (ctx.filesRead[p] || 0) + 1;
+  }
+}
+
 function handleAssistantTurn(obj, file, fileToSlug, ctx) {
-  let touched = false;
   const usage = obj?.message?.usage;
+  const touched = Boolean(usage);
   if (usage) {
     const model = obj?.message?.model || "unknown";
-    const tokens = tokensFromUsage(usage);
-    addTotals(ctx.totals, tokens);
-    if (!ctx.byModel[model]) {
-      ctx.byModel[model] = { tokens: emptyTotals(), usd: 0, messages: 0 };
-    }
-    addTotals(ctx.byModel[model].tokens, tokens);
-    ctx.byModel[model].messages += 1;
-    ctx.counters.messagesCounted += 1;
-    touched = true;
-    const srcSlug = fileToSlug.get(file);
-    if (srcSlug) {
-      const s = ctx.ensureSource(srcSlug);
-      addTotals(s.tokens, tokens);
-      if (!s.modelTokens[model]) s.modelTokens[model] = emptyTotals();
-      addTotals(s.modelTokens[model], tokens);
-      s.messages += 1;
-      s.touched = true;
-    }
+    recordTokenUsage(ctx, model, tokensFromUsage(usage), file, fileToSlug);
   }
   const insp = inspectContent(obj?.message?.content);
   if (insp.toolUses.length === 0 && !ctx.flags.sawFirstTool) {
     ctx.counters.turnsBeforeFirstTool += 1;
   }
   for (const tu of insp.toolUses) {
-    ctx.flags.sawFirstTool = true;
-    ctx.toolUseCounts[tu.name] = (ctx.toolUseCounts[tu.name] || 0) + 1;
-    if (tu.id) ctx.toolNameById.set(tu.id, tu.name);
-    if (tu.name === "Skill") ctx.counters.skillInvocations += 1;
-    if (tu.name === "Agent") ctx.counters.subagentDispatches += 1;
-    if (tu.name === "Read") {
-      const p = tu.input?.file_path;
-      if (p) ctx.filesRead[p] = (ctx.filesRead[p] || 0) + 1;
-    }
+    recordToolUse(ctx, tu);
   }
   return touched;
 }

@@ -3,6 +3,39 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.1.24 — 2026-05-22
+
+### Changed
+- **`briefing/collect.mjs::parseCostReportText`** complexity 34 → split
+  into `parseHeaderFields`, `parseTokenFields`, `parseDiagnosticFields`,
+  `parseOutcomeFields`, `bodyNum`. Composer reads top-down.
+- **`artifacts.mjs::renderCostReportFrontmatter`** complexity 27 → 16
+  via `[predicate, line-builder][]` table with lazy interpolation.
+- **`artifacts.mjs::renderCostReportHeader`** complexity 22 → 16 via
+  small `formatDuration`/`formatTokens`/`formatCacheHit`/`formatUsd`/
+  `formatBool` helpers.
+- **`session-cost.mjs::autoDetectSourceProject`** + `listActiveProjectDirs`
+  both 18-25 → off list. Extracted shared helpers
+  `listJsonlInDir`, `listProjectDirEntries`,
+  `countInWindowAssistantTurns`. Caller bodies now ~10 lines each.
+- **`session-cost.mjs::handleAssistantTurn`** complexity 23 → off list.
+  Split into `recordTokenUsage` + `recordToolUse` + `TOOL_COUNTERS`
+  table dispatch for Skill/Agent counters.
+- **`workflow-state.mjs::hasPendingGates`** complexity 18 → off list.
+  Predicates moved into `PENDING_GATE_CHECKS` array.
+- **`workflow-state.mjs::hasCompletedPhaseEvidence`** complexity 19 →
+  off list. Field accessors moved into `GATE_STATUS_GETTERS` +
+  `PHASE_ARTIFACT_GETTERS` arrays.
+- **`workflow-state.mjs::summarizeMissingArtifactWritesForRun`**
+  complexity 23 → off list. Gate-to-artifact mapping moved into
+  `MISSING_WRITE_SPECS` table with `gate(g)` / `artifact(a)` /
+  `code` fields.
+
+### Notes
+- Lint warning count: 15 → 8. All remaining within 5 of threshold;
+  further cuts have diminishing returns.
+- All 49 tests pass.
+
 ## v0.1.23 — 2026-05-22
 
 ### Changed
