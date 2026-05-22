@@ -73,7 +73,7 @@ Implemented:
 
 Validated:
 
-- `claude plugin validate /Users/aradaev/Documents/Playground`
+- `claude plugin validate <path-to-this-repo>`
 
 ### Installer
 
@@ -317,7 +317,7 @@ Then:
 
 Validation:
 
-- `claude plugin validate /Users/aradaev/Documents/Playground`
+- `claude plugin validate <path-to-this-repo>`
 
 Installer:
 

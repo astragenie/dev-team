@@ -41,7 +41,7 @@ The plugin is intentionally content-heavy and runtime-light.
 
 ## Repo Rules
 
-1. Validate plugin changes with `claude plugin validate /Users/aradaev/Documents/Playground`.
+1. Validate plugin changes with `claude plugin validate <path-to-this-repo>`.
 2. Prefer additive changes over rewrites.
 3. Keep repo-specific guidance in this file and use the docs above as the continuity set.
 4. Do not add heavy automation until the manual workflow is proven useful.

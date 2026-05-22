@@ -28,6 +28,23 @@ The next product direction is an evidence-gated validation loop: local validatio
 
 For the broader implementation order and rename plan, see [docs/product-roadmap.md](docs/product-roadmap.md).
 
+## Install
+
+Add the marketplace and install the plugin in Claude Code:
+
+```
+/plugin marketplace add https://github.com/sergeymilashico/hero-crew
+/plugin install crew@crew-dev
+```
+
+The companion `autonomous-loop` plugin lives in the same marketplace:
+
+```
+/plugin install autonomous-loop@crew-dev
+```
+
+Verify locally with `npm test`. Pinned release: `v0.1.12`.
+
 ## Commands
 
 The public surface should stay small.
