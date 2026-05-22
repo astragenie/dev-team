@@ -281,12 +281,29 @@ async function maybeEmitCostReport(repoPath, { runTitle } = {}) {
     });
     const title = runTitle || run.title || "cost-report";
     const outcome = await collectOutcomeLinkage(repoPath, title);
-    return await writeArtifact(repoPath, "cost-report", {
+    const reportArtifact = await writeArtifact(repoPath, "cost-report", {
       title: `Cost — ${title}`,
       runTitle: title,
       cost,
       outcome
     });
+    // Chain the advisor — runs the rule library against the freshly-written
+    // cost-report (now the most recent) plus prior history, and writes a
+    // sibling advise artifact. Failure here is also non-fatal.
+    let adviseArtifact = null;
+    try {
+      const advisor = await buildCostAdvisor(repoPath, { limit: 10 });
+      const md = renderCostAdvisorMarkdown(advisor);
+      const advisePath = await writeCostAdviseArtifact(repoPath, md, advisor);
+      adviseArtifact = {
+        path: advisePath,
+        recommendations: advisor.recommendations?.length || 0,
+        aggregateFlags: advisor.aggregateFlags?.length || 0
+      };
+    } catch (err) {
+      adviseArtifact = { error: err.message };
+    }
+    return { report: reportArtifact, advise: adviseArtifact };
   } catch (err) {
     return { error: err.message };
   }
