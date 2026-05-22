@@ -5,12 +5,13 @@ import path from "node:path";
 // re-exported templates that callers and tests reach into). Internal helpers
 // live in ./installer/* — see util.mjs and templates.mjs.
 import {
-  indentJson,
   pathExists,
   ensureDir,
   writeFileIfChanged,
   writeSeedIfMissing
 } from "./installer/util.mjs";
+import { updateSettings } from "./installer/settings.mjs";
+import { migrateLegacyHarness } from "./installer/legacy-migration.mjs";
 import {
   GLOBAL_MEMORY_VERSION,
   GLOBAL_METADATA_TEMPLATE,
@@ -28,44 +29,8 @@ import {
   CLAIMS_TEMPLATE,
   SPRINT_TEMPLATE,
   HOOK_SCRIPT_TEMPLATE,
-  GIT_GATE_REMINDER_TEMPLATE,
-  DEFAULT_SETTINGS
+  GIT_GATE_REMINDER_TEMPLATE
 } from "./installer/templates.mjs";
-
-function isCrewHook(entry) {
-  const hooks = Array.isArray(entry?.hooks) ? entry.hooks : [];
-  return hooks.some((hook) => {
-    const command = hook?.command || "";
-    const description = hook?.description || "";
-    return (
-      command.includes(".claude/hooks/log_event.sh") ||
-      command.includes(".claude/hooks/check_git_gate.sh") ||
-      // Detect both current ("crew:") and legacy ("engineering-os:") namespaces so
-      // mergeHooks replaces legacy registrations cleanly after the rename.
-      description.startsWith("crew:") ||
-      description.startsWith("engineering-os:")
-    );
-  });
-}
-
-function mergeHooks(existingHooks = {}, desiredHooks = {}) {
-  const result = { ...existingHooks };
-  for (const [eventName, hookDefs] of Object.entries(desiredHooks)) {
-    const current = Array.isArray(result[eventName]) ? result[eventName] : [];
-    const preserved = current.filter((entry) => !isCrewHook(entry));
-    const nextEntries = [...preserved];
-    const seen = new Set(nextEntries.map((item) => JSON.stringify(item)));
-    for (const hookDef of hookDefs) {
-      const serialized = JSON.stringify(hookDef);
-      if (!seen.has(serialized)) {
-        nextEntries.push(hookDef);
-        seen.add(serialized);
-      }
-    }
-    result[eventName] = nextEntries;
-  }
-  return result;
-}
 
 function replaceLegacyMarkerBlock(existing) {
   // Replace the entire legacy `<!-- engineering-os:start -->...<!-- engineering-os:end -->`
@@ -153,22 +118,6 @@ async function updateGitignore(repoPath, writes) {
   }
 }
 
-async function updateSettings(repoPath, writes) {
-  const settingsPath = path.join(repoPath, ".claude", "settings.json");
-  const existing = await fs.readFile(settingsPath, "utf8").catch(() => null);
-  const current = existing ? JSON.parse(existing) : {};
-  const next = {
-    ...current,
-    hooks: mergeHooks(current.hooks, DEFAULT_SETTINGS.hooks)
-  };
-
-  const changed = await writeFileIfChanged(settingsPath, indentJson(next));
-  if (changed) {
-    writes.push(path.relative(repoPath, settingsPath));
-  }
-}
-
-// Like writeFileIfChanged but only writes when the file does not yet exist.
 async function writeHarnessFiles(repoPath, writes) {
   // README and hook scripts are template files — always refresh to the latest.
   const refreshFiles = [
@@ -264,82 +213,6 @@ async function writeRepoLocalGuides(repoPath, writes) {
 // legacy directory into the equivalent .claude/.../crew/ path. When both files exist,
 // the newer mtime wins (crew/ is preferred on tie). Empty legacy directories are then
 // removed so the repo ends in a clean single-namespace state.
-async function migrateLegacyHarness(repoPath, writes) {
-  const moves = [
-    [path.join(repoPath, ".claude", "engineering-os"), path.join(repoPath, ".claude", "crew")],
-    [
-      path.join(repoPath, ".claude", "state", "engineering-os"),
-      path.join(repoPath, ".claude", "state", "crew")
-    ],
-    [
-      path.join(repoPath, ".claude", "artifacts", "engineering-os"),
-      path.join(repoPath, ".claude", "artifacts", "crew")
-    ]
-  ];
-
-  for (const [legacyRoot, targetRoot] of moves) {
-    if (!(await pathExists(legacyRoot))) {
-      continue;
-    }
-    await migrateDirectoryTree(legacyRoot, targetRoot, repoPath, writes);
-    await removeEmptyTree(legacyRoot);
-  }
-}
-
-async function migrateDirectoryTree(legacyDir, targetDir, repoPath, writes) {
-  const entries = await fs.readdir(legacyDir, { withFileTypes: true });
-  for (const entry of entries) {
-    const legacyPath = path.join(legacyDir, entry.name);
-    const targetPath = path.join(targetDir, entry.name);
-    if (entry.isDirectory()) {
-      await ensureDir(targetPath);
-      await migrateDirectoryTree(legacyPath, targetPath, repoPath, writes);
-      continue;
-    }
-    if (!entry.isFile()) {
-      continue;
-    }
-    await migrateOneFile(legacyPath, targetPath, repoPath, writes);
-  }
-}
-
-async function migrateOneFile(legacyPath, targetPath, repoPath, writes) {
-  const targetExists = await pathExists(targetPath);
-  if (!targetExists) {
-    await ensureDir(path.dirname(targetPath));
-    const data = await fs.readFile(legacyPath);
-    await fs.writeFile(targetPath, data);
-    writes.push(path.relative(repoPath, targetPath));
-    await fs.unlink(legacyPath);
-    return;
-  }
-
-  // Both exist — newer mtime wins. Tie goes to the new (crew/) path.
-  const [legacyStat, targetStat] = await Promise.all([fs.stat(legacyPath), fs.stat(targetPath)]);
-  if (legacyStat.mtimeMs > targetStat.mtimeMs) {
-    const data = await fs.readFile(legacyPath);
-    await fs.writeFile(targetPath, data);
-    writes.push(path.relative(repoPath, targetPath));
-  }
-  await fs.unlink(legacyPath);
-}
-
-async function removeEmptyTree(dirPath) {
-  if (!(await pathExists(dirPath))) {
-    return;
-  }
-  const entries = await fs.readdir(dirPath, { withFileTypes: true });
-  for (const entry of entries) {
-    if (entry.isDirectory()) {
-      await removeEmptyTree(path.join(dirPath, entry.name));
-    }
-  }
-  const remaining = await fs.readdir(dirPath);
-  if (remaining.length === 0) {
-    await fs.rmdir(dirPath);
-  }
-}
-
 export async function auditRepo(repoPath) {
   const global = await inspectGlobalInstall();
   return {

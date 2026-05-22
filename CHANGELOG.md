@@ -3,6 +3,22 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.1.18 — 2026-05-22
+
+### Changed
+- **installer.mjs split (Tier B-5)**: the 1040-line mega-module is now
+  399 lines. Extracted four cohesive submodules under
+  `scripts/lib/installer/`:
+  - `templates.mjs` (504 lines) — all string templates and constants.
+  - `util.mjs` (42 lines) — filesystem + JSON helpers.
+  - `settings.mjs` (61 lines) — `.claude/settings.json` hook-merge logic
+    (`isCrewHook`, `mergeHooks`, `updateSettings`).
+  - `legacy-migration.mjs` (89 lines) — the one-shot
+    `engineering-os` → `crew` namespace migrator.
+- Public API unchanged: `bootstrapRepo`, `initRepo`, `installGlobal`,
+  `auditRepo` still export from `scripts/lib/installer.mjs`. All 49
+  tests pass without modification.
+
 ## v0.1.17 — 2026-05-22
 
 ### Changed
