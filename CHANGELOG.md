@@ -3,6 +3,19 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.1.15 — 2026-05-22
+
+### Changed
+- README: removed stale "legacy compatibility aliases" section that
+  listed five `/crew:*` commands which no longer exist (`build-feature`,
+  `investigate-bug`, `bootstrap-repo`, `init-repo`, `install-global`).
+- README: added optional follow-up step recommending
+  `/crew:install-commit-bridge`, replacing the dead-alias block with
+  real, discoverable guidance.
+- `installer.mjs::buildWelcome`: returns an `optional` array with a
+  one-line hint pointing at `/crew:install-commit-bridge` after `init`
+  or `bootstrap`. Bridge remains opt-in; install flow is unchanged.
+
 ## v0.1.14 — 2026-05-21
 
 ### Changed

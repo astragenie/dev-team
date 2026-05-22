@@ -889,12 +889,19 @@ function buildWelcome({ mode, repoScoped = false }) {
     "install-global": "Crew global memory is installed. Bold and correct."
   };
 
+  const optional = repoScoped
+    ? [
+        "Optional: /crew:install-commit-bridge to mint Crew artifacts from matching commits (installs a PostToolUse hook; skip if you don't want that)."
+      ]
+    : [];
+
   return {
     headline: headlineByMode[mode] || "Crew is ready.",
     commands,
     guidance: repoScoped
       ? "Start with /crew:brief-me for a quick situational report, then /crew:build or /crew:fix for real work."
-      : "Use /crew:init for a new repo, /crew:adopt for an existing repo, and /crew:brief-me once a repo is wired in."
+      : "Use /crew:init for a new repo, /crew:adopt for an existing repo, and /crew:brief-me once a repo is wired in.",
+    optional
   };
 }
 
