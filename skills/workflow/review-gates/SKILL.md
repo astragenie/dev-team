@@ -1,5 +1,6 @@
 ---
 name: review-gates
+tier: workflow
 description: Use before declaring implementation work done to separate task-compliance review from code-quality review and make approval criteria explicit.
 ---
 

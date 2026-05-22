@@ -1,5 +1,6 @@
 ---
 name: writing-claude-md
+tier: universal
 description: Use when adding or updating CLAUDE.md entries to keep them concise and useful.
 ---
 

@@ -1,5 +1,6 @@
 ---
 name: writing-task-handoffs
+tier: universal
 description: Use when delegating or concluding substantial work so tasks, ownership, risks, and next steps are explicit and easy to inspect.
 ---
 
