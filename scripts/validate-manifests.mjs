@@ -6,81 +6,93 @@
 // hit in practice: required fields present, version fields in sync,
 // marketplace entries reference real plugin names, version strings are
 // parseable as semver-ish.
+//
+// validateManifests() is exported so the same checks can run from a test
+// without spawning a subprocess. The entry point at the bottom prints +
+// sets process.exitCode on failure; it does NOT call process.exit, so
+// callers that `await import` this module are not killed.
 
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-
-const failures = [];
-function fail(msg) {
-  failures.push(msg);
-}
+const SEMVER_RE = /^\d+\.\d+\.\d+(?:-[\w.]+)?$/;
 
 async function readJson(p) {
   return JSON.parse(await fs.readFile(p, "utf8"));
 }
 
-const pluginPath = path.join(repoRoot, ".claude-plugin", "plugin.json");
-const marketplacePath = path.join(repoRoot, ".claude-plugin", "marketplace.json");
-const packagePath = path.join(repoRoot, "package.json");
+export async function validateManifests(repoRoot) {
+  const failures = [];
+  const fail = (msg) => failures.push(msg);
 
-const plugin = await readJson(pluginPath);
-const marketplace = await readJson(marketplacePath);
-const pkg = await readJson(packagePath);
+  const plugin = await readJson(path.join(repoRoot, ".claude-plugin", "plugin.json"));
+  const marketplace = await readJson(path.join(repoRoot, ".claude-plugin", "marketplace.json"));
+  const pkg = await readJson(path.join(repoRoot, "package.json"));
 
-const SEMVER_RE = /^\d+\.\d+\.\d+(?:-[\w.]+)?$/;
-
-for (const [label, manifest, requiredFields] of [
-  ["plugin.json", plugin, ["name", "version", "description", "author", "license"]],
-  ["marketplace.json", marketplace, ["name", "owner", "plugins"]]
-]) {
-  for (const field of requiredFields) {
-    if (manifest[field] === undefined || manifest[field] === null || manifest[field] === "") {
-      fail(`${label}: missing required field "${field}"`);
+  for (const [label, manifest, requiredFields] of [
+    ["plugin.json", plugin, ["name", "version", "description", "author", "license"]],
+    ["marketplace.json", marketplace, ["name", "owner", "plugins"]]
+  ]) {
+    for (const field of requiredFields) {
+      if (manifest[field] === undefined || manifest[field] === null || manifest[field] === "") {
+        fail(`${label}: missing required field "${field}"`);
+      }
     }
   }
-}
 
-if (!SEMVER_RE.test(plugin.version))
-  fail(`plugin.json: version "${plugin.version}" is not parseable semver`);
-if (!SEMVER_RE.test(pkg.version))
-  fail(`package.json: version "${pkg.version}" is not parseable semver`);
+  if (!SEMVER_RE.test(plugin.version))
+    fail(`plugin.json: version "${plugin.version}" is not parseable semver`);
+  if (!SEMVER_RE.test(pkg.version))
+    fail(`package.json: version "${pkg.version}" is not parseable semver`);
 
-if (plugin.version !== pkg.version) {
-  fail(`version drift: plugin.json=${plugin.version}, package.json=${pkg.version}`);
-}
+  if (plugin.version !== pkg.version) {
+    fail(`version drift: plugin.json=${plugin.version}, package.json=${pkg.version}`);
+  }
 
-const ownEntry = marketplace.plugins.find((entry) => entry.name === plugin.name);
-if (!ownEntry) {
-  fail(`marketplace.json: no entry for own plugin name "${plugin.name}"`);
-} else if (ownEntry.version !== plugin.version) {
-  fail(
-    `marketplace.json: entry "${plugin.name}" version=${ownEntry.version} but plugin.json=${plugin.version}`
-  );
-}
-
-for (const entry of marketplace.plugins) {
-  if (!entry.name) fail(`marketplace.json: a plugins[] entry is missing "name"`);
-  if (!entry.version || !SEMVER_RE.test(entry.version)) {
+  const ownEntry = marketplace.plugins.find((entry) => entry.name === plugin.name);
+  if (!ownEntry) {
+    fail(`marketplace.json: no entry for own plugin name "${plugin.name}"`);
+  } else if (ownEntry.version !== plugin.version) {
     fail(
-      `marketplace.json: entry "${entry.name}" version "${entry.version}" is not parseable semver`
+      `marketplace.json: entry "${plugin.name}" version=${ownEntry.version} but plugin.json=${plugin.version}`
     );
   }
-  if (!entry.source) fail(`marketplace.json: entry "${entry.name}" missing "source"`);
+
+  for (const entry of marketplace.plugins) {
+    if (!entry.name) fail(`marketplace.json: a plugins[] entry is missing "name"`);
+    if (!entry.version || !SEMVER_RE.test(entry.version)) {
+      fail(
+        `marketplace.json: entry "${entry.name}" version "${entry.version}" is not parseable semver`
+      );
+    }
+    if (!entry.source) fail(`marketplace.json: entry "${entry.name}" missing "source"`);
+  }
+
+  return { ok: failures.length === 0, failures, plugin, marketplace, pkg };
 }
 
-if (failures.length > 0) {
-  console.error("Manifest validation failed:");
-  for (const f of failures) console.error(`  - ${f}`);
-  process.exit(1);
+function isMainEntry() {
+  if (!process.argv[1]) return false;
+  const entryPath = path.resolve(process.argv[1]);
+  const thisPath = fileURLToPath(import.meta.url);
+  return entryPath === thisPath;
 }
 
-console.log("Manifests OK:");
-console.log(`  plugin.json     ${plugin.name}@${plugin.version}`);
-console.log(`  package.json    ${pkg.name}@${pkg.version}`);
-console.log(`  marketplace.json (${marketplace.plugins.length} entries)`);
-for (const entry of marketplace.plugins) {
-  console.log(`    - ${entry.name}@${entry.version}`);
+if (isMainEntry()) {
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const result = await validateManifests(repoRoot);
+  if (!result.ok) {
+    console.error("Manifest validation failed:");
+    for (const f of result.failures) console.error(`  - ${f}`);
+    process.exitCode = 1;
+  } else {
+    console.log("Manifests OK:");
+    console.log(`  plugin.json     ${result.plugin.name}@${result.plugin.version}`);
+    console.log(`  package.json    ${result.pkg.name}@${result.pkg.version}`);
+    console.log(`  marketplace.json (${result.marketplace.plugins.length} entries)`);
+    for (const entry of result.marketplace.plugins) {
+      console.log(`    - ${entry.name}@${entry.version}`);
+    }
+  }
 }

@@ -182,7 +182,7 @@ function summarizeReport(r) {
 const RULES = [
   {
     id: "cache-busted",
-    trigger: (s, base) => s.cacheHitPct > 0 && s.cacheHitPct < 85,
+    trigger: (s) => s.cacheHitPct > 0 && s.cacheHitPct < 85,
     severity: (s) => (s.cacheHitPct < 60 ? "high" : "medium"),
     message: (s) =>
       `Cache hit ${s.cacheHitPct}% is below the 85% target. Repeated cache rebuilds are dominating cost.`,

@@ -52,13 +52,6 @@ async function pathReadable(filePath) {
   }
 }
 
-async function workflowStateExists(repoPath) {
-  if (await pathReadable(path.join(repoPath, ...WORKFLOW_STATE_PATH))) {
-    return true;
-  }
-  return pathReadable(path.join(repoPath, ...LEGACY_WORKFLOW_STATE_PATH));
-}
-
 export async function loadWorkflowState(repoPath, options = {}) {
   const workflowPath = path.join(repoPath, ...WORKFLOW_STATE_PATH);
   if (await pathReadable(workflowPath)) {
@@ -153,70 +146,80 @@ function hasPendingGates(run) {
   );
 }
 
-function hasMeaningfulProgress(run) {
-  if (!run) {
-    return false;
-  }
-
+// Artifact-shape helpers shared by progress/substance/evidence checks.
+function hasReviewOrValidationArtifact(artifacts) {
   return Boolean(
-    hasAnyWorkflowGate(run) ||
-    run?.artifacts?.handoffs?.length ||
-    run?.artifacts?.reviewResult ||
-    run?.artifacts?.validationPlan ||
-    run?.artifacts?.validationResult ||
-    run?.artifacts?.deploymentChecks?.dev ||
-    run?.artifacts?.deploymentChecks?.prod ||
-    run?.next
+    artifacts?.handoffs?.length ||
+    artifacts?.reviewResult ||
+    artifacts?.validationPlan ||
+    artifacts?.validationResult ||
+    artifacts?.deploymentChecks?.dev ||
+    artifacts?.deploymentChecks?.prod
+  );
+}
+
+function hasSubstantialArtifact(artifacts) {
+  return Boolean(
+    artifacts?.handoffs?.length ||
+    artifacts?.validationPlan ||
+    artifacts?.validationResult ||
+    artifacts?.deploymentChecks?.dev ||
+    artifacts?.deploymentChecks?.prod
+  );
+}
+
+function hasSubstantialGate(gates) {
+  return Boolean(gates?.validation || gates?.deployment?.dev || gates?.deployment?.prod);
+}
+
+function hasSubstantialMode(mode) {
+  return mode === "assisted single-session" || mode === "team run";
+}
+
+function hasMeaningfulProgress(run) {
+  if (!run) return false;
+  return Boolean(
+    hasAnyWorkflowGate(run) || hasReviewOrValidationArtifact(run.artifacts) || run.next
   );
 }
 
 function isSubstantialRunHint(run) {
-  if (!run) {
-    return false;
-  }
-
+  if (!run) return false;
   return Boolean(
-    run.mode === "assisted single-session" ||
-    run.mode === "team run" ||
-    run.artifacts?.handoffs?.length ||
-    run.artifacts?.validationPlan ||
-    run.artifacts?.validationResult ||
-    run.artifacts?.deploymentChecks?.dev ||
-    run.artifacts?.deploymentChecks?.prod ||
-    run.gates?.validation ||
-    run.gates?.deployment?.dev ||
-    run.gates?.deployment?.prod
+    hasSubstantialMode(run.mode) ||
+    hasSubstantialArtifact(run.artifacts) ||
+    hasSubstantialGate(run.gates)
   );
 }
 
+// A gate is "resolved" when its status is one of the terminal values
+// (passed/failed/skipped) — i.e. someone has explicitly closed it,
+// regardless of whether the outcome was success or failure.
+const RESOLVED_GATE_STATUSES = new Set(["passed", "failed", "skipped"]);
+
+function isGateResolved(status) {
+  return Boolean(status) && RESOLVED_GATE_STATUSES.has(status);
+}
+
 function hasCompletedPhaseEvidence(run) {
-  if (!run) {
-    return false;
-  }
+  if (!run) return false;
 
-  const reviewStatus = run.gates?.review?.status || null;
-  const validationStatus = run.gates?.validation?.status || null;
-  const devDeployStatus = run.gates?.deployment?.dev?.status || null;
-  const prodDeployStatus = run.gates?.deployment?.prod?.status || null;
+  const gates = run.gates || {};
+  const anyGateResolved =
+    isGateResolved(gates.review?.status) ||
+    isGateResolved(gates.validation?.status) ||
+    isGateResolved(gates.deployment?.dev?.status) ||
+    isGateResolved(gates.deployment?.prod?.status);
 
-  return Boolean(
-    reviewStatus === "passed" ||
-    reviewStatus === "failed" ||
-    reviewStatus === "skipped" ||
-    validationStatus === "passed" ||
-    validationStatus === "failed" ||
-    validationStatus === "skipped" ||
-    devDeployStatus === "passed" ||
-    devDeployStatus === "failed" ||
-    devDeployStatus === "skipped" ||
-    prodDeployStatus === "passed" ||
-    prodDeployStatus === "failed" ||
-    prodDeployStatus === "skipped" ||
-    run.artifacts?.reviewResult ||
-    run.artifacts?.validationResult ||
-    run.artifacts?.deploymentChecks?.dev ||
-    run.artifacts?.deploymentChecks?.prod
+  const artifacts = run.artifacts || {};
+  const anyArtifactWritten = Boolean(
+    artifacts.reviewResult ||
+    artifacts.validationResult ||
+    artifacts.deploymentChecks?.dev ||
+    artifacts.deploymentChecks?.prod
   );
+
+  return anyGateResolved || anyArtifactWritten;
 }
 
 function summarizeMissingArtifactWritesForRun(run) {
@@ -224,43 +227,40 @@ function summarizeMissingArtifactWritesForRun(run) {
     return [];
   }
 
-  const missing = [];
-  const reviewStatus = run.gates?.review?.status || null;
-  const validationStatus = run.gates?.validation?.status || null;
-  const devDeployStatus = run.gates?.deployment?.dev?.status || null;
-  const prodDeployStatus = run.gates?.deployment?.prod?.status || null;
-  const hasProgress = hasMeaningfulProgress(run);
-  const substantialRun = isSubstantialRunHint(run);
+  // "Decided" means the gate was explicitly closed pass/fail (not pending,
+  // not skipped). A decided gate without its corresponding artifact is a
+  // missing write-back.
+  const isDecided = (status) => status === "passed" || status === "failed";
 
-  if ((reviewStatus === "passed" || reviewStatus === "failed") && !run.artifacts?.reviewResult) {
-    missing.push("review_result_missing");
-  }
-  if (
-    (validationStatus === "passed" || validationStatus === "failed") &&
-    !run.artifacts?.validationResult
-  ) {
-    missing.push("validation_result_missing");
-  }
-  if (
-    (devDeployStatus === "passed" || devDeployStatus === "failed") &&
-    !run.artifacts?.deploymentChecks?.dev
-  ) {
-    missing.push("dev_deployment_check_missing");
-  }
-  if (
-    (prodDeployStatus === "passed" || prodDeployStatus === "failed") &&
-    !run.artifacts?.deploymentChecks?.prod
-  ) {
-    missing.push("prod_deployment_check_missing");
-  }
-  if (substantialRun && hasProgress && !run.artifacts?.runBrief) {
+  const gates = run.gates || {};
+  const artifacts = run.artifacts || {};
+  const checks = [
+    [isDecided(gates.review?.status) && !artifacts.reviewResult, "review_result_missing"],
+    [
+      isDecided(gates.validation?.status) && !artifacts.validationResult,
+      "validation_result_missing"
+    ],
+    [
+      isDecided(gates.deployment?.dev?.status) && !artifacts.deploymentChecks?.dev,
+      "dev_deployment_check_missing"
+    ],
+    [
+      isDecided(gates.deployment?.prod?.status) && !artifacts.deploymentChecks?.prod,
+      "prod_deployment_check_missing"
+    ]
+  ];
+
+  const missing = checks.filter(([cond]) => cond).map(([, code]) => code);
+
+  const substantialRun = isSubstantialRunHint(run);
+  if (substantialRun && hasMeaningfulProgress(run) && !artifacts.runBrief) {
     missing.push("run_brief_missing");
   }
   if (
     substantialRun &&
     hasCompletedPhaseEvidence(run) &&
     !hasPendingGates(run) &&
-    !run.artifacts?.finalSynthesis
+    !artifacts.finalSynthesis
   ) {
     missing.push("final_synthesis_missing");
   }
@@ -286,74 +286,35 @@ function ensureCurrentRun(state, fields = {}) {
   return state.currentRun;
 }
 
-function applyBadge(run, badge, note = "") {
-  const updatedAt = nowIso();
-  if (badge === "review_required") {
-    run.gates.review = { status: "required", updatedAt, note };
-    return;
-  }
-  if (badge === "review_passed") {
-    run.gates.review = { status: "passed", updatedAt, note };
-    return;
-  }
-  if (badge === "review_failed") {
-    run.gates.review = { status: "failed", updatedAt, note };
-    return;
-  }
-  if (badge === "review_skipped") {
-    run.gates.review = { status: "skipped", updatedAt, note };
-    return;
-  }
-  if (badge === "validation_expected") {
-    run.gates.validation = { status: "expected", updatedAt, note };
-    return;
-  }
-  if (badge === "validation_passed") {
-    run.gates.validation = { status: "passed", updatedAt, note };
-    return;
-  }
-  if (badge === "validation_failed") {
-    run.gates.validation = { status: "failed", updatedAt, note };
-    return;
-  }
-  if (badge === "validation_skipped") {
-    run.gates.validation = { status: "skipped", updatedAt, note };
-    return;
-  }
-  if (badge === "dev_deploy_expected") {
-    run.gates.deployment.dev = { status: "expected", updatedAt, note };
-    return;
-  }
-  if (badge === "dev_checked") {
-    run.gates.deployment.dev = { status: "passed", updatedAt, note };
-    return;
-  }
-  if (badge === "dev_failed") {
-    run.gates.deployment.dev = { status: "failed", updatedAt, note };
-    return;
-  }
-  if (badge === "dev_skipped") {
-    run.gates.deployment.dev = { status: "skipped", updatedAt, note };
-    return;
-  }
-  if (badge === "prod_deploy_expected") {
-    run.gates.deployment.prod = { status: "expected", updatedAt, note };
-    return;
-  }
-  if (badge === "prod_checked") {
-    run.gates.deployment.prod = { status: "passed", updatedAt, note };
-    return;
-  }
-  if (badge === "prod_failed") {
-    run.gates.deployment.prod = { status: "failed", updatedAt, note };
-    return;
-  }
-  if (badge === "prod_skipped") {
-    run.gates.deployment.prod = { status: "skipped", updatedAt, note };
-    return;
-  }
+// Badge -> (gate selector, status). `selector` takes the run and returns
+// a [parent, key] tuple so the badge can assign without having to repeat
+// the `run.gates.deployment.dev = ...` chain inline.
+const BADGE_TABLE = {
+  review_required: { selector: (run) => [run.gates, "review"], status: "required" },
+  review_passed: { selector: (run) => [run.gates, "review"], status: "passed" },
+  review_failed: { selector: (run) => [run.gates, "review"], status: "failed" },
+  review_skipped: { selector: (run) => [run.gates, "review"], status: "skipped" },
+  validation_expected: { selector: (run) => [run.gates, "validation"], status: "expected" },
+  validation_passed: { selector: (run) => [run.gates, "validation"], status: "passed" },
+  validation_failed: { selector: (run) => [run.gates, "validation"], status: "failed" },
+  validation_skipped: { selector: (run) => [run.gates, "validation"], status: "skipped" },
+  dev_deploy_expected: { selector: (run) => [run.gates.deployment, "dev"], status: "expected" },
+  dev_checked: { selector: (run) => [run.gates.deployment, "dev"], status: "passed" },
+  dev_failed: { selector: (run) => [run.gates.deployment, "dev"], status: "failed" },
+  dev_skipped: { selector: (run) => [run.gates.deployment, "dev"], status: "skipped" },
+  prod_deploy_expected: { selector: (run) => [run.gates.deployment, "prod"], status: "expected" },
+  prod_checked: { selector: (run) => [run.gates.deployment, "prod"], status: "passed" },
+  prod_failed: { selector: (run) => [run.gates.deployment, "prod"], status: "failed" },
+  prod_skipped: { selector: (run) => [run.gates.deployment, "prod"], status: "skipped" }
+};
 
-  throw new Error(`Unsupported workflow badge: ${badge}`);
+function applyBadge(run, badge, note = "") {
+  const spec = BADGE_TABLE[badge];
+  if (!spec) {
+    throw new Error(`Unsupported workflow badge: ${badge}`);
+  }
+  const [parent, key] = spec.selector(run);
+  parent[key] = { status: spec.status, updatedAt: nowIso(), note };
 }
 
 export async function markWorkflowBadge(repoPath, options = {}) {

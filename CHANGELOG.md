@@ -3,6 +3,45 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.1.20 — 2026-05-22
+
+### Changed
+- **`scripts/lib/workflow-state.mjs`** — reduced complexity in five
+  hot functions:
+  - `hasCompletedPhaseEvidence`: 37 → 19. Extracted
+    `isGateResolved(status)` + `RESOLVED_GATE_STATUSES` set;
+    artifact-shape check pulled out.
+  - `hasMeaningfulProgress` (25) and `isSubstantialRunHint` (24):
+    artifact / gate predicates extracted into
+    `hasReviewOrValidationArtifact`, `hasSubstantialArtifact`,
+    `hasSubstantialGate`, `hasSubstantialMode`.
+  - `summarizeMissingArtifactWritesForRun`: 43 → 23. Status checks
+    folded into a `[cond, code][]` table; named `isDecided(status)`
+    helper makes the intent (pass/fail, not pending or skipped)
+    explicit.
+  - `applyBadge`: 18 → 1. Replaced 16-branch `if`-chain with a
+    `BADGE_TABLE` registry mapping badge name → `(run) => [parent, key]`
+    selector + target status. Adding a new badge is now one entry.
+- **`scripts/validate-manifests.mjs`**: exports `validateManifests()`
+  for in-process testing. Entry-point check uses `process.exitCode`
+  instead of `process.exit(1)` so `await import` doesn't kill the
+  caller.
+- **`scripts/lib/wakeup.mjs`**: dropped dead `resolvedSprintPath`
+  computation (lint `no-unused-vars`).
+- **`scripts/lib/workflow-state.mjs`**: dropped dead
+  `workflowStateExists()`.
+- **`scripts/lib/cost-advisor.mjs`**: dropped unused `base` parameter
+  in `cache-busted` rule trigger.
+
+### Added
+- **`docs/code-conventions.md`**: per-repo coding conventions adapted
+  from `Astragenie.Standards/typescript/coding-conventions.md` for
+  plain ESM. Anchors the lint rules to their reasoning.
+
+### Notes
+- Lint warning count: 20 → 17.
+- All 49 tests pass.
+
 ## v0.1.19 — 2026-05-22
 
 ### Changed

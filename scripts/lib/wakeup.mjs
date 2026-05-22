@@ -286,11 +286,6 @@ export async function buildWakeUpBrief(repoPath, options = {}) {
   const resolvedHistoryPath = (await pathExists(historyPath))
     ? historyPath
     : path.join(repoPath, ...LEGACY_HISTORY_PATH);
-  const sprintPath = path.join(repoPath, ...SPRINT_PATH);
-  const resolvedSprintPath = (await pathExists(sprintPath))
-    ? sprintPath
-    : path.join(repoPath, ...LEGACY_SPRINT_PATH);
-
   const [recentEventsRaw, recentClaimHistory, archiveCounts] = await Promise.all([
     readRecentJsonl(path.join(repoPath, ...EVENTS_PATH), RECENT_EVENTS_LIMIT),
     readRecentJsonl(resolvedHistoryPath, RECENT_HISTORY_LIMIT),
