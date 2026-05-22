@@ -18,7 +18,7 @@ phase: 1
 ## Description
 
 Produce `docs/routing-table.md` — the prescriptive heuristic map the lead
-consults when classifying incoming work. See `docs/architecture.md` §5
+consults when classifying incoming work. See `docs/architecture/architecture.md` §5
 for the column shape.
 
 Derive entries from observed task patterns in

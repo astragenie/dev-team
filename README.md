@@ -28,9 +28,9 @@ In practice, the highest-value default mode is:
 
 The user should mostly talk to the lead, not manage a menu of agents or remember a command graph.
 
-The next product direction is an evidence-gated validation loop: local validation, review, PR, dev deploy validation, dev logs/metrics, production promotion, and production monitoring. See [docs/validation-loop.md](docs/validation-loop.md).
+The next product direction is an evidence-gated validation loop: local validation, review, PR, dev deploy validation, dev logs/metrics, production promotion, and production monitoring. See [docs/process/validation-loop.md](docs/process/validation-loop.md).
 
-For the broader implementation order and rename plan, see [docs/product-roadmap.md](docs/product-roadmap.md).
+For the broader implementation order and rename plan, see [docs/architecture/product-roadmap.md](docs/architecture/product-roadmap.md).
 
 ## Install
 

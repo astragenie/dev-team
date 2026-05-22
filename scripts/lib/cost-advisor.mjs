@@ -332,7 +332,7 @@ const RULES = [
     message: (s) =>
       `Exploration:execution tool ratio is ${s.explorationRatio.toFixed(1)}:1 (Reads/Greps/Bashes vs Edits/Writes).`,
     suggestion:
-      "Lots of looking, little doing. After the second exploration pass, write the plan down and start editing; do not keep grepping. Prefer LSP for code-symbol lookups (see `docs/grep-guidance.md` in hero-crew); use Grep only for prose, configs, or regex hunts."
+      "Lots of looking, little doing. After the second exploration pass, write the plan down and start editing; do not keep grepping. Prefer LSP for code-symbol lookups (see `docs/process/grep-guidance.md` in hero-crew); use Grep only for prose, configs, or regex hunts."
   },
   {
     id: "expensive-failure",

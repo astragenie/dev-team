@@ -17,9 +17,14 @@ phase: 2
 
 ## Description
 
-Author `skills/domain/dotnet/csharp-conventions/SKILL.md`. Distil the
-relevant slice of `Astragenie.Standards/docs/csharp/coding-conventions.md`
-into a skill the builder loads when touching `*.cs`.
+Author `skills/domain/dotnet/csharp-conventions/SKILL.md`. Consult
+`Astragenie.Standards/docs/csharp/coding-conventions.md` for guidance if
+that repo is installed at a sibling path; otherwise distil the rules
+from the most recent crew artifacts touching `*.cs` and from the
+SOLID / GoF reference at
+`Astragenie.Standards/docs/patterns/design-patterns.md` (also optional).
+The Standards repo is provenance, not a runtime dependency — the skill
+must stand on its own.
 
 Pattern this skill so future domain skills can copy its shape
 (detection-trigger, trigger conditions, action steps, done criteria).

@@ -17,7 +17,7 @@ phase: 1
 
 ## Description
 
-Split `skills/` into the four-tier taxonomy defined in `docs/architecture.md`:
+Split `skills/` into the four-tier taxonomy defined in `docs/architecture/architecture.md`:
 
 ```
 skills/
@@ -36,4 +36,4 @@ Move existing skills into the correct tier without rewriting content.
 - Each skill's frontmatter gains a `tier` field (`universal | workflow | domain | meta`).
 - `.claude-plugin/plugin.json` paths still resolve (or adjusted).
 - Existing tests pass unchanged.
-- One follow-up note added to `docs/architecture.md` if the move uncovered a misclassification.
+- One follow-up note added to `docs/architecture/architecture.md` if the move uncovered a misclassification.

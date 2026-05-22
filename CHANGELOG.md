@@ -21,7 +21,7 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
     `install-wiggin-bridge`, `backfill-wiggin-bridge`
   - README Install section "optional follow-up" block
   - `commands/adopt.md` step 12 bridge probe
-  - `docs/adoption-checklist.md` bridge sections
+  - `docs/process/adoption-checklist.md` bridge sections
   - `installer/welcome.mjs` optional bridge hint
 - Companion `autonomous-loop/skills/loop-discipline/SKILL.md` lost its
   one-line reference to the bridge as well.
@@ -208,7 +208,7 @@ Final lint-cleanup pass. **Lint warning count: 8 → 0.**
   in `cache-busted` rule trigger.
 
 ### Added
-- **`docs/code-conventions.md`**: per-repo coding conventions adapted
+- **`docs/standards/code-conventions.md`**: per-repo coding conventions adapted
   from `Astragenie.Standards/typescript/coding-conventions.md` for
   plain ESM. Anchors the lint rules to their reasoning.
 
@@ -321,7 +321,7 @@ Tests: 49/49 pass.
 - README local-development clone URL pointed to the legacy
   `alex-radaev/engineering-os` repo; corrected to
   `sergeymilashico/hero-crew`.
-- `docs/reference-repo-plan.md` replaced hard-coded
+- `docs/history/reference-repo-plan.md` replaced hard-coded
   `/Users/aradaev/Desktop/Projects/` paths with `<reference-repos-dir>`
   placeholders.
 

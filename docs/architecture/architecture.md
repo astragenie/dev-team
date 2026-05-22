@@ -67,7 +67,7 @@ Hybrid: prescriptive heuristics in `docs/routing-table.md` + lead judgment for a
 1. Reorganize `skills/` into `{universal,workflow,domain,meta}/`.
 2. Author `docs/routing-table.md`.
 3. Update `agents/lead.md` (≤200 lines) to reference routing-table + skill tier conventions.
-4. Write this `docs/architecture.md`.
+4. Write this `docs/architecture/architecture.md`.
 5. Run two end-to-end tasks. Observe.
 
 ## Phase 2+ (when, not whether)

@@ -26,7 +26,7 @@ Author `docs/governance.md` covering:
 - Lessons → standards pipeline (when same lesson appears in 3+ grades
   or retrospectives, promote to skill or `code-conventions.md` entry)
 - Specialist-agent admission criteria (the three-test rule from
-  `docs/architecture.md` §6)
+  `docs/architecture/architecture.md` §6)
 
 ## Acceptance hints
 

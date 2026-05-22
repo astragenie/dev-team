@@ -1,8 +1,10 @@
 # Code Conventions — crew
 
-Adapted from `Astragenie.Standards/docs/typescript/coding-conventions.md`
-for this repo's plain Node ESM (`.mjs`) surface. Where a TS-specific rule
-does not apply, the underlying intent is preserved.
+Mirrors
+[`Astragenie.Standards/docs/javascript/coding-conventions.md`](https://github.com/sergeymilashico/Astragenie.Standards/blob/main/docs/javascript/coding-conventions.md)
+when that repo is installed at a sibling path; otherwise this file is
+self-contained and authoritative. The Standards repo is provenance and
+cross-team alignment, not a runtime dependency.
 
 The lint config (`eslint.config.mjs`) enforces the mechanical parts.
 This doc records the reasoning so PR reviewers can apply judgment in

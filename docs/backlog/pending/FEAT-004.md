@@ -17,7 +17,7 @@ phase: 1
 
 ## Description
 
-`docs/architecture.md` exists as a Phase 1 draft. Polish it once
+`docs/architecture/architecture.md` exists as a Phase 1 draft. Polish it once
 FEAT-001/002/003 land so the lived layout matches the doc.
 
 ## Acceptance hints

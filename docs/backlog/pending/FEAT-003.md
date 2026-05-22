@@ -20,7 +20,7 @@ phase: 1
 Rewrite `agents/lead.md` to:
 
 1. Reference `docs/routing-table.md` as the routing source of truth.
-2. Reference the skill-tier conventions in `docs/architecture.md`.
+2. Reference the skill-tier conventions in `docs/architecture/architecture.md`.
 3. Document the composition formula
    `role + universal + workflow + domain + repo + task`.
 4. Stay **≤200 lines**. Push specifics into skills.

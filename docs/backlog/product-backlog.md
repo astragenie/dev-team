@@ -1,6 +1,6 @@
 # Crew Engineering OS — Product Backlog
 
-Source: `docs/architecture.md`.
+Source: `docs/architecture/architecture.md`.
 
 Items live in `docs/backlog/{pending,triaged,in-progress,done}/` and are
 managed by the `autonomous-loop` plugin's backlog CLI.

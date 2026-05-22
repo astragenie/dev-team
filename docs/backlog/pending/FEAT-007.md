@@ -31,7 +31,7 @@ stack: <optional — only for domain skills>
 ---
 ```
 
-Document the four quality gates in `docs/architecture.md`:
+Document the four quality gates in `docs/architecture/architecture.md`:
 
 1. ≤200 lines
 2. Trigger conditions section
