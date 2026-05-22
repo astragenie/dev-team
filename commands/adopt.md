@@ -44,13 +44,7 @@ Workflow:
 9. If deployment is only partly clear, record the known build/deploy path and what still needs live verification instead of guessing.
 10. If the installer reports missing or stale global memory, recommend `/crew:install`.
 11. Explain any assumptions before editing if the repo shape makes the bootstrap risky.
-12. Inspect the repo's commit conventions (recent `git log --oneline -20` plus any
-    `CONTRIBUTING.md` or release docs). If commits follow a recognizable pattern
-    (slice IDs, Conventional Commits, etc.), explicitly recommend
-    `/crew:install-commit-bridge` and name the matching preset. If the convention
-    is unclear or the user has signaled they don't want extra hooks, mention the
-    bridge once as an opt-in and move on. Do not auto-install.
-13. End with a short welcome message:
+12. End with a short welcome message:
    - congratulate the user on the suspiciously good choice of bringing this repo into Crew
    - keep it brief and slightly tongue-in-cheek
    - show the main commands to start with: `/crew:brief-me`, `/crew:build`, `/crew:fix`, and `/crew:ship`

@@ -62,20 +62,12 @@ Run through this list before invoking `/crew:adopt`:
    exist). No data loss, but worth knowing the gate badges will still be in
    place after migration.
 
-4. **Custom `.git/hooks/post-commit`?** The optional bridge installer
-   (`/crew:install-commit-bridge`) **overwrites** this file without merging.
-   If you have local hook customization, back it up first:
-   ```bash
-   cp .git/hooks/post-commit .git/hooks/post-commit.bak
-   ```
-   The bridge is a separate step — `/crew:adopt` alone does not touch git hooks.
-
-5. **CLAUDE.md is fully under your control?** The marker-block insertion is
+4. **CLAUDE.md is fully under your control?** The marker-block insertion is
    idempotent and additive, but if you have strong opinions about CLAUDE.md
    ordering, decide before running whether to let the installer append at
    the end or whether you want to position the block manually afterward.
 
-6. **`.gitignore` treatment of `.claude/`?** Decide whether to:
+5. **`.gitignore` treatment of `.claude/`?** Decide whether to:
    - Commit `.claude/{crew,hooks,settings.json}` so the harness is reproducible
    - Commit only `.claude/artifacts/crew/` for the historical record
    - Gitignore everything (treat the harness as per-clone runtime state)
@@ -107,41 +99,13 @@ ls .claude/crew/    # constitution.md, workflow.md, protocol.md, deployment.md i
 ls .claude/state/crew/    # workflow-state.json, claims.json, history.jsonl, approvals.jsonl, sprint.json, README.md
 ```
 
-## Commit bridge (optional, separate step)
-
-Only install the commit bridge if the repo's methodology produces signals
-that map cleanly to Crew artifacts. The bridge is observability, not
-enforcement — installing it in a repo without a recognizable commit
-convention just produces artifact spam.
-
-```bash
-# default preset (wiggin-loop):
-/crew:install-commit-bridge
-
-# conventional commits:
-/crew:install-commit-bridge --preset conventional-commits
-
-# custom convention:
-/crew:install-commit-bridge --commit-pattern '^EPIC_[0-9]+' --trigger-filename 'epics-done.md' --reviewer-label 'epic-tracker'
-
-# one-time backfill of historical matching commits:
-/crew:backfill-commit-bridge --preset <same-preset>
-```
-
-See `commands/install-commit-bridge.md` for the full flag set and trade-offs.
-
 ## Rollback
 
 If something goes wrong:
 
 1. Restore the `.claude/` backup directory from step 1
 2. Restore CLAUDE.md from git: `git checkout HEAD -- CLAUDE.md`
-3. Remove the bridge artifacts if installed:
-   ```bash
-   rm -f .git/hooks/post-commit .git/hooks/post-commit.bak
-   rm -f .claude/hooks/commit_bridge.sh
-   ```
-4. File an issue or note what surprised you so the checklist can absorb it
+3. File an issue or note what surprised you so the checklist can absorb it
 
 ## Repos that should NOT adopt
 

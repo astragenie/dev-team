@@ -47,16 +47,7 @@ The companion `autonomous-loop` plugin lives in the same marketplace:
 /plugin install autonomous-loop@crew-dev
 ```
 
-Verify locally with `npm test`. Pinned release: `v0.1.25`.
-
-Optional per-repo follow-up — install the commit bridge if you want
-Crew artifacts produced from matching commits:
-
-```
-/crew:install-commit-bridge
-```
-
-Skip if you don't want a `PostToolUse` hook in `.claude/settings.json`.
+Verify locally with `npm test`. Pinned release: `v0.1.26`.
 
 ## Commands
 
@@ -73,13 +64,6 @@ Preferred entry points:
 - `/crew:adopt` — adopt an existing repo into the workflow
 - `/crew:init` — initialize a new repo with the harness
 - `/crew:install` — install or update the managed global framework memory
-
-Optional, repo-by-repo:
-
-- `/crew:install-commit-bridge` — install a `PostToolUse` hook that mints
-  Crew artifacts from matching commits (presets: `wiggin-loop`,
-  `conventional-commits`). Opt-in because it changes commit-time
-  behavior; see `docs/adoption-checklist.md`.
 
 Everything else should be treated as internal, advanced, or debugging-oriented workflow plumbing:
 

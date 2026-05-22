@@ -5,13 +5,6 @@ import { writeArtifact } from "./lib/artifacts.mjs";
 import { discoverDeploymentClues, writeDeploymentGuidance } from "./lib/deployment-guidance.mjs";
 import { buildBriefingReport } from "./lib/briefing.mjs";
 import { auditRepo, bootstrapRepo, initRepo, installGlobal } from "./lib/installer.mjs";
-import {
-  installCommitBridge,
-  installWigginBridge,
-  backfillCommitBridge,
-  backfillWigginBridge,
-  listBridgePresets
-} from "./lib/bridge-installer.mjs";
 import { listApprovals, requestApproval, resolveApproval } from "./lib/approvals.mjs";
 import { claimFiles, inspectClaims, listClaims, releaseFiles } from "./lib/claims.mjs";
 import { buildWakeUpBrief } from "./lib/wakeup.mjs";
@@ -231,16 +224,7 @@ function usage(target = null) {
       "  node scripts/crew.mjs write-final-synthesis --repo <path> --title <text> [--summary <text>] [--files <a,b>]",
     "cost-slice":
       "  node scripts/crew.mjs cost-slice --repo <path> [--started-at <iso>] [--completed-at <iso>] [--run-title <text>] [--source-project <slug>] [--aggregate-all]",
-    "cost-advise": "  node scripts/crew.mjs cost-advise --repo <path>",
-    "install-commit-bridge":
-      "  node scripts/crew.mjs install-commit-bridge --repo <path> [--preset wiggin-loop|conventional-commits] [--commit-pattern <regex>] [--trigger-filename <name>] [--reviewer-label <name>]",
-    "backfill-commit-bridge":
-      "  node scripts/crew.mjs backfill-commit-bridge --repo <path> [--preset wiggin-loop|conventional-commits] [--commit-pattern <regex>] [--reviewer-label <name>]",
-    "list-bridge-presets": "  node scripts/crew.mjs list-bridge-presets",
-    "install-wiggin-bridge":
-      "  node scripts/crew.mjs install-wiggin-bridge --repo <path>   (alias: install-commit-bridge --preset wiggin-loop)",
-    "backfill-wiggin-bridge":
-      "  node scripts/crew.mjs backfill-wiggin-bridge --repo <path> (alias: backfill-commit-bridge --preset wiggin-loop)"
+    "cost-advise": "  node scripts/crew.mjs cost-advise --repo <path>"
   };
 
   if (target && subcommands[target]) {
@@ -339,23 +323,6 @@ const COMMANDS = {
   audit: ({ repoPath }) => auditRepo(repoPath),
   bootstrap: ({ repoPath }) => bootstrapRepo(repoPath),
   init: ({ repoPath, flags }) => initRepo(repoPath, { allowExisting: flags.allowExisting }),
-
-  "install-commit-bridge": ({ repoPath, flags }) =>
-    installCommitBridge(repoPath, {
-      preset: flags.preset,
-      commitPattern: flags.commitPattern,
-      triggerFilename: flags.triggerFilename,
-      reviewerLabel: flags.reviewerLabel
-    }),
-  "backfill-commit-bridge": ({ repoPath, flags }) =>
-    backfillCommitBridge(repoPath, {
-      preset: flags.preset,
-      commitPattern: flags.commitPattern,
-      reviewerLabel: flags.reviewerLabel
-    }),
-  "list-bridge-presets": () => Promise.resolve({ presets: listBridgePresets() }),
-  "install-wiggin-bridge": ({ repoPath }) => installWigginBridge(repoPath),
-  "backfill-wiggin-bridge": ({ repoPath }) => backfillWigginBridge(repoPath),
 
   claim: ({ repoPath, flags, positionals }) =>
     claimFiles(repoPath, positionals, { owner: flags.owner || "lead-session" }),

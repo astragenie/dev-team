@@ -3,6 +3,41 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.1.26 — 2026-05-22
+
+### Removed
+- **Commit bridge feature removed in its entirety.** The bridge was an
+  opt-in `PostToolUse` hook that minted Crew artifacts from commits
+  matching a preset pattern; in practice it was never adopted beyond
+  exploration. Deletion reclaims ~700 lines (lib + tests + commands +
+  docs) and one PostToolUse-hook surface for downstream repos to worry
+  about.
+  - `scripts/lib/bridge-installer.mjs` (463 lines)
+  - `scripts/lib/plugin-identity.mjs` (sole consumer was the bridge)
+  - `tests/bridge-installer.test.mjs` (14 tests)
+  - `commands/install-commit-bridge.md` + `commands/install-wiggin-bridge.md`
+  - CLI subcommands: `install-commit-bridge`,
+    `backfill-commit-bridge`, `list-bridge-presets`,
+    `install-wiggin-bridge`, `backfill-wiggin-bridge`
+  - README Install section "optional follow-up" block
+  - `commands/adopt.md` step 12 bridge probe
+  - `docs/adoption-checklist.md` bridge sections
+  - `installer/welcome.mjs` optional bridge hint
+- Companion `autonomous-loop/skills/loop-discipline/SKILL.md` lost its
+  one-line reference to the bridge as well.
+
+### Migration
+Repos with a bridge already installed will keep the generated
+`.claude/hooks/commit_bridge.sh` + `PostToolUse` settings entry — no
+runtime breakage. The CLI commands for re-installing or reconfiguring
+the bridge are simply gone. Manual cleanup: delete
+`.claude/hooks/commit_bridge.sh` and the matching `PostToolUse` entry
+in `.claude/settings.json` if you want to remove the hook entirely.
+
+### Notes
+- Tests: 35/35 pass (down from 49 — the 14 missing tests are the
+  bridge suite that no longer exists).
+
 ## v0.1.25 — 2026-05-22
 
 ### Changed
