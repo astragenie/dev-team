@@ -124,6 +124,26 @@ async function loadReports(repoPath, limit = 20) {
   return reports;
 }
 
+// Parse the "## Sources (aggregated)" block out of a cost-report body.
+// Lines look like: "- C--work-mega: 14 msgs, $9.5937".
+function extractSources(body) {
+  const section = body.split(/^##\s+/m).find((s) => s.startsWith("Sources"));
+  if (!section) return [];
+  const out = [];
+  for (const line of section.split(/\r?\n/)) {
+    const m = line.match(/^-\s+(\S+):\s*(\d+)\s+msgs,\s+\$([\d.]+)/);
+    if (m) out.push({ slug: m[1], messages: Number(m[2]), usd: Number(m[3]) });
+  }
+  return out;
+}
+
+// Slug that the repo path itself would resolve to. Used to detect when
+// spend is concentrated in a NON-repo source dir (cross-repo work signal).
+function repoOwnSlug(repoPath) {
+  if (!repoPath) return null;
+  return repoPath.replace(/[^A-Za-z0-9]/g, "-");
+}
+
 function summarizeReport(r) {
   const body = r.body;
   const opusShare = extractModelMix(body)
@@ -175,7 +195,13 @@ function summarizeReport(r) {
     skillInvocations: extractCounter(body, "skill_invocations"),
     subagentDispatches: extractCounter(body, "subagent_dispatches"),
     fileRereadCount: extractCounter(body, "redundant_read_count"),
-    toolResultP90: extractCounter(body, "p90")
+    toolResultP90: extractCounter(body, "p90"),
+    // Cross-repo / aggregate-source metadata
+    sourceProject: r.fm.source_project || null,
+    autoDetected: String(r.fm.auto_detected || "").toLowerCase() === "true",
+    aggregateAll: String(r.fm.aggregate_all || "").toLowerCase() === "true",
+    sourceCount: r.fm.source_count ? Number(r.fm.source_count) : 0,
+    sources: extractSources(body)
   };
 }
 
@@ -276,18 +302,58 @@ const RULES = [
       `Spent $${s.usd.toFixed(2)} (>$${"top quartile"}) on a slice the review rejected.`,
     suggestion:
       "Mandate a written plan + brainstorming gate for similar slices before code is touched."
+  },
+  // ---- per-source / cross-repo rules ----
+  {
+    id: "xrepo-attribution",
+    trigger: (s) => s.autoDetected === true && !s.aggregateAll,
+    severity: () => "medium",
+    message: (s) =>
+      `Cost was auto-attributed to ${s.sourceProject} (not the repo-derived dir). Single-source view may under-count if work spanned multiple sessions.`,
+    suggestion:
+      "Re-run cost-slice with --aggregate-all to capture cross-repo spend, or pass --source-project explicitly if you know the right slug."
+  },
+  {
+    id: "non-repo-dominant",
+    trigger: (s, _base, ctx) => {
+      if (!s.aggregateAll || !s.sources?.length || !ctx?.repoOwnSlug) return false;
+      const own = s.sources.find((src) => src.slug === ctx.repoOwnSlug);
+      const ownUsd = own?.usd || 0;
+      const total = s.sources.reduce((a, b) => a + b.usd, 0);
+      if (total === 0) return false;
+      return ownUsd / total < 0.3; // <30% in the repo's own dir
+    },
+    severity: () => "medium",
+    message: (s, _base, ctx) => {
+      const own = s.sources.find((src) => src.slug === ctx?.repoOwnSlug);
+      const ownUsd = own?.usd || 0;
+      const total = s.sources.reduce((a, b) => a + b.usd, 0);
+      const pct = total > 0 ? ((ownUsd / total) * 100).toFixed(1) : "0";
+      return `Only ${pct}% of spend ($${ownUsd.toFixed(2)} of $${total.toFixed(2)}) came from the repo-derived session. Bookkeeping is misaligned with where work actually happened.`;
+    },
+    suggestion:
+      "Either work directly inside the repo's own Claude session, or move the work to its real home. Cross-repo work hides accountability and inflates the next session's context."
+  },
+  {
+    id: "many-sources",
+    trigger: (s) => s.aggregateAll && s.sourceCount >= 3,
+    severity: (s) => (s.sourceCount >= 5 ? "high" : "low"),
+    message: (s) =>
+      `Slice spend spread across ${s.sourceCount} different Claude sessions. Hard to reason about; cache reuse is fragmented.`,
+    suggestion:
+      "Scope sessions per slice. Open one Claude Code session in the target repo and stay there until the slice closes."
   }
 ];
 
-function applyRules(target, baseline) {
+function applyRules(target, baseline, ctx = {}) {
   const fired = [];
   for (const rule of RULES) {
     try {
-      if (rule.trigger(target, baseline)) {
+      if (rule.trigger(target, baseline, ctx)) {
         fired.push({
           id: rule.id,
-          severity: rule.severity(target, baseline),
-          message: rule.message(target, baseline),
+          severity: rule.severity(target, baseline, ctx),
+          message: rule.message(target, baseline, ctx),
           suggestion: rule.suggestion
         });
       }
@@ -318,7 +384,7 @@ export async function buildCostAdvisor(repoPath, { limit = 10 } = {}) {
     opusShareMedian: median(opusShares)
   };
 
-  const recommendations = applyRules(target, baseline);
+  const recommendations = applyRules(target, baseline, { repoOwnSlug: repoOwnSlug(repoPath) });
 
   // Cross-history aggregate signals
   const aggregateFlags = [];

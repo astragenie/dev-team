@@ -280,7 +280,11 @@ async function maybeEmitCostReport(repoPath, { runTitle } = {}) {
     const completedAt = run.completedAt || new Date().toISOString();
     const cost = await computeSessionCost(repoPath, {
       startedAt: run.startedAt,
-      completedAt
+      completedAt,
+      // Default to aggregate-all on auto-emit so cross-repo work is captured
+      // by default. Manual `cost-slice` still defaults to single-source unless
+      // --aggregate-all is passed.
+      aggregateAll: true
     });
     const title = runTitle || run.title || "cost-report";
     const outcome = await collectOutcomeLinkage(repoPath, title);
