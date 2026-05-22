@@ -186,7 +186,10 @@ function inspectContent(content) {
   return out;
 }
 
-export async function computeSessionCost(repoPath, { startedAt, completedAt, sourceProject = null, autoDetect = true } = {}) {
+export async function computeSessionCost(
+  repoPath,
+  { startedAt, completedAt, sourceProject = null, autoDetect = true } = {}
+) {
   if (!startedAt) throw new Error("computeSessionCost requires startedAt");
   const endIso = completedAt || new Date().toISOString();
   const startMs = Date.parse(startedAt);
