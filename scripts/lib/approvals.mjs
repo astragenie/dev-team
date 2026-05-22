@@ -112,7 +112,9 @@ function replayApprovals(events) {
     }
   }
 
-  return [...approvals.values()].sort((left, right) => left.requestedAt.localeCompare(right.requestedAt));
+  return [...approvals.values()].sort((left, right) =>
+    left.requestedAt.localeCompare(right.requestedAt)
+  );
 }
 
 export async function requestApproval(repoPath, options = {}) {

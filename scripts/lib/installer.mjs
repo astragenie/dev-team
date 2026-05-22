@@ -538,12 +538,14 @@ function isCrewHook(entry) {
   return hooks.some((hook) => {
     const command = hook?.command || "";
     const description = hook?.description || "";
-    return command.includes(".claude/hooks/log_event.sh")
-      || command.includes(".claude/hooks/check_git_gate.sh")
+    return (
+      command.includes(".claude/hooks/log_event.sh") ||
+      command.includes(".claude/hooks/check_git_gate.sh") ||
       // Detect both current ("crew:") and legacy ("engineering-os:") namespaces so
       // mergeHooks replaces legacy registrations cleanly after the rename.
-      || description.startsWith("crew:")
-      || description.startsWith("engineering-os:");
+      description.startsWith("crew:") ||
+      description.startsWith("engineering-os:")
+    );
   });
 }
 
@@ -686,22 +688,14 @@ async function writeHarnessFiles(repoPath, writes) {
       path.join(repoPath, ".claude", "artifacts", "crew", "README.md"),
       `${ARTIFACT_README_TEMPLATE}\n`
     ],
-    [
-      path.join(repoPath, ".claude", "state", "crew", "README.md"),
-      `${STATE_README_TEMPLATE}\n`
-    ],
-    [
-      path.join(repoPath, ".claude", "hooks", "log_event.sh"),
-      HOOK_SCRIPT_TEMPLATE
-    ],
-    [
-      path.join(repoPath, ".claude", "hooks", "check_git_gate.sh"),
-      GIT_GATE_REMINDER_TEMPLATE
-    ]
+    [path.join(repoPath, ".claude", "state", "crew", "README.md"), `${STATE_README_TEMPLATE}\n`],
+    [path.join(repoPath, ".claude", "hooks", "log_event.sh"), HOOK_SCRIPT_TEMPLATE],
+    [path.join(repoPath, ".claude", "hooks", "check_git_gate.sh"), GIT_GATE_REMINDER_TEMPLATE]
   ];
 
   for (const [filePath, contents] of refreshFiles) {
-    const isHookScript = filePath.endsWith("log_event.sh") || filePath.endsWith("check_git_gate.sh");
+    const isHookScript =
+      filePath.endsWith("log_event.sh") || filePath.endsWith("check_git_gate.sh");
     const changed = await writeFileIfChanged(
       filePath,
       contents,
@@ -718,22 +712,20 @@ async function writeHarnessFiles(repoPath, writes) {
       path.join(repoPath, ".claude", "state", "crew", "claims.json"),
       `${JSON.stringify(CLAIMS_TEMPLATE, null, 2)}\n`
     ],
-    [
-      path.join(repoPath, ".claude", "state", "crew", "history.jsonl"),
-      ""
-    ],
-    [
-      path.join(repoPath, ".claude", "state", "crew", "approvals.jsonl"),
-      ""
-    ],
+    [path.join(repoPath, ".claude", "state", "crew", "history.jsonl"), ""],
+    [path.join(repoPath, ".claude", "state", "crew", "approvals.jsonl"), ""],
     [
       path.join(repoPath, ".claude", "state", "crew", "workflow-state.json"),
-      `${JSON.stringify({
-        version: "1.0",
-        updatedAt: "2026-01-01T00:00:00.000Z",
-        currentRun: null,
-        recentRuns: []
-      }, null, 2)}\n`
+      `${JSON.stringify(
+        {
+          version: "1.0",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+          currentRun: null,
+          recentRuns: []
+        },
+        null,
+        2
+      )}\n`
     ],
     [
       path.join(repoPath, ".claude", "state", "crew", "sprint.json"),
@@ -786,10 +778,7 @@ async function writeRepoLocalGuides(repoPath, writes) {
 // removed so the repo ends in a clean single-namespace state.
 async function migrateLegacyHarness(repoPath, writes) {
   const moves = [
-    [
-      path.join(repoPath, ".claude", "engineering-os"),
-      path.join(repoPath, ".claude", "crew")
-    ],
+    [path.join(repoPath, ".claude", "engineering-os"), path.join(repoPath, ".claude", "crew")],
     [
       path.join(repoPath, ".claude", "state", "engineering-os"),
       path.join(repoPath, ".claude", "state", "crew")
@@ -873,7 +862,9 @@ export async function auditRepo(repoPath) {
     hasSettings: await pathExists(path.join(repoPath, ".claude", "settings.json")),
     hasHarnessLayer: await pathExists(path.join(repoPath, ".claude", "artifacts", "crew")),
     hasStateLayer: await pathExists(path.join(repoPath, ".claude", "state", "crew", "claims.json")),
-    hasWorkflowState: await pathExists(path.join(repoPath, ".claude", "state", "crew", "workflow-state.json")),
+    hasWorkflowState: await pathExists(
+      path.join(repoPath, ".claude", "state", "crew", "workflow-state.json")
+    ),
     global
   };
 }
@@ -948,10 +939,12 @@ function globalPaths(homeDir) {
 async function inspectGlobalInstall() {
   const homeDir = process.env.HOME || process.env.USERPROFILE;
   const paths = globalPaths(homeDir);
-  const metadata = await fs.readFile(paths.metadata, "utf8")
+  const metadata = await fs
+    .readFile(paths.metadata, "utf8")
     .then((raw) => JSON.parse(raw))
     .catch(() => null);
-  const hasImports = await fs.readFile(paths.claudeMd, "utf8")
+  const hasImports = await fs
+    .readFile(paths.claudeMd, "utf8")
     .then((raw) => GLOBAL_IMPORT_LINES.every((line) => raw.includes(line)))
     .catch(() => false);
 
@@ -974,7 +967,10 @@ export async function installGlobal() {
   const paths = globalPaths(homeDir);
   const writes = [];
 
-  const constitutionChanged = await writeFileIfChanged(paths.constitution, `${CONSTITUTION_TEMPLATE}\n`);
+  const constitutionChanged = await writeFileIfChanged(
+    paths.constitution,
+    `${CONSTITUTION_TEMPLATE}\n`
+  );
   if (constitutionChanged) {
     writes.push("~/.claude/engineering-os/constitution.md");
   }

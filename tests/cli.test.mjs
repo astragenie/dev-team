@@ -123,12 +123,7 @@ test("CLI approval requests can be listed and resolved", async () => {
   assert.equal(requestResult.status, "open");
   assert.equal(requestResult.approver, "user");
 
-  const openOutput = await execFile("node", [
-    cliPath,
-    "show-approvals",
-    "--repo",
-    repoPath
-  ]);
+  const openOutput = await execFile("node", [cliPath, "show-approvals", "--repo", repoPath]);
   const openResult = JSON.parse(openOutput.stdout);
   assert.equal(openResult.approvals.length, 1);
   assert.equal(openResult.approvals[0].id, requestResult.id);
@@ -466,12 +461,7 @@ test("CLI wake-up brief summarizes repo memory and state", async () => {
     "passed"
   ]);
 
-  const wakeUpOutput = await execFile("node", [
-    cliPath,
-    "wake-up",
-    "--repo",
-    repoPath
-  ]);
+  const wakeUpOutput = await execFile("node", [cliPath, "wake-up", "--repo", repoPath]);
   const wakeUpResult = JSON.parse(wakeUpOutput.stdout);
 
   assert.equal(wakeUpResult.summary.memoryPolicy, "bounded-v1");
@@ -491,8 +481,14 @@ test("CLI wake-up brief summarizes repo memory and state", async () => {
   assert.match(wakeUpResult.memory.hot.repoGuidance.deployment.title, /Wake-up deployment model/);
   assert.ok(wakeUpResult.memory.hot.repoMemory.some((entry) => entry.path.endsWith("CLAUDE.md")));
   assert.match(wakeUpResult.memory.hot.latestArtifacts.runBrief.title, /Wake-up test run/);
-  assert.match(wakeUpResult.memory.hot.latestArtifacts.validationPlan.title, /Wake-up validation plan/);
-  assert.match(wakeUpResult.memory.hot.latestArtifacts.deploymentCheck.title, /Wake-up deployment check/);
+  assert.match(
+    wakeUpResult.memory.hot.latestArtifacts.validationPlan.title,
+    /Wake-up validation plan/
+  );
+  assert.match(
+    wakeUpResult.memory.hot.latestArtifacts.deploymentCheck.title,
+    /Wake-up deployment check/
+  );
   assert.match(wakeUpResult.memory.warm.validation.title, /Wake-up validation result/);
   assert.equal(wakeUpResult.memory.hot.claims.length, 1);
   assert.equal(wakeUpResult.memory.hot.openApprovals.length, 1);
@@ -569,12 +565,7 @@ test("CLI brief-me synthesizes workflow state, git activity, and next step", asy
 
   await fs.writeFile(path.join(repoPath, "notes.txt"), "untracked\n");
 
-  const briefOutput = await execFile("node", [
-    cliPath,
-    "brief-me",
-    "--repo",
-    repoPath
-  ]);
+  const briefOutput = await execFile("node", [cliPath, "brief-me", "--repo", repoPath]);
   const briefResult = JSON.parse(briefOutput.stdout);
 
   assert.equal(briefResult.repoPath, repoPath);
@@ -588,18 +579,19 @@ test("CLI brief-me synthesizes workflow state, git activity, and next step", asy
   assert.ok(briefResult.sections.recentActivity.git.workingTree.untrackedCount >= 1);
   assert.ok(briefResult.sections.recentActivity.git.workingTree.changedPaths.includes("notes.txt"));
   assert.equal(briefResult.sections.recentActivity.latestArtifacts[0].label.length > 0, true);
-  assert.ok(briefResult.sections.recentActivity.repoMemory.some((entry) => entry.path.endsWith("CLAUDE.md")));
   assert.ok(
-    briefResult.sections.recentActivity.retrievalGuide.some((entry) => entry.path.endsWith("CLAUDE.md"))
+    briefResult.sections.recentActivity.repoMemory.some((entry) => entry.path.endsWith("CLAUDE.md"))
+  );
+  assert.ok(
+    briefResult.sections.recentActivity.retrievalGuide.some((entry) =>
+      entry.path.endsWith("CLAUDE.md")
+    )
   );
   assert.match(
     briefResult.sections.blockedOrMissing.join("\n"),
     /Independent review is still required/
   );
-  assert.match(
-    briefResult.sections.importantReminders.join("\n"),
-    /Working tree has/
-  );
+  assert.match(briefResult.sections.importantReminders.join("\n"), /Working tree has/);
   assert.match(briefResult.sections.recommendedNextStep, /Run independent review next/);
   assert.ok(briefResult.sections.secondaryOptions.length >= 1);
 });
@@ -608,12 +600,7 @@ test("CLI brief-me is read-only for an uninitialized repo", async () => {
   const repoPath = await makeTempDir("engineering-os-cli-brief-me-readonly-");
   await fs.writeFile(path.join(repoPath, "README.md"), "# Plain repo\n");
 
-  const briefOutput = await execFile("node", [
-    cliPath,
-    "brief-me",
-    "--repo",
-    repoPath
-  ]);
+  const briefOutput = await execFile("node", [cliPath, "brief-me", "--repo", repoPath]);
   const briefResult = JSON.parse(briefOutput.stdout);
 
   assert.equal(briefResult.repoPath, repoPath);
@@ -653,12 +640,7 @@ test("CLI brief-me surfaces failed gates before generic next steps", async () =>
     "Missing null guard"
   ]);
 
-  const briefOutput = await execFile("node", [
-    cliPath,
-    "brief-me",
-    "--repo",
-    repoPath
-  ]);
+  const briefOutput = await execFile("node", [cliPath, "brief-me", "--repo", repoPath]);
   const briefResult = JSON.parse(briefOutput.stdout);
 
   assert.match(
@@ -685,21 +667,9 @@ test("CLI workflow state tracks gate badges and artifact progress", async () => 
     "assisted single-session"
   ]);
 
-  await execFile("node", [
-    cliPath,
-    "mark-badge",
-    "--repo",
-    repoPath,
-    "--badge",
-    "review_required"
-  ]);
+  await execFile("node", [cliPath, "mark-badge", "--repo", repoPath, "--badge", "review_required"]);
 
-  let workflowOutput = await execFile("node", [
-    cliPath,
-    "show-workflow-state",
-    "--repo",
-    repoPath
-  ]);
+  let workflowOutput = await execFile("node", [cliPath, "show-workflow-state", "--repo", repoPath]);
   let workflowResult = JSON.parse(workflowOutput.stdout);
   assert.equal(workflowResult.summary.currentRun.gates.review.status, "required");
   assert.deepEqual(workflowResult.summary.pendingBadges, ["review_required"]);
@@ -727,12 +697,7 @@ test("CLI workflow state tracks gate badges and artifact progress", async () => 
     "local"
   ]);
 
-  workflowOutput = await execFile("node", [
-    cliPath,
-    "show-workflow-state",
-    "--repo",
-    repoPath
-  ]);
+  workflowOutput = await execFile("node", [cliPath, "show-workflow-state", "--repo", repoPath]);
   workflowResult = JSON.parse(workflowOutput.stdout);
   assert.equal(workflowResult.summary.currentRun.gates.review.status, "passed");
   assert.equal(workflowResult.summary.currentRun.gates.validation.status, "expected");
@@ -750,12 +715,7 @@ test("CLI workflow state tracks gate badges and artifact progress", async () => 
     "passed"
   ]);
 
-  workflowOutput = await execFile("node", [
-    cliPath,
-    "show-workflow-state",
-    "--repo",
-    repoPath
-  ]);
+  workflowOutput = await execFile("node", [cliPath, "show-workflow-state", "--repo", repoPath]);
   workflowResult = JSON.parse(workflowOutput.stdout);
   assert.equal(workflowResult.summary.currentRun.gates.validation.status, "passed");
   assert.deepEqual(workflowResult.summary.pendingBadges, []);
@@ -770,12 +730,7 @@ test("CLI workflow state tracks gate badges and artifact progress", async () => 
     "dev_deploy_expected"
   ]);
 
-  workflowOutput = await execFile("node", [
-    cliPath,
-    "show-workflow-state",
-    "--repo",
-    repoPath
-  ]);
+  workflowOutput = await execFile("node", [cliPath, "show-workflow-state", "--repo", repoPath]);
   workflowResult = JSON.parse(workflowOutput.stdout);
   assert.equal(workflowResult.summary.currentRun.gates.deployment.dev.status, "expected");
   assert.deepEqual(workflowResult.summary.pendingBadges, ["dev_deploy_expected"]);
@@ -800,12 +755,7 @@ test("CLI workflow state tracks gate badges and artifact progress", async () => 
     "passed"
   ]);
 
-  workflowOutput = await execFile("node", [
-    cliPath,
-    "show-workflow-state",
-    "--repo",
-    repoPath
-  ]);
+  workflowOutput = await execFile("node", [cliPath, "show-workflow-state", "--repo", repoPath]);
   workflowResult = JSON.parse(workflowOutput.stdout);
   assert.equal(workflowResult.summary.currentRun.gates.deployment.dev.status, "passed");
   assert.deepEqual(workflowResult.summary.pendingBadges, []);
@@ -850,21 +800,13 @@ test("CLI workflow state and brief-me surface missing artifact write-backs after
   assert.deepEqual(workflowResult.summary.pendingBadges, []);
   assert.deepEqual(workflowResult.summary.missingArtifactWrites, ["review_result_missing"]);
 
-  const briefOutput = await execFile("node", [
-    cliPath,
-    "brief-me",
-    "--repo",
-    repoPath
-  ]);
+  const briefOutput = await execFile("node", [cliPath, "brief-me", "--repo", repoPath]);
   const briefResult = JSON.parse(briefOutput.stdout);
   assert.match(
     briefResult.sections.blockedOrMissing.join("\n"),
     /review artifact write-back is still missing/
   );
-  assert.match(
-    briefResult.sections.recommendedNextStep,
-    /Write the review-result artifact now/
-  );
+  assert.match(briefResult.sections.recommendedNextStep, /Write the review-result artifact now/);
 });
 
 test("CLI workflow state and brief-me surface missing run briefs after meaningful progress starts", async () => {
@@ -892,21 +834,13 @@ test("CLI workflow state and brief-me surface missing run briefs after meaningfu
   assert.deepEqual(workflowResult.summary.pendingBadges, ["review_required"]);
   assert.deepEqual(workflowResult.summary.missingArtifactWrites, []);
 
-  const briefOutput = await execFile("node", [
-    cliPath,
-    "brief-me",
-    "--repo",
-    repoPath
-  ]);
+  const briefOutput = await execFile("node", [cliPath, "brief-me", "--repo", repoPath]);
   const briefResult = JSON.parse(briefOutput.stdout);
   assert.match(
     briefResult.sections.blockedOrMissing.join("\n"),
     /Independent review is still required/
   );
-  assert.match(
-    briefResult.sections.recommendedNextStep,
-    /Run independent review next/
-  );
+  assert.match(briefResult.sections.recommendedNextStep, /Run independent review next/);
 });
 
 test("CLI blocks final synthesis when workflow badges are still pending", async () => {
@@ -926,26 +860,20 @@ test("CLI blocks final synthesis when workflow badges are still pending", async 
     "single-session"
   ]);
 
-  await execFile("node", [
-    cliPath,
-    "mark-badge",
-    "--repo",
-    repoPath,
-    "--badge",
-    "review_required"
-  ]);
+  await execFile("node", [cliPath, "mark-badge", "--repo", repoPath, "--badge", "review_required"]);
 
   await assert.rejects(
-    () => execFile("node", [
-      cliPath,
-      "write-final-synthesis",
-      "--repo",
-      repoPath,
-      "--title",
-      "Blocked final synthesis",
-      "--summary",
-      "Should not complete while review is pending"
-    ]),
+    () =>
+      execFile("node", [
+        cliPath,
+        "write-final-synthesis",
+        "--repo",
+        repoPath,
+        "--title",
+        "Blocked final synthesis",
+        "--summary",
+        "Should not complete while review is pending"
+      ]),
     /pending: review_required/
   );
 
@@ -976,11 +904,7 @@ test("CLI blocks final synthesis when workflow badges are still pending", async 
 });
 
 test("CLI subcommand help works without error", async () => {
-  const helpOutput = await execFile("node", [
-    cliPath,
-    "write-review-result",
-    "--help"
-  ]);
+  const helpOutput = await execFile("node", [cliPath, "write-review-result", "--help"]);
 
   assert.match(helpOutput.stdout, /write-review-result/);
   assert.match(helpOutput.stdout, /--verdict/);

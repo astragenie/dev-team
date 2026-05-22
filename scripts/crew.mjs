@@ -2,10 +2,7 @@
 
 import path from "node:path";
 import { writeArtifact } from "./lib/artifacts.mjs";
-import {
-  discoverDeploymentClues,
-  writeDeploymentGuidance
-} from "./lib/deployment-guidance.mjs";
+import { discoverDeploymentClues, writeDeploymentGuidance } from "./lib/deployment-guidance.mjs";
 import { buildBriefingReport } from "./lib/briefing.mjs";
 import { auditRepo, bootstrapRepo, initRepo, installGlobal } from "./lib/installer.mjs";
 import {
@@ -18,7 +15,11 @@ import {
 import { listApprovals, requestApproval, resolveApproval } from "./lib/approvals.mjs";
 import { claimFiles, inspectClaims, listClaims, releaseFiles } from "./lib/claims.mjs";
 import { buildWakeUpBrief } from "./lib/wakeup.mjs";
-import { loadWorkflowState, markWorkflowBadge, summarizeWorkflowState } from "./lib/workflow-state.mjs";
+import {
+  loadWorkflowState,
+  markWorkflowBadge,
+  summarizeWorkflowState
+} from "./lib/workflow-state.mjs";
 import { computeSessionCost } from "./lib/session-cost.mjs";
 import { collectOutcomeLinkage } from "./lib/outcome-linkage.mjs";
 import { buildCostAdvisor, renderCostAdvisorMarkdown } from "./lib/cost-advisor.mjs";
@@ -402,47 +403,55 @@ function usage(target = null) {
     claim: "  node scripts/crew.mjs claim --repo <path> [--owner <name>] <files...>",
     release: "  node scripts/crew.mjs release --repo <path> [--owner <name>] [files...]",
     "show-claims": "  node scripts/crew.mjs show-claims --repo <path>",
-    "show-conflicts": "  node scripts/crew.mjs show-conflicts --repo <path> [--owner <name>] [files...]",
-    "request-approval": "  node scripts/crew.mjs request-approval --repo <path> --summary <text> [--kind <kind>] [--severity <level>] [--requester <name>] [--approver <name>] [--reason <text>]",
-    "show-approvals": "  node scripts/crew.mjs show-approvals --repo <path> [--status open|resolved|all] [--approver <name>]",
-    "resolve-approval": "  node scripts/crew.mjs resolve-approval --repo <path> --id <approval-id> --decision approved|rejected|canceled [--resolver <name>] [--note <text>]",
+    "show-conflicts":
+      "  node scripts/crew.mjs show-conflicts --repo <path> [--owner <name>] [files...]",
+    "request-approval":
+      "  node scripts/crew.mjs request-approval --repo <path> --summary <text> [--kind <kind>] [--severity <level>] [--requester <name>] [--approver <name>] [--reason <text>]",
+    "show-approvals":
+      "  node scripts/crew.mjs show-approvals --repo <path> [--status open|resolved|all] [--approver <name>]",
+    "resolve-approval":
+      "  node scripts/crew.mjs resolve-approval --repo <path> --id <approval-id> --decision approved|rejected|canceled [--resolver <name>] [--note <text>]",
     "wake-up": "  node scripts/crew.mjs wake-up --repo <path>",
     "brief-me": "  node scripts/crew.mjs brief-me --repo <path>",
     "discover-deployment": "  node scripts/crew.mjs discover-deployment --repo <path>",
-    "write-deployment-guidance": "  node scripts/crew.mjs write-deployment-guidance --repo <path> --title <text> [--discovery-status repo-derived|partial|live-verified] [--verified-from <a,b>] [--missing <a,b>] [--summary <text>] [--build <text>] [--deploy <text>]",
+    "write-deployment-guidance":
+      "  node scripts/crew.mjs write-deployment-guidance --repo <path> --title <text> [--discovery-status repo-derived|partial|live-verified] [--verified-from <a,b>] [--missing <a,b>] [--summary <text>] [--build <text>] [--deploy <text>]",
     "show-workflow-state": "  node scripts/crew.mjs show-workflow-state --repo <path>",
-    "mark-badge": "  node scripts/crew.mjs mark-badge --repo <path> --badge review_required|review_passed|review_failed|review_skipped|validation_expected|validation_passed|validation_failed|validation_skipped|dev_deploy_expected|dev_checked|dev_failed|dev_skipped|prod_deploy_expected|prod_checked|prod_failed|prod_skipped [--note <text>]",
-    "write-run-brief": "  node scripts/crew.mjs write-run-brief --repo <path> --title <text> [--goal <text>] [--mode <mode>] [--pace <pace>]",
-    "write-handoff": "  node scripts/crew.mjs write-handoff --repo <path> --title <text> [--from <role>] [--to <role>] [--files <a,b>]",
-    "write-review-result": "  node scripts/crew.mjs write-review-result --repo <path> --title <text> [--reviewer <role>] [--decision <decision>] [--verdict <decision>]",
-    "write-validation-plan": "  node scripts/crew.mjs write-validation-plan --repo <path> --title <text> [--validator <role>] [--environment <name>]",
-    "write-validation-result": "  node scripts/crew.mjs write-validation-result --repo <path> --title <text> [--validator <role>] [--environment <name>] [--decision <decision>]",
-    "write-deployment-check": "  node scripts/crew.mjs write-deployment-check --repo <path> --title <text> [--deployer <role>] [--environment dev|prod] [--resource <name>] [--url <service-url>] [--revision <id>] [--decision <decision>]",
-    "write-final-synthesis": "  node scripts/crew.mjs write-final-synthesis --repo <path> --title <text> [--summary <text>] [--files <a,b>]",
-    "cost-slice": "  node scripts/crew.mjs cost-slice --repo <path> [--started-at <iso>] [--completed-at <iso>] [--run-title <text>]",
+    "mark-badge":
+      "  node scripts/crew.mjs mark-badge --repo <path> --badge review_required|review_passed|review_failed|review_skipped|validation_expected|validation_passed|validation_failed|validation_skipped|dev_deploy_expected|dev_checked|dev_failed|dev_skipped|prod_deploy_expected|prod_checked|prod_failed|prod_skipped [--note <text>]",
+    "write-run-brief":
+      "  node scripts/crew.mjs write-run-brief --repo <path> --title <text> [--goal <text>] [--mode <mode>] [--pace <pace>]",
+    "write-handoff":
+      "  node scripts/crew.mjs write-handoff --repo <path> --title <text> [--from <role>] [--to <role>] [--files <a,b>]",
+    "write-review-result":
+      "  node scripts/crew.mjs write-review-result --repo <path> --title <text> [--reviewer <role>] [--decision <decision>] [--verdict <decision>]",
+    "write-validation-plan":
+      "  node scripts/crew.mjs write-validation-plan --repo <path> --title <text> [--validator <role>] [--environment <name>]",
+    "write-validation-result":
+      "  node scripts/crew.mjs write-validation-result --repo <path> --title <text> [--validator <role>] [--environment <name>] [--decision <decision>]",
+    "write-deployment-check":
+      "  node scripts/crew.mjs write-deployment-check --repo <path> --title <text> [--deployer <role>] [--environment dev|prod] [--resource <name>] [--url <service-url>] [--revision <id>] [--decision <decision>]",
+    "write-final-synthesis":
+      "  node scripts/crew.mjs write-final-synthesis --repo <path> --title <text> [--summary <text>] [--files <a,b>]",
+    "cost-slice":
+      "  node scripts/crew.mjs cost-slice --repo <path> [--started-at <iso>] [--completed-at <iso>] [--run-title <text>]",
     "cost-advise": "  node scripts/crew.mjs cost-advise --repo <path>",
-    "install-commit-bridge": "  node scripts/crew.mjs install-commit-bridge --repo <path> [--preset wiggin-loop|conventional-commits] [--commit-pattern <regex>] [--trigger-filename <name>] [--reviewer-label <name>]",
-    "backfill-commit-bridge": "  node scripts/crew.mjs backfill-commit-bridge --repo <path> [--preset wiggin-loop|conventional-commits] [--commit-pattern <regex>] [--reviewer-label <name>]",
+    "install-commit-bridge":
+      "  node scripts/crew.mjs install-commit-bridge --repo <path> [--preset wiggin-loop|conventional-commits] [--commit-pattern <regex>] [--trigger-filename <name>] [--reviewer-label <name>]",
+    "backfill-commit-bridge":
+      "  node scripts/crew.mjs backfill-commit-bridge --repo <path> [--preset wiggin-loop|conventional-commits] [--commit-pattern <regex>] [--reviewer-label <name>]",
     "list-bridge-presets": "  node scripts/crew.mjs list-bridge-presets",
-    "install-wiggin-bridge": "  node scripts/crew.mjs install-wiggin-bridge --repo <path>   (alias: install-commit-bridge --preset wiggin-loop)",
-    "backfill-wiggin-bridge": "  node scripts/crew.mjs backfill-wiggin-bridge --repo <path> (alias: backfill-commit-bridge --preset wiggin-loop)"
+    "install-wiggin-bridge":
+      "  node scripts/crew.mjs install-wiggin-bridge --repo <path>   (alias: install-commit-bridge --preset wiggin-loop)",
+    "backfill-wiggin-bridge":
+      "  node scripts/crew.mjs backfill-wiggin-bridge --repo <path> (alias: backfill-commit-bridge --preset wiggin-loop)"
   };
 
   if (target && subcommands[target]) {
-    return [
-      "Engineering OS installer",
-      "",
-      "Usage:",
-      subcommands[target]
-    ].join("\n");
+    return ["Engineering OS installer", "", "Usage:", subcommands[target]].join("\n");
   }
 
-  return [
-    "Engineering OS installer",
-    "",
-    "Usage:",
-    ...Object.values(subcommands)
-  ].join("\n");
+  return ["Engineering OS installer", "", "Usage:", ...Object.values(subcommands)].join("\n");
 }
 
 async function writeCostAdviseArtifact(repoPath, md, advisor) {
@@ -450,9 +459,15 @@ async function writeCostAdviseArtifact(repoPath, md, advisor) {
   const pathMod = await import("node:path");
   const dir = pathMod.join(repoPath, ".claude", "artifacts", "crew", "runs");
   await fs.mkdir(dir, { recursive: true });
-  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z");
+  const stamp = new Date()
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d+Z$/, "Z");
   const slug = (advisor?.target?.sliceId || advisor?.target?.runTitle || "advise")
-    .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
   const file = pathMod.join(dir, `${stamp}-cost-advise-${slug}.md`);
   await fs.writeFile(file, md + "\n");
   return file;
@@ -554,7 +569,9 @@ async function main() {
       reason: flags.reason || ""
     });
   } else if (command === "show-approvals") {
-    result = { approvals: await listApprovals(repoPath, { status: flags.status, approver: flags.approver }) };
+    result = {
+      approvals: await listApprovals(repoPath, { status: flags.status, approver: flags.approver })
+    };
   } else if (command === "resolve-approval") {
     result = await resolveApproval(repoPath, {
       id: flags.id,

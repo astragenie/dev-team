@@ -9,15 +9,20 @@ function nowIso() {
 }
 
 function timestampSlug() {
-  return new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+  return new Date()
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}Z$/, "Z");
 }
 
 function slugify(value) {
-  return (value || "artifact")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60) || "artifact";
+  return (
+    (value || "artifact")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60) || "artifact"
+  );
 }
 
 function toList(value) {
@@ -39,10 +44,7 @@ function renderListField(label, value) {
   if (items.length === 0) {
     return `- ${label}: -`;
   }
-  return [
-    `- ${label}:`,
-    ...items.map((item) => `  - ${item}`)
-  ].join("\n");
+  return [`- ${label}:`, ...items.map((item) => `  - ${item}`)].join("\n");
 }
 
 function resolveArtifactConfig(kind) {
@@ -203,12 +205,13 @@ function resolveArtifactConfig(kind) {
           ? Object.values(breakdown.totals).reduce((a, b) => a + b, 0)
           : 0;
         const promptTokens = breakdown?.totals
-          ? breakdown.totals.input + breakdown.totals.cache_create_5m
-            + breakdown.totals.cache_create_1h + breakdown.totals.cache_read
+          ? breakdown.totals.input +
+            breakdown.totals.cache_create_5m +
+            breakdown.totals.cache_create_1h +
+            breakdown.totals.cache_read
           : 0;
-        const cacheHitPct = promptTokens > 0
-          ? ((breakdown.totals.cache_read / promptTokens) * 100).toFixed(1)
-          : "-";
+        const cacheHitPct =
+          promptTokens > 0 ? ((breakdown.totals.cache_read / promptTokens) * 100).toFixed(1) : "-";
 
         // Frontmatter — machine-readable outcome linkage
         const fmLines = ["---"];
@@ -221,7 +224,8 @@ function resolveArtifactConfig(kind) {
         if (cacheHitPct !== "-") fmLines.push(`cache_hit_pct: ${cacheHitPct}`);
         if (outcome?.gradeAvg != null) fmLines.push(`grade_avg: ${outcome.gradeAvg}`);
         if (outcome?.reviewDecision) fmLines.push(`review_decision: ${outcome.reviewDecision}`);
-        if (outcome?.validationDecision) fmLines.push(`validation_decision: ${outcome.validationDecision}`);
+        if (outcome?.validationDecision)
+          fmLines.push(`validation_decision: ${outcome.validationDecision}`);
         fmLines.push(`created_at: ${nowIso()}`);
         fmLines.push("---");
 
@@ -246,7 +250,9 @@ function resolveArtifactConfig(kind) {
         if (outcome?.sliceId) {
           lines.push("## Outcome Linkage", "");
           lines.push(renderField("Slice", outcome.sliceId));
-          lines.push(renderField("Grade Avg", outcome.gradeAvg != null ? String(outcome.gradeAvg) : "-"));
+          lines.push(
+            renderField("Grade Avg", outcome.gradeAvg != null ? String(outcome.gradeAvg) : "-")
+          );
           lines.push(renderField("Review Decision", outcome.reviewDecision || "-"));
           lines.push(renderField("Validation Decision", outcome.validationDecision || "-"));
           if (outcome.scores) {
@@ -270,7 +276,9 @@ function resolveArtifactConfig(kind) {
         lines.push("", "## Model Mix", "");
         if (breakdown?.modelMix?.length) {
           for (const m of breakdown.modelMix) {
-            lines.push(`- ${m.model} (priced as ${m.pricedAs}): ${m.messages} msgs (${m.msgPct}%), $${m.usd.toFixed(4)} (${m.usdPct}%)`);
+            lines.push(
+              `- ${m.model} (priced as ${m.pricedAs}): ${m.messages} msgs (${m.msgPct}%), $${m.usd.toFixed(4)} (${m.usdPct}%)`
+            );
           }
         } else {
           lines.push("- (none)");

@@ -36,11 +36,23 @@ async function main() {
   console.log(`- CLAUDE.md exists: ${claudeMd.length > 0}`);
   console.log(`- .gitignore has Crew block: ${gitignore.includes("# crew:start")}`);
   console.log(`- Harness import present: ${claudeMd.includes("crew:start")}`);
-  console.log(`- Workflow stays command-loaded: ${!claudeMd.includes("@.claude/crew/workflow.md")}`);
+  console.log(
+    `- Workflow stays command-loaded: ${!claudeMd.includes("@.claude/crew/workflow.md")}`
+  );
   console.log(`- Workflow file exists: ${workflowMd.length > 0}`);
   console.log(`- Protocol file exists: ${protocolMd.length > 0}`);
-  console.log(`- Validation artifacts dir exists: ${await fs.access(validationsPath).then(() => true).catch(() => false)}`);
-  console.log(`- Deployment artifacts dir exists: ${await fs.access(deploymentsPath).then(() => true).catch(() => false)}`);
+  console.log(
+    `- Validation artifacts dir exists: ${await fs
+      .access(validationsPath)
+      .then(() => true)
+      .catch(() => false)}`
+  );
+  console.log(
+    `- Deployment artifacts dir exists: ${await fs
+      .access(deploymentsPath)
+      .then(() => true)
+      .catch(() => false)}`
+  );
   console.log(`- Hook events configured: ${Object.keys(settings.hooks).join(", ")}`);
   console.log(`- Repo path: ${repoPath}`);
 }

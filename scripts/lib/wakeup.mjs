@@ -263,23 +263,24 @@ export async function buildWakeUpBrief(repoPath, options = {}) {
     latestValidationPlan,
     latestValidationResult,
     latestDeploymentCheck
-  ] =
-    await Promise.all([
-      listApprovals(repoPath, { status: "open", createIfMissing: !readOnly }),
-      listClaims(repoPath, { createIfMissing: !readOnly }),
-      readJson((await pathExists(path.join(repoPath, ...SPRINT_PATH)))
+  ] = await Promise.all([
+    listApprovals(repoPath, { status: "open", createIfMissing: !readOnly }),
+    listClaims(repoPath, { createIfMissing: !readOnly }),
+    readJson(
+      (await pathExists(path.join(repoPath, ...SPRINT_PATH)))
         ? path.join(repoPath, ...SPRINT_PATH)
-        : path.join(repoPath, ...LEGACY_SPRINT_PATH)),
-      loadWorkflowState(repoPath, { createIfMissing: !readOnly }),
-      readDeploymentGuidanceSummary(repoPath),
-      latestArtifactByPrefix(repoPath, RUNS_DIR, "run-brief"),
-      latestArtifactByPrefix(repoPath, RUNS_DIR, "final-synthesis"),
-      latestArtifactByPrefix(repoPath, HANDOFFS_DIR, "handoff"),
-      latestArtifactByPrefix(repoPath, REVIEWS_DIR, "review-result"),
-      latestArtifactByPrefix(repoPath, VALIDATIONS_DIR, "validation-plan"),
-      latestArtifactByPrefix(repoPath, VALIDATIONS_DIR, "validation-result"),
-      latestArtifactByPrefix(repoPath, DEPLOYMENTS_DIR, "deployment-check")
-    ]);
+        : path.join(repoPath, ...LEGACY_SPRINT_PATH)
+    ),
+    loadWorkflowState(repoPath, { createIfMissing: !readOnly }),
+    readDeploymentGuidanceSummary(repoPath),
+    latestArtifactByPrefix(repoPath, RUNS_DIR, "run-brief"),
+    latestArtifactByPrefix(repoPath, RUNS_DIR, "final-synthesis"),
+    latestArtifactByPrefix(repoPath, HANDOFFS_DIR, "handoff"),
+    latestArtifactByPrefix(repoPath, REVIEWS_DIR, "review-result"),
+    latestArtifactByPrefix(repoPath, VALIDATIONS_DIR, "validation-plan"),
+    latestArtifactByPrefix(repoPath, VALIDATIONS_DIR, "validation-result"),
+    latestArtifactByPrefix(repoPath, DEPLOYMENTS_DIR, "deployment-check")
+  ]);
 
   const historyPath = path.join(repoPath, ...HISTORY_PATH);
   const resolvedHistoryPath = (await pathExists(historyPath))

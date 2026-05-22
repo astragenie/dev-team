@@ -104,7 +104,11 @@ function percentile(sortedArr, p) {
 function approxSize(value) {
   if (value == null) return 0;
   if (typeof value === "string") return value.length;
-  try { return JSON.stringify(value).length; } catch { return 0; }
+  try {
+    return JSON.stringify(value).length;
+  } catch {
+    return 0;
+  }
 }
 
 // Walk a content array and collect tool_use / tool_result / text signals.
@@ -245,7 +249,8 @@ export async function computeSessionCost(repoPath, { startedAt, completedAt } = 
       model,
       pricedAs: info.pricedAs,
       messages: info.messages,
-      msgPct: messagesCounted > 0 ? Number(((info.messages / messagesCounted) * 100).toFixed(2)) : 0,
+      msgPct:
+        messagesCounted > 0 ? Number(((info.messages / messagesCounted) * 100).toFixed(2)) : 0,
       usd: info.usd,
       usdPct: totalUsd > 0 ? Number(((info.usd / totalUsd) * 100).toFixed(2)) : 0
     });

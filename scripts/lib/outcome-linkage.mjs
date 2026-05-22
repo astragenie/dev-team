@@ -65,8 +65,7 @@ async function findLatestMatching(dir, sliceNumber) {
 
 function parseDecision(text) {
   if (!text) return null;
-  const m = text.match(/^-\s*Decision:\s*([\w_-]+)/im)
-    || text.match(/^decision:\s*([\w_-]+)/im);
+  const m = text.match(/^-\s*Decision:\s*([\w_-]+)/im) || text.match(/^decision:\s*([\w_-]+)/im);
   return m ? m[1] : null;
 }
 

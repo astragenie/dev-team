@@ -112,7 +112,10 @@ test("install-commit-bridge accepts explicit overrides on top of a preset", asyn
   assert.match(hook, /\^EPIC_\[0-9\]\+/);
   assert.match(hook, /epic-tracker/);
 
-  const bridge = await fs.readFile(path.join(repoPath, ".claude", "hooks", BRIDGE_HOOK_FILE), "utf8");
+  const bridge = await fs.readFile(
+    path.join(repoPath, ".claude", "hooks", BRIDGE_HOOK_FILE),
+    "utf8"
+  );
   assert.match(bridge, /epics-done\.md/);
 });
 
@@ -218,10 +221,7 @@ test("install-commit-bridge is idempotent and migrates legacy crew:wiggin-loop-b
 
 test("install-commit-bridge throws when target is not a git repo", async () => {
   const tmpPath = await makeTempDir("crew-bridge-no-git-");
-  await assert.rejects(
-    () => installCommitBridge(tmpPath),
-    /Not a git repository/
-  );
+  await assert.rejects(() => installCommitBridge(tmpPath), /Not a git repository/);
 });
 
 test("backfill picks up SLICE-pattern commits, skips non-matching commits", async () => {
@@ -298,15 +298,27 @@ test("generated hooks discover the CLI via the marketplace + plugin names from m
   const identity = await getPluginIdentity();
 
   const postCommit = await fs.readFile(path.join(repoPath, ".git", "hooks", "post-commit"), "utf8");
-  const bridge = await fs.readFile(path.join(repoPath, ".claude", "hooks", BRIDGE_HOOK_FILE), "utf8");
+  const bridge = await fs.readFile(
+    path.join(repoPath, ".claude", "hooks", BRIDGE_HOOK_FILE),
+    "utf8"
+  );
   const readme = await fs.readFile(path.join(repoPath, ".claude", "hooks", "README.md"), "utf8");
 
   // Marketplace + plugin names should be substituted into the cache discovery
   // paths in every generated artifact, not hardcoded as "crew-dev"/"crew".
   const cacheFragment = `${identity.marketplaceName}/${identity.pluginName}`;
-  assert.ok(postCommit.includes(cacheFragment), "post-commit hook should embed marketplace/plugin from manifests");
-  assert.ok(bridge.includes(identity.marketplaceName), "PostToolUse hook should embed marketplace from manifests");
-  assert.ok(bridge.includes(identity.pluginName), "PostToolUse hook should embed plugin name from manifests");
+  assert.ok(
+    postCommit.includes(cacheFragment),
+    "post-commit hook should embed marketplace/plugin from manifests"
+  );
+  assert.ok(
+    bridge.includes(identity.marketplaceName),
+    "PostToolUse hook should embed marketplace from manifests"
+  );
+  assert.ok(
+    bridge.includes(identity.pluginName),
+    "PostToolUse hook should embed plugin name from manifests"
+  );
   assert.ok(readme.includes(cacheFragment), "README should document the resolved cache path");
 });
 

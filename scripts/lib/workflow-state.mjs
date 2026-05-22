@@ -235,19 +235,33 @@ function summarizeMissingArtifactWritesForRun(run) {
   if ((reviewStatus === "passed" || reviewStatus === "failed") && !run.artifacts?.reviewResult) {
     missing.push("review_result_missing");
   }
-  if ((validationStatus === "passed" || validationStatus === "failed") && !run.artifacts?.validationResult) {
+  if (
+    (validationStatus === "passed" || validationStatus === "failed") &&
+    !run.artifacts?.validationResult
+  ) {
     missing.push("validation_result_missing");
   }
-  if ((devDeployStatus === "passed" || devDeployStatus === "failed") && !run.artifacts?.deploymentChecks?.dev) {
+  if (
+    (devDeployStatus === "passed" || devDeployStatus === "failed") &&
+    !run.artifacts?.deploymentChecks?.dev
+  ) {
     missing.push("dev_deployment_check_missing");
   }
-  if ((prodDeployStatus === "passed" || prodDeployStatus === "failed") && !run.artifacts?.deploymentChecks?.prod) {
+  if (
+    (prodDeployStatus === "passed" || prodDeployStatus === "failed") &&
+    !run.artifacts?.deploymentChecks?.prod
+  ) {
     missing.push("prod_deployment_check_missing");
   }
   if (substantialRun && hasProgress && !run.artifacts?.runBrief) {
     missing.push("run_brief_missing");
   }
-  if (substantialRun && hasCompletedPhaseEvidence(run) && !hasPendingGates(run) && !run.artifacts?.finalSynthesis) {
+  if (
+    substantialRun &&
+    hasCompletedPhaseEvidence(run) &&
+    !hasPendingGates(run) &&
+    !run.artifacts?.finalSynthesis
+  ) {
     missing.push("final_synthesis_missing");
   }
 
@@ -414,9 +428,7 @@ export async function registerWorkflowArtifact(repoPath, artifact, fields = {}) 
     run.artifacts.deploymentChecks[environment] = artifact.path;
     applyBadge(
       run,
-      fields.decision === "failed"
-        ? `${environment}_failed`
-        : `${environment}_checked`,
+      fields.decision === "failed" ? `${environment}_failed` : `${environment}_checked`,
       fields.summary || fields.goal || ""
     );
   } else if (artifact.kind === "final-synthesis") {

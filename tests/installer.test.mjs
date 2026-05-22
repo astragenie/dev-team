@@ -35,10 +35,7 @@ test("bootstrap adds harness files to an existing repo and preserves CLAUDE.md",
     await fs.readFile(path.join(repoPath, ".claude", "settings.json"), "utf8")
   );
   const claimsState = JSON.parse(
-    await fs.readFile(
-      path.join(repoPath, ".claude", "state", "crew", "claims.json"),
-      "utf8"
-    )
+    await fs.readFile(path.join(repoPath, ".claude", "state", "crew", "claims.json"), "utf8")
   );
 
   assert.equal(result.mode, "bootstrap");
@@ -46,7 +43,10 @@ test("bootstrap adds harness files to an existing repo and preserves CLAUDE.md",
   assert.match(claudeMd, /crew:start/);
   assert.match(claudeMd, /@\.claude\/crew\/constitution\.md/);
   assert.doesNotMatch(claudeMd, /@\.claude\/crew\/workflow\.md/);
-  assert.match(workflowMd, /Builder owns code-bearing tasks, including tests for changed behavior when practical/);
+  assert.match(
+    workflowMd,
+    /Builder owns code-bearing tasks, including tests for changed behavior when practical/
+  );
   assert.match(protocolMd, /Validation Result/);
   assert.match(protocolMd, /Deployment Result/);
   assert.match(protocolMd, /whether tests were added or updated/);
@@ -128,7 +128,7 @@ test("bootstrap upgrades legacy harness paths and CLAUDE import block", async ()
   );
   await fs.writeFile(
     path.join(repoPath, ".claude", "state", "engineering-os", "claims.json"),
-    "{\n  \"claims\": {\n    \"src/legacy.ts\": {\n      \"owner\": \"builder\"\n    }\n  }\n}\n"
+    '{\n  "claims": {\n    "src/legacy.ts": {\n      "owner": "builder"\n    }\n  }\n}\n'
   );
 
   await bootstrapRepo(repoPath);
@@ -140,8 +140,20 @@ test("bootstrap upgrades legacy harness paths and CLAUDE import block", async ()
   );
   assert.match(claudeMd, /<!-- crew:start -->/);
   assert.doesNotMatch(claudeMd, /engineering-os:start/);
-  assert.equal(await fs.access(path.join(repoPath, ".claude", "crew", "constitution.md")).then(() => true).catch(() => false), true);
-  assert.equal(await fs.access(path.join(repoPath, ".claude", "state", "crew", "claims.json")).then(() => true).catch(() => false), true);
+  assert.equal(
+    await fs
+      .access(path.join(repoPath, ".claude", "crew", "constitution.md"))
+      .then(() => true)
+      .catch(() => false),
+    true
+  );
+  assert.equal(
+    await fs
+      .access(path.join(repoPath, ".claude", "state", "crew", "claims.json"))
+      .then(() => true)
+      .catch(() => false),
+    true
+  );
   assert.match(claimsState, /src\/legacy\.ts/);
   assert.equal(
     await fs
@@ -188,31 +200,29 @@ test("bootstrap installs a soft git gate reminder hook", async () => {
     assert.ok((hookStat.mode & 0o111) !== 0);
   }
 
-  const workflowPath = path.join(
-    repoPath,
-    ".claude",
-    "state",
-    "crew",
-    "workflow-state.json"
-  );
+  const workflowPath = path.join(repoPath, ".claude", "state", "crew", "workflow-state.json");
   await fs.writeFile(
     workflowPath,
-    `${JSON.stringify({
-      version: "1.0",
-      updatedAt: "2026-01-01T00:00:00.000Z",
-      currentRun: {
-        title: "Gate test",
-        goal: "Check reminder hook",
-        mode: "single-session",
-        status: "active",
-        gates: {
-          review: { status: "required", updatedAt: "2026-01-01T00:00:00.000Z", note: "" },
-          validation: null,
-          deployment: { dev: null, prod: null }
-        }
+    `${JSON.stringify(
+      {
+        version: "1.0",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+        currentRun: {
+          title: "Gate test",
+          goal: "Check reminder hook",
+          mode: "single-session",
+          status: "active",
+          gates: {
+            review: { status: "required", updatedAt: "2026-01-01T00:00:00.000Z", note: "" },
+            validation: null,
+            deployment: { dev: null, prod: null }
+          }
+        },
+        recentRuns: []
       },
-      recentRuns: []
-    }, null, 2)}\n`
+      null,
+      2
+    )}\n`
   );
 
   const hookInput = JSON.stringify({
@@ -223,11 +233,11 @@ test("bootstrap installs a soft git gate reminder hook", async () => {
     hook_event_name: "PreToolUse",
     tool_name: "Bash",
     tool_input: {
-      command: "git commit -m \"test\""
+      command: 'git commit -m "test"'
     }
   });
 
-  const { stdout } = await execFile("bash", ["-lc", "printf '%s' \"$HOOK_INPUT\" | \"$HOOK_PATH\""], {
+  const { stdout } = await execFile("bash", ["-lc", 'printf \'%s\' "$HOOK_INPUT" | "$HOOK_PATH"'], {
     cwd: repoPath,
     env: {
       ...process.env,
@@ -248,40 +258,38 @@ test("bootstrap git gate reminder also warns when a completed phase is missing i
   await bootstrapRepo(repoPath);
 
   const hookPath = path.join(repoPath, ".claude", "hooks", "check_git_gate.sh");
-  const workflowPath = path.join(
-    repoPath,
-    ".claude",
-    "state",
-    "crew",
-    "workflow-state.json"
-  );
+  const workflowPath = path.join(repoPath, ".claude", "state", "crew", "workflow-state.json");
   await fs.writeFile(
     workflowPath,
-    `${JSON.stringify({
-      version: "1.0",
-      updatedAt: "2026-01-01T00:00:00.000Z",
-      currentRun: {
-        title: "Artifact gap test",
-        goal: "Check reminder hook",
-        mode: "single-session",
-        status: "active",
-        gates: {
-          review: { status: "passed", updatedAt: "2026-01-01T00:00:00.000Z", note: "" },
-          validation: null,
-          deployment: { dev: null, prod: null }
+    `${JSON.stringify(
+      {
+        version: "1.0",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+        currentRun: {
+          title: "Artifact gap test",
+          goal: "Check reminder hook",
+          mode: "single-session",
+          status: "active",
+          gates: {
+            review: { status: "passed", updatedAt: "2026-01-01T00:00:00.000Z", note: "" },
+            validation: null,
+            deployment: { dev: null, prod: null }
+          },
+          artifacts: {
+            runBrief: null,
+            handoffs: [],
+            reviewResult: null,
+            validationPlan: null,
+            validationResult: null,
+            deploymentChecks: { dev: null, prod: null },
+            finalSynthesis: null
+          }
         },
-        artifacts: {
-          runBrief: null,
-          handoffs: [],
-          reviewResult: null,
-          validationPlan: null,
-          validationResult: null,
-          deploymentChecks: { dev: null, prod: null },
-          finalSynthesis: null
-        }
+        recentRuns: []
       },
-      recentRuns: []
-    }, null, 2)}\n`
+      null,
+      2
+    )}\n`
   );
 
   const hookInput = JSON.stringify({
@@ -296,7 +304,7 @@ test("bootstrap git gate reminder also warns when a completed phase is missing i
     }
   });
 
-  const { stdout } = await execFile("bash", ["-lc", "printf '%s' \"$HOOK_INPUT\" | \"$HOOK_PATH\""], {
+  const { stdout } = await execFile("bash", ["-lc", 'printf \'%s\' "$HOOK_INPUT" | "$HOOK_PATH"'], {
     cwd: repoPath,
     env: {
       ...process.env,
@@ -307,7 +315,10 @@ test("bootstrap git gate reminder also warns when a completed phase is missing i
   const reminder = JSON.parse(stdout);
   assert.equal(reminder.continue, true);
   assert.equal(reminder.suppressOutput, true);
-  assert.match(reminder.systemMessage, /phase-complete write-backs still missing before gh pr: review-result artifact/);
+  assert.match(
+    reminder.systemMessage,
+    /phase-complete write-backs still missing before gh pr: review-result artifact/
+  );
 });
 
 test("init rejects a non-empty existing directory without opt-in", async () => {

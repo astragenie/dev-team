@@ -191,9 +191,10 @@ export async function releaseFiles(repoPath, filePaths = [], options = {}) {
     const released = [];
     const skipped = [];
 
-    const targets = filePaths.length > 0
-      ? filePaths.map((inputPath) => toRepoRelative(repoPath, inputPath))
-      : Object.keys(state.claims);
+    const targets =
+      filePaths.length > 0
+        ? filePaths.map((inputPath) => toRepoRelative(repoPath, inputPath))
+        : Object.keys(state.claims);
 
     for (const repoRelativePath of targets) {
       const existing = state.claims[repoRelativePath];

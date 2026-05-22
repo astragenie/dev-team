@@ -48,15 +48,7 @@ const DEPLOYMENT_DIR_HINTS = new Set([
   "terraform",
   "manifests"
 ]);
-const DEPLOYMENT_EXTENSIONS = new Set([
-  ".yaml",
-  ".yml",
-  ".json",
-  ".toml",
-  ".tf",
-  ".tfvars",
-  ".sh"
-]);
+const DEPLOYMENT_EXTENSIONS = new Set([".yaml", ".yml", ".json", ".toml", ".tf", ".tfvars", ".sh"]);
 
 function nowIso() {
   return new Date().toISOString();
@@ -94,10 +86,7 @@ function renderListField(label, value) {
   if (items.length === 0) {
     return `- ${label}: -`;
   }
-  return [
-    `- ${label}:`,
-    ...items.map((item) => `  - ${item}`)
-  ].join("\n");
+  return [`- ${label}:`, ...items.map((item) => `  - ${item}`)].join("\n");
 }
 
 function fileLooksLikeDeploymentClue(relativePath) {

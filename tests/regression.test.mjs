@@ -94,15 +94,7 @@ test("BUG-A: concurrent releases do not corrupt claims state", async () => {
   const promises = [];
   for (let i = 0; i < count; i += 1) {
     promises.push(
-      execFile("node", [
-        cliPath,
-        "release",
-        "--repo",
-        repoPath,
-        "--owner",
-        `o_${i}`,
-        `f_${i}.txt`
-      ])
+      execFile("node", [cliPath, "release", "--repo", repoPath, "--owner", `o_${i}`, `f_${i}.txt`])
     );
   }
   await Promise.all(promises);
@@ -155,7 +147,11 @@ test("BUG-B: write-run-brief archives the previous run instead of destroying it"
   let state = JSON.parse(stateOutput.stdout);
   assert.equal(state.workflowState.currentRun.title, "First run");
   assert.equal(state.workflowState.currentRun.gates.review.status, "required");
-  assert.equal(state.workflowState.recentRuns.length, 0, "archive should be empty before second brief");
+  assert.equal(
+    state.workflowState.recentRuns.length,
+    0,
+    "archive should be empty before second brief"
+  );
 
   // Write a second run brief. The first run must be archived, not destroyed.
   await execFile("node", [
@@ -320,7 +316,10 @@ test("BUG-E: discover-deployment uses POSIX separators in clue paths on all plat
   const result = JSON.parse(output.stdout);
 
   // Each classifier branch should produce its expected clue:
-  assert.ok(result.clues.includes(".github/workflows/deploy.yml"), "github workflow not discovered");
+  assert.ok(
+    result.clues.includes(".github/workflows/deploy.yml"),
+    "github workflow not discovered"
+  );
   assert.ok(result.clues.includes(".circleci/config.yml"), "circleci config not discovered");
   assert.ok(result.clues.includes("Dockerfile"), "Dockerfile not discovered");
   assert.ok(result.clues.includes("infra/k8s/deploy.yaml"), "infra k8s manifest not discovered");

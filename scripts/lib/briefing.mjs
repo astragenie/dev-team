@@ -347,31 +347,45 @@ function buildBlockedOrMissing(wakeUpBrief, deploymentClues, gitActivity) {
     blocked.push("Dev deployment evidence is still missing for the current run.");
   }
   if (gates.deployment?.dev?.status === "failed") {
-    blocked.push(`Dev deployment checks failed${gates.deployment.dev.note ? `: ${gates.deployment.dev.note}` : "."}`);
+    blocked.push(
+      `Dev deployment checks failed${gates.deployment.dev.note ? `: ${gates.deployment.dev.note}` : "."}`
+    );
   }
   if (pending.has("prod_deploy_expected")) {
     blocked.push("Production deployment evidence is still missing for the current run.");
   }
   if (gates.deployment?.prod?.status === "failed") {
-    blocked.push(`Production deployment checks failed${gates.deployment.prod.note ? `: ${gates.deployment.prod.note}` : "."}`);
+    blocked.push(
+      `Production deployment checks failed${gates.deployment.prod.note ? `: ${gates.deployment.prod.note}` : "."}`
+    );
   }
   if (missingWrites.has("review_result_missing")) {
-    blocked.push("Independent review appears complete, but the review artifact write-back is still missing.");
+    blocked.push(
+      "Independent review appears complete, but the review artifact write-back is still missing."
+    );
   }
   if (missingWrites.has("validation_result_missing")) {
-    blocked.push("Validation appears complete, but the validation-result artifact write-back is still missing.");
+    blocked.push(
+      "Validation appears complete, but the validation-result artifact write-back is still missing."
+    );
   }
   if (missingWrites.has("dev_deployment_check_missing")) {
-    blocked.push("Dev deployment evidence exists in workflow state, but the deployment-check artifact is still missing.");
+    blocked.push(
+      "Dev deployment evidence exists in workflow state, but the deployment-check artifact is still missing."
+    );
   }
   if (missingWrites.has("prod_deployment_check_missing")) {
-    blocked.push("Production deployment evidence exists in workflow state, but the deployment-check artifact is still missing.");
+    blocked.push(
+      "Production deployment evidence exists in workflow state, but the deployment-check artifact is still missing."
+    );
   }
   if (missingWrites.has("run_brief_missing")) {
     blocked.push("This run has meaningful progress, but the run-brief artifact is still missing.");
   }
   if (missingWrites.has("final_synthesis_missing")) {
-    blocked.push("Meaningful workflow phases completed, but the final synthesis artifact is still missing.");
+    blocked.push(
+      "Meaningful workflow phases completed, but the final synthesis artifact is still missing."
+    );
   }
   if (wakeUpBrief.openApprovals.length > 0) {
     blocked.push(`${wakeUpBrief.openApprovals.length} open approval(s) still need a decision.`);
@@ -379,11 +393,19 @@ function buildBlockedOrMissing(wakeUpBrief, deploymentClues, gitActivity) {
   if (!wakeUpBrief.hasClaudeMd) {
     blocked.push("This repo is not fully adopted into Crew yet.");
   }
-  if (!wakeUpBrief.repoGuidance?.deployment && deploymentClues.clues.length > 0 && !wakeUpBrief.workflow?.hasActiveRun) {
-    blocked.push("Deployment clues exist, but durable deployment guidance has not been recorded yet.");
+  if (
+    !wakeUpBrief.repoGuidance?.deployment &&
+    deploymentClues.clues.length > 0 &&
+    !wakeUpBrief.workflow?.hasActiveRun
+  ) {
+    blocked.push(
+      "Deployment clues exist, but durable deployment guidance has not been recorded yet."
+    );
   }
   if (gitActivity.workingTree.behind > 0) {
-    blocked.push(`Current branch is behind ${gitActivity.workingTree.upstream || "upstream"} by ${gitActivity.workingTree.behind} commit(s).`);
+    blocked.push(
+      `Current branch is behind ${gitActivity.workingTree.upstream || "upstream"} by ${gitActivity.workingTree.behind} commit(s).`
+    );
   }
 
   return blocked;
@@ -407,13 +429,19 @@ function buildImportantReminders(wakeUpBrief, deploymentClues, gitActivity) {
     );
   }
   if (wakeUpBrief.claims.length > 0) {
-    reminders.push(`${wakeUpBrief.claims.length} active claim(s) are still present in repo-local state.`);
+    reminders.push(
+      `${wakeUpBrief.claims.length} active claim(s) are still present in repo-local state.`
+    );
   }
   if (wakeUpBrief.repoMemory.length <= 1) {
-    reminders.push("Repo-specific memory is still thin; keep durable guidance and lessons learned up to date.");
+    reminders.push(
+      "Repo-specific memory is still thin; keep durable guidance and lessons learned up to date."
+    );
   }
   if (missingWrites.size > 0) {
-    reminders.push("A workflow phase appears complete, but the matching artifact write-back is still missing.");
+    reminders.push(
+      "A workflow phase appears complete, but the matching artifact write-back is still missing."
+    );
   }
 
   return reminders;
@@ -492,16 +520,24 @@ function buildSecondaryOptions(wakeUpBrief, deploymentClues, gitActivity) {
   const options = [];
 
   if (gitActivity.isGitRepo && gitActivity.workingTree.hasChanges) {
-    options.push("Inspect the current working tree and decide whether anything should be staged, split, or discarded.");
+    options.push(
+      "Inspect the current working tree and decide whether anything should be staged, split, or discarded."
+    );
   }
   if (!wakeUpBrief.repoGuidance?.deployment && deploymentClues.clues.length > 0) {
-    options.push("Write repo deployment guidance now so later ship work does not need to rediscover CI/CD from scratch.");
+    options.push(
+      "Write repo deployment guidance now so later ship work does not need to rediscover CI/CD from scratch."
+    );
   }
   if (!wakeUpBrief.summary.hasRecentRunMemory) {
-    options.push("Leave a run brief once substantial work starts so the next session has bounded context to recover.");
+    options.push(
+      "Leave a run brief once substantial work starts so the next session has bounded context to recover."
+    );
   }
   if (wakeUpBrief.workflow?.hasActiveRun && !wakeUpBrief.workflow.currentRun?.next) {
-    options.push("Record a concrete next step in workflow state or the next artifact so recovery nudges stay specific.");
+    options.push(
+      "Record a concrete next step in workflow state or the next artifact so recovery nudges stay specific."
+    );
   }
 
   return options.slice(0, 3);
@@ -575,15 +611,21 @@ async function collectRecentCosts(repoPath, limit = 5) {
         }
       }
 
-      const runTitle = (fm.run_title || text.match(/^- Run Title:\s*(.+)$/m)?.[1] || "")
-        .replace(/^"|"$/g, "").trim() || null;
-      const usd = fm.usd != null
-        ? Number(fm.usd)
-        : Number(text.match(/^- Total USD:\s*\$([\d.]+)/m)?.[1] || 0) || null;
+      const runTitle =
+        (fm.run_title || text.match(/^- Run Title:\s*(.+)$/m)?.[1] || "")
+          .replace(/^"|"$/g, "")
+          .trim() || null;
+      const usd =
+        fm.usd != null
+          ? Number(fm.usd)
+          : Number(text.match(/^- Total USD:\s*\$([\d.]+)/m)?.[1] || 0) || null;
       const windowStart = text.match(/^- Window Start:\s*(.+)$/m)?.[1]?.trim() || null;
       const windowEnd = text.match(/^- Window End:\s*(.+)$/m)?.[1]?.trim() || null;
-      const durationMs = fm.duration_ms ? Number(fm.duration_ms)
-        : (windowStart && windowEnd ? Date.parse(windowEnd) - Date.parse(windowStart) : 0);
+      const durationMs = fm.duration_ms
+        ? Number(fm.duration_ms)
+        : windowStart && windowEnd
+          ? Date.parse(windowEnd) - Date.parse(windowStart)
+          : 0;
       const messages = Number(text.match(/^- Assistant Messages Counted:\s*(\d+)/m)?.[1] || 0);
       const totalTokens = fm.total_tokens
         ? Number(fm.total_tokens)
@@ -604,14 +646,17 @@ async function collectRecentCosts(repoPath, limit = 5) {
       const mixSection = text.split(/^##\s+/m).find((s) => s.startsWith("Model Mix"));
       if (mixSection) {
         for (const line of mixSection.split(/\r?\n/)) {
-          const m = line.match(/^-\s+(\S+)\s+\(priced as\s+\S+\):\s+(\d+)\s+msgs\s+\(([\d.]+)%\),\s+\$([\d.]+)\s+\(([\d.]+)%\)/);
-          if (m) modelMix.push({
-            model: m[1],
-            messages: Number(m[2]),
-            msgPct: Number(m[3]),
-            usd: Number(m[4]),
-            usdPct: Number(m[5])
-          });
+          const m = line.match(
+            /^-\s+(\S+)\s+\(priced as\s+\S+\):\s+(\d+)\s+msgs\s+\(([\d.]+)%\),\s+\$([\d.]+)\s+\(([\d.]+)%\)/
+          );
+          if (m)
+            modelMix.push({
+              model: m[1],
+              messages: Number(m[2]),
+              msgPct: Number(m[3]),
+              usd: Number(m[4]),
+              usdPct: Number(m[5])
+            });
         }
       }
 
@@ -624,11 +669,14 @@ async function collectRecentCosts(repoPath, limit = 5) {
       // synthetic/unknown sentinel entries (auto-injected, no LLM call).
       // Surface a single percentage — msgPct — to avoid the "199%" confusion
       // that comes from reading msgPct/usdPct as one number.
-      const dominantEntry = modelMix.find((m) => !/^<|unknown/i.test(m.model)) || modelMix[0] || null;
-      const dominantModel = dominantEntry ? {
-        model: dominantEntry.model,
-        pct: dominantEntry.msgPct
-      } : null;
+      const dominantEntry =
+        modelMix.find((m) => !/^<|unknown/i.test(m.model)) || modelMix[0] || null;
+      const dominantModel = dominantEntry
+        ? {
+            model: dominantEntry.model,
+            pct: dominantEntry.msgPct
+          }
+        : null;
 
       const inputM = toM(inputTokens);
       const outputM = toM(outputTokens);
@@ -661,7 +709,8 @@ async function collectRecentCosts(repoPath, limit = 5) {
           }
         }
       }
-      const toolFailureRate = toolCalls > 0 ? Number((toolFailures / toolCalls * 100).toFixed(1)) : 0;
+      const toolFailureRate =
+        toolCalls > 0 ? Number(((toolFailures / toolCalls) * 100).toFixed(1)) : 0;
 
       // Outcome from frontmatter
       const gradeAvg = fm.grade_avg != null ? Number(fm.grade_avg) : null;
@@ -758,13 +807,15 @@ async function fetchAutonomousLoopBrief(repoPath) {
 }
 
 export async function buildBriefingReport(repoPath) {
-  const [wakeUpBrief, gitActivity, deploymentClues, autonomousLoopBrief, costs] = await Promise.all([
-    buildWakeUpBrief(repoPath, { readOnly: true }),
-    collectGitActivity(repoPath),
-    discoverDeploymentClues(repoPath),
-    fetchAutonomousLoopBrief(repoPath),
-    collectRecentCosts(repoPath, 5)
-  ]);
+  const [wakeUpBrief, gitActivity, deploymentClues, autonomousLoopBrief, costs] = await Promise.all(
+    [
+      buildWakeUpBrief(repoPath, { readOnly: true }),
+      collectGitActivity(repoPath),
+      discoverDeploymentClues(repoPath),
+      fetchAutonomousLoopBrief(repoPath),
+      collectRecentCosts(repoPath, 5)
+    ]
+  );
 
   // Attach cost summary to autonomous-loop block when the plugin is installed,
   // so the user-facing "Autonomous Loop" section in brief-me renders it

@@ -3,9 +3,18 @@
   "version": "0.1.16",
   "private": true,
   "type": "module",
+  "devDependencies": {
+    "@eslint/js": "^9.16.0",
+    "eslint": "^9.16.0",
+    "globals": "^15.13.0",
+    "prettier": "^3.4.2"
+  },
   "scripts": {
     "test": "node --test",
     "validate:manifests": "node ./scripts/validate-manifests.mjs",
+    "lint": "eslint scripts tests eslint.config.mjs",
+    "format": "prettier --write \"scripts/**/*.mjs\" \"tests/**/*.mjs\"",
+    "format:check": "prettier --check \"scripts/**/*.mjs\" \"tests/**/*.mjs\"",
     "installer:install-global": "node ./scripts/crew.mjs install-global",
     "installer:bootstrap": "node ./scripts/crew.mjs bootstrap",
     "installer:init": "node ./scripts/crew.mjs init",

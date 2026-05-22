@@ -50,7 +50,13 @@ function escapeForJsLiteral(value) {
   return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
-function renderPostCommitTemplate({ commitPattern, reviewerLabel, presetName, marketplaceName, pluginName }) {
+function renderPostCommitTemplate({
+  commitPattern,
+  reviewerLabel,
+  presetName,
+  marketplaceName,
+  pluginName
+}) {
   const safePattern = escapeForSingleQuoteShell(commitPattern);
   const safeReviewer = escapeForSingleQuoteShell(reviewerLabel);
   const cliGlob = `"$HOME"/.claude/plugins/cache/${marketplaceName}/${pluginName}/*/scripts/crew.mjs`;
@@ -183,7 +189,14 @@ NODE
 `;
 }
 
-function renderHooksReadme({ presetName, commitPattern, triggerFilename, reviewerLabel, marketplaceName, pluginName }) {
+function renderHooksReadme({
+  presetName,
+  commitPattern,
+  triggerFilename,
+  reviewerLabel,
+  marketplaceName,
+  pluginName
+}) {
   return `# Crew Hooks
 
 This repo runs two hook layers:
@@ -395,12 +408,7 @@ export async function backfillCommitBridge(repoPath, options = {}) {
   const fieldSep = "<<<CREW-FIELD>>>";
   const { stdout } = await execFile(
     "git",
-    [
-      "log",
-      "--all",
-      "--reverse",
-      `--pretty=format:${recordSep}%H${fieldSep}%s${fieldSep}%b`
-    ],
+    ["log", "--all", "--reverse", `--pretty=format:${recordSep}%H${fieldSep}%s${fieldSep}%b`],
     { cwd: repoPath, maxBuffer: 32 * 1024 * 1024 }
   );
 
@@ -418,10 +426,7 @@ export async function backfillCommitBridge(repoPath, options = {}) {
       continue;
     }
 
-    const bodyLine = body
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 800);
+    const bodyLine = body.replace(/\s+/g, " ").trim().slice(0, 800);
     const summary = bodyLine
       ? `git commit ${sha.slice(0, 7)}: ${subject} | ${bodyLine}`
       : `git commit ${sha.slice(0, 7)}: ${subject}`;
