@@ -580,11 +580,34 @@ export async function collectRecentCosts(repoPath, limit = 5) {
   }
 
   const avgUsd = recent.length ? Number((totalUsd / recent.length).toFixed(4)) : 0;
+
+  // Item 2 — Model Burn rollup: aggregate modelMix[] across recent slices so
+  // brief-me can show "across the last N slices, opus burned X tokens / $Y".
+  // Tokens aren't in modelMix; reconstruct from per-slice totals * usdPct.
+  // That's approximate but only used for the summary line.
+  const modelBurnMap = new Map();
+  for (const r of recent) {
+    if (!Array.isArray(r.modelMix)) continue;
+    for (const m of r.modelMix) {
+      if (!modelBurnMap.has(m.model)) {
+        modelBurnMap.set(m.model, { model: m.model, slices: 0, messages: 0, usd: 0 });
+      }
+      const agg = modelBurnMap.get(m.model);
+      agg.slices += 1;
+      agg.messages += m.messages || 0;
+      agg.usd += m.usd || 0;
+    }
+  }
+  const modelBurn = Array.from(modelBurnMap.values())
+    .map((m) => ({ ...m, usd: Number(m.usd.toFixed(4)) }))
+    .sort((a, b) => b.usd - a.usd);
+
   return {
     recent,
     totalReports: sorted.length,
     sumUsdRecent: Number(totalUsd.toFixed(4)),
     avgUsdRecent: avgUsd,
+    modelBurn,
     diagnostics: recent.filter((r) => r.hasFlags)
   };
 }
