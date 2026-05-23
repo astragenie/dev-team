@@ -120,6 +120,23 @@ When adding artifact-producing features, prefer:
 - `.claude/logs/events.jsonl` for append-only event logs.
 - `.claude/artifacts/crew/` for task handoffs, reviews, validations, deployments, and run summaries.
 
+### What is committed vs ignored
+
+`.claude/artifacts/` is **committed** as durable cross-machine history.
+A teammate who clones the repo gets the full record of cost reports,
+reviews, handoffs, deployments, validations, and run synthesis — the
+working memory of *why* a slice landed the way it did.
+
+Ignored (machine-local only):
+
+- `.claude/logs/` — runtime hook output
+- `.claude/state/` — per-session workflow state
+- `.claude/settings.local.json`, `.claude/scheduled_tasks.lock`,
+  `.claude/hooks/`, `.claude/worktrees/`, `.claude.backup.*`
+
+This policy applies repo-wide across the team's repos for consistency
+of `brief-me` and `crew fleet` output across machines.
+
 ## Backlog discipline
 
 Active backlog under `docs/backlog/{pending,triaged,in-progress,done}/`.
