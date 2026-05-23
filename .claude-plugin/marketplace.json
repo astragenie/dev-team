@@ -10,7 +10,7 @@
     {
       "name": "crew",
       "description": "Lead-guided engineering workflow plugin for Claude Code with bounded subagents, quality gates, and inspectable handoffs",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "source": {
         "source": "github",
         "repo": "sergeymilashico/hero-crew"
@@ -22,7 +22,7 @@
     {
       "name": "loop",
       "description": "Wiggin-Loop methodology layer for Claude Code with HARD RULE blocks, slice scaffold, and phase-gate runner. Depends on `crew` for artifact writers.",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "source": {
         "source": "github",
         "repo": "sergeymilashico/hero-crew-autonomous-loop"

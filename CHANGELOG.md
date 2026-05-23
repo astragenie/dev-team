@@ -3,6 +3,30 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.3.1 — 2026-05-23 — Marketplace polish + agent model tuning
+
+### Marketplace
+
+- `crew` plugin source switched from local `./` to structured `github`
+  form (`source: "github", repo: "sergeymilashico/hero-crew"`) — symmetric
+  with the `loop` entry and resolvable from any consumer install.
+- `loop` plugin source corrected from raw string URL → structured `github`
+  form so the marketplace loader can resolve it.
+- Owner + author rebrand consolidated to `astra` across `marketplace.json`
+  and both plugins' `plugin.json`.
+
+### Agents
+
+- `builder` model `opus` → `sonnet`; `lead` effort `high` → `medium`.
+  Reduces per-slice cost on bounded implementation work without observed
+  quality regression. Revert by editing `agents/builder.md` and
+  `agents/lead.md` if regression is observed.
+
+### Notes
+
+- No consumer-repo migration required.
+- Marketplace pins bumped: `crew@0.3.1`, `loop@0.3.1`.
+
 ## v0.3.0 — 2026-05-23 — Astra rebrand
 
 ### Breaking
