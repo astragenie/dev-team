@@ -20,7 +20,10 @@
       "name": "loop",
       "description": "Wiggin-Loop methodology layer for Claude Code with HARD RULE blocks, slice scaffold, and phase-gate runner. Depends on `crew` for artifact writers.",
       "version": "0.3.0",
-      "source": "https://github.com/sergeymilashico/hero-crew-autonomous-loop",
+      "source": {
+        "source": "github",
+        "repo": "sergeymilashico/hero-crew-autonomous-loop"
+      },
       "author": {
         "name": "shishkosv"
       }
