@@ -17,6 +17,7 @@
     "lint": "eslint scripts tests eslint.config.mjs",
     "typecheck": "tsc --noEmit",
     "validate:skills": "node ./scripts/validate-skills.mjs",
+    "validate:routing-table": "node ./scripts/validate-routing-table.mjs",
     "format": "prettier --write \"scripts/**/*.mjs\" \"tests/**/*.mjs\"",
     "format:check": "prettier --check \"scripts/**/*.mjs\" \"tests/**/*.mjs\"",
     "installer:install-global": "node ./scripts/crew.mjs install-global",

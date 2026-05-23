@@ -16,6 +16,11 @@ jobs:
       - run: npm ci
       - run: node ./scripts/validate-manifests.mjs
       - run: node ./scripts/validate-skills.mjs
+      - name: Validate routing-table skill IDs (advisory)
+        env:
+          CREW_VALIDATE_ROUTING_TABLE: "1"
+        continue-on-error: true
+        run: node ./scripts/validate-routing-table.mjs
       - run: npm run lint
       - run: npm run format:check
       - run: npm run typecheck
