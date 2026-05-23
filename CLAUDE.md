@@ -41,6 +41,8 @@ Four tiers (see `docs/architecture/architecture.md` for details):
 
 Repo-local overrides live in each consumer repo's `.claude/skills/`.
 
+External-plugin skills (`context7`, `microsoft-docs:*`, `plugin-dev:*`, `hashicorp:terraform-*` when installed) are wired into agent prompts via `docs/routing-table.md` rows — see FEAT-019 + the architecture doc's "External plugin skills as routed dependencies" subsection for the routing pattern.
+
 ## Local commands
 
 - `npm test` — full test suite (`node --test`).

@@ -38,6 +38,18 @@ Rules:
 4. Repo overrides plugin on conflict.
 5. Task skills never persist.
 
+### External plugin skills as routed dependencies
+
+Skills from upstream plugins (`context7`, `microsoft-docs:*`, `plugin-dev:*`, `hashicorp:terraform-*`, etc.) are wired into crew agents **by routing-table row**, never by inlining their content into agent prompts. The pattern:
+
+- **Route by signal.** Each row's "Signal" column names the observable condition (file glob, task type, error string) that should trigger the skill.
+- **Name skill by exact ID.** `plugin-namespace:skill-name` for plugin skills, `crew:skill-name` for skills in this plugin's own `skills/` tree, `context7` for the MCP server. Agent prompts cite the routing-table row heading, not the bare skill ID, so an upstream rename is a one-line table edit.
+- **No inlining.** Skill bodies stay external. Agent prompts get a 3–8 line bullet block citing the row + condition, not the skill text itself. Keeps agent prompts under the ≤200-line cap (lead is currently 169/200; the cap is HARD).
+- **Single point of rename.** When an upstream skill renames, only the routing-table row's "Route to" column changes. Agent prompts continue to work because they reference the row heading, not the skill ID.
+- **Stack-narrowing decisions documented inline.** When a routing decision narrows the surface (e.g. `azure:azure-deploy` demoted for terraform-using consumers, fallback row preserved), the row's Notes column records *why* so future maintainers do not re-litigate. See `docs/routing-table.md` for current narrowing decisions.
+
+This pattern is what FEAT-019 institutionalised. Adding new external-plugin skill consumption is a routing-table edit + a (rarely) agent-prompt bullet — never a prompt rewrite.
+
 ## Skill quality bar
 
 Enforced by `scripts/validate-skills.mjs` (CI step).
