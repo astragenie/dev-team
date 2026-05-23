@@ -19,16 +19,12 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
   `evmts/tevm-monorepo` (MIT, © 2023 evmts contributors); reduced
   emoji list, replaced pnpm pre-commit gate with this repo's
   `npm run lint && npm test && validate-manifests/skills`.
-- **New** `skills/workflow/tdd/` — Red-Green-Refactor discipline with
-  this repo's `node --test` specifics. Authored fresh; concept is
-  standard Kent Beck TDD (2002) + Martin Fowler refactor guidance
-  (2018). No text copied from upstream skills.
 - **New** `skills/workflow/fix-pr/` — fetch and address unresolved PR
   review comments with proper threading + commit-per-fix discipline.
   Authored fresh; cites `gh` CLI workflow for this repo.
 
-All four pass `validate-skills.mjs` (tier in enum, ≤200 lines,
-required headings present). Total: 13 skills (was 9).
+All three pass `validate-skills.mjs` (tier in enum, ≤200 lines,
+required headings present). Total: 12 skills (was 9).
 
 ## v0.3.1 — 2026-05-23 — Marketplace polish + agent model tuning
 
