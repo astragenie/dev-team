@@ -16,6 +16,8 @@ Source: `Astragenie.Standards/docs/typescript/coding-conventions.md`
 
 Lead: recommend when a builder touches `.ts` / `.tsx` files, creates a new React component, or reviews TS PRs.
 
+When unsure of a TS-typed library's current API (e.g. `zod`, `react`, `@tanstack/*`, type-shape changes between majors), call **context7 MCP** (`resolve-library-id` → `get-library-docs`) before editing. See `docs/routing-table.md` row "Library / API uncertainty".
+
 ## Compiler requirements
 
 `tsconfig.json` must include `strict: true`, `noUncheckedIndexedAccess: true`, `exactOptionalPropertyTypes: true`, `noImplicitOverride: true`, `noUnusedLocals: true`, `noUnusedParameters: true`, `verbatimModuleSyntax: true`. Non-negotiable.

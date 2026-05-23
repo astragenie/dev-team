@@ -1,0 +1,10 @@
+{
+  "_comment": "Repo-pinned MCP servers. Loaded by Claude Code when this repo is open. Edit / delete entries to opt out.",
+  "mcpServers": {
+    "context7": {
+      "_comment": "Live, version-correct library docs (Upstash context7). Tools: resolve-library-id, get-library-docs. Used by researcher/builder/reviewer to avoid stale-knowledge bias. See FEAT-016 + docs/routing-table.md.",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@3.0.0"]
+    }
+  }
+}

@@ -232,6 +232,21 @@ Default model assignments:
 | deployer | opus |
 | researcher | sonnet |
 
+## Optional integrations
+
+This repo ships an opt-in `.mcp.json` declaring [context7](https://github.com/upstash/context7) as a stdio MCP server. context7 returns live, version-correct library documentation, used by the researcher, builder, and reviewer agents to avoid stale-knowledge bias.
+
+Tools exposed:
+
+- `context7.resolve-library-id` — map a package name to a context7 library id
+- `context7.get-library-docs` — fetch current docs for a resolved id
+
+Routing for "library / API uncertainty" lives in [docs/routing-table.md](docs/routing-table.md). For Microsoft technologies the crew prefers `microsoft-docs:microsoft-code-reference` (when present); context7 covers everything else.
+
+To opt out, delete the `context7` entry from `.mcp.json` (or remove the file). To pin a different version, edit the `args` line (server is pinned to `@upstash/context7-mcp@3.0.0` by default).
+
+The server is invoked via `npx -y` on first use; no global install required. Cost is the upstream service's free / rate-limited tier — no Anthropic billing change.
+
 ## What to commit
 
 Commit the stable operating layer:

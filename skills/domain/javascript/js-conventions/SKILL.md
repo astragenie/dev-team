@@ -16,6 +16,8 @@ Source: `Astragenie.Standards/docs/javascript/coding-conventions.md`
 
 Lead: recommend when a builder is touching `.mjs` / `.js` files, adding a new Node module, or reviewing JavaScript PRs.
 
+When unsure of a library's current API surface (e.g. `vite`, `eslint`, `vitest`, `node`), call **context7 MCP** (`resolve-library-id` → `get-library-docs`) before editing. See `docs/routing-table.md` row "Library / API uncertainty".
+
 ## Module shape
 
 - ESM only. `import` / `export`. No CommonJS unless integrating with a CJS-only edge dependency.
