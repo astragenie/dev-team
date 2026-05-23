@@ -25,9 +25,10 @@ Expected shape:
    - repo review policy
    - repo `CLAUDE.md` expectations
    - any repo-configured or globally configured review skills and standards that apply
-7. run the relevant review gates for the task and repo
-8. record the review result and update workflow state immediately when review completes
-9. return findings, risks, standards checked, configured review skills used, and the next recommended step
+7. dispatch the **`crew:reviewer`** agent for the independent review gate. Pass it: the diff or branch under review, the relevant run brief / handoff context, and which repo + global standards to apply. Do **not** dispatch `caveman:cavecrew-reviewer`, `code-reviewer`, or any other review agent here — those are scoped to ad-hoc spot-checks and do not honor the Crew review-artifact contract.
+8. run the relevant review gates for the task and repo (the dispatched `crew:reviewer` owns this; the lead supervises and synthesizes its output)
+9. record the review result and update workflow state immediately when review completes
+10. return findings, risks, standards checked, configured review skills used, and the next recommended step
 
 Review should be treated as a phase, not a courtesy:
 
