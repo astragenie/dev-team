@@ -114,22 +114,22 @@ Hybrid: prescriptive heuristics in `docs/routing-table.md` + lead judgment for a
 ## Phase 2+ (when, not whether)
 
 - Domain skill per stack pain point (1 at a time, on-demand).
-- Loop iteration cap + halt for runaway autonomous loops (✓ shipped in `autonomous-loop` plugin v0.1.18).
-- Cost-advisor signal in stop-conditions (✓ shipped in `autonomous-loop` v0.1.19).
-- Snapshot iteration telemetry (✓ shipped in `autonomous-loop` v0.1.20).
-- Mirror crew gates in autonomous-loop slice flow (✓ shipped in `autonomous-loop` v0.1.21).
+- Loop iteration cap + halt for runaway autonomous loops (✓ shipped in `loop` plugin v0.1.18).
+- Cost-advisor signal in stop-conditions (✓ shipped in `loop` v0.1.19).
+- Snapshot iteration telemetry (✓ shipped in `loop` v0.1.20).
+- Mirror crew gates in loop slice flow (✓ shipped in `loop` v0.1.21).
 - MCP integration when an external system has data the lead needs centrally.
 - Artifact index file when grep exceeds 2s (FEAT-009, deferred until measured).
 - Specialist agent only after 3+ observed misroutes of the same class.
 
 ## Companion plugin sync line
 
-| Capability | crew | autonomous-loop |
+| Capability | crew | loop |
 |---|---|---|
 | `blocked` + `escalated_to_human` badges (writer) | ≥ 0.1.27 | — |
 | Honors crew blocked/escalated in slice flow (reader) | — | ≥ 0.1.21 |
 
-Consumers should keep both pinned together; an older `autonomous-loop`
+Consumers should keep both pinned together; an older `loop`
 against a newer `crew` will silently miss the new gate signals.
 
 ## Tooling gates
@@ -140,10 +140,10 @@ Every CI run on both plugin repos enforces:
 2. `node ./scripts/validate-skills.mjs` (crew only; FEAT-007)
 3. `npm run lint` — ESLint flat config, zero warnings
 4. `npm run format:check` — Prettier
-5. `npm run typecheck` — `tsc --noEmit` over `scripts/**/*.mjs` (JSDoc-driven; `checkJs: true` on crew, on autonomous-loop as of v0.1.20)
+5. `npm run typecheck` — `tsc --noEmit` over `scripts/**/*.mjs` (JSDoc-driven; `checkJs: true` on crew, on loop as of v0.1.20)
 6. `node --test`
 7. `node ./scripts/e2e-smoke.mjs` (crew only)
 
 ## Backlog
 
-See `docs/backlog/`. Companion items in `hero-crew-autonomous-loop/docs/backlog/`.
+See `docs/backlog/`. Companion items in `hero-crew-loop/docs/backlog/`.

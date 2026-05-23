@@ -335,6 +335,6 @@ export function buildSecondaryOptions(wakeUpBrief, deploymentClues, gitActivity)
   return options.slice(0, 3);
 }
 
-// Best-effort lookup of the autonomous-loop plugin CLI from the Claude Code
-// plugin cache. Returns null if not installed. The brief integration is
-// optional — crew works fine without the plugin present.
+// Best-effort lookup of the loop plugin CLI from the Claude Code plugin
+// cache. Returns null if not installed. The brief integration is optional —
+// crew works fine without the plugin present.

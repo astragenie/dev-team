@@ -256,12 +256,26 @@ export async function collectRelevantArtifacts(wakeUpBrief) {
 async function findAutonomousLoopCli() {
   const home = process.env.HOME || process.env.USERPROFILE;
   if (!home) return null;
-  const candidates = [
-    `${home}/.claude/plugins/cache/autonomous-loop-dev/autonomous-loop/0.1.0/scripts/autonomous-loop.mjs`,
-    `${home}/.claude/plugins/cache/autonomous-loop/autonomous-loop/0.1.0/scripts/autonomous-loop.mjs`
+  const cacheDirs = [
+    `${home}/.claude/plugins/cache/astra/loop`,
+    `${home}/.claude/plugins/cache/autonomous-loop-dev/autonomous-loop`,
+    `${home}/.claude/plugins/cache/autonomous-loop/autonomous-loop`
   ];
-  for (const candidate of candidates) {
-    if (await pathExists(candidate)) return candidate;
+  const { promises: fs } = await import("node:fs");
+  for (const cacheDir of cacheDirs) {
+    let entries;
+    try {
+      entries = await fs.readdir(cacheDir);
+    } catch {
+      continue;
+    }
+    const versions = entries.sort().reverse();
+    for (const v of versions) {
+      const newName = `${cacheDir}/${v}/scripts/loop.mjs`;
+      const legacyName = `${cacheDir}/${v}/scripts/autonomous-loop.mjs`;
+      if (await pathExists(newName)) return newName;
+      if (await pathExists(legacyName)) return legacyName;
+    }
   }
   return null;
 }

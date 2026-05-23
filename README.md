@@ -41,17 +41,19 @@ For ownership, prompt size bar, lessons-to-standards pipeline, and the three-tes
 Add the marketplace and install the plugin in Claude Code:
 
 ```
-/plugin marketplace add https://github.com/sergeymilashico/hero-crew
-/plugin install crew@crew-dev
+/plugin marketplace add sergeymilashico/hero-crew
+/plugin install crew@astra
 ```
 
-The companion `autonomous-loop` plugin lives in the same marketplace:
+The companion `loop` plugin lives in the same marketplace:
 
 ```
-/plugin install autonomous-loop@crew-dev
+/plugin install loop@astra
 ```
 
-Verify locally with `npm test`. Pinned release: `v0.2.0`.
+Verify locally with `npm test`. Pinned release: `v0.3.0`.
+
+> **Upgrading from `crew-dev` / `autonomous-loop`?** See [docs/process/rebrand-migration.md](docs/process/rebrand-migration.md) for the one-time uninstall + reinstall sequence. The `loop` plugin auto-migrates consumer-repo state (`.claude/autonomous-loop.json` → `.claude/loop.json`, CLAUDE.md markers) on first `/loop:install`.
 
 ## Commands
 

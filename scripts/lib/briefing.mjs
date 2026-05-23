@@ -56,9 +56,9 @@ export async function buildBriefingReport(repoPath) {
       checkRoutingTableStale(repoPath)
     ]);
 
-  // Attach cost summary to autonomous-loop block when the plugin is installed,
-  // so the user-facing "Autonomous Loop" section in brief-me renders it
-  // alongside backlog counts and grades. Also expose top-level for non-loop users.
+  // Attach cost summary to loop block when the plugin is installed, so the
+  // user-facing "Autonomous Loop" section in brief-me renders it alongside
+  // backlog counts and grades. Also expose top-level for non-loop users.
   if (autonomousLoopBrief && costs.recent.length > 0) {
     autonomousLoopBrief.costs = costs;
   }

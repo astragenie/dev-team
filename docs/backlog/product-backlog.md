@@ -3,7 +3,7 @@
 Source: `docs/architecture/architecture.md`.
 
 Items live in `docs/backlog/{pending,triaged,in-progress,done}/` and are
-managed by the `autonomous-loop` plugin's backlog CLI.
+managed by the `loop` plugin's backlog CLI.
 
 ## Phase 1 — Minimal Viable
 
@@ -44,9 +44,9 @@ managed by the `autonomous-loop` plugin's backlog CLI.
 | (MCP)    | MCP memory integration                             | When external system has central data  |
 | (TS)     | TS migration                                       | If JSDoc + tsc no longer enough        |
 
-## Companion items in autonomous-loop
+## Companion items in loop
 
-See `hero-crew-autonomous-loop/docs/backlog/`:
+See `hero-crew-loop/docs/backlog/`:
 
 - FEAT-001 (loop): Iteration cap + runaway halt
 - FEAT-002 (loop): Mirror `blocked` + `escalated_to_human` badges
@@ -58,5 +58,5 @@ See `hero-crew-autonomous-loop/docs/backlog/`:
 
 Items marked **autonomous_safe: false** require human review of the
 slice handoff before merge. Items marked **true** can be picked by the
-autonomous-loop without per-slice approval, but each slice still passes
+loop without per-slice approval, but each slice still passes
 through the standard crew gates (review, validation, deployment).

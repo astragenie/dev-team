@@ -1,7 +1,7 @@
 // Fleet view: reads .claude/state/crew/slice-progress.md from sibling
 // worktrees/repos and renders a one-pane summary. Keeps the one-way
 // dependency clean — reads only the filesystem artifact; never imports
-// autonomous-loop code.
+// loop code.
 
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -67,7 +67,14 @@ async function findSliceProgressFiles(roots) {
     }
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
-      const candidate = path.join(root, entry.name, ".claude", "state", "crew", "slice-progress.md");
+      const candidate = path.join(
+        root,
+        entry.name,
+        ".claude",
+        "state",
+        "crew",
+        "slice-progress.md"
+      );
       if (await pathExists(candidate)) {
         found.push({ repoName: entry.name, progressPath: candidate });
       }
@@ -79,7 +86,10 @@ async function findSliceProgressFiles(roots) {
 // Collect fleet data from slice-progress.md files found in sibling repos
 // relative to rootDir (defaults to parent of the current repo).
 // If --include-self is set, also includes the currentRepoPath itself.
-export async function collectFleetWorktrees(currentRepoPath, { extraRoots = [], includeSelf = true } = {}) {
+export async function collectFleetWorktrees(
+  currentRepoPath,
+  { extraRoots = [], includeSelf = true } = {}
+) {
   const parent = path.dirname(currentRepoPath);
   const scanRoots = [parent, ...extraRoots.map((r) => path.resolve(r))];
 
@@ -175,7 +185,10 @@ export function renderFleet(items) {
 }
 
 // Top-level function: collect + render + return both raw data and markdown.
-export async function buildFleetReport(currentRepoPath, { extraRoots = [], includeSelf = true } = {}) {
+export async function buildFleetReport(
+  currentRepoPath,
+  { extraRoots = [], includeSelf = true } = {}
+) {
   const items = await collectFleetWorktrees(currentRepoPath, { extraRoots, includeSelf });
   const markdown = renderFleet(items);
   return { items, markdown };

@@ -1,7 +1,7 @@
 {
-  "name": "crew-dev",
+  "name": "astra",
   "metadata": {
-    "description": "Development marketplace for the Crew Claude Code plugin"
+    "description": "Astra marketplace: lead-guided engineering workflow (`crew`) and the Wiggin-Loop methodology layer (`loop`) for Claude Code."
   },
   "owner": {
     "name": "shishkosv"
@@ -10,16 +10,16 @@
     {
       "name": "crew",
       "description": "Lead-guided engineering workflow plugin for Claude Code with bounded subagents, quality gates, and inspectable handoffs",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "source": "./",
       "author": {
         "name": "shishkosv"
       }
     },
     {
-      "name": "autonomous-loop",
+      "name": "loop",
       "description": "Wiggin-Loop methodology layer for Claude Code with HARD RULE blocks, slice scaffold, and phase-gate runner. Depends on `crew` for artifact writers.",
-      "version": "0.1.21",
+      "version": "0.3.0",
       "source": "https://github.com/sergeymilashico/hero-crew-autonomous-loop",
       "author": {
         "name": "shishkosv"

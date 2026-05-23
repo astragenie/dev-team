@@ -34,7 +34,7 @@ cases lint cannot reach.
 | **OCP** | Table-driven dispatch (`COMMANDS`, `FLAG_SPEC`) so new entries add one line without modifying control flow. |
 | **LSP** | Pure functions over object methods where possible. |
 | **ISP** | Small option objects (`{ owner }`, `{ allowExisting }`) per function, not a kitchen-sink config blob. |
-| **DIP** | Lazy `await import("./...")` inside command handlers so unrelated subsystems do not pay startup cost. See `scripts/autonomous-loop.mjs::COMMANDS`. |
+| **DIP** | Lazy `await import("./...")` inside command handlers so unrelated subsystems do not pay startup cost. See `scripts/loop.mjs::COMMANDS`. |
 
 ## Functions
 
@@ -91,7 +91,7 @@ Never `process.exit(N)` from a library function. Set
   isolation. Never write to the repo root from a test.
 - Skip-with-reason instead of silent skip when a system dependency is
   absent (see `tests/loop-installer.test.mjs` for the
-  crew-CLI-version-gated skip pattern in autonomous-loop).
+  crew-CLI-version-gated skip pattern in loop).
 
 ## Comments
 

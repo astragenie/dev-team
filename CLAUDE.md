@@ -2,8 +2,7 @@
 
 Claude Code plugin: the **Crew** harness. Lead-guided engineering
 workflow with bounded subagents, quality gates, and inspectable
-handoffs. The companion `autonomous-loop` plugin sits on top of this
-one.
+handoffs. The companion `loop` plugin sits on top of this one.
 
 ## Read first
 
@@ -90,13 +89,13 @@ Pre-1.0 semver-ish (see `CHANGELOG.md` header):
 - **Patch** (`0.X.Y`): bugfix, doc polish, skill quality bar updates.
 - Bumping `package.json` without bumping `marketplace.json` is a release bug.
 
-### Companion plugin (`autonomous-loop`)
+### Companion plugin (`loop`)
 
 Lives in a separate repo
 (`https://github.com/sergeymilashico/hero-crew-autonomous-loop`) and is
 referenced from this repo's `marketplace.json` by version only. To pick up
-an AL release, bump `plugins[name=autonomous-loop].version` here and commit
-under `chore(marketplace): bump autonomous-loop to <ver>`.
+a `loop` release, bump `plugins[name=loop].version` here and commit
+under `chore(marketplace): bump loop to <ver>`.
 
 ### Hard rules
 
@@ -127,7 +126,7 @@ Active backlog under `docs/backlog/{pending,triaged,in-progress,done}/`.
 Each FEAT has frontmatter declaring priority, status, and an
 `autonomous_safe` flag. Items tagged `autonomous_safe: false` (lead
 prompt edits, skill authorship) require a human-in-loop on review even
-when picked by the autonomous-loop.
+when picked by the loop.
 
 ## Safety
 

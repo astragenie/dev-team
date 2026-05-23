@@ -80,7 +80,7 @@ Run through this list before invoking `/crew:adopt`:
 Verify with `audit`:
 
 ```bash
-node "$HOME/.claude/plugins/cache/crew-dev/crew/0.1.0/scripts/crew.mjs" audit --repo "$PWD"
+node "$HOME/.claude/plugins/cache/astra/crew/0.3.0/scripts/crew.mjs" audit --repo "$PWD"
 ```
 
 Look for:

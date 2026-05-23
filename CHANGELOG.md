@@ -3,6 +3,40 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.3.0 — 2026-05-23 — Astra rebrand
+
+### Breaking
+
+- Marketplace renamed `crew-dev` → `astra`. New install path:
+  `/plugin marketplace add sergeymilashico/hero-crew` then
+  `/plugin install crew@astra`.
+- Companion plugin renamed `autonomous-loop` → `loop`. Install:
+  `/plugin install loop@astra`. Companion slash command namespace
+  `/autonomous-loop:*` → `/loop:*` (handled in the companion repo
+  release; `loop@0.3.0` ships a one-time migrator that renames
+  `.claude/autonomous-loop.json` → `.claude/loop.json` and rewrites
+  CLAUDE.md markers on first `/loop:install`).
+
+### Migration
+
+- Existing installs of `crew@crew-dev` and `autonomous-loop@crew-dev`
+  must be uninstalled and re-installed under the new marketplace name.
+  See `docs/process/rebrand-migration.md` for the exact command
+  sequence.
+- Consumer-repo state for the companion plugin auto-migrates on first
+  `/loop:install`; no manual file rewrites required.
+
+### Notes
+
+- `crew` plugin itself has no consumer-repo state rename — only the
+  install path changes.
+- Marketplace manifest is the source of truth for plugin pins; both
+  `crew` and `loop` pinned at `0.3.0` here.
+- Hardcoded cache-path fallbacks in `scripts/lib/briefing/collect.mjs`
+  walk the new `astra/loop/<version>/` cache first, then fall back to
+  the legacy `autonomous-loop-dev/autonomous-loop/<version>/` shape so
+  briefings keep working during the transition.
+
 ## v0.2.0 — 2026-05-22 — Phase 1 (Engineering OS) complete
 
 Closes the Phase-1 backlog defined in `docs/architecture/architecture.md`.
