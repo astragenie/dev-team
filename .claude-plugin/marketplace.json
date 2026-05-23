@@ -11,7 +11,10 @@
       "name": "crew",
       "description": "Lead-guided engineering workflow plugin for Claude Code with bounded subagents, quality gates, and inspectable handoffs",
       "version": "0.3.0",
-      "source": "./",
+      "source": {
+        "source": "github",
+        "repo": "sergeymilashico/hero-crew"
+      },
       "author": {
         "name": "astra"
       }
