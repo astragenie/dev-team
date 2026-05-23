@@ -40,7 +40,7 @@ Rules:
 
 ### External plugin skills as routed dependencies
 
-Skills from upstream plugins (`context7`, `microsoft-docs:*`, `plugin-dev:*`, `hashicorp:terraform-*`, etc.) are wired into crew agents **by routing-table row**, never by inlining their content into agent prompts. The pattern:
+Skills from upstream plugins (`context7`, `microsoft-docs:*`, `plugin-dev:*`, etc.) are wired into crew agents **by routing-table row**, never by inlining their content into agent prompts. The pattern:
 
 - **Route by signal.** Each row's "Signal" column names the observable condition (file glob, task type, error string) that should trigger the skill.
 - **Name skill by exact ID.** `plugin-namespace:skill-name` for plugin skills, `crew:skill-name` for skills in this plugin's own `skills/` tree, `context7` for the MCP server. Agent prompts cite the routing-table row heading, not the bare skill ID, so an upstream rename is a one-line table edit.
