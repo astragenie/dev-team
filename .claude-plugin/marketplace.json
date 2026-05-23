@@ -4,7 +4,7 @@
     "description": "Astra marketplace: lead-guided engineering workflow (`crew`) and the Wiggin-Loop methodology layer (`loop`) for Claude Code."
   },
   "owner": {
-    "name": "shishkosv"
+    "name": "astra"
   },
   "plugins": [
     {
@@ -13,7 +13,7 @@
       "version": "0.3.0",
       "source": "./",
       "author": {
-        "name": "shishkosv"
+        "name": "astra"
       }
     },
     {
@@ -25,7 +25,7 @@
         "repo": "sergeymilashico/hero-crew-autonomous-loop"
       },
       "author": {
-        "name": "shishkosv"
+        "name": "astra"
       }
     }
   ]
