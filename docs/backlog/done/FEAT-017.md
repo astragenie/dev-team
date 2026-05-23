@@ -1,9 +1,9 @@
 ---
 id: FEAT-017
-status: pending
+status: done
 priority: P2
 category: workflow
-target_release: tbd
+target_release: v0.3.1
 created: 2026-05-23
 updated: 2026-05-23
 depends_on: []

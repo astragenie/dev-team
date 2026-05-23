@@ -96,4 +96,17 @@ Procedure of record for the policy: superpowers
 `test-driven-development` skill (cached under
 `~/.claude/plugins/cache/claude-plugins-official/superpowers/`).
 
+### Plugin- and skill-shape reviewer skills (FEAT-017)
+
+When the diff touches the plugin shape (manifests, `agents/`, `commands/`, `hooks/`, `.mcp.json`) or skills (`skills/**/SKILL.md`), reach for the upstream quality skills that already know the rules. Do not re-derive them by ad-hoc grep.
+
+Use:
+
+- **`plugin-dev:plugin-validator`** — when the diff modifies any of: `.claude-plugin/marketplace.json`, `plugin.json`, files under `agents/`, `commands/`, `hooks/`, or adds / changes `.mcp.json`. Treat its findings as review input alongside the local `node ./scripts/validate-manifests.mjs` output (which is the hard CI gate).
+- **`plugin-dev:skill-reviewer`** — when the diff modifies any `skills/**/SKILL.md` file. Run it for triggering-effectiveness + best-practice feedback. Pair with `node ./scripts/validate-skills.mjs` for the structural quality bar (tier, ≤200 lines, required headings).
+
+Route signals live in `docs/routing-table.md` ("Plugin shape change" and "Skill shape change" rows). Cite them in the review-result artifact under "configured review skills consulted".
+
+If neither path pattern matches the diff, skip these skills. They are scoped tools, not blanket gates.
+
 The user relies on the review result to know what was actually checked. Leaving standards checking implicit means the user cannot tell whether their configured review program was applied. Say explicitly which standards and skills were part of the review.

@@ -63,6 +63,13 @@ and every PR. All steps are blocking; lint must stay zero-warning.
 7. `node --test`
 8. `node ./scripts/e2e-smoke.mjs`
 
+The local validators are **hard** CI gates. During reviewer-phase work, the
+`plugin-dev:plugin-validator` and `plugin-dev:skill-reviewer` skills are
+consulted as **narrative** review aids on top of the CI gates — they catch
+triggering-effectiveness and best-practice issues that structural validators
+miss. Routing lives in `docs/routing-table.md` ("Plugin shape change",
+"Skill shape change") and is enforced by `agents/reviewer.md`.
+
 ## Release & deployment
 
 This plugin has no server, no container, and no hosted runtime. "Deploying"

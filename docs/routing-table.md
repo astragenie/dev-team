@@ -23,6 +23,8 @@ Anything ambiguous, blocked, or spanning multiple tiers routes to **lead** for r
 | **Cost analysis or optimization** (expensive operations, token burn investigation) | researcher (read-only) + lead decision | Researcher investigates and reports; lead decides on action (optimize, accept, defer). |
 | **Blocked work or escalation** (dependency unmet, config broken, ambiguous requirements) | lead | Unblock by re-scoping, deferring, or escalating to stakeholder. Document the blocker in repo memory. |
 | **Library / API uncertainty** ("is method X still supported?", "current docs for Y", touching unfamiliar npm package, unsure of signature) | researcher / builder via **context7 MCP** | Call `context7.resolve-library-id` then `context7.get-library-docs` before recommending or editing. If context7 has no coverage for the library, fall back to general web docs rather than retrying. Pairs with `microsoft-docs:microsoft-code-reference` for MS-tech. Server pinned in `.mcp.json`. |
+| **Plugin shape change** (diff touches `.claude-plugin/marketplace.json`, `plugin.json`, `agents/`, `commands/`, `hooks/`, or `.mcp.json`) | reviewer via **`plugin-dev:plugin-validator`** | Reviewer invokes `plugin-dev:plugin-validator` for manifest + structure review *alongside* the local CI gate `node ./scripts/validate-manifests.mjs` (the latter is hard-fail). Cite both in the review-result artifact. |
+| **Skill shape change** (diff touches any `skills/**/SKILL.md`) | reviewer via **`plugin-dev:skill-reviewer`** | Reviewer invokes `plugin-dev:skill-reviewer` for triggering-effectiveness + best-practice feedback, plus `node ./scripts/validate-skills.mjs` for the structural quality bar (tier, ≤200 lines, required headings). Both required when skills change. |
 
 ---
 

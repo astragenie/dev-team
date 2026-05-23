@@ -80,6 +80,17 @@ stack: <only for domain skills>  # e.g. "dotnet", "flutter"
 
 Hybrid: prescriptive heuristics in `docs/routing-table.md` + lead judgment for ambiguous cases. No LLM classifier. No pure config map.
 
+### Reviewer-phase skills
+
+A real, used pattern: the reviewer invokes external quality skills when their
+path predicate matches the diff. Current wired entries:
+
+- `plugin-dev:plugin-validator` — diff touches `agents/`, `commands/`, `hooks/`, plugin/marketplace manifests, or `.mcp.json`.
+- `plugin-dev:skill-reviewer` — diff touches `skills/**/SKILL.md`.
+- `context7` MCP — researcher/builder fetches live library docs when an API surface is unfamiliar.
+
+These are **review aids**, not CI gates. The hard gates remain `scripts/validate-manifests.mjs` and `scripts/validate-skills.mjs`. The reviewer-phase skills add triggering-effectiveness and best-practice judgment on top.
+
 ## Memory tiers
 
 | Tier | Storage | Defer? |
