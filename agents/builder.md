@@ -1,7 +1,7 @@
 ---
 name: builder
 description: Implementation specialist for bounded code changes with strict scope discipline and explicit completion reports.
-model: opus
+model: sonnet
 effort: high
 maxTurns: 30
 ---
