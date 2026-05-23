@@ -45,6 +45,7 @@ Workflow:
    - validator exercises the bug path and expected behavior when it can be run
 12. Use claims only when multiple people may touch overlapping files, and use approvals only for destructive or scope-expanding decisions.
 13. Require every teammate or helper to report scope, deliverable, evidence, risks, confidence, and next handoff.
+   After a subagent completes, read its full report from the artifact path it returned (via `Read` on the handoff path). Do NOT treat the inline return as the full report — agents return only path + headline by contract.
 14. If the work produces a code fix, make that code-bearing change independently reviewable. Review should happen before the fix is treated as complete.
 15. Substantial non-code deliverables should normally be reviewed before being treated as done.
 16. For code fixes, independent review is the default. When code work is complete and waiting for review, record that gate in workflow state:

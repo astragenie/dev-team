@@ -34,3 +34,18 @@ Cite this override in the review-result artifact under "configured review skills
 ### Upstream note
 
 `caveman:cavecrew-reviewer`'s description should be scoped away from `/crew:review` ("audit this file" / "spot-check this diff" only). Until that upstream fix lands, this repo-local override is the durable mitigation. See commit message for the FEAT-016 / FEAT-017 ship discovery that surfaced this gap.
+
+## Shell pre-check
+
+Before any chained Bash with `cd` / path-touching commands, verify with `pwd` (POSIX) or `Get-Location` + `Test-Path` (PowerShell). On Windows, prefer the PowerShell tool for cmdlet operations and reserve Bash for POSIX-style scripts. Use `$env:NAME` in PS, `$NAME` in bash. Quote paths with spaces.
+
+## Shell cheatsheet (PS vs bash)
+
+| Operation | PowerShell | Bash |
+|---|---|---|
+| Env var read | `$env:NAME` | `$NAME` |
+| Env var set | `$env:NAME = 'val'` | `export NAME=val` |
+| List files | `Get-ChildItem` | `ls` |
+| Current dir | `Get-Location` | `pwd` |
+| File exists | `Test-Path path` | `[ -f path ]` |
+| Path with space | `"C:\Program Files\..."` | `"/path with space/..."` |

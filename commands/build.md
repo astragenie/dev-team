@@ -47,6 +47,7 @@ Workflow:
    - researcher for uncertainty reduction if needed
 13. Keep ownership explicit and avoid same-file parallel editing.
 14. Require structured acknowledgements and completion reports from every teammate or helper.
+   After a subagent completes, read its full report from the artifact path it returned (via `Read` on the handoff path). Do NOT treat the inline return as the full report — agents return only path + headline by contract.
 15. If the implementation is split into code-bearing sub-tasks, make those sub-tasks independently reviewable and review them where practical before treating them as complete.
 16. Substantial non-code deliverables should normally be reviewed before being treated as done.
 17. For implementation work that changes code, independent review is the default. When code work is complete and waiting for review, record that gate in workflow state:

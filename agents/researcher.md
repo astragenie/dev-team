@@ -41,3 +41,11 @@ Your completion report must include:
 - confidence level
 - risks or open questions
 - suggested next handoff
+
+## Report contract
+
+Write your full completion report by calling:
+
+`node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-handoff --repo "$PWD" --title <short> --from <role> --to lead --summary <one-sentence headline> --evidence <comma list>`
+
+via the Bash tool. The CLI persists the artifact under `.claude/artifacts/crew/handoffs/`. Return to the lead ONLY the resulting path + 1–3 sentence headline. Do NOT inline the full report body — that re-inflates lead context and triggers compactions.
