@@ -1,0 +1,49 @@
+{
+  "preset": "dotnet-aspire-python",
+  "loop": {
+    "aiLoopRoot": "docs/ai-loop",
+    "backlogPath": "docs/ai-loop/backlog",
+    "slicesRoot": "docs/ai-loop/slices",
+    "phaseGateArtifactDir": ".claude/artifacts/crew/validations",
+    "maxIterations": 25
+  },
+  "stack": {
+    "build": [
+      {
+        "cmd": "dotnet",
+        "args": [
+          "build",
+          "-c",
+          "Release"
+        ]
+      }
+    ],
+    "test": [
+      {
+        "cmd": "dotnet",
+        "args": [
+          "test",
+          "-c",
+          "Release",
+          "--nologo"
+        ]
+      }
+    ],
+    "frontendBuild": null,
+    "infraPlan": null,
+    "aspireBoot": null,
+    "healthchecks": []
+  },
+  "reviewers": {
+    "ladder": [
+      "A",
+      "B"
+    ]
+  },
+  "mandatoryDocs": [
+    "docs/architecture/platform-overview.md"
+  ],
+  "productName": "Untitled product",
+  "productDescription": "Override productName and productDescription in .claude/loop.json after install.",
+  "stackDescription": "- C# .NET (Aspire local orchestration when configured)\n- Python agents (LangGraph or FastAPI) when configured\n- Terraform for infrastructure when configured"
+}
