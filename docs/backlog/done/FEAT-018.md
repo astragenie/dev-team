@@ -1,6 +1,6 @@
 ---
 id: FEAT-018
-status: in-progress
+status: done
 priority: P2
 category: workflow
 target_release: v0.3.1
@@ -12,6 +12,7 @@ derived_from: null
 autonomous_safe: true
 phase: 2
 started_at: 2026-05-23
+completed_at: 2026-05-23
 ---
 # FEAT-018: cost-discipline patterns — subagent report-to-path + pre-check + no-reReread
 
