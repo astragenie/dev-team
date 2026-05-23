@@ -1,6 +1,6 @@
 ---
 id: FEAT-019
-status: in-progress
+status: done
 priority: P2
 category: workflow
 target_release: v0.4.0
@@ -12,6 +12,7 @@ derived_from: null
 autonomous_safe: false
 phase: 2
 started_at: 2026-05-23
+completed_at: 2026-05-23
 ---
 # FEAT-019: wire context7 / plugin-dev / microsoft-docs + terraform skills into crew agents
 

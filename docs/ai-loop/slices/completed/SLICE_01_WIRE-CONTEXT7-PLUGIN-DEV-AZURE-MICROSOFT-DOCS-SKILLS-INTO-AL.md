@@ -1,11 +1,12 @@
 ---
 id: SLICE-01
-status: pending
+status: completed
 feature: FEAT-019
 priority: P2
 target_release: v0.4.0
 created: 2026-05-23
 updated: 2026-05-23
+completed_at: 2026-05-23
 ---
 # SLICE-01: routing-table + CLAUDE.md callout + architecture doc subsection (FEAT-019 SLICE-A)
 
