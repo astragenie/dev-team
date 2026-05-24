@@ -3,12 +3,14 @@ import path from "node:path";
 
 const SLICE_RE = /SLICE[-_](\d+)/i;
 
+/** @param {any} text */
 function extractSliceId(text) {
   if (!text) return null;
   const m = String(text).match(SLICE_RE);
   return m ? `SLICE-${String(Number(m[1])).padStart(2, "0")}` : null;
 }
 
+/** @param {string} file */
 async function readIfExists(file) {
   try {
     return await fs.readFile(file, "utf8");
@@ -17,6 +19,7 @@ async function readIfExists(file) {
   }
 }
 
+/** @param {string} dir */
 async function listIfExists(dir) {
   try {
     return await fs.readdir(dir);
@@ -27,6 +30,7 @@ async function listIfExists(dir) {
 
 // Parse score lines like "- architecture_quality: 0.85" out of the body even
 // when frontmatter scores is null.
+/** @param {string | null} text */
 function parseScoresFromBody(text) {
   if (!text) return null;
   const dimensions = [
@@ -38,6 +42,7 @@ function parseScoresFromBody(text) {
     "test_confidence",
     "product_completeness"
   ];
+  /** @type {Record<string, number>} */
   const out = {};
   for (const dim of dimensions) {
     const re = new RegExp(`^-\\s+${dim}:\\s*([0-9.]+)`, "m");
@@ -47,6 +52,7 @@ function parseScoresFromBody(text) {
   return Object.keys(out).length > 0 ? out : null;
 }
 
+/** @param {Record<string, number> | null} scores */
 function avgScores(scores) {
   if (!scores) return null;
   const vals = Object.values(scores).filter((v) => typeof v === "number");
@@ -54,6 +60,7 @@ function avgScores(scores) {
   return Number((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(3));
 }
 
+/** @param {string} dir @param {string} sliceNumber */
 async function findLatestMatching(dir, sliceNumber) {
   const files = await listIfExists(dir);
   const pat = new RegExp(`slice[-_]?0*${sliceNumber}\\b`, "i");
@@ -63,6 +70,7 @@ async function findLatestMatching(dir, sliceNumber) {
   return path.join(dir, matches[matches.length - 1]);
 }
 
+/** @param {string | null} text */
 function parseDecision(text) {
   if (!text) return null;
   const m = text.match(/^-\s*Decision:\s*([\w_-]+)/im) || text.match(/^decision:\s*([\w_-]+)/im);
@@ -71,9 +79,10 @@ function parseDecision(text) {
 
 // Given a slice id or run title, gather the outcome signals visible in
 // docs/grades + .claude/artifacts/crew/{reviews,validations}.
+/** @param {string} repoPath @param {string} runTitle */
 export async function collectOutcomeLinkage(repoPath, runTitle) {
   const sliceId = extractSliceId(runTitle);
-  if (!sliceId) return { sliceId: null };
+  if (!sliceId) return /** @type {{ sliceId: null }} */ ({ sliceId: null });
 
   const sliceNumber = sliceId.replace(/^SLICE-/, "").replace(/^0+/, "") || "0";
 

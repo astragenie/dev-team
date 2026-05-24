@@ -6,6 +6,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+/** @param {string} p */
 async function pathExists(p) {
   try {
     await fs.access(p);
@@ -18,6 +19,7 @@ async function pathExists(p) {
 // Parse a slice-progress.md file into { repoName, inProgressSlice,
 // completedCount, totalCount, updatedAt }. All fields are best-effort:
 // missing sections return null so the fleet view degrades gracefully.
+/** @param {string} text @param {string} repoName */
 function parseSliceProgress(text, repoName) {
   const lines = text.split(/\r?\n/);
   let updatedAt = null;
@@ -55,6 +57,7 @@ function parseSliceProgress(text, repoName) {
 
 // Find all slice-progress.md files under the given scan roots.
 // Each entry in roots is searched one level deep (immediate subdirs).
+/** @param {string[]} roots */
 async function findSliceProgressFiles(roots) {
   const found = [];
   for (const root of roots) {
@@ -86,6 +89,7 @@ async function findSliceProgressFiles(roots) {
 // Collect fleet data from slice-progress.md files found in sibling repos
 // relative to rootDir (defaults to parent of the current repo).
 // If --include-self is set, also includes the currentRepoPath itself.
+/** @param {string} currentRepoPath @param {{ extraRoots?: string[], includeSelf?: boolean }} [opts] */
 export async function collectFleetWorktrees(
   currentRepoPath,
   { extraRoots = [], includeSelf = true } = {}
@@ -135,6 +139,7 @@ export async function collectFleetWorktrees(
   return items.sort((a, b) => a.repoName.localeCompare(b.repoName));
 }
 
+/** @param {string | null} isoString */
 function formatAge(isoString) {
   if (!isoString) return "unknown";
   const ms = Date.now() - new Date(isoString).getTime();
@@ -148,6 +153,7 @@ function formatAge(isoString) {
 }
 
 // Render the fleet data as a markdown one-pane summary.
+/** @param {any[]} items */
 export function renderFleet(items) {
   if (items.length === 0) {
     return "# Fleet\n\n_(no active loops found — no sibling repos with `.claude/state/crew/slice-progress.md`)_\n";
@@ -185,6 +191,7 @@ export function renderFleet(items) {
 }
 
 // Top-level function: collect + render + return both raw data and markdown.
+/** @param {string} currentRepoPath @param {{ extraRoots?: string[], includeSelf?: boolean }} [opts] */
 export async function buildFleetReport(
   currentRepoPath,
   { extraRoots = [], includeSelf = true } = {}

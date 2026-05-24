@@ -25,9 +25,11 @@ const VALID_TIERS = new Set(["universal", "workflow", "domain", "meta"]);
 const MAX_LINES = 200;
 const STALE_REVIEW_DAYS = 180;
 
+/** @param {string} text */
 function parseFrontmatter(text) {
   const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!match) return null;
+  /** @type {Record<string, string>} */
   const fm = {};
   for (const line of match[1].split(/\r?\n/)) {
     const kv = line.match(/^([\w_]+):\s*(.*)$/);
@@ -36,14 +38,18 @@ function parseFrontmatter(text) {
   return fm;
 }
 
+/** @param {string} isoDate */
 function daysSince(isoDate) {
   const t = Date.parse(isoDate);
   if (Number.isNaN(t)) return Infinity;
   return Math.floor((Date.now() - t) / (24 * 60 * 60 * 1000));
 }
 
+/** @param {string} root */
 async function findSkillFiles(root) {
+  /** @type {string[]} */
   const out = [];
+  /** @param {string} dir */
   async function walk(dir) {
     const entries = await fs.readdir(dir, { withFileTypes: true });
     for (const entry of entries) {
@@ -60,18 +66,21 @@ async function findSkillFiles(root) {
   return out;
 }
 
+/** @param {Record<string, string>} fm @param {string} label @param {string[]} errors */
 function checkRequiredFields(fm, label, errors) {
   for (const field of ["name", "tier", "description"]) {
     if (!fm[field]) errors.push(`${label}: missing required frontmatter "${field}"`);
   }
 }
 
+/** @param {Record<string, string>} fm @param {string} label @param {string[]} errors */
 function checkTier(fm, label, errors) {
   if (fm.tier && !VALID_TIERS.has(fm.tier)) {
     errors.push(`${label}: tier "${fm.tier}" not in {${[...VALID_TIERS].join(", ")}}`);
   }
 }
 
+/** @param {string} filePath @param {Record<string, string>} fm @param {string} label @param {string[]} errors */
 function checkDirectoryName(filePath, fm, label, errors) {
   if (!fm.name) return;
   const dirName = path.basename(path.dirname(filePath));
@@ -82,6 +91,7 @@ function checkDirectoryName(filePath, fm, label, errors) {
   }
 }
 
+/** @param {string} text @param {string} label @param {string[]} errors */
 function checkLineCount(text, label, errors) {
   const lines = text.split("\n").length;
   if (lines > MAX_LINES) {
@@ -89,6 +99,7 @@ function checkLineCount(text, label, errors) {
   }
 }
 
+/** @param {Record<string, string>} fm @param {string} label @param {string[]} warnings */
 function checkRecommendedFields(fm, label, warnings) {
   for (const field of ["owner", "last_reviewed", "triggers"]) {
     if (!fm[field]) warnings.push(`${label}: missing recommended frontmatter "${field}"`);

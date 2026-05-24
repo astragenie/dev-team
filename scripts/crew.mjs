@@ -99,8 +99,10 @@ const FLAG_SPEC = {
   "--verified-from": { key: "verifiedFrom" }
 };
 
+/** @param {string[]} argv */
 function parseArgs(argv) {
   const [command, ...rest] = argv;
+  /** @type {Record<string, string | boolean | null>} */
   const flags = {
     repo: process.cwd(),
     allowExisting: false,
@@ -178,7 +180,7 @@ function parseArgs(argv) {
       }
       break;
     }
-    const spec = FLAG_SPEC[value];
+    const spec = /** @type {Record<string, {key: string, boolean?: boolean}>} */ (FLAG_SPEC)[value];
     if (spec) {
       if (spec.boolean) {
         flags[spec.key] = true;
@@ -202,6 +204,7 @@ function parseArgs(argv) {
   }
   return { command, helpTarget: null, flags, positionals };
 }
+/** @param {string | null} [target] */
 function usage(target = null) {
   const subcommands = {
     "install-global": "  node scripts/crew.mjs install-global",
@@ -246,7 +249,7 @@ function usage(target = null) {
     "cost-advise": "  node scripts/crew.mjs cost-advise --repo <path>"
   };
 
-  if (target && subcommands[target]) {
+  if (target && /** @type {Record<string, string>} */ (subcommands)[target]) {
     return ["Engineering OS installer", "", "Usage:", subcommands[target]].join("\n");
   }
 
@@ -257,6 +260,7 @@ function usage(target = null) {
 // target runTitle → fallback "advise". --title lets the loop side pass the
 // enriched FEAT/PHASE/SLICE tag so cost-advise filenames match the rest of
 // the artifact surface.
+/** @param {string | null} title @param {Record<string, any> | null} advisor */
 function buildCostAdviseSlug(title, advisor) {
   const source = title || advisor?.target?.sliceId || advisor?.target?.runTitle || "advise";
   return source
@@ -268,6 +272,7 @@ function buildCostAdviseSlug(title, advisor) {
 
 // Optional YAML frontmatter block; "" when both feature + phase absent so
 // existing output stays byte-identical for legacy callers.
+/** @param {string | null} feature @param {string | null} phase */
 function buildOptionalFrontmatter(feature, phase) {
   const lines = [];
   if (feature) lines.push(`feature: ${feature}`);
@@ -278,6 +283,7 @@ function buildOptionalFrontmatter(feature, phase) {
   return ["---", ...lines, "---", ""].join("\n");
 }
 
+/** @param {string} repoPath @param {string} md @param {Record<string, any> | null} advisor @param {Record<string, any>} [options] */
 async function writeCostAdviseArtifact(repoPath, md, advisor, options = {}) {
   const fs = await import("node:fs/promises");
   const pathMod = await import("node:path");
@@ -301,6 +307,7 @@ async function writeCostAdviseArtifact(repoPath, md, advisor, options = {}) {
 // Best-effort cost-advise emit. Returns a description object on success,
 // `{ error }` on failure. Extracted from maybeEmitCostReport to keep its
 // cyclomatic complexity under the eslint cap.
+/** @param {string} repoPath @param {{ title: string | null, feature: string | null, phase: string | null }} opts */
 async function emitCostAdvise(repoPath, { title, feature, phase }) {
   try {
     const advisor = await buildCostAdvisor(repoPath, { limit: 10 });
@@ -320,6 +327,7 @@ async function emitCostAdvise(repoPath, { title, feature, phase }) {
   }
 }
 
+/** @param {string} repoPath @param {Record<string, any>} [options] */
 async function maybeEmitCostReport(repoPath, options = {}) {
   const { runTitle, feature, phase } =
     /** @type {{ runTitle?: string | null, feature?: string | null, phase?: string | null }} */ (

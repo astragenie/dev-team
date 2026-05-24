@@ -18,14 +18,17 @@ import { fileURLToPath } from "node:url";
 
 const SEMVER_RE = /^\d+\.\d+\.\d+(?:-[\w.]+)?$/;
 
+/** @param {string} p */
 async function readJson(p) {
   return JSON.parse(await fs.readFile(p, "utf8"));
 }
 
+/** @param {any} value */
 function isMissing(value) {
   return value === undefined || value === null || value === "";
 }
 
+/** @param {Record<string, any>} manifest @param {string} label @param {string[]} requiredFields @param {(msg: string) => void} fail */
 function checkRequiredFields(manifest, label, requiredFields, fail) {
   for (const field of requiredFields) {
     if (isMissing(manifest[field])) {
@@ -34,6 +37,7 @@ function checkRequiredFields(manifest, label, requiredFields, fail) {
   }
 }
 
+/** @param {Record<string, any>} plugin @param {Record<string, any>} pkg @param {(msg: string) => void} fail */
 function checkVersions(plugin, pkg, fail) {
   if (!SEMVER_RE.test(plugin.version)) {
     fail(`plugin.json: version "${plugin.version}" is not parseable semver`);
@@ -46,8 +50,11 @@ function checkVersions(plugin, pkg, fail) {
   }
 }
 
+/** @param {Record<string, any>} plugin @param {Record<string, any>} marketplace @param {(msg: string) => void} fail */
 function checkOwnMarketplaceEntry(plugin, marketplace, fail) {
-  const ownEntry = marketplace.plugins.find((entry) => entry.name === plugin.name);
+  const ownEntry = marketplace.plugins.find(
+    (/** @type {any} */ entry) => entry.name === plugin.name
+  );
   if (!ownEntry) {
     fail(`marketplace.json: no entry for own plugin name "${plugin.name}"`);
     return;
@@ -59,6 +66,7 @@ function checkOwnMarketplaceEntry(plugin, marketplace, fail) {
   }
 }
 
+/** @param {Record<string, any>} marketplace @param {(msg: string) => void} fail */
 function checkMarketplaceEntries(marketplace, fail) {
   for (const entry of marketplace.plugins) {
     if (!entry.name) fail(`marketplace.json: a plugins[] entry is missing "name"`);
@@ -71,9 +79,11 @@ function checkMarketplaceEntries(marketplace, fail) {
   }
 }
 
+/** @param {string} repoRoot */
 export async function validateManifests(repoRoot) {
+  /** @type {string[]} */
   const failures = [];
-  const fail = (msg) => failures.push(msg);
+  const fail = (/** @type {string} */ msg) => failures.push(msg);
 
   const plugin = await readJson(path.join(repoRoot, ".claude-plugin", "plugin.json"));
   const marketplace = await readJson(path.join(repoRoot, ".claude-plugin", "marketplace.json"));
