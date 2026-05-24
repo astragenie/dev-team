@@ -69,6 +69,16 @@ Your completion report must include:
 - risks or open questions
 - suggested next handoff
 
+## Review and validation dispatch
+
+When the lead's dispatch instruction requests review and validation:
+
+1. **Review**: dispatch a `crew:reviewer` subagent. Wait for its review-result artifact.
+2. **Validation**: after review passes, dispatch a `crew:validator` subagent for any runnable/observable behavior. Wait for its validation-result artifact.
+3. **Report**: include review and validation artifact paths in your completion handoff.
+
+If review returns `rejected` or validation returns `failed`, pivot through `/crew:fix` before reporting completion.
+
 ## Report contract
 
 Write your full completion report by calling:

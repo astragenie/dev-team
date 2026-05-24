@@ -115,6 +115,27 @@ If neither path pattern matches the diff, skip these skills. They are scoped too
 
 The user relies on the review result to know what was actually checked. Leaving standards checking implicit means the user cannot tell whether their configured review program was applied. Say explicitly which standards and skills were part of the review.
 
+## Review artifact
+
+After completing your review analysis, write the review-result artifact by calling:
+
+```
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-review-result \
+  --repo "$PWD" \
+  --title "<short title>" \
+  --decision approved|approved_with_notes|rejected \
+  --summary "<one-sentence review verdict>" \
+  --evidence "<key evidence points checked>" \
+  --files "<comma-separated files reviewed>" \
+  --test-summary "<test coverage assessment or 'N/A — doc-only'>" \
+  --risks "<residual risks or 'none'>" \
+  --next "<required follow-up or 'none'>"
+```
+
+For doc-only diffs, pass `--non-code` instead of `--test-summary`. For approved code-bearing reviews where tests are legitimately N/A, pass `--test-summary-skip-reason "<reason>"`.
+
+Write the review artifact FIRST, then write the handoff (Report contract below).
+
 ## Report contract
 
 Write your full completion report by calling:

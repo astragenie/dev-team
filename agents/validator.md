@@ -52,6 +52,26 @@ And must include:
 - required follow-up, if failed
 - confidence level
 
+## Validation artifact
+
+After completing validation, write the validation-result artifact by calling:
+
+```
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-validation-result \
+  --repo "$PWD" \
+  --title "<short title>" \
+  --decision passed|passed_with_notes|failed \
+  --environment "<environment validated: local, CI, staging, etc.>" \
+  --goal "<what was being validated>" \
+  --summary "<one-sentence validation verdict>" \
+  --evidence "<concrete evidence: command output, test results, observed behavior>" \
+  --files "<comma-separated files/surfaces checked>" \
+  --risks "<residual risks or 'none'>" \
+  --next "<required follow-up or 'none'>"
+```
+
+Write the validation artifact FIRST, then write the handoff (Report contract below).
+
 ## Report contract
 
 Write your full completion report by calling:
