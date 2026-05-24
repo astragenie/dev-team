@@ -4,7 +4,7 @@ tier: domain
 stack: javascript
 description: JavaScript / Node ESM conventions — module shape, SOLID idioms, error handling, lint rules. Use when touching *.mjs or *.js files.
 owner: sergeymilashico
-last_reviewed: 2026-05-22
+last_reviewed: 2026-05-24
 triggers: ["*.mjs", "*.js", "node", "javascript", "eslint.config"]
 ---
 
@@ -37,8 +37,16 @@ When unsure of a library's current API surface (e.g. `vite`, `eslint`, `vitest`,
 |---|---|
 | **SRP** | One responsibility per module / function. Fetch + render + write = three units. |
 | **OCP** | Table-driven dispatch (`COMMANDS`, `FLAG_SPEC`) so new entries add one line. |
+| **LSP** | Prefer pure functions over object methods — substitutability is automatic. |
 | **ISP** | Small option objects per function, not a kitchen-sink config blob. |
 | **DIP** | Lazy `await import("./...")` inside handlers — unrelated subsystems skip startup cost. |
+
+## Functions
+
+- Named `function foo()` over `const foo = () =>` — except registry tables and inline callbacks.
+- Default ≤80 lines per function (ESLint warns at 120).
+- Default cyclomatic complexity ≤12 (ESLint warns at 15).
+- Beyond budget: extract helper, table-driven dispatch, predicate extraction, or early returns.
 
 ## Tables over chains
 
@@ -66,6 +74,17 @@ async function bestEffort(fn) {
 }
 ```
 
+## Constants and templates
+
+- String templates + large constants in sibling `<module>/templates.mjs`. Functional code imports at most one template module.
+- Magic numbers → named constants. `const MAX_OUTPUT_BYTES = 64 * 1024` beats `64 * 1024` inline.
+
+## CLI
+
+- Subcommand dispatch through `COMMANDS` registry.
+- Flag parsing through `FLAG_SPEC` table.
+- Help text generated from the same tables — single source of truth.
+
 ## Filesystem
 
 - `await fs.readFile(path, "utf8")` for text.
@@ -80,6 +99,7 @@ async function bestEffort(fn) {
 | `prefer-const` | error |
 | `eqeqeq` | error, "smart" |
 | `no-unused-vars` | warn (`_`-prefix tolerated) |
+| `no-implicit-globals` | error (every export explicit) |
 | `max-lines-per-function` | warn 120 (off for tests) |
 | `complexity` | warn 15 (off for tests) |
 
