@@ -126,3 +126,14 @@ via the Bash tool. The CLI persists the artifact under `.claude/artifacts/crew/h
 ## No re-Read after Edit/Write
 
 After a successful Edit / Write, do not Read the same file to verify. The tool would have errored on failure. Re-Read only if you need new context the edit revealed.
+
+## Efficiency rules
+
+- **Grep before Read.** Find the relevant line range first; then `Read` with `offset` + `limit`. Never open a whole file to find one section.
+  - Bad: `Read agents/builder.md` (loads 80 lines to find 5)
+  - Good: `Grep "Report contract" agents/builder.md` → `Read agents/builder.md offset:65 limit:10`
+  - Target: `Read`:`Grep` ratio ≤ 1:1 per review run.
+
+- **Batch AC verification.** Never one Bash call per AC. Batch all AC grep checks into one command.
+  - Bad: `grep "write-handoff" agents/builder.md` then `grep "write-handoff" agents/reviewer.md` (separate calls)
+  - Good: `grep -l "write-handoff" agents/{builder,reviewer,validator,deployer,researcher}.md`
