@@ -45,7 +45,7 @@ In scope:
 
 | # | Driver | Hypothesis | Measurement signal | Remediation if confirmed |
 |---|---|---|---|---|
-| D1 | Builder Read→Edit→Read | Verification re-Reads burn 2–3 tool turns per file × N files = waste. Rule 6 in FEAT-018 should reduce this but may not catch every case. | Count `Read` tool calls within 2 turns of `Edit`/`Write` for the same file path. From `.claude/artifacts/crew/cost/<slice>-cost-report.md` tool-usage section. Threshold: >20% of Edit/Write calls followed by Read of same path = confirmed. | Add PreToolUse hook (`hooks/no-reread-after-edit.mjs`) that blocks Read on a path within 2 turns of Edit/Write to same path. Hard enforcement; rule body in builder + reviewer + validator already says "do not" but no gate. |
+| D1 | Builder Read→Edit→Read | Verification re-Reads burn 2–3 tool turns per file × N files = waste. Rule 6 in FEAT-018 should reduce this but may not catch every case. | Count `Read` tool calls within 2 turns of `Edit`/`Write` for the same file path. From `.claude/artifacts/crew/cost/<slice>-cost-report.md` tool-usage section. Threshold: >20% of Edit/Write calls followed by Read of same path = confirmed. | Strengthen the Rule 6 prompt wording in builder/reviewer/validator with a concrete anti-example block + add a cost-report dashboard line "Re-Read after Edit count: N (target: 0)". Prompt-only — **no PreToolUse hook** (operator decision: hard-block risk on legitimate verification reads outweighs the win). |
 | D2 | Reviewer full-file Read | Reviewer Reads whole files (e.g. 500-line `slice-linker.mjs`) instead of grep-then-targeted-Read. Wastes context + turns. | From cost-report tool-usage: avg `bytes-per-Read` for reviewer agent. Threshold: avg > 5KB OR ratio of `Read` vs `Grep` tool uses > 2:1 = confirmed. | Add "grep before Read" rule to `agents/reviewer.md` Reviewer-skill-checklist section. Add concrete pattern example: `Grep "AC-1.*:" docs/ai-loop/slices/.../SLICE_NN_*.md` to find AC by name, then `Read offset:<line> limit:5` to inspect. |
 | D3 | Multi-AC sequential Bash | Each AC fires its own `Bash` call instead of batched. N ACs × N Bash = N × 1.5s × turn-cost overhead. | From cost-report tool-usage: count of `Bash` tool calls per slice vs count of declared ACs in slice spec. Ratio > 1.5:1 = confirmed. | Add "batch grep ACs into single Bash" pattern to reviewer prompt + commit skill. Provide concrete one-liner: `for ac in AC-1 AC-2 ...; do echo "=== $ac ==="; grep "$pattern_$ac"; done`. |
 | D4 | Subagent repo rediscovery | Subagent re-greps for repo layout (`ls scripts/`, `cat package.json`, `find skills/`) early in its run, burning 3–5 turns on context it could inherit from the handoff. | From cost-report tool-usage: count of layout-discovery Bash/Glob calls (matching patterns `ls`, `find .* -type`, `cat package.json`, etc.) in first 5 turns of a subagent run. Threshold: ≥2 = confirmed. | Extend `write-handoff` CLI to include a `--repo-context` flag that injects a pre-discovered layout block (scripts/ files, tests/ files, agents/ list) into the handoff. Subagent reads handoff first, skips rediscovery. |
@@ -86,10 +86,9 @@ In scope:
   file"). May need a small cost-report extension to track file paths
   for D1 + D2 measurements. Treat as a sub-task of whichever driver
   is investigated first.
-- **PreToolUse hook (D1 remediation) is risky.** Hard blocks on Read
-  could break legitimate workflows (e.g. agent reading freshly-written
-  file as user-visible verification). Default to warn-only first,
-  promote to block only after the warning rate confirms it's safe.
+- **PreToolUse hook explicitly out of scope.** Operator decision
+  (this session): hard-block on Read carries too much risk vs prompt-
+  only remediation. D1 stays prompt-only forever.
 
 ## Followups (not in this FEAT)
 
