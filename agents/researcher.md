@@ -50,6 +50,10 @@ Write your full completion report by calling:
 
 via the Bash tool. The CLI persists the artifact under `.claude/artifacts/crew/handoffs/`. Return to the lead ONLY the resulting path + 1–3 sentence headline. Do NOT inline the full report body — that re-inflates lead context and triggers compactions.
 
+## Handoff before stop
+
+Completion, pause, blocker, context-budget end — **all** require writing a handoff via `write-handoff` BEFORE returning to the lead. Inline-only return (path + headline without a written artifact) is a contract violation. If the harness pauses you mid-task and you cannot complete, write a `--confidence low` handoff with `--risks "<what is still in progress>"` and return its path. The lead reads the handoff, not your inline reply.
+
 ## Repo layout on start
 
 When resuming from a handoff, check for a `## Repo Layout` section in the handoff artifact before running `ls`, `find`, or `cat package.json`. If the section is present, it contains a pre-discovered layout — use it directly. This saves 3–5 tool turns per run.
