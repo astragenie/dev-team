@@ -1,17 +1,18 @@
 ---
 id: FEAT-021
-status: in-progress
+status: done
 priority: P2
 category: quality
 target_release: v0.4.0
 created: 2026-05-23
-updated: 2026-05-23
+updated: 2026-05-24
 depends_on: []
 slices: [SLICE-03]
 derived_from: null
 autonomous_safe: true
 phase: 2
 started_at: 2026-05-23
+completed_at: 2026-05-24
 ---
 # FEAT-021: Routing-table skill-ID CI linter (validate-routing-table.mjs)
 
