@@ -492,6 +492,13 @@ const COMMANDS = {
     }),
   "write-review-result": ({ repoPath, flags, positionals }) => {
     const decision = flags.decision;
+    const VALID_DECISIONS = new Set(["approved", "approved_with_notes", "rejected"]);
+    if (decision && !VALID_DECISIONS.has(decision)) {
+      process.stderr.write(
+        `[crew] write-review-result refused: unknown decision "${decision}". Valid values: approved, approved_with_notes, rejected.\n`
+      );
+      process.exit(2);
+    }
     const isApproved = decision === "approved" || decision === "approved_with_notes";
     const isCodeBearing = !flags.nonCode;
     if (isApproved && isCodeBearing && !flags.testSummary && !flags.testSummarySkipReason) {

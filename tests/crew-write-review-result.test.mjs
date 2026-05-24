@@ -159,6 +159,31 @@ test("write-review-result: approved_with_notes without test flags also exits 2",
   }
 });
 
+// Scenario 7: unknown decision → exit 2
+test("write-review-result: unknown decision exits 2", async () => {
+  const repoPath = await makeTempRepo("crew-wrr-unknown-decision-");
+  try {
+    const { status, stderr } = runCli([
+      "write-review-result",
+      "--repo",
+      repoPath,
+      "--title",
+      "Unknown decision",
+      "--decision",
+      "lgtm",
+      "--summary",
+      "looks good to me",
+      "--test-summary",
+      "n/a"
+    ]);
+    assert.equal(status, 2, "expected exit 2 for unknown decision");
+    assert.match(stderr, /unknown.*decision/i, "stderr must mention unknown decision");
+    assert.match(stderr, /approved/, "stderr must list valid decisions");
+  } finally {
+    await cleanup(repoPath);
+  }
+});
+
 // Scenario 6: approved + --test-summary-skip-reason → exit 0, artifact contains Test Adequacy Skip Reason
 test("write-review-result: approved + --test-summary-skip-reason exits 0 and writes skip reason", async () => {
   const repoPath = await makeTempRepo("crew-wrr-skip-reason-");
