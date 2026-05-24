@@ -502,7 +502,11 @@ async function buildRepoLayoutBlock(repoPath) {
 
   let skillDirs = "(not found)";
   try {
-    const skillEntries = await fs.readdir(path.join(repoPath, "skills"), { withFileTypes: true });
+    // Cast: fs.readdir overloads do not always narrow { withFileTypes: true }
+    // to Dirent[] under the LSP's strict default. Runtime is unaffected.
+    const skillEntries = /** @type {import('node:fs').Dirent[]} */ (
+      await fs.readdir(path.join(repoPath, "skills"), { withFileTypes: true })
+    );
     const joined = skillEntries
       .filter((e) => e.isDirectory())
       .map((e) => `${e.name}/`)
