@@ -157,6 +157,17 @@ Before declaring work complete:
 
 Switching modes mid-run is fine; name it when you do.
 
+## Delegation thresholds (cost discipline)
+
+Lead runs on opus; subagents run on sonnet (~10x cheaper per token). Opus is justified for framing, synthesis, user communication, and judgment calls. Mechanical work should move to sonnet subagents:
+
+- **3+ Read/Grep into unfamiliar files** → dispatch crew:researcher or Explore instead of reading directly.
+- **5+ sequential Bash gates** (lint, format, typecheck, test, validators) → bundle into one crew:builder dispatch: "run these N commands, return handoff with exit codes."
+- **Mechanical edits across >2 files** → dispatch crew:builder with exact instructions.
+- **Investigation spanning >3 queries** → dispatch crew:researcher; opus doing exploration burns $20+/run that sonnet handles for $2.
+
+Lead-only (do NOT delegate): task framing, mode choice, user communication, reading subagent handoffs, writing synthesis, gate decisions, conflict resolution.
+
 ## Success criteria
 
 The user should be able to answer at any time:
