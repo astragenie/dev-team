@@ -52,6 +52,22 @@
             "type": "command",
             "command": "${PWD}/.claude/hooks/log_event.sh subagent_stop",
             "description": "crew:subagent-stop"
+          },
+          {
+            "type": "prompt",
+            "prompt": "CREW HANDOFF VERIFIER: A subagent just stopped. Check its return message. If this was a crew:builder, crew:reviewer, or crew:researcher dispatched for substantial work (>5 tool calls or multi-file scope), it MUST have written a handoff artifact via write-handoff and returned the artifact path. If the return message does NOT contain a path under .claude/artifacts/crew/handoffs/, the subagent violated the handoff-before-stop contract. Action: (1) note the gap explicitly in your next message to the user, (2) run `git status` to verify working tree state, (3) check .claude/artifacts/crew/handoffs/ for recent files. Quick-lookup agents (Explore, single-grep researchers) are exempt. Do NOT silently continue past a missing handoff on substantial work.",
+            "description": "crew:handoff-verifier"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "CREW SESSION-END CHECKPOINT: Before stopping, verify these items. Skip any that don't apply.\n\n1. UNCOMMITTED CHANGES: Run `git status --short`. If there are uncommitted changes from this session's work, either commit them or note explicitly that they are intentional WIP.\n\n2. WORKFLOW GATES: Check if the current run has pending gates (review_required, validation_expected). If so, either resolve them or record explicit skips via mark-badge.\n\n3. FINAL SYNTHESIS: If this was a substantial run (wrote a run-brief, dispatched subagents, produced code changes), write a final-synthesis artifact before stopping. Half-finished runs without synthesis lose context across sessions.\n\n4. HANDOFF: If work is mid-flight and will continue in a future session, write a handoff artifact capturing scope state, what's done, what's next, and risks.\n\nIf all items are clear or not applicable, stop normally. If any item needs action, address it now.",
+            "description": "crew:session-end-checkpoint"
           }
         ]
       }
