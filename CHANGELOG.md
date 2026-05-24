@@ -3,6 +3,40 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.3.5 — 2026-05-24 — Agent codification + CI hardening + cost discipline
+
+### Agent prompts
+
+- `write-handoff --repo-context` injects pre-discovered repo layout (scripts/, agents/, skills/, tests/, npm scripts) into handoff artifacts so subagents skip 3-5 layout-discovery turns (FEAT-022 D4).
+- `agents/reviewer.md` gains "Efficiency rules" section: grep-before-Read (D2, target Read:Grep ≤ 1:1) and batch-AC-verification (D3, single Bash call per AC set) (FEAT-022 D2+D3).
+- `agents/builder.md` TDD policy strengthened: forward-references FEAT-023 `--test-summary` gate so builder knows reviewer will require test coverage evidence.
+- `agents/builder.md` + `agents/researcher.md` gain "Handoff before stop" section: completion, pause, blocker, context-end all require `write-handoff` before returning. Addresses two observed subagent mid-task pauses this session.
+- `agents/lead.md` gains "Delegation thresholds" section: 3+ unfamiliar-file reads → dispatch researcher; 5+ sequential Bash gates → bundle into builder; mechanical edits across >2 files → builder. Addresses opus overuse (97% of $ in recent slices).
+
+### CI gates
+
+- New `scripts/validate-slices.mjs` hard gate scans `docs/ai-loop/slices/pending/**/*.md` for AC-placeholder bullets (literal dots, angle-bracket template, empty post-colon). Exit 1 with file:line diagnostics. Companion to FEAT-024 (loop-side enforcement).
+- `write-review-result --decision` now validates against allow-list (`approved | approved_with_notes | rejected`). Unknown values exit 2 with stderr listing valid options.
+
+### Skills
+
+- 4 skills (writing-claude-md, writing-task-handoffs, review-gates, using-crew) gain Trigger + Done headings. `validate-skills.mjs` warnings 8 → 0.
+
+### Types
+
+- JSDoc `@type {Dirent[]}` cast on `buildRepoLayoutBlock` skills/ branch clears recurring LSP red diagnostics on `.isDirectory()` / `.name` access.
+
+### Docs + backlog
+
+- `.claude/crew/deployment.md` created — durable deployment guidance extracted from CLAUDE.md release workflow.
+- FEAT-022 closed (D2+D3+D4 shipped, D1 dropped per operator decision: prompt-only, no PreToolUse hook).
+- FEAT-023 closed (shipped in v0.3.4).
+- CLAUDE.md CI gates list updated from 8 → 9 entries (includes `validate-slices.mjs`).
+
+### Tests
+
+- 8 new test scenarios: 7 for `validate-slices.mjs` (3 placeholder shapes + concrete-AC pass + completed-skip + empty-pending + missing-dir) + 1 for unknown `--decision` (allow-list gate).
+
 ## v0.3.4 — 2026-05-24 — Hard-gate `test_adequacy` in `write-review-result` (FEAT-023)
 
 ### Why
