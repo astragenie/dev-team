@@ -1139,3 +1139,133 @@ test("brief-me reports routingTableStale=true when mtime > 30 days old", async (
     "reminders should mention routing-table staleness"
   );
 });
+
+test("write-* commands embed --feature and --phase in frontmatter", async () => {
+  const repoPath = await makeTempDir("crew-cli-feature-phase-");
+  await execFile("node", [cliPath, "init", "--repo", repoPath]);
+
+  // run-brief with feature + phase
+  const runBriefOut = await execFile("node", [
+    cliPath,
+    "write-run-brief",
+    "--repo",
+    repoPath,
+    "--title",
+    "Tagged brief",
+    "--feature",
+    "FEAT-021",
+    "--phase",
+    "3"
+  ]);
+  const briefPath = JSON.parse(runBriefOut.stdout).path;
+  const briefBody = await fs.readFile(briefPath, "utf8");
+  assert.match(briefBody, /^---\nfeature: FEAT-021\nphase: "3"\n---\n/);
+  assert.match(briefBody, /# Run Brief: Tagged brief/);
+
+  // review-result without feature/phase emits no frontmatter (backward-compat)
+  const reviewOut = await execFile("node", [
+    cliPath,
+    "write-review-result",
+    "--repo",
+    repoPath,
+    "--title",
+    "Bare review",
+    "--decision",
+    "approved"
+  ]);
+  const reviewPath = JSON.parse(reviewOut.stdout).path;
+  const reviewBody = await fs.readFile(reviewPath, "utf8");
+  assert.ok(
+    !reviewBody.startsWith("---"),
+    "bare review-result has no frontmatter when feature/phase absent"
+  );
+
+  // review-result with only feature emits frontmatter without phase line
+  const reviewFeatOut = await execFile("node", [
+    cliPath,
+    "write-review-result",
+    "--repo",
+    repoPath,
+    "--title",
+    "Feat review",
+    "--decision",
+    "approved",
+    "--feature",
+    "FEAT-007"
+  ]);
+  const reviewFeatPath = JSON.parse(reviewFeatOut.stdout).path;
+  const reviewFeatBody = await fs.readFile(reviewFeatPath, "utf8");
+  assert.match(reviewFeatBody, /^---\nfeature: FEAT-007\n---\n/);
+  assert.ok(!reviewFeatBody.includes("phase:"), "no phase key when phase omitted");
+});
+
+test("cost-advise accepts --title --feature --phase and slugs filename + emits frontmatter", async () => {
+  const repoPath = await makeTempDir("crew-cli-advise-");
+  await execFile("node", [cliPath, "init", "--repo", repoPath]);
+  // Seed a minimal cost-report so the advisor has a target.
+  await execFile("node", [
+    cliPath,
+    "cost-slice",
+    "--repo",
+    repoPath,
+    "--started-at",
+    "2026-05-22T00:00:00Z",
+    "--completed-at",
+    "2026-05-22T00:05:00Z",
+    "--run-title",
+    "seed",
+    "--aggregate-all"
+  ]);
+
+  const adviseOut = await execFile("node", [
+    cliPath,
+    "cost-advise",
+    "--repo",
+    repoPath,
+    "--title",
+    "PHASE3 FEAT021 SLICE36",
+    "--feature",
+    "FEAT-021",
+    "--phase",
+    "3"
+  ]);
+  const adviseResult = JSON.parse(adviseOut.stdout);
+  assert.ok(adviseResult.artifactPath);
+  assert.match(
+    path.basename(adviseResult.artifactPath),
+    /-cost-advise-phase3-feat021-slice36\.md$/,
+    "cost-advise filename includes the --title slug"
+  );
+  const body = await fs.readFile(adviseResult.artifactPath, "utf8");
+  assert.match(
+    body,
+    /^---\nfeature: FEAT-021\nphase: "3"\n---\n/,
+    "cost-advise body starts with feature/phase frontmatter"
+  );
+});
+
+test("cost-slice embeds --feature and --phase in cost-report frontmatter", async () => {
+  const repoPath = await makeTempDir("crew-cli-cost-tags-");
+  await execFile("node", [cliPath, "init", "--repo", repoPath]);
+  const out = await execFile("node", [
+    cliPath,
+    "cost-slice",
+    "--repo",
+    repoPath,
+    "--started-at",
+    "2026-05-22T00:00:00Z",
+    "--completed-at",
+    "2026-05-22T00:05:00Z",
+    "--run-title",
+    "tagged",
+    "--feature",
+    "FEAT-100",
+    "--phase",
+    "beta",
+    "--aggregate-all"
+  ]);
+  const reportPath = JSON.parse(out.stdout).path;
+  const body = await fs.readFile(reportPath, "utf8");
+  assert.match(body, /\nfeature: FEAT-100\n/);
+  assert.match(body, /\nphase: "beta"\n/);
+});

@@ -51,6 +51,7 @@ const FLAG_SPEC = {
   "--environments": { key: "environments" },
   "--evidence": { key: "evidence" },
   "--extra-root": { key: "extraRoot" },
+  "--feature": { key: "feature" },
   "--files": { key: "files" },
   "--from": { key: "from" },
   "--goal": { key: "goal" },
@@ -65,6 +66,7 @@ const FLAG_SPEC = {
   "--out-of-scope": { key: "outOfScope" },
   "--owner": { key: "owner" },
   "--pace": { key: "pace" },
+  "--phase": { key: "phase" },
   "--preset": { key: "preset" },
   "--reason": { key: "reason" },
   "--refresh-when": { key: "refreshWhen" },
@@ -154,7 +156,9 @@ function parseArgs(argv) {
     completedAt: null,
     runTitle: null,
     sourceProject: null,
-    blockedBy: null
+    blockedBy: null,
+    feature: null,
+    phase: null
   };
   const positionals = [];
 
@@ -241,30 +245,78 @@ function usage(target = null) {
   return ["Engineering OS installer", "", "Usage:", ...Object.values(subcommands)].join("\n");
 }
 
-async function writeCostAdviseArtifact(repoPath, md, advisor) {
+// Slug source priority: explicit --title → advisor target slice → advisor
+// target runTitle → fallback "advise". --title lets the loop side pass the
+// enriched FEAT/PHASE/SLICE tag so cost-advise filenames match the rest of
+// the artifact surface.
+function buildCostAdviseSlug(title, advisor) {
+  const source = title || advisor?.target?.sliceId || advisor?.target?.runTitle || "advise";
+  return source
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
+// Optional YAML frontmatter block; "" when both feature + phase absent so
+// existing output stays byte-identical for legacy callers.
+function buildOptionalFrontmatter(feature, phase) {
+  const lines = [];
+  if (feature) lines.push(`feature: ${feature}`);
+  if (phase !== null && phase !== undefined && String(phase).length > 0) {
+    lines.push(`phase: ${JSON.stringify(String(phase))}`);
+  }
+  if (lines.length === 0) return "";
+  return ["---", ...lines, "---", ""].join("\n");
+}
+
+async function writeCostAdviseArtifact(repoPath, md, advisor, options = {}) {
   const fs = await import("node:fs/promises");
   const pathMod = await import("node:path");
+  const { title = null, feature = null, phase = null } = options;
   const dir = pathMod.join(repoPath, ".claude", "artifacts", "crew", "cost-insights");
   await fs.mkdir(dir, { recursive: true });
   const stamp = new Date()
     .toISOString()
     .replace(/[-:]/g, "")
     .replace(/\.\d+Z$/, "Z");
-  const slug = (advisor?.target?.sliceId || advisor?.target?.runTitle || "advise")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
+  const slug = buildCostAdviseSlug(title, advisor);
+  const fm = buildOptionalFrontmatter(feature, phase);
   const file = pathMod.join(dir, `${stamp}-cost-advise-${slug}.md`);
-  await fs.writeFile(file, md + "\n");
+  await fs.writeFile(file, fm + md + "\n");
   return file;
 }
 
 // Auto-emit a cost-report artifact when a run window is available. Designed
 // to be called immediately after write-final-synthesis. Failures here are
 // non-fatal: they return null so the synthesis result still surfaces.
+// Best-effort cost-advise emit. Returns a description object on success,
+// `{ error }` on failure. Extracted from maybeEmitCostReport to keep its
+// cyclomatic complexity under the eslint cap.
+async function emitCostAdvise(repoPath, { title, feature, phase }) {
+  try {
+    const advisor = await buildCostAdvisor(repoPath, { limit: 10 });
+    const md = renderCostAdvisorMarkdown(advisor);
+    const advisePath = await writeCostAdviseArtifact(repoPath, md, advisor, {
+      title,
+      feature,
+      phase
+    });
+    return {
+      path: advisePath,
+      recommendations: advisor.recommendations?.length || 0,
+      aggregateFlags: advisor.aggregateFlags?.length || 0
+    };
+  } catch (err) {
+    return { error: err.message };
+  }
+}
+
 async function maybeEmitCostReport(repoPath, options = {}) {
-  const { runTitle } = /** @type {{ runTitle?: string | null }} */ (options);
+  const { runTitle, feature, phase } =
+    /** @type {{ runTitle?: string | null, feature?: string | null, phase?: string | null }} */ (
+      options
+    );
   try {
     const state = await loadWorkflowState(repoPath);
     const run = state?.currentRun || null;
@@ -284,24 +336,15 @@ async function maybeEmitCostReport(repoPath, options = {}) {
       title: `Cost — ${title}`,
       runTitle: title,
       cost,
-      outcome
+      outcome,
+      feature: feature || null,
+      phase: phase || null
     });
-    // Chain the advisor — runs the rule library against the freshly-written
-    // cost-report (now the most recent) plus prior history, and writes a
-    // sibling advise artifact. Failure here is also non-fatal.
-    let adviseArtifact = null;
-    try {
-      const advisor = await buildCostAdvisor(repoPath, { limit: 10 });
-      const md = renderCostAdvisorMarkdown(advisor);
-      const advisePath = await writeCostAdviseArtifact(repoPath, md, advisor);
-      adviseArtifact = {
-        path: advisePath,
-        recommendations: advisor.recommendations?.length || 0,
-        aggregateFlags: advisor.aggregateFlags?.length || 0
-      };
-    } catch (err) {
-      adviseArtifact = { error: err.message };
-    }
+    const adviseArtifact = await emitCostAdvise(repoPath, {
+      title: runTitle || null,
+      feature: feature || null,
+      phase: phase || null
+    });
     return { report: reportArtifact, advise: adviseArtifact };
   } catch (err) {
     return { error: err.message };
@@ -417,7 +460,9 @@ const COMMANDS = {
       scope: flags.scope,
       outOfScope: flags.outOfScope,
       files: flags.files,
-      next: flags.next
+      next: flags.next,
+      feature: flags.feature,
+      phase: flags.phase
     }),
   "write-handoff": ({ repoPath, flags, positionals }) =>
     writeArtifact(repoPath, "handoff", {
@@ -432,7 +477,9 @@ const COMMANDS = {
       files: flags.files,
       confidence: flags.confidence,
       risks: flags.risks,
-      next: flags.next
+      next: flags.next,
+      feature: flags.feature,
+      phase: flags.phase
     }),
   "write-review-result": ({ repoPath, flags, positionals }) =>
     writeArtifact(repoPath, "review-result", {
@@ -443,7 +490,9 @@ const COMMANDS = {
       evidence: flags.evidence,
       files: flags.files,
       risks: flags.risks,
-      next: flags.next
+      next: flags.next,
+      feature: flags.feature,
+      phase: flags.phase
     }),
   "write-validation-plan": ({ repoPath, flags, positionals }) =>
     writeArtifact(repoPath, "validation-plan", {
@@ -456,7 +505,9 @@ const COMMANDS = {
       scope: flags.scope,
       outOfScope: flags.outOfScope,
       evidence: flags.evidence,
-      next: flags.next
+      next: flags.next,
+      feature: flags.feature,
+      phase: flags.phase
     }),
   "write-validation-result": ({ repoPath, flags, positionals }) =>
     writeArtifact(repoPath, "validation-result", {
@@ -469,7 +520,9 @@ const COMMANDS = {
       evidence: flags.evidence,
       files: flags.files,
       risks: flags.risks,
-      next: flags.next
+      next: flags.next,
+      feature: flags.feature,
+      phase: flags.phase
     }),
   "write-deployment-check": ({ repoPath, flags, positionals }) =>
     writeArtifact(repoPath, "deployment-check", {
@@ -485,7 +538,9 @@ const COMMANDS = {
       evidence: flags.evidence,
       files: flags.files,
       risks: flags.risks,
-      next: flags.next
+      next: flags.next,
+      feature: flags.feature,
+      phase: flags.phase
     }),
   "write-final-synthesis": async ({ repoPath, flags, positionals }) => {
     const synthesis = await writeArtifact(repoPath, "final-synthesis", {
@@ -497,18 +552,26 @@ const COMMANDS = {
       evidence: flags.evidence,
       risks: flags.risks,
       next: flags.next,
-      force: flags.force
+      force: flags.force,
+      feature: flags.feature,
+      phase: flags.phase
     });
     const costArtifact = await maybeEmitCostReport(repoPath, {
-      runTitle: flags.title || positionals.join(" ") || null
+      runTitle: flags.title || positionals.join(" ") || null,
+      feature: flags.feature,
+      phase: flags.phase
     });
     return costArtifact ? { ...synthesis, costReport: costArtifact } : synthesis;
   },
 
-  "cost-advise": async ({ repoPath }) => {
+  "cost-advise": async ({ repoPath, flags }) => {
     const advisor = await buildCostAdvisor(repoPath, { limit: 10 });
     const md = renderCostAdvisorMarkdown(advisor);
-    const writePath = await writeCostAdviseArtifact(repoPath, md, advisor);
+    const writePath = await writeCostAdviseArtifact(repoPath, md, advisor, {
+      title: flags.title,
+      feature: flags.feature,
+      phase: flags.phase
+    });
     return {
       target: advisor.target?.sliceId || advisor.target?.runTitle || null,
       recommendations: advisor.recommendations,
@@ -539,7 +602,9 @@ const COMMANDS = {
       runTitle,
       cost,
       outcome,
-      notes: flags.summary || null
+      notes: flags.summary || null,
+      feature: flags.feature,
+      phase: flags.phase
     });
     artifact.cost = cost;
     artifact.outcome = outcome;

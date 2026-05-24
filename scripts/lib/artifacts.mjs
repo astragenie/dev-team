@@ -15,6 +15,25 @@ function timestampSlug() {
     .replace(/\.\d{3}Z$/, "Z");
 }
 
+// Emit an optional YAML frontmatter block when feature / phase is set.
+// Returns an empty string when neither is present so existing artifacts
+// stay byte-for-byte identical to the pre-frontmatter shape. Consumed by
+// SIMPLE_RENDERERS via writeArtifact; cost-report folds these keys into
+// its own frontmatter inline (see renderCostReportFrontmatter).
+function renderOptionalFrontmatter(fields) {
+  const lines = [];
+  if (fields.feature) {
+    lines.push(`feature: ${fields.feature}`);
+  }
+  if (fields.phase !== null && fields.phase !== undefined && String(fields.phase).length > 0) {
+    lines.push(`phase: ${JSON.stringify(String(fields.phase))}`);
+  }
+  if (lines.length === 0) {
+    return "";
+  }
+  return ["---", ...lines, "---", ""].join("\n");
+}
+
 function slugify(value) {
   return (
     (value || "artifact")
@@ -199,8 +218,11 @@ function renderCostReportFrontmatter(fields, breakdown, outcome, totalTokens, ca
   // [predicate, line]. Truthy predicate emits the line. Defers evaluation of
   // the line string until we know it's emitted; keeps complexity flat instead
   // of nesting if-pushes.
+  const phaseStr = fields.phase != null ? String(fields.phase) : "";
   const optional = [
     [outcome?.sliceId, () => `slice: ${outcome.sliceId}`],
+    [fields.feature, () => `feature: ${fields.feature}`],
+    [phaseStr.length > 0, () => `phase: ${JSON.stringify(phaseStr)}`],
     [true, () => `run_title: ${JSON.stringify(fields.runTitle || "")}`],
     [breakdown?.usd != null, () => `usd: ${breakdown.usd}`],
     [durationMs, () => `duration_ms: ${durationMs}`],
@@ -463,7 +485,12 @@ export async function writeArtifact(repoPath, kind, fields = {}) {
   const title = fields.title || fields.summary || kind;
   const fileName = `${timestampSlug()}-${config.prefix}-${slugify(title)}.md`;
   const artifactPath = path.join(artifactDir, fileName);
-  const contents = `${config.render(fields)}\n`;
+  // cost-report owns its own frontmatter (feature/phase folded inline by
+  // renderCostReportFrontmatter). Every other artifact kind gets an optional
+  // YAML frontmatter block from renderOptionalFrontmatter when feature or
+  // phase is set; otherwise the body is unchanged.
+  const fm = kind === "cost-report" ? "" : renderOptionalFrontmatter(fields);
+  const contents = `${fm}${config.render(fields)}\n`;
 
   await fs.writeFile(artifactPath, contents);
   const artifact = {

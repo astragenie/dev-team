@@ -3,6 +3,47 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.3.3 — 2026-05-24 — `--feature` / `--phase` + cost-advise `--title`
+
+### CLI flags
+
+- New `--feature` and `--phase` flags on every artifact-writer command
+  (`write-run-brief`, `write-handoff`, `write-review-result`,
+  `write-validation-plan`, `write-validation-result`,
+  `write-deployment-check`, `write-final-synthesis`, `cost-slice`,
+  `cost-advise`). When set, both values are embedded in the YAML
+  frontmatter of the resulting artifact, so downstream tools
+  (LoopObserver, dashboards) can filter / group without parsing the
+  body.
+- New `--title` flag on `cost-advise`. Overrides the slug source for
+  the cost-advise filename. Lets callers pass `PHASE3 FEAT021 SLICE36`
+  so the filename matches the rest of the artifact surface
+  (`<TS>-cost-advise-phase3-feat021-slice36.md`).
+
+### Frontmatter
+
+- Simple-renderer artifact kinds (`run-brief`, `handoff`,
+  `review-result`, `validation-plan`, `validation-result`,
+  `deployment-check`, `final-synthesis`) gain an optional YAML
+  frontmatter block when `--feature` or `--phase` is set. Block is
+  `---\nfeature: ...\nphase: "..."\n---`. When neither is set, body is
+  byte-identical to v0.3.2 (backward compatible).
+- `cost-report` and `cost-advise` already had structured frontmatter;
+  `feature:` and `phase:` keys are folded in inline.
+
+### Tests
+
+- 4 new cases in `tests/cli.test.mjs` cover `--feature` / `--phase`
+  frontmatter emission, backward-compat (no frontmatter without flags),
+  `cost-advise --title` slug, `cost-slice` frontmatter keys.
+
+### Internal
+
+- `writeCostAdviseArtifact` refactored into `buildCostAdviseSlug` +
+  `buildOptionalFrontmatter` helpers; cost-advise emit inside
+  `maybeEmitCostReport` extracted into `emitCostAdvise`. Eslint
+  complexity warnings resolved.
+
 ## v0.3.2 — 2026-05-24 — Skills library + routing + cost discipline + linter
 
 ### Skills
