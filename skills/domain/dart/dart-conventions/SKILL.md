@@ -4,7 +4,7 @@ tier: domain
 stack: dart
 description: Dart 3 conventions — null safety, sealed classes, pattern matching, Result types, lints. Use when touching *.dart files outside Flutter UI.
 owner: sergeymilashico
-last_reviewed: 2026-05-22
+last_reviewed: 2026-05-24
 triggers: ["*.dart", "pubspec.yaml", "pubspec.lock", "dart"]
 ---
 
@@ -78,6 +78,35 @@ String describe(OrderStatus s) => switch (s) {
   Cancelled(:final reason) => 'Cancelled: $reason',
 };
 ```
+
+## Records (Dart 3)
+
+Use records for ad-hoc multi-value returns instead of inline tuples or new classes:
+
+```dart
+(double, double) splitPrice(double total) => (total * 0.9, total * 0.1);
+final (net, tax) = splitPrice(100);
+
+// Named records for clarity at usage site:
+({String url, int statusCode}) fetchHead(Uri u) => ...;
+```
+
+Records pair with pattern matching for clean destructuring. Reach for `sealed class` when you need discriminated variants; reach for records when you need tuple-shaped data only.
+
+## Extension methods
+
+Add behavior to third-party or built-in types without subclassing:
+
+```dart
+extension StringValidation on String {
+  bool get isValidEmail => RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(this);
+}
+
+// Usage:
+if (input.isValidEmail) { ... }
+```
+
+Keep extensions in `lib/<area>/extensions.dart` per concern. Do not extend `Object` or `dynamic`.
 
 ## Naming
 

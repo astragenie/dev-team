@@ -4,7 +4,7 @@ tier: domain
 stack: flutter
 description: Flutter conventions — widget patterns, state management, navigation, performance, approved packages. Use when touching Flutter UI code.
 owner: sergeymilashico
-last_reviewed: 2026-05-22
+last_reviewed: 2026-05-24
 triggers: ["*.dart", "pubspec.yaml", "flutter", "Widget", "BuildContext", "StatelessWidget", "StatefulWidget"]
 ---
 
@@ -99,6 +99,20 @@ Future<void> onTap() async {
 | `integration_test` | End-to-end on device |
 
 **Banned:** `provider` for new screens (use Riverpod), `get` / `GetX` (implicit global state), `flutter_hooks` mixed with Riverpod (pick one mental model).
+
+## Error display
+
+- Transient failures → `ScaffoldMessenger.showSnackBar` with action to retry.
+- Blocking failures → `AlertDialog` with single primary action; never two destructive options.
+- Render failures → `ErrorWidget.builder` override at app root to swap red error screen for a release-mode-safe placeholder.
+- Never `print` an exception in release. Use `FlutterError.onError` + logger.
+
+## Internationalization
+
+- `flutter_localizations` + `intl` from day one even if shipping single-locale. Switch-cost compounds.
+- ARB files (`lib/l10n/app_en.arb`) + `flutter gen-l10n` codegen.
+- No hardcoded user-facing strings in widgets — `AppLocalizations.of(context)!.<key>`.
+- Plural / gender / date formatting via `Intl.plural` + `DateFormat`, never string concatenation.
 
 ## Testing
 

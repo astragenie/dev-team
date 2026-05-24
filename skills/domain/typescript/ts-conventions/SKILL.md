@@ -4,13 +4,13 @@ tier: domain
 stack: typescript
 description: TypeScript strict-mode conventions — types, Result<T,E>, branded IDs, Zod validation, React patterns, approved libraries. Use when touching *.ts or *.tsx files.
 owner: sergeymilashico
-last_reviewed: 2026-05-22
+last_reviewed: 2026-05-24
 triggers: ["*.ts", "*.tsx", "tsconfig.json", "typescript", "react"]
 ---
 
 # TypeScript Conventions
 
-Source: `Astragenie.Standards/docs/typescript/coding-conventions.md`
+Standalone — no upstream Standards doc yet. Candidate for `Astragenie.Standards/docs/typescript/` follow-on.
 
 ## When to Use
 
@@ -91,6 +91,20 @@ Inside the app, work with the typed value — do not re-validate.
 **Approved:** `react` + `react-dom` (18), `react-router-dom` (6), `vite` (5), `vitest` (1+), `@testing-library/react` (14+), `zod` (3), `@tanstack/react-query` (5), `zustand` (4), `react-hook-form` (7), `clsx` (2), `date-fns` (3), `@radix-ui/*` (1).
 
 **Banned:** `moment`, `lodash` (full import), `redux` / `react-redux` (new code), `styled-components` / `@emotion/*`, `enzyme`, `formik`, `mobx`.
+
+## Imports
+
+- Type-only imports use `import type` (compiler enforces under `verbatimModuleSyntax: true`).
+- No `import * as X` unless library has no named exports.
+- No deep node_modules paths unless `package.json` `exports` allows it.
+
+## Testing
+
+- `vitest` + `@testing-library/react`. No Jest in new code.
+- Co-locate `*.test.ts` / `*.test.tsx` next to the unit under test.
+- One behavior per `test()` — no bundled unrelated assertions.
+- Mock at module boundary (`vi.mock`), not at function call sites.
+- `screen.findBy*` over `getBy*` for anything that appears async.
 
 ## Async rules
 
