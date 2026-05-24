@@ -9,6 +9,7 @@ autonomous_safe: false
 cross_repo: hero-crew-autonomous-loop
 parent_spec: null
 related: [FEAT-023]
+hero_crew_companion: "validate-slices.mjs (6840023) scans pending/ for AC placeholders — hero-crew-side done"
 ---
 
 # FEAT-024 — Loop-side enforcement (cross-repo coordination)

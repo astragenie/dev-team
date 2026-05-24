@@ -1,13 +1,14 @@
 ---
 id: FEAT-022
-status: pending
+status: done
 priority: P3
 category: workflow
-target_release: null
+target_release: 0.3.5
 created: 2026-05-24
 updated: 2026-05-24
 depends_on: [FEAT-018]
 slices: []
+resolution: "D2+D3 shipped (bf5eb55), D4 shipped (ead5401), D1 dropped per operator decision"
 derived_from: null
 autonomous_safe: true
 phase: 2

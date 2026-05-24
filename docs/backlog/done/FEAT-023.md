@@ -2,7 +2,7 @@
 id: FEAT-023
 title: Hard-gate test_adequacy in write-review-result + TDD enforcement
 priority: P1
-status: pending
+status: done
 category: quality-gate
 target_release: 0.3.4
 autonomous_safe: true

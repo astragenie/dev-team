@@ -59,11 +59,12 @@ and every PR. All steps are blocking; lint must stay zero-warning.
 1. `npm ci`
 2. `node ./scripts/validate-manifests.mjs`
 3. `node ./scripts/validate-skills.mjs`
-4. `npm run lint`
-5. `npm run format:check`
-6. `npm run typecheck`
-7. `node --test`
-8. `node ./scripts/e2e-smoke.mjs`
+4. `node ./scripts/validate-slices.mjs`
+5. `npm run lint`
+6. `npm run format:check`
+7. `npm run typecheck`
+8. `node --test`
+9. `node ./scripts/e2e-smoke.mjs`
 
 The local validators are **hard** CI gates. During reviewer-phase work, the
 `plugin-dev:plugin-validator` and `plugin-dev:skill-reviewer` skills are
