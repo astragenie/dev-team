@@ -9,6 +9,10 @@ triggers: ["handoff", "delegate", "ownership change", "write-handoff"]
 
 # Writing Task Handoffs
 
+## Trigger
+
+Use whenever work passes between lead, builder, reviewer, researcher, or the user — completion, mid-flight pause, blocker, or context-budget end. Always required for substantial work before returning to the lead.
+
 ## Overview
 
 Use this skill whenever work passes between lead, builder, reviewer, researcher, or the user.
@@ -56,3 +60,11 @@ When persisting a handoff, prefer:
 Preferred command:
 
 - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-handoff --repo "$PWD" --title "<short title>" ...`
+
+## Done
+
+The handoff is complete when:
+
+- the artifact has been persisted via `write-handoff` (path returned)
+- objective, owner, scope, deliverable, evidence, confidence, risks, and next step are all populated (no `-` placeholders for fields the situation actually has)
+- the agent's inline reply is just the artifact path + a 1-3 sentence headline

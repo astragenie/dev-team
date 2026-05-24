@@ -9,6 +9,10 @@ triggers: ["review", "PR", "mark-badge review_required", "approval"]
 
 # Review Gates
 
+## Trigger
+
+Use before declaring any code-bearing or substantial non-code deliverable done. Also use when a lead is deciding whether to skip review and needs to record that decision explicitly.
+
 ## Overview
 
 The user trusts the "done" signal to mean work has been independently checked. Skipping from "deliverable produced" to "done" without review means the user inherits unchecked risk.
@@ -77,3 +81,12 @@ When review materially completes, persist it with:
 ## Escalation Rule
 
 If the reviewer finds scope drift or a missing spec boundary, send the task back to the lead rather than silently repairing the assignment.
+
+## Done
+
+Review is complete when:
+
+- a decision (`approved` / `approved_with_notes` / `rejected`) has been chosen and recorded
+- a `review-result` artifact has been persisted via `write-review-result`
+- gates run, repo standards checked, configured review skills consulted, and evidence checked are all named in the artifact
+- for code-bearing diffs, `--test-summary` (or `--test-summary-skip-reason` / `--non-code`) was populated per FEAT-023

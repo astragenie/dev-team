@@ -9,6 +9,10 @@ triggers: ["crew:build", "crew:fix", "crew:review", "crew:ship", "new task"]
 
 # Using Crew
 
+## Trigger
+
+Use at the start of any substantial software work — building a feature, fixing a bug, reviewing changes, shipping a release. Also use when the user explicitly invokes `/crew:build`, `/crew:fix`, `/crew:review`, `/crew:ship`, or `/crew:brief-me`.
+
 ## Overview
 
 Use this skill when the user wants help building, debugging, reviewing, or coordinating real code work.
@@ -89,3 +93,12 @@ These situations create merge conflicts, wasted effort, or confused ownership th
 - the task boundary becomes fuzzy
 - the work needs a broader refactor than assigned
 - a teammate cannot explain ownership clearly
+
+## Done
+
+The framing phase is complete and the lead can proceed when:
+
+- `pwd` and `wake-up`'s `repoPath` match
+- mode (`single-session` / `assisted single-session` / `team run`), pace, and scope have been stated
+- a run-brief artifact has been written for substantial work
+- the matching `/crew:*` command's workflow steps are loaded and ready to execute
