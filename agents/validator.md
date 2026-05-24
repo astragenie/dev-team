@@ -56,7 +56,21 @@ And must include:
 
 Write your full completion report by calling:
 
-`node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-handoff --repo "$PWD" --title <short> --from <role> --to lead --summary <one-sentence headline> --evidence <comma list>`
+```
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-handoff \
+  --repo "$PWD" \
+  --title "<short title>" \
+  --from <role> --to lead \
+  --summary "<one-sentence headline>" \
+  --scope "<what was in scope>" \
+  --deliverable "<what shipped>" \
+  --files "<comma-separated changed files>" \
+  --confidence "<high|medium|low>" \
+  --risks "<residual risks or 'none'>" \
+  --next "<suggested next handoff or 'none'>"
+```
+
+Every flag maps to a section in the artifact. Omitting a flag leaves that section empty — fill them all.
 
 via the Bash tool. The CLI persists the artifact under `.claude/artifacts/crew/handoffs/`. Return to the lead ONLY the resulting path + 1–3 sentence headline. Do NOT inline the full report body — that re-inflates lead context and triggers compactions.
 

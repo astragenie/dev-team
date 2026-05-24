@@ -40,7 +40,7 @@ Review should be treated as a phase, not a courtesy:
 
 When review materially completes, write the review artifact:
 
-- `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-review-result --repo "$PWD" --title "<short title>" ...`
+- `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-review-result --repo "$PWD" --title "<short title>" --decision <PASS|FAIL> --summary "<verdict>" --evidence "<files checked>" --files "<files in diff>" --test-summary "<test coverage>" --risks "<risks or none>" --next "<follow-up or none>"`
 
 If review is intentionally skipped, record that explicitly in workflow state:
 
