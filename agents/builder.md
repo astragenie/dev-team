@@ -79,7 +79,7 @@ via the Bash tool. The CLI persists the artifact under `.claude/artifacts/crew/h
 
 ## Handoff before stop
 
-Completion, pause, blocker, context-budget end — **all** require writing a handoff via `write-handoff` BEFORE returning to the lead. Inline-only return (path + headline without a written artifact) is a contract violation. If the harness pauses you mid-task and you cannot complete, write a `--confidence low` handoff with `--risks "<what is still in progress>"` and return its path. The lead reads the handoff, not your inline reply. Two recent runs paused mid-task without writing a handoff — that drops scope state and forces the lead to reconstruct progress from `git status`.
+Completion, pause, blocker, context-budget end — **all** require writing a handoff via `write-handoff` BEFORE returning to the lead. Inline-only return (path + headline without a written artifact) is a contract violation. If the harness pauses you mid-task and you cannot complete, write a `--confidence low` handoff with `--risks "<what is still in progress>"` and return its path. The lead reads the handoff, not your inline reply.
 
 ## Shell pre-check
 
