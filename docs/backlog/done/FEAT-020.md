@@ -1,18 +1,19 @@
 ---
 id: FEAT-020
-status: pending
+status: done
 priority: P2
 category: workflow
 target_release: v0.4.0
 created: 2026-05-23
-updated: 2026-05-23
+updated: 2026-05-24
 depends_on: []
-slices: []
+slices: [SLICE-04]
 derived_from: null
 autonomous_safe: true
 phase: 2
+started_at: 2026-05-24
+completed_at: 2026-05-24
 ---
-
 # FEAT-020: Multi-slice support in loop:slice-complete
 
 ## Description
