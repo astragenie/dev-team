@@ -18,6 +18,7 @@
     "typecheck": "tsc --noEmit",
     "validate:skills": "node ./scripts/validate-skills.mjs",
     "validate:routing-table": "node ./scripts/validate-routing-table.mjs",
+    "validate:slices": "node ./scripts/validate-slices.mjs",
     "format": "prettier --write \"scripts/**/*.mjs\" \"tests/**/*.mjs\"",
     "format:check": "prettier --check \"scripts/**/*.mjs\" \"tests/**/*.mjs\"",
     "installer:install-global": "node ./scripts/crew.mjs install-global",
