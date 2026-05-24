@@ -485,6 +485,57 @@ function resolveArtifactConfig(kind) {
   return config;
 }
 
+async function buildRepoLayoutBlock(repoPath) {
+  async function safeReaddir(relDir, opts = {}) {
+    try {
+      return await fs.readdir(path.join(repoPath, relDir), opts);
+    } catch {
+      return [];
+    }
+  }
+
+  const scripts =
+    (await safeReaddir("scripts")).filter((e) => e.endsWith(".mjs")).join(", ") || "(not found)";
+
+  const agents =
+    (await safeReaddir("agents")).filter((e) => e.endsWith(".md")).join(", ") || "(not found)";
+
+  let skillDirs = "(not found)";
+  try {
+    const skillEntries = await fs.readdir(path.join(repoPath, "skills"), { withFileTypes: true });
+    const joined = skillEntries
+      .filter((e) => e.isDirectory())
+      .map((e) => `${e.name}/`)
+      .join(", ");
+    if (joined) skillDirs = joined;
+  } catch {
+    // skills/ absent or unreadable
+  }
+  const skills = skillDirs;
+
+  const tests =
+    (await safeReaddir("tests")).filter((e) => e.endsWith(".mjs")).join(", ") || "(not found)";
+
+  let npmScripts = "(not found)";
+  try {
+    const pkg = JSON.parse(await fs.readFile(path.join(repoPath, "package.json"), "utf8"));
+    npmScripts = Object.keys(pkg.scripts || {}).join(", ");
+  } catch {
+    // package.json absent or unreadable
+  }
+
+  return [
+    "",
+    "## Repo Layout (auto-discovered at handoff write time)",
+    `scripts/: ${scripts}`,
+    `agents/: ${agents}`,
+    `skills/: ${skills}`,
+    `tests/: ${tests}`,
+    `npm scripts: ${npmScripts}`,
+    ""
+  ].join("\n");
+}
+
 export async function writeArtifact(repoPath, kind, fields = {}) {
   const config = resolveArtifactConfig(kind);
   const artifactDir = path.join(repoPath, ...ARTIFACT_ROOT, config.directory);
@@ -498,7 +549,11 @@ export async function writeArtifact(repoPath, kind, fields = {}) {
   // YAML frontmatter block from renderOptionalFrontmatter when feature or
   // phase is set; otherwise the body is unchanged.
   const fm = kind === "cost-report" ? "" : renderOptionalFrontmatter(fields);
-  const contents = `${fm}${config.render(fields)}\n`;
+  let body = config.render(fields);
+  if (kind === "handoff" && fields.repoContext) {
+    body += await buildRepoLayoutBlock(repoPath);
+  }
+  const contents = `${fm}${body}\n`;
 
   await fs.writeFile(artifactPath, contents);
   const artifact = {

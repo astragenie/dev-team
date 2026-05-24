@@ -1274,3 +1274,46 @@ test("cost-slice embeds --feature and --phase in cost-report frontmatter", async
   assert.match(body, /\nfeature: FEAT-100\n/);
   assert.match(body, /\nphase: "beta"\n/);
 });
+
+test("write-handoff --repo-context appends ## Repo Layout section", async () => {
+  const repoPath = await makeTempDir("crew-repo-context-");
+  await execFile("node", [cliPath, "init", "--repo", repoPath]);
+  const { stdout } = await execFile("node", [
+    cliPath,
+    "write-handoff",
+    "--repo",
+    repoPath,
+    "--title",
+    "Test handoff",
+    "--from",
+    "builder",
+    "--to",
+    "lead",
+    "--repo-context"
+  ]);
+  const result = JSON.parse(stdout);
+  assert.ok(result.path, "should return artifact path");
+  const content = await fs.readFile(result.path, "utf8");
+  assert.match(content, /## Repo Layout/);
+  assert.match(content, /npm scripts:/);
+});
+
+test("write-handoff without --repo-context has no ## Repo Layout section", async () => {
+  const repoPath = await makeTempDir("crew-no-repo-context-");
+  await execFile("node", [cliPath, "init", "--repo", repoPath]);
+  const { stdout } = await execFile("node", [
+    cliPath,
+    "write-handoff",
+    "--repo",
+    repoPath,
+    "--title",
+    "Test handoff plain",
+    "--from",
+    "builder",
+    "--to",
+    "lead"
+  ]);
+  const result = JSON.parse(stdout);
+  const content = await fs.readFile(result.path, "utf8");
+  assert.ok(!content.includes("## Repo Layout"), "should not contain Repo Layout without flag");
+});

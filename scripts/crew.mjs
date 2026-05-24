@@ -33,6 +33,7 @@ const FLAG_SPEC = {
   "--aggregate-all": { key: "aggregateAll", boolean: true },
   "--no-self": { key: "noSelf", boolean: true },
   "--non-code": { key: "nonCode", boolean: true },
+  "--repo-context": { key: "repoContext", boolean: true },
   // Value-consuming flags.
   "--alerts": { key: "alerts" },
   "--approver": { key: "approver" },
@@ -162,6 +163,7 @@ function parseArgs(argv) {
     blockedBy: null,
     feature: null,
     nonCode: false,
+    repoContext: false,
     phase: null,
     testSummary: null,
     testSummarySkipReason: null
@@ -485,7 +487,8 @@ const COMMANDS = {
       risks: flags.risks,
       next: flags.next,
       feature: flags.feature,
-      phase: flags.phase
+      phase: flags.phase,
+      repoContext: flags.repoContext
     }),
   "write-review-result": ({ repoPath, flags, positionals }) => {
     const decision = flags.decision;

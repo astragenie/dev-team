@@ -77,3 +77,7 @@ Before any chained Bash with `cd` / path-touching commands, verify with `pwd` (P
 ## No re-Read after Edit/Write
 
 After a successful Edit / Write, do not Read the same file to verify. The tool would have errored on failure. Re-Read only if you need new context the edit revealed.
+
+## Repo layout on start
+
+When resuming from a handoff, check for a `## Repo Layout` section in the handoff artifact before running `ls`, `find`, or `cat package.json`. If the section is present, it contains a pre-discovered layout — use it directly. This saves 3–5 tool turns per run.
