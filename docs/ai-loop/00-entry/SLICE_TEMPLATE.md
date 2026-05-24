@@ -26,11 +26,15 @@ What unblocks this slice. What this slice unblocks for future slices.
 ## Acceptance criteria
 
 List each criterion the slice must meet. Each must be testable with evidence
-per `01-loop-control/EVIDENCE_RULES.md`.
+per `01-loop-control/EVIDENCE_RULES.md`. Replace every `...` with concrete,
+verifiable language before the slice opens — placeholder bullets fail the
+slice-start linter.
 
-- [ ] AC-1: ...
-- [ ] AC-2: ...
-- [ ] AC-3: ...
+- [ ] AC-1: <concrete, verifiable outcome>
+- [ ] AC-2: <concrete, verifiable outcome>
+- [ ] AC-N: tests cover all new public behavior (controllers, services,
+      schema migrations, badges) — name the test file(s) and the scenarios
+      they assert.
 
 ## Done When
 
@@ -39,10 +43,11 @@ The slice is complete only when:
 - all acceptance criteria above are PASS with evidence
 - build passes per `.claude/loop.json` `stack.build`
 - tests pass per `.claude/loop.json` `stack.test`
-- Crew `review-result` artifact written
+- Crew `review-result` artifact written with `Test Adequacy` field populated
+  (or explicit `Test Adequacy Skip Reason` / `Non-Code Review`)
 - Crew `final-synthesis` artifact written
 - entry appended to `../backlog/completed-slices.md`
-- this slice file moved from `slices/pending/` to `slices/active/` then to
+- this slice file moved from `slices/pending/` → `slices/active/` →
   `slices/completed/` as it progresses
 
 ## Reviewer ladder

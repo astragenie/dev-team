@@ -34,6 +34,7 @@ Anything ambiguous, blocked, or spanning multiple tiers routes to **lead** for r
 | **Authoring or refactoring Terraform modules / Stacks** (module design, shared modules, Terraform Stacks composition) | builder + reviewer via **`terraform-module-generation:refactor-module`** + **`terraform-module-generation:terraform-stacks`** | HashiCorp official skills for module shape + Stacks composition. Pairs with the HCL row above when the change touches both module structure and resource code. |
 | **Importing existing infrastructure into Terraform** (state import, brownfield onboarding, `terraform import` workflows) | builder via **`terraform-code-generation:terraform-search-import`** | Dedicated workflow for finding existing cloud resources and importing them into state. |
 | **Terraform operational issue** (state drift, multi-env config drift, container `Restarting` after `apply`, TLS/ACME failure, fresh-instance bootstrap) | researcher + builder via **`crew:terraform-ops-traps`** ops-traps body + `references/{provisioner-traps,multi-env-isolation,zero-to-deploy}.md` | Operator-incident patterns with copy-paste fixes. Load `references/*.md` on demand for full HCL examples — the main skill body stays ≤200 lines. |
+| **TDD / test-adequacy enforcement on review** | `agents/reviewer.md` TDD gate + `scripts/crew.mjs` hard-gate in `write-review-result` | reviewer must populate `--test-summary` for approved code-bearing diffs; CLI exits non-zero otherwise. |
 
 ---
 

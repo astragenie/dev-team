@@ -3,6 +3,33 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.3.4 — 2026-05-24 — Hard-gate `test_adequacy` in `write-review-result` (FEAT-023)
+
+### Why
+
+A downstream `loop` customer reported four compounding quality failures: TDD prose-only enforcement, slice files shipping with literal `AC-N: ...` placeholders, review artifacts rendering `Test Adequacy: -` on every run (the field was in the renderer but no CLI flag set it), and marathon-mode auto-closing on "build + review passed" without inspecting test-adequacy signal. This release closes the hero-crew half of that report. The loop half is tracked under FEAT-024.
+
+### CLI gate
+
+- `write-review-result` gains `--test-summary`, `--test-summary-skip-reason`, and `--non-code` flags. When `--decision=approved` or `--decision=approved_with_notes`, the CLI exits 2 with a clear stderr message if none of the three flags are set. `--decision=rejected` bypasses the gate (rejection itself is the signal).
+- Renderer adds `Test Adequacy Skip Reason` and `Non-Code Review: yes` lines when the matching flag is set. The pre-existing `Test Adequacy: -` rendering for absent `--test-summary` is preserved for backward compatibility, but the gate makes it impossible on approved code-bearing reviews.
+
+### Agent + template
+
+- `agents/reviewer.md` FEAT-011 TDD gate gains a "Test Adequacy field — populate or refuse" section documenting the new CLI contract.
+- `docs/ai-loop/00-entry/SLICE_TEMPLATE.md` Acceptance Criteria + Done When rewritten: placeholders now state "Replace every `...` with concrete, verifiable language before the slice opens — placeholder bullets fail the slice-start linter." New default test-coverage AC bullet. Done When requires populated `Test Adequacy` (or explicit skip / non-code) in the review artifact.
+- `docs/routing-table.md` gains a "TDD / test-adequacy enforcement on review" row pointing at the reviewer agent + CLI gate.
+
+### Tests
+
+- 6 new scenarios in `tests/crew-write-review-result.test.mjs` cover: refuse on `approved`, refuse on `approved_with_notes`, `--non-code` exit 0 + `Non-Code Review: yes` rendered, `--test-summary` exit 0 + field rendered, `--test-summary-skip-reason` exit 0 + reason rendered, `rejected` bypass.
+- Pre-existing `tests/cli.test.mjs` updated to pass `--non-code` where it previously wrote an approved code-bearing artifact without test flags. Assertions were not weakened.
+
+### Backlog
+
+- `docs/backlog/pending/FEAT-023.md` (this release) and `FEAT-024.md` (cross-repo loop coordination ticket for AC placeholder linter, slice template test AC, ladder + marathon test-adequacy gates) added.
+- FEAT-024 introduces a new `cross_repo` frontmatter key. Schema documentation for that key is deferred.
+
 ## v0.3.3 — 2026-05-24 — `--feature` / `--phase` + cost-advise `--title`
 
 ### CLI flags

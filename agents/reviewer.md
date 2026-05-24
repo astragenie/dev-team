@@ -96,6 +96,10 @@ Procedure of record for the policy: superpowers
 `test-driven-development` skill (cached under
 `~/.claude/plugins/cache/claude-plugins-official/superpowers/`).
 
+### Test Adequacy field — populate or refuse
+
+When you call `write-review-result`, populate `--test-summary` with a one-sentence description of test coverage status (e.g. "3 controller tests added covering tenant isolation paths; integration test deferred to follow-up"). If no tests were warranted, pass `--test-summary-skip-reason` with the justification, or `--non-code` for doc-only diffs. The CLI rejects approved code-bearing reviews without one of these flags (exit 2). A bare `-` in the Test Adequacy field is no longer possible from this CLI.
+
 ### Plugin- and skill-shape reviewer skills (FEAT-017)
 
 When the diff touches the plugin shape (manifests, `agents/`, `commands/`, `hooks/`, `.mcp.json`) or skills (`skills/**/SKILL.md`), reach for the upstream quality skills that already know the rules. Do not re-derive them by ad-hoc grep.

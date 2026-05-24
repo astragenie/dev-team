@@ -32,6 +32,7 @@ const FLAG_SPEC = {
   "--force": { key: "force", boolean: true },
   "--aggregate-all": { key: "aggregateAll", boolean: true },
   "--no-self": { key: "noSelf", boolean: true },
+  "--non-code": { key: "nonCode", boolean: true },
   // Value-consuming flags.
   "--alerts": { key: "alerts" },
   "--approver": { key: "approver" },
@@ -86,6 +87,8 @@ const FLAG_SPEC = {
   "--status": { key: "status" },
   "--summary": { key: "summary" },
   "--telemetry": { key: "telemetry" },
+  "--test-summary": { key: "testSummary" },
+  "--test-summary-skip-reason": { key: "testSummarySkipReason" },
   "--title": { key: "title" },
   "--to": { key: "to" },
   "--trigger-filename": { key: "triggerFilename" },
@@ -158,7 +161,10 @@ function parseArgs(argv) {
     sourceProject: null,
     blockedBy: null,
     feature: null,
-    phase: null
+    nonCode: false,
+    phase: null,
+    testSummary: null,
+    testSummarySkipReason: null
   };
   const positionals = [];
 
@@ -481,19 +487,33 @@ const COMMANDS = {
       feature: flags.feature,
       phase: flags.phase
     }),
-  "write-review-result": ({ repoPath, flags, positionals }) =>
-    writeArtifact(repoPath, "review-result", {
+  "write-review-result": ({ repoPath, flags, positionals }) => {
+    const decision = flags.decision;
+    const isApproved = decision === "approved" || decision === "approved_with_notes";
+    const isCodeBearing = !flags.nonCode;
+    if (isApproved && isCodeBearing && !flags.testSummary && !flags.testSummarySkipReason) {
+      process.stderr.write(
+        "[crew] write-review-result refused: --test-summary or --test-summary-skip-reason is required for approved code-bearing reviews. " +
+          "Pass --non-code if the diff is doc-only.\n"
+      );
+      process.exit(2);
+    }
+    return writeArtifact(repoPath, "review-result", {
       title: flags.title || positionals.join(" ") || "Review Result",
       reviewer: flags.reviewer || flags.owner || "reviewer",
-      decision: flags.decision,
+      decision,
       summary: flags.summary,
       evidence: flags.evidence,
       files: flags.files,
       risks: flags.risks,
       next: flags.next,
       feature: flags.feature,
-      phase: flags.phase
-    }),
+      phase: flags.phase,
+      testSummary: flags.testSummary,
+      testSummarySkipReason: flags.testSummarySkipReason,
+      nonCode: flags.nonCode
+    });
+  },
   "write-validation-plan": ({ repoPath, flags, positionals }) =>
     writeArtifact(repoPath, "validation-plan", {
       title: flags.title || positionals.join(" ") || "Validation Plan",

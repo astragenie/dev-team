@@ -116,8 +116,8 @@ const SIMPLE_RENDERERS = {
   "review-result": {
     directory: "reviews",
     prefix: "review-result",
-    render: (f) =>
-      [
+    render: (f) => {
+      const lines = [
         `# Review Result: ${f.title || "Untitled"}`,
         "",
         renderField("Created", nowIso()),
@@ -126,11 +126,19 @@ const SIMPLE_RENDERERS = {
         renderField("Summary", f.summary),
         renderListField("Evidence Checked", f.evidence),
         renderListField("Files Reviewed", f.files),
-        renderField("Test Adequacy", f.testSummary),
-        renderField("Risks", f.risks),
-        renderField("Required Follow-up", f.next),
-        ""
-      ].join("\n")
+        renderField("Test Adequacy", f.testSummary)
+      ];
+      if (f.testSummarySkipReason) {
+        lines.push(renderField("Test Adequacy Skip Reason", f.testSummarySkipReason));
+      }
+      if (f.nonCode) {
+        lines.push(renderField("Non-Code Review", "yes"));
+      }
+      lines.push(renderField("Risks", f.risks));
+      lines.push(renderField("Required Follow-up", f.next));
+      lines.push("");
+      return lines.join("\n");
+    }
   },
   "validation-plan": {
     directory: "validations",

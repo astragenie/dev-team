@@ -193,7 +193,8 @@ test("CLI artifact writers create markdown artifacts", async () => {
     "--reviewer",
     "reviewer",
     "--files",
-    "app/templates/create.html"
+    "app/templates/create.html",
+    "--non-code"
   ]);
   const reviewResult = JSON.parse(reviewOutput.stdout);
   const reviewBody = await fs.readFile(reviewResult.path, "utf8");
@@ -208,7 +209,8 @@ test("CLI artifact writers create markdown artifacts", async () => {
     "--title",
     "Platform guidance alias review",
     "--verdict",
-    "approved_with_notes"
+    "approved_with_notes",
+    "--non-code"
   ]);
   const reviewAliasResult = JSON.parse(reviewAliasOutput.stdout);
   const reviewAliasBody = await fs.readFile(reviewAliasResult.path, "utf8");
@@ -683,7 +685,8 @@ test("CLI workflow state tracks gate badges and artifact progress", async () => 
     "--title",
     "Workflow gate review",
     "--decision",
-    "approved"
+    "approved",
+    "--non-code"
   ]);
 
   await execFile("node", [
@@ -1171,7 +1174,8 @@ test("write-* commands embed --feature and --phase in frontmatter", async () => 
     "--title",
     "Bare review",
     "--decision",
-    "approved"
+    "approved",
+    "--non-code"
   ]);
   const reviewPath = JSON.parse(reviewOut.stdout).path;
   const reviewBody = await fs.readFile(reviewPath, "utf8");
@@ -1191,7 +1195,8 @@ test("write-* commands embed --feature and --phase in frontmatter", async () => 
     "--decision",
     "approved",
     "--feature",
-    "FEAT-007"
+    "FEAT-007",
+    "--non-code"
   ]);
   const reviewFeatPath = JSON.parse(reviewFeatOut.stdout).path;
   const reviewFeatBody = await fs.readFile(reviewFeatPath, "utf8");
