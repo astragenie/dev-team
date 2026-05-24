@@ -3,7 +3,7 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
-## Unreleased
+## v0.3.2 — 2026-05-24 — Skills library + routing + cost discipline + linter
 
 ### Skills
 
@@ -25,6 +25,66 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 All three pass `validate-skills.mjs` (tier in enum, ≤200 lines,
 required headings present). Total: 12 skills (was 9).
+
+### Routing (FEAT-019)
+
+- 6 new rows in `docs/routing-table.md` covering Microsoft SDK code,
+  Microsoft tech concepts, builder edits of `agents/` + `skills/`,
+  Terraform HCL (`terraform-code-generation:*` + `crew:terraform-ops-traps`),
+  Terraform modules/Stacks (`terraform-module-generation:*`), Terraform
+  state import. Plus context7 row extension to name reviewer as consumer.
+- `CLAUDE.md` "Skill taxonomy" callout pointing at external-plugin
+  skill wiring.
+- `docs/architecture/architecture.md` "Skill tiers" subsection
+  "External plugin skills as routed dependencies" documenting the
+  routing-by-row pattern + single-point-of-rename design.
+
+### Cost discipline (FEAT-018)
+
+- All 5 agent prompts gain identical "Report contract" section:
+  agents write completion reports via `write-handoff` CLI, return
+  only path + 1-3 sentence headline to lead. Inline returns
+  re-inflate lead context.
+- `agents/builder.md` + `.claude/engineering-os/lead.md` gain shell
+  pre-check rule (pwd / Test-Path before chained cd) + PS-vs-bash
+  cheatsheet.
+- `agents/{builder,reviewer,validator}.md` gain "no re-Read after
+  Edit/Write" rule.
+- `commands/{build,fix}.md` gain "read agent reports from path"
+  reminder.
+- New routing-table row "Subagent completion report".
+
+### Routing-table linter (FEAT-021)
+
+- New `scripts/validate-routing-table.mjs` validates every
+  `<plugin>:<skill>` reference in routing-table resolves against
+  installed plugin cache + local `skills/`/`commands/`/`agents/`.
+- Supports `<!-- routing-lint:ignore -->` opt-out for forward pointers.
+- Env-gated by `CREW_VALIDATE_ROUTING_TABLE=1`; skips silently
+  otherwise so contributors without plugin cache can still run tests.
+- CI gate added as advisory (`continue-on-error: true`); promote to
+  hard-fail when plugin cache is reliably present.
+- `npm run validate:routing-table` script entry.
+- 4 test scenarios via temp-dir fixtures.
+
+### Agents
+
+- `builder` maxTurns bumped 30 → 40.
+- `reviewer` maxTurns bumped 25 → 35.
+- Per operator policy: if pauses recur at these caps, investigate
+  workflow root cause via trigger-gated FEAT-022 (do not bump further).
+
+### Backlog
+
+- FEAT-018, FEAT-019, FEAT-020, FEAT-021 → done.
+- FEAT-022 filed (P3, trigger-gated subagent-pause investigation).
+- FEAT-019 SLICE-B (agent-prompt addendums) deferred — routing layer
+  alone proved sufficient; revisit if missing routing causes problems.
+
+### Marketplace pin
+
+- crew bumped to 0.3.2.
+- loop bumped to 0.3.2 (depends on loop FEAT-020 multi-slice support).
 
 ## v0.3.1 — 2026-05-23 — Marketplace polish + agent model tuning
 
