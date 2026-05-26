@@ -3,6 +3,38 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.3.7 — 2026-05-26 — Global namespace rename: engineering-os → crew
+
+### Installer
+
+- Global memory path renamed from `~/.claude/engineering-os/` to `~/.claude/crew/`, matching the plugin brand and repo-local convention.
+- `installGlobal()` auto-migrates existing `~/.claude/engineering-os/` files and rewrites `CLAUDE.md` `@`-imports on next run.
+- `.claude/engineering-os/lead.md` moved to `.claude/crew/lead.md`.
+
+### Agent prompts
+
+- All 6 agent prompts (`lead`, `builder`, `reviewer`, `validator`, `researcher`, `deployer`) updated: custom instruction paths now reference `~/.claude/crew/<role>.md` and `.claude/crew/<role>.md`.
+- `deployer.md` deployment guidance path corrected to `.claude/crew/deployment.md`.
+
+### Commands
+
+- `install.md`, `audit-repo.md` updated to reference `~/.claude/crew/`.
+- `adopt.md` expanded legacy-path context to include `~/.claude/engineering-os/` globals.
+
+### Docs
+
+- `README.md` — all user-facing path references updated.
+- `docs/architecture/system-design.md` — updated to reflect completed rename.
+
+### Tests
+
+- New test: `installGlobal migrates legacy ~/.claude/engineering-os/ to ~/.claude/crew/`.
+- Existing global-install assertions updated. 73/73 tests pass.
+
+## v0.3.6 — 2026-05-24 — Rich artifact flags for all agents
+
+_(No changelog entry was written for v0.3.6. See commit `00f5f7a` for details.)_
+
 ## v0.3.5 — 2026-05-24 — Agent codification + CI hardening + cost discipline
 
 ### Agent prompts
