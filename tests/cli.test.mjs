@@ -16,7 +16,7 @@ async function makeTempDir(prefix) {
 }
 
 test("CLI init creates a harnessed repo", async () => {
-  const rootPath = await makeTempDir("engineering-os-cli-init-");
+  const rootPath = await makeTempDir("crew-cli-init-");
   const repoPath = path.join(rootPath, "app");
   const { stdout } = await execFile("node", [cliPath, "init", "--repo", repoPath]);
   const result = JSON.parse(stdout);
@@ -31,7 +31,7 @@ test("CLI init creates a harnessed repo", async () => {
 });
 
 test("CLI bootstrap preserves existing CLAUDE.md content", async () => {
-  const repoPath = await makeTempDir("engineering-os-cli-bootstrap-");
+  const repoPath = await makeTempDir("crew-cli-bootstrap-");
   await fs.writeFile(path.join(repoPath, "CLAUDE.md"), "# Existing\n");
 
   const { stdout } = await execFile("node", [cliPath, "bootstrap", "--repo", repoPath]);
@@ -46,7 +46,7 @@ test("CLI bootstrap preserves existing CLAUDE.md content", async () => {
 });
 
 test("CLI claim and release manage repo-local claims", async () => {
-  const repoPath = await makeTempDir("engineering-os-cli-claims-");
+  const repoPath = await makeTempDir("crew-cli-claims-");
   await execFile("node", [cliPath, "init", "--repo", repoPath]);
 
   const claimOutput = await execFile("node", [
@@ -104,7 +104,7 @@ test("CLI claim and release manage repo-local claims", async () => {
 });
 
 test("CLI approval requests can be listed and resolved", async () => {
-  const repoPath = await makeTempDir("engineering-os-cli-approvals-");
+  const repoPath = await makeTempDir("crew-cli-approvals-");
   await execFile("node", [cliPath, "init", "--repo", repoPath]);
 
   const requestOutput = await execFile("node", [
@@ -157,7 +157,7 @@ test("CLI approval requests can be listed and resolved", async () => {
 });
 
 test("CLI artifact writers create markdown artifacts", async () => {
-  const repoPath = await makeTempDir("engineering-os-cli-artifacts-");
+  const repoPath = await makeTempDir("crew-cli-artifacts-");
   await execFile("node", [cliPath, "init", "--repo", repoPath]);
 
   const runBriefOutput = await execFile("node", [
@@ -348,7 +348,7 @@ test("CLI artifact writers create markdown artifacts", async () => {
 });
 
 test("CLI wake-up brief summarizes repo memory and state", async () => {
-  const repoPath = await makeTempDir("engineering-os-cli-wakeup-");
+  const repoPath = await makeTempDir("crew-cli-wakeup-");
   await execFile("node", [cliPath, "init", "--repo", repoPath]);
 
   await execFile("node", [
@@ -507,7 +507,7 @@ test("CLI wake-up brief summarizes repo memory and state", async () => {
 });
 
 test("CLI brief-me synthesizes workflow state, git activity, and next step", async () => {
-  const repoPath = await makeTempDir("engineering-os-cli-brief-me-");
+  const repoPath = await makeTempDir("crew-cli-brief-me-");
   await execFile("node", [cliPath, "init", "--repo", repoPath]);
 
   await execFile("git", ["init", "-b", "main"], { cwd: repoPath });
@@ -599,7 +599,7 @@ test("CLI brief-me synthesizes workflow state, git activity, and next step", asy
 });
 
 test("CLI brief-me is read-only for an uninitialized repo", async () => {
-  const repoPath = await makeTempDir("engineering-os-cli-brief-me-readonly-");
+  const repoPath = await makeTempDir("crew-cli-brief-me-readonly-");
   await fs.writeFile(path.join(repoPath, "README.md"), "# Plain repo\n");
 
   const briefOutput = await execFile("node", [cliPath, "brief-me", "--repo", repoPath]);
@@ -611,7 +611,7 @@ test("CLI brief-me is read-only for an uninitialized repo", async () => {
 });
 
 test("CLI brief-me surfaces failed gates before generic next steps", async () => {
-  const repoPath = await makeTempDir("engineering-os-cli-brief-me-failed-gates-");
+  const repoPath = await makeTempDir("crew-cli-brief-me-failed-gates-");
   await execFile("node", [cliPath, "init", "--repo", repoPath]);
 
   await execFile("node", [
@@ -653,7 +653,7 @@ test("CLI brief-me surfaces failed gates before generic next steps", async () =>
 });
 
 test("CLI workflow state tracks gate badges and artifact progress", async () => {
-  const repoPath = await makeTempDir("engineering-os-cli-workflow-state-");
+  const repoPath = await makeTempDir("crew-cli-workflow-state-");
   await execFile("node", [cliPath, "init", "--repo", repoPath]);
 
   await execFile("node", [
@@ -766,7 +766,7 @@ test("CLI workflow state tracks gate badges and artifact progress", async () => 
 });
 
 test("CLI workflow state and brief-me surface missing artifact write-backs after a completed phase", async () => {
-  const repoPath = await makeTempDir("engineering-os-cli-missing-artifact-writeback-");
+  const repoPath = await makeTempDir("crew-cli-missing-artifact-writeback-");
   await execFile("node", [cliPath, "init", "--repo", repoPath]);
 
   await execFile("node", [
@@ -813,7 +813,7 @@ test("CLI workflow state and brief-me surface missing artifact write-backs after
 });
 
 test("CLI workflow state and brief-me surface missing run briefs after meaningful progress starts", async () => {
-  const repoPath = await makeTempDir("engineering-os-cli-run-brief-gap-");
+  const repoPath = await makeTempDir("crew-cli-run-brief-gap-");
   await execFile("node", [cliPath, "init", "--repo", repoPath]);
 
   await execFile("node", [
@@ -847,7 +847,7 @@ test("CLI workflow state and brief-me surface missing run briefs after meaningfu
 });
 
 test("CLI blocks final synthesis when workflow badges are still pending", async () => {
-  const repoPath = await makeTempDir("engineering-os-cli-gate-enforcement-");
+  const repoPath = await makeTempDir("crew-cli-gate-enforcement-");
   await execFile("node", [cliPath, "init", "--repo", repoPath]);
 
   await execFile("node", [
@@ -914,7 +914,7 @@ test("CLI subcommand help works without error", async () => {
 });
 
 test("CLI install-global writes managed global memory into HOME", async () => {
-  const homePath = await makeTempDir("engineering-os-cli-global-home-");
+  const homePath = await makeTempDir("crew-cli-global-home-");
   const installOutput = await execFile("node", [cliPath, "install-global"], {
     env: { ...process.env, HOME: homePath }
   });
@@ -926,9 +926,9 @@ test("CLI install-global writes managed global memory into HOME", async () => {
   assert.equal(result.global.hasGlobalMemory, true);
   assert.equal(result.global.globalMemoryStale, false);
   assert.deepEqual(result.writes, [
-    "~/.claude/engineering-os/constitution.md",
-    "~/.claude/engineering-os/workflow.md",
-    "~/.claude/engineering-os/metadata.json",
+    "~/.claude/crew/constitution.md",
+    "~/.claude/crew/workflow.md",
+    "~/.claude/crew/metadata.json",
     "~/.claude/CLAUDE.md"
   ]);
 

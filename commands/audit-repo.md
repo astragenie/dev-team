@@ -16,7 +16,7 @@ Workflow:
    - `.claude/settings.json`
    - `.claude/artifacts/crew/`
    - `.claude/state/crew/`
-   - global Crew memory in `~/.claude/engineering-os/`
+   - global Crew memory in `~/.claude/crew/`
 3. If the harness is incomplete, recommend either:
    - `/crew:adopt` for adoption into this repo
    - `/crew:init` for a fresh repo instead

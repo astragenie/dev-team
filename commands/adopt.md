@@ -8,7 +8,7 @@ Prepare the current repository for the Crew workflow.
 
 Before running for the first time on a repo that already has a pre-P3.1 install
 (legacy `.claude/engineering-os/` paths, `<!-- engineering-os:start -->`
-markers, etc.), read `docs/process/adoption-checklist.md` for what gets created,
+markers, or pre-rename `~/.claude/engineering-os/` globals), read `docs/process/adoption-checklist.md` for what gets created,
 migrated, modified, and how to roll back.
 
 For what counts as "substantial" below, see the canonical definition in `constitution.md` (`What "Substantial" Means`).

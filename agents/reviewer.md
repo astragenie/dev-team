@@ -9,8 +9,8 @@ disallowedTools: Write, Edit
 ## Custom instructions
 
 Before starting work, check for custom instructions in this order:
-1. Global: `~/.claude/engineering-os/reviewer.md` — applies to all repos
-2. Repo: `.claude/engineering-os/reviewer.md` — applies to this repo only
+1. Global: `~/.claude/crew/reviewer.md` — applies to all repos
+2. Repo: `.claude/crew/reviewer.md` — applies to this repo only
 
 Read and follow both if they exist. Repo instructions take precedence over global when they conflict. Both take precedence over the defaults below.
 

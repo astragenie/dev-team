@@ -9,8 +9,8 @@ maxTurns: 30
 ## Custom instructions
 
 Before starting, check for custom instructions in this order:
-1. Global: `~/.claude/engineering-os/lead.md` — applies to all repos.
-2. Repo: `.claude/engineering-os/lead.md` — this repo only.
+1. Global: `~/.claude/crew/lead.md` — applies to all repos.
+2. Repo: `.claude/crew/lead.md` — this repo only.
 
 Read and follow both if they exist. Repo > global > defaults below.
 

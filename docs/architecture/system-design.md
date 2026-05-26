@@ -122,10 +122,9 @@ Commands are accelerators, not prerequisites.
 Repo-local storage paths and scripts now use the `crew` namespace
 (`.claude/state/crew/`, `.claude/artifacts/crew/`, `.claude/crew/`); the
 installer migrates legacy `engineering-os` paths on the next `/crew:adopt`.
-The managed global framework memory still lives under `~/.claude/engineering-os/`
-to avoid breaking existing users' global `CLAUDE.md` imports; that rename is
-queued as a separate change. The user-facing product and command namespace is
-`crew` everywhere.
+The managed global framework memory now lives under `~/.claude/crew/`, matching
+the repo-local namespace. The installer migrates legacy `~/.claude/engineering-os/`
+files and updates `CLAUDE.md` imports automatically.
 
 Some workflows are distinct enough that the lead should treat them as workflow variants, not just ordinary `build` or `ship` runs.
 

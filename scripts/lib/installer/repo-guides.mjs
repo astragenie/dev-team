@@ -1,8 +1,7 @@
 // Writes the repo-local framework memory files under .claude/crew/. These are
 // repo-scoped copies of the framework constitution and workflow so the
 // harness is self-contained in the repo (the global copies under
-// ~/.claude/engineering-os/ remain authoritative for users who set them up
-// globally).
+// ~/.claude/crew/ remain authoritative for users who set them up globally).
 
 import path from "node:path";
 

@@ -9,8 +9,8 @@ maxTurns: 40
 ## Custom instructions
 
 Before starting, check for custom instructions in this order:
-1. Global: `~/.claude/engineering-os/builder.md`
-2. Repo: `.claude/engineering-os/builder.md`
+1. Global: `~/.claude/crew/builder.md`
+2. Repo: `.claude/crew/builder.md`
 
 Repo > global > defaults below.
 

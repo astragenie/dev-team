@@ -10,9 +10,9 @@ Use this after installing or updating the plugin when framework memory changes.
 
 This command writes one global managed copy:
 
-- `~/.claude/engineering-os/constitution.md`
-- `~/.claude/engineering-os/workflow.md`
-- `~/.claude/engineering-os/metadata.json`
+- `~/.claude/crew/constitution.md`
+- `~/.claude/crew/workflow.md`
+- `~/.claude/crew/metadata.json`
 
 It also ensures global `~/.claude/CLAUDE.md` imports the constitution and workflow.
 

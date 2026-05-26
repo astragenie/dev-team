@@ -103,9 +103,9 @@ Then add it as a local marketplace in `~/.claude/plugins/known_marketplaces.json
 
 Crew keeps one managed global memory copy for framework-level rules:
 
-- `~/.claude/engineering-os/constitution.md`
-- `~/.claude/engineering-os/workflow.md`
-- `~/.claude/engineering-os/metadata.json`
+- `~/.claude/crew/constitution.md`
+- `~/.claude/crew/workflow.md`
+- `~/.claude/crew/metadata.json`
 
 Project repos should not each get their own copied constitution and workflow. They should keep only repo-specific rules plus repo-local state, artifacts, and hooks.
 
@@ -129,7 +129,7 @@ If a plugin update changes constitution or workflow behavior, rerun `/crew:insta
 
 | Layer | Location | Scope | Who edits |
 |-------|----------|-------|-----------|
-| Constitution + workflow | `~/.claude/engineering-os/` | All repos | Plugin-managed global copy |
+| Constitution + workflow | `~/.claude/crew/` | All repos | Plugin-managed global copy |
 | Global user rules | `~/.claude/CLAUDE.md` | All repos | User |
 | Repo rules | `CLAUDE.md` | This repo | Team |
 
@@ -155,8 +155,8 @@ Agents support two-tier custom instructions, same model as Claude Code settings:
 
 | Level | Path | Scope |
 |-------|------|-------|
-| Global | `~/.claude/engineering-os/<role>.md` | All repos |
-| Repo | `.claude/engineering-os/<role>.md` | This repo only |
+| Global | `~/.claude/crew/<role>.md` | All repos |
+| Repo | `.claude/crew/<role>.md` | This repo only |
 
 Both files are read if they exist. Repo instructions take precedence over global on conflict.
 
@@ -185,27 +185,27 @@ The review model is:
 
 That means you should put your review program in:
 
-- `~/.claude/engineering-os/reviewer.md` for machine-wide defaults
-- `.claude/engineering-os/reviewer.md` for repo-specific review behavior
+- `~/.claude/crew/reviewer.md` for machine-wide defaults
+- `.claude/crew/reviewer.md` for repo-specific review behavior
 
 The reviewer will read those files before review, and the lead should dispatch review using them as the source of truth for extra review standards.
 
 ### Examples
 
-`~/.claude/engineering-os/reviewer.md` (global):
+`~/.claude/crew/reviewer.md` (global):
 ```markdown
 - For Go repos, use our Go review skill and check dependency-injection, context handling, and error wrapping.
 - For Python repos, use our Python review skill and check typing, async boundaries, and test quality.
 - For security-sensitive changes, add a security review gate.
 ```
 
-`.claude/engineering-os/builder.md` (repo-level):
+`.claude/crew/builder.md` (repo-level):
 ```markdown
 - Follow strict typing — no `Any` unless unavoidable
 - All new functions must have tests
 ```
 
-`.claude/engineering-os/reviewer.md` (repo-level):
+`.claude/crew/reviewer.md` (repo-level):
 ```markdown
 - For this repo, always review against our internal API compatibility rules.
 - For Go code, apply the team's configured Go review skill.
@@ -252,15 +252,15 @@ The server is invoked via `npx -y` on first use; no global install required. Cos
 Commit the stable operating layer:
 
 - `CLAUDE.md`
-- `.claude/engineering-os/` (custom agent instructions)
+- `.claude/crew/` (custom agent instructions)
 - `.claude/settings.json` (shared project settings)
 
 Do **not** commit transient coordination state:
 
 ```gitignore
 .claude/logs/
-.claude/artifacts/engineering-os/
-.claude/state/engineering-os/
+.claude/artifacts/crew/
+.claude/state/crew/
 .claude/settings.local.json
 ```
 

@@ -16,8 +16,8 @@ Every agent starts with:
 
 ```
 Before starting work, check for custom instructions in this order:
-1. Global: `~/.claude/engineering-os/<agent>.md`
-2. Repo: `.claude/engineering-os/<agent>.md`
+1. Global: `~/.claude/crew/<agent>.md`
+2. Repo: `.claude/crew/<agent>.md`
 Read and follow both if they exist. Repo instructions take precedence over global when they conflict.
 ```
 
@@ -34,7 +34,7 @@ Read and follow both if they exist. Repo instructions take precedence over globa
 
 **If you can't change the mechanism**, at minimum the instruction should be more forcing:
 
-> *"FIRST ACTION before any other tool call: read `~/.claude/engineering-os/<name>.md` and `.claude/engineering-os/<name>.md` if they exist. Treat the contents as additions to your operating rules. Where they conflict with these defaults, the file instructions win. Where the two files conflict, the repo file wins."*
+> *"FIRST ACTION before any other tool call: read `~/.claude/crew/<name>.md` and `.claude/crew/<name>.md` if they exist. Treat the contents as additions to your operating rules. Where they conflict with these defaults, the file instructions win. Where the two files conflict, the repo file wins."*
 
 The current phrasing ("Read and follow both if they exist") is too soft.
 

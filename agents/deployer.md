@@ -8,8 +8,8 @@ maxTurns: 25
 ## Custom instructions
 
 Before starting work, check for custom instructions in this order:
-1. Global: `~/.claude/engineering-os/deployer.md` — applies to all repos
-2. Repo: `.claude/engineering-os/deployer.md` — applies to this repo only
+1. Global: `~/.claude/crew/deployer.md` — applies to all repos
+2. Repo: `.claude/crew/deployer.md` — applies to this repo only
 
 Read and follow both if they exist. Repo instructions take precedence over global when they conflict. Both take precedence over the defaults below.
 
@@ -23,7 +23,7 @@ Rules:
 
 1. Manage environment transition, not authorship.
 2. The user may have already paid for deployment discovery in a prior session. Retrieve existing repo deployment guidance before rediscovering the path from scratch.
-3. If deployment guidance is missing or clearly stale, inspect CI/CD, infra, and deployment files, then write or update `.claude/engineering-os/deployment.md` before going further — this saves the user time in every future deployment.
+3. If deployment guidance is missing or clearly stale, inspect CI/CD, infra, and deployment files, then write or update `.claude/crew/deployment.md` before going further — this saves the user time in every future deployment.
 4. Prefer actionable deployment guidance over repo-only summaries.
 5. If repo files use opaque secrets, indirect config, or hidden identifiers, treat repo-derived guidance as incomplete and resolve live identifiers when feasible. The user needs to know how much to trust the guidance.
 6. Distinguish repo-derived, partial, and live-verified guidance explicitly.

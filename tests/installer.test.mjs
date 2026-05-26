@@ -180,7 +180,7 @@ test("init creates a new repo harness and audit sees it", async () => {
 });
 
 test("bootstrap installs a soft git gate reminder hook", async () => {
-  const repoPath = await makeTempDir("engineering-os-git-gate-hook-");
+  const repoPath = await makeTempDir("crew-git-gate-hook-");
   await fs.writeFile(path.join(repoPath, "CLAUDE.md"), "# Repo\n");
 
   await bootstrapRepo(repoPath);
@@ -252,7 +252,7 @@ test("bootstrap installs a soft git gate reminder hook", async () => {
 });
 
 test("bootstrap git gate reminder also warns when a completed phase is missing its artifact write-back", async () => {
-  const repoPath = await makeTempDir("engineering-os-git-gate-artifact-gap-");
+  const repoPath = await makeTempDir("crew-git-gate-artifact-gap-");
   await fs.writeFile(path.join(repoPath, "CLAUDE.md"), "# Repo\n");
 
   await bootstrapRepo(repoPath);
@@ -328,29 +328,75 @@ test("init rejects a non-empty existing directory without opt-in", async () => {
   await assert.rejects(() => initRepo(repoPath), /already exists and is not empty/);
 });
 
+test("installGlobal migrates legacy ~/.claude/engineering-os/ to ~/.claude/crew/", async () => {
+  const originalHome = process.env.HOME;
+  const homePath = await makeTempDir("crew-global-migrate-");
+  process.env.HOME = homePath;
+
+  try {
+    const legacyDir = path.join(homePath, ".claude", "engineering-os");
+    await fs.mkdir(legacyDir, { recursive: true });
+    await fs.writeFile(path.join(legacyDir, "constitution.md"), "# Old Constitution\n");
+    await fs.writeFile(path.join(legacyDir, "workflow.md"), "# Old Workflow\n");
+    await fs.writeFile(
+      path.join(legacyDir, "metadata.json"),
+      '{"managedBy":"crew","version":"1.0"}\n'
+    );
+    await fs.mkdir(path.join(homePath, ".claude"), { recursive: true });
+    await fs.writeFile(
+      path.join(homePath, ".claude", "CLAUDE.md"),
+      "@~/.claude/engineering-os/constitution.md\n@~/.claude/engineering-os/workflow.md\n"
+    );
+
+    const result = await installGlobal();
+    assert.equal(result.global.hasGlobalMemory, true);
+    assert.ok(
+      result.writes.some((w) => w.includes("migrated")),
+      "should report migration in writes"
+    );
+
+    const claudeMd = await fs.readFile(path.join(homePath, ".claude", "CLAUDE.md"), "utf8");
+    assert.match(claudeMd, /@~\/\.claude\/crew\/constitution\.md/);
+    assert.match(claudeMd, /@~\/\.claude\/crew\/workflow\.md/);
+    assert.doesNotMatch(claudeMd, /engineering-os/);
+
+    const legacyExists = await fs
+      .access(legacyDir)
+      .then(() => true)
+      .catch(() => false);
+    assert.equal(legacyExists, false, "legacy dir should be removed");
+  } finally {
+    if (originalHome === undefined) {
+      delete process.env.HOME;
+    } else {
+      process.env.HOME = originalHome;
+    }
+  }
+});
+
 test("installGlobal writes one managed global memory copy and is idempotent", async () => {
   const originalHome = process.env.HOME;
-  const homePath = await makeTempDir("engineering-os-global-home-");
+  const homePath = await makeTempDir("crew-global-home-");
   process.env.HOME = homePath;
 
   try {
     const first = await installGlobal();
     assert.equal(first.mode, "install-global");
     assert.deepEqual(first.writes, [
-      "~/.claude/engineering-os/constitution.md",
-      "~/.claude/engineering-os/workflow.md",
-      "~/.claude/engineering-os/metadata.json",
+      "~/.claude/crew/constitution.md",
+      "~/.claude/crew/workflow.md",
+      "~/.claude/crew/metadata.json",
       "~/.claude/CLAUDE.md"
     ]);
     assert.equal(first.global.hasGlobalMemory, true);
     assert.equal(first.global.globalMemoryStale, false);
 
     const claudeMd = await fs.readFile(path.join(homePath, ".claude", "CLAUDE.md"), "utf8");
-    assert.match(claudeMd, /@~\/\.claude\/engineering-os\/constitution\.md/);
-    assert.match(claudeMd, /@~\/\.claude\/engineering-os\/workflow\.md/);
+    assert.match(claudeMd, /@~\/\.claude\/crew\/constitution\.md/);
+    assert.match(claudeMd, /@~\/\.claude\/crew\/workflow\.md/);
 
     const metadata = JSON.parse(
-      await fs.readFile(path.join(homePath, ".claude", "engineering-os", "metadata.json"), "utf8")
+      await fs.readFile(path.join(homePath, ".claude", "crew", "metadata.json"), "utf8")
     );
     assert.equal(metadata.managedBy, "crew");
 
