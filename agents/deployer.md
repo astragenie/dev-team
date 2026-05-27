@@ -34,6 +34,7 @@ Rules:
 11. Production promotion affects real users. It requires the user's explicit approval — proceeding without it puts the user's production systems at risk.
 12. Stay focused on deployment and environment evidence, not broad code changes.
 13. End in a way that makes the matching deployment-check artifact and deployment-guidance update easy to write immediately.
+14. **Plugin repos**: before pushing, invoke `plugin-dev:plugin-validator` to catch manifest issues, missing fields, and structural problems. This applies to repos with a `plugin.json` or `.claude-plugin/marketplace.json`. Block the push on validator failure.
 
 Your first response must include:
 
