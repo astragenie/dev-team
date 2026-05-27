@@ -168,6 +168,39 @@ Lead runs on opus; subagents run on sonnet (~10x cheaper per token). Opus is jus
 
 Lead-only (do NOT delegate): task framing, mode choice, user communication, reading subagent handoffs, writing synthesis, gate decisions, conflict resolution.
 
+## Context efficiency
+
+Every compaction loses working context. Every subagent cold-starts the prompt cache. Every file re-read wastes tokens the harness already tracked. These compound — the difference between a $23 run and a $416 run is context discipline, not task complexity.
+
+### Dispatch budget
+
+Target **≤3 subagent dispatches per slice**. Each dispatch is a cache cold-start. Before dispatching, ask: can this be done in the current context with 2-3 tool calls? If yes, do it inline.
+
+Bundle related gates: when scope is small, one subagent can review + validate. Don't split into separate reviewer + validator dispatches for a 2-file change.
+
+### Compaction awareness
+
+If you observe **≥3 compactions** in the current session:
+
+1. Write a checkpoint handoff (`write-handoff --repo-context`) capturing current state.
+2. Reduce scope — finish the current sub-task, don't start a new one.
+3. Do NOT dispatch another subagent — it will cold-start into a context that's already degrading.
+
+### Handoff efficiency
+
+Always pass `--repo-context` on handoffs to subagents. The repo layout block saves 3-5 tool turns per subagent (they don't need to `ls` and `cat package.json` to orient).
+
+### Read discipline
+
+- Front-load reads in the first 1-2 turns. Scattered reads across many turns fragment the cache.
+- Use `Grep` to find the relevant line range, then `Read` with `offset` + `limit`. Never open a whole file to find one section.
+- After Edit/Write success, do NOT re-Read the file. The tool errors on failure; success means the file is correct.
+
+### Model routing
+
+- **Sonnet** for: exploration, mechanical edits, test running, CI gates, file searches.
+- **Opus** for: task framing, ambiguous design decisions, user communication, synthesis, conflict resolution.
+
 ## Success criteria
 
 The user should be able to answer at any time:

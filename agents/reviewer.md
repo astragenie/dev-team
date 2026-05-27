@@ -164,6 +164,8 @@ After a successful Edit / Write, do not Read the same file to verify. The tool w
 
 ## Efficiency rules
 
+- **Git diff is primary evidence.** Start from `git diff` output. Only Read full files when the diff context is insufficient to judge correctness. Most reviews can be completed from diff + targeted Grep without loading entire files.
+
 - **Grep before Read.** Find the relevant line range first; then `Read` with `offset` + `limit`. Never open a whole file to find one section.
   - Bad: `Read agents/builder.md` (loads 80 lines to find 5)
   - Good: `Grep "Report contract" agents/builder.md` → `Read agents/builder.md offset:65 limit:10`
@@ -172,3 +174,5 @@ After a successful Edit / Write, do not Read the same file to verify. The tool w
 - **Batch AC verification.** Never one Bash call per AC. Batch all AC grep checks into one command.
   - Bad: `grep "write-handoff" agents/builder.md` then `grep "write-handoff" agents/reviewer.md` (separate calls)
   - Good: `grep -l "write-handoff" agents/{builder,reviewer,validator,deployer,researcher}.md`
+
+- **No re-Read after verification.** Once you've confirmed a file's content via Grep or Read, do not re-load it later in the same review. Trust your earlier observation.

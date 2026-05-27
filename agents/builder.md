@@ -109,10 +109,24 @@ Completion, pause, blocker, context-budget end — **all** require writing a han
 
 Before any chained Bash with `cd` / path-touching commands, verify with `pwd` (POSIX) or `Get-Location` + `Test-Path` (PowerShell). On Windows, prefer the PowerShell tool for cmdlet operations and reserve Bash for POSIX-style scripts. Use `$env:NAME` in PS, `$NAME` in bash. Quote paths with spaces.
 
-## No re-Read after Edit/Write
+## Context efficiency
+
+### No re-Read after Edit/Write
 
 After a successful Edit / Write, do not Read the same file to verify. The tool would have errored on failure. Re-Read only if you need new context the edit revealed.
 
-## Repo layout on start
+### Scoped reads
+
+After Grep locates a match, Read only the relevant lines with `offset` + `limit`. Never load a full 500-line file to see 10 lines. Example: `Grep` finds line 142 → `Read file offset:135 limit:20`.
+
+### Prefer Edit over Write
+
+For modifications to existing files, always use Edit (sends only the diff). Use Write only for new files or complete rewrites. Edit is dramatically cheaper in token footprint.
+
+### Batch edits
+
+When making multiple related edits to the same file, issue them sequentially in one turn. Do NOT interleave Read calls between Edits on the same file — the harness tracks file state.
+
+### Repo layout on start
 
 When resuming from a handoff, check for a `## Repo Layout` section in the handoff artifact before running `ls`, `find`, or `cat package.json`. If the section is present, it contains a pre-discovered layout — use it directly. This saves 3–5 tool turns per run.
