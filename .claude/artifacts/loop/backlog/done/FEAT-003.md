@@ -1,6 +1,6 @@
 ---
 id: FEAT-003
-status: in-progress
+status: done
 priority: P2
 category: feature
 target_release: null
@@ -11,6 +11,7 @@ slices: [SLICE-07]
 derived_from: null
 triage_notes: no fields needed inference
 started_at: 2026-05-27
+completed_at: 2026-05-27
 ---
 # FEAT-003: Cost health summary in brief-me output
 
