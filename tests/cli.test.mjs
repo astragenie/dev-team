@@ -1162,7 +1162,7 @@ test("write-* commands embed --feature and --phase in frontmatter", async () => 
   ]);
   const briefPath = JSON.parse(runBriefOut.stdout).path;
   const briefBody = await fs.readFile(briefPath, "utf8");
-  assert.match(briefBody, /^---\nfeature: FEAT-021\nphase: "3"\n---\n/);
+  assert.match(briefBody, /^---\nphase: "3"\nfeature: FEAT-021\n---\n/);
   assert.match(briefBody, /# Run Brief: Tagged brief/);
 
   // review-result without feature/phase emits no frontmatter (backward-compat)
@@ -1244,8 +1244,8 @@ test("cost-advise accepts --title --feature --phase and slugs filename + emits f
   const body = await fs.readFile(adviseResult.artifactPath, "utf8");
   assert.match(
     body,
-    /^---\nfeature: FEAT-021\nphase: "3"\n---\n/,
-    "cost-advise body starts with feature/phase frontmatter"
+    /^---\nphase: "3"\nfeature: FEAT-021\n---\n/,
+    "cost-advise body starts with phase/feature frontmatter"
   );
 });
 

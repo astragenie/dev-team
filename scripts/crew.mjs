@@ -275,10 +275,10 @@ function buildCostAdviseSlug(title, advisor) {
 /** @param {string | null} feature @param {string | null} phase */
 function buildOptionalFrontmatter(feature, phase) {
   const lines = [];
-  if (feature) lines.push(`feature: ${feature}`);
   if (phase !== null && phase !== undefined && String(phase).length > 0) {
     lines.push(`phase: ${JSON.stringify(String(phase))}`);
   }
+  if (feature) lines.push(`feature: ${feature}`);
   if (lines.length === 0) return "";
   return ["---", ...lines, "---", ""].join("\n");
 }
@@ -349,7 +349,7 @@ async function maybeEmitCostReport(repoPath, options = {}) {
     const title = runTitle || run.title || "cost-report";
     const outcome = await collectOutcomeLinkage(repoPath, title);
     const reportArtifact = await writeArtifact(repoPath, "cost-report", {
-      title: `Cost — ${title}`,
+      title,
       runTitle: title,
       cost,
       outcome,
@@ -636,7 +636,7 @@ const COMMANDS = {
     });
     const outcome = await collectOutcomeLinkage(repoPath, runTitle);
     const artifact = await writeArtifact(repoPath, "cost-report", {
-      title: `Cost — ${runTitle}`,
+      title: runTitle,
       runTitle,
       cost,
       outcome,

@@ -22,11 +22,14 @@ function timestampSlug() {
 // its own frontmatter inline (see renderCostReportFrontmatter).
 function renderOptionalFrontmatter(fields) {
   const lines = [];
+  if (fields.phase !== null && fields.phase !== undefined && String(fields.phase).length > 0) {
+    lines.push(`phase: ${JSON.stringify(String(fields.phase))}`);
+  }
   if (fields.feature) {
     lines.push(`feature: ${fields.feature}`);
   }
-  if (fields.phase !== null && fields.phase !== undefined && String(fields.phase).length > 0) {
-    lines.push(`phase: ${JSON.stringify(String(fields.phase))}`);
+  if (fields.slice) {
+    lines.push(`slice: ${fields.slice}`);
   }
   if (lines.length === 0) {
     return "";
@@ -228,9 +231,9 @@ function renderCostReportFrontmatter(fields, breakdown, outcome, totalTokens, ca
   // of nesting if-pushes.
   const phaseStr = fields.phase != null ? String(fields.phase) : "";
   const optional = [
-    [outcome?.sliceId, () => `slice: ${outcome.sliceId}`],
-    [fields.feature, () => `feature: ${fields.feature}`],
     [phaseStr.length > 0, () => `phase: ${JSON.stringify(phaseStr)}`],
+    [fields.feature, () => `feature: ${fields.feature}`],
+    [outcome?.sliceId, () => `slice: ${outcome.sliceId}`],
     [true, () => `run_title: ${JSON.stringify(fields.runTitle || "")}`],
     [breakdown?.usd != null, () => `usd: ${breakdown.usd}`],
     [durationMs, () => `duration_ms: ${durationMs}`],
