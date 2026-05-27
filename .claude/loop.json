@@ -2,7 +2,7 @@
   "preset": "dotnet-aspire-python",
   "loop": {
     "aiLoopRoot": "docs/ai-loop",
-    "backlogPath": "docs/ai-loop/backlog",
+    "backlogPath": "docs/backlog",
     "slicesRoot": "docs/ai-loop/slices",
     "phaseGateArtifactDir": ".claude/artifacts/crew/validations",
     "maxIterations": 25
@@ -10,23 +10,22 @@
   "stack": {
     "build": [
       {
-        "cmd": "dotnet",
-        "args": [
-          "build",
-          "-c",
-          "Release"
-        ]
+        "cmd": "npm",
+        "args": ["test"]
       }
     ],
     "test": [
       {
-        "cmd": "dotnet",
-        "args": [
-          "test",
-          "-c",
-          "Release",
-          "--nologo"
-        ]
+        "cmd": "npm",
+        "args": ["run", "lint"]
+      },
+      {
+        "cmd": "node",
+        "args": ["./scripts/validate-manifests.mjs"]
+      },
+      {
+        "cmd": "node",
+        "args": ["./scripts/validate-skills.mjs"]
       }
     ],
     "frontendBuild": null,
@@ -43,7 +42,7 @@
   "mandatoryDocs": [
     "docs/architecture/platform-overview.md"
   ],
-  "productName": "Untitled product",
-  "productDescription": "Override productName and productDescription in .claude/loop.json after install.",
-  "stackDescription": "- C# .NET (Aspire local orchestration when configured)\n- Python agents (LangGraph or FastAPI) when configured\n- Terraform for infrastructure when configured"
+  "productName": "hero-crew",
+  "productDescription": "Claude Code plugin: Crew harness with lead-guided engineering workflow, bounded subagents, quality gates, and inspectable handoffs.",
+  "stackDescription": "- ESM / Node.js (node:test, ESLint flat config, Prettier)\n- Content-heavy plugin: agents/, skills/, commands/, hooks/\n- No server, no container — plugin is installed by consumers"
 }
