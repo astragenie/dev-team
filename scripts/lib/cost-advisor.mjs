@@ -560,6 +560,73 @@ function applyRules(target, baseline, ctx = {}) {
   return fired;
 }
 
+/**
+ * Detect regression trends by comparing the last 3 summarized reports.
+ *
+ * Reports are expected newest-first (same order as loadReports / summaries).
+ * Returns findings with the same shape as per-slice recommendations:
+ * { id, severity, message, suggestion }.
+ *
+ * Three signals:
+ *   compaction-drift   — compactionCount strictly increasing across last 3 (medium)
+ *   subagent-creep     — subagentDispatches strictly increasing across last 3 (medium)
+ *   cost-regression    — current usd >20% above median of last 3 (high)
+ *
+ * @param {Array<ReturnType<summarizeReport>>} reports  Newest-first array of summaries.
+ * @returns {{ id: string, severity: string, message: string, suggestion: string }[]}
+ */
+export function detectTrends(reports) {
+  if (!reports || reports.length < 3) return [];
+
+  const [r0, r1, r2] = reports; // r0 = newest, r2 = oldest
+  const findings = [];
+
+  // --- compaction-drift -------------------------------------------------------
+  // Each newer report has MORE compactions than the previous one.
+  // newest > middle > oldest  ⟹  r0 > r1 > r2
+  if (r0.compactionCount > r1.compactionCount && r1.compactionCount > r2.compactionCount) {
+    findings.push({
+      id: "compaction-drift",
+      severity: "medium",
+      message: `Compaction count has increased across the last 3 slices: ${r2.compactionCount} → ${r1.compactionCount} → ${r0.compactionCount}. Context window pressure is growing.`,
+      suggestion:
+        "Split work into smaller slices and write checkpoint handoffs earlier. If compaction hit once, treat it as a budget warning and wrap up that slice."
+    });
+  }
+
+  // --- subagent-creep ---------------------------------------------------------
+  // Each newer report dispatches MORE subagents than the previous one.
+  if (
+    r0.subagentDispatches > r1.subagentDispatches &&
+    r1.subagentDispatches > r2.subagentDispatches
+  ) {
+    findings.push({
+      id: "subagent-creep",
+      severity: "medium",
+      message: `Subagent dispatch count has grown across the last 3 slices: ${r2.subagentDispatches} → ${r1.subagentDispatches} → ${r0.subagentDispatches}. Each cold-start re-derives session context.`,
+      suggestion:
+        "Bundle review + validation into a single subagent when scope is small. Reserve parallel dispatches for genuinely independent parallel work."
+    });
+  }
+
+  // --- cost-regression --------------------------------------------------------
+  // Current slice USD is more than 20% above the median of the last 3 slices.
+  const usds = [r0.usd, r1.usd, r2.usd];
+  const med = median(usds);
+  if (med > 0 && r0.usd > med * 1.2) {
+    const pctAbove = (((r0.usd - med) / med) * 100).toFixed(0);
+    findings.push({
+      id: "cost-regression",
+      severity: "high",
+      message: `Current slice cost $${r0.usd.toFixed(4)} is ${pctAbove}% above the last-3 median of $${med.toFixed(4)}.`,
+      suggestion:
+        "Audit what drove the spike: Opus usage, subagent cold-starts, cache busts, or long exploration loops. Mandate Sonnet-default and a written plan before the next similar slice."
+    });
+  }
+
+  return findings;
+}
+
 export async function buildCostAdvisor(repoPath, { limit = 10 } = {}) {
   const reports = await loadReports(repoPath, limit);
   if (reports.length === 0) {
@@ -583,8 +650,8 @@ export async function buildCostAdvisor(repoPath, { limit = 10 } = {}) {
   const recommendations = applyRules(target, baseline, { repoOwnSlug: repoOwnSlug(repoPath) });
   const grade = computeGrade(target);
 
-  // Cross-history aggregate signals
-  const aggregateFlags = [];
+  // Cross-history aggregate signals (existing median checks + new trend detectors)
+  const aggregateFlags = [...detectTrends(summaries)];
   if (baseline.n >= 3 && baseline.cacheHitMedian > 0 && baseline.cacheHitMedian < 90) {
     aggregateFlags.push({
       id: "trend-cache",
