@@ -1,12 +1,13 @@
 ---
 id: SLICE-05
-status: pending
+status: completed
 feature: FEAT-001
 phase: null
 priority: P2
 target_release: null
 created: 2026-05-27
 updated: 2026-05-27
+completed_at: 2026-05-27
 ---
 # SLICE-05: Performance letter grades (A-F) in cost-advisor
 
