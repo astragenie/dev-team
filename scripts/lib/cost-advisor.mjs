@@ -353,6 +353,15 @@ const RULES = [
     suggestion:
       "Mandate a written plan + brainstorming gate for similar slices before code is touched."
   },
+  {
+    id: "compaction-cascade",
+    trigger: (s) => s.compactionCount > 10 && s.subagentDispatches > 5,
+    severity: () => "high",
+    message: (s) =>
+      `${s.compactionCount} compactions + ${s.subagentDispatches} subagent dispatches — context overflow driven by excessive dispatching.`,
+    suggestion:
+      "Each subagent cold-starts the cache; the lead's context grows with each handoff read. Target ≤3 dispatches per slice. Bundle review + validation when scope is small. Write checkpoint handoffs at ≥3 compactions instead of dispatching more agents."
+  },
   // ---- per-source / cross-repo rules ----
   {
     id: "xrepo-attribution",
