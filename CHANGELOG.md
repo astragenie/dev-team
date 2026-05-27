@@ -3,6 +3,35 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.3.8 — 2026-05-27 — Performance + observability + quality gates
+
+### Bugfixes
+
+- **fix(artifacts):** remove double-cost filename prefix — `cost-report-cost-...` → `cost-report-...` (FEAT-002).
+- **fix(artifacts):** reorder frontmatter to phase → feature → slice across all render functions (FEAT-003).
+- **fix(agent-report):** add phase/feature/slice identification to body, diagnostic note for missing events (loop repo).
+
+### Performance
+
+- **perf(cli):** convert 14 static imports to per-command lazy `import()` — ~100-200ms faster startup.
+- **perf(agents):** context efficiency rules in lead (dispatch budget ≤3, compaction awareness, read discipline, model routing), builder (scoped reads, Edit preference, batch edits), reviewer (git-diff-primary, no-re-Read).
+
+### Observability (Phase 4)
+
+- **feat(cost-advisor):** `computeGrade(target)` — composite A-F letter grade from compaction count, subagent dispatches, re-reads, tool failure rate, cache hit %. 15 TDD tests.
+- **feat(cost-advisor):** `detectTrends(reports)` — regression detectors for compaction-drift, subagent-creep, cost-regression across last 3 reports. 14 TDD tests.
+- **feat(cost-advisor):** compaction-cascade rule — HIGH severity when compactions >10 AND dispatches >5.
+- **feat(briefing):** `costHealth` field in brief-me output — grade + top concern from latest cost report. 10 TDD tests.
+
+### Quality Gates
+
+- **feat(agents):** deployer pre-push `plugin-dev:plugin-validator` gate for plugin repos.
+- **feat(agents):** reviewer `plugin-dev:plugin-validator` and `plugin-dev:skill-reviewer` upgraded from optional to required dispatch.
+
+### Test suite
+
+- 112 total tests (39 new across `cost-advisor-grade`, `cost-advisor-trends`, `briefing-cost-health`).
+
 ## v0.3.7 — 2026-05-26 — Global namespace rename: engineering-os → crew
 
 ### Installer
