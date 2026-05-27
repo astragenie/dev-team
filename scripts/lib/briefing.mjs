@@ -16,6 +16,7 @@ import {
   collectGitActivity,
   collectRelevantArtifacts,
   collectRecentCosts,
+  collectCostHealth,
   fetchAutonomousLoopBrief
 } from "./briefing/collect.mjs";
 
@@ -46,15 +47,23 @@ import {
 } from "./briefing/render.mjs";
 
 export async function buildBriefingReport(repoPath) {
-  const [wakeUpBrief, gitActivity, deploymentClues, autonomousLoopBrief, costs, routingTable] =
-    await Promise.all([
-      buildWakeUpBrief(repoPath, { readOnly: true }),
-      collectGitActivity(repoPath),
-      discoverDeploymentClues(repoPath),
-      fetchAutonomousLoopBrief(repoPath),
-      collectRecentCosts(repoPath, 5),
-      checkRoutingTableStale(repoPath)
-    ]);
+  const [
+    wakeUpBrief,
+    gitActivity,
+    deploymentClues,
+    autonomousLoopBrief,
+    costs,
+    routingTable,
+    costHealth
+  ] = await Promise.all([
+    buildWakeUpBrief(repoPath, { readOnly: true }),
+    collectGitActivity(repoPath),
+    discoverDeploymentClues(repoPath),
+    fetchAutonomousLoopBrief(repoPath),
+    collectRecentCosts(repoPath, 5),
+    checkRoutingTableStale(repoPath),
+    collectCostHealth(repoPath)
+  ]);
 
   // Attach cost summary to loop block when the plugin is installed, so the
   // user-facing "Autonomous Loop" section in brief-me renders it alongside
@@ -80,6 +89,7 @@ export async function buildBriefingReport(repoPath) {
     repoPath: wakeUpBrief.repoPath,
     wakeUp: wakeUpBrief,
     git: gitActivity,
+    costHealth,
     sections: {
       currentObjective,
       recentActivity: {

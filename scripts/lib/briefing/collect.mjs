@@ -7,6 +7,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
+import { buildCostAdvisor } from "../cost-advisor.mjs";
 
 const execFile = promisify(execFileCallback);
 const BRANCH_COMMITS_LIMIT = 5;
@@ -633,6 +634,46 @@ export async function collectRecentCosts(repoPath, limit = 5) {
     avgUsdRecent: avgUsd,
     modelBurn,
     diagnostics: recent.filter((r) => r.hasFlags)
+  };
+}
+
+// Severity priority order for picking the top concern from recommendations.
+const SEVERITY_RANK = { high: 0, medium: 1, low: 2 };
+
+/**
+ * Compute a lightweight cost health snapshot for the brief-me surface.
+ *
+ * Uses buildCostAdvisor to derive the grade and recommendations from the most
+ * recent cost report. Returns null when no cost reports exist (backward compat
+ * — callers should omit the costHealth field entirely in that case).
+ *
+ * @param {string} repoPath
+ * @returns {Promise<{ grade: string, topConcern: string|null, reportCount: number }|null>}
+ */
+export async function collectCostHealth(repoPath) {
+  let advisor;
+  try {
+    advisor = await buildCostAdvisor(repoPath, { limit: 5 });
+  } catch {
+    return null;
+  }
+  if (!advisor.target) {
+    return null;
+  }
+
+  const { grade, recommendations = [], reports = [] } = advisor;
+
+  // Pick the highest-severity recommendation as the top concern. Ties are
+  // broken by insertion order (rules fire in declaration order).
+  const sorted = [...recommendations].sort(
+    (a, b) => (SEVERITY_RANK[a.severity] ?? 3) - (SEVERITY_RANK[b.severity] ?? 3)
+  );
+  const topConcern = sorted.length > 0 ? sorted[0].message : null;
+
+  return {
+    grade,
+    topConcern,
+    reportCount: reports.length
   };
 }
 

@@ -422,7 +422,9 @@ const COMMANDS = {
   },
   "show-approvals": async ({ repoPath, flags }) => {
     const { listApprovals } = await import("./lib/approvals.mjs");
-    return { approvals: await listApprovals(repoPath, { status: flags.status, approver: flags.approver }) };
+    return {
+      approvals: await listApprovals(repoPath, { status: flags.status, approver: flags.approver })
+    };
   },
   "resolve-approval": async ({ repoPath, flags }) => {
     const { resolveApproval } = await import("./lib/approvals.mjs");
