@@ -1,22 +1,6 @@
 #!/usr/bin/env node
 
 import path from "node:path";
-import { writeArtifact } from "./lib/artifacts.mjs";
-import { discoverDeploymentClues, writeDeploymentGuidance } from "./lib/deployment-guidance.mjs";
-import { buildBriefingReport } from "./lib/briefing.mjs";
-import { auditRepo, bootstrapRepo, initRepo, installGlobal } from "./lib/installer.mjs";
-import { listApprovals, requestApproval, resolveApproval } from "./lib/approvals.mjs";
-import { claimFiles, inspectClaims, listClaims, releaseFiles } from "./lib/claims.mjs";
-import { buildWakeUpBrief } from "./lib/wakeup.mjs";
-import {
-  loadWorkflowState,
-  markWorkflowBadge,
-  summarizeWorkflowState
-} from "./lib/workflow-state.mjs";
-import { computeSessionCost } from "./lib/session-cost.mjs";
-import { collectOutcomeLinkage } from "./lib/outcome-linkage.mjs";
-import { buildCostAdvisor, renderCostAdvisorMarkdown } from "./lib/cost-advisor.mjs";
-import { buildFleetReport } from "./lib/fleet.mjs";
 
 // Flag schema. Each entry maps a CLI flag to the flags-object key and the
 // arity (whether it consumes a value). Aliases (e.g. `--verdict` → `decision`)
@@ -310,6 +294,7 @@ async function writeCostAdviseArtifact(repoPath, md, advisor, options = {}) {
 /** @param {string} repoPath @param {{ title: string | null, feature: string | null, phase: string | null }} opts */
 async function emitCostAdvise(repoPath, { title, feature, phase }) {
   try {
+    const { buildCostAdvisor, renderCostAdvisorMarkdown } = await import("./lib/cost-advisor.mjs");
     const advisor = await buildCostAdvisor(repoPath, { limit: 10 });
     const md = renderCostAdvisorMarkdown(advisor);
     const advisePath = await writeCostAdviseArtifact(repoPath, md, advisor, {
@@ -334,6 +319,10 @@ async function maybeEmitCostReport(repoPath, options = {}) {
       options
     );
   try {
+    const { loadWorkflowState } = await import("./lib/workflow-state.mjs");
+    const { computeSessionCost } = await import("./lib/session-cost.mjs");
+    const { collectOutcomeLinkage } = await import("./lib/outcome-linkage.mjs");
+    const { writeArtifact } = await import("./lib/artifacts.mjs");
     const state = await loadWorkflowState(repoPath);
     const run = state?.currentRun || null;
     if (!run?.startedAt) return null;
@@ -386,49 +375,87 @@ function normalizeMsysPath(value) {
 // `ctx = { repoPath, flags, positionals }`. main() dispatches by name; the
 // table replaces a 240-line else-if chain. Adding a command = one entry.
 const COMMANDS = {
-  "install-global": () => installGlobal(),
-  audit: ({ repoPath }) => auditRepo(repoPath),
-  bootstrap: ({ repoPath }) => bootstrapRepo(repoPath),
-  init: ({ repoPath, flags }) => initRepo(repoPath, { allowExisting: flags.allowExisting }),
+  "install-global": async () => {
+    const { installGlobal } = await import("./lib/installer.mjs");
+    return installGlobal();
+  },
+  audit: async ({ repoPath }) => {
+    const { auditRepo } = await import("./lib/installer.mjs");
+    return auditRepo(repoPath);
+  },
+  bootstrap: async ({ repoPath }) => {
+    const { bootstrapRepo } = await import("./lib/installer.mjs");
+    return bootstrapRepo(repoPath);
+  },
+  init: async ({ repoPath, flags }) => {
+    const { initRepo } = await import("./lib/installer.mjs");
+    return initRepo(repoPath, { allowExisting: flags.allowExisting });
+  },
 
-  claim: ({ repoPath, flags, positionals }) =>
-    claimFiles(repoPath, positionals, { owner: flags.owner || "lead-session" }),
-  release: ({ repoPath, flags, positionals }) =>
-    releaseFiles(repoPath, positionals, { owner: flags.owner }),
-  "show-claims": async ({ repoPath }) => ({ claims: await listClaims(repoPath) }),
-  "show-conflicts": ({ repoPath, flags, positionals }) =>
-    inspectClaims(repoPath, positionals, { owner: flags.owner || "lead-session" }),
+  claim: async ({ repoPath, flags, positionals }) => {
+    const { claimFiles } = await import("./lib/claims.mjs");
+    return claimFiles(repoPath, positionals, { owner: flags.owner || "lead-session" });
+  },
+  release: async ({ repoPath, flags, positionals }) => {
+    const { releaseFiles } = await import("./lib/claims.mjs");
+    return releaseFiles(repoPath, positionals, { owner: flags.owner });
+  },
+  "show-claims": async ({ repoPath }) => {
+    const { listClaims } = await import("./lib/claims.mjs");
+    return { claims: await listClaims(repoPath) };
+  },
+  "show-conflicts": async ({ repoPath, flags, positionals }) => {
+    const { inspectClaims } = await import("./lib/claims.mjs");
+    return inspectClaims(repoPath, positionals, { owner: flags.owner || "lead-session" });
+  },
 
-  "request-approval": ({ repoPath, flags, positionals }) =>
-    requestApproval(repoPath, {
+  "request-approval": async ({ repoPath, flags, positionals }) => {
+    const { requestApproval } = await import("./lib/approvals.mjs");
+    return requestApproval(repoPath, {
       requester: flags.requester || "lead-session",
       approver: flags.approver,
       kind: flags.kind || "scope_change",
       severity: flags.severity || "medium",
       summary: flags.summary || positionals.join(" ") || "Approval requested",
       reason: flags.reason || ""
-    }),
-  "show-approvals": async ({ repoPath, flags }) => ({
-    approvals: await listApprovals(repoPath, { status: flags.status, approver: flags.approver })
-  }),
-  "resolve-approval": ({ repoPath, flags }) =>
-    resolveApproval(repoPath, {
+    });
+  },
+  "show-approvals": async ({ repoPath, flags }) => {
+    const { listApprovals } = await import("./lib/approvals.mjs");
+    return { approvals: await listApprovals(repoPath, { status: flags.status, approver: flags.approver }) };
+  },
+  "resolve-approval": async ({ repoPath, flags }) => {
+    const { resolveApproval } = await import("./lib/approvals.mjs");
+    return resolveApproval(repoPath, {
       id: flags.id,
       decision: flags.decision,
       resolver: flags.resolver || "lead-session",
       note: flags.note || ""
-    }),
+    });
+  },
 
-  "wake-up": ({ repoPath }) => buildWakeUpBrief(repoPath),
-  "brief-me": ({ repoPath }) => buildBriefingReport(repoPath),
-  fleet: ({ repoPath, flags }) =>
-    buildFleetReport(repoPath, {
+  "wake-up": async ({ repoPath }) => {
+    const { buildWakeUpBrief } = await import("./lib/wakeup.mjs");
+    return buildWakeUpBrief(repoPath);
+  },
+  "brief-me": async ({ repoPath }) => {
+    const { buildBriefingReport } = await import("./lib/briefing.mjs");
+    return buildBriefingReport(repoPath);
+  },
+  fleet: async ({ repoPath, flags }) => {
+    const { buildFleetReport } = await import("./lib/fleet.mjs");
+    return buildFleetReport(repoPath, {
       extraRoots: flags.extraRoot ? [flags.extraRoot] : [],
       includeSelf: !flags.noSelf
-    }),
-  "discover-deployment": ({ repoPath }) => discoverDeploymentClues(repoPath),
-  "write-deployment-guidance": ({ repoPath, flags, positionals }) =>
-    writeDeploymentGuidance(repoPath, {
+    });
+  },
+  "discover-deployment": async ({ repoPath }) => {
+    const { discoverDeploymentClues } = await import("./lib/deployment-guidance.mjs");
+    return discoverDeploymentClues(repoPath);
+  },
+  "write-deployment-guidance": async ({ repoPath, flags, positionals }) => {
+    const { writeDeploymentGuidance } = await import("./lib/deployment-guidance.mjs");
+    return writeDeploymentGuidance(repoPath, {
       title: flags.title || positionals.join(" ") || "Repo Deployment Model",
       owner: flags.owner || "lead-session",
       summary: flags.summary,
@@ -445,13 +472,16 @@ const COMMANDS = {
       missing: flags.missing,
       refreshWhen: flags.refreshWhen,
       next: flags.next
-    }),
+    });
+  },
 
   "show-workflow-state": async ({ repoPath }) => {
+    const { loadWorkflowState, summarizeWorkflowState } = await import("./lib/workflow-state.mjs");
     const workflowState = await loadWorkflowState(repoPath);
     return { workflowState, summary: summarizeWorkflowState(workflowState) };
   },
   "mark-badge": async ({ repoPath, flags }) => {
+    const { markWorkflowBadge } = await import("./lib/workflow-state.mjs");
     const currentRun = await markWorkflowBadge(repoPath, {
       badge: flags.badge,
       note: flags.note || flags.reason || "",
@@ -464,8 +494,9 @@ const COMMANDS = {
     return { badge: flags.badge, currentRun };
   },
 
-  "write-run-brief": ({ repoPath, flags, positionals }) =>
-    writeArtifact(repoPath, "run-brief", {
+  "write-run-brief": async ({ repoPath, flags, positionals }) => {
+    const { writeArtifact } = await import("./lib/artifacts.mjs");
+    return writeArtifact(repoPath, "run-brief", {
       title: flags.title || positionals.join(" ") || "Run Brief",
       goal: flags.goal,
       mode: flags.mode,
@@ -479,9 +510,11 @@ const COMMANDS = {
       next: flags.next,
       feature: flags.feature,
       phase: flags.phase
-    }),
-  "write-handoff": ({ repoPath, flags, positionals }) =>
-    writeArtifact(repoPath, "handoff", {
+    });
+  },
+  "write-handoff": async ({ repoPath, flags, positionals }) => {
+    const { writeArtifact } = await import("./lib/artifacts.mjs");
+    return writeArtifact(repoPath, "handoff", {
       title: flags.title || positionals.join(" ") || "Task Handoff",
       from: flags.from || flags.owner || "lead-session",
       to: flags.to,
@@ -497,8 +530,9 @@ const COMMANDS = {
       feature: flags.feature,
       phase: flags.phase,
       repoContext: flags.repoContext
-    }),
-  "write-review-result": ({ repoPath, flags, positionals }) => {
+    });
+  },
+  "write-review-result": async ({ repoPath, flags, positionals }) => {
     const decision = flags.decision;
     const VALID_DECISIONS = new Set(["approved", "approved_with_notes", "rejected"]);
     if (decision && !VALID_DECISIONS.has(decision)) {
@@ -516,6 +550,7 @@ const COMMANDS = {
       );
       process.exit(2);
     }
+    const { writeArtifact } = await import("./lib/artifacts.mjs");
     return writeArtifact(repoPath, "review-result", {
       title: flags.title || positionals.join(" ") || "Review Result",
       reviewer: flags.reviewer || flags.owner || "reviewer",
@@ -532,8 +567,9 @@ const COMMANDS = {
       nonCode: flags.nonCode
     });
   },
-  "write-validation-plan": ({ repoPath, flags, positionals }) =>
-    writeArtifact(repoPath, "validation-plan", {
+  "write-validation-plan": async ({ repoPath, flags, positionals }) => {
+    const { writeArtifact } = await import("./lib/artifacts.mjs");
+    return writeArtifact(repoPath, "validation-plan", {
       title: flags.title || positionals.join(" ") || "Validation Plan",
       validator: flags.validator || flags.owner || "validator",
       owner: flags.owner || "lead-session",
@@ -546,9 +582,11 @@ const COMMANDS = {
       next: flags.next,
       feature: flags.feature,
       phase: flags.phase
-    }),
-  "write-validation-result": ({ repoPath, flags, positionals }) =>
-    writeArtifact(repoPath, "validation-result", {
+    });
+  },
+  "write-validation-result": async ({ repoPath, flags, positionals }) => {
+    const { writeArtifact } = await import("./lib/artifacts.mjs");
+    return writeArtifact(repoPath, "validation-result", {
       title: flags.title || positionals.join(" ") || "Validation Result",
       validator: flags.validator || flags.owner || "validator",
       environment: flags.environment,
@@ -561,9 +599,11 @@ const COMMANDS = {
       next: flags.next,
       feature: flags.feature,
       phase: flags.phase
-    }),
-  "write-deployment-check": ({ repoPath, flags, positionals }) =>
-    writeArtifact(repoPath, "deployment-check", {
+    });
+  },
+  "write-deployment-check": async ({ repoPath, flags, positionals }) => {
+    const { writeArtifact } = await import("./lib/artifacts.mjs");
+    return writeArtifact(repoPath, "deployment-check", {
       title: flags.title || positionals.join(" ") || "Deployment Check",
       deployer: flags.deployer || flags.owner || "deployer",
       environment: flags.environment,
@@ -579,8 +619,10 @@ const COMMANDS = {
       next: flags.next,
       feature: flags.feature,
       phase: flags.phase
-    }),
+    });
+  },
   "write-final-synthesis": async ({ repoPath, flags, positionals }) => {
+    const { writeArtifact } = await import("./lib/artifacts.mjs");
     const synthesis = await writeArtifact(repoPath, "final-synthesis", {
       title: flags.title || positionals.join(" ") || "Final Synthesis",
       owner: flags.owner || "lead-session",
@@ -603,6 +645,7 @@ const COMMANDS = {
   },
 
   "cost-advise": async ({ repoPath, flags }) => {
+    const { buildCostAdvisor, renderCostAdvisorMarkdown } = await import("./lib/cost-advisor.mjs");
     const advisor = await buildCostAdvisor(repoPath, { limit: 10 });
     const md = renderCostAdvisorMarkdown(advisor);
     const writePath = await writeCostAdviseArtifact(repoPath, md, advisor, {
@@ -620,6 +663,10 @@ const COMMANDS = {
     };
   },
   "cost-slice": async ({ repoPath, flags }) => {
+    const { loadWorkflowState } = await import("./lib/workflow-state.mjs");
+    const { computeSessionCost } = await import("./lib/session-cost.mjs");
+    const { collectOutcomeLinkage } = await import("./lib/outcome-linkage.mjs");
+    const { writeArtifact } = await import("./lib/artifacts.mjs");
     const state = await loadWorkflowState(repoPath);
     const run = state?.currentRun || null;
     const startedAt = flags.startedAt || run?.startedAt;
