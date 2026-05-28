@@ -3,6 +3,12 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.3.9 — 2026-05-28 — Agent color badges
+
+### UI
+
+- **feat(agents):** add `color` field to all 6 crew agent frontmatter files — `lead=blue`, `builder=green`, `reviewer=orange`, `validator=yellow`, `deployer=red`, `researcher=cyan`. Agents now display distinct colored badges in Claude Code UI.
+
 ## v0.3.8 — 2026-05-27 — Performance + observability + quality gates
 
 ### Bugfixes
