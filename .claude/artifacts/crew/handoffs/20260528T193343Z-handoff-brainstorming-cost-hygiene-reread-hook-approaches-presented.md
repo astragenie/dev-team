@@ -20,11 +20,11 @@
 | 1 | Explore project context | ✅ completed |
 | 2 | Ask clarifying questions | ✅ completed (7 Qs locked) |
 | 3 | Propose 2-3 approaches | ✅ completed (**Approach B approved** 2026-05-28T19:34Z) |
-| 4 | Present design sections | 🔄 **in_progress — Sections 1 ✅ + 2 ✅ APPROVED; Sections 3 (Data flow) + 4 (Error handling) + 5 (Testing) batched-delivered, awaiting full-design approval** |
-| 5 | Write design doc | pending |
-| 6 | Spec self-review | pending |
-| 7 | User reviews spec | pending |
-| 8 | Invoke writing-plans skill | pending |
+| 4 | Present design sections | ✅ completed (all 5 sections approved) |
+| 5 | Write design doc | ✅ completed — `docs/superpowers/specs/2026-05-28-cost-hygiene-reread-hook-design.md` committed at `e5929e9` |
+| 6 | Spec self-review | ✅ completed — no placeholders, no ambiguity (fixed Step-1 env-var pin inline) |
+| 7 | User reviews spec | 🔄 **in_progress — awaiting user `approve` / `revise <area>` / `stop`** |
+| 8 | Invoke writing-plans skill | pending (unblocked by Task 7 approval) |
 
 ## Locked Decisions (Q1–Q7)
 
@@ -65,10 +65,13 @@ Fatal flaw: `session-cost.mjs` parses transcript JSONL **after-the-fact**. Hook 
 ## Resume Instructions
 
 1. **Approach B is approved** (this session). Task 3 completed, Task 4 in_progress.
-2. **Section 1 (Architecture) APPROVED** by user. Content retained below for reference.
-3. **Section 2 (Components) APPROVED** by user (with `approve, batch` directive). Content retained below.
-4. **Sections 3 + 4 + 5 DELIVERED in one batch**, awaiting full-design approval. Content captured below under "Sections 3–5 (batched delivery, awaiting approval)". Do NOT re-present; wait for user's `approve` / `revise <area>` / `stop` decision.
-5. On full design approval → mark Task 4 completed, Task 5 in_progress, write spec at `docs/superpowers/specs/2026-05-28-cost-hygiene-reread-hook-design.md`.
+2. **Sections 1+2 APPROVED** by user.
+3. **Sections 3+4+5 APPROVED** by user (single `aaprove` directive after batch delivery).
+4. **Spec WRITTEN, SELF-REVIEWED, COMMITTED + PUSHED** at `e5929e9` to `docs/superpowers/specs/2026-05-28-cost-hygiene-reread-hook-design.md` (350 lines). Self-review fixed one ambiguity: Step-1 "commented out OR env-var" → pinned to env-var `CREW_COST_HYGIENE=1`.
+5. **User review of written spec in_progress** — user has not yet replied. Do NOT re-present spec content; wait for `approve` / `revise <area>` / `stop` reply.
+6. On user `approve` → mark Task 7 completed, Task 8 in_progress, invoke `superpowers:writing-plans` skill with the spec path as input.
+7. On user `revise <area>` → edit spec inline, re-run self-review, re-ask user.
+8. On user `stop` → session ends, this handoff captures full state.
 5. On full design approval → write spec at `docs/superpowers/specs/2026-05-28-cost-hygiene-reread-hook-design.md`.
 6. Self-review spec (placeholder/contradiction/scope/ambiguity).
 7. User reviews spec.
@@ -227,7 +230,7 @@ DAG. No cycles. `decide.mjs` has zero deps → maximally testable.
 - **decide.mjs** = pure logic. Tests are tables — fast, deterministic, no fs.
 - **Q5's warning format lives in `decide.mjs`** — the prevention lever per memory. Pure tests pin down its exact text + structure. Any future drift caught by test diff.
 
-## Sections 3–5 (batched delivery, awaiting approval)
+## Sections 3–5 (APPROVED 2026-05-28T19:53Z, content retained below for reference)
 
 ### Section 3 — Data flow
 
