@@ -3,6 +3,14 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.3.10 — 2026-05-28 — Type safety (noImplicitAny)
+
+### Quality Gates
+
+- **feat(typecheck):** enable `noImplicitAny: true` in `tsconfig.json` — 654 → 0 TypeScript errors (SLICE-08 / FEAT-004).
+- **feat(typecheck):** JSDoc `@param`/`@returns` annotations added to all 22 `scripts/**/*.mjs` files — `ArtifactFields`, `CostBreakdown`, `ScanCtx`, `Flags` typedefs; boundary guards use `{unknown}` not `{any}`.
+- **ci:** `npm run typecheck` is now a meaningful gate — implicit-any regressions caught at commit time.
+
 ## v0.3.9 — 2026-05-28 — Agent color badges
 
 ### UI
