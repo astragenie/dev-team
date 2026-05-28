@@ -20,7 +20,7 @@
 | 1 | Explore project context | ✅ completed |
 | 2 | Ask clarifying questions | ✅ completed (7 Qs locked) |
 | 3 | Propose 2-3 approaches | ✅ completed (**Approach B approved** 2026-05-28T19:34Z) |
-| 4 | Present design sections | 🔄 **in_progress — architecture section next** |
+| 4 | Present design sections | 🔄 **in_progress — Section 1 (architecture) DELIVERED, awaiting user approval; Sections 2–5 pending** |
 | 5 | Write design doc | pending |
 | 6 | Spec self-review | pending |
 | 7 | User reviews spec | pending |
@@ -65,16 +65,102 @@ Fatal flaw: `session-cost.mjs` parses transcript JSONL **after-the-fact**. Hook 
 ## Resume Instructions
 
 1. **Approach B is approved** (this session). Task 3 completed, Task 4 in_progress.
-2. **Present design sections one at a time**, awaiting per-section approval (skill instruction):
-   - Architecture: how PreToolUse fires, hook input shape, state location (`.claude/state/cost-hygiene/<session_id>.json`), output protocol (Claude Code hook stdout/exit semantics).
-   - Components: 3 modules (entry, state, decide) + 2 test files; for each — purpose, public surface, dependencies (point of code-conventions.md "what does it do / how do you use it / what does it depend on" rule).
-   - Data flow: stdin → parse → load state → stat file → decide → emit `<system-reminder>` block → write state → exit. Diagram.
-   - Error handling: hook must NEVER block a Read on its own error (corrupt state file, fs error, JSON parse fail). Always fall through to allow. Log to `.claude/logs/events.jsonl` on internal error.
-   - Testing: table-driven for `decide()` covering Q1–Q7 decision matrix (every reread, mtime-changed, content under/over 50KB cap, LRU eviction at 2MB, etc.).
+2. **Section 1 (Architecture) has been DELIVERED** — content captured below under "Section 1 — Architecture (delivered, awaiting approval)". Do NOT re-present; wait for user's `approve` / `revise <area>` / `stop` decision.
+3. On Architecture approval → present Section 2 (Components). Pending sections 2–5 outlined under "Pending sections (not yet presented)" below.
 4. On full design approval → write spec at `docs/superpowers/specs/2026-05-28-cost-hygiene-reread-hook-design.md`.
 5. Self-review spec (placeholder/contradiction/scope/ambiguity).
 6. User reviews spec.
 7. On user approval → invoke `superpowers:writing-plans` skill.
+
+## Section 1 — Architecture (delivered, awaiting approval)
+
+### Hook trigger
+
+Add `PreToolUse` matcher in `hooks/hooks.json` scoped to `Read`:
+
+```json
+"PreToolUse": [
+  {
+    "matcher": "Read",
+    "hooks": [
+      { "type": "command",
+        "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/check-redundant-read.mjs\"" }
+    ]
+  }
+]
+```
+
+### Hook input (stdin JSON from Claude Code)
+
+```jsonc
+{
+  "session_id": "abc123-def...",
+  "tool_name": "Read",
+  "tool_input": { "file_path": "C:/abs/path", "offset": 1, "limit": 2000 },
+  "cwd": "C:/work/mega/hero-crew"
+}
+```
+
+### Hook output (stdout) and exit semantics
+
+Hook **always exits 0** (never blocks the Read). Stdout is one of:
+
+- **Silent pass**: empty stdout (no reread, or mtime changed since last Read of this path)
+- **Warning**: JSON conforming to Claude Code PreToolUse output schema:
+
+```json
+{
+  "decision": "approve",
+  "systemMessage": "<system-reminder>You already loaded /abs/path Nx this session at <ts>. Content unchanged (mtime <iso>). Prior content:\n\n<quoted body>\n\nDo not re-issue the Read.</system-reminder>"
+}
+```
+
+`systemMessage` is injected before the actual Read result reaches the assistant.
+
+### State location
+
+`.claude/state/cost-hygiene/<session_id>.json` — per-session, gitignored (`.claude/state/` already in `.gitignore` per CLAUDE.md).
+
+Schema:
+
+```jsonc
+{
+  "session_id": "abc123",
+  "first_seen": "2026-05-28T19:35:00Z",
+  "last_seen": "2026-05-28T19:42:13Z",
+  "total_bytes": 487231,
+  "entries": {
+    "/abs/path": {
+      "read_count": 3,
+      "first_read_at": "...",
+      "last_read_at": "...",
+      "mtime_at_last_read": "2026-05-28T18:11:02Z",
+      "size_at_last_read": 27419,
+      "content_bytes": 27419,
+      "content": "..."
+    }
+  }
+}
+```
+
+Per-file 50KB cap, session-file 2MB cap, LRU evict on overflow (per Q6).
+
+### Three boundaries (Approach B)
+
+1. **Hook entry** `hooks/check-redundant-read.mjs` — I/O only: parse stdin → call lib → write stdout → exit 0.
+2. **State lib** `scripts/lib/cost-hygiene/state.mjs` — fs only: read/write session JSON, LRU evict, atomic write (write-temp + rename).
+3. **Decide lib** `scripts/lib/cost-hygiene/decide.mjs` — pure: `decide({path, storedEntry, currentMtime, currentSize})` → `{action: "pass"|"warn", message: string|null}`. No fs, no stdin/stdout.
+
+### Latency budget
+
+Target: **<150ms p95**. Components: Node startup ~80ms, stdin parse <1ms, state read ~5–15ms, fs.stat ~1–3ms, decide <1ms, atomic write ~5–15ms, stdout <1ms. Worst case ~115ms.
+
+## Pending sections (not yet presented)
+
+- **Section 2 — Components**: public surface of state.mjs (`loadSession`, `saveSession`, `evictLRU`) + decide.mjs (`decide()` pure function); dependency graph; what each does / how to use / what it depends on (per code-conventions.md).
+- **Section 3 — Data flow**: stdin → parse → load state → stat file → decide → emit `<system-reminder>` block → write state → exit. With diagram.
+- **Section 4 — Error handling**: hook NEVER blocks Read on its own error (corrupt state, fs fail, JSON parse fail) — always fall through to allow. Log to `.claude/logs/events.jsonl` on internal error.
+- **Section 5 — Testing**: table-driven for `decide()` covering Q1–Q7 decision matrix (every reread fires, mtime-changed suppresses, content under/over 50KB cap, LRU eviction at 2MB, session-id partition, malformed state file). State-lib tests use `os.tmpdir()` fixtures. Plus dogfood plan: run hook against this repo's actual workflow before promoting to plugin default-on.
 
 ## Reference
 
