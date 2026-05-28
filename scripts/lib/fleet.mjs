@@ -152,8 +152,21 @@ function formatAge(isoString) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+/**
+ * @typedef {Object} FleetItem
+ * @property {string} repoName
+ * @property {string} [progressPath]
+ * @property {boolean} [isSelf]
+ * @property {string|null} [inProgressSlice]
+ * @property {string|null} [inProgressTitle]
+ * @property {number|null} [completedCount]
+ * @property {number|null} [totalCount]
+ * @property {string|null} [updatedAt]
+ * @property {string} [error]
+ */
+
 // Render the fleet data as a markdown one-pane summary.
-/** @param {any[]} items */
+/** @param {FleetItem[]} items */
 export function renderFleet(items) {
   if (items.length === 0) {
     return "# Fleet\n\n_(no active loops found — no sibling repos with `.claude/state/crew/slice-progress.md`)_\n";
