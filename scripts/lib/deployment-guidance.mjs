@@ -104,7 +104,9 @@ function renderField(label, value) {
  * @returns {string}
  */
 function renderListField(label, value) {
-  const items = Array.isArray(value) ? value : toList(/** @type {string | null | undefined} */ (value));
+  const items = Array.isArray(value)
+    ? value
+    : toList(/** @type {string | null | undefined} */ (value));
   if (items.length === 0) {
     return `- ${label}: -`;
   }
@@ -132,7 +134,9 @@ function fileLooksLikeDeploymentClue(relativePath) {
   // relativePath is normalized to forward slashes in collectDeploymentClues,
   // so split on "/" rather than path.sep.
   const segments = relativePath.split("/");
-  const underDeploymentDir = segments.some((/** @type {string} */ segment) => DEPLOYMENT_DIR_HINTS.has(segment));
+  const underDeploymentDir = segments.some((/** @type {string} */ segment) =>
+    DEPLOYMENT_DIR_HINTS.has(segment)
+  );
   if (!underDeploymentDir) {
     return false;
   }

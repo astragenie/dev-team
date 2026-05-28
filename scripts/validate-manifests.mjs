@@ -53,8 +53,7 @@ function checkVersions(plugin, pkg, fail) {
 /** @param {Record<string, any>} plugin @param {Record<string, any>} marketplace @param {(msg: string) => void} fail */
 function checkOwnMarketplaceEntry(plugin, marketplace, fail) {
   const ownEntry = marketplace.plugins.find(
-    (/** @type {{ name?: string; version?: string }} */ entry) =>
-      entry.name === plugin.name
+    (/** @type {{ name?: string; version?: string }} */ entry) => entry.name === plugin.name
   );
   if (!ownEntry) {
     fail(`marketplace.json: no entry for own plugin name "${plugin.name}"`);

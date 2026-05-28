@@ -326,7 +326,9 @@ function parseFrontmatterBlock(text) {
 function parseModelMix(text) {
   /** @type {Array<{model: string, messages: number, msgPct: number, usd: number, usdPct: number}>} */
   const out = [];
-  const section = text.split(/^##\s+/m).find((/** @type {string} */ s) => s.startsWith("Model Mix"));
+  const section = text
+    .split(/^##\s+/m)
+    .find((/** @type {string} */ s) => s.startsWith("Model Mix"));
   if (!section) return out;
   for (const line of section.split(/\r?\n/)) {
     const m = line.match(
@@ -348,7 +350,9 @@ function parseModelMix(text) {
 function parseToolUsage(text) {
   let toolCalls = 0;
   let toolFailures = 0;
-  const section = text.split(/^##\s+/m).find((/** @type {string} */ s) => s.startsWith("Tool Usage"));
+  const section = text
+    .split(/^##\s+/m)
+    .find((/** @type {string} */ s) => s.startsWith("Tool Usage"));
   if (section) {
     for (const line of section.split(/\r?\n/)) {
       const m = line.match(/^-\s+\S+:\s*([\d,]+)(?:\s*\((\d+)\s+failed\))?/);
@@ -363,7 +367,12 @@ function parseToolUsage(text) {
 
 /** @param {Array<{model: string, msgPct: number}>} modelMix */
 function computeDominantModel(modelMix) {
-  const dominantEntry = modelMix.find((/** @type {{model: string, msgPct: number}} */ m) => !/^<|unknown/i.test(m.model)) || modelMix[0] || null;
+  const dominantEntry =
+    modelMix.find(
+      (/** @type {{model: string, msgPct: number}} */ m) => !/^<|unknown/i.test(m.model)
+    ) ||
+    modelMix[0] ||
+    null;
   if (!dominantEntry) return null;
   return { model: dominantEntry.model, pct: dominantEntry.msgPct };
 }
@@ -659,7 +668,11 @@ export async function collectRecentCosts(repoPath, limit = 5) {
     path.join(repoPath, ".claude", "artifacts", "crew", "runs") // legacy fallback
   ];
   const sorted = await listCostReportFilesByMtime(dirs, limit);
-  if (sorted.length === 0) return { recent: /** @type {ReturnType<typeof parseCostReportText>[]} */ ([]), totalReports: 0 };
+  if (sorted.length === 0)
+    return {
+      recent: /** @type {ReturnType<typeof parseCostReportText>[]} */ ([]),
+      totalReports: 0
+    };
 
   /** @type {ReturnType<typeof parseCostReportText>[]} */
   const recent = [];

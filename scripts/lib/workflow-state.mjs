@@ -193,8 +193,22 @@ function archiveRun(state, run) {
     updatedAt: run.updatedAt || nowIso(),
     completedAt: run.completedAt || run.updatedAt || nowIso(),
     next: run.next || "",
-    gates: run.gates || { review: null, validation: null, deployment: { dev: null, prod: null }, blocked: null, escalation: null },
-    artifacts: run.artifacts || { runBrief: null, handoffs: [], reviewResult: null, validationPlan: null, validationResult: null, deploymentChecks: { dev: null, prod: null }, finalSynthesis: null }
+    gates: run.gates || {
+      review: null,
+      validation: null,
+      deployment: { dev: null, prod: null },
+      blocked: null,
+      escalation: null
+    },
+    artifacts: run.artifacts || {
+      runBrief: null,
+      handoffs: [],
+      reviewResult: null,
+      validationPlan: null,
+      validationResult: null,
+      deploymentChecks: { dev: null, prod: null },
+      finalSynthesis: null
+    }
   };
 
   state.recentRuns = [archived, ...(state.recentRuns || [])].slice(0, MAX_RECENT_RUNS);
@@ -381,9 +395,27 @@ const PHASE_ARTIFACT_GETTERS = [
 function hasCompletedPhaseEvidence(run) {
   if (!run) return false;
   /** @type {RunGates} */
-  const gates = run.gates || /** @type {RunGates} */ ({ review: null, validation: null, deployment: { dev: null, prod: null }, blocked: null, escalation: null });
+  const gates =
+    run.gates ||
+    /** @type {RunGates} */ ({
+      review: null,
+      validation: null,
+      deployment: { dev: null, prod: null },
+      blocked: null,
+      escalation: null
+    });
   /** @type {RunArtifacts} */
-  const artifacts = run.artifacts || /** @type {RunArtifacts} */ ({ runBrief: null, handoffs: [], reviewResult: null, validationPlan: null, validationResult: null, deploymentChecks: { dev: null, prod: null }, finalSynthesis: null });
+  const artifacts =
+    run.artifacts ||
+    /** @type {RunArtifacts} */ ({
+      runBrief: null,
+      handoffs: [],
+      reviewResult: null,
+      validationPlan: null,
+      validationResult: null,
+      deploymentChecks: { dev: null, prod: null },
+      finalSynthesis: null
+    });
   const anyGateResolved = GATE_STATUS_GETTERS.some((get) => isGateResolved(get(gates)));
   const anyArtifactWritten = PHASE_ARTIFACT_GETTERS.some((get) => Boolean(get(artifacts)));
   return anyGateResolved || anyArtifactWritten;
@@ -433,9 +465,27 @@ const MISSING_WRITE_SPECS = [
 function summarizeMissingArtifactWritesForRun(run) {
   if (!run) return [];
   /** @type {RunGates} */
-  const gates = run.gates || /** @type {RunGates} */ ({ review: null, validation: null, deployment: { dev: null, prod: null }, blocked: null, escalation: null });
+  const gates =
+    run.gates ||
+    /** @type {RunGates} */ ({
+      review: null,
+      validation: null,
+      deployment: { dev: null, prod: null },
+      blocked: null,
+      escalation: null
+    });
   /** @type {RunArtifacts} */
-  const artifacts = run.artifacts || /** @type {RunArtifacts} */ ({ runBrief: null, handoffs: [], reviewResult: null, validationPlan: null, validationResult: null, deploymentChecks: { dev: null, prod: null }, finalSynthesis: null });
+  const artifacts =
+    run.artifacts ||
+    /** @type {RunArtifacts} */ ({
+      runBrief: null,
+      handoffs: [],
+      reviewResult: null,
+      validationPlan: null,
+      validationResult: null,
+      deploymentChecks: { dev: null, prod: null },
+      finalSynthesis: null
+    });
 
   const missing = MISSING_WRITE_SPECS.filter(
     (spec) => isDecided(spec.gate(gates)) && !spec.artifact(artifacts)
@@ -606,7 +656,9 @@ const ARTIFACT_HANDLERS = {
     );
   },
   "final-synthesis"(run, artifact, fields) {
-    const pendingBadges = summarizeWorkflowState(/** @type {WorkflowState} */ ({ currentRun: run, version: "", updatedAt: "", recentRuns: [] })).pendingBadges;
+    const pendingBadges = summarizeWorkflowState(
+      /** @type {WorkflowState} */ ({ currentRun: run, version: "", updatedAt: "", recentRuns: [] })
+    ).pendingBadges;
     const hasEscalation = run?.gates?.escalation?.status === "escalated";
     const force = fields.force === true;
 

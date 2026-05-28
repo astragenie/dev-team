@@ -367,7 +367,8 @@ async function sessionsHaveInWindowAssistantTurns(files, startMs, endMs) {
  */
 async function scanSessions({ sessions, fileToSlug, startMs, endMs }) {
   const totals = emptyTotals();
-  const byModel = /** @type {Record<string, {tokens: Record<string, number>, usd: number, messages: number, pricedAs?: string}>} */ ({});
+  const byModel =
+    /** @type {Record<string, {tokens: Record<string, number>, usd: number, messages: number, pricedAs?: string}>} */ ({});
   const toolUseCounts = /** @type {Record<string, number>} */ ({});
   const toolFailureCounts = /** @type {Record<string, number>} */ ({});
   /** @type {number[]} */
@@ -390,7 +391,8 @@ async function scanSessions({ sessions, fileToSlug, startMs, endMs }) {
   // contribution to cache_create on the NEXT assistant turn after a
   // tool_use → tool_result pair. State lives across turns inside the
   // scanner loop.
-  const toolCachePrime = /** @type {Record<string, {calls: number, totalResultBytes: number, attributedCacheCreate: number}>} */ ({}); // { toolName: { calls, totalResultBytes, attributedCacheCreate } }
+  const toolCachePrime =
+    /** @type {Record<string, {calls: number, totalResultBytes: number, attributedCacheCreate: number}>} */ ({}); // { toolName: { calls, totalResultBytes, attributedCacheCreate } }
   const cachePrimeState = {
     pendingToolUses: /** @type {Array<{id: string, name: string}>} */ ([]), // [{ id, name }] from the previous assistant turn
     pendingResultSizes: /** @type {Record<string, number>} */ ({}) // { tool_use_id: bytes } from the next user turn

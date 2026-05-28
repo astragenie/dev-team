@@ -311,7 +311,12 @@ function usage(target = null) {
   };
 
   if (target && subcommands[/** @type {keyof typeof subcommands} */ (target)]) {
-    return ["Engineering OS installer", "", "Usage:", subcommands[/** @type {keyof typeof subcommands} */ (target)]].join("\n");
+    return [
+      "Engineering OS installer",
+      "",
+      "Usage:",
+      subcommands[/** @type {keyof typeof subcommands} */ (target)]
+    ].join("\n");
   }
 
   return ["Engineering OS installer", "", "Usage:", ...Object.values(subcommands)].join("\n");
@@ -537,7 +542,9 @@ const COMMANDS = {
     const { discoverDeploymentClues } = await import("./lib/deployment-guidance.mjs");
     return discoverDeploymentClues(repoPath);
   },
-  "write-deployment-guidance": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
+  "write-deployment-guidance": async (
+    /** @type {CommandContext} */ { repoPath, flags, positionals }
+  ) => {
     const { writeDeploymentGuidance } = await import("./lib/deployment-guidance.mjs");
     return writeDeploymentGuidance(repoPath, {
       title: flags.title || positionals.join(" ") || "Repo Deployment Model",
@@ -651,7 +658,9 @@ const COMMANDS = {
       nonCode: flags.nonCode
     });
   },
-  "write-validation-plan": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
+  "write-validation-plan": async (
+    /** @type {CommandContext} */ { repoPath, flags, positionals }
+  ) => {
     const { writeArtifact } = await import("./lib/artifacts.mjs");
     return writeArtifact(repoPath, "validation-plan", {
       title: flags.title || positionals.join(" ") || "Validation Plan",
@@ -668,7 +677,9 @@ const COMMANDS = {
       phase: flags.phase
     });
   },
-  "write-validation-result": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
+  "write-validation-result": async (
+    /** @type {CommandContext} */ { repoPath, flags, positionals }
+  ) => {
     const { writeArtifact } = await import("./lib/artifacts.mjs");
     return writeArtifact(repoPath, "validation-result", {
       title: flags.title || positionals.join(" ") || "Validation Result",
@@ -685,7 +696,9 @@ const COMMANDS = {
       phase: flags.phase
     });
   },
-  "write-deployment-check": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
+  "write-deployment-check": async (
+    /** @type {CommandContext} */ { repoPath, flags, positionals }
+  ) => {
     const { writeArtifact } = await import("./lib/artifacts.mjs");
     return writeArtifact(repoPath, "deployment-check", {
       title: flags.title || positionals.join(" ") || "Deployment Check",
@@ -705,7 +718,9 @@ const COMMANDS = {
       phase: flags.phase
     });
   },
-  "write-final-synthesis": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
+  "write-final-synthesis": async (
+    /** @type {CommandContext} */ { repoPath, flags, positionals }
+  ) => {
     const { writeArtifact } = await import("./lib/artifacts.mjs");
     const synthesis = await writeArtifact(repoPath, "final-synthesis", {
       title: flags.title || positionals.join(" ") || "Final Synthesis",

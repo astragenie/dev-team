@@ -346,9 +346,7 @@ export function computeGrade(target) {
   let grade = "A";
 
   /** @type {Record<string, number>} */
-  const targetMap = /** @type {Record<string, number>} */ (
-    /** @type {unknown} */ (target)
-  );
+  const targetMap = /** @type {Record<string, number>} */ (/** @type {unknown} */ (target));
 
   // cacheHitPct: higher is better
   const cacheHit = target.cacheHitPct ?? 0;
@@ -371,7 +369,7 @@ export function computeGrade(target) {
   ];
 
   for (const [key, thresholds] of countMetrics) {
-    const val = (targetMap[key] ?? 0);
+    const val = targetMap[key] ?? 0;
     let metricGrade = "F";
     for (const [max, g] of thresholds) {
       if (val <= /** @type {number} */ (max)) {
@@ -755,7 +753,8 @@ export async function buildCostAdvisor(repoPath, { limit = 10 } = {}) {
       reports: /** @type {SummaryRecord[]} */ ([]),
       target: /** @type {SummaryRecord | null} */ (null),
       baseline: /** @type {BaselineRecord | null} */ (null),
-      recommendations: /** @type {Array<{id:string,severity:string,message:string,suggestion:string}>} */ ([])
+      recommendations:
+        /** @type {Array<{id:string,severity:string,message:string,suggestion:string}>} */ ([])
     };
   }
   const summaries = reports.map(summarizeReport);

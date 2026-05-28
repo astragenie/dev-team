@@ -437,7 +437,10 @@ function buildWakeUpSummary({
   latestArtifacts,
   archiveCounts
 }) {
-  const recentArtifactList = /** @type {(({ path: string, title: string, updatedAt: string }) | null | undefined)[]} */ (Object.values(latestArtifacts));
+  const recentArtifactList =
+    /** @type {(({ path: string, title: string, updatedAt: string }) | null | undefined)[]} */ (
+      Object.values(latestArtifacts)
+    );
   const newest = newestOf(...recentArtifactList);
   return {
     memoryPolicy: /** @type {string} */ (memory["policy"]),

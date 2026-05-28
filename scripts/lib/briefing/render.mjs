@@ -119,8 +119,14 @@ const MISSING_WRITE_MESSAGES = {
 const GATE_FAILURE_SPECS = [
   { label: "Independent review failed", gate: (/** @type {Record<string, any>} */ g) => g.review },
   { label: "Validation failed", gate: (/** @type {Record<string, any>} */ g) => g.validation },
-  { label: "Dev deployment checks failed", gate: (/** @type {Record<string, any>} */ g) => g.deployment?.dev },
-  { label: "Production deployment checks failed", gate: (/** @type {Record<string, any>} */ g) => g.deployment?.prod }
+  {
+    label: "Dev deployment checks failed",
+    gate: (/** @type {Record<string, any>} */ g) => g.deployment?.dev
+  },
+  {
+    label: "Production deployment checks failed",
+    gate: (/** @type {Record<string, any>} */ g) => g.deployment?.prod
+  }
 ];
 
 /**
@@ -171,9 +177,19 @@ export function buildBlockedOrMissing(wakeUpBrief, deploymentClues, gitActivity)
   const gates = wakeUpBrief.workflow?.currentRun?.gates || {};
 
   return [
-    ...pending.map((/** @type {string} */ b) => /** @type {Record<string, string>} */ (PENDING_BADGE_MESSAGES)[b]).filter(Boolean),
+    ...pending
+      .map(
+        (/** @type {string} */ b) =>
+          /** @type {Record<string, string>} */ (PENDING_BADGE_MESSAGES)[b]
+      )
+      .filter(Boolean),
     ...collectGateFailureMessages(gates),
-    ...missingWrites.map((/** @type {string} */ w) => /** @type {Record<string, string>} */ (MISSING_WRITE_MESSAGES)[w]).filter(Boolean),
+    ...missingWrites
+      .map(
+        (/** @type {string} */ w) =>
+          /** @type {Record<string, string>} */ (MISSING_WRITE_MESSAGES)[w]
+      )
+      .filter(Boolean),
     ...collectRepoStateMessages(wakeUpBrief, deploymentClues, gitActivity)
   ];
 }
@@ -182,7 +198,8 @@ export function buildBlockedOrMissing(wakeUpBrief, deploymentClues, gitActivity)
 
 const REMINDER_RULES = [
   {
-    when: (/** @type {ReminderCtx} */ ctx) => ctx.gitActivity.isGitRepo && ctx.gitActivity.workingTree.hasChanges,
+    when: (/** @type {ReminderCtx} */ ctx) =>
+      ctx.gitActivity.isGitRepo && ctx.gitActivity.workingTree.hasChanges,
     message: (/** @type {ReminderCtx} */ ctx) =>
       `Working tree has ${ctx.gitActivity.workingTree.stagedCount} staged, ${ctx.gitActivity.workingTree.modifiedCount} modified, and ${ctx.gitActivity.workingTree.untrackedCount} untracked path(s).`
   },

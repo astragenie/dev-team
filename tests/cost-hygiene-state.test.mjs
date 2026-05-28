@@ -76,11 +76,23 @@ test("recordRead increments read_count, updates last_read_at, preserves first_re
   const repo = await makeRepo();
   try {
     let state = await loadSession(repo, "sess-rec");
-    state = recordRead(state, "/abs/p", "2026-05-28T17:00:00.000Z", 100, "2026-05-28T18:00:00.000Z");
+    state = recordRead(
+      state,
+      "/abs/p",
+      "2026-05-28T17:00:00.000Z",
+      100,
+      "2026-05-28T18:00:00.000Z"
+    );
     assert.equal(state.entries["/abs/p"].read_count, 1);
     assert.equal(state.entries["/abs/p"].first_read_at, "2026-05-28T18:00:00.000Z");
 
-    state = recordRead(state, "/abs/p", "2026-05-28T17:00:00.000Z", 100, "2026-05-28T18:05:00.000Z");
+    state = recordRead(
+      state,
+      "/abs/p",
+      "2026-05-28T17:00:00.000Z",
+      100,
+      "2026-05-28T18:05:00.000Z"
+    );
     assert.equal(state.entries["/abs/p"].read_count, 2);
     assert.equal(state.entries["/abs/p"].first_read_at, "2026-05-28T18:00:00.000Z");
     assert.equal(state.entries["/abs/p"].last_read_at, "2026-05-28T18:05:00.000Z");
@@ -108,7 +120,13 @@ test("recordReadContent caps content at 50KB, sets content:null when oversized",
   try {
     let state = await loadSession(repo, "sess-big");
     const big = "x".repeat(60_000);
-    state = recordRead(state, "/abs/p", "2026-05-28T17:00:00.000Z", 60_000, "2026-05-28T18:00:00.000Z");
+    state = recordRead(
+      state,
+      "/abs/p",
+      "2026-05-28T17:00:00.000Z",
+      60_000,
+      "2026-05-28T18:00:00.000Z"
+    );
     state = recordReadContent(state, "/abs/p", big);
     assert.equal(state.entries["/abs/p"].content, null);
     assert.equal(state.entries["/abs/p"].content_bytes, 0);
@@ -125,9 +143,33 @@ test("evictLRU drops least-recently-read on session-cap overflow", () => {
     last_seen: "2026-05-28T18:00:00.000Z",
     total_bytes: 2_100_000,
     entries: {
-      "/a": { read_count: 1, first_read_at: "2026-05-28T18:00:00.000Z", last_read_at: "2026-05-28T18:00:00.000Z", mtime_at_last_read: "x", size_at_last_read: 0, content_bytes: 1_000_000, content: "a" },
-      "/b": { read_count: 1, first_read_at: "2026-05-28T18:01:00.000Z", last_read_at: "2026-05-28T18:01:00.000Z", mtime_at_last_read: "x", size_at_last_read: 0, content_bytes: 600_000, content: "b" },
-      "/c": { read_count: 1, first_read_at: "2026-05-28T18:02:00.000Z", last_read_at: "2026-05-28T18:02:00.000Z", mtime_at_last_read: "x", size_at_last_read: 0, content_bytes: 500_000, content: "c" }
+      "/a": {
+        read_count: 1,
+        first_read_at: "2026-05-28T18:00:00.000Z",
+        last_read_at: "2026-05-28T18:00:00.000Z",
+        mtime_at_last_read: "x",
+        size_at_last_read: 0,
+        content_bytes: 1_000_000,
+        content: "a"
+      },
+      "/b": {
+        read_count: 1,
+        first_read_at: "2026-05-28T18:01:00.000Z",
+        last_read_at: "2026-05-28T18:01:00.000Z",
+        mtime_at_last_read: "x",
+        size_at_last_read: 0,
+        content_bytes: 600_000,
+        content: "b"
+      },
+      "/c": {
+        read_count: 1,
+        first_read_at: "2026-05-28T18:02:00.000Z",
+        last_read_at: "2026-05-28T18:02:00.000Z",
+        mtime_at_last_read: "x",
+        size_at_last_read: 0,
+        content_bytes: 500_000,
+        content: "c"
+      }
     }
   };
   const protectedPath = "/c";
@@ -144,8 +186,24 @@ test("evictLRU never drops the entry being recorded even if it is the LRU", () =
     last_seen: "2026-05-28T18:00:00.000Z",
     total_bytes: 2_100_000,
     entries: {
-      "/oldest": { read_count: 1, first_read_at: "2026-05-28T18:00:00.000Z", last_read_at: "2026-05-28T18:00:00.000Z", mtime_at_last_read: "x", size_at_last_read: 0, content_bytes: 1_500_000, content: "x" },
-      "/newer": { read_count: 1, first_read_at: "2026-05-28T18:05:00.000Z", last_read_at: "2026-05-28T18:05:00.000Z", mtime_at_last_read: "x", size_at_last_read: 0, content_bytes: 600_000, content: "y" }
+      "/oldest": {
+        read_count: 1,
+        first_read_at: "2026-05-28T18:00:00.000Z",
+        last_read_at: "2026-05-28T18:00:00.000Z",
+        mtime_at_last_read: "x",
+        size_at_last_read: 0,
+        content_bytes: 1_500_000,
+        content: "x"
+      },
+      "/newer": {
+        read_count: 1,
+        first_read_at: "2026-05-28T18:05:00.000Z",
+        last_read_at: "2026-05-28T18:05:00.000Z",
+        mtime_at_last_read: "x",
+        size_at_last_read: 0,
+        content_bytes: 600_000,
+        content: "y"
+      }
     }
   };
   const result = evictLRU(state, "/oldest");
