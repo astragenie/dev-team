@@ -51,6 +51,22 @@ function emptyState(sessionId) {
 /**
  * @param {string} repoPath
  * @param {string} sessionId
+ * @param {SessionState} state
+ * @returns {Promise<void>}
+ */
+export async function saveSession(repoPath, sessionId, state) {
+  const file = statePath(repoPath, sessionId);
+  const dir = path.dirname(file);
+  await fs.mkdir(dir, { recursive: true });
+  const tempFile = `${file}.tmp.${process.pid}`;
+  state.last_seen = new Date().toISOString();
+  await fs.writeFile(tempFile, JSON.stringify(state, null, 2), "utf8");
+  await fs.rename(tempFile, file);
+}
+
+/**
+ * @param {string} repoPath
+ * @param {string} sessionId
  * @returns {Promise<SessionState>}
  */
 export async function loadSession(repoPath, sessionId) {
