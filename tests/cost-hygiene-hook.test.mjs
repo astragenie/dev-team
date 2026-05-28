@@ -115,3 +115,55 @@ test("hook with malformed stdin exits 0 silently", async () => {
   assert.equal(result.exitCode, 0);
   assert.equal(result.stdout, "");
 });
+
+const POST_HOOK_PATH = path.join(__dirname, "..", "hooks", "record-read-content.mjs");
+
+/**
+ * @param {string} stdin
+ * @param {Record<string, string>} env
+ * @returns {Promise<{exitCode: number, stdout: string, stderr: string}>}
+ */
+function runPostHook(stdin, env = {}) {
+  return new Promise((resolve) => {
+    const proc = spawn("node", [POST_HOOK_PATH], { env: { ...process.env, ...env } });
+    let stdout = "";
+    let stderr = "";
+    proc.stdout.on("data", (b) => (stdout += b.toString("utf8")));
+    proc.stderr.on("data", (b) => (stderr += b.toString("utf8")));
+    proc.on("close", (exitCode) => resolve({ exitCode: exitCode ?? -1, stdout, stderr }));
+    proc.stdin.end(stdin);
+  });
+}
+
+test("post-hook captures Read tool result content into state", async () => {
+  const repo = await makeRepo();
+  try {
+    const file = path.join(repo, "post.txt");
+    await fs.writeFile(file, "wisp", "utf8");
+    // Seed state with a first-read record (no content yet).
+    const preStdin = JSON.stringify({
+      session_id: "s4",
+      tool_name: "Read",
+      tool_input: { file_path: file },
+      cwd: repo
+    });
+    await runHook(preStdin, { CREW_COST_HYGIENE: "1" });
+
+    const postStdin = JSON.stringify({
+      session_id: "s4",
+      tool_name: "Read",
+      tool_input: { file_path: file },
+      tool_response: { content: "wisp" },
+      cwd: repo
+    });
+    const result = await runPostHook(postStdin, { CREW_COST_HYGIENE: "1" });
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.stdout, "");
+    const state = JSON.parse(
+      await fs.readFile(path.join(repo, ".claude", "state", "cost-hygiene", "s4.json"), "utf8")
+    );
+    assert.equal(state.entries[file].content, "wisp");
+  } finally {
+    await cleanup(repo);
+  }
+});
