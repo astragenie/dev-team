@@ -88,3 +88,57 @@ export async function loadSession(repoPath, sessionId) {
     return emptyState(sessionId);
   }
 }
+
+const PER_FILE_CAP_BYTES = 50 * 1024;
+
+/**
+ * @param {SessionState} state
+ * @param {string} filePath
+ * @param {string} mtime
+ * @param {number} size
+ * @param {string} now
+ * @returns {SessionState}
+ */
+export function recordRead(state, filePath, mtime, size, now) {
+  const existing = state.entries[filePath];
+  if (existing) {
+    existing.read_count += 1;
+    existing.last_read_at = now;
+    existing.mtime_at_last_read = mtime;
+    existing.size_at_last_read = size;
+  } else {
+    state.entries[filePath] = {
+      read_count: 1,
+      first_read_at: now,
+      last_read_at: now,
+      mtime_at_last_read: mtime,
+      size_at_last_read: size,
+      content_bytes: 0,
+      content: null
+    };
+  }
+  return state;
+}
+
+/**
+ * @param {SessionState} state
+ * @param {string} filePath
+ * @param {string} content
+ * @returns {SessionState}
+ */
+export function recordReadContent(state, filePath, content) {
+  const entry = state.entries[filePath];
+  if (!entry) return state;
+  const previousBytes = entry.content_bytes;
+  const candidateBytes = Buffer.byteLength(content, "utf8");
+  if (candidateBytes > PER_FILE_CAP_BYTES) {
+    entry.content = null;
+    entry.content_bytes = 0;
+    state.total_bytes = state.total_bytes - previousBytes;
+  } else {
+    entry.content = content;
+    entry.content_bytes = candidateBytes;
+    state.total_bytes = state.total_bytes - previousBytes + candidateBytes;
+  }
+  return state;
+}
