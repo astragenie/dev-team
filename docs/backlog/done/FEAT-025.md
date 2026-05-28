@@ -2,7 +2,7 @@
 id: FEAT-025
 title: Enable noImplicitAny in tsconfig and annotate all scripts/**/*.mjs
 priority: P3
-status: pending
+status: done
 category: types
 target_release: null
 autonomous_safe: true
