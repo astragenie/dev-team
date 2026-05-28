@@ -12,6 +12,7 @@ import path from "node:path";
 import { indentJson, writeFileIfChanged } from "./util.mjs";
 import { DEFAULT_SETTINGS } from "./templates.mjs";
 
+/** @param {{ hooks?: Array<{command?: string, description?: string}> } | null | undefined} entry */
 export function isCrewHook(entry) {
   const hooks = Array.isArray(entry?.hooks) ? entry.hooks : [];
   return hooks.some((hook) => {
@@ -26,6 +27,10 @@ export function isCrewHook(entry) {
   });
 }
 
+/**
+ * @param {Record<string, unknown[]>} [existingHooks]
+ * @param {Record<string, unknown[]>} [desiredHooks]
+ */
 export function mergeHooks(existingHooks = {}, desiredHooks = {}) {
   const result = { ...existingHooks };
   for (const [eventName, hookDefs] of Object.entries(desiredHooks)) {
@@ -45,9 +50,13 @@ export function mergeHooks(existingHooks = {}, desiredHooks = {}) {
   return result;
 }
 
+/**
+ * @param {string} repoPath
+ * @param {string[]} writes
+ */
 export async function updateSettings(repoPath, writes) {
   const settingsPath = path.join(repoPath, ".claude", "settings.json");
-  const existing = await fs.readFile(settingsPath, "utf8").catch(() => null);
+  const existing = await fs.readFile(settingsPath, "utf8").catch(/** @returns {null} */ () => null);
   const current = existing ? JSON.parse(existing) : {};
   const next = {
     ...current,

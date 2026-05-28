@@ -3,7 +3,7 @@ import path from "node:path";
 
 const SLICE_RE = /SLICE[-_](\d+)/i;
 
-/** @param {any} text */
+/** @param {unknown} text */
 function extractSliceId(text) {
   if (!text) return null;
   const m = String(text).match(SLICE_RE);

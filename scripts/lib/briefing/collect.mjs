@@ -13,6 +13,7 @@ const execFile = promisify(execFileCallback);
 const BRANCH_COMMITS_LIMIT = 5;
 const REPO_ACTIVITY_LIMIT = 8;
 
+/** @param {string} targetPath */
 async function pathExists(targetPath) {
   try {
     await fs.access(targetPath);
@@ -22,11 +23,16 @@ async function pathExists(targetPath) {
   }
 }
 
+/** @param {string} value */
 function parseInteger(value) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+/**
+ * @param {string} repoPath
+ * @param {string[]} args
+ */
 async function runGit(repoPath, args) {
   try {
     const result = await execFile("git", args, { cwd: repoPath });
@@ -36,6 +42,7 @@ async function runGit(repoPath, args) {
   }
 }
 
+/** @param {string} header */
 function parseStatusHeader(header) {
   const branchMatch = header.match(/^##\s+([^\s.]+|HEAD)(?:\.\.\.([^\s[]+))?(?:\s+\[(.+)\])?/);
   const details = branchMatch?.[3] || "";
@@ -50,6 +57,7 @@ function parseStatusHeader(header) {
   };
 }
 
+/** @param {string | null} statusOutput */
 function parseWorkingTree(statusOutput) {
   if (!statusOutput) {
     return {
@@ -104,6 +112,7 @@ function parseWorkingTree(statusOutput) {
   };
 }
 
+/** @param {string | null} stdout */
 function parseCommits(stdout) {
   if (!stdout) {
     return [];
@@ -111,9 +120,9 @@ function parseCommits(stdout) {
 
   return stdout
     .split("\n")
-    .map((line) => line.trim())
+    .map((/** @type {string} */ line) => line.trim())
     .filter(Boolean)
-    .map((line) => {
+    .map((/** @type {string} */ line) => {
       const [hash = "", date = "", author = "", refs = "", subject = ""] = line.split("\t");
       return {
         hash,
@@ -125,6 +134,7 @@ function parseCommits(stdout) {
     });
 }
 
+/** @param {string} repoPath */
 export async function collectGitActivity(repoPath) {
   const statusOutput = await runGit(repoPath, ["status", "--short", "--branch"]);
   const workingTree = parseWorkingTree(statusOutput);
@@ -161,7 +171,9 @@ export async function collectGitActivity(repoPath) {
   };
 }
 
+/** @param {Record<string, any>} wakeUpBrief */
 function collectArtifactActivity(wakeUpBrief) {
+  /** @type {Record<string, string>} */
   const labels = {
     runBrief: "Run brief",
     finalSynthesis: "Final synthesis",
@@ -184,11 +196,19 @@ function collectArtifactActivity(wakeUpBrief) {
     .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
 }
 
+/**
+ * @param {string} body
+ * @param {string} label
+ */
 function extractMarkdownField(body, label) {
   const match = body.match(new RegExp(`^\\*\\*${label}\\*\\*:\\s*(.+)$`, "m"));
   return match ? match[1].trim() : "";
 }
 
+/**
+ * @param {string} filePath
+ * @param {string} [fallbackTitle]
+ */
 async function readArtifactSummary(filePath, fallbackTitle = "") {
   if (!filePath || !(await pathExists(filePath))) {
     return null;
@@ -208,12 +228,14 @@ async function readArtifactSummary(filePath, fallbackTitle = "") {
   };
 }
 
+/** @param {Record<string, any>} wakeUpBrief */
 export async function collectRelevantArtifacts(wakeUpBrief) {
   const runArtifacts = wakeUpBrief.workflowState?.currentRun?.artifacts;
   if (!runArtifacts) {
     return collectArtifactActivity(wakeUpBrief);
   }
 
+  /** @type {Record<string, string>} */
   const labels = {
     runBrief: "Run brief",
     finalSynthesis: "Final synthesis",
@@ -240,7 +262,7 @@ export async function collectRelevantArtifacts(wakeUpBrief) {
       }
       return {
         kind,
-        label: labels[kind] || kind,
+        label: labels[/** @type {string} */ (kind)] || kind,
         title: summary.title,
         updatedAt: summary.updatedAt,
         path: summary.path,
@@ -286,8 +308,10 @@ async function findAutonomousLoopCli() {
 // reports are skipped silently.
 // --- cost-report parsing helpers used by collectRecentCosts ---
 
+/** @param {string} text */
 function parseFrontmatterBlock(text) {
   const match = text.match(/^---\n([\s\S]*?)\n---/);
+  /** @type {Record<string, string>} */
   const fm = {};
   if (match) {
     for (const line of match[1].split(/\r?\n/)) {
@@ -298,9 +322,11 @@ function parseFrontmatterBlock(text) {
   return fm;
 }
 
+/** @param {string} text */
 function parseModelMix(text) {
+  /** @type {Array<{model: string, messages: number, msgPct: number, usd: number, usdPct: number}>} */
   const out = [];
-  const section = text.split(/^##\s+/m).find((s) => s.startsWith("Model Mix"));
+  const section = text.split(/^##\s+/m).find((/** @type {string} */ s) => s.startsWith("Model Mix"));
   if (!section) return out;
   for (const line of section.split(/\r?\n/)) {
     const m = line.match(
@@ -318,10 +344,11 @@ function parseModelMix(text) {
   return out;
 }
 
+/** @param {string} text */
 function parseToolUsage(text) {
   let toolCalls = 0;
   let toolFailures = 0;
-  const section = text.split(/^##\s+/m).find((s) => s.startsWith("Tool Usage"));
+  const section = text.split(/^##\s+/m).find((/** @type {string} */ s) => s.startsWith("Tool Usage"));
   if (section) {
     for (const line of section.split(/\r?\n/)) {
       const m = line.match(/^-\s+\S+:\s*([\d,]+)(?:\s*\((\d+)\s+failed\))?/);
@@ -334,12 +361,16 @@ function parseToolUsage(text) {
   return { toolCalls, toolFailures };
 }
 
+/** @param {Array<{model: string, msgPct: number}>} modelMix */
 function computeDominantModel(modelMix) {
-  const dominantEntry = modelMix.find((m) => !/^<|unknown/i.test(m.model)) || modelMix[0] || null;
+  const dominantEntry = modelMix.find((/** @type {{model: string, msgPct: number}} */ m) => !/^<|unknown/i.test(m.model)) || modelMix[0] || null;
   if (!dominantEntry) return null;
   return { model: dominantEntry.model, pct: dominantEntry.msgPct };
 }
 
+/**
+ * @param {{compactionCount: number, subagentDispatches: number, fileReReadCount: number, toolFailures: number, toolResultP90: number, turnsBeforeFirstTool: number, gradeAvg: number | null, reviewDecision: string | null, validationDecision: string | null, autoDetected: boolean, sourceProject: string | null, aggregateAll: boolean, sourceCount: number}} metrics
+ */
 function deriveFlags(metrics) {
   const flags = [];
   if (metrics.compactionCount > 0) flags.push(`compact:${metrics.compactionCount}`);
@@ -357,30 +388,51 @@ function deriveFlags(metrics) {
   return flags;
 }
 
+/**
+ * @param {string} text
+ * @param {RegExp} re
+ */
 function bodyNum(text, re) {
   return Number(text.match(re)?.[1]?.replace(/,/g, "") || 0);
 }
 
 // Header/window fields. Frontmatter wins when present; falls through to
 // body markdown patterns for pre-frontmatter cost-reports.
+/**
+ * @param {string} text
+ * @param {Record<string, string>} fm
+ */
 function parseRunTitle(text, fm) {
   const raw = fm.run_title || text.match(/^- Run Title:\s*(.+)$/m)?.[1] || "";
   const stripped = raw.replace(/^"|"$/g, "").trim();
   return stripped || null;
 }
 
+/**
+ * @param {string} text
+ * @param {Record<string, string>} fm
+ */
 function parseUsd(text, fm) {
   if (fm.usd != null) return Number(fm.usd);
   const fromBody = Number(text.match(/^- Total USD:\s*\$([\d.]+)/m)?.[1] || 0);
   return fromBody || null;
 }
 
+/**
+ * @param {Record<string, string>} fm
+ * @param {string | null} windowStart
+ * @param {string | null} windowEnd
+ */
 function parseDurationMs(fm, windowStart, windowEnd) {
   if (fm.duration_ms) return Number(fm.duration_ms);
   if (windowStart && windowEnd) return Date.parse(windowEnd) - Date.parse(windowStart);
   return 0;
 }
 
+/**
+ * @param {string} text
+ * @param {Record<string, string>} fm
+ */
 function parseHeaderFields(text, fm) {
   const windowStart = text.match(/^- Window Start:\s*(.+)$/m)?.[1]?.trim() || null;
   const windowEnd = text.match(/^- Window End:\s*(.+)$/m)?.[1]?.trim() || null;
@@ -393,6 +445,10 @@ function parseHeaderFields(text, fm) {
   };
 }
 
+/**
+ * @param {string} text
+ * @param {Record<string, string>} fm
+ */
 function parseTokenFields(text, fm) {
   const totalTokens = fm.total_tokens
     ? Number(fm.total_tokens)
@@ -415,6 +471,7 @@ function parseTokenFields(text, fm) {
   };
 }
 
+/** @param {string} text */
 function parseDiagnosticFields(text) {
   return {
     compactionCount: bodyNum(text, /^- compaction_count:\s*(\d+)/m),
@@ -429,6 +486,7 @@ function parseDiagnosticFields(text) {
   };
 }
 
+/** @param {Record<string, string>} fm */
 function parseOutcomeFields(fm) {
   return {
     gradeAvg: fm.grade_avg != null ? Number(fm.grade_avg) : null,
@@ -441,6 +499,10 @@ function parseOutcomeFields(fm) {
   };
 }
 
+/**
+ * @param {string} filePath
+ * @param {string} text
+ */
 function parseCostReportText(filePath, text) {
   const fm = parseFrontmatterBlock(text);
   const header = parseHeaderFields(text, fm);
@@ -452,7 +514,7 @@ function parseCostReportText(filePath, text) {
   const { toolCalls, toolFailures } = parseToolUsage(text);
   const toolFailureRate = toolCalls > 0 ? Number(((toolFailures / toolCalls) * 100).toFixed(1)) : 0;
 
-  const toM = (n) => Number((n / 1_000_000).toFixed(3));
+  const toM = (/** @type {number} */ n) => Number((n / 1_000_000).toFixed(3));
   const inputM = toM(tokens.inputTokens);
   const outputM = toM(tokens.outputTokens);
   const cacheReadM = toM(tokens.cacheReadTokens);
@@ -547,6 +609,10 @@ function parseCostReportText(filePath, text) {
   };
 }
 
+/**
+ * @param {string | string[]} dirs
+ * @param {number} limit
+ */
 async function listCostReportFilesByMtime(dirs, limit) {
   // Accept either a single dir (legacy) or an array of dirs to merge.
   const dirList = Array.isArray(dirs) ? dirs : [dirs];
@@ -583,14 +649,19 @@ async function listCostReportFilesByMtime(dirs, limit) {
     .map((entry) => entry.f);
 }
 
+/**
+ * @param {string} repoPath
+ * @param {number} [limit]
+ */
 export async function collectRecentCosts(repoPath, limit = 5) {
   const dirs = [
     path.join(repoPath, ".claude", "artifacts", "crew", "cost"),
     path.join(repoPath, ".claude", "artifacts", "crew", "runs") // legacy fallback
   ];
   const sorted = await listCostReportFilesByMtime(dirs, limit);
-  if (sorted.length === 0) return { recent: [], totalReports: 0 };
+  if (sorted.length === 0) return { recent: /** @type {ReturnType<typeof parseCostReportText>[]} */ ([]), totalReports: 0 };
 
+  /** @type {ReturnType<typeof parseCostReportText>[]} */
   const recent = [];
   let totalUsd = 0;
   for (const filePath of sorted) {
@@ -638,6 +709,7 @@ export async function collectRecentCosts(repoPath, limit = 5) {
 }
 
 // Severity priority order for picking the top concern from recommendations.
+/** @type {Record<string, number>} */
 const SEVERITY_RANK = { high: 0, medium: 1, low: 2 };
 
 /**
@@ -677,6 +749,7 @@ export async function collectCostHealth(repoPath) {
   };
 }
 
+/** @param {string} repoPath */
 export async function fetchAutonomousLoopBrief(repoPath) {
   try {
     const cli = await findAutonomousLoopCli();

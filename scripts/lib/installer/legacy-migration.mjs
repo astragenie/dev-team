@@ -12,6 +12,10 @@ import path from "node:path";
 
 import { ensureDir, pathExists } from "./util.mjs";
 
+/**
+ * @param {string} repoPath
+ * @param {string[]} writes
+ */
 export async function migrateLegacyHarness(repoPath, writes) {
   const moves = [
     [path.join(repoPath, ".claude", "engineering-os"), path.join(repoPath, ".claude", "crew")],
@@ -34,6 +38,12 @@ export async function migrateLegacyHarness(repoPath, writes) {
   }
 }
 
+/**
+ * @param {string} legacyDir
+ * @param {string} targetDir
+ * @param {string} repoPath
+ * @param {string[]} writes
+ */
 async function migrateDirectoryTree(legacyDir, targetDir, repoPath, writes) {
   const entries = await fs.readdir(legacyDir, { withFileTypes: true });
   for (const entry of entries) {
@@ -51,6 +61,12 @@ async function migrateDirectoryTree(legacyDir, targetDir, repoPath, writes) {
   }
 }
 
+/**
+ * @param {string} legacyPath
+ * @param {string} targetPath
+ * @param {string} repoPath
+ * @param {string[]} writes
+ */
 async function migrateOneFile(legacyPath, targetPath, repoPath, writes) {
   const targetExists = await pathExists(targetPath);
   if (!targetExists) {
@@ -72,6 +88,7 @@ async function migrateOneFile(legacyPath, targetPath, repoPath, writes) {
   await fs.unlink(legacyPath);
 }
 
+/** @param {string} dirPath */
 async function removeEmptyTree(dirPath) {
   if (!(await pathExists(dirPath))) {
     return;

@@ -15,11 +15,47 @@ function timestampSlug() {
     .replace(/\.\d{3}Z$/, "Z");
 }
 
+/**
+ * @typedef {{
+ *   title?: string, summary?: string, goal?: string, mode?: string, pace?: string,
+ *   owner?: string, status?: string, scope?: string, outOfScope?: string, files?: string,
+ *   next?: string, from?: string, to?: string, deliverable?: string, confidence?: string,
+ *   risks?: string, decision?: string, evidence?: string, testSummary?: string,
+ *   testSummarySkipReason?: string, nonCode?: boolean, reviewer?: string,
+ *   environment?: string, validator?: string, deployer?: string, resource?: string,
+ *   url?: string, revision?: string, runSteps?: string, repoContext?: boolean,
+ *   feature?: string, slice?: string, phase?: string | number,
+ *   cost?: CostBreakdown, outcome?: CostOutcome | null, notes?: string, runTitle?: string,
+ *   force?: boolean
+ * }} ArtifactFields
+ *
+ * @typedef {{
+ *   window?: {durationMs?: number, start?: string, end?: string},
+ *   usd?: number, totals?: Record<string, number>,
+ *   byModel?: Record<string, {messages: number, usd: number, tokens: Record<string, number>, pricedAs?: string}>,
+ *   modelMix?: Array<{model: string, pricedAs: string, messages: number, msgPct: number, usd: number, usdPct: number}>,
+ *   conversation?: {userMsgCount?: number, userMsgAvgLen?: number, turnsBeforeFirstTool?: number, compactionCount?: number, skillInvocations?: number, subagentDispatches?: number},
+ *   toolUsage?: Array<{name: string, count: number, failures: number}>,
+ *   toolResultSizes?: {count: number, sumBytes: number, p50Bytes: number, p90Bytes: number, maxBytes: number},
+ *   fileReReadCount?: number, fileReReadTopPaths?: Array<{reads: number, path: string}>,
+ *   toolCachePrime?: Array<{name: string, calls: number, totalResultBytes: number, attributedCacheCreate: number, ratio?: number}>,
+ *   sourceProject?: string, autoDetected?: boolean, aggregateAll?: boolean,
+ *   sources?: Array<{slug: string, messages: number, usd: number}>,
+ *   sessionsScanned?: number, messagesCounted?: number
+ * }} CostBreakdown
+ *
+ * @typedef {{
+ *   sliceId?: string, gradeAvg?: number, reviewDecision?: string,
+ *   validationDecision?: string, scores?: Record<string, unknown>
+ * }} CostOutcome
+ */
+
 // Emit an optional YAML frontmatter block when feature / phase is set.
 // Returns an empty string when neither is present so existing artifacts
 // stay byte-for-byte identical to the pre-frontmatter shape. Consumed by
 // SIMPLE_RENDERERS via writeArtifact; cost-report folds these keys into
 // its own frontmatter inline (see renderCostReportFrontmatter).
+/** @param {ArtifactFields} fields */
 function renderOptionalFrontmatter(fields) {
   const lines = [];
   if (fields.phase !== null && fields.phase !== undefined && String(fields.phase).length > 0) {
@@ -37,6 +73,7 @@ function renderOptionalFrontmatter(fields) {
   return ["---", ...lines, "---", ""].join("\n");
 }
 
+/** @param {string | undefined | null} value */
 function slugify(value) {
   return (
     (value || "artifact")
@@ -47,20 +84,29 @@ function slugify(value) {
   );
 }
 
+/** @param {unknown} value */
 function toList(value) {
-  if (!value) {
+  if (!value || typeof value !== "string") {
     return [];
   }
   return value
     .split(",")
-    .map((item) => item.trim())
+    .map((/** @type {string} */ item) => item.trim())
     .filter(Boolean);
 }
 
+/**
+ * @param {string} label
+ * @param {unknown} value
+ */
 function renderField(label, value) {
   return `- ${label}: ${value || "-"}`;
 }
 
+/**
+ * @param {string} label
+ * @param {unknown} value
+ */
 function renderListField(label, value) {
   const items = toList(value);
   if (items.length === 0) {
@@ -73,6 +119,7 @@ function renderListField(label, value) {
 // the output directory, filename prefix, and a pure `(fields) => string`
 // renderer. The complex cost-report renderer is a separate named function
 // below and is wired in by resolveArtifactConfig.
+/** @type {Record<string, {directory: string, prefix: string, render: (f: ArtifactFields) => string}>} */
 const SIMPLE_RENDERERS = {
   "run-brief": {
     directory: "runs",
@@ -224,13 +271,20 @@ const SIMPLE_RENDERERS = {
 
 // --- cost-report: complex, multi-section renderer split into helpers ---
 
+/**
+ * @param {ArtifactFields} fields
+ * @param {CostBreakdown | undefined} breakdown
+ * @param {CostOutcome | null} outcome
+ * @param {number} totalTokens
+ * @param {number | string} cacheHitPct
+ */
 function renderCostReportFrontmatter(fields, breakdown, outcome, totalTokens, cacheHitPct) {
   const durationMs = breakdown?.window?.durationMs || 0;
   // [predicate, line]. Truthy predicate emits the line. Defers evaluation of
   // the line string until we know it's emitted; keeps complexity flat instead
   // of nesting if-pushes.
   const phaseStr = fields.phase != null ? String(fields.phase) : "";
-  const optional = [
+  const optional = /** @type {Array<[unknown, function(): string]>} */ ([
     [phaseStr.length > 0, () => `phase: ${JSON.stringify(phaseStr)}`],
     [fields.feature, () => `feature: ${fields.feature}`],
     [outcome?.sliceId, () => `slice: ${outcome.sliceId}`],
@@ -246,7 +300,7 @@ function renderCostReportFrontmatter(fields, breakdown, outcome, totalTokens, ca
     [breakdown?.autoDetected, () => `auto_detected: true`],
     [breakdown?.aggregateAll, () => `aggregate_all: true`],
     [breakdown?.sources?.length, () => `source_count: ${breakdown.sources.length}`]
-  ];
+  ]);
   return [
     "---",
     "kind: cost-report",
@@ -256,6 +310,7 @@ function renderCostReportFrontmatter(fields, breakdown, outcome, totalTokens, ca
   ];
 }
 
+/** @param {CostBreakdown | undefined} breakdown */
 function renderCostReportSources(breakdown) {
   if (!breakdown?.sources?.length || breakdown.sources.length < 2) return [];
   const lines = ["## Sources (aggregated)", ""];
@@ -266,31 +321,43 @@ function renderCostReportSources(breakdown) {
   return lines;
 }
 
+/** @param {number} durationMs */
 function formatDuration(durationMs) {
   if (!durationMs) return "-";
   return `${(durationMs / 60000).toFixed(1)} min (${durationMs} ms)`;
 }
 
+/** @param {number} totalTokens */
 function formatTokens(totalTokens) {
   return totalTokens ? totalTokens.toLocaleString() : "-";
 }
 
+/** @param {number | string} cacheHitPct */
 function formatCacheHit(cacheHitPct) {
   return cacheHitPct !== "-" ? `${cacheHitPct}%` : "-";
 }
 
+/** @param {CostBreakdown | undefined | null} breakdown */
 function formatUsd(breakdown) {
   return breakdown ? `$${breakdown.usd.toFixed(4)}` : "-";
 }
 
+/** @param {unknown} value */
 function formatBool(value) {
   return value ? "yes" : "no";
 }
 
+/** @param {number | null | undefined} value */
 function formatCount(value) {
   return String(value ?? 0);
 }
 
+/**
+ * @param {ArtifactFields} fields
+ * @param {CostBreakdown | undefined} breakdown
+ * @param {number} totalTokens
+ * @param {number | string} cacheHitPct
+ */
 function renderCostReportHeader(fields, breakdown, totalTokens, cacheHitPct) {
   const window = breakdown?.window || {};
   return [
@@ -313,6 +380,7 @@ function renderCostReportHeader(fields, breakdown, totalTokens, cacheHitPct) {
   ];
 }
 
+/** @param {CostOutcome | null | undefined} outcome */
 function renderCostReportOutcome(outcome) {
   if (!outcome?.sliceId) return [];
   const lines = ["## Outcome Linkage", ""];
@@ -330,6 +398,7 @@ function renderCostReportOutcome(outcome) {
   return lines;
 }
 
+/** @param {CostBreakdown | undefined} breakdown */
 function renderCostReportTokens(breakdown) {
   const lines = ["## Tokens (totals)", ""];
   if (breakdown?.totals) {
@@ -342,6 +411,7 @@ function renderCostReportTokens(breakdown) {
   return lines;
 }
 
+/** @param {CostBreakdown | undefined} breakdown */
 function renderCostReportModelMix(breakdown) {
   const lines = ["", "## Model Mix", ""];
   if (breakdown?.modelMix?.length) {
@@ -356,6 +426,7 @@ function renderCostReportModelMix(breakdown) {
   return lines;
 }
 
+/** @param {CostBreakdown | undefined} breakdown */
 function renderCostReportConversation(breakdown) {
   const conv = breakdown?.conversation || {};
   return [
@@ -371,6 +442,7 @@ function renderCostReportConversation(breakdown) {
   ];
 }
 
+/** @param {CostBreakdown | undefined} breakdown */
 function renderCostReportToolUsage(breakdown) {
   const lines = ["", "## Tool Usage", ""];
   if (breakdown?.toolUsage?.length) {
@@ -384,6 +456,7 @@ function renderCostReportToolUsage(breakdown) {
   return lines;
 }
 
+/** @param {CostBreakdown | undefined} breakdown */
 function renderCostReportToolResultSizes(breakdown) {
   const lines = ["", "## Tool Result Sizes (bytes)", ""];
   const trs = breakdown?.toolResultSizes;
@@ -399,6 +472,7 @@ function renderCostReportToolResultSizes(breakdown) {
   return lines;
 }
 
+/** @param {CostBreakdown | undefined} breakdown */
 function renderCostReportFileReReads(breakdown) {
   const lines = ["", "## File Re-reads", ""];
   lines.push(`- redundant_read_count: ${breakdown?.fileReReadCount ?? 0}`);
@@ -411,6 +485,7 @@ function renderCostReportFileReReads(breakdown) {
   return lines;
 }
 
+/** @param {CostBreakdown | undefined} breakdown */
 function renderCostReportCachePriming(breakdown) {
   if (!breakdown?.toolCachePrime?.length) return [];
   const lines = ["", "## Cache Priming (per tool, approximate)", ""];
@@ -428,6 +503,7 @@ function renderCostReportCachePriming(breakdown) {
   return lines;
 }
 
+/** @param {CostBreakdown | undefined} breakdown */
 function renderCostReportByModel(breakdown) {
   const lines = ["", "## By Model (token detail)", ""];
   if (breakdown?.byModel && Object.keys(breakdown.byModel).length) {
@@ -444,6 +520,7 @@ function renderCostReportByModel(breakdown) {
   return lines;
 }
 
+/** @param {ArtifactFields} fields */
 function renderCostReport(fields) {
   const breakdown = fields.cost;
   const outcome = fields.outcome || null;
@@ -477,6 +554,7 @@ function renderCostReport(fields) {
   ].join("\n");
 }
 
+/** @param {string} kind */
 function resolveArtifactConfig(kind) {
   if (kind === "cost-report") {
     return { directory: "cost", prefix: "cost-report", render: renderCostReport };
@@ -488,7 +566,12 @@ function resolveArtifactConfig(kind) {
   return config;
 }
 
+/** @param {string} repoPath */
 async function buildRepoLayoutBlock(repoPath) {
+  /**
+   * @param {string} relDir
+   * @param {object} [opts]
+   */
   async function safeReaddir(relDir, opts = {}) {
     try {
       return await fs.readdir(path.join(repoPath, relDir), opts);
@@ -543,6 +626,11 @@ async function buildRepoLayoutBlock(repoPath) {
   ].join("\n");
 }
 
+/**
+ * @param {string} repoPath
+ * @param {string} kind
+ * @param {ArtifactFields} [fields]
+ */
 export async function writeArtifact(repoPath, kind, fields = {}) {
   const config = resolveArtifactConfig(kind);
   const artifactDir = path.join(repoPath, ...ARTIFACT_ROOT, config.directory);

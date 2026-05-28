@@ -112,6 +112,11 @@ function checkRecommendedFields(fm, label, warnings) {
   }
 }
 
+/**
+ * @param {string} text
+ * @param {string} label
+ * @param {string[]} warnings
+ */
 function checkSectionHeadings(text, label, warnings) {
   const triggerHint = /^##\s+(Trigger|When to Use|Use this|Detection)/im.test(text);
   if (!triggerHint) warnings.push(`${label}: no detectable Trigger / When-to-Use section heading`);
@@ -120,6 +125,10 @@ function checkSectionHeadings(text, label, warnings) {
     warnings.push(`${label}: no detectable Done / Acceptance / Stop-when section heading`);
 }
 
+/**
+ * @param {Array<{label: string, fm: Record<string, string> | null}>} skills
+ * @param {string[]} errors
+ */
 function checkDuplicateNames(skills, errors) {
   const byName = new Map();
   for (const s of skills) {
@@ -134,7 +143,9 @@ function checkDuplicateNames(skills, errors) {
 
 export async function validateSkills(skillsRoot = SKILLS_ROOT) {
   const files = await findSkillFiles(skillsRoot);
+  /** @type {string[]} */
   const errors = [];
+  /** @type {string[]} */
   const warnings = [];
   const skills = [];
 

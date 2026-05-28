@@ -16,10 +16,15 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+/** @param {string} dirPath */
 async function ensureDir(dirPath) {
   await fs.mkdir(dirPath, { recursive: true });
 }
 
+/**
+ * @param {string} filePath
+ * @param {string} contents
+ */
 async function ensureFile(filePath, contents) {
   try {
     await fs.access(filePath);
@@ -29,10 +34,12 @@ async function ensureFile(filePath, contents) {
   }
 }
 
+/** @param {string} repoPath */
 async function ensureApprovalLog(repoPath) {
   await ensureFile(path.join(repoPath, ...APPROVALS_PATH), "");
 }
 
+/** @param {string} repoPath */
 async function approvalLogExists(repoPath) {
   try {
     await fs.access(path.join(repoPath, ...APPROVALS_PATH));
@@ -42,10 +49,12 @@ async function approvalLogExists(repoPath) {
   }
 }
 
+/** @param {string} kind */
 function defaultApprover(kind) {
   return USER_APPROVAL_KINDS.has(kind) ? "user" : "lead";
 }
 
+/** @param {string} [status] */
 function normalizeStatusFilter(status) {
   if (!status || status === "open") {
     return "open";
@@ -60,12 +69,20 @@ function buildApprovalId() {
   return `apr_${Date.now().toString(36)}_${crypto.randomBytes(3).toString("hex")}`;
 }
 
+/**
+ * @param {string} repoPath
+ * @param {Record<string, unknown>} event
+ */
 async function appendApprovalEvent(repoPath, event) {
   await ensureApprovalLog(repoPath);
   const approvalsPath = path.join(repoPath, ...APPROVALS_PATH);
   await fs.appendFile(approvalsPath, `${JSON.stringify({ timestamp: nowIso(), ...event })}\n`);
 }
 
+/**
+ * @param {string} repoPath
+ * @param {{createIfMissing?: boolean}} [options]
+ */
 async function readApprovalEvents(repoPath, options = {}) {
   if (options.createIfMissing === false && !(await approvalLogExists(repoPath))) {
     return [];
@@ -80,6 +97,7 @@ async function readApprovalEvents(repoPath, options = {}) {
     .map((line) => JSON.parse(line));
 }
 
+/** @param {Array<Record<string, unknown>>} events */
 function replayApprovals(events) {
   const approvals = new Map();
 
@@ -117,6 +135,10 @@ function replayApprovals(events) {
   );
 }
 
+/**
+ * @param {string} repoPath
+ * @param {{kind?: string, severity?: string, summary?: string, reason?: string, requester?: string, approver?: string}} [options]
+ */
 export async function requestApproval(repoPath, options = {}) {
   const kind = options.kind || "scope_change";
   const approval = {
@@ -140,6 +162,10 @@ export async function requestApproval(repoPath, options = {}) {
   };
 }
 
+/**
+ * @param {string} repoPath
+ * @param {{status?: string, approver?: string | null, createIfMissing?: boolean}} [options]
+ */
 export async function listApprovals(repoPath, options = {}) {
   const status = normalizeStatusFilter(options.status);
   const approver = options.approver || null;
@@ -160,6 +186,10 @@ export async function listApprovals(repoPath, options = {}) {
   });
 }
 
+/**
+ * @param {string} repoPath
+ * @param {{id?: string, decision?: string, resolver?: string, note?: string}} [options]
+ */
 export async function resolveApproval(repoPath, options = {}) {
   const id = options.id;
   const decision = options.decision;

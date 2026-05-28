@@ -18,11 +18,13 @@ import { installGlobal } from "./installer/global.mjs";
 
 export { auditRepo, installGlobal };
 
+/** @param {string} repoPath */
 export async function bootstrapRepo(repoPath) {
   if (!(await pathExists(repoPath))) {
     throw new Error(`Repository path does not exist: ${repoPath}`);
   }
 
+  /** @type {string[]} */
   const writes = [];
   // Migrate first so writeHarnessFiles uses missing-only semantics on top of
   // whatever the legacy tree provides (Step 3 of the P3.1 namespace rename).
@@ -42,9 +44,13 @@ export async function bootstrapRepo(repoPath) {
   };
 }
 
+/**
+ * @param {string} repoPath
+ * @param {{ allowExisting?: boolean }} [options]
+ */
 export async function initRepo(repoPath, options = {}) {
   if (await pathExists(repoPath)) {
-    const entries = await fs.readdir(repoPath).catch(() => []);
+    const entries = await fs.readdir(repoPath).catch(/** @returns {string[]} */ () => []);
     if (entries.length > 0 && !options.allowExisting) {
       throw new Error(
         `Target directory already exists and is not empty: ${repoPath}. Pass --allow-existing to reuse it.`

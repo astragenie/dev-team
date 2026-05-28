@@ -6,6 +6,10 @@ import { createReadStream } from "node:fs";
 
 const PROJECTS_ROOT = path.join(os.homedir(), ".claude", "projects");
 
+/**
+ * @param {string} repoPath
+ * @returns {string}
+ */
 export function slugifyRepoPath(repoPath) {
   return repoPath.replace(/[^A-Za-z0-9]/g, "-");
 }
@@ -17,6 +21,11 @@ export async function loadPricing() {
   return JSON.parse(raw);
 }
 
+/**
+ * @param {string} model
+ * @param {{ fallback: string, models: Record<string, Record<string, number>> }} pricing
+ * @returns {string}
+ */
 function matchModelKey(model, pricing) {
   if (!model) return pricing.fallback;
   const keys = Object.keys(pricing.models);
@@ -37,27 +46,50 @@ function emptyTotals() {
   };
 }
 
+/**
+ * @typedef {{ calls: number, totalResultBytes: number, attributedCacheCreate: number }} CachePrimeEntry
+ * @typedef {{ messagesCounted: number, sessionsScanned: number, compactionCount: number, userMsgCount: number, userMsgTotalLen: number, skillInvocations: number, subagentDispatches: number, turnsBeforeFirstTool: number }} Counters
+ * @typedef {{ sawFirstTool: boolean }} Flags
+ * @typedef {{ pendingToolUses: Array<{id: string, name: string}>, pendingResultSizes: Record<string, number> }} CachePrimeState
+ * @typedef {{ totals: Record<string, number>, byModel: Record<string, {tokens: Record<string, number>, usd: number, messages: number, pricedAs?: string}>, toolUseCounts: Record<string, number>, toolFailureCounts: Record<string, number>, toolResultSizes: number[], filesRead: Record<string, number>, toolNameById: Map<string, string>, counters: Counters, flags: Flags, ensureSource: (slug: string) => {messages: number, tokens: Record<string, number>, modelTokens: Record<string, Record<string, number>>, touched: boolean}, toolCachePrime: Record<string, CachePrimeEntry>, cachePrimeState: CachePrimeState }} ScanCtx
+ */
+
+/**
+ * @param {Record<string, number>} target
+ * @param {Record<string, number>} source
+ * @returns {void}
+ */
 function addTotals(target, source) {
   for (const k of Object.keys(target)) target[k] += source[k] || 0;
 }
 
+/**
+ * @param {Record<string, unknown>} usage
+ * @returns {Record<string, number>}
+ */
 function tokensFromUsage(usage) {
   const out = emptyTotals();
   if (!usage || typeof usage !== "object") return out;
-  out.input = usage.input_tokens || 0;
-  out.cache_read = usage.cache_read_input_tokens || 0;
-  out.output = usage.output_tokens || 0;
+  out.input = /** @type {number} */ (usage.input_tokens) || 0;
+  out.cache_read = /** @type {number} */ (usage.cache_read_input_tokens) || 0;
+  out.output = /** @type {number} */ (usage.output_tokens) || 0;
 
   const cc = usage.cache_creation;
   if (cc && typeof cc === "object") {
-    out.cache_create_5m = cc.ephemeral_5m_input_tokens || 0;
-    out.cache_create_1h = cc.ephemeral_1h_input_tokens || 0;
+    const cc2 = /** @type {Record<string, number>} */ (cc);
+    out.cache_create_5m = cc2.ephemeral_5m_input_tokens || 0;
+    out.cache_create_1h = cc2.ephemeral_1h_input_tokens || 0;
   } else {
-    out.cache_create_5m = usage.cache_creation_input_tokens || 0;
+    out.cache_create_5m = /** @type {number} */ (usage.cache_creation_input_tokens) || 0;
   }
   return out;
 }
 
+/**
+ * @param {Record<string, number>} tokens
+ * @param {Record<string, number>} modelRates
+ * @returns {number}
+ */
 function priceTokens(tokens, modelRates) {
   let usd = 0;
   for (const k of Object.keys(tokens)) {
@@ -67,6 +99,11 @@ function priceTokens(tokens, modelRates) {
   return usd;
 }
 
+/**
+ * @param {string} repoPath
+ * @param {string|null} [sourceProjectSlug]
+ * @returns {Promise<string[]>}
+ */
 async function listProjectSessions(repoPath, sourceProjectSlug = null) {
   // sourceProjectSlug overrides the repo-derived slug so callers can attribute
   // cost to a Claude session that ran in a different repo (e.g. multi-repo
@@ -91,6 +128,10 @@ async function listProjectSessions(repoPath, sourceProjectSlug = null) {
 // the dir with the most assistant turns in the window wins. Returns the
 // slug of the winning dir, or null if no project dir has any activity.
 // Lists .jsonl files in a single project dir, or empty array on any error.
+/**
+ * @param {string} dir
+ * @returns {Promise<string[]>}
+ */
 async function listJsonlInDir(dir) {
   try {
     return (await fs.readdir(dir)).filter((f) => f.endsWith(".jsonl"));
@@ -111,6 +152,12 @@ async function listProjectDirEntries() {
 
 // Counts assistant turns with billable usage inside [startMs, endMs] across
 // every .jsonl file in `dir`.
+/**
+ * @param {string} dir
+ * @param {number} startMs
+ * @param {number} endMs
+ * @returns {Promise<number>}
+ */
 async function countInWindowAssistantTurns(dir, startMs, endMs) {
   const files = await listJsonlInDir(dir);
   let count = 0;
@@ -148,6 +195,10 @@ export async function autoDetectSourceProject({ startedAt, completedAt } = {}) {
   return best ? best.slug : null;
 }
 
+/**
+ * @param {string} file
+ * @returns {AsyncGenerator<{type?: string, timestamp?: string, isMeta?: boolean, message?: {usage?: Record<string, unknown>, content?: unknown, model?: string}}>}
+ */
 async function* readJsonlLines(file) {
   const stream = createReadStream(file, { encoding: "utf8" });
   const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
@@ -161,12 +212,21 @@ async function* readJsonlLines(file) {
   }
 }
 
+/**
+ * @param {number[]} sortedArr
+ * @param {number} p
+ * @returns {number}
+ */
 function percentile(sortedArr, p) {
   if (sortedArr.length === 0) return 0;
   const idx = Math.min(sortedArr.length - 1, Math.floor((p / 100) * sortedArr.length));
   return sortedArr[idx];
 }
 
+/**
+ * @param {unknown} value
+ * @returns {number}
+ */
 function approxSize(value) {
   if (value == null) return 0;
   if (typeof value === "string") return value.length;
@@ -178,7 +238,12 @@ function approxSize(value) {
 }
 
 // Walk a content array and collect tool_use / tool_result / text signals.
+/**
+ * @param {unknown} content
+ * @returns {{ toolUses: Array<{id: string, name: string, input: unknown}>, toolResults: Array<{id: string, size: number, isError: boolean}>, textLen: number }}
+ */
 function inspectContent(content) {
+  /** @type {{ toolUses: Array<{id: string, name: string, input: unknown}>, toolResults: Array<{id: string, size: number, isError: boolean}>, textLen: number }} */
   const out = { toolUses: [], toolResults: [], textLen: 0 };
   if (!Array.isArray(content)) {
     if (typeof content === "string") out.textLen = content.length;
@@ -204,6 +269,10 @@ function inspectContent(content) {
 // Build a list of project dirs that have at least one in-window assistant
 // turn. Used by aggregateAll mode to scope summation to relevant dirs only
 // (skips unrelated ambient sessions).
+/**
+ * @param {{ startMs: number, endMs: number }} opts
+ * @returns {Promise<Array<{slug: string, dir: string}>>}
+ */
 async function listActiveProjectDirs({ startMs, endMs }) {
   const slugs = await listProjectDirEntries();
   const active = [];
@@ -221,6 +290,10 @@ async function listActiveProjectDirs({ startMs, endMs }) {
 //   - explicit sourceProject: scan only that dir.
 //   - default: scan the repo-derived dir; if empty + autoDetect enabled,
 //     fall back to the busiest in-window project.
+/**
+ * @param {{ aggregateAll: boolean, sourceProject: string|null, autoDetect: boolean, repoPath: string, startedAt: string, endIso: string, startMs: number, endMs: number }} opts
+ * @returns {Promise<{ sessionsBySource: Map<string, string[]>, effectiveSlug: string, autoDetected: boolean }>}
+ */
 async function resolveScanSources({
   aggregateAll,
   sourceProject,
@@ -265,6 +338,12 @@ async function resolveScanSources({
 // True iff any .jsonl session file has at least one assistant turn with
 // usage data inside [startMs, endMs]. Short-circuits as soon as one match
 // is found.
+/**
+ * @param {string[]} files
+ * @param {number} startMs
+ * @param {number} endMs
+ * @returns {Promise<boolean>}
+ */
 async function sessionsHaveInWindowAssistantTurns(files, startMs, endMs) {
   for (const file of files) {
     for await (const obj of readJsonlLines(file)) {
@@ -282,13 +361,18 @@ async function sessionsHaveInWindowAssistantTurns(files, startMs, endMs) {
 // conversation-shape counters, and per-source attribution. Pulled out of
 // computeSessionCost so the orchestrator stays small and so this loop can
 // be unit-tested in isolation in the future.
+/**
+ * @param {{ sessions: string[], fileToSlug: Map<string, string>, startMs: number, endMs: number }} opts
+ * @returns {Promise<{totals: Record<string, number>, byModel: Record<string, {tokens: Record<string, number>, usd: number, messages: number, pricedAs?: string}>, messagesCounted: number, sessionsScanned: number, toolUseCounts: Record<string, number>, toolFailureCounts: Record<string, number>, toolResultSizes: number[], filesRead: Record<string, number>, compactionCount: number, userMsgCount: number, userMsgTotalLen: number, skillInvocations: number, subagentDispatches: number, turnsBeforeFirstTool: number, perSourceState: Map<string, {messages: number, tokens: Record<string, number>, modelTokens: Record<string, Record<string, number>>, touched: boolean}>, toolCachePrime: Record<string, {calls: number, totalResultBytes: number, attributedCacheCreate: number}>}>}
+ */
 async function scanSessions({ sessions, fileToSlug, startMs, endMs }) {
   const totals = emptyTotals();
-  const byModel = {};
-  const toolUseCounts = {};
-  const toolFailureCounts = {};
+  const byModel = /** @type {Record<string, {tokens: Record<string, number>, usd: number, messages: number, pricedAs?: string}>} */ ({});
+  const toolUseCounts = /** @type {Record<string, number>} */ ({});
+  const toolFailureCounts = /** @type {Record<string, number>} */ ({});
+  /** @type {number[]} */
   const toolResultSizes = [];
-  const filesRead = {};
+  const filesRead = /** @type {Record<string, number>} */ ({});
   const toolNameById = new Map();
   const perSourceState = new Map();
   const counters = {
@@ -306,12 +390,13 @@ async function scanSessions({ sessions, fileToSlug, startMs, endMs }) {
   // contribution to cache_create on the NEXT assistant turn after a
   // tool_use → tool_result pair. State lives across turns inside the
   // scanner loop.
-  const toolCachePrime = {}; // { toolName: { calls, totalResultBytes, attributedCacheCreate } }
+  const toolCachePrime = /** @type {Record<string, {calls: number, totalResultBytes: number, attributedCacheCreate: number}>} */ ({}); // { toolName: { calls, totalResultBytes, attributedCacheCreate } }
   const cachePrimeState = {
-    pendingToolUses: [], // [{ id, name }] from the previous assistant turn
-    pendingResultSizes: {} // { tool_use_id: bytes } from the next user turn
+    pendingToolUses: /** @type {Array<{id: string, name: string}>} */ ([]), // [{ id, name }] from the previous assistant turn
+    pendingResultSizes: /** @type {Record<string, number>} */ ({}) // { tool_use_id: bytes } from the next user turn
   };
 
+  /** @param {string} slug */
   const ensureSource = (slug) => {
     if (!perSourceState.has(slug)) {
       perSourceState.set(slug, {
@@ -380,6 +465,13 @@ async function scanSessions({ sessions, fileToSlug, startMs, endMs }) {
 // Updates ctx with token usage + tool-use stats from one assistant turn.
 // Returns true when the turn produced billable activity (used by the outer
 // scan to count `sessionsScanned`).
+/**
+ * @param {ScanCtx} ctx
+ * @param {string} model
+ * @param {Record<string, number>} tokens
+ * @param {string} file
+ * @param {Map<string, string>} fileToSlug
+ */
 function recordTokenUsage(ctx, model, tokens, file, fileToSlug) {
   addTotals(ctx.totals, tokens);
   if (!ctx.byModel[model]) {
@@ -403,31 +495,42 @@ function recordTokenUsage(ctx, model, tokens, file, fileToSlug) {
 // Maps tool-use names to the counter they bump on the context. Adding a new
 // tracked tool = one entry.
 const TOOL_COUNTERS = {
+  /** @param {ScanCtx} ctx */
   Skill: (ctx) => (ctx.counters.skillInvocations += 1),
+  /** @param {ScanCtx} ctx */
   Agent: (ctx) => (ctx.counters.subagentDispatches += 1)
 };
 
+/**
+ * @param {ScanCtx} ctx
+ * @param {{id: string, name: string, input: unknown}} tu
+ */
 function recordToolUse(ctx, tu) {
   ctx.flags.sawFirstTool = true;
   ctx.toolUseCounts[tu.name] = (ctx.toolUseCounts[tu.name] || 0) + 1;
   if (tu.id) ctx.toolNameById.set(tu.id, tu.name);
-  TOOL_COUNTERS[tu.name]?.(ctx);
+  TOOL_COUNTERS[/** @type {keyof typeof TOOL_COUNTERS} */ (tu.name)]?.(ctx);
   if (tu.name === "Read") {
-    const p = tu.input?.file_path;
+    const inp = /** @type {Record<string, unknown>} */ (tu.input);
+    const p = /** @type {string|undefined} */ (inp?.file_path);
     if (p) ctx.filesRead[p] = (ctx.filesRead[p] || 0) + 1;
   }
 }
 
+/**
+ * @param {ScanCtx} ctx
+ * @param {Record<string, unknown>} usage
+ */
 function attributeCachePrime(ctx, usage) {
   // Attribute this turn's cache_create_* tokens to the tool_uses from the
   // PRIOR assistant turn, weighted by their tool_result sizes. Approximate:
   // ignores interleaved system content, prompt re-injection, etc.
   const pending = ctx.cachePrimeState.pendingToolUses;
   if (!pending.length || !usage) return;
-  const cc = usage.cache_creation;
+  const cc = /** @type {Record<string, number>|null|undefined} */ (usage.cache_creation);
   const cacheCreate = cc
     ? (cc.ephemeral_5m_input_tokens || 0) + (cc.ephemeral_1h_input_tokens || 0)
-    : usage.cache_creation_input_tokens || 0;
+    : /** @type {number} */ (usage.cache_creation_input_tokens) || 0;
   if (cacheCreate <= 0) return;
   const sizes = pending.map((tu) => ctx.cachePrimeState.pendingResultSizes[tu.id] || 0);
   const totalSize = sizes.reduce((a, b) => a + b, 0);
@@ -446,11 +549,18 @@ function attributeCachePrime(ctx, usage) {
 // assistant messages with no real LLM call. They show $0 cost but pollute
 // byModel/modelMix output. Filter them out at capture time.
 const SYNTHETIC_MODEL_PREFIXES = ["<synthetic>", "<", "synthetic"];
+/** @param {string} model */
 function isSyntheticModel(model) {
   if (!model) return false;
   return SYNTHETIC_MODEL_PREFIXES.some((p) => model.startsWith(p));
 }
 
+/**
+ * @param {{type?: string, timestamp?: string, isMeta?: boolean, message?: {usage?: Record<string, unknown>, content?: unknown, model?: string}}} obj
+ * @param {string} file
+ * @param {Map<string, string>} fileToSlug
+ * @param {ScanCtx} ctx
+ */
 function handleAssistantTurn(obj, file, fileToSlug, ctx) {
   const usage = obj?.message?.usage;
   const touched = Boolean(usage);
@@ -479,6 +589,10 @@ function handleAssistantTurn(obj, file, fileToSlug, ctx) {
 
 // Updates ctx with tool-result sizes/failures, conversation-shape counters,
 // and compaction signals from one user turn.
+/**
+ * @param {{type?: string, timestamp?: string, isMeta?: boolean, message?: {usage?: Record<string, unknown>, content?: unknown, model?: string}}} obj
+ * @param {ScanCtx} ctx
+ */
 function handleUserTurn(obj, ctx) {
   if (obj.isMeta) {
     // Meta-injected user messages = compaction summaries, skill activations,
@@ -517,6 +631,10 @@ function handleUserTurn(obj, ctx) {
 }
 
 // Prices every model's accumulated tokens in place and returns the total USD.
+/**
+ * @param {Record<string, {tokens: Record<string, number>, usd: number, messages: number, pricedAs?: string}>} byModel
+ * @param {{ fallback: string, models: Record<string, Record<string, number>> }} pricing
+ */
 function priceByModel(byModel, pricing) {
   let totalUsd = 0;
   for (const model of Object.keys(byModel)) {
@@ -531,6 +649,10 @@ function priceByModel(byModel, pricing) {
 }
 
 // Per-source USD breakdown, sorted by usd desc.
+/**
+ * @param {Map<string, {messages: number, tokens: Record<string, number>, modelTokens: Record<string, Record<string, number>>, touched: boolean}>} perSourceState
+ * @param {{ fallback: string, models: Record<string, Record<string, number>> }} pricing
+ */
 function computeSourceBreakdown(perSourceState, pricing) {
   const out = [];
   for (const [slug, s] of perSourceState.entries()) {
@@ -546,6 +668,11 @@ function computeSourceBreakdown(perSourceState, pricing) {
   return out.sort((a, b) => b.usd - a.usd);
 }
 
+/**
+ * @param {Record<string, {tokens: Record<string, number>, usd: number, messages: number, pricedAs?: string}>} byModel
+ * @param {number} messagesCounted
+ * @param {number} totalUsd
+ */
 function buildModelMix(byModel, messagesCounted, totalUsd) {
   return Object.entries(byModel)
     .map(([model, info]) => ({
@@ -560,6 +687,7 @@ function buildModelMix(byModel, messagesCounted, totalUsd) {
     .sort((a, b) => b.usd - a.usd);
 }
 
+/** @param {number[]} toolResultSizes */
 function computeSizeStats(toolResultSizes) {
   toolResultSizes.sort((a, b) => a - b);
   return {
@@ -571,12 +699,17 @@ function computeSizeStats(toolResultSizes) {
   };
 }
 
+/** @param {Record<string, number>} filesRead */
 function collectFileReReadEntries(filesRead) {
   return Object.entries(filesRead)
     .filter(([, c]) => c > 1)
     .sort((a, b) => b[1] - a[1]);
 }
 
+/**
+ * @param {Record<string, number>} toolUseCounts
+ * @param {Record<string, number>} toolFailureCounts
+ */
 function buildToolUsage(toolUseCounts, toolFailureCounts) {
   return Object.entries(toolUseCounts)
     .map(([name, count]) => ({ name, count, failures: toolFailureCounts[name] || 0 }))

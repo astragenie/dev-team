@@ -380,8 +380,10 @@ const PHASE_ARTIFACT_GETTERS = [
  */
 function hasCompletedPhaseEvidence(run) {
   if (!run) return false;
-  const gates = run.gates || {};
-  const artifacts = run.artifacts || {};
+  /** @type {RunGates} */
+  const gates = run.gates || /** @type {RunGates} */ ({ review: null, validation: null, deployment: { dev: null, prod: null }, blocked: null, escalation: null });
+  /** @type {RunArtifacts} */
+  const artifacts = run.artifacts || /** @type {RunArtifacts} */ ({ runBrief: null, handoffs: [], reviewResult: null, validationPlan: null, validationResult: null, deploymentChecks: { dev: null, prod: null }, finalSynthesis: null });
   const anyGateResolved = GATE_STATUS_GETTERS.some((get) => isGateResolved(get(gates)));
   const anyArtifactWritten = PHASE_ARTIFACT_GETTERS.some((get) => Boolean(get(artifacts)));
   return anyGateResolved || anyArtifactWritten;
@@ -430,8 +432,10 @@ const MISSING_WRITE_SPECS = [
  */
 function summarizeMissingArtifactWritesForRun(run) {
   if (!run) return [];
-  const gates = run.gates || {};
-  const artifacts = run.artifacts || {};
+  /** @type {RunGates} */
+  const gates = run.gates || /** @type {RunGates} */ ({ review: null, validation: null, deployment: { dev: null, prod: null }, blocked: null, escalation: null });
+  /** @type {RunArtifacts} */
+  const artifacts = run.artifacts || /** @type {RunArtifacts} */ ({ runBrief: null, handoffs: [], reviewResult: null, validationPlan: null, validationResult: null, deploymentChecks: { dev: null, prod: null }, finalSynthesis: null });
 
   const missing = MISSING_WRITE_SPECS.filter(
     (spec) => isDecided(spec.gate(gates)) && !spec.artifact(artifacts)
@@ -483,7 +487,7 @@ function ensureCurrentRun(state, fields = {}) {
 // Badge -> (gate selector, status). `selector` takes the run and returns
 // a [parent, key] tuple so the badge can assign without having to repeat
 // the `run.gates.deployment.dev = ...` chain inline.
-/** @type {Record<string, { selector: (run: WorkflowRun) => [Record<string, GateEntry|null>, string], status: string, custom?: boolean }>} */
+/** @type {Record<string, { selector: (run: WorkflowRun) => [Record<string, unknown>, string], status: string, custom?: boolean }>} */
 const BADGE_TABLE = {
   review_required: { selector: (run) => [run.gates, "review"], status: "required" },
   review_passed: { selector: (run) => [run.gates, "review"], status: "passed" },
@@ -567,6 +571,7 @@ export async function markWorkflowBadge(repoPath, options = {}) {
 // (run, artifact, fields) and mutates run in place. Centralizing the
 // dispatch keeps registerWorkflowArtifact below the complexity budget
 // and makes adding a new artifact kind a one-entry change.
+/** @type {Record<string, (run: WorkflowRun, artifact: ArtifactRef, fields: RunFields & BadgeOptions & { decision?: string, environment?: string, status?: string }) => void>} */
 const ARTIFACT_HANDLERS = {
   handoff(run, artifact) {
     run.artifacts.handoffs = [...(run.artifacts.handoffs || []), artifact.path].slice(-10);
@@ -601,7 +606,7 @@ const ARTIFACT_HANDLERS = {
     );
   },
   "final-synthesis"(run, artifact, fields) {
-    const pendingBadges = summarizeWorkflowState({ currentRun: run }).pendingBadges;
+    const pendingBadges = summarizeWorkflowState(/** @type {WorkflowState} */ ({ currentRun: run, version: "", updatedAt: "", recentRuns: [] })).pendingBadges;
     const hasEscalation = run?.gates?.escalation?.status === "escalated";
     const force = fields.force === true;
 
@@ -619,6 +624,12 @@ const ARTIFACT_HANDLERS = {
   }
 };
 
+/**
+ * @param {WorkflowRun} run
+ * @param {ArtifactRef} artifact
+ * @param {RunFields & BadgeOptions & { decision?: string, environment?: string, status?: string }} fields
+ * @returns {void}
+ */
 function applyArtifactToRun(run, artifact, fields) {
   const handler = ARTIFACT_HANDLERS[artifact.kind];
   if (handler) {
@@ -626,6 +637,12 @@ function applyArtifactToRun(run, artifact, fields) {
   }
 }
 
+/**
+ * @param {string} repoPath
+ * @param {ArtifactRef} artifact
+ * @param {RunFields & BadgeOptions & { decision?: string, environment?: string, status?: string }} [fields]
+ * @returns {Promise<WorkflowRun|null>}
+ */
 export async function registerWorkflowArtifact(repoPath, artifact, fields = {}) {
   const state = await loadWorkflowState(repoPath);
 
@@ -665,25 +682,34 @@ export async function registerWorkflowArtifact(repoPath, artifact, fields = {}) 
 // Pending-badge specs: each maps the runtime gate-status check to the
 // badge name emitted in the workflow summary. Keeping these as data lets
 // summarizeWorkflowState stay small enough to read at a glance.
+/** @type {Array<{ badge: string, check: (run: WorkflowRun|null|undefined) => boolean }>} */
 const PENDING_BADGE_SPECS = [
-  { badge: "review_required", check: (run) => run.gates?.review?.status === "required" },
-  { badge: "validation_expected", check: (run) => run.gates?.validation?.status === "expected" },
+  { badge: "review_required", check: (run) => run?.gates?.review?.status === "required" },
+  { badge: "validation_expected", check: (run) => run?.gates?.validation?.status === "expected" },
   {
     badge: "dev_deploy_expected",
-    check: (run) => run.gates?.deployment?.dev?.status === "expected"
+    check: (run) => run?.gates?.deployment?.dev?.status === "expected"
   },
   {
     badge: "prod_deploy_expected",
-    check: (run) => run.gates?.deployment?.prod?.status === "expected"
+    check: (run) => run?.gates?.deployment?.prod?.status === "expected"
   },
-  { badge: "blocked", check: (run) => run.gates?.blocked?.status === "blocked" },
-  { badge: "escalated_to_human", check: (run) => run.gates?.escalation?.status === "escalated" }
+  { badge: "blocked", check: (run) => run?.gates?.blocked?.status === "blocked" },
+  { badge: "escalated_to_human", check: (run) => run?.gates?.escalation?.status === "escalated" }
 ];
 
+/**
+ * @param {WorkflowRun|null|undefined} currentRun
+ * @returns {string[]}
+ */
 function collectPendingBadges(currentRun) {
   return PENDING_BADGE_SPECS.filter((spec) => spec.check(currentRun)).map((spec) => spec.badge);
 }
 
+/**
+ * @param {WorkflowState} state
+ * @returns {{ hasActiveRun: boolean, pendingBadges: string[], missingArtifactWrites: string[], currentRun: object|null }}
+ */
 export function summarizeWorkflowState(state) {
   const currentRun = state?.currentRun || null;
   if (!currentRun) {

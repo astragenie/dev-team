@@ -83,10 +83,84 @@ const FLAG_SPEC = {
   "--verified-from": { key: "verifiedFrom" }
 };
 
+/**
+ * @typedef {{
+ *   repo: string,
+ *   allowExisting: boolean,
+ *   help: boolean,
+ *   force: boolean,
+ *   noSelf: boolean,
+ *   nonCode: boolean,
+ *   repoContext: boolean,
+ *   aggregateAll: boolean,
+ *   alerts: string | null,
+ *   approver: string | null,
+ *   badge: string | null,
+ *   blockedBy: string | null,
+ *   build: string | null,
+ *   clues: string | null,
+ *   commitPattern: string | null,
+ *   completedAt: string | null,
+ *   confidence: string | null,
+ *   decision: string | null,
+ *   deliverable: string | null,
+ *   deploy: string | null,
+ *   deployer: string | null,
+ *   discoveryStatus: string | null,
+ *   environment: string | null,
+ *   environments: string | null,
+ *   evidence: string | null,
+ *   extraRoot: string | null,
+ *   feature: string | null,
+ *   files: string | null,
+ *   from: string | null,
+ *   goal: string | null,
+ *   id: string | null,
+ *   kind: string | null,
+ *   logs: string | null,
+ *   metrics: string | null,
+ *   missing: string | null,
+ *   mode: string | null,
+ *   next: string | null,
+ *   note: string | null,
+ *   outOfScope: string | null,
+ *   owner: string | null,
+ *   pace: string | null,
+ *   phase: string | null,
+ *   preset: string | null,
+ *   reason: string | null,
+ *   refreshWhen: string | null,
+ *   requester: string | null,
+ *   resolver: string | null,
+ *   resource: string | null,
+ *   revision: string | null,
+ *   reviewer: string | null,
+ *   reviewerLabel: string | null,
+ *   risks: string | null,
+ *   runTitle: string | null,
+ *   scope: string | null,
+ *   severity: string | null,
+ *   sourceProject: string | null,
+ *   startedAt: string | null,
+ *   status: string | null,
+ *   summary: string | null,
+ *   telemetry: string | null,
+ *   testSummary: string | null,
+ *   testSummarySkipReason: string | null,
+ *   title: string | null,
+ *   to: string | null,
+ *   triggerFilename: string | null,
+ *   url: string | null,
+ *   validator: string | null,
+ *   verifiedFrom: string | null,
+ *   [key: string]: string | boolean | null
+ * }} Flags
+ */
+
 /** @param {string[]} argv */
 function parseArgs(argv) {
   const [command, ...rest] = argv;
-  /** @type {Record<string, string | boolean | null>} */
+  /** @type {Flags} */
   const flags = {
     repo: process.cwd(),
     allowExisting: false,
@@ -149,7 +223,10 @@ function parseArgs(argv) {
     blockedBy: null,
     feature: null,
     nonCode: false,
+    noSelf: false,
+    aggregateAll: false,
     repoContext: false,
+    extraRoot: null,
     phase: null,
     testSummary: null,
     testSummarySkipReason: null
@@ -233,8 +310,8 @@ function usage(target = null) {
     "cost-advise": "  node scripts/crew.mjs cost-advise --repo <path>"
   };
 
-  if (target && /** @type {Record<string, string>} */ (subcommands)[target]) {
-    return ["Engineering OS installer", "", "Usage:", subcommands[target]].join("\n");
+  if (target && subcommands[/** @type {keyof typeof subcommands} */ (target)]) {
+    return ["Engineering OS installer", "", "Usage:", subcommands[/** @type {keyof typeof subcommands} */ (target)]].join("\n");
   }
 
   return ["Engineering OS installer", "", "Usage:", ...Object.values(subcommands)].join("\n");
@@ -360,6 +437,7 @@ async function maybeEmitCostReport(repoPath, options = {}) {
 // path `C:/work/foo` when running on win32. Node's path.resolve treats a
 // leading "/" as drive-relative, so `/c/work` becomes `C:\c\work` (a phantom
 // nested dir). This converter restores the intended drive-letter form.
+/** @param {string} value */
 function normalizeMsysPath(value) {
   if (!value || process.platform !== "win32") {
     return value;
@@ -371,6 +449,10 @@ function normalizeMsysPath(value) {
   return `${match[1].toUpperCase()}:/${match[2]}`;
 }
 
+/**
+ * @typedef {{ repoPath: string, flags: Flags, positionals: string[] }} CommandContext
+ */
+
 // Command registry. Each entry is `(ctx) => Promise<result>` where
 // `ctx = { repoPath, flags, positionals }`. main() dispatches by name; the
 // table replaces a 240-line else-if chain. Adding a command = one entry.
@@ -379,37 +461,37 @@ const COMMANDS = {
     const { installGlobal } = await import("./lib/installer.mjs");
     return installGlobal();
   },
-  audit: async ({ repoPath }) => {
+  audit: async (/** @type {CommandContext} */ { repoPath }) => {
     const { auditRepo } = await import("./lib/installer.mjs");
     return auditRepo(repoPath);
   },
-  bootstrap: async ({ repoPath }) => {
+  bootstrap: async (/** @type {CommandContext} */ { repoPath }) => {
     const { bootstrapRepo } = await import("./lib/installer.mjs");
     return bootstrapRepo(repoPath);
   },
-  init: async ({ repoPath, flags }) => {
+  init: async (/** @type {CommandContext} */ { repoPath, flags }) => {
     const { initRepo } = await import("./lib/installer.mjs");
     return initRepo(repoPath, { allowExisting: flags.allowExisting });
   },
 
-  claim: async ({ repoPath, flags, positionals }) => {
+  claim: async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
     const { claimFiles } = await import("./lib/claims.mjs");
     return claimFiles(repoPath, positionals, { owner: flags.owner || "lead-session" });
   },
-  release: async ({ repoPath, flags, positionals }) => {
+  release: async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
     const { releaseFiles } = await import("./lib/claims.mjs");
     return releaseFiles(repoPath, positionals, { owner: flags.owner });
   },
-  "show-claims": async ({ repoPath }) => {
+  "show-claims": async (/** @type {CommandContext} */ { repoPath }) => {
     const { listClaims } = await import("./lib/claims.mjs");
     return { claims: await listClaims(repoPath) };
   },
-  "show-conflicts": async ({ repoPath, flags, positionals }) => {
+  "show-conflicts": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
     const { inspectClaims } = await import("./lib/claims.mjs");
     return inspectClaims(repoPath, positionals, { owner: flags.owner || "lead-session" });
   },
 
-  "request-approval": async ({ repoPath, flags, positionals }) => {
+  "request-approval": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
     const { requestApproval } = await import("./lib/approvals.mjs");
     return requestApproval(repoPath, {
       requester: flags.requester || "lead-session",
@@ -420,13 +502,13 @@ const COMMANDS = {
       reason: flags.reason || ""
     });
   },
-  "show-approvals": async ({ repoPath, flags }) => {
+  "show-approvals": async (/** @type {CommandContext} */ { repoPath, flags }) => {
     const { listApprovals } = await import("./lib/approvals.mjs");
     return {
       approvals: await listApprovals(repoPath, { status: flags.status, approver: flags.approver })
     };
   },
-  "resolve-approval": async ({ repoPath, flags }) => {
+  "resolve-approval": async (/** @type {CommandContext} */ { repoPath, flags }) => {
     const { resolveApproval } = await import("./lib/approvals.mjs");
     return resolveApproval(repoPath, {
       id: flags.id,
@@ -436,26 +518,26 @@ const COMMANDS = {
     });
   },
 
-  "wake-up": async ({ repoPath }) => {
+  "wake-up": async (/** @type {CommandContext} */ { repoPath }) => {
     const { buildWakeUpBrief } = await import("./lib/wakeup.mjs");
     return buildWakeUpBrief(repoPath);
   },
-  "brief-me": async ({ repoPath }) => {
+  "brief-me": async (/** @type {CommandContext} */ { repoPath }) => {
     const { buildBriefingReport } = await import("./lib/briefing.mjs");
     return buildBriefingReport(repoPath);
   },
-  fleet: async ({ repoPath, flags }) => {
+  fleet: async (/** @type {CommandContext} */ { repoPath, flags }) => {
     const { buildFleetReport } = await import("./lib/fleet.mjs");
     return buildFleetReport(repoPath, {
       extraRoots: flags.extraRoot ? [flags.extraRoot] : [],
       includeSelf: !flags.noSelf
     });
   },
-  "discover-deployment": async ({ repoPath }) => {
+  "discover-deployment": async (/** @type {CommandContext} */ { repoPath }) => {
     const { discoverDeploymentClues } = await import("./lib/deployment-guidance.mjs");
     return discoverDeploymentClues(repoPath);
   },
-  "write-deployment-guidance": async ({ repoPath, flags, positionals }) => {
+  "write-deployment-guidance": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
     const { writeDeploymentGuidance } = await import("./lib/deployment-guidance.mjs");
     return writeDeploymentGuidance(repoPath, {
       title: flags.title || positionals.join(" ") || "Repo Deployment Model",
@@ -477,12 +559,12 @@ const COMMANDS = {
     });
   },
 
-  "show-workflow-state": async ({ repoPath }) => {
+  "show-workflow-state": async (/** @type {CommandContext} */ { repoPath }) => {
     const { loadWorkflowState, summarizeWorkflowState } = await import("./lib/workflow-state.mjs");
     const workflowState = await loadWorkflowState(repoPath);
     return { workflowState, summary: summarizeWorkflowState(workflowState) };
   },
-  "mark-badge": async ({ repoPath, flags }) => {
+  "mark-badge": async (/** @type {CommandContext} */ { repoPath, flags }) => {
     const { markWorkflowBadge } = await import("./lib/workflow-state.mjs");
     const currentRun = await markWorkflowBadge(repoPath, {
       badge: flags.badge,
@@ -496,7 +578,7 @@ const COMMANDS = {
     return { badge: flags.badge, currentRun };
   },
 
-  "write-run-brief": async ({ repoPath, flags, positionals }) => {
+  "write-run-brief": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
     const { writeArtifact } = await import("./lib/artifacts.mjs");
     return writeArtifact(repoPath, "run-brief", {
       title: flags.title || positionals.join(" ") || "Run Brief",
@@ -514,7 +596,7 @@ const COMMANDS = {
       phase: flags.phase
     });
   },
-  "write-handoff": async ({ repoPath, flags, positionals }) => {
+  "write-handoff": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
     const { writeArtifact } = await import("./lib/artifacts.mjs");
     return writeArtifact(repoPath, "handoff", {
       title: flags.title || positionals.join(" ") || "Task Handoff",
@@ -534,7 +616,7 @@ const COMMANDS = {
       repoContext: flags.repoContext
     });
   },
-  "write-review-result": async ({ repoPath, flags, positionals }) => {
+  "write-review-result": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
     const decision = flags.decision;
     const VALID_DECISIONS = new Set(["approved", "approved_with_notes", "rejected"]);
     if (decision && !VALID_DECISIONS.has(decision)) {
@@ -569,7 +651,7 @@ const COMMANDS = {
       nonCode: flags.nonCode
     });
   },
-  "write-validation-plan": async ({ repoPath, flags, positionals }) => {
+  "write-validation-plan": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
     const { writeArtifact } = await import("./lib/artifacts.mjs");
     return writeArtifact(repoPath, "validation-plan", {
       title: flags.title || positionals.join(" ") || "Validation Plan",
@@ -586,7 +668,7 @@ const COMMANDS = {
       phase: flags.phase
     });
   },
-  "write-validation-result": async ({ repoPath, flags, positionals }) => {
+  "write-validation-result": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
     const { writeArtifact } = await import("./lib/artifacts.mjs");
     return writeArtifact(repoPath, "validation-result", {
       title: flags.title || positionals.join(" ") || "Validation Result",
@@ -603,7 +685,7 @@ const COMMANDS = {
       phase: flags.phase
     });
   },
-  "write-deployment-check": async ({ repoPath, flags, positionals }) => {
+  "write-deployment-check": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
     const { writeArtifact } = await import("./lib/artifacts.mjs");
     return writeArtifact(repoPath, "deployment-check", {
       title: flags.title || positionals.join(" ") || "Deployment Check",
@@ -623,7 +705,7 @@ const COMMANDS = {
       phase: flags.phase
     });
   },
-  "write-final-synthesis": async ({ repoPath, flags, positionals }) => {
+  "write-final-synthesis": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
     const { writeArtifact } = await import("./lib/artifacts.mjs");
     const synthesis = await writeArtifact(repoPath, "final-synthesis", {
       title: flags.title || positionals.join(" ") || "Final Synthesis",
@@ -646,7 +728,7 @@ const COMMANDS = {
     return costArtifact ? { ...synthesis, costReport: costArtifact } : synthesis;
   },
 
-  "cost-advise": async ({ repoPath, flags }) => {
+  "cost-advise": async (/** @type {CommandContext} */ { repoPath, flags }) => {
     const { buildCostAdvisor, renderCostAdvisorMarkdown } = await import("./lib/cost-advisor.mjs");
     const advisor = await buildCostAdvisor(repoPath, { limit: 10 });
     const md = renderCostAdvisorMarkdown(advisor);
@@ -664,7 +746,7 @@ const COMMANDS = {
       artifactPath: writePath
     };
   },
-  "cost-slice": async ({ repoPath, flags }) => {
+  "cost-slice": async (/** @type {CommandContext} */ { repoPath, flags }) => {
     const { loadWorkflowState } = await import("./lib/workflow-state.mjs");
     const { computeSessionCost } = await import("./lib/session-cost.mjs");
     const { collectOutcomeLinkage } = await import("./lib/outcome-linkage.mjs");
@@ -684,15 +766,17 @@ const COMMANDS = {
       aggregateAll: flags.aggregateAll === true
     });
     const outcome = await collectOutcomeLinkage(repoPath, runTitle);
-    const artifact = await writeArtifact(repoPath, "cost-report", {
-      title: runTitle,
-      runTitle,
-      cost,
-      outcome,
-      notes: flags.summary || null,
-      feature: flags.feature,
-      phase: flags.phase
-    });
+    const artifact = /** @type {Record<string, unknown>} */ (
+      await writeArtifact(repoPath, "cost-report", {
+        title: runTitle,
+        runTitle,
+        cost,
+        outcome,
+        notes: flags.summary || null,
+        feature: flags.feature,
+        phase: flags.phase
+      })
+    );
     artifact.cost = cost;
     artifact.outcome = outcome;
     return artifact;
@@ -708,7 +792,7 @@ async function main() {
     return;
   }
 
-  const handler = COMMANDS[command];
+  const handler = COMMANDS[/** @type {keyof typeof COMMANDS} */ (command)];
   if (!handler) {
     throw new Error(`Unknown command: ${command}`);
   }

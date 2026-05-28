@@ -21,6 +21,7 @@ const LEGACY_GLOBAL_IMPORT_LINES = [
   "@~/.claude/engineering-os/workflow.md"
 ];
 
+/** @param {string} homeDir */
 function globalPaths(homeDir) {
   const globalDir = path.join(homeDir, ".claude", "crew");
   return {
@@ -33,6 +34,7 @@ function globalPaths(homeDir) {
   };
 }
 
+/** @param {string} targetPath */
 async function pathExists(targetPath) {
   try {
     await fs.access(targetPath);
@@ -47,8 +49,8 @@ export async function inspectGlobalInstall() {
   const paths = globalPaths(homeDir);
   const metadata = await fs
     .readFile(paths.metadata, "utf8")
-    .then((raw) => JSON.parse(raw))
-    .catch(() => null);
+    .then(/** @returns {Record<string, unknown>} */ (raw) => JSON.parse(raw))
+    .catch(/** @returns {null} */ () => null);
   const hasImports = await fs
     .readFile(paths.claudeMd, "utf8")
     .then((raw) => GLOBAL_IMPORT_LINES.every((line) => raw.includes(line)))
@@ -71,6 +73,7 @@ export async function inspectGlobalInstall() {
 export async function installGlobal() {
   const homeDir = process.env.HOME || process.env.USERPROFILE;
   const paths = globalPaths(homeDir);
+  /** @type {string[]} */
   const writes = [];
 
   await migrateGlobalLegacy(paths, writes);
@@ -128,6 +131,10 @@ export async function installGlobal() {
   };
 }
 
+/**
+ * @param {ReturnType<typeof globalPaths>} paths
+ * @param {string[]} writes
+ */
 async function migrateGlobalLegacy(paths, writes) {
   if (!(await pathExists(paths.legacyGlobalDir))) {
     return;

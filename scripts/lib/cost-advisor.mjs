@@ -6,24 +6,29 @@ import path from "node:path";
 const REPORTS_DIR_PARTS = [".claude", "artifacts", "crew", "cost"];
 const LEGACY_REPORTS_DIR_PARTS = [".claude", "artifacts", "crew", "runs"];
 
+/**
+ * @param {string} text
+ */
 function parseFrontmatter(text) {
   if (!text.startsWith("---")) return { fm: null, body: text };
   const end = text.indexOf("\n---", 3);
   if (end < 0) return { fm: null, body: text };
   const block = text.slice(3, end).trim();
   const body = text.slice(end + 4);
+  /** @type {Record<string, string | number>} */
   const fm = {};
   for (const line of block.split(/\r?\n/)) {
     const m = line.match(/^([\w_]+):\s*(.*)$/);
     if (!m) continue;
+    /** @type {string | number} */
     let v = m[2].trim();
-    if (v.startsWith('"') && v.endsWith('"')) {
+    if (typeof v === "string" && v.startsWith('"') && v.endsWith('"')) {
       try {
         v = JSON.parse(v);
       } catch {
         /* keep raw string on parse failure */
       }
-    } else if (/^-?\d+(?:\.\d+)?$/.test(v)) {
+    } else if (typeof v === "string" && /^-?\d+(?:\.\d+)?$/.test(v)) {
       v = Number(v);
     }
     fm[m[1]] = v;
@@ -31,17 +36,26 @@ function parseFrontmatter(text) {
   return { fm, body };
 }
 
+/**
+ * @param {string} body
+ * @param {string} label
+ */
 function extractBodyMetric(body, label) {
   const m = body.match(new RegExp(`^-\\s+${label}:\\s*(.+)$`, "m"));
   return m ? m[1].trim() : null;
 }
 
+/**
+ * @param {string} body
+ * @param {string} label
+ */
 function extractCounter(body, label) {
   const m = body.match(new RegExp(`^-\\s+${label}:\\s*([\\d.,]+)`, "m"));
   return m ? Number(m[1].replace(/,/g, "")) : 0;
 }
 
 // Pull tool usage out of the "## Tool Usage" section.
+/** @param {string} body */
 function extractToolUsage(body) {
   const section = body.split(/^##\s+/m).find((s) => s.startsWith("Tool Usage"));
   if (!section) return [];
@@ -58,6 +72,7 @@ function extractToolUsage(body) {
   return out;
 }
 
+/** @param {string} body */
 function extractModelMix(body) {
   const section = body.split(/^##\s+/m).find((s) => s.startsWith("Model Mix"));
   if (!section) return [];
@@ -79,6 +94,7 @@ function extractModelMix(body) {
   return out;
 }
 
+/** @param {number[]} arr */
 function median(arr) {
   if (arr.length === 0) return 0;
   const s = [...arr].sort((a, b) => a - b);
@@ -86,12 +102,17 @@ function median(arr) {
   return s.length % 2 === 0 ? (s[mid - 1] + s[mid]) / 2 : s[mid];
 }
 
+/**
+ * @param {number[]} arr
+ * @param {number} p
+ */
 function percentile(arr, p) {
   if (arr.length === 0) return 0;
   const s = [...arr].sort((a, b) => a - b);
   return s[Math.min(s.length - 1, Math.floor((p / 100) * s.length))];
 }
 
+/** @param {string} repoPath @param {number} [limit] */
 async function loadReports(repoPath, limit = 20) {
   // Scan new cost/ dir first, then legacy runs/ dir for backward compat.
   // Filenames carry a timestamp prefix (YYYYMMDDTHHMMSSZ-...) so lexicographic
@@ -133,6 +154,7 @@ async function loadReports(repoPath, limit = 20) {
 
 // Parse the "## Cache Priming (per tool, approximate)" block. Lines look
 // like: "- Bash: 7 calls, 5,190B results, ~18,601 cache_create tok (3.58×)".
+/** @param {string} body */
 function extractCachePriming(body) {
   const section = body.split(/^##\s+/m).find((s) => s.startsWith("Cache Priming"));
   if (!section) return [];
@@ -157,6 +179,7 @@ function extractCachePriming(body) {
 
 // Parse the "## Sources (aggregated)" block out of a cost-report body.
 // Lines look like: "- C--work-mega: 14 msgs, $9.5937".
+/** @param {string} body */
 function extractSources(body) {
   const section = body.split(/^##\s+/m).find((s) => s.startsWith("Sources"));
   if (!section) return [];
@@ -170,15 +193,21 @@ function extractSources(body) {
 
 // Slug that the repo path itself would resolve to. Used to detect when
 // spend is concentrated in a NON-repo source dir (cross-repo work signal).
+/** @param {string | null | undefined} repoPath */
 function repoOwnSlug(repoPath) {
   if (!repoPath) return null;
   return repoPath.replace(/[^A-Za-z0-9]/g, "-");
 }
 
+/**
+ * @param {Array<{name: string, count: number, failures: number}>} tools
+ * @param {string} name
+ */
 function toolCount(tools, name) {
   return tools.find((t) => t.name === name)?.count || 0;
 }
 
+/** @param {Array<{name: string, count: number, failures: number}>} tools */
 function computeExplorationRatio(tools) {
   const exploration =
     toolCount(tools, "Read") + toolCount(tools, "Grep") + toolCount(tools, "Bash");
@@ -187,6 +216,7 @@ function computeExplorationRatio(tools) {
   return exploration > 0 ? Infinity : 0;
 }
 
+/** @param {string} body */
 function summarizeToolStats(body) {
   const tools = extractToolUsage(body);
   const totalToolCalls = tools.reduce((a, t) => a + t.count, 0);
@@ -204,6 +234,9 @@ function summarizeToolStats(body) {
   };
 }
 
+/**
+ * @param {{ path: string, fm: Record<string, string | number>, body: string }} r
+ */
 function summarizeReport(r) {
   const body = r.body;
   const opusShare = extractModelMix(body)
@@ -251,6 +284,8 @@ function summarizeReport(r) {
  * Grade thresholds keyed by metric name. Each row is [maxValue, grade] where
  * maxValue is the INCLUSIVE upper bound that still earns that grade.
  * cacheHitPct uses INCLUSIVE lower bound (inverted — higher is better).
+ *
+ * @type {Record<string, Array<[number, string]>>}
  */
 const GRADE_THRESHOLDS = {
   // [minPct, grade] — highest threshold first
@@ -290,6 +325,11 @@ const GRADE_THRESHOLDS = {
 
 const GRADE_ORDER = ["A", "B", "C", "D", "F"];
 
+/**
+ * @param {string} a
+ * @param {string} b
+ * @returns {string}
+ */
 function worseGrade(a, b) {
   return GRADE_ORDER.indexOf(a) >= GRADE_ORDER.indexOf(b) ? a : b;
 }
@@ -305,18 +345,24 @@ function worseGrade(a, b) {
 export function computeGrade(target) {
   let grade = "A";
 
+  /** @type {Record<string, number>} */
+  const targetMap = /** @type {Record<string, number>} */ (
+    /** @type {unknown} */ (target)
+  );
+
   // cacheHitPct: higher is better
   const cacheHit = target.cacheHitPct ?? 0;
   let cacheGrade = "F";
   for (const [min, g] of GRADE_THRESHOLDS.cacheHitPct) {
-    if (cacheHit >= min) {
-      cacheGrade = g;
+    if (cacheHit >= /** @type {number} */ (min)) {
+      cacheGrade = /** @type {string} */ (g);
       break;
     }
   }
   grade = worseGrade(grade, cacheGrade);
 
   // Count-based metrics: lower is better
+  /** @type {Array<[string, Array<[number, string]>]>} */
   const countMetrics = [
     ["compactionCount", GRADE_THRESHOLDS.compactionCount],
     ["subagentDispatches", GRADE_THRESHOLDS.subagentDispatches],
@@ -325,26 +371,95 @@ export function computeGrade(target) {
   ];
 
   for (const [key, thresholds] of countMetrics) {
-    const val = target[key] ?? 0;
+    const val = (targetMap[key] ?? 0);
     let metricGrade = "F";
     for (const [max, g] of thresholds) {
-      if (val <= max) {
-        metricGrade = g;
+      if (val <= /** @type {number} */ (max)) {
+        metricGrade = /** @type {string} */ (g);
         break;
       }
     }
     grade = worseGrade(grade, metricGrade);
   }
 
-  return grade;
+  return /** @type {"A"|"B"|"C"|"D"|"F"} */ (grade);
 }
+
+/**
+ * @typedef {object} SourceEntry
+ * @property {string} slug
+ * @property {number} messages
+ * @property {number} usd
+ */
+
+/**
+ * @typedef {object} CachePrimingEntry
+ * @property {string} name
+ * @property {number} calls
+ * @property {number} resultBytes
+ * @property {number} cacheCreateTokens
+ * @property {number | null} ratio
+ */
+
+/**
+ * @typedef {object} SummaryRecord
+ * @property {string} path
+ * @property {string | number | null} sliceId
+ * @property {string | number | null} runTitle
+ * @property {number} usd
+ * @property {number} durationMs
+ * @property {number} totalTokens
+ * @property {number} cacheHitPct
+ * @property {number | null} gradeAvg
+ * @property {string | number | null} reviewDecision
+ * @property {string | number | null} validationDecision
+ * @property {number} opusUsdPct
+ * @property {number} totalToolCalls
+ * @property {number} totalToolFailures
+ * @property {number} toolFailureRate
+ * @property {number} readCount
+ * @property {number} bashCount
+ * @property {number} grepCount
+ * @property {number} writeCount
+ * @property {number} editCount
+ * @property {number} explorationRatio
+ * @property {number} msgCount
+ * @property {number} userMsgCount
+ * @property {number} userMsgAvgLen
+ * @property {number} turnsBeforeFirstTool
+ * @property {number} compactionCount
+ * @property {number} skillInvocations
+ * @property {number} subagentDispatches
+ * @property {number} fileRereadCount
+ * @property {number} toolResultP90
+ * @property {string | number | null} sourceProject
+ * @property {boolean} autoDetected
+ * @property {boolean} aggregateAll
+ * @property {number} sourceCount
+ * @property {SourceEntry[]} sources
+ * @property {CachePrimingEntry[]} cachePriming
+ */
+
+/**
+ * @typedef {object} BaselineRecord
+ * @property {number} n
+ * @property {number} usdMedian
+ * @property {number} usdP75
+ * @property {number} cacheHitMedian
+ * @property {number} opusShareMedian
+ */
+
+/**
+ * @typedef {object} RuleContext
+ * @property {string} [repoOwnSlug]
+ */
 
 /**
  * @typedef {object} CostRule
  * @property {string} id
- * @property {(target: any, baseline?: any, ctx?: any) => boolean} trigger
- * @property {(target: any, baseline?: any, ctx?: any) => string} severity
- * @property {(target: any, baseline?: any, ctx?: any) => string} message
+ * @property {(target: SummaryRecord, baseline?: BaselineRecord, ctx?: RuleContext) => boolean} trigger
+ * @property {(target: SummaryRecord, baseline?: BaselineRecord, ctx?: RuleContext) => string} severity
+ * @property {(target: SummaryRecord, baseline?: BaselineRecord, ctx?: RuleContext) => string} message
  * @property {string} suggestion
  */
 
@@ -541,6 +656,11 @@ const RULES = [
   }
 ];
 
+/**
+ * @param {SummaryRecord} target
+ * @param {BaselineRecord} baseline
+ * @param {RuleContext} [ctx]
+ */
 function applyRules(target, baseline, ctx = {}) {
   const fired = [];
   for (const rule of RULES) {
@@ -627,10 +747,16 @@ export function detectTrends(reports) {
   return findings;
 }
 
+/** @param {string} repoPath @param {{ limit?: number }} [opts] */
 export async function buildCostAdvisor(repoPath, { limit = 10 } = {}) {
   const reports = await loadReports(repoPath, limit);
   if (reports.length === 0) {
-    return { reports: [], target: null, baseline: null, recommendations: [] };
+    return {
+      reports: /** @type {SummaryRecord[]} */ ([]),
+      target: /** @type {SummaryRecord | null} */ (null),
+      baseline: /** @type {BaselineRecord | null} */ (null),
+      recommendations: /** @type {Array<{id:string,severity:string,message:string,suggestion:string}>} */ ([])
+    };
   }
   const summaries = reports.map(summarizeReport);
   const target = summaries[0]; // most recent
@@ -681,6 +807,11 @@ export async function buildCostAdvisor(repoPath, { limit = 10 } = {}) {
   };
 }
 
+/**
+ * @param {{ target: SummaryRecord | null, baseline?: BaselineRecord | null,
+ *           grade?: string, recommendations: Array<{id:string,severity:string,message:string,suggestion:string}>,
+ *           aggregateFlags?: Array<{id:string,severity:string,message:string,suggestion:string}> }} advisor
+ */
 export function renderCostAdvisorMarkdown(advisor) {
   const lines = [];
   lines.push("# Cost Advisor", "");

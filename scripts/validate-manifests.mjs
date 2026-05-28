@@ -23,7 +23,7 @@ async function readJson(p) {
   return JSON.parse(await fs.readFile(p, "utf8"));
 }
 
-/** @param {any} value */
+/** @param {unknown} value */
 function isMissing(value) {
   return value === undefined || value === null || value === "";
 }

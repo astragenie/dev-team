@@ -18,6 +18,10 @@ import {
   STATE_README_TEMPLATE
 } from "./templates.mjs";
 
+/**
+ * @param {string} repoPath
+ * @param {string[]} writes
+ */
 export async function writeHarnessFiles(repoPath, writes) {
   const refreshFiles = [
     [

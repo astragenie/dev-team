@@ -1,6 +1,6 @@
 ---
 id: FEAT-004
-status: in-progress
+status: done
 priority: P3
 category: types
 target_release: null
@@ -10,6 +10,7 @@ depends_on: []
 slices: [SLICE-08]
 derived_from: null
 started_at: 2026-05-28
+completed_at: 2026-05-28
 ---
 # FEAT-004: Enable noImplicitAny and annotate scripts/**/*.mjs
 

@@ -2,17 +2,20 @@
 // outro of bootstrap / init / install-global. Pure data — no I/O, no
 // templates beyond the strings below.
 
+/** @param {{ mode: string, repoScoped?: boolean }} options */
 export function buildWelcome({ mode, repoScoped = false }) {
   const commands = repoScoped
     ? ["/crew:brief-me", "/crew:build", "/crew:fix", "/crew:ship"]
     : ["/crew:init", "/crew:adopt", "/crew:brief-me"];
 
+  /** @type {Record<string, string>} */
   const headlineByMode = {
     init: "Crew is now wired into this repo. Excellent judgment.",
     bootstrap: "This repo is now on Crew. Tasteful choice.",
     "install-global": "Crew global memory is installed. Bold and correct."
   };
 
+  /** @type {string[]} */
   const optional = [];
 
   return {

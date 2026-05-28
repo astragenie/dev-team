@@ -1,12 +1,13 @@
 ---
 id: SLICE-08
-status: pending
+status: completed
 feature: FEAT-004
 phase: null
 priority: P3
 target_release: null
 created: 2026-05-28
 updated: 2026-05-28
+completed_at: 2026-05-28
 ---
 # SLICE-08: Enable noImplicitAny and annotate scripts/**/*.mjs
 

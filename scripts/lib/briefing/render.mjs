@@ -2,6 +2,10 @@
 // Consumes shapes produced by ./collect.mjs.
 // Extracted from briefing.mjs during the Tier B-7 split.
 
+/**
+ * @param {Record<string, any>} wakeUpBrief
+ * @param {Array<{kind: string, path: string, title?: string, updatedAt?: string, goal?: string, mode?: string, next?: string}>} artifacts
+ */
 export function buildRetrievalGuide(wakeUpBrief, artifacts) {
   const guide = [];
 
@@ -29,6 +33,10 @@ export function buildRetrievalGuide(wakeUpBrief, artifacts) {
   );
 }
 
+/**
+ * @param {Record<string, any>} wakeUpBrief
+ * @param {Array<{kind: string, path: string, title?: string, updatedAt?: string, goal?: string, mode?: string, next?: string}>} artifacts
+ */
 export function buildCurrentObjective(wakeUpBrief, artifacts) {
   const currentRun = wakeUpBrief.workflow?.currentRun;
   if (currentRun) {
@@ -78,6 +86,10 @@ export function buildCurrentObjective(wakeUpBrief, artifacts) {
 
 // Formats a gate failure message: prefer the operator-supplied note when
 // present, otherwise terminate with a period.
+/**
+ * @param {string} label
+ * @param {{note?: string} | null | undefined} gate
+ */
 function gateFailureMessage(label, gate) {
   return `${label}${gate?.note ? `: ${gate.note}` : "."}`;
 }
@@ -105,18 +117,26 @@ const MISSING_WRITE_MESSAGES = {
     "Meaningful workflow phases completed, but the final synthesis artifact is still missing."
 };
 const GATE_FAILURE_SPECS = [
-  { label: "Independent review failed", gate: (g) => g.review },
-  { label: "Validation failed", gate: (g) => g.validation },
-  { label: "Dev deployment checks failed", gate: (g) => g.deployment?.dev },
-  { label: "Production deployment checks failed", gate: (g) => g.deployment?.prod }
+  { label: "Independent review failed", gate: (/** @type {Record<string, any>} */ g) => g.review },
+  { label: "Validation failed", gate: (/** @type {Record<string, any>} */ g) => g.validation },
+  { label: "Dev deployment checks failed", gate: (/** @type {Record<string, any>} */ g) => g.deployment?.dev },
+  { label: "Production deployment checks failed", gate: (/** @type {Record<string, any>} */ g) => g.deployment?.prod }
 ];
 
+/**
+ * @param {Record<string, any>} gates
+ */
 function collectGateFailureMessages(gates) {
   return GATE_FAILURE_SPECS.filter((spec) => spec.gate(gates)?.status === "failed").map((spec) =>
     gateFailureMessage(spec.label, spec.gate(gates))
   );
 }
 
+/**
+ * @param {Record<string, any>} wakeUpBrief
+ * @param {{clues: string[]}} deploymentClues
+ * @param {{workingTree: {behind: number, upstream?: string}}} gitActivity
+ */
 function collectRepoStateMessages(wakeUpBrief, deploymentClues, gitActivity) {
   const out = [];
   if (wakeUpBrief.openApprovals.length > 0) {
@@ -140,57 +160,70 @@ function collectRepoStateMessages(wakeUpBrief, deploymentClues, gitActivity) {
   return out;
 }
 
+/**
+ * @param {Record<string, any>} wakeUpBrief
+ * @param {{clues: string[]}} deploymentClues
+ * @param {{workingTree: {behind: number, upstream?: string}}} gitActivity
+ */
 export function buildBlockedOrMissing(wakeUpBrief, deploymentClues, gitActivity) {
   const pending = wakeUpBrief.workflow?.pendingBadges || [];
   const missingWrites = wakeUpBrief.workflow?.missingArtifactWrites || [];
   const gates = wakeUpBrief.workflow?.currentRun?.gates || {};
 
   return [
-    ...pending.map((b) => PENDING_BADGE_MESSAGES[b]).filter(Boolean),
+    ...pending.map((/** @type {string} */ b) => /** @type {Record<string, string>} */ (PENDING_BADGE_MESSAGES)[b]).filter(Boolean),
     ...collectGateFailureMessages(gates),
-    ...missingWrites.map((w) => MISSING_WRITE_MESSAGES[w]).filter(Boolean),
+    ...missingWrites.map((/** @type {string} */ w) => /** @type {Record<string, string>} */ (MISSING_WRITE_MESSAGES)[w]).filter(Boolean),
     ...collectRepoStateMessages(wakeUpBrief, deploymentClues, gitActivity)
   ];
 }
 
+/** @typedef {{ wakeUpBrief: Record<string, any>, deploymentClues: {clues: string[]}, gitActivity: Record<string, any>, routingTable: Record<string, any> | null | undefined, missingWrites: Set<string> }} ReminderCtx */
+
 const REMINDER_RULES = [
   {
-    when: (ctx) => ctx.gitActivity.isGitRepo && ctx.gitActivity.workingTree.hasChanges,
-    message: (ctx) =>
+    when: (/** @type {ReminderCtx} */ ctx) => ctx.gitActivity.isGitRepo && ctx.gitActivity.workingTree.hasChanges,
+    message: (/** @type {ReminderCtx} */ ctx) =>
       `Working tree has ${ctx.gitActivity.workingTree.stagedCount} staged, ${ctx.gitActivity.workingTree.modifiedCount} modified, and ${ctx.gitActivity.workingTree.untrackedCount} untracked path(s).`
   },
   {
-    when: (ctx) => !ctx.wakeUpBrief.summary.hasRecentRunMemory,
+    when: (/** @type {ReminderCtx} */ ctx) => !ctx.wakeUpBrief.summary.hasRecentRunMemory,
     message: () => "No recent run artifacts are recorded for this repo yet."
   },
   {
-    when: (ctx) =>
+    when: (/** @type {ReminderCtx} */ ctx) =>
       !ctx.wakeUpBrief.repoGuidance?.deployment && ctx.deploymentClues.clues.length > 0,
-    message: (ctx) =>
+    message: (/** @type {ReminderCtx} */ ctx) =>
       `Deployment clues were found in ${ctx.deploymentClues.clues.slice(0, 3).join(", ")}${ctx.deploymentClues.clues.length > 3 ? ", ..." : ""}.`
   },
   {
-    when: (ctx) => ctx.wakeUpBrief.claims.length > 0,
-    message: (ctx) =>
+    when: (/** @type {ReminderCtx} */ ctx) => ctx.wakeUpBrief.claims.length > 0,
+    message: (/** @type {ReminderCtx} */ ctx) =>
       `${ctx.wakeUpBrief.claims.length} active claim(s) are still present in repo-local state.`
   },
   {
-    when: (ctx) => ctx.wakeUpBrief.repoMemory.length <= 1,
+    when: (/** @type {ReminderCtx} */ ctx) => ctx.wakeUpBrief.repoMemory.length <= 1,
     message: () =>
       "Repo-specific memory is still thin; keep durable guidance and lessons learned up to date."
   },
   {
-    when: (ctx) => ctx.missingWrites.size > 0,
+    when: (/** @type {ReminderCtx} */ ctx) => ctx.missingWrites.size > 0,
     message: () =>
       "A workflow phase appears complete, but the matching artifact write-back is still missing."
   },
   {
-    when: (ctx) => ctx.routingTable?.present && ctx.routingTable.stale,
-    message: (ctx) =>
+    when: (/** @type {ReminderCtx} */ ctx) => ctx.routingTable?.present && ctx.routingTable.stale,
+    message: (/** @type {ReminderCtx} */ ctx) =>
       `Routing table (docs/routing-table.md) is ${ctx.routingTable.ageDays} days stale. Review against the last ~30 runs and refresh signal → role rows.`
   }
 ];
 
+/**
+ * @param {Record<string, any>} wakeUpBrief
+ * @param {{clues: string[]}} deploymentClues
+ * @param {Record<string, any>} gitActivity
+ * @param {Record<string, any> | null | undefined} routingTable
+ */
 export function buildImportantReminders(wakeUpBrief, deploymentClues, gitActivity, routingTable) {
   const ctx = {
     wakeUpBrief,
@@ -205,6 +238,11 @@ export function buildImportantReminders(wakeUpBrief, deploymentClues, gitActivit
 // Returns a message for whichever repo/git/deployment state warrants a
 // nudge, or null when none apply. Same priority order as the original
 // if-chain; first match wins.
+/**
+ * @param {Record<string, any>} wakeUpBrief
+ * @param {{clues: string[]}} deploymentClues
+ * @param {{workingTree: {behind: number, hasChanges: boolean}}} gitActivity
+ */
 function repoStateNextStep(wakeUpBrief, deploymentClues, gitActivity) {
   const probes = [
     {
@@ -231,6 +269,11 @@ function repoStateNextStep(wakeUpBrief, deploymentClues, gitActivity) {
   return probes.find((p) => p.cond)?.msg || null;
 }
 
+/**
+ * @param {Record<string, any>} wakeUpBrief
+ * @param {{clues: string[]}} deploymentClues
+ * @param {{workingTree: {behind: number, hasChanges: boolean}}} gitActivity
+ */
 export function recommendedNextStep(wakeUpBrief, deploymentClues, gitActivity) {
   const pending = wakeUpBrief.workflow?.pendingBadges || [];
   const missingWrites = wakeUpBrief.workflow?.missingArtifactWrites || [];
@@ -245,9 +288,9 @@ export function recommendedNextStep(wakeUpBrief, deploymentClues, gitActivity) {
     : null;
   const ordered = [
     repoNotAdopted,
-    NEXT_STEP_FROM_PENDING[pending[0]],
+    /** @type {Record<string, string>} */ (NEXT_STEP_FROM_PENDING)[pending[0]],
     collectGateFailureNextStep(gates),
-    NEXT_STEP_FROM_MISSING[missingWrites[0]],
+    /** @type {Record<string, string>} */ (NEXT_STEP_FROM_MISSING)[missingWrites[0]],
     currentRun?.next || null,
     repoStateNextStep(wakeUpBrief, deploymentClues, gitActivity)
   ];
@@ -285,29 +328,37 @@ const NEXT_STEP_FROM_MISSING = {
 
 const GATE_NEXT_STEP_SPECS = [
   {
-    gate: (g) => g.review,
+    gate: (/** @type {Record<string, any>} */ g) => g.review,
     message: "Address the failed review findings before moving the work forward."
   },
   {
-    gate: (g) => g.validation,
+    gate: (/** @type {Record<string, any>} */ g) => g.validation,
     message: "Investigate the failed validation evidence and fix the issue before continuing."
   },
   {
-    gate: (g) => g.deployment?.dev,
+    gate: (/** @type {Record<string, any>} */ g) => g.deployment?.dev,
     message: "Investigate the failed dev deployment checks before attempting another rollout."
   },
   {
-    gate: (g) => g.deployment?.prod,
+    gate: (/** @type {Record<string, any>} */ g) => g.deployment?.prod,
     message:
       "Investigate the failed production checks immediately before any further promotion work."
   }
 ];
 
+/**
+ * @param {Record<string, any>} gates
+ */
 function collectGateFailureNextStep(gates) {
   const hit = GATE_NEXT_STEP_SPECS.find((spec) => spec.gate(gates)?.status === "failed");
   return hit ? hit.message : null;
 }
 
+/**
+ * @param {Record<string, any>} wakeUpBrief
+ * @param {{clues: string[]}} deploymentClues
+ * @param {{isGitRepo: boolean, workingTree: {hasChanges: boolean}}} gitActivity
+ */
 export function buildSecondaryOptions(wakeUpBrief, deploymentClues, gitActivity) {
   const options = [];
 

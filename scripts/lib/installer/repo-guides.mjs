@@ -8,6 +8,10 @@ import path from "node:path";
 import { writeFileIfChanged } from "./util.mjs";
 import { CONSTITUTION_TEMPLATE, PROTOCOL_TEMPLATE, WORKFLOW_TEMPLATE } from "./templates.mjs";
 
+/**
+ * @param {string} repoPath
+ * @param {string[]} writes
+ */
 export async function writeRepoLocalGuides(repoPath, writes) {
   const guides = [
     [path.join(repoPath, ".claude", "crew", "constitution.md"), `${CONSTITUTION_TEMPLATE}\n`],

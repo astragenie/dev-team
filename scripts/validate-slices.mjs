@@ -38,6 +38,7 @@ function resolveRepoRoot() {
   return path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 }
 
+/** @param {string} pendingDir */
 async function listSliceFiles(pendingDir) {
   try {
     const entries = await fs.readdir(pendingDir, { withFileTypes: true });
@@ -48,6 +49,7 @@ async function listSliceFiles(pendingDir) {
   }
 }
 
+/** @param {string} text */
 function findPlaceholders(text) {
   const findings = [];
   const lines = text.split(/\r?\n/);

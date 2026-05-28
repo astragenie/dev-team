@@ -6,6 +6,7 @@ import path from "node:path";
 import { pathExists } from "./util.mjs";
 import { inspectGlobalInstall } from "./global.mjs";
 
+/** @param {string} repoPath */
 export async function auditRepo(repoPath) {
   const global = await inspectGlobalInstall();
   return {

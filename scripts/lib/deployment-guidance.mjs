@@ -54,20 +54,32 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+/**
+ * @param {string | null | undefined} value
+ * @returns {string[]}
+ */
 function toList(value) {
   if (!value) {
     return [];
   }
   return value
     .split(",")
-    .map((item) => item.trim())
+    .map((/** @type {string} */ item) => item.trim())
     .filter(Boolean);
 }
 
+/**
+ * @param {(string | null | undefined)[]} values
+ * @returns {string[]}
+ */
 function uniq(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
+/**
+ * @param {string} targetPath
+ * @returns {Promise<boolean>}
+ */
 async function pathExists(targetPath) {
   try {
     await fs.access(targetPath);
@@ -77,18 +89,32 @@ async function pathExists(targetPath) {
   }
 }
 
+/**
+ * @param {string} label
+ * @param {string | null | undefined} value
+ * @returns {string}
+ */
 function renderField(label, value) {
   return `- ${label}: ${value || "-"}`;
 }
 
+/**
+ * @param {string} label
+ * @param {string | string[] | null | undefined} value
+ * @returns {string}
+ */
 function renderListField(label, value) {
-  const items = Array.isArray(value) ? value : toList(value);
+  const items = Array.isArray(value) ? value : toList(/** @type {string | null | undefined} */ (value));
   if (items.length === 0) {
     return `- ${label}: -`;
   }
-  return [`- ${label}:`, ...items.map((item) => `  - ${item}`)].join("\n");
+  return [`- ${label}:`, ...items.map((/** @type {string} */ item) => `  - ${item}`)].join("\n");
 }
 
+/**
+ * @param {string} relativePath
+ * @returns {boolean}
+ */
 function fileLooksLikeDeploymentClue(relativePath) {
   const baseName = path.basename(relativePath);
   if (ALWAYS_INCLUDE_FILES.some((pattern) => pattern.test(baseName))) {
@@ -106,7 +132,7 @@ function fileLooksLikeDeploymentClue(relativePath) {
   // relativePath is normalized to forward slashes in collectDeploymentClues,
   // so split on "/" rather than path.sep.
   const segments = relativePath.split("/");
-  const underDeploymentDir = segments.some((segment) => DEPLOYMENT_DIR_HINTS.has(segment));
+  const underDeploymentDir = segments.some((/** @type {string} */ segment) => DEPLOYMENT_DIR_HINTS.has(segment));
   if (!underDeploymentDir) {
     return false;
   }
@@ -114,6 +140,13 @@ function fileLooksLikeDeploymentClue(relativePath) {
   return DEPLOYMENT_EXTENSIONS.has(path.extname(baseName));
 }
 
+/**
+ * @param {string} repoPath
+ * @param {string} relativeDir
+ * @param {number} depth
+ * @param {Set<string>} out
+ * @returns {Promise<void>}
+ */
 async function collectDeploymentClues(repoPath, relativeDir, depth, out) {
   if (depth < 0 || out.size >= MAX_CLUES) {
     return;
@@ -152,10 +185,18 @@ async function collectDeploymentClues(repoPath, relativeDir, depth, out) {
   }
 }
 
+/**
+ * @param {string} repoPath
+ * @returns {string}
+ */
 function guidancePath(repoPath) {
   return path.join(repoPath, ...DEPLOYMENT_GUIDANCE_PATH);
 }
 
+/**
+ * @param {string} repoPath
+ * @returns {Promise<string | null>}
+ */
 async function readableGuidancePath(repoPath) {
   const primary = guidancePath(repoPath);
   if (await pathExists(primary)) {
@@ -168,11 +209,19 @@ async function readableGuidancePath(repoPath) {
   return null;
 }
 
+/**
+ * @param {string} body
+ * @param {string} label
+ * @returns {string}
+ */
 function extractField(body, label) {
   const match = body.match(new RegExp(`^- ${label}:\\s*(.+)$`, "m"));
   return match ? match[1].trim() : "";
 }
 
+/**
+ * @param {string} repoPath
+ */
 export async function discoverDeploymentClues(repoPath) {
   const clues = new Set();
   await collectDeploymentClues(repoPath, "", MAX_DEPTH, clues);
@@ -184,6 +233,9 @@ export async function discoverDeploymentClues(repoPath) {
   };
 }
 
+/**
+ * @param {string} repoPath
+ */
 export async function readDeploymentGuidanceSummary(repoPath) {
   const filePath = await readableGuidancePath(repoPath);
   if (!filePath) {
@@ -202,6 +254,13 @@ export async function readDeploymentGuidanceSummary(repoPath) {
   };
 }
 
+/**
+ * @param {string} repoPath
+ * @param {{ title?: string, owner?: string, discoveryStatus?: string, verifiedFrom?: string,
+ *           summary?: string, build?: string, deploy?: string, environments?: string,
+ *           logs?: string, metrics?: string, alerts?: string, telemetry?: string,
+ *           clues?: string, missing?: string, refreshWhen?: string, next?: string }} [fields]
+ */
 export async function writeDeploymentGuidance(repoPath, fields = {}) {
   const filePath = guidancePath(repoPath);
   await fs.mkdir(path.dirname(filePath), { recursive: true });

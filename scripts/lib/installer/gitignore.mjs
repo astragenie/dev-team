@@ -8,9 +8,13 @@ import path from "node:path";
 import { writeFileIfChanged } from "./util.mjs";
 import { GITIGNORE_BLOCK, GITIGNORE_MARKER_END, GITIGNORE_MARKER_START } from "./templates.mjs";
 
+/**
+ * @param {string} repoPath
+ * @param {string[]} writes
+ */
 export async function updateGitignore(repoPath, writes) {
   const ignorePath = path.join(repoPath, ".gitignore");
-  const existing = await fs.readFile(ignorePath, "utf8").catch(() => null);
+  const existing = await fs.readFile(ignorePath, "utf8").catch(/** @returns {null} */ () => null);
 
   if (existing === null) {
     const contents = `${GITIGNORE_BLOCK}\n`;

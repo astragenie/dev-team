@@ -18,14 +18,20 @@ function defaultClaimsState() {
     version: "1.0",
     updatedAt: nowIso(),
     claims: {},
+    /** @type {string[]} */
     warnings: []
   };
 }
 
+/** @param {string} dirPath */
 async function ensureDir(dirPath) {
   await fs.mkdir(dirPath, { recursive: true });
 }
 
+/**
+ * @param {string} filePath
+ * @param {string} contents
+ */
 async function ensureFile(filePath, contents) {
   try {
     await fs.access(filePath);
@@ -35,6 +41,10 @@ async function ensureFile(filePath, contents) {
   }
 }
 
+/**
+ * @param {string} repoPath
+ * @param {string} inputPath
+ */
 function toRepoRelative(repoPath, inputPath) {
   const absolute = path.resolve(repoPath, inputPath);
   const relative = path.relative(repoPath, absolute);
@@ -49,6 +59,7 @@ function toRepoRelative(repoPath, inputPath) {
 // POSIX and Windows. If the lock file already exists, the open fails and
 // we retry. A stale lock (older than LOCK_STALE_MS) is forcibly cleared
 // to recover from crashed processes.
+/** @param {string} repoPath */
 async function acquireClaimsLock(repoPath) {
   const claimsPath = path.join(repoPath, ...CLAIMS_PATH);
   const lockPath = `${claimsPath}${LOCK_SUFFIX}`;
@@ -85,10 +96,15 @@ async function acquireClaimsLock(repoPath) {
   }
 }
 
+/** @param {string} lockPath */
 async function releaseClaimsLock(lockPath) {
   await fs.unlink(lockPath).catch(() => {});
 }
 
+/**
+ * @param {string} repoPath
+ * @param {() => Promise<unknown>} fn
+ */
 async function withClaimsLock(repoPath, fn) {
   const lockPath = await acquireClaimsLock(repoPath);
   try {
@@ -98,17 +114,26 @@ async function withClaimsLock(repoPath, fn) {
   }
 }
 
+/**
+ * @param {string} repoPath
+ * @param {Record<string, unknown>} state
+ */
 async function saveClaimsState(repoPath, state) {
   const claimsPath = path.join(repoPath, ...CLAIMS_PATH);
   state.updatedAt = nowIso();
   await fs.writeFile(claimsPath, `${JSON.stringify(state, null, 2)}\n`);
 }
 
+/**
+ * @param {string} repoPath
+ * @param {Record<string, unknown>} event
+ */
 async function appendHistoryEvent(repoPath, event) {
   const historyPath = path.join(repoPath, ...HISTORY_PATH);
   await fs.appendFile(historyPath, `${JSON.stringify({ timestamp: nowIso(), ...event })}\n`);
 }
 
+/** @param {string} repoPath */
 export async function ensureStateScaffold(repoPath) {
   const stateDir = path.join(repoPath, ...STATE_DIR);
   await ensureDir(stateDir);
@@ -119,6 +144,7 @@ export async function ensureStateScaffold(repoPath) {
   await ensureFile(path.join(repoPath, ...HISTORY_PATH), "");
 }
 
+/** @param {string} repoPath */
 async function claimsStateExists(repoPath) {
   try {
     await fs.access(path.join(repoPath, ...CLAIMS_PATH));
@@ -128,6 +154,10 @@ async function claimsStateExists(repoPath) {
   }
 }
 
+/**
+ * @param {string} repoPath
+ * @param {{ createIfMissing?: boolean }} [options]
+ */
 export async function loadClaimsState(repoPath, options = {}) {
   if (options.createIfMissing === false && !(await claimsStateExists(repoPath))) {
     return defaultClaimsState();
@@ -137,6 +167,11 @@ export async function loadClaimsState(repoPath, options = {}) {
   return JSON.parse(await fs.readFile(claimsPath, "utf8"));
 }
 
+/**
+ * @param {string} repoPath
+ * @param {string[]} filePaths
+ * @param {{ owner?: string; note?: string }} [options]
+ */
 export async function claimFiles(repoPath, filePaths, options = {}) {
   const owner = options.owner || "lead-session";
   const note = options.note || "";
@@ -183,6 +218,11 @@ export async function claimFiles(repoPath, filePaths, options = {}) {
   });
 }
 
+/**
+ * @param {string} repoPath
+ * @param {string[]} [filePaths]
+ * @param {{ owner?: string }} [options]
+ */
 export async function releaseFiles(repoPath, filePaths = [], options = {}) {
   const owner = options.owner || null;
 
@@ -220,6 +260,10 @@ export async function releaseFiles(repoPath, filePaths = [], options = {}) {
   });
 }
 
+/**
+ * @param {string} repoPath
+ * @param {{ createIfMissing?: boolean }} [options]
+ */
 export async function listClaims(repoPath, options = {}) {
   const state = await loadClaimsState(repoPath, { createIfMissing: options.createIfMissing });
   return Object.entries(state.claims)
@@ -232,6 +276,11 @@ export async function listClaims(repoPath, options = {}) {
     }));
 }
 
+/**
+ * @param {string} repoPath
+ * @param {string[]} [filePaths]
+ * @param {{ owner?: string }} [options]
+ */
 export async function inspectClaims(repoPath, filePaths = [], options = {}) {
   const owner = options.owner || null;
   const claims = await listClaims(repoPath);

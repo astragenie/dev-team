@@ -25,6 +25,10 @@ const RECENT_EVENTS_LIMIT = 3;
 const RECENT_HISTORY_LIMIT = 3;
 const JSONL_TAIL_BYTES = 64 * 1024;
 
+/**
+ * @param {string} targetPath
+ * @returns {Promise<boolean>}
+ */
 async function pathExists(targetPath) {
   try {
     await fs.access(targetPath);
@@ -34,6 +38,12 @@ async function pathExists(targetPath) {
   }
 }
 
+/**
+ * @param {string} filePath
+ * @param {number} count
+ * @param {number} [maxBytes]
+ * @returns {Promise<Record<string, unknown>[]>}
+ */
 async function readRecentJsonl(filePath, count, maxBytes = JSONL_TAIL_BYTES) {
   if (!(await pathExists(filePath))) {
     return [];
@@ -68,6 +78,10 @@ async function readRecentJsonl(filePath, count, maxBytes = JSONL_TAIL_BYTES) {
   }
 }
 
+/**
+ * @param {string} filePath
+ * @returns {Promise<object | null>}
+ */
 async function readJson(filePath) {
   if (!(await pathExists(filePath))) {
     return null;
@@ -75,6 +89,10 @@ async function readJson(filePath) {
   return JSON.parse(await fs.readFile(filePath, "utf8"));
 }
 
+/**
+ * @param {string} dirPath
+ * @returns {Promise<number>}
+ */
 async function countFiles(dirPath) {
   if (!(await pathExists(dirPath))) {
     return 0;
@@ -92,6 +110,10 @@ async function countFiles(dirPath) {
   return count;
 }
 
+/**
+ * @param {string} dirPath
+ * @returns {Promise<{ path: string, mtimeMs: number }[]>}
+ */
 async function listFilesNewestFirst(dirPath) {
   if (!(await pathExists(dirPath))) {
     return [];
@@ -109,6 +131,12 @@ async function listFilesNewestFirst(dirPath) {
   return files.sort((left, right) => right.mtimeMs - left.mtimeMs);
 }
 
+/**
+ * @param {string} repoPath
+ * @param {string[]} subdir
+ * @param {string} prefix
+ * @returns {Promise<{ path: string, title: string, updatedAt: string } | null>}
+ */
 async function latestArtifactByPrefix(repoPath, subdir, prefix) {
   const dirPath = path.join(repoPath, ...subdir);
   const files = await listFilesNewestFirst(dirPath);
@@ -126,6 +154,11 @@ async function latestArtifactByPrefix(repoPath, subdir, prefix) {
   };
 }
 
+/**
+ * @param {string} dirPath
+ * @param {{ path: string, kind: string }[]} guides
+ * @returns {Promise<void>}
+ */
 async function collectGuideFiles(dirPath, guides) {
   if (!(await pathExists(dirPath))) {
     return;
@@ -142,6 +175,10 @@ async function collectGuideFiles(dirPath, guides) {
   }
 }
 
+/**
+ * @param {string} repoPath
+ * @returns {Promise<{ path: string, kind: string }[]>}
+ */
 async function listRepoGuidance(repoPath) {
   const claudePath = path.join(repoPath, "CLAUDE.md");
   const guides = [];
@@ -161,6 +198,10 @@ async function listRepoGuidance(repoPath) {
   return guides;
 }
 
+/**
+ * @param {(({ path: string, title: string, updatedAt: string }) | null | undefined)[]} artifacts
+ * @returns {{ path: string, title: string, updatedAt: string } | null}
+ */
 function newestOf(...artifacts) {
   return (
     artifacts
@@ -169,6 +210,9 @@ function newestOf(...artifacts) {
   );
 }
 
+/**
+ * @param {({ path: string, title: string, updatedAt: string }) | null} artifact
+ */
 function summarizeLatestArtifact(artifact) {
   if (!artifact) {
     return null;
@@ -181,6 +225,10 @@ function summarizeLatestArtifact(artifact) {
   };
 }
 
+/**
+ * @param {string} repoPath
+ * @returns {Promise<{ runs: number, handoffs: number, reviews: number, validations: number, deployments: number }>}
+ */
 async function countArchive(repoPath) {
   const [runs, handoffs, reviews, validations, deployments] = await Promise.all([
     countFiles(path.join(repoPath, ...RUNS_DIR)),
@@ -193,6 +241,17 @@ async function countArchive(repoPath) {
   return { runs, handoffs, reviews, validations, deployments };
 }
 
+/**
+ * @param {{ claims: object[], openApprovals: object[], sprint: object | null,
+ *           workflow: object, latestDeploymentGuidance: object | null,
+ *           latestRunBrief: object | null, latestFinalSynthesis: object | null,
+ *           latestHandoff: object | null, latestReview: object | null,
+ *           latestValidationPlan: object | null, latestValidationResult: object | null,
+ *           latestDeploymentCheck: object | null, repoMemory: object[],
+ *           recentEvents: object[], recentClaimHistory: object[],
+ *           archiveCounts: object }} _
+ * @returns {Record<string, unknown>}
+ */
 function buildMemoryBuckets({
   claims,
   openApprovals,
@@ -248,6 +307,10 @@ function buildMemoryBuckets({
   };
 }
 
+/**
+ * @param {string} repoPath
+ * @param {{ readOnly?: boolean }} [options]
+ */
 export async function buildWakeUpBrief(repoPath, options = {}) {
   const readOnly = options.readOnly === true;
   const [
@@ -294,9 +357,9 @@ export async function buildWakeUpBrief(repoPath, options = {}) {
   const repoMemory = await listRepoGuidance(repoPath);
 
   const recentEvents = recentEventsRaw.map((event) => ({
-    timestamp: event.timestamp,
-    event: event.event,
-    payloadPath: event.payloadPath || ""
+    timestamp: /** @type {string} */ (event["timestamp"]),
+    event: /** @type {string} */ (event["event"]),
+    payloadPath: /** @type {string} */ (event["payloadPath"] || "")
   }));
 
   const latestArtifacts = {
@@ -357,6 +420,13 @@ export async function buildWakeUpBrief(repoPath, options = {}) {
   };
 }
 
+/**
+ * @param {{ memory: Record<string, unknown>, claims: object[], openApprovals: object[],
+ *           workflow: { hasActiveRun: boolean, pendingBadges: string[] },
+ *           latestDeploymentGuidance: object | null, repoMemory: object[],
+ *           latestArtifacts: object, archiveCounts: object }} _
+ * @returns {object}
+ */
 function buildWakeUpSummary({
   memory,
   claims,
@@ -367,10 +437,10 @@ function buildWakeUpSummary({
   latestArtifacts,
   archiveCounts
 }) {
-  const recentArtifactList = Object.values(latestArtifacts);
+  const recentArtifactList = /** @type {(({ path: string, title: string, updatedAt: string }) | null | undefined)[]} */ (Object.values(latestArtifacts));
   const newest = newestOf(...recentArtifactList);
   return {
-    memoryPolicy: memory.policy,
+    memoryPolicy: /** @type {string} */ (memory["policy"]),
     activeClaims: claims.length,
     openApprovals: openApprovals.length,
     hasActiveWorkflow: workflow.hasActiveRun,

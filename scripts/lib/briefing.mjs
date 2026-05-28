@@ -22,6 +22,7 @@ import {
 
 const ROUTING_TABLE_STALE_DAYS = 30;
 
+/** @param {string} repoPath */
 async function checkRoutingTableStale(repoPath) {
   const candidate = path.join(repoPath, "docs", "routing-table.md");
   try {
@@ -46,6 +47,7 @@ import {
   recommendedNextStep
 } from "./briefing/render.mjs";
 
+/** @param {string} repoPath */
 export async function buildBriefingReport(repoPath) {
   const [
     wakeUpBrief,
