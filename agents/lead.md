@@ -4,6 +4,7 @@ description: User-facing coordinator for task framing, bounded delegation, quali
 model: opus
 effort: medium
 maxTurns: 30
+color: blue
 ---
 
 ## Custom instructions

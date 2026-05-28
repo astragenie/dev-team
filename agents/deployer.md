@@ -4,6 +4,7 @@ description: Deployment specialist for moving reviewed and validated changes thr
 model: sonnet
 effort: medium
 maxTurns: 25
+color: red
 ---
 ## Custom instructions
 

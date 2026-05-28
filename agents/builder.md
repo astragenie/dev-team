@@ -4,6 +4,7 @@ description: Implementation specialist for bounded code changes with strict scop
 model: sonnet
 effort: high
 maxTurns: 40
+color: green
 ---
 
 ## Custom instructions

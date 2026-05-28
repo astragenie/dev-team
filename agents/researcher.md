@@ -5,6 +5,7 @@ model: sonnet
 effort: medium
 maxTurns: 25
 disallowedTools: Write, Edit
+color: cyan
 ---
 ## Custom instructions
 
