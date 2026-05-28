@@ -1,0 +1,31 @@
+# Review Result: cost-hygiene reread hook — Tasks 1-6 final review
+
+- Created: 2026-05-28T20:42:20.699Z
+- Reviewer: reviewer
+- Decision: approved
+- Summary: All 6 implementation tasks are correct, complete, and safe to merge; every CI gate passes at 133/133 tests with no warnings.
+- Evidence Checked:
+  - 9 CI gates all EXIT 0 (validate-manifests
+  - validate-skills
+  - validate-slices
+  - typecheck
+  - lint
+  - format:check
+  - node --test 133/133
+  - validate-manifests struct
+  - e2e-smoke); integration smoke test confirms recordRead->recordReadContent->decide end-to-end chain produces warn+quoted-content on reread; evictLRU consistency verified (total_bytes == sum of remaining entry.content_bytes); single-protected-entry edge case verified (no infinite loop
+  - loop terminates naturally); cardinal never-block rule confirmed (all exit paths in both hook entry scripts exit 0
+  - no throws escape main().catch); no process.exit in library modules decide.mjs or state.mjs; cross-file field-name consistency clean (StoredEntry shape identical in decide.mjs typedef and state.mjs typedef + all construction sites); format pass 6bdeb07 is whitespace-only with zero logic change; hooks.json adds PreToolUse+PostToolUse Read matchers under correct top-level key; gstack-health composite score 10/10 (up from 9.8)
+- Files Reviewed:
+  - scripts/lib/cost-hygiene/decide.mjs
+  - scripts/lib/cost-hygiene/state.mjs
+  - hooks/check-redundant-read.mjs
+  - hooks/record-read-content.mjs
+  - hooks/hooks.json
+  - tests/cost-hygiene-decide.test.mjs
+  - tests/cost-hygiene-state.test.mjs
+  - tests/cost-hygiene-hook.test.mjs
+- Test Adequacy: 21 new tests added (6 decide + 10 state + 5 hook); new floor 133 vs prior 112; covers first-read pass, reread-warn with content, reread-warn content-omitted, mtime-newer pass, LRU eviction, protected-entry safety, corrupt-JSON tolerance, stale-tmp cleanup, atomic write, post-hook content capture, env-var gate, malformed-stdin — all plan targets met (plan asked >=18 new tests, new floor 130)
+- Risks: none — hook is env-var gated (CREW_COST_HYGIENE=1, default off); Task 7 dogfood/enable is user-interactive and explicitly out of scope; single-entry-exceeds-cap edge case leaves total_bytes > 2MB in that degenerate scenario but is benign and loop-safe
+- Required Follow-up: Task 7: user sets CREW_COST_HYGIENE=1, runs a full session, inspects .claude/state/cost-hygiene/<sid>.json, generates cost report, writes observation
+

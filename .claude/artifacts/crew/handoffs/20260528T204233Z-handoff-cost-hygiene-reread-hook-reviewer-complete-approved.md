@@ -1,0 +1,31 @@
+# Task Handoff: cost-hygiene reread hook — reviewer complete, approved
+
+- Created: 2026-05-28T20:42:33.308Z
+- From: reviewer
+- To: lead
+- Objective: Final review of Tasks 1-6 (87a3ea6..dc95a1b) approved with zero blocking findings; implementation is correct, test-complete, and safe to merge.
+- Allowed Scope:
+  - All 10 commits in range 87a3ea6..dc95a1b inclusive (Tasks 1-6 + chore/format pass); correctness
+  - never-block cardinal rule
+  - state boundary
+  - CI gates
+  - test coverage delta
+  - CLAUDE.md compliance
+  - cross-file type consistency
+  - integration safety
+  - dogfood readiness
+- Forbidden Scope: -
+- Deliverable: review-result artifact: approved; gstack-health dashboard: 10.0/10 composite; all 9 CI gates green; integration smoke test passed; evictLRU consistency verified
+- Changed Files:
+  - scripts/lib/cost-hygiene/decide.mjs
+  - scripts/lib/cost-hygiene/state.mjs
+  - hooks/check-redundant-read.mjs
+  - hooks/record-read-content.mjs
+  - hooks/hooks.json
+  - tests/cost-hygiene-decide.test.mjs
+  - tests/cost-hygiene-state.test.mjs
+  - tests/cost-hygiene-hook.test.mjs
+- Confidence: high
+- Risks: Single-entry-exceeds-cap edge case leaves total_bytes > 2MB when the only entry is both protected and oversized; benign and loop-safe, but total_bytes will be inflated until that entry is eventually displaced. Recommend noting it as a known minor invariant gap.
+- Suggested Next Handoff: Lead: merge is clear. Task 7 (user-interactive dogfood): set CREW_COST_HYGIENE=1, run session, inspect state file, record observation, then promote to default-on in a follow-up minor release.
+
