@@ -8,7 +8,8 @@ import {
   loadSession,
   saveSession,
   recordRead,
-  recordReadContent
+  recordReadContent,
+  evictLRU
 } from "../scripts/lib/cost-hygiene/state.mjs";
 
 async function makeRepo() {
@@ -115,4 +116,38 @@ test("recordReadContent caps content at 50KB, sets content:null when oversized",
   } finally {
     await cleanup(repo);
   }
+});
+
+test("evictLRU drops least-recently-read on session-cap overflow", () => {
+  const state = {
+    session_id: "s",
+    first_seen: "2026-05-28T18:00:00.000Z",
+    last_seen: "2026-05-28T18:00:00.000Z",
+    total_bytes: 2_100_000,
+    entries: {
+      "/a": { read_count: 1, first_read_at: "2026-05-28T18:00:00.000Z", last_read_at: "2026-05-28T18:00:00.000Z", mtime_at_last_read: "x", size_at_last_read: 0, content_bytes: 1_000_000, content: "a" },
+      "/b": { read_count: 1, first_read_at: "2026-05-28T18:01:00.000Z", last_read_at: "2026-05-28T18:01:00.000Z", mtime_at_last_read: "x", size_at_last_read: 0, content_bytes: 600_000, content: "b" },
+      "/c": { read_count: 1, first_read_at: "2026-05-28T18:02:00.000Z", last_read_at: "2026-05-28T18:02:00.000Z", mtime_at_last_read: "x", size_at_last_read: 0, content_bytes: 500_000, content: "c" }
+    }
+  };
+  const protectedPath = "/c";
+  const result = evictLRU(state, protectedPath);
+  assert.ok(!("/a" in result.entries), "least-recently-read /a should be evicted");
+  assert.ok("/c" in result.entries, "currently-being-recorded /c must not be evicted");
+  assert.ok(result.total_bytes <= 2_000_000);
+});
+
+test("evictLRU never drops the entry being recorded even if it is the LRU", () => {
+  const state = {
+    session_id: "s",
+    first_seen: "2026-05-28T18:00:00.000Z",
+    last_seen: "2026-05-28T18:00:00.000Z",
+    total_bytes: 2_100_000,
+    entries: {
+      "/oldest": { read_count: 1, first_read_at: "2026-05-28T18:00:00.000Z", last_read_at: "2026-05-28T18:00:00.000Z", mtime_at_last_read: "x", size_at_last_read: 0, content_bytes: 1_500_000, content: "x" },
+      "/newer": { read_count: 1, first_read_at: "2026-05-28T18:05:00.000Z", last_read_at: "2026-05-28T18:05:00.000Z", mtime_at_last_read: "x", size_at_last_read: 0, content_bytes: 600_000, content: "y" }
+    }
+  };
+  const result = evictLRU(state, "/oldest");
+  assert.ok("/oldest" in result.entries, "protected /oldest must survive eviction");
 });

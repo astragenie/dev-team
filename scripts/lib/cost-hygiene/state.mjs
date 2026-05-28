@@ -142,3 +142,23 @@ export function recordReadContent(state, filePath, content) {
   }
   return state;
 }
+
+const SESSION_CAP_BYTES = 2_000_000;
+
+/**
+ * @param {SessionState} state
+ * @param {string | null} protectedPath
+ * @returns {SessionState}
+ */
+export function evictLRU(state, protectedPath = null) {
+  if (state.total_bytes <= SESSION_CAP_BYTES) return state;
+  const entries = Object.entries(state.entries)
+    .filter(([p]) => p !== protectedPath)
+    .sort(([, a], [, b]) => Date.parse(a.last_read_at) - Date.parse(b.last_read_at));
+  for (const [evictPath, entry] of entries) {
+    if (state.total_bytes <= SESSION_CAP_BYTES) break;
+    state.total_bytes -= entry.content_bytes;
+    delete state.entries[evictPath];
+  }
+  return state;
+}
