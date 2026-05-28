@@ -3,6 +3,30 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.3.11 — 2026-05-28 — Cost-hygiene reread hook
+
+### Cost prevention (default-off, env-var-gated)
+
+- **feat(cost-hygiene):** new `PreToolUse` + `PostToolUse` Read matchers in `hooks/hooks.json` wire a pair of env-var-gated hooks (`CREW_COST_HYGIENE=1`).
+- **feat(cost-hygiene):** `hooks/check-redundant-read.mjs` — PreToolUse. On reread of a path with unchanged mtime, injects a `<system-reminder>` block quoting the prior file content into the assistant's context so the model uses it instead of issuing a redundant Read. Never blocks; always exits 0.
+- **feat(cost-hygiene):** `hooks/record-read-content.mjs` — PostToolUse. Captures the Read tool result content into session state for the next reread to quote.
+- **feat(cost-hygiene):** `scripts/lib/cost-hygiene/decide.mjs` — pure decision module. Q7 mtime-edit exception: warns only when file unchanged since last Read.
+- **feat(cost-hygiene):** `scripts/lib/cost-hygiene/state.mjs` — per-session JSON at `.claude/state/cost-hygiene/<session_id>.json`. Per-file 50KB cap, per-session 2MB cap with LRU eviction. Atomic write via `.tmp.<pid>` + rename. Stale temp cleanup on load. Corrupt-JSON tolerance.
+
+### Test suite
+
+- 133 total tests (+21 from baseline 112): 6 `cost-hygiene-decide`, 10 `cost-hygiene-state`, 5 `cost-hygiene-hook` (integration via subprocess spawn).
+
+### Quality gates
+
+- **chore(format):** apply prettier to 9 drift-accumulated files. `npm run format:check` is now clean.
+- **fix(types):** SLICE-08 AC5 zero-tolerance — last 2 residual `{any}` occurrences in `scripts/` replaced with typed alternatives (`@type {{ name?: string; version?: string }}` + `FleetItem` typedef).
+
+### Known limitations
+
+- Plugin ships **default-off**. Set `CREW_COST_HYGIENE=1` to enable. Promotion to default-on follows dogfood measurement.
+- `evictLRU` may leave `total_bytes > 2MB` when a single protected entry alone exceeds the cap (cosmetic accounting only; cannot affect decisions or persist incorrect data).
+
 ## v0.3.10 — 2026-05-28 — Type safety (noImplicitAny)
 
 ### Quality Gates
