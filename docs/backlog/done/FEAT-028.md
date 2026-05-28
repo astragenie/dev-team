@@ -2,7 +2,7 @@
 id: FEAT-028
 title: Cost health summary in brief-me output
 priority: P2
-status: triaged
+status: done
 category: feature
 target_release: null
 created: 2026-05-27

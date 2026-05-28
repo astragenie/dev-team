@@ -2,7 +2,7 @@
 id: FEAT-027
 title: Regression trend detectors in cost-advisor
 priority: P2
-status: triaged
+status: done
 category: feature
 target_release: null
 created: 2026-05-27

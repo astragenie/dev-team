@@ -1,6 +1,66 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+/**
+ * @typedef {{ status: string, updatedAt: string, note?: string }} GateEntry
+ * @typedef {{ dev: GateEntry|null, prod: GateEntry|null }} DeploymentGates
+ * @typedef {{
+ *   review: GateEntry|null,
+ *   validation: GateEntry|null,
+ *   deployment: DeploymentGates,
+ *   blocked: GateEntry|null,
+ *   escalation: GateEntry|null
+ * }} RunGates
+ * @typedef {{
+ *   runBrief: string|null,
+ *   handoffs: string[],
+ *   reviewResult: string|null,
+ *   validationPlan: string|null,
+ *   validationResult: string|null,
+ *   deploymentChecks: { dev: string|null, prod: string|null },
+ *   finalSynthesis: string|null
+ * }} RunArtifacts
+ * @typedef {{
+ *   title: string,
+ *   goal: string,
+ *   mode: string,
+ *   status: string,
+ *   startedAt: string,
+ *   updatedAt: string,
+ *   completedAt?: string,
+ *   next: string,
+ *   gates: RunGates,
+ *   artifacts: RunArtifacts
+ * }} WorkflowRun
+ * @typedef {{
+ *   version: string,
+ *   updatedAt: string,
+ *   currentRun: WorkflowRun|null,
+ *   recentRuns: WorkflowRun[]
+ * }} WorkflowState
+ * @typedef {{
+ *   title?: string,
+ *   goal?: string,
+ *   mode?: string,
+ *   status?: string,
+ *   next?: string,
+ *   path?: string
+ * }} RunFields
+ * @typedef {{
+ *   badge?: string,
+ *   title?: string,
+ *   goal?: string,
+ *   mode?: string,
+ *   next?: string,
+ *   note?: string,
+ *   blockedBy?: string|null,
+ *   force?: boolean,
+ *   summary?: string
+ * }} BadgeOptions
+ * @typedef {{ kind: string, path: string, title: string }} ArtifactRef
+ * @typedef {{ createIfMissing?: boolean }} LoadOptions
+ */
+
 const STATE_DIR = [".claude", "state", "crew"];
 const WORKFLOW_STATE_PATH = [...STATE_DIR, "workflow-state.json"];
 // Legacy path retained for read-side fallback so repos installed before the
@@ -14,6 +74,9 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+/**
+ * @returns {WorkflowState}
+ */
 function defaultWorkflowState() {
   return {
     version: "1.0",
@@ -23,10 +86,19 @@ function defaultWorkflowState() {
   };
 }
 
+/**
+ * @param {string} dirPath
+ * @returns {Promise<void>}
+ */
 async function ensureDir(dirPath) {
   await fs.mkdir(dirPath, { recursive: true });
 }
 
+/**
+ * @param {string} filePath
+ * @param {string} contents
+ * @returns {Promise<void>}
+ */
 async function ensureFile(filePath, contents) {
   try {
     await fs.access(filePath);
@@ -36,6 +108,10 @@ async function ensureFile(filePath, contents) {
   }
 }
 
+/**
+ * @param {string} repoPath
+ * @returns {Promise<void>}
+ */
 export async function ensureWorkflowStateScaffold(repoPath) {
   await ensureFile(
     path.join(repoPath, ...WORKFLOW_STATE_PATH),
@@ -43,6 +119,10 @@ export async function ensureWorkflowStateScaffold(repoPath) {
   );
 }
 
+/**
+ * @param {string} filePath
+ * @returns {Promise<boolean>}
+ */
 async function pathReadable(filePath) {
   try {
     await fs.access(filePath);
@@ -52,6 +132,11 @@ async function pathReadable(filePath) {
   }
 }
 
+/**
+ * @param {string} repoPath
+ * @param {LoadOptions} [options]
+ * @returns {Promise<WorkflowState>}
+ */
 export async function loadWorkflowState(repoPath, options = {}) {
   const workflowPath = path.join(repoPath, ...WORKFLOW_STATE_PATH);
   if (await pathReadable(workflowPath)) {
@@ -71,6 +156,11 @@ export async function loadWorkflowState(repoPath, options = {}) {
   return JSON.parse(await fs.readFile(workflowPath, "utf8"));
 }
 
+/**
+ * @param {string} repoPath
+ * @param {WorkflowState} state
+ * @returns {Promise<void>}
+ */
 async function saveWorkflowState(repoPath, state) {
   const workflowPath = path.join(repoPath, ...WORKFLOW_STATE_PATH);
   state.updatedAt = nowIso();
@@ -78,24 +168,42 @@ async function saveWorkflowState(repoPath, state) {
   await fs.writeFile(workflowPath, `${JSON.stringify(state, null, 2)}\n`);
 }
 
+/**
+ * @param {WorkflowState} state
+ * @param {WorkflowRun|null} run
+ * @returns {void}
+ */
+/**
+ * @param {WorkflowState} state
+ * @param {WorkflowRun|null} run
+ * @returns {void}
+ */
 function archiveRun(state, run) {
   if (!run) {
     return;
   }
 
+  /** @type {WorkflowRun} */
   const archived = {
     title: run.title,
     goal: run.goal || "",
     mode: run.mode || "",
     status: run.status || "completed",
     startedAt: run.startedAt || run.updatedAt || nowIso(),
+    updatedAt: run.updatedAt || nowIso(),
     completedAt: run.completedAt || run.updatedAt || nowIso(),
-    gates: run.gates || { review: null, validation: null, blocked: null, escalation: null }
+    next: run.next || "",
+    gates: run.gates || { review: null, validation: null, deployment: { dev: null, prod: null }, blocked: null, escalation: null },
+    artifacts: run.artifacts || { runBrief: null, handoffs: [], reviewResult: null, validationPlan: null, validationResult: null, deploymentChecks: { dev: null, prod: null }, finalSynthesis: null }
   };
 
   state.recentRuns = [archived, ...(state.recentRuns || [])].slice(0, MAX_RECENT_RUNS);
 }
 
+/**
+ * @param {RunFields} [fields]
+ * @returns {WorkflowRun}
+ */
 function createRun(fields = {}) {
   return {
     title: fields.title || "Workflow Run",
@@ -130,6 +238,10 @@ function createRun(fields = {}) {
   };
 }
 
+/**
+ * @param {WorkflowRun|null|undefined} run
+ * @returns {boolean}
+ */
 function hasAnyWorkflowGate(run) {
   return Boolean(
     run?.gates?.review ||
@@ -143,6 +255,7 @@ function hasAnyWorkflowGate(run) {
 // pending sentinel value. The shared PENDING_BADGE_SPECS table cannot be
 // reused here because it accepts `currentRun.gates?.foo` while this helper
 // is called with `run` from contexts where gates may be missing entirely.
+/** @type {Array<(run: WorkflowRun|null|undefined) => boolean>} */
 const PENDING_GATE_CHECKS = [
   (run) => run?.gates?.review?.status === "required",
   (run) => run?.gates?.validation?.status === "expected",
@@ -152,11 +265,19 @@ const PENDING_GATE_CHECKS = [
   (run) => run?.gates?.escalation?.status === "escalated"
 ];
 
+/**
+ * @param {WorkflowRun|null|undefined} run
+ * @returns {boolean}
+ */
 function hasPendingGates(run) {
   return PENDING_GATE_CHECKS.some((check) => check(run));
 }
 
 // Artifact-shape helpers shared by progress/substance/evidence checks.
+/**
+ * @param {RunArtifacts|null|undefined} artifacts
+ * @returns {boolean}
+ */
 function hasReviewOrValidationArtifact(artifacts) {
   return Boolean(
     artifacts?.handoffs?.length ||
@@ -168,6 +289,10 @@ function hasReviewOrValidationArtifact(artifacts) {
   );
 }
 
+/**
+ * @param {RunArtifacts|null|undefined} artifacts
+ * @returns {boolean}
+ */
 function hasSubstantialArtifact(artifacts) {
   return Boolean(
     artifacts?.handoffs?.length ||
@@ -178,14 +303,26 @@ function hasSubstantialArtifact(artifacts) {
   );
 }
 
+/**
+ * @param {RunGates|null|undefined} gates
+ * @returns {boolean}
+ */
 function hasSubstantialGate(gates) {
   return Boolean(gates?.validation || gates?.deployment?.dev || gates?.deployment?.prod);
 }
 
+/**
+ * @param {string} mode
+ * @returns {boolean}
+ */
 function hasSubstantialMode(mode) {
   return mode === "assisted single-session" || mode === "team run";
 }
 
+/**
+ * @param {WorkflowRun|null|undefined} run
+ * @returns {boolean}
+ */
 function hasMeaningfulProgress(run) {
   if (!run) return false;
   return Boolean(
@@ -193,6 +330,10 @@ function hasMeaningfulProgress(run) {
   );
 }
 
+/**
+ * @param {WorkflowRun|null|undefined} run
+ * @returns {boolean}
+ */
 function isSubstantialRunHint(run) {
   if (!run) return false;
   return Boolean(
@@ -207,11 +348,16 @@ function isSubstantialRunHint(run) {
 // regardless of whether the outcome was success or failure.
 const RESOLVED_GATE_STATUSES = new Set(["passed", "failed", "skipped"]);
 
+/**
+ * @param {string|undefined} status
+ * @returns {boolean}
+ */
 function isGateResolved(status) {
   return Boolean(status) && RESOLVED_GATE_STATUSES.has(status);
 }
 
 // Gate-status accessors used to test "is any gate resolved?".
+/** @type {Array<(gates: RunGates) => string|undefined>} */
 const GATE_STATUS_GETTERS = [
   (gates) => gates.review?.status,
   (gates) => gates.validation?.status,
@@ -220,6 +366,7 @@ const GATE_STATUS_GETTERS = [
 ];
 
 // Closed-artifact accessors used to test "is any phase artifact written?".
+/** @type {Array<(artifacts: RunArtifacts) => string|null|undefined>} */
 const PHASE_ARTIFACT_GETTERS = [
   (artifacts) => artifacts.reviewResult,
   (artifacts) => artifacts.validationResult,
@@ -227,6 +374,10 @@ const PHASE_ARTIFACT_GETTERS = [
   (artifacts) => artifacts.deploymentChecks?.prod
 ];
 
+/**
+ * @param {WorkflowRun|null|undefined} run
+ * @returns {boolean}
+ */
 function hasCompletedPhaseEvidence(run) {
   if (!run) return false;
   const gates = run.gates || {};
@@ -239,12 +390,17 @@ function hasCompletedPhaseEvidence(run) {
 // "Decided" means the gate was explicitly closed pass/fail (not pending,
 // not skipped). A decided gate without its corresponding artifact is a
 // missing write-back.
+/**
+ * @param {string|undefined} status
+ * @returns {boolean}
+ */
 function isDecided(status) {
   return status === "passed" || status === "failed";
 }
 
 // Spec table mapping each gate to its expected artifact slot and the
 // missing-code emitted when the gate is decided but the artifact is absent.
+/** @type {Array<{ code: string, gate: (g: RunGates) => string|undefined, artifact: (a: RunArtifacts) => string|null|undefined }>} */
 const MISSING_WRITE_SPECS = [
   {
     code: "review_result_missing",
@@ -268,6 +424,10 @@ const MISSING_WRITE_SPECS = [
   }
 ];
 
+/**
+ * @param {WorkflowRun|null|undefined} run
+ * @returns {string[]}
+ */
 function summarizeMissingArtifactWritesForRun(run) {
   if (!run) return [];
   const gates = run.gates || {};
@@ -292,6 +452,11 @@ function summarizeMissingArtifactWritesForRun(run) {
   return missing;
 }
 
+/**
+ * @param {string} repoPath
+ * @param {RunFields} [fields]
+ * @returns {Promise<WorkflowRun>}
+ */
 export async function startWorkflowRun(repoPath, fields = {}) {
   const state = await loadWorkflowState(repoPath);
   if (state.currentRun) {
@@ -303,6 +468,11 @@ export async function startWorkflowRun(repoPath, fields = {}) {
   return state.currentRun;
 }
 
+/**
+ * @param {WorkflowState} state
+ * @param {RunFields} [fields]
+ * @returns {WorkflowRun}
+ */
 function ensureCurrentRun(state, fields = {}) {
   if (!state.currentRun) {
     state.currentRun = createRun(fields);
@@ -313,6 +483,7 @@ function ensureCurrentRun(state, fields = {}) {
 // Badge -> (gate selector, status). `selector` takes the run and returns
 // a [parent, key] tuple so the badge can assign without having to repeat
 // the `run.gates.deployment.dev = ...` chain inline.
+/** @type {Record<string, { selector: (run: WorkflowRun) => [Record<string, GateEntry|null>, string], status: string, custom?: boolean }>} */
 const BADGE_TABLE = {
   review_required: { selector: (run) => [run.gates, "review"], status: "required" },
   review_passed: { selector: (run) => [run.gates, "review"], status: "passed" },
@@ -338,6 +509,13 @@ const BADGE_TABLE = {
   }
 };
 
+/**
+ * @param {WorkflowRun} run
+ * @param {string} badge
+ * @param {string} [note]
+ * @param {string|null} [blockedBy]
+ * @returns {void}
+ */
 function applyBadge(run, badge, note = "", blockedBy = null) {
   const spec = BADGE_TABLE[badge];
   if (!spec) {
@@ -347,16 +525,22 @@ function applyBadge(run, badge, note = "", blockedBy = null) {
 
   if (spec.custom) {
     // Custom badges (blocked, escalation) need special handling for their fields
-    const gateObj = { status: spec.status, updatedAt: nowIso(), note };
+    /** @type {Record<string, string|null>} */
+    const gateObj = { status: spec.status, updatedAt: nowIso(), note: note || "" };
     if (badge === "blocked" && blockedBy !== null) {
       gateObj.blockedBy = blockedBy;
     }
-    parent[key] = gateObj;
+    parent[key] = /** @type {GateEntry} */ (/** @type {unknown} */ (gateObj));
   } else {
-    parent[key] = { status: spec.status, updatedAt: nowIso(), note };
+    parent[key] = { status: spec.status, updatedAt: nowIso(), note: note || "" };
   }
 }
 
+/**
+ * @param {string} repoPath
+ * @param {BadgeOptions} [options]
+ * @returns {Promise<WorkflowRun|null>}
+ */
 export async function markWorkflowBadge(repoPath, options = {}) {
   const badge = options.badge;
   if (!badge) {
