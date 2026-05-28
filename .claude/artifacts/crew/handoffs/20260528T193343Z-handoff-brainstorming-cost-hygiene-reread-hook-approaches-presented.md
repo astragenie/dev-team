@@ -20,7 +20,7 @@
 | 1 | Explore project context | ✅ completed |
 | 2 | Ask clarifying questions | ✅ completed (7 Qs locked) |
 | 3 | Propose 2-3 approaches | ✅ completed (**Approach B approved** 2026-05-28T19:34Z) |
-| 4 | Present design sections | 🔄 **in_progress — Section 1 (architecture) DELIVERED, awaiting user approval; Sections 2–5 pending** |
+| 4 | Present design sections | 🔄 **in_progress — Sections 1 (Architecture) ✅ APPROVED + 2 (Components) DELIVERED awaiting approval; Sections 3–5 pending** |
 | 5 | Write design doc | pending |
 | 6 | Spec self-review | pending |
 | 7 | User reviews spec | pending |
@@ -65,14 +65,15 @@ Fatal flaw: `session-cost.mjs` parses transcript JSONL **after-the-fact**. Hook 
 ## Resume Instructions
 
 1. **Approach B is approved** (this session). Task 3 completed, Task 4 in_progress.
-2. **Section 1 (Architecture) has been DELIVERED** — content captured below under "Section 1 — Architecture (delivered, awaiting approval)". Do NOT re-present; wait for user's `approve` / `revise <area>` / `stop` decision.
-3. On Architecture approval → present Section 2 (Components). Pending sections 2–5 outlined under "Pending sections (not yet presented)" below.
-4. On full design approval → write spec at `docs/superpowers/specs/2026-05-28-cost-hygiene-reread-hook-design.md`.
-5. Self-review spec (placeholder/contradiction/scope/ambiguity).
-6. User reviews spec.
-7. On user approval → invoke `superpowers:writing-plans` skill.
+2. **Section 1 (Architecture) APPROVED** by user. Content retained below for reference.
+3. **Section 2 (Components) DELIVERED**, awaiting approval. Content captured below under "Section 2 — Components (delivered, awaiting approval)". Do NOT re-present; wait for user's `approve` / `revise <area>` / `stop` decision.
+4. On Section 2 approval → present Section 3 (Data flow). Pending sections 3–5 outlined under "Pending sections (not yet presented)" below.
+5. On full design approval → write spec at `docs/superpowers/specs/2026-05-28-cost-hygiene-reread-hook-design.md`.
+6. Self-review spec (placeholder/contradiction/scope/ambiguity).
+7. User reviews spec.
+8. On user approval → invoke `superpowers:writing-plans` skill.
 
-## Section 1 — Architecture (delivered, awaiting approval)
+## Section 1 — Architecture (APPROVED 2026-05-28T19:39Z)
 
 ### Hook trigger
 
@@ -155,9 +156,78 @@ Per-file 50KB cap, session-file 2MB cap, LRU evict on overflow (per Q6).
 
 Target: **<150ms p95**. Components: Node startup ~80ms, stdin parse <1ms, state read ~5–15ms, fs.stat ~1–3ms, decide <1ms, atomic write ~5–15ms, stdout <1ms. Worst case ~115ms.
 
+## Section 2 — Components (delivered, awaiting approval)
+
+### Component A — `hooks/check-redundant-read.mjs` (hook entry)
+
+- **Does**: Reads stdin JSON, calls `loadSession` → `decide` → `saveSession` → writes stdout (empty or `{decision, systemMessage}`) → exits 0.
+- **Use**: Invoked by Claude Code on every Read tool call. Never called manually.
+- **Depends on**: `scripts/lib/cost-hygiene/state.mjs`, `scripts/lib/cost-hygiene/decide.mjs`, `node:fs/promises`, `node:path`. Zero third-party deps.
+- **Public surface**: none — process entry point.
+- **Target size**: ≤30 lines (CLAUDE.md "Hooks should stay small and auditable").
+
+### Component B — `scripts/lib/cost-hygiene/state.mjs` (session state IO)
+
+- **Does**: Reads/writes per-session JSON at `.claude/state/cost-hygiene/<sessionId>.json`. Enforces 50KB/file + 2MB/session caps via LRU eviction. Atomic writes (temp + rename).
+- **Use**: `loadSession(repoPath, sessionId) → SessionState`; `saveSession(repoPath, sessionId, state) → Promise<void>`; `recordRead(state, path, mtime, size, contentOrNull) → SessionState` (pure transformation, no fs).
+- **Depends on**: `node:fs/promises`, `node:path`. Pure helpers from `scripts/lib/util.mjs` if any. No imports from cost-advisor, session-cost, wakeup.
+- **Public surface**: `loadSession`, `saveSession`, `recordRead`. Internal: `evictLRU`, `applyContentCap`.
+- **Target size**: ≤200 lines.
+
+### Component C — `scripts/lib/cost-hygiene/decide.mjs` (pure decision)
+
+- **Does**: Given path + stored entry (or null) + current mtime + current size → returns `{action: "pass"|"warn", message: string|null}`. No fs. No side effects.
+- **Use**: `decide({ path, storedEntry, currentMtime, currentSize, now }) → DecideResult`. Called by hook entry between `loadSession` and `saveSession`.
+- **Depends on**: nothing. Pure.
+- **Public surface**: `decide`. Internal: `formatWarning(entry, currentMtime)` (builds `<system-reminder>` block with prior content quoted per Q5).
+- **Target size**: ≤120 lines.
+
+### Component D — `tests/cost-hygiene-decide.test.mjs`
+
+Table-driven, no fs. Covers Q1–Q7 matrix:
+
+- first Read of path (no stored entry) → pass
+- Read #2 of path, mtime unchanged → warn (per Q2 "every reread")
+- Read #2 of path, mtime newer → pass (per Q7 edit exception)
+- Read #N with content stored → warn message quotes the body
+- Read #N with content absent (file was >50KB) → warn message says "(content omitted, file size NNN KB)"
+- Read with mtime unchanged but size changed → warn (mtime is the gate per Q7; size recorded but not the trigger)
+
+### Component E — `tests/cost-hygiene-state.test.mjs`
+
+`os.tmpdir()` fixtures. Covers:
+
+- `loadSession` returns empty shape when file absent
+- `saveSession` atomic-write (temp + rename, leaves no `.tmp` on success)
+- `recordRead` increments `read_count`, updates `last_read_at`, preserves `first_read_at`
+- `recordRead` with content >50KB stores entry with `content: null`, `content_bytes: 0`
+- `evictLRU` triggers when `total_bytes > 2_000_000`, drops least-recently-read first
+- `evictLRU` never drops the entry being recorded
+- malformed state file → `loadSession` returns empty shape + logs event (does NOT throw)
+
+### Dependency graph
+
+```
+hooks/check-redundant-read.mjs
+   ├── scripts/lib/cost-hygiene/state.mjs
+   │      └── node:fs/promises, node:path
+   └── scripts/lib/cost-hygiene/decide.mjs
+          └── (none — pure)
+
+tests/cost-hygiene-decide.test.mjs → scripts/lib/cost-hygiene/decide.mjs
+tests/cost-hygiene-state.test.mjs  → scripts/lib/cost-hygiene/state.mjs (+ os.tmpdir fixtures)
+```
+
+DAG. No cycles. `decide.mjs` has zero deps → maximally testable.
+
+### Why split state / decide
+
+- **state.mjs** = side-effecting boundary. Tests need fs fixtures.
+- **decide.mjs** = pure logic. Tests are tables — fast, deterministic, no fs.
+- **Q5's warning format lives in `decide.mjs`** — the prevention lever per memory. Pure tests pin down its exact text + structure. Any future drift caught by test diff.
+
 ## Pending sections (not yet presented)
 
-- **Section 2 — Components**: public surface of state.mjs (`loadSession`, `saveSession`, `evictLRU`) + decide.mjs (`decide()` pure function); dependency graph; what each does / how to use / what it depends on (per code-conventions.md).
 - **Section 3 — Data flow**: stdin → parse → load state → stat file → decide → emit `<system-reminder>` block → write state → exit. With diagram.
 - **Section 4 — Error handling**: hook NEVER blocks Read on its own error (corrupt state, fs fail, JSON parse fail) — always fall through to allow. Log to `.claude/logs/events.jsonl` on internal error.
 - **Section 5 — Testing**: table-driven for `decide()` covering Q1–Q7 decision matrix (every reread fires, mtime-changed suppresses, content under/over 50KB cap, LRU eviction at 2MB, session-id partition, malformed state file). State-lib tests use `os.tmpdir()` fixtures. Plus dogfood plan: run hook against this repo's actual workflow before promoting to plugin default-on.
