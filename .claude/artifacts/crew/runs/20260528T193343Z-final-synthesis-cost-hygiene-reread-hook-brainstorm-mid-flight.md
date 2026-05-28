@@ -50,8 +50,8 @@ The Q5 decision is the prevention lever: prior recommendations ("Trust prior Rea
 ## Open Items at Session End
 
 1. **Section 1 (Architecture) APPROVED**.
-2. **Section 2 (Components) DELIVERED**, awaiting approval. Content captured in companion handoff.
-3. **Sections 3–5** (Data flow, Error handling, Testing) — pending, outlined in companion handoff under "Pending sections (not yet presented)".
+2. **Section 2 (Components) APPROVED** (via `approve, batch` directive).
+3. **Sections 3 + 4 + 5 DELIVERED in one batch**, awaiting full-design approval. Content captured in companion handoff.
 4. **Spec write** at `docs/superpowers/specs/2026-05-28-cost-hygiene-reread-hook-design.md` — blocked on full design approval.
 5. **`superpowers:writing-plans`** — blocked on spec approval.
 6. **TS-port brainstorm** — parked mid-flight at sibling handoff `20260528T190032Z`. 5 Error Handling Qs still pending user answers.

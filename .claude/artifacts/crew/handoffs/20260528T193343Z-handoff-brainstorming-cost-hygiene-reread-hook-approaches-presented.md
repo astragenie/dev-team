@@ -20,7 +20,7 @@
 | 1 | Explore project context | ✅ completed |
 | 2 | Ask clarifying questions | ✅ completed (7 Qs locked) |
 | 3 | Propose 2-3 approaches | ✅ completed (**Approach B approved** 2026-05-28T19:34Z) |
-| 4 | Present design sections | 🔄 **in_progress — Sections 1 (Architecture) ✅ APPROVED + 2 (Components) DELIVERED awaiting approval; Sections 3–5 pending** |
+| 4 | Present design sections | 🔄 **in_progress — Sections 1 ✅ + 2 ✅ APPROVED; Sections 3 (Data flow) + 4 (Error handling) + 5 (Testing) batched-delivered, awaiting full-design approval** |
 | 5 | Write design doc | pending |
 | 6 | Spec self-review | pending |
 | 7 | User reviews spec | pending |
@@ -66,8 +66,9 @@ Fatal flaw: `session-cost.mjs` parses transcript JSONL **after-the-fact**. Hook 
 
 1. **Approach B is approved** (this session). Task 3 completed, Task 4 in_progress.
 2. **Section 1 (Architecture) APPROVED** by user. Content retained below for reference.
-3. **Section 2 (Components) DELIVERED**, awaiting approval. Content captured below under "Section 2 — Components (delivered, awaiting approval)". Do NOT re-present; wait for user's `approve` / `revise <area>` / `stop` decision.
-4. On Section 2 approval → present Section 3 (Data flow). Pending sections 3–5 outlined under "Pending sections (not yet presented)" below.
+3. **Section 2 (Components) APPROVED** by user (with `approve, batch` directive). Content retained below.
+4. **Sections 3 + 4 + 5 DELIVERED in one batch**, awaiting full-design approval. Content captured below under "Sections 3–5 (batched delivery, awaiting approval)". Do NOT re-present; wait for user's `approve` / `revise <area>` / `stop` decision.
+5. On full design approval → mark Task 4 completed, Task 5 in_progress, write spec at `docs/superpowers/specs/2026-05-28-cost-hygiene-reread-hook-design.md`.
 5. On full design approval → write spec at `docs/superpowers/specs/2026-05-28-cost-hygiene-reread-hook-design.md`.
 6. Self-review spec (placeholder/contradiction/scope/ambiguity).
 7. User reviews spec.
@@ -156,7 +157,7 @@ Per-file 50KB cap, session-file 2MB cap, LRU evict on overflow (per Q6).
 
 Target: **<150ms p95**. Components: Node startup ~80ms, stdin parse <1ms, state read ~5–15ms, fs.stat ~1–3ms, decide <1ms, atomic write ~5–15ms, stdout <1ms. Worst case ~115ms.
 
-## Section 2 — Components (delivered, awaiting approval)
+## Section 2 — Components (APPROVED 2026-05-28T19:50Z)
 
 ### Component A — `hooks/check-redundant-read.mjs` (hook entry)
 
@@ -226,11 +227,132 @@ DAG. No cycles. `decide.mjs` has zero deps → maximally testable.
 - **decide.mjs** = pure logic. Tests are tables — fast, deterministic, no fs.
 - **Q5's warning format lives in `decide.mjs`** — the prevention lever per memory. Pure tests pin down its exact text + structure. Any future drift caught by test diff.
 
-## Pending sections (not yet presented)
+## Sections 3–5 (batched delivery, awaiting approval)
 
-- **Section 3 — Data flow**: stdin → parse → load state → stat file → decide → emit `<system-reminder>` block → write state → exit. With diagram.
-- **Section 4 — Error handling**: hook NEVER blocks Read on its own error (corrupt state, fs fail, JSON parse fail) — always fall through to allow. Log to `.claude/logs/events.jsonl` on internal error.
-- **Section 5 — Testing**: table-driven for `decide()` covering Q1–Q7 decision matrix (every reread fires, mtime-changed suppresses, content under/over 50KB cap, LRU eviction at 2MB, session-id partition, malformed state file). State-lib tests use `os.tmpdir()` fixtures. Plus dogfood plan: run hook against this repo's actual workflow before promoting to plugin default-on.
+### Section 3 — Data flow
+
+```
+Claude Code about to invoke Read tool
+            │
+            ▼
+   PreToolUse fires; spawns:
+   node hooks/check-redundant-read.mjs
+            │
+            ▼ stdin (JSON)
+   ┌────────────────────────────────┐
+   │ hooks/check-redundant-read.mjs │
+   │  1. parse stdin                │
+   │  2. extract session_id,        │
+   │     file_path, cwd             │
+   │  3. resolve abs path           │
+   └──────┬─────────────────────────┘
+          ▼
+   loadSession(cwd, session_id)        ──► fs read .claude/state/cost-hygiene/<sid>.json
+          ▼
+   fs.stat(abs_path)                   ──► currentMtime, currentSize
+          │                                 (if stat fails: no-such-file → pass silently)
+          ▼
+   decide({path, storedEntry, currentMtime, currentSize, now})
+          │
+          ├── action: "pass"  ──────────►  silent: empty stdout, exit 0
+          │
+          └── action: "warn" + message
+                  ▼
+          stdout: {"decision":"approve","systemMessage":"<system-reminder>...</system-reminder>"}
+                  ▼
+   recordRead(state, path, mtime, size, content?)
+          ▼
+   saveSession(cwd, session_id, state) ──► fs atomic write (.tmp + rename)
+          ▼
+        exit 0
+            ▼
+   Claude Code reads stdout, injects systemMessage,
+   then proceeds with the actual Read.
+```
+
+Single pass. No retries, no async fanout. Order: `loadSession` → `stat` → `decide` → `saveSession`. State written even on `pass` so `read_count` increments and `first_read_at` persists.
+
+**Content acquisition** — when the hook records the first Read of a path, it doesn't have the content (Read hasn't run yet). Two options:
+
+- **A**: Paired `PostToolUse` Read hook records content after Claude Code returns the Read result. Two hooks, each does one job.
+- **B**: PreToolUse hook itself reads file (`fs.readFile`) to cache content before Read runs. One hook but double I/O.
+
+**Recommendation: A** (paired PostToolUse). Avoids redundant file reads. Adds one more matcher to `hooks/hooks.json`.
+
+### Section 4 — Error handling
+
+**Cardinal rule: hook MUST NEVER prevent a Read from succeeding.** Any internal error → silent pass + log to `.claude/logs/events.jsonl`.
+
+| Failure | Response |
+|---|---|
+| stdin not valid JSON | exit 0 silently, log `cost-hygiene:stdin-parse-fail` |
+| `session_id` or `tool_input.file_path` missing | exit 0 silently, log `cost-hygiene:input-shape-fail` |
+| State file corrupt JSON | `loadSession` returns empty shape, log `cost-hygiene:state-corrupt`, continue |
+| State file unreadable (permission) | `loadSession` returns empty shape, log once per session |
+| State file write fails | log `cost-hygiene:state-write-fail`, exit 0 with already-emitted stdout (decision still injected if warn) |
+| `fs.stat` on target fails (no-such-file, perm) | treat as "no prior entry comparable" — pass + skip recording |
+| `decide()` throws (defensive) | exit 0 silently, log `cost-hygiene:decide-throw` with stack |
+| Node spawn slower than expected | no enforcement; Claude Code's own hook timeout governs |
+
+**Log format**: one JSON line appended:
+
+```json
+{"ts":"<iso>","event":"cost-hygiene:<code>","session_id":"<sid>","detail":"<short>"}
+```
+
+Top-level `try/catch` wraps `main()`. No exceptions propagate.
+
+**Atomic write safety** — `saveSession` writes to `<path>.tmp.<pid>` then `fs.rename`. Crash between write+rename leaves orphan `.tmp.*`. Cleanup on next `loadSession`: glob `<sid>.json.tmp.*`, delete any older than 60s. Single-pass best-effort.
+
+### Section 5 — Testing
+
+#### `tests/cost-hygiene-decide.test.mjs` (pure, table-driven)
+
+Cases:
+
+- first read, no stored entry → pass
+- reread, mtime unchanged → warn (message contains "already loaded 1×", "Prior content:", content excerpt)
+- reread, mtime newer → pass
+- 5th reread, content stored → warn (message contains "already loaded 4×")
+- reread, content omitted (>50KB) → warn (message contains "content omitted, file size 87 KB")
+- reread, mtime unchanged + size changed → warn (mtime is gate per Q7; size recorded but not trigger)
+
+Each row = one `test()` block. Assertions: `action` exact + message-substring presence.
+
+#### `tests/cost-hygiene-state.test.mjs` (fs, `os.tmpdir()` fixtures)
+
+- `loadSession` empty when file absent
+- `saveSession` then `loadSession` round-trip preserves entries
+- `saveSession` atomic — no `.tmp.<pid>` left on success
+- `recordRead` increments `read_count`, updates `last_read_at`, preserves `first_read_at`
+- `recordRead` caps content at 50KB, sets `content:null` when oversized
+- `evictLRU` drops least-recently-read on session-cap overflow
+- `evictLRU` never drops the entry being recorded
+- `loadSession` on corrupt JSON returns empty + logs event (no throw)
+- `loadSession` cleans up stale `.tmp.<pid>` files older than 60s
+
+Each `setup()` uses `await fs.mkdtemp(path.join(os.tmpdir(), "cost-hygiene-"))`. Teardown recursive delete.
+
+#### Dogfood plan (before promoting to plugin default-on)
+
+- **Step 1**: land hook **disabled** in `hooks/hooks.json` — commented out or behind `CREW_COST_HYGIENE=1` env-var.
+- **Step 2**: enable locally on this repo for one full work-session. Measure: did `costHealth.topConcern` drop below "redundant Read" as #1? Did total session $ drop?
+- **Step 3**: yes → flip default to on in next plugin minor release. No → analyze: was warning visible? Iterate on `decide.mjs` message format.
+
+#### Integration test (added with hook landing)
+
+`tests/cost-hygiene-hook.test.mjs` spawns the hook script as subprocess:
+
+- hook with no stdin exits 0 silently
+- hook with valid first-read stdin emits empty stdout, writes state
+- hook with reread stdin emits `{decision, systemMessage}` with prior content
+- hook with corrupt state file exits 0, allows read, logs event
+
+`child_process.spawn("node", [HOOK_PATH])`, writes stdin, asserts stdout + state-file delta. ~150ms per test.
+
+#### Test count gate
+
+Repo currently has **112 tests**. Hook lands with ≥18 new (6 decide + 9 state + 3+ integration). New floor: **130 tests**. CI test-count guard deferred to FEAT-024-style enforcement work.
 
 ## Reference
 
