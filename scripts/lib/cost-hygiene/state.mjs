@@ -70,6 +70,7 @@ export async function saveSession(repoPath, sessionId, state) {
  * @returns {Promise<SessionState>}
  */
 export async function loadSession(repoPath, sessionId) {
+  await cleanupStaleTempFiles(repoPath, sessionId);
   const file = statePath(repoPath, sessionId);
   try {
     const raw = await fs.readFile(file, "utf8");
@@ -161,4 +162,35 @@ export function evictLRU(state, protectedPath = null) {
     delete state.entries[evictPath];
   }
   return state;
+}
+
+const TEMP_FILE_MAX_AGE_MS = 60_000;
+
+/**
+ * @param {string} repoPath
+ * @param {string} sessionId
+ * @returns {Promise<void>}
+ */
+async function cleanupStaleTempFiles(repoPath, sessionId) {
+  const dir = path.join(repoPath, STATE_DIR_REL);
+  let files;
+  try {
+    files = await fs.readdir(dir);
+  } catch {
+    return;
+  }
+  const prefix = `${sessionId}.json.tmp.`;
+  const cutoff = Date.now() - TEMP_FILE_MAX_AGE_MS;
+  for (const name of files) {
+    if (!name.startsWith(prefix)) continue;
+    const fullPath = path.join(dir, name);
+    try {
+      const stat = await fs.stat(fullPath);
+      if (stat.mtimeMs < cutoff) {
+        await fs.unlink(fullPath);
+      }
+    } catch {
+      // best-effort
+    }
+  }
 }

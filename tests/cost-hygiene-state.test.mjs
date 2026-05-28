@@ -151,3 +151,37 @@ test("evictLRU never drops the entry being recorded even if it is the LRU", () =
   const result = evictLRU(state, "/oldest");
   assert.ok("/oldest" in result.entries, "protected /oldest must survive eviction");
 });
+
+test("loadSession on corrupt JSON returns empty + does not throw", async () => {
+  const repo = await makeRepo();
+  try {
+    const dir = path.join(repo, ".claude", "state", "cost-hygiene");
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, "sess-corrupt.json"), "{not valid json}", "utf8");
+    const state = await loadSession(repo, "sess-corrupt");
+    assert.equal(state.session_id, "sess-corrupt");
+    assert.deepEqual(state.entries, {});
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+test("loadSession cleans up stale .tmp.<pid> files older than 60s", async () => {
+  const repo = await makeRepo();
+  try {
+    const dir = path.join(repo, ".claude", "state", "cost-hygiene");
+    await fs.mkdir(dir, { recursive: true });
+    const stale = path.join(dir, "sess-x.json.tmp.99999");
+    await fs.writeFile(stale, "{}", "utf8");
+    const oldTime = new Date(Date.now() - 120_000);
+    await fs.utimes(stale, oldTime, oldTime);
+    const fresh = path.join(dir, "sess-x.json.tmp.88888");
+    await fs.writeFile(fresh, "{}", "utf8");
+    await loadSession(repo, "sess-x");
+    const after = await fs.readdir(dir);
+    assert.ok(!after.includes("sess-x.json.tmp.99999"), "stale tmp should be deleted");
+    assert.ok(after.includes("sess-x.json.tmp.88888"), "fresh tmp should remain");
+  } finally {
+    await cleanup(repo);
+  }
+});
