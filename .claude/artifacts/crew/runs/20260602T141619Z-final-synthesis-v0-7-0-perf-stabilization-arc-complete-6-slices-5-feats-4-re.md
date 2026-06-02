@@ -1,0 +1,45 @@
+# Final Synthesis: v0.7.0 perf-stabilization arc complete — 6 slices, 5 FEATs, 4 releases
+
+- Created: 2026-06-02T14:16:19.220Z
+- Owner: lead-session
+- Outcome: completed
+- Summary: Full perf-stabilization arc + agent-quality bar shipped. 6 slices closed (SLICE-10..15), 5 FEATs done (FEAT-030/031/032/033/034/035), 4 minor releases tagged (v0.4.0/v0.5.0/v0.6.0/v0.7.0). Test count 161 → 229 (+68). Loop CLI 0.5.5 bug fixed via 0.5.6 bump. New CI gate added (validate-agents.mjs). Agent prompt cap raised 200 → 300 with enforcement. FEAT-030 validation-evidence bundling exercised end-to-end 4× (SLICE-11/12/13/15).
+- Changed Files / Evidence:
+  - hooks/preflight-shell.mjs
+  - hooks/check-subagent-return.mjs
+  - scripts/lib/preflight/checks.mjs
+  - scripts/lib/subagent-return/check.mjs
+  - scripts/lib/cost-advisor.mjs
+  - scripts/lib/briefing.mjs
+  - scripts/lib/briefing/collect.mjs
+  - scripts/lib/artifacts.mjs
+  - scripts/crew.mjs
+  - scripts/validate-agents.mjs
+  - agents/builder.md
+  - agents/reviewer.md
+  - agents/lead.md
+  - agents/researcher.md
+  - agents/deployer.md
+  - agents/validator.md
+  - hooks/hooks.json
+  - docs/standards/model-selection.md
+  - docs/governance.md
+  - docs/architecture/architecture.md
+  - docs/routing-table.md
+  - tests/preflight-shell.test.mjs
+  - tests/subagent-return.test.mjs
+  - tests/briefing-cost-health.test.mjs
+  - tests/cli.test.mjs
+  - tests/cost-report-emission.test.mjs
+  - tests/validate-agents.test.mjs
+  - .github/workflows/test.yml
+  - CLAUDE.md
+  - CHANGELOG.md
+  - README.md
+  - package.json
+  - .claude-plugin/plugin.json
+  - .claude-plugin/marketplace.json
+- Run / Test Steps: -
+- Risks: lead.md at 238 lines (was 222 + FEAT-031 16-line addition) — under 300 cap but should monitor before further growth. model-selection.md at 90 lines vs slice target ≤80 (10 over, non-blocking, acknowledged in slice grade). 3 eslint-disable suppressions remain in scripts/crew.mjs + scripts/lib/artifacts.mjs tagged FEAT-034 — needs future helper extraction. Builder context-ceiling hit twice this session (SLICE-12, SLICE-13); lead recovered inline both times. Loop CLI 0.5.6 verified post-bump but not exhaustively tested across all subcommands.
+- Next Step: FEAT-029 dogfood (P0, deferred, needs user-driven A/B). FEAT-034 complexity refactor (P3, 3 eslint-disable extractions tagged in commit cd6c0eb). lead.md slim (P3, 238 lines now under 300 cap, no longer urgent). Optional retrospective via /loop:retrospective over SLICE-10..15.
+
