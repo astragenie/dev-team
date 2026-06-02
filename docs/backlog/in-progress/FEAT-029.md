@@ -2,13 +2,13 @@
 id: FEAT-029
 title: Promote cost-hygiene reread hook to default-on
 priority: P0
-status: triaged
+status: in-progress
 category: performance
 target_release: v0.3.12
 created: 2026-06-01
-updated: 2026-06-01
+updated: 2026-06-02
 depends_on: []
-slices: []
+slices: [SLICE-09]
 derived_from: null
 autonomous_safe: true
 ---
