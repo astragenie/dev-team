@@ -3,6 +3,23 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.4.0 — 2026-06-02 — Tool-failure preflight hook (FEAT-033)
+
+### Preflight checks for Bash + PowerShell (default-ON)
+
+- **feat(preflight):** new `PreToolUse` matchers for `Bash` and `PowerShell` in `hooks/hooks.json` wire a default-ON preflight hook. Opt-out via `CREW_TOOL_PREFLIGHT=0`.
+- **feat(preflight):** `hooks/preflight-shell.mjs` — PreToolUse. Reads command string from stdin, delegates to pure check library, emits `{ decision: "approve", systemMessage: "<warnings>" }` on detected failure mode. Never blocks (`decision: "block"` is never used). Always exits 0.
+- **feat(preflight):** `scripts/lib/preflight/checks.mjs` — four v1 checks:
+  1. **env-var shape mismatch**: warns when Bash command uses `$env:NAME` or PowerShell uses bare `$NAME` instead of `$env:NAME`.
+  2. **chained-cd missing path**: scans for `cd <path> &&`, `cd <path>;`, and `Set-Location <path>` patterns, resolves against `cwd`, warns on ENOENT.
+  3. **unquoted Windows path with space**: detects `[A-Za-z]:\\` paths with an embedded space not wrapped in quotes.
+  4. **unterminated here-doc**: detects `<<EOF` / `<<'EOF'` without a closing `EOF` on its own line.
+- Opt-out: `CREW_TOOL_PREFLIGHT=0` disables the hook (mirrors `CREW_COST_HYGIENE` convention). Default is ON — no env var required.
+
+### Test suite
+
+- New `tests/preflight-shell.test.mjs`: 28 tests covering all 14 ACs — env-var false-positive guards (`${HOME}`, `$()`, `$1`, `$env:NAME`), PowerShell automatic-variable deny-list (`$_`, `$HOME`, `$LASTEXITCODE`, `$NULL`, `$TRUE`, `$FALSE`, mixed-case `$PSVersionTable`, `$MyInvocation`, `$PSScriptRoot`), silence on clean commands, opt-out gate, exception resilience, and `decision: "approve"` shape guarantee.
+
 ## v0.3.11 — 2026-05-28 — Cost-hygiene reread hook
 
 ### Cost prevention (default-off, env-var-gated)

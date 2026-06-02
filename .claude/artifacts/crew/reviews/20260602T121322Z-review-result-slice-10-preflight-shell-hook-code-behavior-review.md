@@ -1,0 +1,39 @@
+# Review Result: SLICE-10 preflight-shell hook — code + behavior review
+
+- Created: 2026-06-02T12:13:22.849Z
+- Reviewer: reviewer
+- Decision: rejected
+- Summary: Hook implementation is structurally sound and all 22 tests pass, but the PowerShell env-var check contains critical false positives on common PowerShell automatic variables ($_, $HOME, $LASTEXITCODE, $PSVersionTable, $PSScriptRoot, $NULL, $TRUE, $FALSE) that will produce wrong, misleading warnings on every normal PowerShell pipeline command in production.
+- Evidence Checked:
+  - 1. No decision:block string found in either file (AC-4 PASS). 2. Regex false-positive audit: ${HOME} curly-brace
+  - $1 positional
+  - $@
+  - $()
+  - $env:NAME
+  - $((1+1)) all correctly suppressed. HOWEVER $_ fires (use $env:_ — nonsense advice)
+  - $HOME fires (valid PS automatic var)
+  - $PSVersionTable fires (partial match on PSV)
+  - $LASTEXITCODE fires
+  - $PSScriptRoot fires
+  - $NULL/$TRUE/$FALSE fire — all legitimate PS built-in variables. 3. fs.stat exception wrapping: each stat individually wrapped in try/catch inside while loop; outer runChecks() wrapped in preflight-shell.mjs main() — PASS. 4. Windows path heuristic: odd-quote-count prefix is sound for single and double quoted paths; correctly silent for quoted
+  - correctly warns for unquoted; backslash-escaped paths (cd C:/work\ mega) produce a false positive but this is an obscure pattern acceptable per spec scope. 5. Heredoc: both real newlines and escaped \n handled correctly; EOFextra correctly identified as unterminated (word boundary works). 6. hooks.json: JSON valid; Read matcher unchanged; Bash and PowerShell matchers are exact string matches (not regex) so no accidental BashTool matches. 7. Default-ON gate: only === '0' short-circuits; empty string
+  - unset
+  - 'false'
+  - 'off' all run the hook — PASS. 8. CHANGELOG says 21 tests
+  - actual file has 22 (minor discrepancy
+  - not a blocker). 9. AC-12c test has redundant assert.ok(parsed.decision === 'approve' || parsed.decision === 'block') before assert.notEqual(parsed.decision
+  - 'block') — logically correct but misleading. 10. Files touched: exactly 5 per scope (hooks/preflight-shell.mjs
+  - scripts/lib/preflight/checks.mjs
+  - hooks/hooks.json
+  - tests/preflight-shell.test.mjs
+  - CHANGELOG.md) — PASS. 11. Test suite: 22/22 green on local run.
+- Files Reviewed:
+  - hooks/preflight-shell.mjs
+  - scripts/lib/preflight/checks.mjs
+  - hooks/hooks.json
+  - tests/preflight-shell.test.mjs
+  - CHANGELOG.md
+- Test Adequacy: 22 tests cover all 14 ACs including false-positive guards, but the test suite does not cover PS automatic variable false positives ($_, $LASTEXITCODE, $PSVersionTable, $PSScriptRoot, $NULL, $TRUE, $FALSE, $HOME) — these are untested paths that fire wrong advice in production; the suite must be extended alongside the regex fix.
+- Risks: CRITICAL: PowerShell env-var check will warn on virtually every real PowerShell pipeline command (any use of $_ in ForEach-Object/Where-Object), on common automatic variables like $LASTEXITCODE, $NULL, $TRUE, $FALSE, and partially on $PSVersionTable/$PSScriptRoot. This degrades signal quality from day one and will cause the agent to distrust hook warnings. Minor: CHANGELOG test count says 21, file has 22. Minor: AC-12c has a misleading assert.
+- Required Follow-up: Builder must: (1) add a PowerShell automatic variable exclusion list (at minimum: $_, $HOME, $NULL, $TRUE, $FALSE, $LASTEXITCODE, $ERROR, $PROFILE, $HOST, $MYINVOCATION, and any var where the first match[1] is a known PS built-in) OR restrict the regex to only uppercase names that do NOT appear in PS automatic variable lists; (2) add regression tests for $_ in a pipeline context, $LASTEXITCODE, $NULL/$TRUE/$FALSE, $PSVersionTable pattern; (3) fix CHANGELOG test count 21 → 22; (4) clean up AC-12c redundant assert.
+
