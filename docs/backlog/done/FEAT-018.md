@@ -10,9 +10,11 @@ depends_on: []
 slices: [SLICE-02]
 derived_from: null
 autonomous_safe: true
-phase: 2
+phase: 1
 started_at: 2026-05-23
 completed_at: 2026-05-23
+github_issue: 18
+github_milestone: 1
 ---
 # FEAT-018: cost-discipline patterns — subagent report-to-path + pre-check + no-reReread
 

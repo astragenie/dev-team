@@ -10,9 +10,10 @@ depends_on: []
 slices: []
 derived_from: null
 autonomous_safe: true
-phase: 2
+phase: 1
+github_issue: 16
+github_milestone: 1
 ---
-
 # FEAT-016: context7 MCP integration for live library docs
 
 ## Description

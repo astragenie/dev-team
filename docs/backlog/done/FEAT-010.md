@@ -11,9 +11,10 @@ depends_on: [FEAT-007]
 slices: []
 derived_from: null
 autonomous_safe: true
-phase: 3
+phase: 1
+github_issue: 10
+github_milestone: 1
 ---
-
 # FEAT-010: Governance doc
 
 ## Description

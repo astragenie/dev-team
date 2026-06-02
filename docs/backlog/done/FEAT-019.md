@@ -10,9 +10,11 @@ depends_on: [FEAT-016, FEAT-017]
 slices: [SLICE-01]
 derived_from: null
 autonomous_safe: false
-phase: 2
+phase: 1
 started_at: 2026-05-23
 completed_at: 2026-05-23
+github_issue: 20
+github_milestone: 1
 ---
 # FEAT-019: wire context7 / plugin-dev / microsoft-docs + terraform skills into crew agents
 

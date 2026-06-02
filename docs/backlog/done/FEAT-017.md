@@ -10,9 +10,10 @@ depends_on: []
 slices: []
 derived_from: null
 autonomous_safe: true
-phase: 2
+phase: 1
+github_issue: 17
+github_milestone: 1
 ---
-
 # FEAT-017: wire plugin-dev:plugin-validator + skill-reviewer into reviewer phase
 
 ## Description

@@ -10,9 +10,10 @@ depends_on: [FEAT-001]
 slices: []
 derived_from: null
 autonomous_safe: false
-phase: 2
+phase: 1
+github_issue: 5
+github_milestone: 1
 ---
-
 # FEAT-005: First domain skill — dotnet/csharp-conventions
 
 ## Description

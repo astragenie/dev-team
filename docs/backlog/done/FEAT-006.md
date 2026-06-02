@@ -11,9 +11,10 @@ depends_on: []
 slices: []
 derived_from: null
 autonomous_safe: true
-phase: 3
+phase: 1
+github_issue: 6
+github_milestone: 1
 ---
-
 # FEAT-006: workflow-state — blocked + escalated_to_human badges
 
 ## Description

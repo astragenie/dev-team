@@ -11,9 +11,10 @@ depends_on: [FEAT-005]
 slices: []
 derived_from: FEAT-005
 autonomous_safe: false
-phase: 2
+phase: 1
+github_issue: 13
+github_milestone: 1
 ---
-
 # FEAT-013: Domain skill — typescript/ts-conventions
 
 ## Description

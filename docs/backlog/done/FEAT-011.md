@@ -11,9 +11,10 @@ depends_on: []
 slices: []
 derived_from: null
 autonomous_safe: false
-phase: 2
+phase: 1
+github_issue: 11
+github_milestone: 1
 ---
-
 # FEAT-011: TDD discipline — selectively, not universally
 
 ## Description

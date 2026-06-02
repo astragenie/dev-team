@@ -12,8 +12,9 @@ slices: []
 derived_from: null
 autonomous_safe: true
 phase: 1
+github_issue: 4
+github_milestone: 1
 ---
-
 # FEAT-004: Architecture document polish
 
 ## Description

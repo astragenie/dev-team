@@ -7,8 +7,10 @@ category: quality-gate
 target_release: 0.3.4
 autonomous_safe: true
 parent_spec: null
+phase: 1
+github_issue: 27
+github_milestone: 1
 ---
-
 # FEAT-023 — Hard-gate test_adequacy in write-review-result + TDD enforcement
 
 ## Why

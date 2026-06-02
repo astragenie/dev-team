@@ -10,9 +10,11 @@ depends_on: []
 slices: [SLICE-04]
 derived_from: null
 autonomous_safe: true
-phase: 2
+phase: 1
 started_at: 2026-05-24
 completed_at: 2026-05-24
+github_issue: 22
+github_milestone: 1
 ---
 # FEAT-020: Multi-slice support in loop:slice-complete
 

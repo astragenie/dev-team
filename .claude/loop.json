@@ -3,6 +3,7 @@
   "loop": {
     "aiLoopRoot": "docs/ai-loop",
     "backlogPath": "docs/backlog",
+    "backlogRoot": "docs/backlog",
     "slicesRoot": "docs/ai-loop/slices",
     "phaseGateArtifactDir": ".claude/artifacts/crew/validations",
     "maxIterations": 25
@@ -44,5 +45,9 @@
   ],
   "productName": "hero-crew",
   "productDescription": "Claude Code plugin: Crew harness with lead-guided engineering workflow, bounded subagents, quality gates, and inspectable handoffs.",
-  "stackDescription": "- ESM / Node.js (node:test, ESLint flat config, Prettier)\n- Content-heavy plugin: agents/, skills/, commands/, hooks/\n- No server, no container — plugin is installed by consumers"
+  "stackDescription": "- ESM / Node.js (node:test, ESLint flat config, Prettier)\n- Content-heavy plugin: agents/, skills/, commands/, hooks/\n- No server, no container — plugin is installed by consumers",
+  "github": {
+    "enabled": true,
+    "repo": null
+  }
 }

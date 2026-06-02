@@ -12,8 +12,9 @@ slices: []
 derived_from: null
 autonomous_safe: true
 phase: 1
+github_issue: 7
+github_milestone: 1
 ---
-
 # FEAT-007: Skill quality bar + frontmatter convention
 
 ## Description

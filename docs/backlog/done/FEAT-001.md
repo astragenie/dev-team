@@ -12,8 +12,9 @@ slices: []
 derived_from: null
 autonomous_safe: true
 phase: 1
+github_issue: 1
+github_milestone: 1
 ---
-
 # FEAT-001: Skills directory reorganization
 
 ## Description

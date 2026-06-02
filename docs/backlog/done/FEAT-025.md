@@ -7,8 +7,10 @@ category: types
 target_release: null
 autonomous_safe: true
 parent_spec: null
+phase: 1
+github_issue: 29
+github_milestone: 1
 ---
-
 # FEAT-025 — Enable noImplicitAny in tsconfig
 
 ## Why

@@ -1,6 +1,6 @@
 ---
 id: FEAT-024
-title: Loop-side enforcement — AC linter, slice template test AC, ladder + marathon gates
+title: "Loop-side enforcement — AC linter, slice template test AC, ladder + marathon gates"
 priority: P1
 status: pending
 category: quality-gate
@@ -9,9 +9,11 @@ autonomous_safe: false
 cross_repo: hero-crew-autonomous-loop
 parent_spec: null
 related: [FEAT-023]
-hero_crew_companion: "validate-slices.mjs (6840023) scans pending/ for AC placeholders — hero-crew-side done"
+hero_crew_companion: validate-slices.mjs (6840023) scans pending/ for AC placeholders — hero-crew-side done
+phase: 2
+github_issue: 28
+github_milestone: 2
 ---
-
 # FEAT-024 — Loop-side enforcement (cross-repo coordination)
 
 ## Why

@@ -11,9 +11,10 @@ depends_on: [FEAT-002]
 slices: []
 derived_from: null
 autonomous_safe: true
-phase: 3
+phase: 1
+github_issue: 8
+github_milestone: 1
 ---
-
 # FEAT-008: Routing-table review cadence
 
 ## Description

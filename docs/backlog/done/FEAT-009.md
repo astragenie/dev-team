@@ -13,9 +13,10 @@ depends_on: []
 slices: []
 derived_from: null
 autonomous_safe: true
-phase: 4
+phase: 1
+github_issue: 9
+github_milestone: 1
 ---
-
 # FEAT-009: Artifact index file (deferred)
 
 ## Description

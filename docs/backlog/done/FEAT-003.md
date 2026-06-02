@@ -12,8 +12,9 @@ slices: []
 derived_from: null
 autonomous_safe: false
 phase: 1
+github_issue: 3
+github_milestone: 1
 ---
-
 # FEAT-003: Lead agent prompt update
 
 ## Description

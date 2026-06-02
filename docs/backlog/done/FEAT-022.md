@@ -11,8 +11,10 @@ slices: []
 resolution: "D2+D3 shipped (bf5eb55), D4 shipped (ead5401), D1 dropped per operator decision"
 derived_from: null
 autonomous_safe: true
-phase: 2
-trigger: "subagent pauses recur at maxTurns 40/35 (post-73aaf03 caps)"
+phase: 1
+trigger: subagent pauses recur at maxTurns 40/35 (post-73aaf03 caps)
+github_issue: 26
+github_milestone: 1
 ---
 # FEAT-022: Subagent pause root-cause investigation — 4 workflow drivers
 
