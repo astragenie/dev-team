@@ -2,13 +2,13 @@
 id: FEAT-030
 title: Builder self-verify + reviewer-bundled validation
 priority: P0
-status: triaged
+status: in-progress
 category: performance
-target_release: null
+target_release: v0.5.0
 created: 2026-06-01
-updated: 2026-06-01
+updated: 2026-06-02
 depends_on: []
-slices: []
+slices: [SLICE-11]
 derived_from: null
 autonomous_safe: false
 ---
