@@ -217,3 +217,7 @@ This repo runs the Wiggin Loop autonomously. Full rules: `.claude/loop/rules.md`
 First action when starting the loop: read `.claude/loop/rules.md` → `docs/ai-loop/00-entry/MASTER_PROMPT.md` → `docs/ai-loop/backlog/approved-slices.md`.
 
 <!-- loop:end -->
+
+## Project state (auto-generated)
+
+@.claude/artifacts/loop/loop-snapshot.md
