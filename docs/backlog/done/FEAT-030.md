@@ -2,7 +2,7 @@
 id: FEAT-030
 title: Builder self-verify + reviewer-bundled validation
 priority: P0
-status: in-progress
+status: done
 category: performance
 target_release: v0.5.0
 created: 2026-06-01

@@ -2,12 +2,13 @@
 id: SLICE-11
 feature: FEAT-030
 title: Builder self-verify + reviewer-bundled validation
-status: pending
+status: completed
 priority: P0
 autonomous_safe: false
 created: 2026-06-02
+completed_at: 2026-06-02
+updated: 2026-06-02
 ---
-
 # SLICE-11: Builder self-verify + reviewer-bundled validation
 
 - **Priority**: P0
