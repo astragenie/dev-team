@@ -2,12 +2,13 @@
 id: SLICE-13
 feature: FEAT-034
 title: Disambiguate aggregate vs per-slice cost reports
-status: pending
+status: completed
 priority: P2
 autonomous_safe: true
 created: 2026-06-02
+completed_at: 2026-06-02
+updated: 2026-06-02
 ---
-
 # SLICE-13: Disambiguate aggregate vs per-slice cost reports
 
 - **Priority**: P2
