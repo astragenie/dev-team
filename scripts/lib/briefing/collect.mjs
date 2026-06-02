@@ -736,9 +736,18 @@ const SEVERITY_RANK = { high: 0, medium: 1, low: 2 };
  * @returns {Promise<{ grade: string, topConcern: string|null, reportCount: number }|null>}
  */
 export async function collectCostHealth(repoPath) {
+  // FEAT-034: prefer per-slice variant for honest grading. Fall back to any
+  // cost report when no slice-variant exists (legacy + repos that have not
+  // yet generated a new-pattern report).
   let advisor;
   try {
-    advisor = await buildCostAdvisor(repoPath, { limit: 5 });
+    advisor = await buildCostAdvisor(repoPath, {
+      limit: 5,
+      nameFilter: (name) => /-cost-report-slice-/.test(name)
+    });
+    if (!advisor.target) {
+      advisor = await buildCostAdvisor(repoPath, { limit: 5 });
+    }
   } catch {
     return null;
   }
@@ -750,6 +759,44 @@ export async function collectCostHealth(repoPath) {
 
   // Pick the highest-severity recommendation as the top concern. Ties are
   // broken by insertion order (rules fire in declaration order).
+  const sorted = [...recommendations].sort(
+    (a, b) => (SEVERITY_RANK[a.severity] ?? 3) - (SEVERITY_RANK[b.severity] ?? 3)
+  );
+  const topConcern = sorted.length > 0 ? sorted[0].message : null;
+
+  return {
+    grade,
+    topConcern,
+    reportCount: reports.length
+  };
+}
+
+/**
+ * Compute the cost-aggregate snapshot (rollup across worktrees / sessions).
+ *
+ * Returns the latest aggregate-variant cost report grade + concern. Returns
+ * null when no aggregate-variant file exists (single-source-only worlds and
+ * legacy-only worlds both return null). Surfaced in brief-me alongside
+ * costHealth for context — never used for grading.
+ *
+ * @param {string} repoPath
+ * @returns {Promise<{ grade: string, topConcern: string|null, reportCount: number }|null>}
+ */
+export async function collectCostAggregate(repoPath) {
+  let advisor;
+  try {
+    advisor = await buildCostAdvisor(repoPath, {
+      limit: 5,
+      nameFilter: (name) => /-cost-report-aggregate-/.test(name)
+    });
+  } catch {
+    return null;
+  }
+  if (!advisor.target) {
+    return null;
+  }
+
+  const { grade, recommendations = [], reports = [] } = advisor;
   const sorted = [...recommendations].sort(
     (a, b) => (SEVERITY_RANK[a.severity] ?? 3) - (SEVERITY_RANK[b.severity] ?? 3)
   );

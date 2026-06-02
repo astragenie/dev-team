@@ -26,7 +26,8 @@ function timestampSlug() {
  *   url?: string, revision?: string, runSteps?: string, repoContext?: boolean,
  *   feature?: string, slice?: string, phase?: string | number,
  *   cost?: CostBreakdown, outcome?: CostOutcome | null, notes?: string, runTitle?: string,
- *   force?: boolean
+ *   force?: boolean,
+ *   _reportVariant?: "slice" | "aggregate" | null
  * }} ArtifactFields
  *
  * @typedef {{
@@ -286,13 +287,36 @@ const SIMPLE_RENDERERS = {
  * @param {CostOutcome | null} outcome
  * @param {number} totalTokens
  * @param {number | string} cacheHitPct
+ * @param {"slice" | "aggregate" | null} [variant] - when "slice", forces aggregate_all:false +
+ *   source_count:1; when "aggregate", uses breakdown values (same as legacy); null = legacy.
  */
-function renderCostReportFrontmatter(fields, breakdown, outcome, totalTokens, cacheHitPct) {
+// eslint-disable-next-line complexity -- FEAT-034 variant frontmatter rendering covers slice/aggregate/legacy paths
+function renderCostReportFrontmatter(
+  fields,
+  breakdown,
+  outcome,
+  totalTokens,
+  cacheHitPct,
+  variant = null
+) {
   const durationMs = breakdown?.window?.durationMs || 0;
   // [predicate, line]. Truthy predicate emits the line. Defers evaluation of
   // the line string until we know it's emitted; keeps complexity flat instead
   // of nesting if-pushes.
   const phaseStr = fields.phase != null ? String(fields.phase) : "";
+
+  // Per-variant aggregate_all + source_count logic:
+  // - "slice":     always emit aggregate_all: false, source_count: 1
+  // - "aggregate": emit aggregate_all: true when breakdown.aggregateAll, source_count from sources
+  // - null/legacy: existing behaviour (aggregate_all: true only when truthy, source_count from sources)
+  const isSlice = variant === "slice";
+  const aggregateAllPredicate = isSlice ? true : Boolean(breakdown?.aggregateAll);
+  const aggregateAllLine = isSlice ? "aggregate_all: false" : "aggregate_all: true";
+  const sourceCountPredicate = isSlice ? true : Boolean(breakdown?.sources?.length);
+  const sourceCountLine = isSlice
+    ? "source_count: 1"
+    : `source_count: ${breakdown?.sources?.length ?? 0}`;
+
   const optional = /** @type {Array<[unknown, function(): string]>} */ ([
     [phaseStr.length > 0, () => `phase: ${JSON.stringify(phaseStr)}`],
     [fields.feature, () => `feature: ${fields.feature}`],
@@ -307,8 +331,8 @@ function renderCostReportFrontmatter(fields, breakdown, outcome, totalTokens, ca
     [outcome?.validationDecision, () => `validation_decision: ${outcome.validationDecision}`],
     [breakdown?.sourceProject, () => `source_project: ${breakdown.sourceProject}`],
     [breakdown?.autoDetected, () => `auto_detected: true`],
-    [breakdown?.aggregateAll, () => `aggregate_all: true`],
-    [breakdown?.sources?.length, () => `source_count: ${breakdown.sources.length}`]
+    [aggregateAllPredicate, () => aggregateAllLine],
+    [sourceCountPredicate, () => sourceCountLine]
   ]);
   return [
     "---",
@@ -529,8 +553,13 @@ function renderCostReportByModel(breakdown) {
   return lines;
 }
 
-/** @param {ArtifactFields} fields */
-function renderCostReport(fields) {
+/**
+ * Shared body renderer used by all three cost-report kinds (legacy, slice, aggregate).
+ * The `variant` parameter controls frontmatter field overrides.
+ * @param {ArtifactFields} fields
+ * @param {"slice" | "aggregate" | null} variant
+ */
+function renderCostReportBody(fields, variant) {
   const breakdown = fields.cost;
   const outcome = fields.outcome || null;
   const totalTokens = breakdown?.totals
@@ -546,7 +575,7 @@ function renderCostReport(fields) {
     promptTokens > 0 ? ((breakdown.totals.cache_read / promptTokens) * 100).toFixed(1) : "-";
 
   return [
-    ...renderCostReportFrontmatter(fields, breakdown, outcome, totalTokens, cacheHitPct),
+    ...renderCostReportFrontmatter(fields, breakdown, outcome, totalTokens, cacheHitPct, variant),
     "",
     ...renderCostReportHeader(fields, breakdown, totalTokens, cacheHitPct),
     ...renderCostReportSources(breakdown),
@@ -563,10 +592,35 @@ function renderCostReport(fields) {
   ].join("\n");
 }
 
+/** @param {ArtifactFields} fields */
+function renderCostReport(fields) {
+  return renderCostReportBody(fields, null);
+}
+
+/** @param {ArtifactFields} fields */
+function renderCostReportSlice(fields) {
+  return renderCostReportBody(fields, "slice");
+}
+
+/** @param {ArtifactFields} fields */
+function renderCostReportAggregate(fields) {
+  return renderCostReportBody(fields, "aggregate");
+}
+
 /** @param {string} kind */
 function resolveArtifactConfig(kind) {
   if (kind === "cost-report") {
     return { directory: "cost", prefix: "cost-report", render: renderCostReport };
+  }
+  if (kind === "cost-report-slice") {
+    return { directory: "cost", prefix: "cost-report-slice", render: renderCostReportSlice };
+  }
+  if (kind === "cost-report-aggregate") {
+    return {
+      directory: "cost",
+      prefix: "cost-report-aggregate",
+      render: renderCostReportAggregate
+    };
   }
   const config = SIMPLE_RENDERERS[kind];
   if (!config) {
@@ -648,11 +702,14 @@ export async function writeArtifact(repoPath, kind, fields = {}) {
   const title = fields.title || fields.summary || kind;
   const fileName = `${timestampSlug()}-${config.prefix}-${slugify(title)}.md`;
   const artifactPath = path.join(artifactDir, fileName);
-  // cost-report owns its own frontmatter (feature/phase folded inline by
-  // renderCostReportFrontmatter). Every other artifact kind gets an optional
-  // YAML frontmatter block from renderOptionalFrontmatter when feature or
-  // phase is set; otherwise the body is unchanged.
-  const fm = kind === "cost-report" ? "" : renderOptionalFrontmatter(fields);
+  // cost-report (and its slice/aggregate variants) own their own frontmatter
+  // (feature/phase folded inline by renderCostReportFrontmatter). Every other
+  // artifact kind gets an optional YAML frontmatter block from
+  // renderOptionalFrontmatter when feature or phase is set; otherwise the
+  // body is unchanged.
+  const isCostReport =
+    kind === "cost-report" || kind === "cost-report-slice" || kind === "cost-report-aggregate";
+  const fm = isCostReport ? "" : renderOptionalFrontmatter(fields);
   let body = config.render(fields);
   if (kind === "handoff" && fields.repoContext) {
     body += await buildRepoLayoutBlock(repoPath);
@@ -666,9 +723,10 @@ export async function writeArtifact(repoPath, kind, fields = {}) {
     title: fields.title || "Untitled"
   };
 
-  // cost-report is purely informational evidence; it must not touch
-  // workflow-state badges or create a spurious currentRun.
-  if (kind !== "cost-report") {
+  // cost-report (and its slice/aggregate variants) are purely informational
+  // evidence; they must not touch workflow-state badges or create a
+  // spurious currentRun.
+  if (!isCostReport) {
     await registerWorkflowArtifact(repoPath, artifact, fields);
   }
 

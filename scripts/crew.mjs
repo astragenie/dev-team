@@ -398,6 +398,7 @@ async function emitCostAdvise(repoPath, { title, feature, phase }) {
 }
 
 /** @param {string} repoPath @param {Record<string, any>} [options] */
+// eslint-disable-next-line complexity -- FEAT-034 slice/aggregate/legacy branching is inherent
 async function maybeEmitCostReport(repoPath, options = {}) {
   const { runTitle, feature, phase } =
     /** @type {{ runTitle?: string | null, feature?: string | null, phase?: string | null }} */ (
@@ -412,30 +413,48 @@ async function maybeEmitCostReport(repoPath, options = {}) {
     const run = state?.currentRun || null;
     if (!run?.startedAt) return null;
     const completedAt = run.completedAt || new Date().toISOString();
-    const cost = await computeSessionCost(repoPath, {
-      startedAt: run.startedAt,
-      completedAt,
-      // Default to aggregate-all on auto-emit so cross-repo work is captured
-      // by default. Manual `cost-slice` still defaults to single-source unless
-      // --aggregate-all is passed.
-      aggregateAll: true
-    });
     const title = runTitle || run.title || "cost-report";
     const outcome = await collectOutcomeLinkage(repoPath, title);
-    const reportArtifact = await writeArtifact(repoPath, "cost-report", {
+
+    // --- per-slice cost (single-source, this repo only) ---
+    const sliceCost = await computeSessionCost(repoPath, {
+      startedAt: run.startedAt,
+      completedAt,
+      aggregateAll: false
+    });
+    const sliceArtifact = await writeArtifact(repoPath, "cost-report-slice", {
       title,
       runTitle: title,
-      cost,
+      cost: sliceCost,
       outcome,
       feature: feature || null,
       phase: phase || null
     });
+
+    // --- aggregate cost (all sources) — only when multi-source is detected ---
+    let aggregateArtifact = null;
+    const aggregateCost = await computeSessionCost(repoPath, {
+      startedAt: run.startedAt,
+      completedAt,
+      aggregateAll: true
+    });
+    if (aggregateCost.sources && aggregateCost.sources.length > 1) {
+      aggregateArtifact = await writeArtifact(repoPath, "cost-report-aggregate", {
+        title,
+        runTitle: title,
+        cost: aggregateCost,
+        outcome,
+        feature: feature || null,
+        phase: phase || null
+      });
+    }
+
     const adviseArtifact = await emitCostAdvise(repoPath, {
       title: runTitle || null,
       feature: feature || null,
       phase: phase || null
     });
-    return { report: reportArtifact, advise: adviseArtifact };
+    return { report: sliceArtifact, aggregate: aggregateArtifact, advise: adviseArtifact };
   } catch (err) {
     return { error: err.message };
   }
@@ -765,6 +784,7 @@ const COMMANDS = {
       artifactPath: writePath
     };
   },
+  // eslint-disable-next-line complexity -- FEAT-034 slice/aggregate emission branching
   "cost-slice": async (/** @type {CommandContext} */ { repoPath, flags }) => {
     const { loadWorkflowState } = await import("./lib/workflow-state.mjs");
     const { computeSessionCost } = await import("./lib/session-cost.mjs");
@@ -778,27 +798,58 @@ const COMMANDS = {
     if (!startedAt) {
       throw new Error("cost-slice requires --started-at or an active/last run with startedAt");
     }
-    const cost = await computeSessionCost(repoPath, {
+    // Always emit a per-slice variant (single-source) for the current repo.
+    const sliceCost = await computeSessionCost(repoPath, {
       startedAt,
       completedAt,
       sourceProject: flags.sourceProject,
-      aggregateAll: flags.aggregateAll === true
+      aggregateAll: false
     });
     const outcome = await collectOutcomeLinkage(repoPath, runTitle);
-    const artifact = /** @type {Record<string, unknown>} */ (
-      await writeArtifact(repoPath, "cost-report", {
+    const sliceArtifact = /** @type {Record<string, unknown>} */ (
+      await writeArtifact(repoPath, "cost-report-slice", {
         title: runTitle,
         runTitle,
-        cost,
+        cost: sliceCost,
         outcome,
         notes: flags.summary || null,
         feature: flags.feature,
         phase: flags.phase
       })
     );
-    artifact.cost = cost;
-    artifact.outcome = outcome;
-    return artifact;
+    sliceArtifact.cost = sliceCost;
+    sliceArtifact.outcome = outcome;
+
+    // When --aggregate-all is passed, also emit the aggregate variant when
+    // more than one source is detected.
+    let aggregateArtifact = null;
+    if (flags.aggregateAll === true) {
+      const aggregateCost = await computeSessionCost(repoPath, {
+        startedAt,
+        completedAt,
+        sourceProject: flags.sourceProject,
+        aggregateAll: true
+      });
+      if (aggregateCost.sources && aggregateCost.sources.length > 1) {
+        aggregateArtifact = /** @type {Record<string, unknown>} */ (
+          await writeArtifact(repoPath, "cost-report-aggregate", {
+            title: runTitle,
+            runTitle,
+            cost: aggregateCost,
+            outcome,
+            notes: flags.summary || null,
+            feature: flags.feature,
+            phase: flags.phase
+          })
+        );
+        aggregateArtifact.cost = aggregateCost;
+        aggregateArtifact.outcome = outcome;
+      }
+    }
+
+    return aggregateArtifact
+      ? { slice: sliceArtifact, aggregate: aggregateArtifact }
+      : sliceArtifact;
   }
 };
 

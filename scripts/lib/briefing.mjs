@@ -17,6 +17,7 @@ import {
   collectRelevantArtifacts,
   collectRecentCosts,
   collectCostHealth,
+  collectCostAggregate,
   fetchAutonomousLoopBrief
 } from "./briefing/collect.mjs";
 
@@ -56,7 +57,8 @@ export async function buildBriefingReport(repoPath) {
     autonomousLoopBrief,
     costs,
     routingTable,
-    costHealth
+    costHealth,
+    costAggregate
   ] = await Promise.all([
     buildWakeUpBrief(repoPath, { readOnly: true }),
     collectGitActivity(repoPath),
@@ -64,7 +66,8 @@ export async function buildBriefingReport(repoPath) {
     fetchAutonomousLoopBrief(repoPath),
     collectRecentCosts(repoPath, 5),
     checkRoutingTableStale(repoPath),
-    collectCostHealth(repoPath)
+    collectCostHealth(repoPath),
+    collectCostAggregate(repoPath)
   ]);
 
   // Attach cost summary to loop block when the plugin is installed, so the
@@ -92,6 +95,7 @@ export async function buildBriefingReport(repoPath) {
     wakeUp: wakeUpBrief,
     git: gitActivity,
     costHealth,
+    costAggregate,
     sections: {
       currentObjective,
       recentActivity: {

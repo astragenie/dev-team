@@ -112,8 +112,12 @@ function percentile(arr, p) {
   return s[Math.min(s.length - 1, Math.floor((p / 100) * s.length))];
 }
 
-/** @param {string} repoPath @param {number} [limit] */
-async function loadReports(repoPath, limit = 20) {
+/**
+ * @param {string} repoPath
+ * @param {number} [limit]
+ * @param {((name: string) => boolean) | null} [nameFilter] optional extra filter on filename
+ */
+async function loadReports(repoPath, limit = 20, nameFilter = null) {
   // Scan new cost/ dir first, then legacy runs/ dir for backward compat.
   // Filenames carry a timestamp prefix (YYYYMMDDTHHMMSSZ-...) so lexicographic
   // sort is chronological. We exploit that to skip an N-wide fs.stat batch:
@@ -132,7 +136,9 @@ async function loadReports(repoPath, limit = 20) {
       continue;
     }
     for (const e of entries) {
-      if (/-cost-report-.+\.md$/.test(e)) files.push({ dir, name: e });
+      if (/-cost-report-.+\.md$/.test(e) && (nameFilter === null || nameFilter(e))) {
+        files.push({ dir, name: e });
+      }
     }
   }
   // Sort by basename desc (newest first via timestamp prefix), then slice.
@@ -745,9 +751,12 @@ export function detectTrends(reports) {
   return findings;
 }
 
-/** @param {string} repoPath @param {{ limit?: number }} [opts] */
-export async function buildCostAdvisor(repoPath, { limit = 10 } = {}) {
-  const reports = await loadReports(repoPath, limit);
+/**
+ * @param {string} repoPath
+ * @param {{ limit?: number, nameFilter?: ((name: string) => boolean) | null }} [opts]
+ */
+export async function buildCostAdvisor(repoPath, { limit = 10, nameFilter = null } = {}) {
+  const reports = await loadReports(repoPath, limit, nameFilter);
   if (reports.length === 0) {
     return {
       reports: /** @type {SummaryRecord[]} */ ([]),

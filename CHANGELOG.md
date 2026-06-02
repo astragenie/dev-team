@@ -29,6 +29,14 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 - **feat(subagent-return):** `scripts/lib/subagent-return/check.mjs` — pure check library (`parseThreshold`, `hasArtifactPath`, `checkSubagentReturn`). Path regex matches POSIX + Windows separators and all `.claude/artifacts/crew/*/` subdirs (handoffs, reviews, validations, deployments, runs, cost, cost-insights, agents).
 - tests/subagent-return.test.mjs: comprehensive coverage of threshold edges, path detection, opt-out, exception safety, and cross-platform separators.
 
+### Cost-report disambiguation (FEAT-034)
+
+- **feat(cost-report):** cost-report emission splits into two labelled variants. `cost-report-slice-<title>.md` carries per-session data (`aggregate_all: false`, `source_count: 1`). `cost-report-aggregate-<title>.md` carries the multi-source rollup (`aggregate_all: true`, `source_count: N`). Single-source sessions emit only the slice variant; multi-source detections also emit the aggregate variant. Legacy `cost-report-<title>.md` artifacts on disk continue to parse via the unchanged read path.
+- **feat(briefing):** `scripts/lib/briefing/collect.mjs` — `collectCostHealth` prefers the `cost-report-slice-` variant via a new `nameFilter` parameter on `buildCostAdvisor`; falls back to any cost report when no slice variant exists (backward compat). New exported `collectCostAggregate` returns the latest `cost-report-aggregate-` grade or null when no aggregate variant exists.
+- **feat(briefing):** `scripts/lib/briefing.mjs` — brief-me JSON output exposes a new top-level `costAggregate` field next to `costHealth`. Removes the false-positive "F" grade caused by aggregating reread counts across sibling worktrees + sessions; the per-slice signal is now the honest baseline.
+- tests/briefing-cost-health.test.mjs: 6 new tests (per-slice-only world, both-variants world, legacy-only fallback, costAggregate population, grade-not-F-with-clean-slice, costAggregate null in legacy-only).
+- tests/cost-report-emission.test.mjs: 8 new tests covering single-source emission writes only slice, multi-source emission writes both variants, filename pattern matches, frontmatter `aggregate_all` per variant, legacy `cost-report` kind still works.
+
 ## v0.4.0 — 2026-06-02 — Tool-failure preflight hook (FEAT-033)
 
 ### Preflight checks for Bash + PowerShell (default-ON)
