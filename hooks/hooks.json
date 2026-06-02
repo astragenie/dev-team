@@ -99,6 +99,15 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/record-read-content.mjs\""
           }
         ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/check-subagent-return.mjs\""
+          }
+        ]
       }
     ]
   }

@@ -23,6 +23,12 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
   2. flag omitted → no frontmatter field, no body section (backwards compat)
   3. flag passed as empty string `""` → treated as omitted
 
+### Subagent-return cost-discipline enforcement (FEAT-032)
+
+- **feat(subagent-return):** new PostToolUse matcher on the `Agent` tool wires `hooks/check-subagent-return.mjs`. When a subagent's return body exceeds the byte threshold (default 512) AND contains no `.claude/artifacts/crew/*/...md` artifact path, emits a soft-warn `systemMessage` citing cost-discipline rule #2. Never blocks. Opt-out: `CREW_SUBAGENT_INLINE_THRESHOLD=0`. Tune: `CREW_SUBAGENT_INLINE_THRESHOLD=<bytes>`.
+- **feat(subagent-return):** `scripts/lib/subagent-return/check.mjs` — pure check library (`parseThreshold`, `hasArtifactPath`, `checkSubagentReturn`). Path regex matches POSIX + Windows separators and all `.claude/artifacts/crew/*/` subdirs (handoffs, reviews, validations, deployments, runs, cost, cost-insights, agents).
+- tests/subagent-return.test.mjs: comprehensive coverage of threshold edges, path detection, opt-out, exception safety, and cross-platform separators.
+
 ## v0.4.0 — 2026-06-02 — Tool-failure preflight hook (FEAT-033)
 
 ### Preflight checks for Bash + PowerShell (default-ON)
