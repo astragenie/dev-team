@@ -2,12 +2,13 @@
 id: SLICE-15
 feature: FEAT-031
 title: Sonnet-default model-selection gate at slice start
-status: pending
+status: completed
 priority: P0
 autonomous_safe: false
 created: 2026-06-02
+completed_at: 2026-06-02
+updated: 2026-06-02
 ---
-
 # SLICE-15: Sonnet-default model-selection gate at slice start
 
 - **Priority**: P0
