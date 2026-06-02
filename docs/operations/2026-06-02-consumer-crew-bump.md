@@ -32,19 +32,25 @@ If any pre-check fails, stop. Either install Claude Code, or wait for the missin
 
 ## Bump commands
 
-In Claude Code, run these slash commands once at the user level:
+In Claude Code, run these slash commands once at the user level. `/plugin marketplace add` takes ONE arg — the source (`owner/repo`, full HTTPS URL, or local path). Do NOT add a marketplace nickname inline; Claude Code will reject the syntax.
 
 ```
-/plugin marketplace add astra https://github.com/sergeymilashico/hero-crew
-/plugin install crew@astra
-/plugin install loop@astra
+/plugin marketplace add sergeymilashico/hero-crew
+/plugin install crew
+/plugin install loop
 ```
+
+Equivalent forms for the marketplace arg:
+
+- `sergeymilashico/hero-crew` — GitHub `owner/repo` (shortest)
+- `https://github.com/sergeymilashico/hero-crew` — full URL (works in the interactive dialog)
+- `./path/to/local/clone` — local path (offline / development)
 
 If already installed at an earlier version, use the upgrade form:
 
 ```
-/plugin update crew@astra
-/plugin update loop@astra
+/plugin update crew
+/plugin update loop
 ```
 
 After install, restart any open Claude Code sessions so they pick up the new plugin binaries.
