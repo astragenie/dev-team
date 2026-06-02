@@ -1,0 +1,35 @@
+# Final Synthesis: v0.5.0 perf bundle release — SLICE-10/11/12/13 shipped
+
+- Created: 2026-06-02T13:39:35.554Z
+- Owner: lead-session
+- Outcome: completed
+- Summary: Four perf + cost-discipline FEATs shipped across two minor releases (v0.4.0 + v0.5.0). Test count 161 → 219 (+55). Cost-discipline rule #3 codified into agent prompts via new --validation-evidence CLI flag; bundled reviewer-validation path exercised three times canonically.
+- Changed Files / Evidence:
+  - hooks/preflight-shell.mjs
+  - hooks/check-subagent-return.mjs
+  - scripts/lib/preflight/checks.mjs
+  - scripts/lib/subagent-return/check.mjs
+  - scripts/lib/cost-advisor.mjs
+  - scripts/lib/briefing.mjs
+  - scripts/lib/briefing/collect.mjs
+  - scripts/lib/artifacts.mjs
+  - scripts/crew.mjs
+  - agents/builder.md
+  - agents/reviewer.md
+  - agents/lead.md
+  - hooks/hooks.json
+  - tests/preflight-shell.test.mjs
+  - tests/subagent-return.test.mjs
+  - tests/briefing-cost-health.test.mjs
+  - tests/cli.test.mjs
+  - tests/cost-report-emission.test.mjs
+  - docs/routing-table.md
+  - CHANGELOG.md
+  - README.md
+  - package.json
+  - .claude-plugin/plugin.json
+  - .claude-plugin/marketplace.json
+- Run / Test Steps: -
+- Risks: lead.md at 222 lines, over documented soft cap of 200 (no validator enforces it but governance.md flags it). Loop CLI 0.5.6 verified post-bump; 0.5.5 was broken. Builder context-ceiling hit on SLICE-13; lead recovered 30% inline (em-dash JSDoc, collectCostAggregate wiring, brief-me JSON exposure).
+- Next Step: FEAT-031 (Sonnet-default model gate) is the remaining P0; lead.md slim refactor blocks it. FEAT-029 dogfood deferred (needs user-driven A/B sessions). Complexity refactor open (3 eslint-disable suppressions tagged FEAT-034).
+
