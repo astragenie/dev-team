@@ -2,7 +2,7 @@
 id: FEAT-033
 title: Tool-failure preflight hook
 priority: P1
-status: in-progress
+status: done
 category: performance
 target_release: v0.4.0
 created: 2026-06-01

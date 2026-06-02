@@ -2,12 +2,13 @@
 id: SLICE-10
 feature: FEAT-033
 title: Tool-failure preflight hook for Bash + PowerShell
-status: pending
+status: completed
 priority: P1
 autonomous_safe: true
 created: 2026-06-02
+completed_at: 2026-06-02
+updated: 2026-06-02
 ---
-
 # SLICE-10: Tool-failure preflight hook for Bash + PowerShell
 
 - **Priority**: P1
