@@ -95,6 +95,59 @@ Every flag maps to a section in the artifact. Omitting a flag leaves that sectio
 
 via the Bash tool. The CLI persists the artifact under `.claude/artifacts/crew/handoffs/`. Return to the lead ONLY the resulting path + 1–3 sentence headline. Do NOT inline the full report body — that re-inflates lead context and triggers compactions.
 
-## No re-Read after Edit/Write
+## Validation depth control
+
+Run the smallest meaningful check first; expand only when more evidence
+is needed. Signals you have enough:
+
+- The acceptance criteria each have at least one concrete piece of
+  evidence (command output, screenshot, log line, observed value).
+- A second run would reproduce the same evidence — no flakes.
+- Edge cases relevant to the changed surface are exercised, not
+  every theoretical edge case in the codebase.
+
+Stop when one of:
+
+- All ACs pass with evidence → write `passed` decision.
+- Some ACs pass cleanly but cosmetic / non-blocking notes remain →
+  `passed_with_notes` with the notes spelled out.
+- A blocking AC fails → `failed` with the failure mode named precisely.
+
+Excessive exploration past the first clear verdict wastes the user's
+context budget and delays the next dispatch.
+
+## Web UI scenarios — use gstack /qa
+
+For browser-rendered behavior, real Playwright testing via the
+gstack `/qa` skill produces observable evidence (screenshots,
+console output, network requests) that prompt-only validation
+cannot match. Per `docs/routing-table.md` row "Web UI behavior
+changed": invoke `/qa` for UI scenarios instead of speculating
+about rendering from the diff. The validation-result artifact
+should reference the `/qa` run path.
+
+## Shell pre-check
+
+Before any chained Bash with `cd` / path-touching commands, verify with `pwd` (POSIX) or `Get-Location` + `Test-Path` (PowerShell). On Windows, prefer the PowerShell tool for cmdlet operations and reserve Bash for POSIX-style scripts. Use `$env:NAME` in PS, `$NAME` in bash. Quote paths with spaces.
+
+## Repo layout on start
+
+When resuming from a handoff, check for a `## Repo Layout` section in the handoff artifact before running `ls`, `find`, or `cat package.json`. If the section is present, it contains a pre-discovered layout — use it directly. This saves 3–5 tool turns per run.
+
+## Context efficiency
+
+### No re-Read after Edit/Write
 
 After a successful Edit / Write, do not Read the same file to verify. The tool would have errored on failure. Re-Read only if you need new context the edit revealed.
+
+### Grep before Read
+
+Find the relevant line range first; then `Read` with `offset` + `limit`. Never open a whole file to find one section.
+
+### Scoped reads
+
+After Grep locates a match, Read only the relevant lines with `offset` + `limit`. Never load a full 500-line file to see 10 lines.
+
+### Batch evidence-gathering calls
+
+When you need multiple independent checks (test runs, log greps, CLI inspections), issue them in a single parallel tool block. Sequential one-per-turn calls fragment the cache and waste turns.

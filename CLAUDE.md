@@ -28,7 +28,7 @@ The plugin is intentionally content-heavy and runtime-light.
 - Durable behavior belongs in `agents/`, `skills/`, and `commands/`.
 - Hooks should stay small and auditable.
 - Scripts should be thin helpers, not a hidden framework runtime.
-- The lead agent prompt is capped at ≤200 lines; specifics live in skills.
+- Agent prompts are capped at ≤300 lines per `docs/governance.md`, enforced by `scripts/validate-agents.mjs` (FEAT-035). Specifics live in skills the agent invokes on demand.
 
 ## Skill taxonomy
 
@@ -59,12 +59,13 @@ and every PR. All steps are blocking; lint must stay zero-warning.
 1. `npm ci`
 2. `node ./scripts/validate-manifests.mjs`
 3. `node ./scripts/validate-skills.mjs`
-4. `node ./scripts/validate-slices.mjs`
-5. `npm run lint`
-6. `npm run format:check`
-7. `npm run typecheck`
-8. `node --test`
-9. `node ./scripts/e2e-smoke.mjs`
+4. `node ./scripts/validate-agents.mjs`
+5. `node ./scripts/validate-slices.mjs`
+6. `npm run lint`
+7. `npm run format:check`
+8. `npm run typecheck`
+9. `node --test`
+10. `node ./scripts/e2e-smoke.mjs`
 
 The local validators are **hard** CI gates. During reviewer-phase work, the
 `plugin-dev:plugin-validator` and `plugin-dev:skill-reviewer` skills are

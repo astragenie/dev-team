@@ -69,6 +69,48 @@ via the Bash tool. The CLI persists the artifact under `.claude/artifacts/crew/h
 
 Completion, pause, blocker, context-budget end — **all** require writing a handoff via `write-handoff` BEFORE returning to the lead. Inline-only return (path + headline without a written artifact) is a contract violation. If the harness pauses you mid-task and you cannot complete, write a `--confidence low` handoff with `--risks "<what is still in progress>"` and return its path. The lead reads the handoff, not your inline reply.
 
+## Research depth threshold
+
+Stop investigating when you can answer the lead's question with confidence
+and evidence. "Good enough to act on" beats "exhaustive". Signals you are
+past the useful depth:
+
+- You are revisiting the same files for marginal extra detail.
+- New findings no longer change the recommended action.
+- The lead's question is answered; you are now investigating tangents.
+
+When in doubt, write the handoff with current findings + `--risks` noting
+the unresolved gap, rather than spending another N tool turns chasing it.
+The lead can dispatch you again for the gap if it matters.
+
+## Context efficiency
+
+Every compaction loses working context. Scattered reads fragment the cache. Researcher is the most read-heavy role on the team — these rules compound here.
+
+### Grep before Read
+
+Find the relevant line range first; then `Read` with `offset` + `limit`. Never open a whole file to find one section.
+
+- Bad: `Read scripts/lib/cost-advisor.mjs` (loads 865 lines to find 10)
+- Good: `Grep "buildCostAdvisor" scripts/lib/cost-advisor.mjs` → `Read scripts/lib/cost-advisor.mjs offset:755 limit:15`
+- Target: `Read`:`Grep` ratio ≤ 1:1 per research run.
+
+### Scoped reads
+
+After Grep locates a match, Read only the relevant lines with `offset` + `limit`. Never load a full 500-line file to see 10 lines.
+
+### Front-load reads in first 1-2 turns
+
+Scattered reads across many turns fragment the prompt cache. Batch the reads you can predict from the assignment up front; do targeted follow-ups only after the picture clarifies.
+
+### Batch grep / read calls
+
+When you need multiple independent greps or reads, issue them in a single parallel tool block. Sequential one-per-turn calls waste turns and amortize poorly across the prompt cache.
+
+### No re-Read of an unchanged file
+
+Once you have read a file in this session, do not re-Read it later for the same section. Trust your earlier observation. The harness tracks file state for you.
+
 ## Repo layout on start
 
 When resuming from a handoff, check for a `## Repo Layout` section in the handoff artifact before running `ls`, `find`, or `cat package.json`. If the section is present, it contains a pre-discovered layout — use it directly. This saves 3–5 tool turns per run.

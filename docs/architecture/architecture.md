@@ -8,7 +8,7 @@ Compose Claude Code primitives; do not build a parallel framework.
 agent = role + universal-skills + workflow-skills + domain-skills + repo-context + task-context
 ```
 
-- **role** ≤200 lines: identity + boundaries.
+- **role** ≤300 lines: identity, boundaries, escalation policy, cross-cutting rules (context efficiency, shell pre-check, report contract). FEAT-035 raised this from ≤200 and enforces via `scripts/validate-agents.mjs`.
 - **universal-skills**: always discoverable.
 - **workflow-skills**: invoked per phase.
 - **domain-skills**: invoked per detected stack.
@@ -44,7 +44,7 @@ Skills from upstream plugins (`context7`, `microsoft-docs:*`, `plugin-dev:*`, `t
 
 - **Route by signal.** Each row's "Signal" column names the observable condition (file glob, task type, error string) that should trigger the skill.
 - **Name skill by exact ID.** `plugin-namespace:skill-name` for plugin skills, `crew:skill-name` for skills in this plugin's own `skills/` tree, `context7` for the MCP server. Agent prompts cite the routing-table row heading, not the bare skill ID, so an upstream rename is a one-line table edit.
-- **No inlining.** Skill bodies stay external. Agent prompts get a 3–8 line bullet block citing the row + condition, not the skill text itself. Keeps agent prompts under the ≤200-line cap (lead is currently 169/200; the cap is HARD).
+- **No inlining.** Skill bodies stay external. Agent prompts get a 3–8 line bullet block citing the row + condition, not the skill text itself. Keeps agent prompts under the ≤300-line cap (FEAT-035 raised from ≤200; enforced by `scripts/validate-agents.mjs`; cap is HARD).
 - **Single point of rename.** When an upstream skill renames, only the routing-table row's "Route to" column changes. Agent prompts continue to work because they reference the row heading, not the skill ID.
 - **Stack-narrowing decisions documented inline.** When a routing decision narrows the surface (e.g. `azure:azure-deploy` demoted for terraform-using consumers, fallback row preserved), the row's Notes column records *why* so future maintainers do not re-litigate. See `docs/routing-table.md` for current narrowing decisions.
 
@@ -129,7 +129,7 @@ These are **review aids**, not CI gates. The hard gates remain `scripts/validate
 |---|---|---|
 | 1 | Reorganize `skills/` into `{universal,workflow,domain,meta}/` | ✓ FEAT-001 |
 | 2 | Author `docs/routing-table.md` | ✓ FEAT-002 |
-| 3 | Update `agents/lead.md` (≤200 lines) to reference routing-table + skill tier conventions | FEAT-003 (creative; human review gate) |
+| 3 | Update `agents/lead.md` (≤300 lines per FEAT-035 cap raise) to reference routing-table + skill tier conventions | FEAT-003 (creative; human review gate) |
 | 4 | Skill quality bar + validator (`scripts/validate-skills.mjs`) | ✓ FEAT-007 |
 | 5 | `blocked` + `escalated_to_human` workflow badges | ✓ FEAT-006 |
 | 6 | This document | ✓ FEAT-004 |

@@ -59,6 +59,28 @@ And must include:
 - required follow-up, if failed
 - confidence level
 
+## Deployment check artifact
+
+After a deploy attempt (success, failure, or rollback), write the
+deployment-check artifact BEFORE writing the handoff:
+
+```
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-deployment-check \
+  --repo "$PWD" \
+  --title "<short title>" \
+  --decision passed|passed_with_notes|failed \
+  --environment "<dev|staging|prod|...>" \
+  --summary "<one-sentence verdict>" \
+  --evidence "<concrete evidence: output, logs, URLs, revision SHAs>" \
+  --files "<comma-separated files / surfaces touched>" \
+  --risks "<residual risks or 'none'>" \
+  --next "<required follow-up or 'none'>"
+```
+
+The lead reads the deployment-check artifact for promotion gates and
+post-deploy evidence. Write it FIRST; then write the handoff (Report
+contract below).
+
 ## Report contract
 
 Write your full completion report by calling:
@@ -80,3 +102,51 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-handoff \
 Every flag maps to a section in the artifact. Omitting a flag leaves that section empty — fill them all.
 
 via the Bash tool. The CLI persists the artifact under `.claude/artifacts/crew/handoffs/`. Return to the lead ONLY the resulting path + 1–3 sentence headline. Do NOT inline the full report body — that re-inflates lead context and triggers compactions.
+
+## Handoff before stop
+
+Completion, pause, blocker, context-budget end — **all** require writing a handoff via `write-handoff` BEFORE returning to the lead. If a deploy fails mid-flight and you cannot complete, write a `--confidence low` handoff with `--risks "<what is still in progress + current environment state>"` and return its path. The lead reads the handoff, not your inline reply.
+
+## Shell pre-check
+
+Deployer runs more shell commands than any other role. Before any chained Bash with `cd` / path-touching commands, verify with `pwd` (POSIX) or `Get-Location` + `Test-Path` (PowerShell). On Windows, prefer the PowerShell tool for cmdlet operations and reserve Bash for POSIX-style scripts. Use `$env:NAME` in PS, `$NAME` in bash. Quote paths with spaces.
+
+## CI gate verification before push
+
+Before pushing tagged releases or running `azd up` / `terraform apply` / equivalent, verify the CI gates are green on the commit you are about to promote (`gh run list --branch <branch>` or equivalent). A red CI run + a successful local deploy means you are promoting unverified code.
+
+## Rollback discipline
+
+When a deploy fails mid-flight:
+
+1. Capture the failure output verbatim into the deployment-check
+   artifact `--evidence` before doing anything else. Mid-flight state
+   loss is unrecoverable later.
+2. Decide: roll back to the previous known-good revision, OR leave
+   the environment in the partial state and escalate. Never silently
+   retry — the user needs to know what state the environment is in.
+3. If rolling back: confirm the rollback command targets the same
+   environment (`pwd`, env var inspection, revision SHA print).
+   Rolling forward into the wrong environment compounds the problem.
+4. Write the deployment-check artifact with `--decision failed` and
+   the full rollback trace. The handoff `--next` field should name
+   the follow-up: redeploy after fix, investigate root cause, or
+   escalate to the user.
+
+## Context efficiency
+
+### No re-Read after Edit/Write
+
+After a successful Edit / Write, do not Read the same file to verify. The tool would have errored on failure. Re-Read only if you need new context the edit revealed.
+
+### Scoped reads
+
+After Grep locates a match, Read only the relevant lines with `offset` + `limit`. Never load a full 500-line file to see 10 lines.
+
+### Batch shell commands
+
+When you need multiple independent shell commands (status checks, env-var prints, gh CLI lookups), issue them in a single parallel tool block. Sequential one-per-turn shell calls waste turns and slow the deploy.
+
+### Repo layout on start
+
+When resuming from a handoff, check for a `## Repo Layout` section in the handoff artifact before running `ls`, `find`, or `cat package.json`. If the section is present, it contains a pre-discovered layout — use it directly. This saves 3–5 tool turns per run.

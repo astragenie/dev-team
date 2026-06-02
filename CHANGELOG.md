@@ -3,6 +3,25 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.6.0 — 2026-06-02 — Agent prompt quality bar + cap raise (FEAT-035)
+
+### Agent prompt size bar raised from ≤200 to ≤300, now CI-enforced
+
+- **feat(validator):** new `scripts/validate-agents.mjs` enforces a ≤300-line cap per agent file plus required frontmatter (`name`, `description`, `model`), required body sections (identity intro + `## Report contract` for teammate roles; lead is exempt from Report contract), filename↔frontmatter-name match, and no-duplicate-names. Wired into `.github/workflows/test.yml` between `validate-skills` and `validate-slices`. CI gate count grows from 8 to 9.
+- **docs(governance):** `docs/governance.md` Agent prompt size bar raised from ≤200 to ≤300 with rationale + cap-history block. `CLAUDE.md` + `docs/architecture/architecture.md` ≤200 references updated to ≤300 (skill cap stays ≤200 per `validate-skills.mjs`).
+
+### Lean-agent enrichments
+
+Three agent prompts were sitting at 74–100 lines, missing context-efficiency / shell-pre-check / depth-control guidance that builder + reviewer already had. All additive — no existing rules rewritten.
+
+- **feat(researcher):** `agents/researcher.md` 74 → 116 lines. New `## Research depth threshold` (when good-enough beats exhaustive). New `## Context efficiency` (Grep-before-Read, scoped reads, batch grep/read, front-load reads, no-re-Read-of-unchanged).
+- **feat(deployer):** `agents/deployer.md` 82 → 152 lines. New `## Deployment check artifact` CLI block calling `write-deployment-check`. New `## Handoff before stop`. New `## Shell pre-check` (heaviest shell user of any role). New `## CI gate verification before push`. New `## Rollback discipline` (capture evidence, decide roll-back vs escalate, confirm environment, write failed deployment-check). New `## Context efficiency` block.
+- **feat(validator):** `agents/validator.md` 100 → 153 lines. New `## Validation depth control` (smallest-meaningful-check first, when to stop). New `## Web UI scenarios — use gstack /qa` note per routing-table row. New `## Shell pre-check`. New `## Repo layout on start`. Expanded `## Context efficiency` block.
+
+### Test suite
+
+- `tests/validate-agents.test.mjs`: 10 tests covering the validator (well-formed pass, missing frontmatter field, missing-frontmatter-block, filename mismatch, missing `## Report contract` section, lead exemption, missing identity intro, 300-line cap, duplicate names, missing agents dir).
+
 ## v0.5.0 — 2026-06-02 — Builder self-verify + reviewer-bundled validation (FEAT-030)
 
 ### Review semantics change (backwards compatible default)

@@ -16,6 +16,7 @@ jobs:
       - run: npm ci
       - run: node ./scripts/validate-manifests.mjs
       - run: node ./scripts/validate-skills.mjs
+      - run: node ./scripts/validate-agents.mjs
       - run: node ./scripts/validate-slices.mjs
       - name: Validate routing-table skill IDs (advisory)
         env:
