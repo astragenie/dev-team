@@ -3,6 +3,26 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.5.0 — 2026-06-02 — Builder self-verify + reviewer-bundled validation (FEAT-030)
+
+### Review semantics change (backwards compatible default)
+
+- **feat(builder):** `agents/builder.md` — new `## Self-verify gate` section requires builders to run lint + format:check + typecheck + full test suite + repo-defined validators before writing the handoff. Handoff body must include a `## Self-Verify Gates` section with one line per gate (command + exit code + summary). Self-verify complements but does not replace the reviewer's independent gate. For loop-using repos, `.claude/loop.json` `stack.build` + `stack.test` arrays are the canonical gate source.
+- **feat(builder):** `agents/builder.md` — `## Review and validation dispatch` updated: dispatches `crew:validator` only when behavior is user-visible OR reviewer's review-result lacks a `Validation Evidence` section. Tests-already-green + code-only diffs with reviewer-bundled note do not require a separate validator dispatch.
+- **feat(reviewer):** `agents/reviewer.md` — new `### Validation-evidence bundling (FEAT-030)` subsection in `## Review artifact`. When tests-already-green AND code-only diff AND no runtime/UI/CLI surface affected, reviewer populates `--validation-evidence` with test totals + gate commands + one-sentence verdict. When any condition fails, the note is NOT emitted. Cross-reference: lead reads the note and skips `crew:validator`; lead never skips validator when note is absent.
+- **feat(reviewer):** `agents/reviewer.md` — `write-review-result` CLI block updated with new `--validation-evidence` flag (between `--test-summary` and `--risks`).
+- **feat(lead):** `agents/lead.md` — new `### Validator dispatch decision (FEAT-030)` subsection in `## Review, validation, deployment`. Lists dispatch triggers and skip conditions (ALL three required: tests-already-green + code-only + reviewer note present). Skip recorded via `mark-badge validation_skipped --note "reviewer emitted validation-evidence note"`.
+- **feat(cli):** `scripts/crew.mjs` — `write-review-result` subcommand accepts optional `--validation-evidence <text>` flag (default null). Pass-through to artifact writer.
+- **feat(artifacts):** `scripts/lib/artifacts.mjs` — review-result renderer: when `validationEvidence` is non-null and non-empty, emits `validation_evidence: <text>` in YAML frontmatter AND a `## Validation Evidence` body section between `Test Adequacy` and `Risks`. When null or empty: omit both (backwards compatible with v0.4.0 baseline).
+- **docs:** `docs/routing-table.md` — new row: reviewer-emitted validation-evidence note → lead skips `crew:validator` + records `validation_skipped` badge.
+
+### Test suite
+
+- `tests/cli.test.mjs`: +3 tests for `--validation-evidence` round-trip
+  1. flag with text → frontmatter has `validation_evidence:` AND body has `## Validation Evidence`
+  2. flag omitted → no frontmatter field, no body section (backwards compat)
+  3. flag passed as empty string `""` → treated as omitted
+
 ## v0.4.0 — 2026-06-02 — Tool-failure preflight hook (FEAT-033)
 
 ### Preflight checks for Bash + PowerShell (default-ON)

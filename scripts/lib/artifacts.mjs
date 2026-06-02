@@ -21,7 +21,7 @@ function timestampSlug() {
  *   owner?: string, status?: string, scope?: string, outOfScope?: string, files?: string,
  *   next?: string, from?: string, to?: string, deliverable?: string, confidence?: string,
  *   risks?: string, decision?: string, evidence?: string, testSummary?: string,
- *   testSummarySkipReason?: string, nonCode?: boolean, reviewer?: string,
+ *   testSummarySkipReason?: string, validationEvidence?: string, nonCode?: boolean, reviewer?: string,
  *   environment?: string, validator?: string, deployer?: string, resource?: string,
  *   url?: string, revision?: string, runSteps?: string, repoContext?: boolean,
  *   feature?: string, slice?: string, phase?: string | number,
@@ -66,6 +66,9 @@ function renderOptionalFrontmatter(fields) {
   }
   if (fields.slice) {
     lines.push(`slice: ${fields.slice}`);
+  }
+  if (fields.validationEvidence) {
+    lines.push(`validation_evidence: ${JSON.stringify(fields.validationEvidence)}`);
   }
   if (lines.length === 0) {
     return "";
@@ -183,6 +186,12 @@ const SIMPLE_RENDERERS = {
       }
       if (f.nonCode) {
         lines.push(renderField("Non-Code Review", "yes"));
+      }
+      if (f.validationEvidence) {
+        lines.push("");
+        lines.push("## Validation Evidence");
+        lines.push("");
+        lines.push(f.validationEvidence);
       }
       lines.push(renderField("Risks", f.risks));
       lines.push(renderField("Required Follow-up", f.next));

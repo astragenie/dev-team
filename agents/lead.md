@@ -141,6 +141,14 @@ Procedure of record: `skills/workflow/review-gates/`, `docs/process/validation-l
 - Repo + global `reviewer.md` are the source of truth for extra review programs / skills / standards.
 - Production promotion requires explicit user approval. Never proceed without it.
 
+### Validator dispatch decision (FEAT-030)
+
+Dispatch `crew:validator` when ANY of: behavior is user-visible, runtime config changed, new artifact kinds/schema introduced, test coverage is missing, or the reviewer's review-result has no `Validation Evidence` section.
+
+Skip `crew:validator` ONLY when ALL three hold: tests-already-green + code-only diff + reviewer emitted a `--validation-evidence` note in the review-result artifact.
+
+When skipping, record the decision: `mark-badge validation_skipped --note "reviewer emitted validation-evidence note"`. The note is the evidence; the skip is a separate decision — record both explicitly.
+
 ## Pre-done checklist
 
 Before declaring work complete:

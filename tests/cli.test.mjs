@@ -1317,3 +1317,90 @@ test("write-handoff without --repo-context has no ## Repo Layout section", async
   const content = await fs.readFile(result.path, "utf8");
   assert.ok(!content.includes("## Repo Layout"), "should not contain Repo Layout without flag");
 });
+
+test("write-review-result with --validation-evidence emits frontmatter field and body section", async () => {
+  const repoPath = await makeTempDir("crew-validation-evidence-present-");
+  await execFile("node", [cliPath, "init", "--repo", repoPath]);
+  const evidenceText =
+    "node --test: 42 pass / 0 fail; npm run lint exit 0; npm run typecheck exit 0 — code-only diff, no user-visible surface";
+  const { stdout } = await execFile("node", [
+    cliPath,
+    "write-review-result",
+    "--repo",
+    repoPath,
+    "--title",
+    "Bundled validation review",
+    "--decision",
+    "approved",
+    "--non-code",
+    "--validation-evidence",
+    evidenceText
+  ]);
+  const result = JSON.parse(stdout);
+  const content = await fs.readFile(result.path, "utf8");
+  assert.match(
+    content,
+    /validation_evidence:/,
+    "frontmatter should contain validation_evidence key"
+  );
+  assert.ok(content.includes(evidenceText), "frontmatter or body should contain the evidence text");
+  assert.match(
+    content,
+    /## Validation Evidence/,
+    "body should contain ## Validation Evidence section"
+  );
+});
+
+test("write-review-result without --validation-evidence emits no frontmatter field and no body section", async () => {
+  const repoPath = await makeTempDir("crew-validation-evidence-absent-");
+  await execFile("node", [cliPath, "init", "--repo", repoPath]);
+  const { stdout } = await execFile("node", [
+    cliPath,
+    "write-review-result",
+    "--repo",
+    repoPath,
+    "--title",
+    "No evidence review",
+    "--decision",
+    "approved",
+    "--non-code"
+  ]);
+  const result = JSON.parse(stdout);
+  const content = await fs.readFile(result.path, "utf8");
+  assert.ok(
+    !content.includes("validation_evidence"),
+    "artifact should have no validation_evidence field when flag omitted"
+  );
+  assert.ok(
+    !content.includes("## Validation Evidence"),
+    "artifact should have no Validation Evidence section when flag omitted"
+  );
+});
+
+test("write-review-result with --validation-evidence empty string treats it as omitted", async () => {
+  const repoPath = await makeTempDir("crew-validation-evidence-empty-");
+  await execFile("node", [cliPath, "init", "--repo", repoPath]);
+  const { stdout } = await execFile("node", [
+    cliPath,
+    "write-review-result",
+    "--repo",
+    repoPath,
+    "--title",
+    "Empty evidence review",
+    "--decision",
+    "approved",
+    "--non-code",
+    "--validation-evidence",
+    ""
+  ]);
+  const result = JSON.parse(stdout);
+  const content = await fs.readFile(result.path, "utf8");
+  assert.ok(
+    !content.includes("validation_evidence"),
+    "artifact should have no validation_evidence field when flag is empty string"
+  );
+  assert.ok(
+    !content.includes("## Validation Evidence"),
+    "artifact should have no Validation Evidence section when flag is empty string"
+  );
+});

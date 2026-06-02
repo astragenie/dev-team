@@ -75,7 +75,7 @@ Your completion report must include:
 When the lead's dispatch instruction requests review and validation:
 
 1. **Review**: dispatch a `crew:reviewer` subagent. Wait for its review-result artifact.
-2. **Validation**: after review passes, dispatch a `crew:validator` subagent for any runnable/observable behavior. Wait for its validation-result artifact.
+2. **Validation**: dispatch a `crew:validator` subagent ONLY when behavior is user-visible (UI, CLI surface, runtime side-effects) OR the reviewer's review-result lacks a `Validation Evidence` section. For tests-already-green + code-only diffs with no user-visible surface, the reviewer's bundled note IS the validation evidence — do not dispatch a separate validator.
 3. **Report**: include review and validation artifact paths in your completion handoff.
 
 If review returns `rejected` or validation returns `failed`, pivot through `/crew:fix` before reporting completion.
@@ -101,6 +101,21 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-handoff \
 Every flag maps to a section in the artifact. Omitting a flag leaves that section empty — fill them all.
 
 via the Bash tool. The CLI persists the artifact under `.claude/artifacts/crew/handoffs/`. Return to the lead ONLY the resulting path + 1–3 sentence headline. Do NOT inline the full report body — that re-inflates lead context and triggers compactions.
+
+## Self-verify gate
+
+Before writing the handoff, run all of these gates in order. Each must exit 0.
+
+- `npm run lint` — zero warnings
+- `npm run format:check` — if it fails, run `npm run format` then re-check
+- `npm run typecheck`
+- `node --test` — full test suite including any new tests you added
+- Repo-defined validators: `node ./scripts/validate-manifests.mjs`, `node ./scripts/validate-skills.mjs`, `node ./scripts/validate-slices.mjs` (skip any that do not exist in the repo)
+- For repos using the loop: check `.claude/loop.json` `stack.build` and `stack.test` arrays — those arrays are the canonical gate command source; run them in order
+
+Your handoff body MUST include a `## Self-Verify Gates` section listing one line per gate: command + exit code or PASS/FAIL + one-sentence summary of the result.
+
+Self-verify complements but does NOT replace the reviewer's independent gate. The reviewer re-runs anything fragile. A green self-verify is a prerequisite for handoff, not a substitute for review.
 
 ## Handoff before stop
 

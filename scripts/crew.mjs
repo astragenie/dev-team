@@ -78,6 +78,7 @@ const FLAG_SPEC = {
   "--to": { key: "to" },
   "--trigger-filename": { key: "triggerFilename" },
   "--url": { key: "url" },
+  "--validation-evidence": { key: "validationEvidence" },
   "--validator": { key: "validator" },
   "--verdict": { key: "decision" }, // alias of --decision
   "--verified-from": { key: "verifiedFrom" }
@@ -147,6 +148,7 @@ const FLAG_SPEC = {
  *   telemetry: string | null,
  *   testSummary: string | null,
  *   testSummarySkipReason: string | null,
+ *   validationEvidence: string | null,
  *   title: string | null,
  *   to: string | null,
  *   triggerFilename: string | null,
@@ -229,7 +231,8 @@ function parseArgs(argv) {
     extraRoot: null,
     phase: null,
     testSummary: null,
-    testSummarySkipReason: null
+    testSummarySkipReason: null,
+    validationEvidence: null
   };
   const positionals = [];
 
@@ -655,6 +658,7 @@ const COMMANDS = {
       phase: flags.phase,
       testSummary: flags.testSummary,
       testSummarySkipReason: flags.testSummarySkipReason,
+      validationEvidence: flags.validationEvidence,
       nonCode: flags.nonCode
     });
   },

@@ -116,6 +116,20 @@ The user relies on the review result to know what was actually checked. Leaving 
 
 ## Review artifact
 
+### Validation-evidence bundling (FEAT-030)
+
+When ALL three conditions hold, populate the `--validation-evidence` flag when calling `write-review-result`:
+
+1. **tests-already-green** — the builder's self-verify gate confirmed the full test suite passes
+2. **code-only diff** — the change touches only source/config/doc files; no deployed runtime, no UI component, no CLI surface accessible to end users
+3. **no runtime/UI/CLI surface affected** — the changed code is not a user-facing behavior path (e.g. internal script helper, artifact writer, agent prompt text)
+
+When ALL three hold, set `--validation-evidence` to: test suite total + pass count, gate commands re-run by the reviewer, and a one-sentence verdict. Example: `"node --test: 127 pass / 0 fail; npm run lint exit 0; npm run typecheck exit 0 — code-only prompt edits + CLI flag, no user-visible surface"`.
+
+When ANY condition fails, you MUST NOT emit the note — behavior-visible changes need an independent validator pass. When in doubt, omit the flag; the default is conservative.
+
+The lead reads this note and skips `crew:validator` dispatch when the note is present. The lead never skips validator when the note is absent.
+
 After completing your review analysis, write the review-result artifact by calling:
 
 ```
@@ -127,6 +141,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-review-result \
   --evidence "<key evidence points checked>" \
   --files "<comma-separated files reviewed>" \
   --test-summary "<test coverage assessment or 'N/A — doc-only'>" \
+  --validation-evidence "<test totals + gates re-run + verdict, or omit if conditions not met>" \
   --risks "<residual risks or 'none'>" \
   --next "<required follow-up or 'none'>"
 ```
