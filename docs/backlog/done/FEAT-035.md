@@ -2,7 +2,7 @@
 id: FEAT-035
 title: Agent prompt quality bar + cap raise + lean-agent enrichment
 priority: P1
-status: in-progress
+status: done
 category: quality
 target_release: v0.6.0
 created: 2026-06-02

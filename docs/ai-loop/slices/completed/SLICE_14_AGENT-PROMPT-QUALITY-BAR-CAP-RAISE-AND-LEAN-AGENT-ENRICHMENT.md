@@ -2,12 +2,13 @@
 id: SLICE-14
 feature: FEAT-035
 title: Agent prompt quality bar + cap raise + lean-agent enrichment
-status: pending
+status: completed
 priority: P1
 autonomous_safe: false
 created: 2026-06-02
+completed_at: 2026-06-02
+updated: 2026-06-02
 ---
-
 # SLICE-14: Agent prompt quality bar + cap raise + lean-agent enrichment
 
 - **Priority**: P1
