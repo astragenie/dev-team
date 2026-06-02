@@ -2,13 +2,13 @@
 id: FEAT-034
 title: Disambiguate aggregate vs per-slice cost reports
 priority: P2
-status: triaged
+status: in-progress
 category: performance
-target_release: null
+target_release: v0.5.0
 created: 2026-06-01
-updated: 2026-06-01
+updated: 2026-06-02
 depends_on: []
-slices: []
+slices: [SLICE-13]
 derived_from: null
 autonomous_safe: true
 ---
