@@ -2,13 +2,13 @@
 id: FEAT-031
 title: Sonnet-default for mechanical slices
 priority: P0
-status: triaged
+status: in-progress
 category: performance
-target_release: null
+target_release: v0.7.0
 created: 2026-06-01
-updated: 2026-06-01
+updated: 2026-06-02
 depends_on: []
-slices: []
+slices: [SLICE-15]
 derived_from: null
 autonomous_safe: false
 ---

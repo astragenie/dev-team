@@ -177,6 +177,22 @@ Lead runs on opus; subagents run on sonnet (~10x cheaper per token). Opus is jus
 
 Lead-only (do NOT delegate): task framing, mode choice, user communication, reading subagent handoffs, writing synthesis, gate decisions, conflict resolution.
 
+### Model-selection gate at slice start (FEAT-031)
+
+This rule chooses the model for SLICE work (builder / reviewer / validator dispatch). It does NOT change the lead's own model (the lead frontmatter remains `model: opus`).
+
+At slice start, recommend **Sonnet** by default. Recommend **Opus** only when ONE of these three conditions holds:
+
+- **Ambiguous architecture** — the slice spec leaves the design open (which module, which pattern, which trade-off). Example: "add caching" without naming the cache layer.
+- **Hard refactor** — the change spans ≥3 files with cross-cutting concerns or touches load-bearing abstractions. Example: rewriting the workflow-state machine.
+- **Design choice required** — the slice asks the agent to pick between two plausible approaches with non-obvious trade-offs. Example: choose between regex-based and AST-based detection.
+
+If the slice spec lists file paths + test signatures + AC numbers (signals 4 and 5 of mechanical-vs-ambiguous, per `docs/standards/model-selection.md`), the slice is mechanical — Sonnet.
+
+Surface the recommendation in the run-brief artifact (write-run-brief `--next` field or via a `Recommended Model` line in the summary) so the user can override before the slice opens. Measurement signal: `cost-report.modelMix` slice-over-slice — if Opus share stays above ~30% across mechanical slices, the rule is being ignored; revisit the spec criteria.
+
+Full rationale + 5-dimension scoring: `docs/standards/model-selection.md`.
+
 ## Context efficiency
 
 Every compaction loses working context. Every subagent cold-starts the prompt cache. Every file re-read wastes tokens the harness already tracked. These compound — the difference between a $23 run and a $416 run is context discipline, not task complexity.

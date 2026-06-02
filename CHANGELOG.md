@@ -3,6 +3,17 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.7.0 — 2026-06-02 — Sonnet-default model-selection gate (FEAT-031)
+
+### Cost-discipline rule #1 codified into lead prompt
+
+Last P0 of the perf-stabilization arc. Recent cost reports across 8 slices: `claude-opus-4-7` $1,821 / 3 slices vs `claude-sonnet-4-6` $277 / 5 slices — Opus paying ~6.6× sonnet per slice for work that, by post-hoc inspection, was mechanical. This release codifies the existing `feedback_cost_discipline.md` rule #1 into the lead agent prompt and a new standards doc.
+
+- **feat(lead):** `agents/lead.md` — new `### Model-selection gate at slice start (FEAT-031)` subsection inside `## Delegation thresholds (cost discipline)`. At slice start, recommend **Sonnet** by default; recommend **Opus** only when ONE of three conditions holds: ambiguous architecture, hard refactor (≥3 files cross-cutting), or design choice required. Surface recommendation in the run-brief so the user can override. Measurement signal: `cost-report.modelMix` slice-over-slice.
+- **docs(standards):** new `docs/standards/model-selection.md` — full rule rationale, 5-dimension slice-shape scoring (files / test signatures / ACs / architecture / scope), how to surface the recommendation, how to override, measurement targets (Opus message share ≤30% across trailing-5 mechanical slices).
+- **docs(routing-table):** new row `Slice opens (subagent dispatch ahead)` → lead applies model-selection gate per the standards doc.
+- **Note:** the rule governs SUBAGENT model choice, not the lead's own model. Lead frontmatter stays on Opus for framing, synthesis, user communication, and judgment calls.
+
 ## v0.6.0 — 2026-06-02 — Agent prompt quality bar + cap raise (FEAT-035)
 
 ### Agent prompt size bar raised from ≤200 to ≤300, now CI-enforced
