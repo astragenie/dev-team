@@ -2,13 +2,13 @@
 id: FEAT-032
 title: Artifact-path-only subagent returns
 priority: P1
-status: triaged
+status: in-progress
 category: performance
-target_release: null
+target_release: v0.5.0
 created: 2026-06-01
-updated: 2026-06-01
+updated: 2026-06-02
 depends_on: []
-slices: []
+slices: [SLICE-12]
 derived_from: null
 autonomous_safe: true
 ---
