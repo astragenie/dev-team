@@ -2,12 +2,13 @@
 id: SLICE-12
 feature: FEAT-032
 title: Artifact-path-only subagent returns — PostToolUse Agent hook
-status: pending
+status: completed
 priority: P1
 autonomous_safe: true
 created: 2026-06-02
+completed_at: 2026-06-02
+updated: 2026-06-02
 ---
-
 # SLICE-12: Artifact-path-only subagent returns — PostToolUse Agent hook
 
 - **Priority**: P1

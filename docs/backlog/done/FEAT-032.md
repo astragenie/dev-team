@@ -2,7 +2,7 @@
 id: FEAT-032
 title: Artifact-path-only subagent returns
 priority: P1
-status: in-progress
+status: done
 category: performance
 target_release: v0.5.0
 created: 2026-06-01
