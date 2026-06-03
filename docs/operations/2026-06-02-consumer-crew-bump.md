@@ -94,4 +94,4 @@ Append a single dated line each time someone runs this bump:
 
 | Date | Operator | Pre-bump crew | Post-bump crew | Pre-bump loop | Post-bump loop | Notes |
 |---|---|---|---|---|---|---|
-| 2026-06-02 | (operator) | (note pre-version) | 0.7.0 | (note pre-version) | 0.5.6 | initial v0.7.0 rollout |
+| 2026-06-02 | herolegion | unknown | 0.7.0 | unknown | 0.5.6 | initial v0.7.0 rollout; hook count delta 10→15 (FEAT-029 + FEAT-033 + FEAT-032) |
