@@ -659,6 +659,69 @@ async function listCostReportFilesByMtime(dirs, limit) {
 }
 
 /**
+ * Deduplicate a list of parsed cost reports so that the rollup summary
+ * (sumUsdRecent, avgUsdRecent, modelBurn) does not double-count overlapping
+ * windows.
+ *
+ * Algorithm:
+ * 1. Bucket reports by exact (windowStart, windowEnd) pair.
+ * 2. For each bucket, keep only the latest aggregate snapshot; if no aggregate
+ *    exists in the bucket, keep only the latest slice/legacy report.
+ * 3. From the surviving per-bucket winners, remove any slice whose window is
+ *    fully contained inside a surviving aggregate row's window (the slice cost
+ *    is already counted inside the aggregate).
+ * 4. The resulting set is the "deduped" set used for rollup arithmetic.
+ *
+ * The raw `recent[]` array is never modified — all reports remain for the
+ * per-row table render.
+ *
+ * @param {ReturnType<typeof parseCostReportText>[]} reports  Newest-first.
+ * @returns {ReturnType<typeof parseCostReportText>[]}
+ */
+function dedupeForRollup(reports) {
+  // Step 1 — bucket by exact (windowStart, windowEnd).
+  // Within each bucket prefer the aggregate variant; among same-variant entries
+  // the first one encountered (newest file first) wins.
+  /** @type {Map<string, ReturnType<typeof parseCostReportText>>} */
+  const bucketWinner = new Map();
+
+  for (const r of reports) {
+    const key = `${r.windowStart ?? ""}|${r.windowEnd ?? ""}`;
+    const existing = bucketWinner.get(key);
+    if (!existing) {
+      bucketWinner.set(key, r);
+    } else {
+      // Upgrade to aggregate if the current winner is not one yet.
+      if (!existing.aggregateAll && r.aggregateAll) {
+        bucketWinner.set(key, r);
+      }
+      // Among two aggregates or two slices, keep the already-stored one
+      // (reports array is newest-first, so first encountered = newest).
+    }
+  }
+
+  const winners = Array.from(bucketWinner.values());
+
+  // Step 2 — collect aggregate windows so we can omit fully-contained slices.
+  const aggregateWindows = winners
+    .filter((r) => r.aggregateAll && r.windowStart && r.windowEnd)
+    .map((r) => ({ start: Date.parse(r.windowStart), end: Date.parse(r.windowEnd) }));
+
+  /**
+   * @param {ReturnType<typeof parseCostReportText>} r
+   */
+  function isContainedInAggregate(r) {
+    if (r.aggregateAll) return false; // aggregates are never dropped for containment
+    if (!r.windowStart || !r.windowEnd) return false;
+    const rStart = Date.parse(r.windowStart);
+    const rEnd = Date.parse(r.windowEnd);
+    return aggregateWindows.some((aw) => rStart >= aw.start && rEnd <= aw.end);
+  }
+
+  return winners.filter((r) => !isContainedInAggregate(r));
+}
+
+/**
  * @param {string} repoPath
  * @param {number} [limit]
  */
@@ -671,31 +734,40 @@ export async function collectRecentCosts(repoPath, limit = 5) {
   if (sorted.length === 0)
     return {
       recent: /** @type {ReturnType<typeof parseCostReportText>[]} */ ([]),
-      totalReports: 0
+      totalReports: 0,
+      dedupedCount: 0
     };
 
   /** @type {ReturnType<typeof parseCostReportText>[]} */
   const recent = [];
-  let totalUsd = 0;
   for (const filePath of sorted) {
     try {
       const text = await fs.readFile(filePath, "utf8");
       const report = parseCostReportText(filePath, text);
-      if (report.usd != null) totalUsd += report.usd;
       recent.push(report);
     } catch {
       // skip unreadable file
     }
   }
 
-  const avgUsd = recent.length ? Number((totalUsd / recent.length).toFixed(4)) : 0;
+  // Deduplicate overlapping windows before computing rollup sums.
+  // recent[] is kept whole for per-row table rendering.
+  const rollupSet = dedupeForRollup(recent);
+  const dedupedCount = rollupSet.length;
 
-  // Item 2 — Model Burn rollup: aggregate modelMix[] across recent slices so
+  let totalUsd = 0;
+  for (const r of rollupSet) {
+    if (r.usd != null) totalUsd += r.usd;
+  }
+
+  const avgUsd = dedupedCount ? Number((totalUsd / dedupedCount).toFixed(4)) : 0;
+
+  // Model Burn rollup: aggregate modelMix[] across deduped slices so
   // brief-me can show "across the last N slices, opus burned X tokens / $Y".
   // Tokens aren't in modelMix; reconstruct from per-slice totals * usdPct.
   // That's approximate but only used for the summary line.
   const modelBurnMap = new Map();
-  for (const r of recent) {
+  for (const r of rollupSet) {
     if (!Array.isArray(r.modelMix)) continue;
     for (const m of r.modelMix) {
       if (!modelBurnMap.has(m.model)) {
@@ -714,6 +786,7 @@ export async function collectRecentCosts(repoPath, limit = 5) {
   return {
     recent,
     totalReports: sorted.length,
+    dedupedCount,
     sumUsdRecent: Number(totalUsd.toFixed(4)),
     avgUsdRecent: avgUsd,
     modelBurn,

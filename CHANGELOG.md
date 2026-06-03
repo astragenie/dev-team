@@ -3,6 +3,17 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.7.1 — 2026-06-03 — Dedupe overlapping cost reports in brief-me rollup (FEAT-036)
+
+### Cost rollup deduplication
+
+`/crew:brief-me` was triple-counting the same fleet window when the recency list contained multiple aggregate snapshots of the same `(windowStart, windowEnd)` plus per-project slice subsets of those windows. The `sumUsdRecent` figure for a $3,995 run was showing $13,774 — arithmetically correct but semantically wrong.
+
+- **fix(collect):** `scripts/lib/briefing/collect.mjs` — `collectRecentCosts` now calls `dedupeForRollup()` before computing `sumUsdRecent`, `avgUsdRecent`, and `modelBurn`. Within each `(windowStart, windowEnd)` bucket the latest aggregate snapshot is preferred; if no aggregate exists the latest slice/legacy report is used; older readings of the same scope+window are discarded from the sum. Slice rows whose window is fully contained inside a surviving aggregate row's window are omitted from the rollup (their cost is already counted inside the aggregate). Raw `recent[]` array is unchanged — all reports remain for per-row table rendering.
+- **feat(collect):** new `costs.dedupedCount` field exposes how many of the `totalReports` rows actually contributed to the sum, enabling the brief to render "$X across N distinct windows (Y reports filtered as overlapping)".
+- **fix(briefing):** `scripts/lib/briefing.mjs` — `summary.costReports` now uses `costs.dedupedCount` (was `costs.totalReports`) so the brief summary reflects deduplicated count.
+- **tests:** `tests/briefing-cost-rollup-dedupe.test.mjs` — 8 new TDD scenarios covering all 5 AC cases: all-aggregate same window, aggregate + nested slice, disjoint historical (no false dedupe), mixed overlapping + disjoint, and `modelBurn` dedupe.
+
 ## v0.7.0 — 2026-06-02 — Sonnet-default model-selection gate (FEAT-031)
 
 ### Cost-discipline rule #1 codified into lead prompt

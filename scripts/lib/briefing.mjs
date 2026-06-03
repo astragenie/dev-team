@@ -122,7 +122,7 @@ export async function buildBriefingReport(repoPath) {
       hasDeploymentGuidance: Boolean(wakeUpBrief.repoGuidance?.deployment),
       discoveredDeploymentClues: deploymentClues.clues.length,
       autonomousLoopInstalled: Boolean(autonomousLoopBrief),
-      costReports: costs.totalReports,
+      costReports: costs.dedupedCount,
       recentCostUsdSum: costs.sumUsdRecent || 0,
       recentCostUsdAvg: costs.avgUsdRecent || 0,
       routingTablePresent: routingTable.present,

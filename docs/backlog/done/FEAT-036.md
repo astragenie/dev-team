@@ -2,7 +2,7 @@
 id: FEAT-036
 title: Dedupe overlapping cost reports in brief-me cost rollup
 priority: P2
-status: pending
+status: done
 category: observability
 target_release: v0.7.1
 created: 2026-06-03
