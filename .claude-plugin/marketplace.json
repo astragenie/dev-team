@@ -22,7 +22,7 @@
     {
       "name": "loop",
       "description": "Wiggin-Loop methodology layer for Claude Code with HARD RULE blocks, slice scaffold, and phase-gate runner. Depends on `crew` for artifact writers.",
-      "version": "0.5.6",
+      "version": "0.7.1",
       "source": {
         "source": "github",
         "repo": "sergeymilashico/loop"
