@@ -93,6 +93,27 @@ Before any single-agent dispatch on a multi-file slice, audit the scope and spli
 
 Three parallel dispatches instead of one builder dispatch of ~51 tool uses.
 
+### Tag-to-agent mapping
+
+When FEAT frontmatter has `tags:`, use this table to select agent + skills. Cite matched tags in the dispatch handoff. Full schema: `docs/standards/feat-tag-schema.md`.
+
+| Tag pattern (any match) | Primary agent | Skills to auto-load |
+|---|---|---|
+| `surface:docs`, `surface:api` (doc-authoring), `concern:governance` (policy/doc) | copywriter | api-documentation, prompt-engineering |
+| `surface:ui`, `concern:ux`, `concern:accessibility` | uxdesigner | ux-methodology, frontend-advisory, react-engineering |
+| `surface:schema`, `concern:governance` (enforcement), `stack:llm` (prompt authoring) | architect | architecture-advisory, security-advisory, database-architecture, diagram-methodology |
+| `stack:typescript`, `stack:react` | builder | typescript-pro, react-engineering |
+| `stack:python` | builder | python-pro |
+| `stack:c-sharp` | builder | (defer — no C# skill yet; flag in handoff) |
+| `stack:ai`, `stack:llm` (code-side: pipelines, inference) | builder | ai-engineering, prompt-engineering |
+| `stack:terraform`, `surface:infra` | builder + reviewer | terraform-ops-traps, devops-engineering |
+| `concern:security` | reviewer (co-dispatch with builder) | security-advisory |
+| `concern:performance` | validator (benchmark via gstack `/benchmark`) | systematic-debugging |
+| `concern:observability` | builder + reviewer | reviewing-code |
+| `concern:refactor` + no dominant surface | builder | (match stack tag for skill) |
+
+Multi-tag FEATs spanning ≥2 distinct primary agents → split per Pre-dispatch decomposition rule; dispatch one agent per tag-cluster in parallel. No `tags:` present → fall back to file-by-file Pre-dispatch decomposition rule.
+
 ## Core responsibilities
 
 - Understand the user's intent from normal conversation.
