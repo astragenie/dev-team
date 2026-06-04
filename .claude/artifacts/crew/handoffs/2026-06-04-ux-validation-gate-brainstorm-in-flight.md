@@ -3,7 +3,7 @@
 - **Date:** 2026-06-04
 - **From:** lead (brainstorming via superpowers:brainstorming skill)
 - **To:** lead (next session)
-- **State:** mid-brainstorm — Architecture section presented, awaiting user "OK so far?" approval before Components section
+- **State:** mid-brainstorm — Architecture + Components approved; Data flow section presented, awaiting "OK?" approval before Error handling section
 - **Spec target path (not yet written):** `docs/superpowers/specs/2026-06-04-ux-validation-gate-design.md`
 
 ## Goal
@@ -13,7 +13,7 @@ Playwright runs automatically against acceptance criteria, evidence is
 captured in a consistent shape, and the lead can pivot to `/crew:fix`
 (or other targets per `docs/routing-table.md`) on failure.
 
-## User Q&A captured (4 of N)
+## User Q&A captured (5 of N)
 
 | # | Question | Answer |
 |---|---|---|
@@ -21,6 +21,7 @@ captured in a consistent shape, and the lead can pivot to `/crew:fix`
 | Q2 | Extend validator vs add qa-engineer agent? | **Extend validator + new `skills/workflow/ux-validation/SKILL.md`** (single agent, no boundary churn) |
 | Q3 | Pivot contract shape on validation fail? | Raw evidence only (screenshot, console, network, diff vs baseline). Lead decides pivot per existing routing-table. No validator-side classification. |
 | Q4 | Beyond Playwright AC pass/fail, which checks? | Accessibility scan (axe-core via gstack `/qa`) + Console error + network 404 scrape + Visual regression vs baseline. Skipped cross-viewport. |
+| Q5 | Where do visual regression baselines live? | `tests/playwright/baselines/` in consumer repo. Native Playwright `toHaveScreenshot()` mechanism. Updates via `npx playwright test --update-snapshots`. Reviewed in PR like any code change. |
 
 ## Approach selected
 
@@ -38,7 +39,7 @@ radius and fits skill taxonomy.
 
 ## Sections presented so far
 
-### Architecture (presented, awaiting approval)
+### Architecture (APPROVED)
 
 Flow chart already drafted in conversation transcript:
 
@@ -66,27 +67,71 @@ No new rows in `docs/routing-table.md` — lead pivot routing already
 covered by existing rows (84: Web UI behavior changed -> validator
 via gstack /qa; 39: reviewer feedback; 95: bug root cause unclear).
 
+### Components (APPROVED)
+
+Skill file: `skills/workflow/ux-validation/SKILL.md` with frontmatter
+`name: ux-validation`, `tier: workflow`, `triggers: ["surface:ui",
+"concern:ux", "concern:accessibility", "validation phase UI"]`.
+
+Body sections (≤200 lines):
+1. When to invoke (tag match + validation phase).
+2. AC extractor (parse slice `## Acceptance criteria` block).
+3. Scenario translator (verb-keyword classification → /qa scenario string;
+   `non_ui_ac` flag for ACs without UI verbs).
+4. `/qa` adapter (CLI invocation with `--scenarios`, `--accessibility-scan`,
+   `--capture-console`, `--capture-network`, `--visual-baseline
+   tests/playwright/baselines/`).
+5. Evidence collector (4-check payload shape — ac_results, a11y, console,
+   network, visual).
+6. Verdict + artifact (failed | passed_with_notes | passed thresholds).
+7. Mark badge (`validation_passed` | `validation_failed`).
+8. Skip conditions (`playwright_not_configured` soft skip).
+9. Pivot signal (raw evidence only per Q3 — no pivot recommendation).
+
+### Data flow (PRESENTED — awaiting approval)
+
+Full transcript-resident sequence:
+
+- **Trigger:** validator reads slice `tags:`; load skill if intersection
+  with `{surface:ui, concern:ux, concern:accessibility}` non-empty.
+- **AC extract:** grep `## Acceptance criteria` → parse `- [ ] AC-N:
+  <text>`.
+- **Scenario translate:** verb classification → `{interaction,
+  visibility, navigation, input, non_ui_ac}` → emit `<verb> <target> |
+  expect <outcome>` strings.
+- **/qa invoke:** CLI call with discovered URL (from
+  `playwright.config.*` or `package.json` scripts) + scenarios JSON +
+  4-check flags + output path to
+  `.claude/artifacts/crew/validations/<stamp>-ux-evidence.json`.
+- **Evidence payload:** strict JSON shape — `ac_results[]`, `a11y
+  {violations[], passes_count}`, `console {errors[], warnings[]}`,
+  `network {failures[]}`, `visual {diffs[]}`.
+- **Verdict computation:**
+  - `failed`: any AC fail OR a11y severity in `{serious, critical}` OR
+    console.errors non-empty OR visual diff.pct > tolerance.
+  - `passed_with_notes`: a11y `{minor, moderate}` OR console.warnings
+    OR network.failures.
+  - `passed`: none of above.
+- **Artifact:** `crew.mjs write-validation-result` with `--evidence
+  <json path>`. No schema change to existing CLI.
+- **Badge:** `crew.mjs mark-badge --badge validation_passed |
+  validation_failed`.
+- **Lead pivot read:** lead reads validation-result + evidence JSON,
+  pivots per existing routing-table rows. Validator does NOT recommend
+  pivot target (per Q3).
+- **Skip path:** detect missing playwright config → soft skip,
+  `validation_skipped --note playwright_not_configured`.
+
 ## Sections queued (not yet presented)
 
-1. **Components** — skill structure (`SKILL.md` body shape), AC
-   extractor, /qa adapter, evidence collector. **Open question for
-   user:** visual regression baseline storage strategy. Three options
-   noted in lead's pre-section thinking:
-   - `.claude/artifacts/crew/validations/baselines/<slice-id>/...` —
-     per-slice, fresh each slice. Catches no regressions across slices.
-   - `.claude/artifacts/crew/baselines/<route>.png` — persistent
-     per-route, crew-managed.
-   - `tests/playwright/baselines/<scenario>.png` — consumer-repo
-     owned, uses Playwright's native baseline mechanism. Recommended.
-2. **Data flow** — slice frontmatter -> AC extract -> scenario
-   translation -> /qa CLI invocation shape -> evidence collection
-   payload -> validation-result artifact shape.
-3. **Error handling / pivot contract** — raw evidence shape (per Q3),
-   badge writing semantics, lead's pivot decision tree referenced
-   inline.
-4. **Testing** — how to test the skill itself. Likely a smoke FEAT
+1. **Error handling / pivot contract** — raw evidence shape detail
+   (per Q3), badge writing semantics, lead's pivot decision tree
+   referenced inline (mapping evidence categories to routing-table
+   rows for crew:fix / /investigate / /cso / /benchmark).
+2. **Testing** — how to test the skill itself. Likely a smoke FEAT
    tagged `surface:ui` that the skill exercises end-to-end against a
-   fixture HTML page served from a local Python `http.server`.
+   fixture HTML page served from a local Python `http.server`. Also
+   unit tests for the AC extractor + scenario translator.
 
 ## What's done after approval flow
 
