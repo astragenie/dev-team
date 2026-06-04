@@ -3,6 +3,49 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.9.0 — 2026-06-04 — turn-reduction workflow, FEAT tag-schema, 3 new orchestrator skills, Pass-2 routing validator
+
+### Dispatch + decomposition rules
+
+- **Pre-dispatch decomposition rule** added to `agents/lead.md`. Mandates per-file role-concern audit before any single-agent dispatch; ≥2 substantive groups → parallel role-bundled dispatch via `superpowers:dispatching-parallel-agents`. Closes the builder cap-hit pattern (5 of 14 dispatches paused near 48–55 tool uses in v0.8.0 work).
+- **Inline-handle rule** added to `agents/lead.md`. Single-line policy edits (routing-table additions, CHANGELOG entries, manifest version bumps, skills-you-consult bullets, frontmatter field bumps, README pinned-release callouts) are lead-inline scope — no builder dispatch.
+- **Architect-mandatory routing** in lead's tag-mapping: `surface:schema`, `surface:docs` (policy/governance), `concern:governance` MUST route to architect, never builder. Shifts authoring load off builder's turn budget.
+- **`agents/architect.md` model upgraded** sonnet → opus to match ADR / system-design quality bar.
+
+### FEAT tag-schema interface contract
+
+- `docs/standards/feat-tag-schema.md` — new spec defining `tags: []` array on FEAT frontmatter. Three namespaces: `stack:*` (12 values), `surface:*` (7), `concern:*` (9). Namespace-prefixed flat array form. Producer (loop) + consumer (crew) contracts documented.
+- `agents/lead.md` gains `### Tag-to-agent mapping` table — 12-row pattern matching tags → primary crew agent → skills to auto-load.
+- Decoupling rationale: loop emits abstract tags; crew owns mapping. Swap orchestrator → re-author crew's mapping only.
+
+### Three new orchestrator-flavor skills
+
+- `skills/workflow/context-curation/` (86 lines) — per-agent context briefings, Quick/Full/Archived size budgets, pre-compaction snapshot methodology. Sourced from `aitmpl/development-tools/context-manager`.
+- `skills/workflow/spec-decomposition/` (126 lines) — 6-step WBS framework (Goal → WBS → Dependencies → Parallelism → Effort/Complexity → Risk Register), 8/80-hour rule, Required Initial Inputs. Sourced from `aitmpl/ai-specialists/task-decomposition-expert`.
+- `skills/workflow/slice-sizing/` (72 lines) — 8/80-hour atomic action rule + builder turn-budget evidence + decomposition triggers (>40 turns, ≥2 concerns, >5 files, multi-stack).
+
+### Pass-2 routing-table validator
+
+- `scripts/validate-routing-table.mjs` extended with second pass that cross-checks routing-table rows against agent `### Skills you consult` blocks. Catches drift between routing-table additions and stale agent prompts.
+- 5 new edge-case fixtures + tests under `tests/fixtures/validate-routing-table/` (empty-block, refs-collapse, multi-role, missing-agent, malformed-row).
+- 12 drift patches applied during validator rollout — builder/deployer/architect/uxdesigner/copywriter blocks gained the co-cite citations that routing-table already specified.
+
+### Other polish
+
+- 29 advisory warnings on FEAT-A distributed skills (missing `triggers:` frontmatter + section headings) closed. `validate-skills.mjs` now reports zero warnings.
+- `agents/3rdparty/code-reviewer.md` per-language checklists harvested into `skills/workflow/reviewing-code/references/{typescript,python,rust,go,sql}-checklist.md`.
+- Removed terraform external-plugin row references (`terraform-code-generation:*`, `terraform-module-generation:*`) from routing-table — those plugins are not crew marketplace dependencies and were failing the new Pass-1 ID resolution.
+- `tests/agent-topology.test.mjs` pins exactly 9 expected agents at top-level `agents/`.
+
+### Skill / agent counts
+
+- Skills: 34 → 37 (added context-curation, spec-decomposition, slice-sizing).
+- Agents: 9 (unchanged) — lead, builder, reviewer, validator, deployer, researcher, architect, uxdesigner, copywriter.
+
+### Fixes
+
+- `agents/researcher.md` model frontmatter typo corrected (`opud` → `opus`). Would have prevented researcher dispatch at runtime.
+
 ## v0.8.0 — 2026-06-04 — 9-agent topology, 34 skills, routing-table H3 grouping, release polish
 
 ### New agents + skill taxonomy (FEAT-A, FEAT-B, FEAT-C, FEAT-D)
