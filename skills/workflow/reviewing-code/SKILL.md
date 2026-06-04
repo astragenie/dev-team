@@ -5,12 +5,20 @@ description: Comprehensive code review skill for TypeScript, JavaScript, Python,
 source: aitmpl/development/code-reviewer
 source_version: 2026-06-04
 last_reviewed: 2026-06-04
+triggers: [code-review, pull-request, PR, security-review, typescript, python, rust, go, sql]
 owner: hero-crew
 ---
 
 # Reviewing Code
 
 Complete toolkit for code review with modern tools and best practices.
+
+## When to use
+
+- Reviewing a pull request or diff before merge
+- Providing structured feedback on changed files
+- Enforcing security, correctness, performance, or style standards
+- Pre-deployment quality gate for any language in the supported stack
 
 ## Quick Start
 
@@ -81,9 +89,28 @@ npm run dev && npm run build && npm run test && npm run lint
 
 Check `references/common_antipatterns.md` for common issues and troubleshooting guidance.
 
+## Language-specific checklists
+
+Per-language review checks extracted from `agents/3rdparty/code-reviewer.md`. Each file is self-contained.
+
+| Language | Reference | Key concerns |
+|---|---|---|
+| TypeScript | `references/typescript-checklist.md` | `any` usage, `strict` config, floating Promises, null safety |
+| Python | `references/python-checklist.md` | Mutable defaults, bare `except`, type hints, `eval`/`exec` |
+| Rust | `references/rust-checklist.md` | `.unwrap()` outside tests, `unsafe` SAFETY comments, lifetimes |
+| Go | `references/go-checklist.md` | Discarded errors, goroutine cancellation, `defer` in loops |
+| SQL | `references/sql-checklist.md` | Unbounded mutations, N+1 queries, missing indexes |
+
 ## Resources
 
 - Pattern Reference: `references/code_review_checklist.md`
 - Workflow Guide: `references/coding_standards.md`
 - Technical Guide: `references/common_antipatterns.md`
 - Tool Scripts: `scripts/` directory
+
+## Done / Acceptance
+
+- All findings are classified by severity (CRITICAL / HIGH / MEDIUM / LOW)
+- Each finding includes risk explanation and a concrete fix suggestion
+- Language-specific checklists consulted for files in TypeScript, Python, Rust, Go, or SQL
+- Review closes with a summary: file count, finding counts by severity, and a merge recommendation
