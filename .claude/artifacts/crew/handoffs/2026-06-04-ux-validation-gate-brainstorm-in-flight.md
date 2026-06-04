@@ -3,7 +3,7 @@
 - **Date:** 2026-06-04
 - **From:** lead (brainstorming via superpowers:brainstorming skill)
 - **To:** lead (next session)
-- **State:** mid-brainstorm — Architecture + Components + Data flow approved; Error handling + pivot contract section presented, awaiting "OK?" approval before Testing section
+- **State:** mid-brainstorm — Architecture + Components + Data flow + Error handling approved; Testing section (final) presented, awaiting "OK?" approval before writing spec doc
 - **Spec target path (not yet written):** `docs/superpowers/specs/2026-06-04-ux-validation-gate-design.md`
 
 ## Goal
@@ -122,7 +122,7 @@ Full transcript-resident sequence:
 - **Skip path:** detect missing playwright config → soft skip,
   `validation_skipped --note playwright_not_configured`.
 
-### Error handling + pivot contract (PRESENTED — awaiting approval)
+### Error handling + pivot contract (APPROVED)
 
 **Validation-result `.md` body** — no interpretation, only evidence
 summary. Body contains: Verdict line, Summary line, Evidence section
@@ -171,12 +171,54 @@ mode already has `priorAttempts` via `/loop:pr-fix`. Per-slice retry
 cap on UX-gate failures is a follow-up FEAT in loop, not in this
 skill's initial scope.
 
-## Sections queued (not yet presented)
+### Testing (PRESENTED — awaiting approval; last design section)
 
-1. **Testing** — how to test the skill itself. Likely a smoke FEAT
-   tagged `surface:ui` that the skill exercises end-to-end against a
-   fixture HTML page served from a local Python `http.server`. Also
-   unit tests for the AC extractor + scenario translator.
+**Unit tests** — pure functions extracted to
+`scripts/lib/ux-validation/`. Test file
+`tests/ux-validation.test.mjs` (Node `--test` runner per repo
+convention). Covered functions:
+
+| Function | Test surface |
+|---|---|
+| `extractACs(sliceContent)` | empty body → `[]`; well-formed → `[{id, text}]`; missing header → `[]`; nested checkboxes ignored |
+| `classifyScenario(acText)` | each verb set → expected category; ambiguous → `non_ui_ac`; typos → `non_ui_ac` fallback |
+| `computeVerdict(evidence)` | each fail-threshold row → expected verdict; empty → `passed`; boundary cases on a11y severity, console errors, visual tolerance |
+| `discoverPlaywrightConfig(repoPath)` | `playwright.config.ts` → URL; `package.json` scripts → URL; neither → `null` |
+
+**Integration test** — `tests/ux-validation-integration.test.mjs`.
+`/qa` mocked via test-injection seam (same pattern as `dispatchFn` /
+`drainFn` in loop's slice-linker). Skill receives fake `/qa`
+returning canned evidence. Asserts: evidence parsed, verdict
+correct, validation-result artifact written with expected fields,
+badge marked correctly.
+
+**End-to-end smoke** — `scripts/e2e-smoke-ux.mjs` (or extend
+`scripts/e2e-smoke.mjs`). Steps:
+
+1. Spin up `python -m http.server 8765` against
+   `tests/fixtures/ux-gate-smoke/`.
+2. Fixture `index.html`: one button, one image (404 by design),
+   one a11y violation (image without alt), one `console.warn`.
+3. `FEAT-SMOKE.md` tagged `surface:ui, concern:ux,
+   concern:accessibility` with 2 ACs (AC-1 button click PASS;
+   AC-2 image displays — FAIL via 404).
+4. Dispatch crew:validator with fixture slice path.
+5. Assert verdict == `failed` and all 4 evidence categories
+   populated.
+6. Tear down http.server.
+
+Runs in CI via existing `npm run e2e:smoke` job.
+
+**Skill quality bar:** `scripts/validate-skills.mjs` (existing)
+enforces name + tier + description + tier-in-enum + ≤200 lines.
+No new CI gate.
+
+**Smoke fixture's own visual baseline:**
+`tests/fixtures/ux-gate-smoke/baselines/index.png` committed.
+Subsequent runs assert pixel match — catches accidental skill
+regression that changes evidence ordering or capture behavior.
+
+## Sections queued (none — design complete after Testing approval)
 
 ## What's done after approval flow
 
