@@ -36,6 +36,7 @@ const FLAG_SPEC = {
   "--environment": { key: "environment" },
   "--environments": { key: "environments" },
   "--evidence": { key: "evidence" },
+  "--external-deltas": { key: "externalDeltas" },
   "--extra-root": { key: "extraRoot" },
   "--feature": { key: "feature" },
   "--files": { key: "files" },
@@ -64,6 +65,7 @@ const FLAG_SPEC = {
   "--reviewer": { key: "reviewer" },
   "--reviewer-label": { key: "reviewerLabel" },
   "--risks": { key: "risks" },
+  "--run-steps": { key: "runSteps" },
   "--run-title": { key: "runTitle" },
   "--source-project": { key: "sourceProject" },
   "--scope": { key: "scope" },
@@ -111,6 +113,7 @@ const FLAG_SPEC = {
  *   environment: string | null,
  *   environments: string | null,
  *   evidence: string | null,
+ *   externalDeltas: string | null,
  *   extraRoot: string | null,
  *   feature: string | null,
  *   files: string | null,
@@ -138,6 +141,7 @@ const FLAG_SPEC = {
  *   reviewer: string | null,
  *   reviewerLabel: string | null,
  *   risks: string | null,
+ *   runSteps: string | null,
  *   runTitle: string | null,
  *   scope: string | null,
  *   severity: string | null,
@@ -188,7 +192,9 @@ function parseArgs(argv) {
     outOfScope: null,
     files: null,
     evidence: null,
+    externalDeltas: null,
     risks: null,
+    runSteps: null,
     next: null,
     from: null,
     to: null,
@@ -307,7 +313,7 @@ function usage(target = null) {
     "write-deployment-check":
       "  node scripts/crew.mjs write-deployment-check --repo <path> --title <text> [--deployer <role>] [--environment dev|prod] [--resource <name>] [--url <service-url>] [--revision <id>] [--decision <decision>]",
     "write-final-synthesis":
-      "  node scripts/crew.mjs write-final-synthesis --repo <path> --title <text> [--summary <text>] [--files <a,b>] [--force]",
+      "  node scripts/crew.mjs write-final-synthesis --repo <path> --title <text> --external-deltas <text|none> [--summary <text>] [--run-steps <a,b>] [--files <a,b>] [--force]",
     "cost-slice":
       "  node scripts/crew.mjs cost-slice --repo <path> [--started-at <iso>] [--completed-at <iso>] [--run-title <text>] [--source-project <slug>] [--aggregate-all]",
     "cost-advise": "  node scripts/crew.mjs cost-advise --repo <path>"
@@ -744,6 +750,15 @@ const COMMANDS = {
   "write-final-synthesis": async (
     /** @type {CommandContext} */ { repoPath, flags, positionals }
   ) => {
+    if (flags.externalDeltas === null || flags.externalDeltas === undefined) {
+      throw new Error(
+        "write-final-synthesis requires --external-deltas. " +
+          "Enumerate sibling-config changes the synthesis depends on " +
+          "(env var renames, terraform/helm updates, sibling-repo PRs, feature flags, DB migrations, IAM). " +
+          "Pass --external-deltas none explicitly if there are none. " +
+          "A silent default is how renamed env vars silently fall back to old defaults in prod."
+      );
+    }
     const { writeArtifact } = await import("./lib/artifacts.mjs");
     const synthesis = await writeArtifact(repoPath, "final-synthesis", {
       title: flags.title || positionals.join(" ") || "Final Synthesis",
@@ -752,6 +767,8 @@ const COMMANDS = {
       summary: flags.summary,
       files: flags.files,
       evidence: flags.evidence,
+      externalDeltas: flags.externalDeltas,
+      runSteps: flags.runSteps,
       risks: flags.risks,
       next: flags.next,
       force: flags.force,

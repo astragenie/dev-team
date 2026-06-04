@@ -44,6 +44,7 @@ Workflow:
    - reviewer checks the code change for regression risk and test coverage
    - validator exercises the bug path and expected behavior when it can be run
 12. Use claims only when multiple people may touch overlapping files, and use approvals only for destructive or scope-expanding decisions.
+   - Set a `size` on each dispatched task: use `size: light` for trivial tasks (one-line fixes, typo corrections, variable renames) — a light-close skips the `write-handoff` artifact but the teammate still returns the structured completion message. Use `size: standard` (default) for anything substantive — these REQUIRE a `write-handoff` artifact. Light is for noise reduction on trivial work; do not use it to skip audit trail on substantive changes.
 13. Require every teammate or helper to report scope, deliverable, evidence, risks, confidence, and next handoff.
    After a subagent completes, read its full report from the artifact path it returned (via `Read` on the handoff path). Do NOT treat the inline return as the full report — agents return only path + headline by contract.
 14. If the work produces a code fix, make that code-bearing change independently reviewable. Review should happen before the fix is treated as complete.
@@ -79,4 +80,5 @@ Workflow:
     - if yes, is validation resolved or explicitly skipped?
     - did the run leave the artifact trail it should?
 25. For substantial work, write a final synthesis artifact:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-final-synthesis --repo "$PWD" --title "<short title>" --summary "<summary>"`
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-final-synthesis --repo "$PWD" --title "<short title>" --summary "<summary>" --external-deltas "<off-repo changes required, or 'none'>"`
+   - The CLI rejects missing `--external-deltas`. Enumerate sibling-config changes the fix depends on (env var renames in deploy manifests, terraform/helm updates, sibling-repo PRs, feature flags, DB migrations, IAM). Pass `--external-deltas none` explicitly if there are none. A silent default is how renamed env vars silently fall back to old defaults in prod.

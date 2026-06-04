@@ -875,7 +875,9 @@ test("CLI blocks final synthesis when workflow badges are still pending", async 
         "--title",
         "Blocked final synthesis",
         "--summary",
-        "Should not complete while review is pending"
+        "Should not complete while review is pending",
+        "--external-deltas",
+        "none"
       ]),
     /pending: review_required/
   );
@@ -899,11 +901,89 @@ test("CLI blocks final synthesis when workflow badges are still pending", async 
     "--title",
     "Allowed final synthesis",
     "--summary",
-    "Review was explicitly skipped with reason"
+    "Review was explicitly skipped with reason",
+    "--external-deltas",
+    "none"
   ]);
   const finalResult = JSON.parse(finalOutput.stdout);
   const finalBody = await fs.readFile(finalResult.path, "utf8");
   assert.match(finalBody, /Allowed final synthesis/);
+});
+
+test("write-final-synthesis rejects when --external-deltas is missing", async () => {
+  const repoPath = await makeTempDir("crew-cli-external-deltas-required-");
+  await execFile("node", [cliPath, "init", "--repo", repoPath]);
+  await execFile("node", [
+    cliPath,
+    "write-run-brief",
+    "--repo",
+    repoPath,
+    "--title",
+    "External-deltas required",
+    "--goal",
+    "g",
+    "--mode",
+    "single-session"
+  ]);
+
+  await assert.rejects(
+    () =>
+      execFile("node", [
+        cliPath,
+        "write-final-synthesis",
+        "--repo",
+        repoPath,
+        "--title",
+        "Missing external-deltas",
+        "--summary",
+        "Should reject because --external-deltas absent"
+      ]),
+    /requires --external-deltas/
+  );
+});
+
+test("write-final-synthesis accepts --external-deltas none and renders the section", async () => {
+  const repoPath = await makeTempDir("crew-cli-external-deltas-none-");
+  await execFile("node", [cliPath, "init", "--repo", repoPath]);
+  await execFile("node", [
+    cliPath,
+    "write-run-brief",
+    "--repo",
+    repoPath,
+    "--title",
+    "External-deltas none",
+    "--goal",
+    "g",
+    "--mode",
+    "single-session"
+  ]);
+  await execFile("node", [
+    cliPath,
+    "mark-badge",
+    "--repo",
+    repoPath,
+    "--badge",
+    "review_skipped",
+    "--note",
+    "docs-only"
+  ]);
+
+  const out = await execFile("node", [
+    cliPath,
+    "write-final-synthesis",
+    "--repo",
+    repoPath,
+    "--title",
+    "Synthesis with no external deltas",
+    "--summary",
+    "Nothing off-repo to coordinate",
+    "--external-deltas",
+    "none"
+  ]);
+  const result = JSON.parse(out.stdout);
+  const body = await fs.readFile(result.path, "utf8");
+  assert.match(body, /External Deltas/);
+  assert.match(body, /none/);
 });
 
 test("CLI subcommand help works without error", async () => {
@@ -1048,7 +1128,9 @@ test("final-synthesis blocked when escalated_to_human set; --force overrides", a
         "--title",
         "Should be blocked",
         "--summary",
-        "Should reject"
+        "Should reject",
+        "--external-deltas",
+        "none"
       ]),
     /escalated_to_human|pending|escalated to human/i
   );
@@ -1061,6 +1143,8 @@ test("final-synthesis blocked when escalated_to_human set; --force overrides", a
     "Forced through",
     "--summary",
     "Override with --force",
+    "--external-deltas",
+    "none",
     "--force"
   ]);
   const result = JSON.parse(forced.stdout);

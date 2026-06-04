@@ -46,8 +46,10 @@ Workflow:
    - validator for behavior checks when behavior can be exercised
    - researcher for uncertainty reduction if needed
 13. Keep ownership explicit and avoid same-file parallel editing.
+   - Set a `size` on each dispatched task: use `size: light` for trivial tasks (one-line fixes, typo corrections, variable renames) — a light-close skips the `write-handoff` artifact but the teammate still returns the structured completion message. Use `size: standard` (default) for anything substantive — these REQUIRE a `write-handoff` artifact. Light is for noise reduction on trivial work; do not use it to skip audit trail on substantive changes.
 14. Require structured acknowledgements and completion reports from every teammate or helper.
    After a subagent completes, read its full report from the artifact path it returned (via `Read` on the handoff path). Do NOT treat the inline return as the full report — agents return only path + headline by contract.
+14a. If this run was driven by a design doc (from `/crew:design` or referenced by the user), pass the design doc path to both the builder and the reviewer in their handoffs so they work from the same spec — the explicit path is how specialists link work to a design. If no design doc applies, say "no design doc" explicitly so specialists know no conformance check applies.
 15. If the implementation is split into code-bearing sub-tasks, make those sub-tasks independently reviewable and review them where practical before treating them as complete.
 16. Substantial non-code deliverables should normally be reviewed before being treated as done.
 17. For implementation work that changes code, independent review is the default. When code work is complete and waiting for review, record that gate in workflow state:
@@ -81,4 +83,5 @@ Workflow:
     - if yes, is validation resolved or explicitly skipped?
     - did the run leave the artifact trail it should?
 26. For substantial work, write a final synthesis artifact:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-final-synthesis --repo "$PWD" --title "<short title>" --summary "<summary>"`
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-final-synthesis --repo "$PWD" --title "<short title>" --summary "<summary>" --external-deltas "<off-repo changes required, or 'none'>"`
+   - The CLI rejects missing `--external-deltas`. Enumerate sibling-config changes the synthesis depends on (env var renames in deploy manifests, terraform/helm updates, sibling-repo PRs, feature flags, DB migrations, IAM). Pass `--external-deltas none` explicitly if there are none. A silent default is how renamed env vars silently fall back to old defaults in prod.

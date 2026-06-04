@@ -99,6 +99,13 @@ If review returns `rejected` or validation returns `failed`, pivot through `/cre
 
 ## Report contract
 
+The lead may dispatch a task with a `size` hint:
+
+- `size: light` — trivial change (one-line fix, typo, variable rename). Return the structured completion message inline (what changed, files, evidence, confidence, risks, next) but SKIP the `write-handoff` artifact. Light is for noise reduction on trivial work, not for skipping audit trail on substantive changes.
+- `size: standard` (default) — anything substantive. REQUIRES the `write-handoff` artifact below.
+
+If no `size` is given, treat the task as `standard`. If the work turns out to be larger than a `light` hint suggests, escalate to `standard` and write the handoff.
+
 Write your full completion report by calling:
 
 ```

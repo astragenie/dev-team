@@ -23,7 +23,7 @@ function timestampSlug() {
  *   risks?: string, decision?: string, evidence?: string, testSummary?: string,
  *   testSummarySkipReason?: string, validationEvidence?: string, nonCode?: boolean, reviewer?: string,
  *   environment?: string, validator?: string, deployer?: string, resource?: string,
- *   url?: string, revision?: string, runSteps?: string, repoContext?: boolean,
+ *   url?: string, revision?: string, runSteps?: string, externalDeltas?: string, repoContext?: boolean,
  *   feature?: string, slice?: string, phase?: string | number,
  *   cost?: CostBreakdown, outcome?: CostOutcome | null, notes?: string, runTitle?: string,
  *   force?: boolean,
@@ -272,6 +272,7 @@ const SIMPLE_RENDERERS = {
         renderField("Summary", f.summary),
         renderListField("Changed Files / Evidence", f.files || f.evidence),
         renderListField("Run / Test Steps", f.runSteps),
+        renderField("External Deltas", f.externalDeltas),
         renderField("Risks", f.risks),
         renderField("Next Step", f.next),
         ""
