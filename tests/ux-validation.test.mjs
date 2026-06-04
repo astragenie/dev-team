@@ -232,3 +232,33 @@ test("discoverPlaywrightConfig returns null when config file lacks baseURL", asy
   );
   assert.equal(await discoverPlaywrightConfig(repo), null);
 });
+
+import { buildQaInvocation } from "../scripts/lib/ux-validation/index.mjs";
+
+test("buildQaInvocation emits all 4 check flags", () => {
+  const cmd = buildQaInvocation({
+    url: "http://localhost:3000",
+    scenarios: [{ id: "AC-1", verb: "click", target: "button", expect: "ok" }],
+    baselineDir: "tests/playwright/baselines/",
+    outputPath: ".claude/artifacts/crew/validations/ux.json"
+  });
+  assert.match(cmd, /gstack:\/qa/);
+  assert.match(cmd, /--url http:\/\/localhost:3000/);
+  assert.match(cmd, /--scenarios /);
+  assert.match(cmd, /--accessibility-scan/);
+  assert.match(cmd, /--capture-console/);
+  assert.match(cmd, /--capture-network/);
+  assert.match(cmd, /--visual-baseline tests\/playwright\/baselines\//);
+  assert.match(cmd, /--output \.claude\/artifacts\/crew\/validations\/ux\.json/);
+});
+
+test("buildQaInvocation embeds scenarios as JSON", () => {
+  const cmd = buildQaInvocation({
+    url: "http://x",
+    scenarios: [{ id: "AC-1" }, { id: "AC-2" }],
+    baselineDir: "b/",
+    outputPath: "o.json"
+  });
+  assert.match(cmd, /"AC-1"/);
+  assert.match(cmd, /"AC-2"/);
+});
