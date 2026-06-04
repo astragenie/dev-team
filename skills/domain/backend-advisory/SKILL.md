@@ -6,9 +6,18 @@ source: aitmpl/development/senior-backend
 source_version: 2026-06-04
 last_reviewed: 2026-06-04
 owner: hero-crew
+triggers: server-side code, API handler, data layer, database query, authentication, REST, GraphQL
 ---
 
 # Backend Advisory
+
+## When to use
+
+- Designing or reviewing API endpoints and handlers
+- Optimizing database queries or data layer patterns
+- Implementing authentication, authorization, or session logic
+- Debugging server-side performance or reliability issues
+- Reviewing backend security practices
 
 Complete toolkit for senior backend development with modern tools and best practices.
 
@@ -124,3 +133,10 @@ Check the comprehensive troubleshooting section in `references/backend_security_
 - Workflow Guide: `references/database_optimization_guide.md`
 - Technical Guide: `references/backend_security_practices.md`
 - Tool Scripts: `scripts/` directory
+
+## Done / Acceptance
+
+- API design is consistent with existing patterns and documented
+- Database queries are optimized and validated against test data
+- Authentication and input-validation logic is implemented and tested
+- Security concerns (injection, over-exposure) are addressed

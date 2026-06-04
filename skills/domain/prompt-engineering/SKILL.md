@@ -6,9 +6,18 @@ source: aitmpl/development/senior-prompt-engineer
 source_version: 2026-06-04
 last_reviewed: 2026-06-04
 owner: hero-crew
+triggers: agent prompt, skill description, LLM prompt, few-shot, chain-of-thought, system prompt, RAG
 ---
 
 # Prompt Engineering
+
+## When to use
+
+- Editing or authoring an agent prompt or SKILL.md description
+- Tuning an LLM prompt for better accuracy, format, or cost
+- Designing few-shot examples or chain-of-thought scaffolding
+- Evaluating or benchmarking prompt variants
+- Building an agentic system with tool use or RAG
 
 World-class prompt engineering skill for production-grade AI/ML/Data systems.
 
@@ -129,3 +138,10 @@ python scripts/health_check.py
 - Technical Reference: `references/agentic_system_design.md`
 - Senior Responsibilities: `references/examples.md`
 - Automation Scripts: `scripts/` directory
+
+## Done / Acceptance
+
+- Prompt change is tested against representative inputs and outputs are reviewed
+- Latency and token cost impact are measured or explicitly noted
+- System prompt and few-shot examples are versioned and documented
+- Evaluation assertions are captured for regression tracking

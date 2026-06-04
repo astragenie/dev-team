@@ -185,3 +185,57 @@ test("consistency-non-crew: non-crew route-to is skipped exits 0", () => {
     `Expected exit 0 for non-crew agent row. stdout: ${result.stdout} stderr: ${result.stderr}`
   );
 });
+
+test("consistency-empty-block: agent missing Skills-you-consult heading exits 1 with skill named", () => {
+  const result = runFixture(path.join(fixturesBase, "consistency-empty-block"));
+  assert.equal(
+    result.status,
+    1,
+    `Expected exit 1 for agent without skill block. stdout: ${result.stdout} stderr: ${result.stderr}`
+  );
+  const output = result.stdout + result.stderr;
+  assert.match(output, /python-pro/, "Error should name the missing skill");
+  assert.match(output, /builder/, "Error should name the agent");
+});
+
+test("consistency-refs-collapse: ref-suffix in notes collapses to dir match exits 0", () => {
+  const result = runFixture(path.join(fixturesBase, "consistency-refs-collapse"));
+  assert.equal(
+    result.status,
+    0,
+    `Expected exit 0 for refs-collapse match. stdout: ${result.stdout} stderr: ${result.stderr}`
+  );
+});
+
+test("consistency-multi-role: multi-role row fails if any role missing skill exits 1", () => {
+  const result = runFixture(path.join(fixturesBase, "consistency-multi-role"));
+  assert.equal(
+    result.status,
+    1,
+    `Expected exit 1 for multi-role missing skill. stdout: ${result.stdout} stderr: ${result.stderr}`
+  );
+  const output = result.stdout + result.stderr;
+  assert.match(output, /typescript-pro/, "Error should name the missing skill");
+  assert.match(output, /reviewer/, "Error should name the reviewer agent");
+});
+
+test("consistency-missing-agent: agent file absent exits 1 with actionable error", () => {
+  const result = runFixture(path.join(fixturesBase, "consistency-missing-agent"));
+  assert.equal(
+    result.status,
+    1,
+    `Expected exit 1 for missing agent file. stdout: ${result.stdout} stderr: ${result.stderr}`
+  );
+  const output = result.stdout + result.stderr;
+  // Should mention the agent role or the skill in error output
+  assert.match(output, /architect/, "Error should reference the architect role");
+});
+
+test("consistency-malformed-row: malformed table rows do not crash validator exits 0", () => {
+  const result = runFixture(path.join(fixturesBase, "consistency-malformed-row"));
+  assert.equal(
+    result.status,
+    0,
+    `Expected exit 0 for fixture with malformed rows (well-formed row passes). stdout: ${result.stdout} stderr: ${result.stderr}`
+  );
+});

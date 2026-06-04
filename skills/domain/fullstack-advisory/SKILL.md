@@ -6,9 +6,18 @@ source: aitmpl/development/senior-fullstack
 source_version: 2026-06-04
 last_reviewed: 2026-06-04
 owner: hero-crew
+triggers: cross-layer feature, fullstack, "**/*.tsx", "**/*.ts", React, Next.js, Node.js, GraphQL
 ---
 
 # Fullstack Advisory
+
+## When to use
+
+- Implementing a feature that spans both frontend and backend layers
+- Scaffolding a new full-stack project or service
+- Reviewing cross-layer data flow (API contract, state, DB schema)
+- Choosing or applying architecture patterns across the stack
+- Optimizing end-to-end performance or build pipeline
 
 Complete toolkit for senior fullstack development with modern tools and best practices.
 
@@ -124,3 +133,10 @@ Check the comprehensive troubleshooting section in `references/development_workf
 - Workflow Guide: `references/architecture_patterns.md`
 - Technical Guide: `references/development_workflows.md`
 - Tool Scripts: `scripts/` directory
+
+## Done / Acceptance
+
+- Frontend and backend changes are consistent in contract (types, API shape, validation)
+- New feature is covered by tests at both layers
+- Performance impact across the stack is measured or explicitly deferred
+- Architecture decision is documented if a new pattern was introduced

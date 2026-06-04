@@ -6,9 +6,18 @@ source: aitmpl/development/senior-frontend
 source_version: 2026-06-04
 last_reviewed: 2026-06-04
 owner: hero-crew
+triggers: UI component, frontend stack, "**/*.tsx", React, Next.js, Tailwind, bundle size
 ---
 
 # Frontend Advisory
+
+## When to use
+
+- Building or reviewing React/Next.js UI components
+- Optimizing bundle size or runtime performance
+- Implementing a UI/UX design in code
+- Managing client-side state or data fetching patterns
+- Reviewing frontend code for best practices
 
 Complete toolkit for senior frontend development with modern tools and best practices.
 
@@ -124,3 +133,10 @@ Check the comprehensive troubleshooting section in `references/frontend_best_pra
 - Workflow Guide: `references/nextjs_optimization_guide.md`
 - Technical Guide: `references/frontend_best_practices.md`
 - Tool Scripts: `scripts/` directory
+
+## Done / Acceptance
+
+- Component renders correctly and matches design intent
+- Bundle impact is measured and within acceptable limits
+- State management is clear, predictable, and tested
+- Accessibility and responsiveness concerns are addressed

@@ -6,9 +6,16 @@ source: aitmpl/development/git-commit-helper
 source_version: 2026-06-04
 last_reviewed: 2026-06-04
 owner: hero-crew
+triggers: commit message, git diff --staged, conventional commits, pre-commit, git status
 ---
 
 # Git Commit
+
+## When to use
+
+- Writing a commit message for staged changes
+- Reviewing what will be included in the next commit
+- Applying conventional commits format to a change set
 
 ## Quick start
 
@@ -178,3 +185,9 @@ Migration guide: Update client code to handle new response structure
 - [ ] Body explains WHY not just WHAT
 - [ ] Breaking changes are clearly marked
 - [ ] Related issue numbers are included
+
+## Done / Acceptance
+
+- Commit message follows conventional commits format with correct type and scope
+- Summary line is under 50 characters and uses imperative mood
+- Breaking changes are marked with `!` suffix or `BREAKING CHANGE:` footer

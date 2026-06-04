@@ -6,9 +6,17 @@ source: aitmpl/development/brainstorming
 source_version: 2026-06-04
 last_reviewed: 2026-06-04
 owner: hero-crew
+triggers: discovery, option divergence, new feature, design exploration, trade-offs, "what should we build"
 ---
 
 # Brainstorming Ideas Into Designs
+
+## When to use
+
+- Before starting any new feature or significant change
+- When exploring trade-offs between 2+ design approaches
+- When requirements or constraints are still unclear
+- When you need to align on scope before writing code
 
 ## Overview
 
@@ -57,3 +65,10 @@ Start by understanding the current project context, then ask questions one at a 
 - **Explore alternatives** - Always propose 2-3 approaches before settling
 - **Incremental validation** - Present design in sections, validate each
 - **Be flexible** - Go back and clarify when something doesn't make sense
+
+## Done / Acceptance
+
+- Design is documented in `docs/plans/YYYY-MM-DD-<topic>-design.md` and committed
+- At least 2 alternatives were presented with explicit trade-offs before the final choice
+- Scope is explicit: what is in and what is intentionally excluded
+- User has confirmed readiness to proceed to implementation

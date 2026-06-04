@@ -6,9 +6,18 @@ source: aitmpl/development/senior-architect
 source_version: 2026-06-04
 last_reviewed: 2026-06-04
 owner: hero-crew
+triggers: architecture, ADR, system design, capacity planning, tech stack decision, architecture diagram
 ---
 
 # Architecture Advisory
+
+## When to use
+
+- Designing a new system or service from scratch
+- Drafting or reviewing an Architecture Decision Record (ADR)
+- Evaluating technology stack trade-offs
+- Performing capacity or dependency analysis
+- Generating architecture diagrams from existing code
 
 Complete toolkit for software architecture with modern tools and best practices.
 
@@ -74,6 +83,13 @@ docker build -t app:latest . && docker-compose up -d
 - Workflow Guide: `references/system_design_workflows.md`
 - Technical Guide: `references/tech_decision_guide.md`
 - Tool Scripts: `scripts/` directory
+
+## Done / Acceptance
+
+- Architecture decision is documented with rationale and trade-offs
+- Diagram or design clearly shows components and data flows
+- Tech stack choice is justified against alternatives
+- Dependency and capacity concerns are surfaced and addressed
 
 ## See also
 

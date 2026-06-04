@@ -6,9 +6,18 @@ source: aitmpl/development/senior-security
 source_version: 2026-06-04
 last_reviewed: 2026-06-04
 owner: hero-crew
+triggers: auth, crypto, secrets, input validation, OWASP, threat model, SQL injection, XSS
 ---
 
 # Security Advisory
+
+## When to use
+
+- Designing or reviewing authentication and authorization flows
+- Implementing cryptography, secrets management, or token handling
+- Auditing input handling for injection or XSS vulnerabilities
+- Conducting a threat model or OWASP-aligned security review
+- Evaluating compliance requirements (GDPR, SOC 2, PCI)
 
 Complete toolkit for senior security engineering with modern tools and best practices.
 
@@ -124,3 +133,10 @@ Check the comprehensive troubleshooting section in `references/cryptography_impl
 - Workflow Guide: `references/penetration_testing_guide.md`
 - Technical Guide: `references/cryptography_implementation.md`
 - Tool Scripts: `scripts/` directory
+
+## Done / Acceptance
+
+- Identified vulnerabilities are categorized by severity and each has a remediation action
+- Threat model covers entry points, trust boundaries, and data flows
+- Authentication and authorization paths are verified against the threat model
+- All high/critical findings are resolved or carry an explicit accepted-risk note

@@ -6,9 +6,18 @@ source: aitmpl/development/skill-creator
 source_version: 2026-06-04
 last_reviewed: 2026-06-04
 owner: hero-crew
+triggers: SKILL.md, skill quality bar, new skill, skill description, skill eval, skill triggering
 ---
 
 # Skill Creator
+
+## When to use
+
+- Authoring a new SKILL.md from scratch
+- Editing or improving an existing skill's body or description
+- Running evals to measure skill triggering accuracy
+- Optimizing the skill description for better routing
+- Reviewing a skill against the quality bar (tier, description, line cap)
 
 A skill for creating new skills and iteratively improving them.
 
@@ -107,3 +116,10 @@ See `references/platform-notes.md` for Claude.ai-specific and Cowork-specific ad
 - `references/improving-skills.md` — the improvement loop
 - `references/description-optimization.md` — description optimization loop
 - `references/platform-notes.md` — Claude.ai and Cowork adaptations
+
+## Done / Acceptance
+
+- Skill has required frontmatter: name, tier, description, triggers
+- SKILL.md body is under the repo line cap (≤200 lines for domain/workflow/meta)
+- At least 2 eval prompts are confirmed with the user and saved to `evals/evals.json`
+- Description optimization has been run and triggering accuracy is satisfactory

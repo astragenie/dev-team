@@ -6,6 +6,7 @@ source: aitmpl/development/systematic-debugging
 source_version: 2026-06-04
 last_reviewed: 2026-06-04
 owner: hero-crew
+triggers: bug, test failure, unexpected behavior, intermittent failure, root cause, repro
 ---
 
 # Systematic Debugging
@@ -112,3 +113,10 @@ Note: 95% of "no root cause" cases are incomplete investigation.
 - Random fixes approach: 2-3 hours of thrashing
 - First-time fix rate: 95% vs 40%
 - New bugs introduced: Near zero vs common
+
+## Done / Acceptance
+
+- Root cause is explicitly stated before any fix is applied
+- A failing test case or repro script exists that confirms the bug
+- The fix resolves the failing test and no other tests regress
+- Fix is targeted at the root cause; no unrelated changes are bundled
