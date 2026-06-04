@@ -84,3 +84,95 @@ test("classifyScenario falls back to non_ui_ac on no match", () => {
   assert.equal(classifyScenario("database row count is 3"), "non_ui_ac");
   assert.equal(classifyScenario(""), "non_ui_ac");
 });
+
+import { computeVerdict } from "../scripts/lib/ux-validation/index.mjs";
+
+const EMPTY_EVIDENCE = {
+  ac_results: [],
+  a11y: { violations: [], passes_count: 0 },
+  console: { errors: [], warnings: [] },
+  network: { failures: [] },
+  visual: { diffs: [] }
+};
+
+test("computeVerdict returns passed on empty evidence", () => {
+  assert.equal(computeVerdict(EMPTY_EVIDENCE), "passed");
+});
+
+test("computeVerdict returns failed when any AC fails", () => {
+  const ev = { ...EMPTY_EVIDENCE, ac_results: [{ id: "AC-1", status: "fail" }] };
+  assert.equal(computeVerdict(ev), "failed");
+});
+
+test("computeVerdict returns failed on serious a11y violation", () => {
+  const ev = {
+    ...EMPTY_EVIDENCE,
+    a11y: { violations: [{ severity: "serious", rule: "x" }], passes_count: 0 }
+  };
+  assert.equal(computeVerdict(ev), "failed");
+});
+
+test("computeVerdict returns failed on critical a11y violation", () => {
+  const ev = {
+    ...EMPTY_EVIDENCE,
+    a11y: { violations: [{ severity: "critical", rule: "x" }], passes_count: 0 }
+  };
+  assert.equal(computeVerdict(ev), "failed");
+});
+
+test("computeVerdict returns failed on console errors", () => {
+  const ev = {
+    ...EMPTY_EVIDENCE,
+    console: { errors: ["TypeError"], warnings: [] }
+  };
+  assert.equal(computeVerdict(ev), "failed");
+});
+
+test("computeVerdict returns failed on visual diff over tolerance", () => {
+  const ev = {
+    ...EMPTY_EVIDENCE,
+    visual: { diffs: [{ route: "/", pct: 5.0, tolerance: 0.5 }] }
+  };
+  assert.equal(computeVerdict(ev), "failed");
+});
+
+test("computeVerdict returns passed_with_notes on minor a11y", () => {
+  const ev = {
+    ...EMPTY_EVIDENCE,
+    a11y: { violations: [{ severity: "minor", rule: "x" }], passes_count: 0 }
+  };
+  assert.equal(computeVerdict(ev), "passed_with_notes");
+});
+
+test("computeVerdict returns passed_with_notes on console warnings", () => {
+  const ev = {
+    ...EMPTY_EVIDENCE,
+    console: { errors: [], warnings: ["React: ..."] }
+  };
+  assert.equal(computeVerdict(ev), "passed_with_notes");
+});
+
+test("computeVerdict returns passed_with_notes on network failures", () => {
+  const ev = {
+    ...EMPTY_EVIDENCE,
+    network: { failures: [{ url: "/x.png", status: 404 }] }
+  };
+  assert.equal(computeVerdict(ev), "passed_with_notes");
+});
+
+test("computeVerdict returns failed when both fail and warn signals present", () => {
+  const ev = {
+    ...EMPTY_EVIDENCE,
+    ac_results: [{ id: "AC-1", status: "fail" }],
+    console: { errors: [], warnings: ["minor"] }
+  };
+  assert.equal(computeVerdict(ev), "failed");
+});
+
+test("computeVerdict returns passed when visual diff under tolerance", () => {
+  const ev = {
+    ...EMPTY_EVIDENCE,
+    visual: { diffs: [{ route: "/", pct: 0.2, tolerance: 0.5 }] }
+  };
+  assert.equal(computeVerdict(ev), "passed");
+});
