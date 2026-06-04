@@ -103,7 +103,7 @@ Pre-1.0 semver-ish (see `CHANGELOG.md` header):
 ### Companion plugin (`loop`)
 
 Lives in a separate repo
-(`https://github.com/sergeymilashico/hero-crew-autonomous-loop`) and is
+(`https://github.com/sergeymilashico/loop`) and is
 referenced from this repo's `marketplace.json` by version only. To pick up
 a `loop` release, bump `plugins[name=loop].version` here and commit
 under `chore(marketplace): bump loop to <ver>`.
