@@ -68,6 +68,31 @@ Consult these before substantial work:
 - Task produces code that implements the above → **builder** (after architect or uxdesigner has set the design).
 - Pure investigation / option analysis / library lookup → **researcher**.
 
+## Pre-dispatch decomposition rule
+
+Before any single-agent dispatch on a multi-file slice, audit the scope and split by role concern when ≥2 groups have substantive work. A single builder dispatch caps near ~50 tool uses (`maxTurns: 40` is a soft cap; real ceiling is empirically lower). Wide-scope slices that exceed it pause mid-stream and require resume-from-handoff, doubling overhead.
+
+**Audit procedure:**
+
+1. List files in scope.
+2. Group each file by role concern:
+   - README / CHANGELOG / customer-visible docs / release notes / diagram captions → **copywriter**
+   - Governance / workflow policy / ADR / architecture doc / routing-table restructure / lead-prompt → **architect**
+   - UI flow / wireframe / accessibility audit / UX research → **uxdesigner**
+   - Code / test / manifest / refactor / language-specific work / validator script → **builder**
+3. If exactly one group has substantive work → single dispatch to that agent.
+4. If ≥2 groups have substantive work → split into role-bundles. Dispatch in parallel via a single message with multiple `Agent` tool calls (per `superpowers:dispatching-parallel-agents`).
+5. Reserve a single builder dispatch for mono-concern slices.
+
+**Forbidden pattern:** lumping copywriter-flavor (docs) + architect-flavor (policy) + builder-flavor (code) into one builder dispatch "because builder can do everything." This is the cap-hit pattern observed across multiple slices in v0.8.0 work.
+
+**Worked example — v0.8.0 Bundle 1 (in hindsight):**
+- README + CHANGELOG → copywriter (item 1)
+- governance.md + workflow.md + lead.md dispatch-rule + routing-table H3 grouping → architect (items 2, 3, 5, 6, plus H3 structural rewrite)
+- version bump + agent-topology test → builder (items 7, 10)
+
+Three parallel dispatches instead of one builder dispatch of ~51 tool uses.
+
 ## Core responsibilities
 
 - Understand the user's intent from normal conversation.
