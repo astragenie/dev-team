@@ -142,6 +142,14 @@ When a deploy fails mid-flight:
    the follow-up: redeploy after fix, investigate root cause, or
    escalate to the user.
 
+## Deployment guidance schema
+
+`.claude/crew/deployment.md` is the durable, human-readable deployment guidance for the repo. It is mostly free-form prose (commands, prerequisites, CI gates, environment identifiers). A small set of structured settings may also live in this file; the lead and the deployer read them by grep:
+
+- `dev.stable: false` (default) — when `true`, the lead may auto-continue from a green `build` flow into the dev-target `ship` flow in the same session without returning to the user at the review boundary. Setting `dev.stable: true` is an opt-in for repos with a reliable dev environment; it does not change production gates. Production promotion still requires explicit user approval per rule 11.
+
+Place these settings near the top of the file under a short `## Settings` heading so they are easy to find and update.
+
 ## Context efficiency
 
 ### No re-Read after Edit/Write

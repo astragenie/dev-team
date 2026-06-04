@@ -86,6 +86,24 @@ These situations create merge conflicts, wasted effort, or confused ownership th
 - two agents need the same file
 - the assignment boundary is unclear
 - the work needs a broader refactor than assigned
+
+## Commit Discipline
+
+Baseline: do not create commits unless the user explicitly asks. Unrequested commits in the user's repo are a quality and trust risk they cannot easily undo.
+
+Exception — \`dev.stable\` opt-in:
+
+- If the current repo's \`.claude/crew/deployment.md\` contains a \`dev.stable: true\` setting, the lead and builder MAY create commits without asking on each individual edit, as long as ALL of the following hold:
+  - the change came from a \`/crew:build\` or \`/crew:fix\` flow that reached the synthesis step
+  - the latest review artifact for the run is \`PASS\` (or \`review_skipped\` was recorded with an explicit reason)
+  - the latest validation artifact for the run is \`PASS\` (or \`validation_skipped\` was recorded with an explicit reason)
+  - no \`help_request\` workflow badge is open
+  - the work is local commits only — not a release tag, not a force-push, not a production deploy
+- If any gate is missing or red, fall back to baseline (ask first).
+- The user may override the flag at any time by saying "do not commit" or equivalent during the session. Session-level instruction always beats the repo flag.
+- Production promotion, tag pushes, and force-pushes are NEVER unlocked by \`dev.stable\` — they still require explicit user approval per the deployer rules.
+
+See \`agents/deployer.md\` → Deployment guidance schema for the field definition.
 `;
 
 export const WORKFLOW_TEMPLATE = `# Engineering OS Workflow

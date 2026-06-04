@@ -3,6 +3,10 @@
 This plugin has no server, no container, and no hosted runtime.
 "Deploying" means **cutting a versioned release that consumers can pin to**.
 
+## Settings
+
+- `dev.stable: false` — no auto-continue from build to dev ship. Releases are manual and user-triggered. See `agents/deployer.md` → Deployment guidance schema.
+
 ## Prerequisites
 
 All 9 CI gates must pass on `main`:
