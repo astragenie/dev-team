@@ -26,6 +26,7 @@
     "installer:bootstrap": "node ./scripts/crew.mjs bootstrap",
     "installer:init": "node ./scripts/crew.mjs init",
     "installer:audit": "node ./scripts/crew.mjs audit",
-    "e2e:smoke": "node ./scripts/e2e-smoke.mjs"
+    "e2e:smoke": "node ./scripts/e2e-smoke.mjs",
+    "e2e:smoke:ux": "node ./scripts/e2e-smoke-ux.mjs"
   }
 }

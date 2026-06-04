@@ -28,3 +28,5 @@ jobs:
       - run: npm run typecheck
       - run: node --test
       - run: node ./scripts/e2e-smoke.mjs
+      - name: e2e smoke — ux validation
+        run: npm run e2e:smoke:ux
