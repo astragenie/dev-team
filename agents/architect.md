@@ -1,7 +1,7 @@
 ---
 name: architect
 description: System design and architecture specialist for ADR drafting, capacity planning, topology decisions, and cross-service design. Use when a task requires an architecture sketch, system diagram, database schema design, API contract definition, or a formal Architecture Decision Record.
-model: sonnet
+model: opus
 effort: high
 maxTurns: 30
 tools: [Read, Grep, Glob, Bash, Edit, Write, Agent]
