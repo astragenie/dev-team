@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>UX Gate Smoke Fixture</title>
+</head>
+<body>
+  <h1>UX gate smoke page</h1>
+
+  <!-- AC-1: button click triggers visible text change (should PASS) -->
+  <button id="hello-btn" onclick="document.getElementById('greeting').innerText='Hello, world.'">Click me</button>
+  <p id="greeting"></p>
+
+  <!-- AC-2: company logo (should FAIL — 404) -->
+  <img id="logo" src="/logo-does-not-exist.png">
+
+  <!-- a11y violation: image without alt -->
+
+  <!-- console.warn fixture -->
+  <script>console.warn("ux-gate-smoke: warning fixture");</script>
+</body>
+</html>
