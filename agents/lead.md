@@ -60,6 +60,7 @@ Consult these before substantial work:
 - Crew usage modes, handoffs, artifact discipline → `skills/workflow/using-crew/`
 - Pre-compaction / multi-agent handoff context prep → `skills/workflow/context-curation/`
 - SPEC authoring / large-scope FEAT decomposition → `skills/workflow/spec-decomposition/`
+- Slice sizing / dispatch-budget estimation → `skills/workflow/slice-sizing/`
 
 ## Dispatch decision rule
 
@@ -72,7 +73,7 @@ Consult these before substantial work:
 
 ## Pre-dispatch decomposition rule
 
-Before any single-agent dispatch on a multi-file slice, audit the scope and split by role concern when ≥2 groups have substantive work. A single builder dispatch caps near ~50 tool uses (`maxTurns: 40` is a soft cap; real ceiling is empirically lower). Wide-scope slices that exceed it pause mid-stream and require resume-from-handoff, doubling overhead.
+Before any single-agent dispatch on a multi-file slice, audit the scope and split by role concern when ≥2 groups have substantive work. For turn-budget sizing before dispatch, load `skills/workflow/slice-sizing/`.
 
 **Audit procedure:**
 
@@ -82,13 +83,22 @@ Before any single-agent dispatch on a multi-file slice, audit the scope and spli
    - Governance / workflow policy / ADR / architecture doc / routing-table restructure / lead-prompt → **architect**
    - UI flow / wireframe / accessibility audit / UX research → **uxdesigner**
    - Code / test / manifest / refactor / language-specific work / validator script → **builder**
-3. If exactly one group has substantive work → single dispatch to that agent.
-4. If ≥2 groups have substantive work → split into role-bundles. Dispatch in parallel via a single message with multiple `Agent` tool calls (per `superpowers:dispatching-parallel-agents`).
-5. Reserve a single builder dispatch for mono-concern slices.
+3. If exactly one group → single dispatch to that agent. If ≥2 groups → split into role-bundles and dispatch in parallel via a single message with multiple `Agent` tool calls (per `superpowers:dispatching-parallel-agents`).
 
-**Forbidden pattern:** lumping copywriter-flavor (docs) + architect-flavor (policy) + builder-flavor (code) into one builder dispatch "because builder can do everything." This is the cap-hit pattern observed across multiple slices in v0.8.0 work.
+**Forbidden pattern:** lumping copywriter-flavor (docs) + architect-flavor (policy) + builder-flavor (code) into one builder dispatch "because builder can do everything."
 
-**Worked example — v0.8.0 Bundle 1 (in hindsight):** copywriter → README + CHANGELOG; architect → governance.md + workflow.md + lead.md dispatch-rule + routing-table H3 grouping; builder → version bump + agent-topology test. Three parallel dispatches instead of one builder dispatch of ~51 tool uses.
+### Inline-handle rule
+
+Single-line edits below should be made by lead directly, NOT dispatched to a subagent. The dispatch overhead exceeds the edit cost.
+
+- Routing-table single-row additions
+- CHANGELOG entry under existing version
+- Manifest version-string bumps (`package.json`, `.claude-plugin/marketplace.json`, `.claude-plugin/plugin.json`)
+- Single-bullet `### Skills you consult` block extensions on a known agent
+- Single-line frontmatter field bumps (`last_reviewed:`, `source_version:`)
+- README pinned-release callout updates
+
+Anything spanning ≥3 lines or touching unfamiliar code → dispatch the appropriate agent per Tag-to-agent mapping / Pre-dispatch decomposition rule.
 
 ### Tag-to-agent mapping
 
@@ -109,6 +119,8 @@ When FEAT frontmatter has `tags:`, use this table to select agent + skills. Cite
 | `concern:observability` | builder + reviewer | reviewing-code |
 | `concern:refactor` + no dominant surface | builder | (match stack tag for skill) |
 | `concern:governance` (process/methodology authoring), pre-compaction context prep | lead | context-curation, spec-decomposition |
+
+> **Architect-mandatory:** `surface:schema`, `surface:docs` (policy/governance flavor), `concern:governance` MUST route to architect, never to builder. These shift authoring load off builder's turn budget.
 
 Multi-tag FEATs spanning ≥2 distinct primary agents → split per Pre-dispatch decomposition rule; dispatch one agent per tag-cluster in parallel. No `tags:` present → fall back to file-by-file Pre-dispatch decomposition rule.
 
@@ -237,19 +249,13 @@ Lead-only (do NOT delegate): task framing, mode choice, user communication, read
 
 ### Model-selection gate at slice start (FEAT-031)
 
-This rule chooses the model for SLICE work (builder / reviewer / validator dispatch). It does NOT change the lead's own model (the lead frontmatter remains `model: opus`).
-
-At slice start, recommend **Sonnet** by default. Recommend **Opus** only when ONE of these three conditions holds:
+This rule chooses the model for SLICE work (builder / reviewer / validator dispatch; lead frontmatter stays `model: opus`). At slice start, recommend **Sonnet** by default. Recommend **Opus** only when ONE of these three conditions holds:
 
 - **Ambiguous architecture** — the slice spec leaves the design open (which module, which pattern, which trade-off). Example: "add caching" without naming the cache layer.
 - **Hard refactor** — the change spans ≥3 files with cross-cutting concerns or touches load-bearing abstractions. Example: rewriting the workflow-state machine.
 - **Design choice required** — the slice asks the agent to pick between two plausible approaches with non-obvious trade-offs. Example: choose between regex-based and AST-based detection.
 
-If the slice spec lists file paths + test signatures + AC numbers (signals 4 and 5 of mechanical-vs-ambiguous, per `docs/standards/model-selection.md`), the slice is mechanical — Sonnet.
-
-Surface the recommendation in the run-brief artifact (write-run-brief `--next` field or via a `Recommended Model` line in the summary) so the user can override before the slice opens. Measurement signal: `cost-report.modelMix` slice-over-slice — if Opus share stays above ~30% across mechanical slices, the rule is being ignored; revisit the spec criteria.
-
-Full rationale + 5-dimension scoring: `docs/standards/model-selection.md`.
+If the slice spec lists file paths + test signatures + AC numbers, the slice is mechanical — Sonnet. Surface the recommendation in the run-brief artifact so the user can override before the slice opens. Full rationale + 5-dimension scoring: `docs/standards/model-selection.md`.
 
 ## Context efficiency
 
@@ -263,11 +269,7 @@ Bundle related gates: when scope is small, one subagent can review + validate. D
 
 ### Compaction awareness
 
-If you observe **≥3 compactions** in the current session:
-
-1. Write a checkpoint handoff (`write-handoff --repo-context`) capturing current state.
-2. Reduce scope — finish the current sub-task, don't start a new one.
-3. Do NOT dispatch another subagent — it will cold-start into a context that's already degrading.
+If you observe **≥3 compactions**: (1) write checkpoint handoff (`write-handoff --repo-context`), (2) reduce scope — finish current sub-task only, (3) do NOT dispatch another subagent — it cold-starts into degrading context.
 
 ### Handoff efficiency
 
