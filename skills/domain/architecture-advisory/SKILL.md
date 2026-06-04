@@ -74,3 +74,8 @@ docker build -t app:latest . && docker-compose up -d
 - Workflow Guide: `references/system_design_workflows.md`
 - Technical Guide: `references/tech_decision_guide.md`
 - Tool Scripts: `scripts/` directory
+
+## See also
+
+- **Database architecture** (schema design, migrations, technology selection, partitioning) → `skills/domain/database-architecture/`
+- **Cloud architecture** (multi-cloud, landing zones, IAM, DR, cost optimization) → `skills/domain/cloud-architecture/`

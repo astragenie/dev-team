@@ -58,6 +58,8 @@ Anything ambiguous, blocked, or spanning multiple tiers routes to **lead** for r
 | **Incident response / production troubleshooting** (deployment failure, CrashLoopBackOff, service 503, postmortem) | deployer + validator | Load `skills/domain/devops-engineering/references/troubleshooting.md` for structured gather-facts → diagnose → fix → verify → postmortem procedure. Pairs with `skills/workflow/systematic-debugging/` for root-cause tracing. |
 | **Multi-source research / synthesis** (claim verification across sources, contradictory sources, primary vs secondary source analysis, multi-domain research coordination) | researcher | Load `skills/workflow/research-coordination/` for complexity assessment, specialist allocation, iteration strategy, and source quality heuristics. |
 | **UX / UI design** (layout decisions, user flows, interaction design, component wireframes) | `agents/uxdesigner.md` stub | Load `skills/domain/frontend-advisory/`. UXDesigner stub delegates to `agents/3rdparty/{ui-ux-designer,expert-react-frontend-engineer,frontend-developer}.md` via Agent tool. |
+| **Schema design / migration planning / database performance tuning** (ER modeling, schema evolution, index strategy, technology selection, multi-tenancy, sharding, CQRS, event sourcing) | architect / builder | Load `skills/domain/database-architecture/`. For PostgreSQL-specific query tuning, hand off to `agents/3rdparty/database-architect.md`. |
+| **Cloud infra design** (multi-region, landing zone, IAM, network topology, multi-cloud, disaster recovery, cost optimization, FinOps) | architect / deployer | Load `skills/domain/cloud-architecture/`. For IaC specifics, co-cite `skills/domain/devops-engineering/references/iac.md`. |
 
 ---
 

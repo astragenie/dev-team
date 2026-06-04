@@ -44,6 +44,8 @@ I do not own:
 - Backend service design → `skills/domain/backend-advisory/`
 - Full-stack cross-layer design → `skills/domain/fullstack-advisory/`
 - Brainstorming / option divergence → `skills/universal/brainstorming/`
+- Database schema, migrations, technology selection, multi-tenancy → `skills/domain/database-architecture/`
+- Cloud infra design (landing zone, IAM, network topology, DR, cost optimization) → `skills/domain/cloud-architecture/`
 
 ## Delegation map
 
