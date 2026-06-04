@@ -6,14 +6,11 @@ import path from "node:path";
 // resolved. Order: playwright.config.{ts,js,mts} → package.json dev script
 // port detection.
 
-const CONFIG_FILES = [
-  "playwright.config.ts",
-  "playwright.config.js",
-  "playwright.config.mts"
-];
+const CONFIG_FILES = ["playwright.config.ts", "playwright.config.js", "playwright.config.mts"];
 const BASE_URL_RE = /baseURL\s*:\s*["'`]([^"'`]+)["'`]/;
 const DEV_PORT_RE = /-p\s+(\d+)|--port[= ](\d+)/;
 
+/** @param {string} p */
 async function readFileOrNull(p) {
   try {
     return await fs.readFile(p, "utf8");
@@ -22,6 +19,7 @@ async function readFileOrNull(p) {
   }
 }
 
+/** @param {string} repoPath */
 async function tryConfigFiles(repoPath) {
   for (const name of CONFIG_FILES) {
     const content = await readFileOrNull(path.join(repoPath, name));
@@ -32,6 +30,7 @@ async function tryConfigFiles(repoPath) {
   return null;
 }
 
+/** @param {string} repoPath */
 async function tryPackageJsonScripts(repoPath) {
   const content = await readFileOrNull(path.join(repoPath, "package.json"));
   if (!content) return null;
@@ -52,6 +51,10 @@ async function tryPackageJsonScripts(repoPath) {
   return null;
 }
 
+/**
+ * @param {string} repoPath
+ * @returns {Promise<{url: string} | null>}
+ */
 export async function discoverPlaywrightConfig(repoPath) {
   return (await tryConfigFiles(repoPath)) || (await tryPackageJsonScripts(repoPath));
 }

@@ -2,13 +2,21 @@
 // Returns one of: "interaction", "visibility", "navigation", "input",
 // or "non_ui_ac" when no verb set matches. Case-insensitive.
 
+/** @type {ReadonlyArray<{name: "interaction" | "visibility" | "navigation" | "input", verbs: readonly string[]}>} */
 const SETS = [
   { name: "interaction", verbs: ["click", "tap", "press", "submit"] },
-  { name: "visibility", verbs: ["see", "render", "renders", "display", "displays", "show", "shows"] },
+  {
+    name: "visibility",
+    verbs: ["see", "render", "renders", "display", "displays", "show", "shows"]
+  },
   { name: "navigation", verbs: ["navigate", "go to", "route"] },
   { name: "input", verbs: ["type", "fill", "enter"] }
 ];
 
+/**
+ * @param {string} acText
+ * @returns {"interaction" | "visibility" | "navigation" | "input" | "non_ui_ac"}
+ */
 export function classifyScenario(acText) {
   if (!acText) return "non_ui_ac";
   const lower = acText.toLowerCase();

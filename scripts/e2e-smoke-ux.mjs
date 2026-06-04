@@ -30,6 +30,7 @@ function startHttpServer() {
   });
 }
 
+/** @param {number} ms */
 async function wait(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -60,9 +61,9 @@ function simulateQaEvidence() {
       violations: [{ rule: "image-alt", severity: "serious", nodes: ["img#logo"] }],
       passes_count: 12
     },
-    console: { errors: [], warnings: ["ux-gate-smoke: warning fixture"] },
+    console: { errors: /** @type {string[]} */ ([]), warnings: ["ux-gate-smoke: warning fixture"] },
     network: { failures: [{ url: "/logo-does-not-exist.png", status: 404 }] },
-    visual: { diffs: [] }
+    visual: { diffs: /** @type {Array<{route: string, pct: number, tolerance: number}>} */ ([]) }
   };
 }
 
@@ -99,7 +100,9 @@ async function main() {
     if (evidence.network.failures.length === 0) {
       throw new Error("network failures missing");
     }
-    console.log("[ux-smoke] PASS — all 4 evidence categories populated, verdict is 'failed' as expected");
+    console.log(
+      "[ux-smoke] PASS — all 4 evidence categories populated, verdict is 'failed' as expected"
+    );
   } finally {
     server.kill();
   }

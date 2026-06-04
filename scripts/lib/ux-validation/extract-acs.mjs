@@ -7,10 +7,14 @@ const HEADER_RE = /^##\s+Acceptance\s+criteria\s*$/i;
 const NEXT_HEADER_RE = /^##\s+/;
 const AC_LINE_RE = /^- \[ \] (AC-\d+):\s*(.+)$/;
 
+/**
+ * @param {string} sliceContent
+ * @returns {Array<{id: string, text: string}>}
+ */
 export function extractACs(sliceContent) {
   if (!sliceContent) return [];
   const lines = sliceContent.split(/\r?\n/);
-  const startIdx = lines.findIndex((l) => HEADER_RE.test(l));
+  const startIdx = lines.findIndex((/** @type {string} */ l) => HEADER_RE.test(l));
   if (startIdx === -1) return [];
   const out = [];
   for (let i = startIdx + 1; i < lines.length; i += 1) {

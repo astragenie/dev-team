@@ -46,9 +46,7 @@ test("extractACs stops at next ## header", () => {
 
 - [ ] not-an-ac: ignored
 `;
-  assert.deepEqual(extractACs(content), [
-    { id: "AC-1", text: "first" }
-  ]);
+  assert.deepEqual(extractACs(content), [{ id: "AC-1", text: "first" }]);
 });
 
 import { classifyScenario } from "../scripts/lib/ux-validation/index.mjs";
@@ -226,10 +224,7 @@ test("discoverPlaywrightConfig falls back to package.json scripts when no config
 
 test("discoverPlaywrightConfig returns null when config file lacks baseURL", async () => {
   const repo = await tmpRepo("ux-disc-no-url-");
-  await fs.writeFile(
-    path.join(repo, "playwright.config.ts"),
-    `export default { use: {} };`
-  );
+  await fs.writeFile(path.join(repo, "playwright.config.ts"), `export default { use: {} };`);
   assert.equal(await discoverPlaywrightConfig(repo), null);
 });
 

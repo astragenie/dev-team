@@ -1,6 +1,3 @@
-import fs from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
 
@@ -10,10 +7,6 @@ import {
   computeVerdict,
   buildQaInvocation
 } from "../scripts/lib/ux-validation/index.mjs";
-
-async function tmpRepo(prefix) {
-  return await fs.mkdtemp(path.join(os.tmpdir(), prefix));
-}
 
 test("integration: full pipeline passes on clean evidence", async () => {
   const sliceContent = `# Slice
@@ -52,6 +45,7 @@ test("integration: full pipeline fails on AC fail + serious a11y", async () => {
 - [ ] AC-2: see image
 `;
   const acs = extractACs(sliceContent);
+  assert.equal(acs.length, 2);
 
   const evidence = {
     ac_results: [

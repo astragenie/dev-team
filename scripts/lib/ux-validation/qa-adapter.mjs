@@ -2,6 +2,10 @@
 // Returns the literal command string the skill will run via Bash. The
 // validator never writes the output file — /qa (as subprocess) does.
 
+/**
+ * @param {{url: string, scenarios: Array<Record<string, unknown>>, baselineDir: string, outputPath: string}} params
+ * @returns {string}
+ */
 export function buildQaInvocation({ url, scenarios, baselineDir, outputPath }) {
   const scenariosJson = JSON.stringify(scenarios).replace(/'/g, "'\\''");
   return [
