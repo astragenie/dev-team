@@ -1,0 +1,38 @@
+# Task Handoff: Slice 4 — UX + frontend + docs skill extraction
+
+- Created: 2026-06-04T12:20:07.430Z
+- From: builder
+- To: lead
+- Objective: Four new skills extracted from 3rd-party agent sources: ux-methodology (reference-split, 4 refs), react-engineering (reference-split with frontend-developer fold, 5 refs), api-documentation (trim-in-place), and diagram-methodology (trim-in-place); routing-table and 3 agent files updated.
+- Allowed Scope:
+  - skills/domain/ux-methodology/
+  - skills/domain/react-engineering/
+  - skills/workflow/api-documentation/
+  - skills/domain/diagram-methodology/ (new); agents/builder.md
+  - agents/copywriter.md
+  - agents/uxdesigner.md
+  - docs/routing-table.md (modified)
+- Forbidden Scope: -
+- Deliverable: 4 new SKILL.md files (all ≤200 lines, full frontmatter, When-to-use + Done/Acceptance), 9 reference files, 4 routing-table rows added, Skills-you-consult blocks updated in 3 agents
+- Changed Files:
+  - skills/domain/ux-methodology/SKILL.md
+  - skills/domain/ux-methodology/references/user-research.md
+  - skills/domain/ux-methodology/references/interaction-design.md
+  - skills/domain/ux-methodology/references/accessibility.md
+  - skills/domain/ux-methodology/references/design-systems.md
+  - skills/domain/react-engineering/SKILL.md
+  - skills/domain/react-engineering/references/hooks-and-composition.md
+  - skills/domain/react-engineering/references/state-management.md
+  - skills/domain/react-engineering/references/server-and-streaming.md
+  - skills/domain/react-engineering/references/performance-and-bundling.md
+  - skills/domain/react-engineering/references/testing.md
+  - skills/workflow/api-documentation/SKILL.md
+  - skills/domain/diagram-methodology/SKILL.md
+  - agents/builder.md
+  - agents/copywriter.md
+  - agents/uxdesigner.md
+  - docs/routing-table.md
+- Confidence: high
+- Risks: 2 pre-existing test failures (WSL bash not found in Windows environment) exist in the baseline — not introduced by this slice. Confirmed by git-stash baseline check: 235 pass / 2 fail before and after changes.
+- Suggested Next Handoff: Slice 5 — reviewing-code skill augmentation with language-specific checklists from agents/3rdparty/code-reviewer.md
+

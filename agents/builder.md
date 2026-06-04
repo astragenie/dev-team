@@ -38,6 +38,7 @@ Stay strictly within assigned scope:
 - Bug root cause / intermittent failure → `skills/workflow/systematic-debugging/`
 - `*.py` edit → `skills/domain/python-pro/`
 - `*.ts` / `*.tsx` edit → `skills/domain/typescript-pro/`
+- React component / hooks / state management code (`*.tsx`, `*.jsx`) → `skills/domain/react-engineering/`
 - AI app / LLM SDK code → `skills/domain/ai-engineering/`
 
 ## TDD policy

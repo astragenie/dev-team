@@ -39,6 +39,7 @@ I do not own:
 ### Skills you consult (per routing-table)
 
 - Frontend code change → `skills/domain/frontend-advisory/`
+- UX research, persona work, interaction design, accessibility audit → `skills/domain/ux-methodology/`
 - Brainstorming / option divergence → `skills/universal/brainstorming/`
 - Authoring a new skill or design pattern → `skills/meta/skill-creator/`
 

@@ -39,6 +39,8 @@ I do not own:
 ### Skills you consult (per routing-table)
 
 - Architecture narrative and diagram captions → `skills/domain/architecture-advisory/`
+- API documentation authoring (OpenAPI specs, SDK guides, error docs) → `skills/workflow/api-documentation/`
+- Diagram authoring (flowcharts, sequence diagrams, ERDs, architecture) → `skills/domain/diagram-methodology/`
 - Prompt and skill description authoring → `skills/domain/prompt-engineering/`
 
 ## Delegation map
