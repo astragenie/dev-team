@@ -35,6 +35,7 @@ Rules:
 
 - Bug root cause / intermittent failure → `skills/workflow/systematic-debugging/`
 - Diff under review (spotting correctness gaps during validation) → `skills/workflow/reviewing-code/`
+- Production incident response / deployment troubleshooting → `skills/domain/devops-engineering/references/troubleshooting.md`
 
 Your first response must include:
 

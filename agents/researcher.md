@@ -32,6 +32,7 @@ Rules:
 
 - Bug root cause / intermittent failure → `skills/workflow/systematic-debugging/`
 - Brainstorming / discovery before new feature → `skills/universal/brainstorming/`
+- Multi-source research / synthesis (claim verification, contradictory sources, multi-domain coordination) → `skills/workflow/research-coordination/`
 
 Your first response must include:
 
