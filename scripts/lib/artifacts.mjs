@@ -35,7 +35,7 @@ function timestampSlug() {
  *   usd?: number, totals?: Record<string, number>,
  *   byModel?: Record<string, {messages: number, usd: number, tokens: Record<string, number>, pricedAs?: string}>,
  *   modelMix?: Array<{model: string, pricedAs: string, messages: number, msgPct: number, usd: number, usdPct: number}>,
- *   conversation?: {userMsgCount?: number, userMsgAvgLen?: number, turnsBeforeFirstTool?: number, compactionCount?: number, skillInvocations?: number, subagentDispatches?: number},
+ *   conversation?: {userMsgCount?: number, userMsgAvgLen?: number, turnsBeforeFirstTool?: number, compactionCount?: number, skillInvocations?: number, subagentDispatches?: number, subagentDispatchesByRole?: Record<string, number>},
  *   toolUsage?: Array<{name: string, count: number, failures: number}>,
  *   toolResultSizes?: {count: number, sumBytes: number, p50Bytes: number, p90Bytes: number, maxBytes: number},
  *   fileReReadCount?: number, fileReReadTopPaths?: Array<{reads: number, path: string}>,
@@ -462,7 +462,7 @@ function renderCostReportModelMix(breakdown) {
 /** @param {CostBreakdown | undefined} breakdown */
 function renderCostReportConversation(breakdown) {
   const conv = breakdown?.conversation || {};
-  return [
+  const lines = [
     "",
     "## Conversation Shape",
     "",
@@ -473,6 +473,14 @@ function renderCostReportConversation(breakdown) {
     `- skill_invocations: ${conv.skillInvocations ?? 0}`,
     `- subagent_dispatches: ${conv.subagentDispatches ?? 0}`
   ];
+  if (conv.subagentDispatchesByRole && Object.keys(conv.subagentDispatchesByRole).length > 0) {
+    lines.push("- subagent_dispatches_by_role:");
+    const sorted = Object.entries(conv.subagentDispatchesByRole).sort((a, b) => b[1] - a[1]);
+    for (const [role, count] of sorted) {
+      lines.push(`  - ${role}: ${count}`);
+    }
+  }
+  return lines;
 }
 
 /** @param {CostBreakdown | undefined} breakdown */

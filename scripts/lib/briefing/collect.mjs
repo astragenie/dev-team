@@ -480,6 +480,42 @@ function parseTokenFields(text, fm) {
   };
 }
 
+/**
+ * Parse the subagent_dispatches_by_role block from cost-report text.
+ * Handles two layouts:
+ *  (a) inside ## Conversation Shape — rendered by renderCostReportConversation
+ *  (b) inside ## Subagent Role Breakdown — used by test helpers and legacy variants
+ *
+ * Both emit lines of the form:
+ *   - subagent_dispatches_by_role:
+ *     - <role>: <count>
+ *
+ * @param {string} text
+ * @returns {Record<string, number>}
+ */
+function parseRoleDispatches(text) {
+  // Find the start of the subagent_dispatches_by_role key anywhere in the text.
+  const keyIdx = text.indexOf("- subagent_dispatches_by_role:");
+  if (keyIdx === -1) return {};
+
+  /** @type {Record<string, number>} */
+  const out = {};
+  // Walk lines after the key, collecting indented "  - role: count" entries.
+  // Role names may contain colons (e.g. "crew:builder"), so match the LAST
+  // ": <digits>" segment to split role from count.
+  const afterKey = text.slice(keyIdx + 1);
+  for (const line of afterKey.split(/\r?\n/)) {
+    const m = line.match(/^\s{2,}-\s+(.+):\s*(\d+)\s*$/);
+    if (m) {
+      out[m[1].trim()] = Number(m[2]);
+    } else if (line.match(/^-\s+\S/) || line.match(/^##/)) {
+      // Hit a sibling bullet or a new section — stop collecting.
+      break;
+    }
+  }
+  return out;
+}
+
 /** @param {string} text */
 function parseDiagnosticFields(text) {
   return {
@@ -491,7 +527,8 @@ function parseDiagnosticFields(text) {
     fileReReadCount: bodyNum(text, /^- redundant_read_count:\s*(\d+)/m),
     sessionsScanned: bodyNum(text, /^- Sessions Scanned:\s*(\d+)/m),
     toolResultP90: bodyNum(text, /##\s+Tool Result Sizes[\s\S]*?-\s+p90:\s*([\d,]+)/),
-    messages: Number(text.match(/^- Assistant Messages Counted:\s*(\d+)/m)?.[1] || 0)
+    messages: Number(text.match(/^- Assistant Messages Counted:\s*(\d+)/m)?.[1] || 0),
+    roleDispatches: parseRoleDispatches(text)
   };
 }
 
@@ -539,7 +576,8 @@ function parseCostReportText(filePath, text) {
     fileReReadCount,
     sessionsScanned,
     toolResultP90,
-    messages
+    messages,
+    roleDispatches
   } = diag;
   const {
     gradeAvg,
@@ -612,6 +650,7 @@ function parseCostReportText(filePath, text) {
     gradeAvg,
     reviewDecision,
     validationDecision,
+    roleDispatches,
     flags,
     flagsStr: flags.join(" / "),
     hasFlags: flags.length > 0
@@ -722,6 +761,23 @@ function dedupeForRollup(reports) {
 }
 
 /**
+ * Aggregate subagent role dispatch counts across a set of cost reports.
+ * @param {ReturnType<typeof parseCostReportText>[]} reports
+ * @returns {Record<string, number>}
+ */
+function aggregateRoleDispatches(reports) {
+  /** @type {Record<string, number>} */
+  const out = {};
+  for (const r of reports) {
+    if (!r.roleDispatches) continue;
+    for (const [role, count] of Object.entries(r.roleDispatches)) {
+      out[role] = (out[role] ?? 0) + count;
+    }
+  }
+  return out;
+}
+
+/**
  * @param {string} repoPath
  * @param {number} [limit]
  */
@@ -735,7 +791,8 @@ export async function collectRecentCosts(repoPath, limit = 5) {
     return {
       recent: /** @type {ReturnType<typeof parseCostReportText>[]} */ ([]),
       totalReports: 0,
-      dedupedCount: 0
+      dedupedCount: 0,
+      roleDispatches: /** @type {Record<string, number>} */ ({})
     };
 
   /** @type {ReturnType<typeof parseCostReportText>[]} */
@@ -790,6 +847,7 @@ export async function collectRecentCosts(repoPath, limit = 5) {
     sumUsdRecent: Number(totalUsd.toFixed(4)),
     avgUsdRecent: avgUsd,
     modelBurn,
+    roleDispatches: aggregateRoleDispatches(rollupSet),
     diagnostics: recent.filter((r) => r.hasFlags)
   };
 }
