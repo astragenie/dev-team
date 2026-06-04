@@ -42,6 +42,7 @@ I do not own:
 - API documentation authoring (OpenAPI specs, SDK guides, error docs) → `skills/workflow/api-documentation/`
 - Diagram authoring (flowcharts, sequence diagrams, ERDs, architecture) → `skills/domain/diagram-methodology/`
 - Prompt and skill description authoring → `skills/domain/prompt-engineering/`
+- API design concerns in documentation → `skills/domain/backend-advisory/`
 
 ## Delegation map
 

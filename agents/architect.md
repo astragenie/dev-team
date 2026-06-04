@@ -46,6 +46,8 @@ I do not own:
 - Brainstorming / option divergence → `skills/universal/brainstorming/`
 - Database schema, migrations, technology selection, multi-tenancy → `skills/domain/database-architecture/`
 - Cloud infra design (landing zone, IAM, network topology, DR, cost optimization) → `skills/domain/cloud-architecture/`
+- IaC architecture concerns (Terraform, Bicep, Helm) → `skills/domain/devops-engineering/`
+- Diagram authoring (architecture, flowcharts, ERDs) → `skills/domain/diagram-methodology/`
 
 ## Delegation map
 

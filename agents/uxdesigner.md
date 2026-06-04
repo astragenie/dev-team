@@ -42,6 +42,8 @@ I do not own:
 - UX research, persona work, interaction design, accessibility audit → `skills/domain/ux-methodology/`
 - Brainstorming / option divergence → `skills/universal/brainstorming/`
 - Authoring a new skill or design pattern → `skills/meta/skill-creator/`
+- UX research synthesis → `skills/workflow/research-coordination/`
+- React implementation handoff → `skills/domain/react-engineering/`
 
 ## Delegation map
 

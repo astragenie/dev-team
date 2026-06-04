@@ -40,6 +40,10 @@ Stay strictly within assigned scope:
 - `*.ts` / `*.tsx` edit → `skills/domain/typescript-pro/`
 - React component / hooks / state management code (`*.tsx`, `*.jsx`) → `skills/domain/react-engineering/`
 - AI app / LLM SDK code → `skills/domain/ai-engineering/`
+- Authoring or editing a SKILL.md → `skills/meta/skill-creator/`
+- IaC change (Terraform, Bicep, Helm, Ansible) → `skills/domain/devops-engineering/`
+- Terraform HCL authoring or operational issue → `skills/domain/terraform-ops-traps/`
+- Schema design / migration / database performance → `skills/domain/database-architecture/`
 
 ## TDD policy
 

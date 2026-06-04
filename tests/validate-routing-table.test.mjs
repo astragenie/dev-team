@@ -110,3 +110,78 @@ test("env-skip: no env var set exits 0 with skip message", async () => {
   assert.equal(result.status, 0, `Expected exit 0 when env not set, got ${result.status}`);
   assert.match(result.stdout, /skipped/, "Should print skip message");
 });
+
+// Fixture-based cross-check tests (consistency validator)
+
+const fixturesBase = path.join(repoRoot, "tests", "fixtures", "validate-routing-table");
+
+/**
+ * Run the script against an in-tree fixture directory.
+ * The fixture provides routing-table.md under docs/ and agents/ under agents/.
+ * @param {string} fixtureDir absolute path to the fixture directory
+ */
+function runFixture(fixtureDir) {
+  const env = {
+    ...process.env,
+    CREW_VALIDATE_ROUTING_TABLE: "1",
+    CREW_VALIDATE_ROUTING_TABLE_FILE: path.join(fixtureDir, "docs", "routing-table.md"),
+    CREW_VALIDATE_ROUTING_TABLE_REPO_ROOT: fixtureDir,
+    // Use a non-existent plugins JSON so ID-resolution doesn't flag external skills
+    CREW_VALIDATE_ROUTING_TABLE_PLUGINS_JSON: path.join(fixtureDir, "no-plugins.json")
+  };
+  return spawnSync("node", [scriptPath], { env, encoding: "utf8" });
+}
+
+test("consistency-pass: aligned row and agent block exits 0", () => {
+  const result = runFixture(path.join(fixturesBase, "consistency-pass"));
+  assert.equal(
+    result.status,
+    0,
+    `Expected exit 0 for aligned fixture. stdout: ${result.stdout} stderr: ${result.stderr}`
+  );
+});
+
+test("consistency-fail: missing skill in agent block exits 1 with actionable error", () => {
+  const result = runFixture(path.join(fixturesBase, "consistency-fail"));
+  assert.equal(
+    result.status,
+    1,
+    `Expected exit 1 for mismatched fixture. stdout: ${result.stdout} stderr: ${result.stderr}`
+  );
+  const output = result.stdout + result.stderr;
+  assert.match(output, /go-pro/, "Error should name the missing skill path");
+  assert.match(output, /builder/, "Error should name the agent");
+});
+
+test("consistency-ignore: routing-lint:ignore row skips cross-check exits 0", () => {
+  const result = runFixture(path.join(fixturesBase, "consistency-ignore"));
+  assert.equal(
+    result.status,
+    0,
+    `Expected exit 0 for ignored row. stdout: ${result.stdout} stderr: ${result.stderr}`
+  );
+});
+
+test("consistency-multi: row with 2 skills, agent has 1, exits 1 for missing skill", () => {
+  const result = runFixture(path.join(fixturesBase, "consistency-multi"));
+  assert.equal(
+    result.status,
+    1,
+    `Expected exit 1 for multi-skill mismatch. stdout: ${result.stdout} stderr: ${result.stderr}`
+  );
+  const output = result.stdout + result.stderr;
+  assert.match(
+    output,
+    /prompt-engineering/,
+    "Error should name the missing prompt-engineering skill"
+  );
+});
+
+test("consistency-non-crew: non-crew route-to is skipped exits 0", () => {
+  const result = runFixture(path.join(fixturesBase, "consistency-non-crew"));
+  assert.equal(
+    result.status,
+    0,
+    `Expected exit 0 for non-crew agent row. stdout: ${result.stdout} stderr: ${result.stderr}`
+  );
+});
