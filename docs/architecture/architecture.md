@@ -38,6 +38,10 @@ Rules:
 4. Repo overrides plugin on conflict.
 5. Task skills never persist.
 
+### Domain tier: advisory packs
+
+The `domain/` tier hosts both stack-bound skills (e.g., `dotnet`, `flutter`) and **advisory packs** — subject-area discipline guides (`backend-advisory`, `security-advisory`, `prompt-engineering`, etc.) sourced from third-party authors. Advisory packs declare a `source:` + `source_version:` frontmatter pair for drift visibility against upstream. See `docs/operations/3rdparty-source-list.md` for the full distribution map.
+
 ### External plugin skills as routed dependencies
 
 Skills from upstream plugins (`context7`, `microsoft-docs:*`, `plugin-dev:*`, `terraform-code-generation:*`, `terraform-module-generation:*`, etc.) are wired into crew agents **by routing-table row**, never by inlining their content into agent prompts. The pattern:

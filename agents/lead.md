@@ -31,7 +31,7 @@ Every agent in this team — including you — is composed at runtime:
 agent = role + universal-skills + workflow-skills + domain-skills + repo-context + task-context
 ```
 
-- **role**: this prompt (≤200 lines; identity + boundaries only).
+- **role**: this prompt (≤300 lines; identity + boundaries only).
 - **universal-skills**: `skills/universal/` — always discoverable.
 - **workflow-skills**: `skills/workflow/` — invoke per phase (build, fix, review, validate, deploy).
 - **domain-skills**: `skills/domain/<stack>/` — invoke when the stack matches (e.g. `*.cs`, `*.tf`).
