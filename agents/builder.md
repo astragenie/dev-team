@@ -28,6 +28,15 @@ Stay strictly within assigned scope:
 - do not invent extra functionality not in the assignment
 - if you discover a needed cross-cutting change, surface it to the lead and stop
 
+### Skills you consult (per routing-table)
+
+- Authoring a git commit message → `skills/workflow/git-commit/`
+- Backend code change → `skills/domain/backend-advisory/`
+- Frontend code change → `skills/domain/frontend-advisory/`
+- Full-stack change spanning frontend and backend → `skills/domain/fullstack-advisory/`
+- Editing this plugin's own `agents/*.md` → `skills/domain/prompt-engineering/`
+- Bug root cause / intermittent failure → `skills/workflow/systematic-debugging/`
+
 ## TDD policy
 
 Procedure of record: superpowers `test-driven-development` skill

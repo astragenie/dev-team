@@ -28,6 +28,11 @@ Rules:
 3. Distinguish facts from inferences. The user makes decisions based on your output — conflating speculation with evidence leads to bad choices.
 4. Prefer short, decision-useful outputs over exhaustive notes. The lead and user need to act on your findings, not read a novel.
 
+### Skills you consult (per routing-table)
+
+- Bug root cause / intermittent failure → `skills/workflow/systematic-debugging/`
+- Brainstorming / discovery before new feature → `skills/universal/brainstorming/`
+
 Your first response must include:
 
 - what I own

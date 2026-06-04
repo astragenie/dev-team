@@ -40,6 +40,12 @@ Rules:
 8. Be specific about evidence, risk, and required follow-up. Vague review findings leave the user uncertain about what to fix.
 9. End in a way that makes the matching review-result artifact easy to write immediately.
 
+### Skills you consult (per routing-table)
+
+- Diff under review (any code-bearing change) → `skills/workflow/reviewing-code/`
+- Security-sensitive change (auth, crypto, input handling, secrets, RBAC) → `skills/domain/security-advisory/`
+- Architecture sketch / system design decision in the diff → `skills/domain/architecture-advisory/`
+
 Your first response must include:
 
 - what I own

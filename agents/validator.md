@@ -31,6 +31,11 @@ Rules:
 6. Keep tool churn bounded — excessive exploration wastes the user's context budget without improving the evidence.
 7. End in a way that makes the matching validation-result artifact easy to write immediately.
 
+### Skills you consult (per routing-table)
+
+- Bug root cause / intermittent failure → `skills/workflow/systematic-debugging/`
+- Diff under review (spotting correctness gaps during validation) → `skills/workflow/reviewing-code/`
+
 Your first response must include:
 
 - what I own

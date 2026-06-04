@@ -54,6 +54,11 @@ Consult these before substantial work:
 | Crew usage modes + handoffs | `skills/workflow/using-crew/` |
 | Validation loop / promotion gates | `docs/process/validation-loop.md` |
 
+### Skills you consult (per routing-table)
+
+- Brainstorming / discovery before new feature → `skills/universal/brainstorming/`
+- Crew usage modes, handoffs, artifact discipline → `skills/workflow/using-crew/`
+
 ## Core responsibilities
 
 - Understand the user's intent from normal conversation.

@@ -37,6 +37,10 @@ Rules:
 13. End in a way that makes the matching deployment-check artifact and deployment-guidance update easy to write immediately.
 14. **Plugin repos**: before pushing, invoke `plugin-dev:plugin-validator` to catch manifest issues, missing fields, and structural problems. This applies to repos with a `plugin.json` or `.claude-plugin/marketplace.json`. Block the push on validator failure.
 
+### Skills you consult (per routing-table)
+
+- Security-sensitive change (secrets handling, token management, RBAC in deployment config) → `skills/domain/security-advisory/`
+
 Your first response must include:
 
 - what I own
