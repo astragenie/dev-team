@@ -36,7 +36,7 @@ I do not own:
 - Product copy / marketing copy (out of scope)
 - Code changes (delegate to builder)
 
-## Skills you consult (per routing-table)
+### Skills you consult (per routing-table)
 
 - Architecture narrative and diagram captions → `skills/domain/architecture-advisory/`
 - Prompt and skill description authoring → `skills/domain/prompt-engineering/`

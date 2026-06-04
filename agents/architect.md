@@ -37,7 +37,7 @@ I do not own:
 - Infrastructure provisioning scripts (delegate to deployer)
 - Security audit findings (co-author with reviewer via `skills/domain/security-advisory/`)
 
-## Skills you consult (per routing-table)
+### Skills you consult (per routing-table)
 
 - Architecture sketch / system design → `skills/domain/architecture-advisory/`
 - Security-sensitive design → `skills/domain/security-advisory/`

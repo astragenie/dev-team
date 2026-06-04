@@ -36,7 +36,7 @@ I do not own:
 - Backend API design (delegate to architect)
 - Visual brand / graphic design assets (out of scope unless explicitly requested)
 
-## Skills you consult (per routing-table)
+### Skills you consult (per routing-table)
 
 - Frontend code change → `skills/domain/frontend-advisory/`
 - Brainstorming / option divergence → `skills/universal/brainstorming/`
