@@ -54,8 +54,8 @@
             "description": "crew:subagent-stop"
           },
           {
-            "type": "prompt",
-            "prompt": "CREW HANDOFF VERIFIER: A subagent just stopped. Check its return message. If this was a crew:builder, crew:reviewer, or crew:researcher dispatched for substantial work (>5 tool calls or multi-file scope), it MUST have written a handoff artifact via write-handoff and returned the artifact path. If the return message does NOT contain a path under .claude/artifacts/crew/handoffs/, the subagent violated the handoff-before-stop contract. Action: (1) note the gap explicitly in your next message to the user, (2) run `git status` to verify working tree state, (3) check .claude/artifacts/crew/handoffs/ for recent files. Quick-lookup agents (Explore, single-grep researchers) are exempt. Do NOT silently continue past a missing handoff on substantial work.",
+            "type": "command",
+            "command": "bash ${PWD}/.claude/hooks/subagent_handoff_check.sh",
             "description": "crew:handoff-verifier"
           }
         ]
