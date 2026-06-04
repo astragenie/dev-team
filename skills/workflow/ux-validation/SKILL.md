@@ -3,6 +3,8 @@ name: ux-validation
 tier: workflow
 description: Auto-triggered by crew:validator when slice tags include surface:ui, concern:ux, or concern:accessibility. Drives Playwright via gstack:/qa, axe-core accessibility scan, console+404 scrape, and visual regression diff. Returns raw evidence; lead pivots per routing-table.
 triggers: ["surface:ui", "concern:ux", "concern:accessibility", "validation phase UI"]
+owner: validator
+last_reviewed: 2026-06-04
 ---
 
 # UX Validation Gate
@@ -18,7 +20,7 @@ results or recommend a pivot target. The lead reads the validation
 result + `ux-evidence.json` and pivots per
 `docs/routing-table.md` rows 84, 95, 39, 45.
 
-## When to invoke
+## When to Use
 
 Detect at validator slice-start:
 
@@ -118,3 +120,14 @@ The skill returns raw evidence. Pivot decision lives in
 | `visual.diffs[*]` over tolerance | row 84 → `/crew:fix` + frontend-advisory |
 | `network.failures[*]` | row 84 → `/crew:fix` |
 | Multiple categories | lead splits per Pre-dispatch decomposition rule |
+
+## Done
+
+Skill exits successfully when one of these terminal states is reached:
+
+- **passed:** validation-result written with `decision: passed`, badge `validation_passed` marked, control returned to lead.
+- **passed_with_notes:** validation-result written with `decision: passed_with_notes`, badge `validation_passed` marked with note count, control returned to lead.
+- **failed:** validation-result written with `decision: failed`, badge `validation_failed` marked with short failure summary, control returned to lead (who pivots per the routing-table mapping above).
+- **skipped:** any condition from the Skip + error cases table — badge `validation_skipped` marked with the documented note, control returned to lead.
+
+The skill never amends prior validation artifacts and never recommends a pivot target. Done means evidence + verdict + badge are all written and the lead has the artifact path.
