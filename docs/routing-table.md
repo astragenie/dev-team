@@ -50,6 +50,9 @@ Anything ambiguous, blocked, or spanning multiple tiers routes to **lead** for r
 | **Backend code change** (server-side logic, API handlers, data layer, service orchestration) | builder | Load `skills/domain/backend-advisory/` for backend patterns and quality bar. |
 | **Frontend code change** (UI components, client-side logic, CSS, browser-rendered output) | builder | Load `skills/domain/frontend-advisory/` for frontend patterns and quality bar. |
 | **Full-stack change spanning both frontend and backend** (shared data shape, API + UI wired end-to-end) | builder | Load `skills/domain/fullstack-advisory/` for cross-layer coherence checks. Pairs with backend and frontend advisory rows when the diff touches both surfaces separately. |
+| **Python code change** (`*.py` file edit, FastAPI/Django/Flask service, data pipeline) | builder | Load `skills/domain/python-pro/` for type-safe, async, Pythonic patterns and quality bar. |
+| **TypeScript / TSX code change** (`*.ts` / `*.tsx` file edit, any framework or runtime) | builder | Load `skills/domain/typescript-pro/` for advanced type system patterns, full-stack type safety, and build tooling guidance. |
+| **AI app / LLM SDK code** (Anthropic / OpenAI SDK imports, prompt engineering infra, agent frameworks, model training or inference code) | builder | Load `skills/domain/ai-engineering/` for end-to-end AI system guidance. Co-cite `skills/domain/prompt-engineering/` for prompt-authoring concerns. |
 | **UX / UI design** (layout decisions, user flows, interaction design, component wireframes) | `agents/uxdesigner.md` stub | Load `skills/domain/frontend-advisory/`. UXDesigner stub delegates to `agents/3rdparty/{ui-ux-designer,expert-react-frontend-engineer,frontend-developer}.md` via Agent tool. |
 
 ---

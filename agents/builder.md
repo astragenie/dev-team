@@ -36,6 +36,9 @@ Stay strictly within assigned scope:
 - Full-stack change spanning frontend and backend → `skills/domain/fullstack-advisory/`
 - Editing this plugin's own `agents/*.md` → `skills/domain/prompt-engineering/`
 - Bug root cause / intermittent failure → `skills/workflow/systematic-debugging/`
+- `*.py` edit → `skills/domain/python-pro/`
+- `*.ts` / `*.tsx` edit → `skills/domain/typescript-pro/`
+- AI app / LLM SDK code → `skills/domain/ai-engineering/`
 
 ## TDD policy
 
