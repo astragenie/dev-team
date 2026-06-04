@@ -176,3 +176,59 @@ test("computeVerdict returns passed when visual diff under tolerance", () => {
   };
   assert.equal(computeVerdict(ev), "passed");
 });
+
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { discoverPlaywrightConfig } from "../scripts/lib/ux-validation/index.mjs";
+
+async function tmpRepo(prefix) {
+  return await fs.mkdtemp(path.join(os.tmpdir(), prefix));
+}
+
+test("discoverPlaywrightConfig returns null when no config present", async () => {
+  const repo = await tmpRepo("ux-disc-none-");
+  assert.equal(await discoverPlaywrightConfig(repo), null);
+});
+
+test("discoverPlaywrightConfig reads URL from playwright.config.ts", async () => {
+  const repo = await tmpRepo("ux-disc-ts-");
+  await fs.writeFile(
+    path.join(repo, "playwright.config.ts"),
+    `export default { use: { baseURL: "http://localhost:4321" } };`
+  );
+  const result = await discoverPlaywrightConfig(repo);
+  assert.equal(result.url, "http://localhost:4321");
+});
+
+test("discoverPlaywrightConfig reads URL from playwright.config.js", async () => {
+  const repo = await tmpRepo("ux-disc-js-");
+  await fs.writeFile(
+    path.join(repo, "playwright.config.js"),
+    `module.exports = { use: { baseURL: "http://localhost:5555" } };`
+  );
+  const result = await discoverPlaywrightConfig(repo);
+  assert.equal(result.url, "http://localhost:5555");
+});
+
+test("discoverPlaywrightConfig falls back to package.json scripts when no config file", async () => {
+  const repo = await tmpRepo("ux-disc-pkg-");
+  await fs.writeFile(
+    path.join(repo, "package.json"),
+    JSON.stringify({
+      name: "x",
+      scripts: { dev: "next dev -p 3000", playwright: "playwright test" }
+    })
+  );
+  const result = await discoverPlaywrightConfig(repo);
+  assert.equal(result.url, "http://localhost:3000");
+});
+
+test("discoverPlaywrightConfig returns null when config file lacks baseURL", async () => {
+  const repo = await tmpRepo("ux-disc-no-url-");
+  await fs.writeFile(
+    path.join(repo, "playwright.config.ts"),
+    `export default { use: {} };`
+  );
+  assert.equal(await discoverPlaywrightConfig(repo), null);
+});
