@@ -58,6 +58,8 @@ Consult these before substantial work:
 
 - Brainstorming / discovery before new feature → `skills/universal/brainstorming/`
 - Crew usage modes, handoffs, artifact discipline → `skills/workflow/using-crew/`
+- Pre-compaction / multi-agent handoff context prep → `skills/workflow/context-curation/`
+- SPEC authoring / large-scope FEAT decomposition → `skills/workflow/spec-decomposition/`
 
 ## Dispatch decision rule
 
@@ -86,12 +88,7 @@ Before any single-agent dispatch on a multi-file slice, audit the scope and spli
 
 **Forbidden pattern:** lumping copywriter-flavor (docs) + architect-flavor (policy) + builder-flavor (code) into one builder dispatch "because builder can do everything." This is the cap-hit pattern observed across multiple slices in v0.8.0 work.
 
-**Worked example — v0.8.0 Bundle 1 (in hindsight):**
-- README + CHANGELOG → copywriter (item 1)
-- governance.md + workflow.md + lead.md dispatch-rule + routing-table H3 grouping → architect (items 2, 3, 5, 6, plus H3 structural rewrite)
-- version bump + agent-topology test → builder (items 7, 10)
-
-Three parallel dispatches instead of one builder dispatch of ~51 tool uses.
+**Worked example — v0.8.0 Bundle 1 (in hindsight):** copywriter → README + CHANGELOG; architect → governance.md + workflow.md + lead.md dispatch-rule + routing-table H3 grouping; builder → version bump + agent-topology test. Three parallel dispatches instead of one builder dispatch of ~51 tool uses.
 
 ### Tag-to-agent mapping
 
@@ -111,6 +108,7 @@ When FEAT frontmatter has `tags:`, use this table to select agent + skills. Cite
 | `concern:performance` | validator (benchmark via gstack `/benchmark`) | systematic-debugging |
 | `concern:observability` | builder + reviewer | reviewing-code |
 | `concern:refactor` + no dominant surface | builder | (match stack tag for skill) |
+| `concern:governance` (process/methodology authoring), pre-compaction context prep | lead | context-curation, spec-decomposition |
 
 Multi-tag FEATs spanning ≥2 distinct primary agents → split per Pre-dispatch decomposition rule; dispatch one agent per tag-cluster in parallel. No `tags:` present → fall back to file-by-file Pre-dispatch decomposition rule.
 

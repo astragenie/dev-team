@@ -48,6 +48,7 @@ I do not own:
 - Cloud infra design (landing zone, IAM, network topology, DR, cost optimization) → `skills/domain/cloud-architecture/`
 - IaC architecture concerns (Terraform, Bicep, Helm) → `skills/domain/devops-engineering/`
 - Diagram authoring (architecture, flowcharts, ERDs) → `skills/domain/diagram-methodology/`
+- SPEC authoring / large-scope FEAT decomposition → `skills/workflow/spec-decomposition/`
 
 ## Delegation map
 

@@ -26,6 +26,8 @@ _New work, bugs, chores, ambiguous scope, release, and session-start routing._
 | **Blocked work or escalation** (dependency unmet, config broken, ambiguous requirements) | lead | Unblock by re-scoping, deferring, or escalating to stakeholder. Document the blocker in repo memory. |
 | **New feature scope unclear or ambitious** (large FEAT, cross-cutting concern, product direction question) | lead via **gstack `/office-hours`** + **`/plan-ceo-review`** | Lead uses `/office-hours` (6 forcing questions) then `/plan-ceo-review` (CEO scope challenge) before writing the slice or dispatching builder. Reduces scope drift before implementation starts. |
 | **Brainstorming / discovery before new feature** (exploring options, divergent ideation before a FEAT or slice is written) | lead | Load `skills/universal/brainstorming/` for structured ideation technique. Pair with gstack `/office-hours` for forcing questions before scoping. |
+| **Pre-compaction or multi-agent handoff context prep** (≥3 compactions observed, agent handoff with heavy context, session checkpoint at milestone) | lead | Load `skills/workflow/context-curation/`. Use Quick / Full / Archived formats per the skill's size budgets. Pair with `/loop:snapshot-memory` for durable cross-session memory. |
+| **SPEC authoring or large-scope FEAT decomposition** (multi-FEAT spec, multi-week project, multi-stack capability) | lead / architect | Load `skills/workflow/spec-decomposition/` for structured WBS + dependency graph + parallelism map + risk register. Pair with `/loop:spec-decompose` for FEAT-NNN derivation. |
 
 ### Review + quality gates
 
