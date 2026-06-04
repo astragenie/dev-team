@@ -50,3 +50,37 @@ test("extractACs stops at next ## header", () => {
     { id: "AC-1", text: "first" }
   ]);
 });
+
+import { classifyScenario } from "../scripts/lib/ux-validation/index.mjs";
+
+test("classifyScenario detects interaction verbs", () => {
+  assert.equal(classifyScenario("user can click submit"), "interaction");
+  assert.equal(classifyScenario("tap the button"), "interaction");
+  assert.equal(classifyScenario("press enter to submit"), "interaction");
+  assert.equal(classifyScenario("submit the form"), "interaction");
+});
+
+test("classifyScenario detects visibility verbs", () => {
+  assert.equal(classifyScenario("see the welcome banner"), "visibility");
+  assert.equal(classifyScenario("renders product list"), "visibility");
+  assert.equal(classifyScenario("displays error message"), "visibility");
+  assert.equal(classifyScenario("shows loading spinner"), "visibility");
+});
+
+test("classifyScenario detects navigation verbs", () => {
+  assert.equal(classifyScenario("navigate to /dashboard"), "navigation");
+  assert.equal(classifyScenario("go to settings page"), "navigation");
+  assert.equal(classifyScenario("route to /profile"), "navigation");
+});
+
+test("classifyScenario detects input verbs", () => {
+  assert.equal(classifyScenario("type email address"), "input");
+  assert.equal(classifyScenario("fill username field"), "input");
+  assert.equal(classifyScenario("enter password"), "input");
+});
+
+test("classifyScenario falls back to non_ui_ac on no match", () => {
+  assert.equal(classifyScenario("total cost equals sum"), "non_ui_ac");
+  assert.equal(classifyScenario("database row count is 3"), "non_ui_ac");
+  assert.equal(classifyScenario(""), "non_ui_ac");
+});
