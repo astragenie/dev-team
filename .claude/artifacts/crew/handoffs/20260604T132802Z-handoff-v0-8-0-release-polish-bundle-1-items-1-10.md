@@ -1,0 +1,33 @@
+# Task Handoff: v0.8.0 release polish — Bundle 1 (items 1–10)
+
+- Created: 2026-06-04T13:28:02.335Z
+- From: builder
+- To: lead
+- Objective: All 10 polish items implemented: README+CHANGELOG updated for 9-agent/34-skill topology, governance and workflow docs extended, routing-table H3-grouped, lead dispatch rule added, version bumped to 0.8.0, and topology test pinning 9 agents added (249 tests passing).
+- Allowed Scope:
+  - Items 1–10 of the v0.8.0 release polish bundle: README
+  - CHANGELOG
+  - docs/governance.md
+  - .claude/crew/workflow.md
+  - docs/routing-table.md
+  - agents/lead.md
+  - package.json
+  - .claude-plugin/marketplace.json + .claude-plugin/plugin.json
+  - tests/agent-topology.test.mjs (new)
+- Forbidden Scope: -
+- Deliverable: README updated (9 agents, 34 skills, v0.8.0 pin, structure block); CHANGELOG v0.8.0 section; governance autonomous_safe policy; workflow.md architect/uxdesigner/copywriter phases + non-code review gate; routing-table 9 H3 categories (62 rows preserved); lead.md dispatch decision rule; version 0.8.0 in package.json + marketplace.json + plugin.json; topology test (2 new passing tests); all CI gates green
+- Changed Files:
+  - README.md
+  - CHANGELOG.md
+  - docs/governance.md
+  - .claude/crew/workflow.md
+  - docs/routing-table.md
+  - agents/lead.md
+  - package.json
+  - .claude-plugin/marketplace.json
+  - .claude-plugin/plugin.json
+  - tests/agent-topology.test.mjs
+- Confidence: high
+- Risks: none
+- Suggested Next Handoff: Bundle 2 dispatch: items 11 (per-role cost-report breakdown) and 12 (CREW_VALIDATE_ROUTING_TABLE always-on in CI). After that, cut the v0.8.0 annotated tag and push with --follow-tags per CLAUDE.md release workflow.
+

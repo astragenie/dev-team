@@ -6,11 +6,14 @@
 2. retrieve bounded wake-up context before substantial work
 3. choose mode: single-session, assisted single-session, or team run
 4. define task ownership and scope
-5. implement or investigate in bounded chunks
-6. review code-bearing work before calling it done
-7. validate behavior when it can be exercised meaningfully
-8. gather deployment evidence when shipping through environments
-9. leave a final synthesis
+5. **architect phase** _(conditional — skip if no ADR / system design / schema / API contract is needed)_ — produces ADR or design artifact before implementation starts; lead decides at framing time
+6. **uxdesigner phase** _(conditional — skip if no UI surface)_ — produces flow spec or component hierarchy before implementation starts
+7. implement or investigate in bounded chunks
+8. review code-bearing work before calling it done
+9. validate behavior when it can be exercised meaningfully
+10. **copywriter phase** _(conditional — skip if no customer-visible docs / release notes)_ — produces doc artifact after validation, before deploy
+11. gather deployment evidence when shipping through environments
+12. leave a final synthesis
 
 ## Default Gate Policy
 
@@ -20,6 +23,7 @@ Each gate protects the user from a different class of risk. Skipping a gate sile
 - runnable, observable, or user-visible behavior changed -> validation expected (protects from shipping broken behavior)
 - deployment or promotion work -> deployment evidence expected (protects from unverified environment state)
 - production promotion -> explicit user approval required (protects the user's production systems)
+- substantial non-code deliverable changed (ADR, system design, UX flow spec, customer-visible docs, release notes) -> independent review expected; use `crew:reviewer` for content review the same way code-bearing changes go through review
 
 ## Write-Back Discipline
 

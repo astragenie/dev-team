@@ -8,8 +8,9 @@ A Claude Code plugin for lead-guided engineering work with bounded subagents, qu
 
 ## What it does
 
-Crew gives Claude Code a lead-centered workflow model:
+Crew gives Claude Code a lead-centered workflow model with **9 first-party agents** across 3 tiers:
 
+**Core workflow agents:**
 - **lead** — plans, delegates, synthesizes, paces
 - **builder** — implements bounded changes within assigned scope
 - **reviewer** — validates correctness, regressions, and scope drift
@@ -17,7 +18,12 @@ Crew gives Claude Code a lead-centered workflow model:
 - **validator** — checks runnable or observable behavior and returns evidence
 - **deployer** — manages environment transition evidence without deciding risky promotion alone
 
-Each agent has strict ownership rules, structured start/completion reports, and explicit handoffs.
+**Specialist agents (new in v0.8.0):**
+- **architect** — ADR authoring, system design, database schema, API contracts; delegates to 3rdparty specialists
+- **uxdesigner** — UI flows, component hierarchies, accessibility specs; delegates to 3rdparty specialists
+- **copywriter** — API docs, release notes, README polish, diagram captions; delegates to 3rdparty specialists
+
+Each agent has strict ownership rules, structured start/completion reports, and explicit handoffs. A library of **34 skills** across 4 tiers (`universal/`, `workflow/`, `domain/`, `meta/`) supplies the procedural knowledge agents load on demand.
 
 In practice, the highest-value default mode is:
 
@@ -51,7 +57,7 @@ The companion `loop` plugin lives in the same marketplace:
 /plugin install loop@astra
 ```
 
-Verify locally with `npm test`. Pinned release: `v0.7.1`.
+Verify locally with `npm test`. Pinned release: `v0.8.0`.
 
 > **Upgrading from `crew-dev` / `autonomous-loop`?** See [docs/process/rebrand-migration.md](docs/process/rebrand-migration.md) for the one-time uninstall + reinstall sequence. The `loop` plugin auto-migrates consumer-repo state (`.claude/autonomous-loop.json` → `.claude/loop.json`, CLAUDE.md markers) on first `/loop:install`.
 
@@ -267,9 +273,10 @@ Do **not** commit transient coordination state:
 ## Project structure
 
 ```
-agents/          — lead, builder, reviewer, researcher, validator, deployer
+agents/          — 9 first-party agents: lead, builder, reviewer, researcher, validator, deployer, architect, uxdesigner, copywriter
+agents/3rdparty/ — 21 vendored specialist agents (delegated to by architect, uxdesigner, copywriter)
 commands/        — small public surface plus internal/debug commands
-skills/          — reusable operating behaviors
+skills/          — 34 skills across universal/, workflow/, domain/, meta/ tiers
 hooks/           — event logging wiring
 scripts/         — CLI tooling and helpers
 docs/            — design docs and specs

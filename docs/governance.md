@@ -111,6 +111,23 @@ the count hits 3, open a backlog FEAT to promote it.
 
 ---
 
+## autonomous_safe policy for agent prompts
+
+Agent prompt files in `agents/` are **agent identity definitions** — they govern how an agent reasons, scopes its work, and communicates. Edits to them are not bounded code changes; they carry outsized risk of drift or scope confusion across every run.
+
+The following agent prompt files are declared `autonomous_safe: false` and require human-in-loop review even when picked by the autonomous loop:
+
+- `agents/lead.md` — user-facing coordinator; any change affects framing + gate decisions.
+- `agents/architect.md` — design + ADR output contract; prompt changes affect what artifacts get produced.
+- `agents/uxdesigner.md` — UX flow + component spec output contract; same risk class as architect.
+- `agents/copywriter.md` — docs + release-notes output contract; same risk class as architect.
+
+The reviewer must not be the same person (or agent session) that authored the change. A human must approve before any of these files are merged to `main`.
+
+All other agent prompts (`builder`, `reviewer`, `validator`, `deployer`, `researcher`) follow the same policy — they are also `autonomous_safe: false` because they define team trust boundaries (review independence, validation evidence, deployment gates).
+
+---
+
 ## Specialist agent admission — the three-test rule
 
 A new agent earns its keep **only when all three hold:**

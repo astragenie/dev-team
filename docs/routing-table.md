@@ -6,6 +6,10 @@ Anything ambiguous, blocked, or spanning multiple tiers routes to **lead** for r
 
 ---
 
+### Workflow signals
+
+_New work, bugs, chores, ambiguous scope, release, and session-start routing._
+
 | Signal | Route to | Notes |
 |---|---|---|
 | **New feature request** (FEAT-*, `feat:` in title) | lead + builder | Lead refines scope, sketches acceptance; builder picks up bounded implementation. Pair with `/crew:build` to auto-select bounded skills. |
@@ -18,49 +22,106 @@ Anything ambiguous, blocked, or spanning multiple tiers routes to **lead** for r
 | **Validation or behavior verification needed** (user-facing behavior changed, or tests added) | validator | Run the app, verify user-visible behavior, document evidence. Pair with `/verify` skill. |
 | **Ship or release** (merge, promote to production, tag release) | deployer + lead approval | Deployer owns the push; lead explicitly approves production-bound changes. Validation must be complete. |
 | **Production promotion** (any deployment to prod, customer environments, live traffic) | lead (explicit human approval required) | **Always** require explicit human sign-off before production-bound work merges or ships. No automation here. |
-| **Reviewer feedback / code quality gate** (PR review needed, lint check, "review this PR", "review my diff") | **`crew:reviewer` agent** (exact name) | Reviewer gates all code-bearing changes before merge. Feedback written as inline PR comments when possible. **Do not dispatch `caveman:cavecrew-reviewer`, `code-reviewer`, or other generically-named review agents for crew review phase** — they have overlapping trigger phrases ("review this PR") but do not honor the Crew review-artifact contract or `agents/reviewer.md` policy. Use them only for ad-hoc spot-checks outside `/crew:review`. |
 | **Session start / work planning** (new task, unclear next steps) | lead | Retrieve bounded context with `/crew:brief-me`. Define scope, assign to role, set pace. Avoid ambiguity at start. |
-| **Cost analysis or optimization** (expensive operations, token burn investigation) | researcher (read-only) + lead decision | Researcher investigates and reports; lead decides on action (optimize, accept, defer). |
 | **Blocked work or escalation** (dependency unmet, config broken, ambiguous requirements) | lead | Unblock by re-scoping, deferring, or escalating to stakeholder. Document the blocker in repo memory. |
-| **Library / API uncertainty** ("is method X still supported?", "current docs for Y", touching unfamiliar npm package, unsure of signature) | researcher / builder / reviewer via **context7 MCP** | Call `context7.resolve-library-id` then `context7.get-library-docs` before recommending or editing. Reviewer also consults context7 when verifying API claims in the diff under review. If context7 has no coverage for the library, fall back to general web docs rather than retrying. Pairs with `microsoft-docs:microsoft-code-reference` for MS-tech. Server pinned in `.mcp.json`. |
+| **New feature scope unclear or ambitious** (large FEAT, cross-cutting concern, product direction question) | lead via **gstack `/office-hours`** + **`/plan-ceo-review`** | Lead uses `/office-hours` (6 forcing questions) then `/plan-ceo-review` (CEO scope challenge) before writing the slice or dispatching builder. Reduces scope drift before implementation starts. |
+| **Brainstorming / discovery before new feature** (exploring options, divergent ideation before a FEAT or slice is written) | lead | Load `skills/universal/brainstorming/` for structured ideation technique. Pair with gstack `/office-hours` for forcing questions before scoping. |
+
+### Review + quality gates
+
+_Code review, quality enforcement, TDD, security, model-selection, and validation-skip decisions._
+
+| Signal | Route to | Notes |
+|---|---|---|
+| **Reviewer feedback / code quality gate** (PR review needed, lint check, "review this PR", "review my diff") | **`crew:reviewer` agent** (exact name) | Reviewer gates all code-bearing changes before merge. Feedback written as inline PR comments when possible. **Do not dispatch `caveman:cavecrew-reviewer`, `code-reviewer`, or other generically-named review agents for crew review phase** — they have overlapping trigger phrases ("review this PR") but do not honor the Crew review-artifact contract or `agents/reviewer.md` policy. Use them only for ad-hoc spot-checks outside `/crew:review`. |
 | **Plugin shape change** (diff touches `.claude-plugin/marketplace.json`, `plugin.json`, `agents/`, `commands/`, `hooks/`, or `.mcp.json`) | reviewer via **`plugin-dev:plugin-validator`** | Reviewer invokes `plugin-dev:plugin-validator` for manifest + structure review *alongside* the local CI gate `node ./scripts/validate-manifests.mjs` (the latter is hard-fail). Cite both in the review-result artifact. |
 | **Skill shape change** (diff touches any `skills/**/SKILL.md`) | reviewer via **`plugin-dev:skill-reviewer`** | Reviewer invokes `plugin-dev:skill-reviewer` for triggering-effectiveness + best-practice feedback, plus `node ./scripts/validate-skills.mjs` for the structural quality bar (tier, ≤200 lines, required headings). Both required when skills change. |
-| **Building / editing Microsoft SDK code** (Azure SDKs, .NET libs, M365 APIs, anything namespaced `Microsoft.*` / `Azure.*`) | builder via **`microsoft-docs:microsoft-code-reference`** | Verify method signatures + parameter shapes against official MS docs before committing. Catches hallucinated APIs that pass type-check but fail at runtime. Reviewer cross-checks on the way in. |
-| **Microsoft tech concept question** ("how does Cosmos partitioning work?", limits, quotas, configs, capabilities) | researcher via **`microsoft-docs:microsoft-docs`** | Authoritative MS lookup before web search. Use for understanding ("what is X") rather than code ("how do I call X" — that's microsoft-code-reference). |
-| **Subagent completion report** (any role finishing a delegated task) | role via `write-handoff` CLI | Agent calls `node ... crew.mjs write-handoff` via Bash; returns path + 1–3 sentence headline. Lead reads the full report from the path on demand. Inline returns re-inflate lead context. |
-| **Editing this plugin's own `agents/*.md`** (any change to lead/builder/reviewer/validator/deployer/researcher prompts) | builder via **`plugin-dev:agent-development`** | Catches frontmatter weakness, tool over-scope, weak `description:` triggers. Downstream reviewer gate: see existing **Plugin shape change** row — do **not** skip the reviewer step. Co-cite: `skills/domain/prompt-engineering/` for prompt-authoring discipline. |
-| **Editing this plugin's own `skills/**/SKILL.md`** (authoring new skills or modifying existing ones) | builder via **`plugin-dev:skill-development`** | Builder-side complement to FEAT-017's reviewer-side wiring. Pairs with `scripts/validate-skills.mjs` (CI gate, hard-fail) + downstream reviewer via **Skill shape change** row — do **not** skip the reviewer step. Co-cite: `skills/meta/skill-creator/` for skill-authoring methodology. |
-| **Terraform operational issue** (state drift, multi-env config drift, container `Restarting` after `apply`, TLS/ACME failure, fresh-instance bootstrap) | researcher + builder via **`crew:terraform-ops-traps`** ops-traps body + `references/{provisioner-traps,multi-env-isolation,zero-to-deploy}.md` | Operator-incident patterns with copy-paste fixes. Load `references/*.md` on demand for full HCL examples — the main skill body stays ≤200 lines. |
 | **TDD / test-adequacy enforcement on review** | `agents/reviewer.md` TDD gate + `scripts/crew.mjs` hard-gate in `write-review-result` | reviewer must populate `--test-summary` for approved code-bearing diffs; CLI exits non-zero otherwise. |
 | **Reviewer emitted validation-evidence note** | lead | skip `crew:validator` dispatch + record `validation_skipped` badge with `--note "reviewer emitted validation-evidence note"` (FEAT-030) |
 | **Slice opens (subagent dispatch ahead)** | lead | apply model-selection gate per `docs/standards/model-selection.md` — recommend Sonnet for spec-framed mechanical slices, Opus only for ambiguous architecture / hard refactor / design choice; surface recommendation in run-brief; track via `cost-report.modelMix` (FEAT-031) |
 | **Security-sensitive change** (auth, crypto, input handling, secrets, RBAC, token management) | reviewer via **gstack `/cso`** | Reviewer invokes `/cso` (OWASP + STRIDE audit) alongside normal review for security-bearing diffs. Complements crew review artifacts with security-specific findings. Co-cite: `skills/domain/security-advisory/` for subject-area discipline guide. |
-| **Web UI behavior changed** (frontend components, user-visible flows, browser-rendered output) | validator via **gstack `/qa`** | Validator invokes `/qa` for real Playwright browser testing instead of prompt-only validation. Produces observable evidence (screenshots, console output). |
-| **New feature scope unclear or ambitious** (large FEAT, cross-cutting concern, product direction question) | lead via **gstack `/office-hours`** + **`/plan-ceo-review`** | Lead uses `/office-hours` (6 forcing questions) then `/plan-ceo-review` (CEO scope challenge) before writing the slice or dispatching builder. Reduces scope drift before implementation starts. |
-| **Bug root cause unclear after initial triage** (intermittent failure, multi-layer interaction, repro-resistant) | researcher via **gstack `/investigate`** | Escalation path when `/crew:fix` hits a wall. gstack's `/investigate` applies structured debugging methodology. |
-| **Performance-sensitive change shipped** (latency-critical path, throughput regression risk, bundle size impact) | deployer / validator via **gstack `/benchmark`** | Gather perf evidence alongside deployment evidence. Run before and after to produce delta metrics. |
-| **Brainstorming / discovery before new feature** (exploring options, divergent ideation before a FEAT or slice is written) | lead | Load `skills/universal/brainstorming/` for structured ideation technique. Pair with gstack `/office-hours` for forcing questions before scoping. |
 | **Diff under review (any code-bearing change)** (reviewing a PR, diff, or completed implementation) | reviewer | Load `skills/workflow/reviewing-code/` for review procedure — correctness, regressions, scope drift, test-gap checks. Pairs with `plugin-dev:plugin-validator` and `plugin-dev:skill-reviewer` when the diff touches plugin shape or skills. |
-| **Authoring a git commit message** (after a code change is complete and staged) | builder | Load `skills/workflow/git-commit/` for commit-message format, conventional-commit style, and co-author footers. |
-| **Bug root cause / intermittent failure** (root cause not clear after first triage, multi-layer interaction, repro-resistant) | validator or researcher | Load `skills/workflow/systematic-debugging/` for structured root-cause tracing. Complements gstack `/investigate` as an escalation path. |
-| **Architecture sketch / system design** (ADR drafting, system design, capacity or topology decisions) | `agents/architect.md` stub | Load `skills/domain/architecture-advisory/`. Architect stub delegates to `agents/3rdparty/{backend-architect,database-architect,cloud-architect,api-architect,diagram-architect}.md` via Agent tool. |
+
+### Code & language
+
+_Language- and framework-specific build signals._
+
+| Signal | Route to | Notes |
+|---|---|---|
+| **Building / editing Microsoft SDK code** (Azure SDKs, .NET libs, M365 APIs, anything namespaced `Microsoft.*` / `Azure.*`) | builder via **`microsoft-docs:microsoft-code-reference`** | Verify method signatures + parameter shapes against official MS docs before committing. Catches hallucinated APIs that pass type-check but fail at runtime. Reviewer cross-checks on the way in. |
 | **Backend code change** (server-side logic, API handlers, data layer, service orchestration) | builder | Load `skills/domain/backend-advisory/` for backend patterns and quality bar. |
 | **Frontend code change** (UI components, client-side logic, CSS, browser-rendered output) | builder | Load `skills/domain/frontend-advisory/` for frontend patterns and quality bar. |
 | **Full-stack change spanning both frontend and backend** (shared data shape, API + UI wired end-to-end) | builder | Load `skills/domain/fullstack-advisory/` for cross-layer coherence checks. Pairs with backend and frontend advisory rows when the diff touches both surfaces separately. |
 | **Python code change** (`*.py` file edit, FastAPI/Django/Flask service, data pipeline) | builder | Load `skills/domain/python-pro/` for type-safe, async, Pythonic patterns and quality bar. |
 | **TypeScript / TSX code change** (`*.ts` / `*.tsx` file edit, any framework or runtime) | builder | Load `skills/domain/typescript-pro/` for advanced type system patterns, full-stack type safety, and build tooling guidance. |
 | **AI app / LLM SDK code** (Anthropic / OpenAI SDK imports, prompt engineering infra, agent frameworks, model training or inference code) | builder | Load `skills/domain/ai-engineering/` for end-to-end AI system guidance. Co-cite `skills/domain/prompt-engineering/` for prompt-authoring concerns. |
-| **CI/CD pipeline change** (`.github/workflows/*.yml`, `azure-pipelines.yml`, `Jenkinsfile`, `*.gitlab-ci.yml`, build-system config) | deployer | Load `skills/domain/devops-engineering/` + `references/ci-cd.md` for pipeline-specific patterns (stages, artifact management, deployment strategies, anti-patterns). |
-| **IaC change** (Terraform, Bicep, Helm, Ansible) | deployer + builder | Co-cite alongside the Terraform HCL row: load `skills/domain/devops-engineering/references/iac.md` for module patterns, state management, and multi-env variable isolation. For provisioner timing, multi-env drift, and TLS/ACME failures, also load `skills/domain/terraform-ops-traps/`. |
-| **Incident response / production troubleshooting** (deployment failure, CrashLoopBackOff, service 503, postmortem) | deployer + validator | Load `skills/domain/devops-engineering/references/troubleshooting.md` for structured gather-facts → diagnose → fix → verify → postmortem procedure. Pairs with `skills/workflow/systematic-debugging/` for root-cause tracing. |
-| **Multi-source research / synthesis** (claim verification across sources, contradictory sources, primary vs secondary source analysis, multi-domain research coordination) | researcher | Load `skills/workflow/research-coordination/` for complexity assessment, specialist allocation, iteration strategy, and source quality heuristics. |
-| **UX / UI design** (layout decisions, user flows, interaction design, component wireframes) | `agents/uxdesigner.md` stub | Load `skills/domain/frontend-advisory/`. UXDesigner stub delegates to `agents/3rdparty/{ui-ux-designer,expert-react-frontend-engineer,frontend-developer}.md` via Agent tool. |
+| **React-specific code** (hooks, state management, Server Components, Suspense, concurrent rendering, performance, React Testing Library, Next.js App Router) | builder | Load `skills/domain/react-engineering/`. Co-cite `skills/domain/frontend-advisory/` for general frontend concerns. Co-cite `skills/domain/typescript-pro/` for `*.tsx` type patterns. |
+
+### Architecture
+
+_ADR authoring, system design, database, cloud infra, API contract decisions._
+
+| Signal | Route to | Notes |
+|---|---|---|
+| **Architecture sketch / system design** (ADR drafting, system design, capacity or topology decisions) | `agents/architect.md` stub | Load `skills/domain/architecture-advisory/`. Architect stub delegates to `agents/3rdparty/{backend-architect,database-architect,cloud-architect,api-architect,diagram-architect}.md` via Agent tool. |
 | **Schema design / migration planning / database performance tuning** (ER modeling, schema evolution, index strategy, technology selection, multi-tenancy, sharding, CQRS, event sourcing) | architect / builder | Load `skills/domain/database-architecture/`. For PostgreSQL-specific query tuning, hand off to `agents/3rdparty/database-architect.md`. |
 | **Cloud infra design** (multi-region, landing zone, IAM, network topology, multi-cloud, disaster recovery, cost optimization, FinOps) | architect / deployer | Load `skills/domain/cloud-architecture/`. For IaC specifics, co-cite `skills/domain/devops-engineering/references/iac.md`. |
-| **UX research / persona work / interaction design / accessibility audit** (user interviews, persona modeling, IA, heuristic evaluation, WCAG compliance, AI interface patterns) | uxdesigner | Load `skills/domain/ux-methodology/`. For research synthesis, co-cite `skills/workflow/research-coordination/`. For implementation, co-cite `skills/domain/react-engineering/` or `skills/domain/frontend-advisory/`. |
-| **React-specific code** (hooks, state management, Server Components, Suspense, concurrent rendering, performance, React Testing Library, Next.js App Router) | builder | Load `skills/domain/react-engineering/`. Co-cite `skills/domain/frontend-advisory/` for general frontend concerns. Co-cite `skills/domain/typescript-pro/` for `*.tsx` type patterns. |
+
+### Infra & ops
+
+_CI/CD, IaC, Terraform, incident response, performance benchmarks, web UI validation._
+
+| Signal | Route to | Notes |
+|---|---|---|
+| **CI/CD pipeline change** (`.github/workflows/*.yml`, `azure-pipelines.yml`, `Jenkinsfile`, `*.gitlab-ci.yml`, build-system config) | deployer | Load `skills/domain/devops-engineering/` + `references/ci-cd.md` for pipeline-specific patterns (stages, artifact management, deployment strategies, anti-patterns). |
+| **IaC change** (Terraform, Bicep, Helm, Ansible) | deployer + builder | Co-cite alongside the Terraform HCL row: load `skills/domain/devops-engineering/references/iac.md` for module patterns, state management, and multi-env variable isolation. For provisioner timing, multi-env drift, and TLS/ACME failures, also load `skills/domain/terraform-ops-traps/`. |
+| **Terraform operational issue** (state drift, multi-env config drift, container `Restarting` after `apply`, TLS/ACME failure, fresh-instance bootstrap) | researcher + builder via **`crew:terraform-ops-traps`** ops-traps body + `references/{provisioner-traps,multi-env-isolation,zero-to-deploy}.md` | Operator-incident patterns with copy-paste fixes. Load `references/*.md` on demand for full HCL examples — the main skill body stays ≤200 lines. |
+| **Incident response / production troubleshooting** (deployment failure, CrashLoopBackOff, service 503, postmortem) | deployer + validator | Load `skills/domain/devops-engineering/references/troubleshooting.md` for structured gather-facts → diagnose → fix → verify → postmortem procedure. Pairs with `skills/workflow/systematic-debugging/` for root-cause tracing. |
+| **Performance-sensitive change shipped** (latency-critical path, throughput regression risk, bundle size impact) | deployer / validator via **gstack `/benchmark`** | Gather perf evidence alongside deployment evidence. Run before and after to produce delta metrics. |
+| **Web UI behavior changed** (frontend components, user-visible flows, browser-rendered output) | validator via **gstack `/qa`** | Validator invokes `/qa` for real Playwright browser testing instead of prompt-only validation. Produces observable evidence (screenshots, console output). |
+
+### Research
+
+_Library lookups, MS docs, bug root cause, multi-source synthesis._
+
+| Signal | Route to | Notes |
+|---|---|---|
+| **Library / API uncertainty** ("is method X still supported?", "current docs for Y", touching unfamiliar npm package, unsure of signature) | researcher / builder / reviewer via **context7 MCP** | Call `context7.resolve-library-id` then `context7.get-library-docs` before recommending or editing. Reviewer also consults context7 when verifying API claims in the diff under review. If context7 has no coverage for the library, fall back to general web docs rather than retrying. Pairs with `microsoft-docs:microsoft-code-reference` for MS-tech. Server pinned in `.mcp.json`. |
+| **Microsoft tech concept question** ("how does Cosmos partitioning work?", limits, quotas, configs, capabilities) | researcher via **`microsoft-docs:microsoft-docs`** | Authoritative MS lookup before web search. Use for understanding ("what is X") rather than code ("how do I call X" — that's microsoft-code-reference). |
+| **Bug root cause unclear after initial triage** (intermittent failure, multi-layer interaction, repro-resistant) | researcher via **gstack `/investigate`** | Escalation path when `/crew:fix` hits a wall. gstack's `/investigate` applies structured debugging methodology. |
+| **Bug root cause / intermittent failure** (root cause not clear after first triage, multi-layer interaction, repro-resistant) | validator or researcher | Load `skills/workflow/systematic-debugging/` for structured root-cause tracing. Complements gstack `/investigate` as an escalation path. |
+| **Multi-source research / synthesis** (claim verification across sources, contradictory sources, primary vs secondary source analysis, multi-domain research coordination) | researcher | Load `skills/workflow/research-coordination/` for complexity assessment, specialist allocation, iteration strategy, and source quality heuristics. |
+
+### Docs & comms
+
+_API documentation, diagram authoring, commit messages, handoff CLI._
+
+| Signal | Route to | Notes |
+|---|---|---|
 | **API documentation authoring** (OpenAPI specs, SDK reference guides, integration guides, error documentation, versioning, deprecation notices) | copywriter | Load `skills/workflow/api-documentation/`. Co-cite `skills/domain/backend-advisory/` for API design concerns. |
 | **Diagram authoring** (architecture diagrams, flowcharts, sequence diagrams, ERDs, state machines, dependency graphs, Mermaid / PlantUML / Draw.io) | copywriter / architect | Load `skills/domain/diagram-methodology/`. Architect uses for ADR diagrams; copywriter uses for docs-embedded diagrams. |
+| **Authoring a git commit message** (after a code change is complete and staged) | builder | Load `skills/workflow/git-commit/` for commit-message format, conventional-commit style, and co-author footers. |
+| **Subagent completion report** (any role finishing a delegated task) | role via `write-handoff` CLI | Agent calls `node ... crew.mjs write-handoff` via Bash; returns path + 1–3 sentence headline. Lead reads the full report from the path on demand. Inline returns re-inflate lead context. |
+
+### UX
+
+_UX design, interaction design, accessibility._
+
+| Signal | Route to | Notes |
+|---|---|---|
+| **UX / UI design** (layout decisions, user flows, interaction design, component wireframes) | `agents/uxdesigner.md` stub | Load `skills/domain/frontend-advisory/`. UXDesigner stub delegates to `agents/3rdparty/{ui-ux-designer,expert-react-frontend-engineer,frontend-developer}.md` via Agent tool. |
+| **UX research / persona work / interaction design / accessibility audit** (user interviews, persona modeling, IA, heuristic evaluation, WCAG compliance, AI interface patterns) | uxdesigner | Load `skills/domain/ux-methodology/`. For research synthesis, co-cite `skills/workflow/research-coordination/`. For implementation, co-cite `skills/domain/react-engineering/` or `skills/domain/frontend-advisory/`. |
+
+### Crew internals
+
+_Plugin authoring, agent edits, cost analysis, model selection, autonomous_safe flags._
+
+| Signal | Route to | Notes |
+|---|---|---|
+| **Cost analysis or optimization** (expensive operations, token burn investigation) | researcher (read-only) + lead decision | Researcher investigates and reports; lead decides on action (optimize, accept, defer). |
+| **Editing this plugin's own `agents/*.md`** (any change to lead/builder/reviewer/validator/deployer/researcher prompts) | builder via **`plugin-dev:agent-development`** | Catches frontmatter weakness, tool over-scope, weak `description:` triggers. Downstream reviewer gate: see existing **Plugin shape change** row — do **not** skip the reviewer step. Co-cite: `skills/domain/prompt-engineering/` for prompt-authoring discipline. |
+| **Editing this plugin's own `skills/**/SKILL.md`** (authoring new skills or modifying existing ones) | builder via **`plugin-dev:skill-development`** | Builder-side complement to FEAT-017's reviewer-side wiring. Pairs with `scripts/validate-skills.mjs` (CI gate, hard-fail) + downstream reviewer via **Skill shape change** row — do **not** skip the reviewer step. Co-cite: `skills/meta/skill-creator/` for skill-authoring methodology. |
+| **Lead-prompt edit or specialist-agent prompt edit** (any change to `agents/{lead,architect,uxdesigner,copywriter}.md`) | builder + human-in-loop review | All four are `autonomous_safe: false` — changes require human-in-loop review before merging. See `docs/governance.md` autonomous_safe policy section. |
 
 ---
 

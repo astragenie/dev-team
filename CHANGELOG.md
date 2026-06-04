@@ -3,6 +3,30 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.8.0 — 2026-06-04 — 9-agent topology, 34 skills, routing-table H3 grouping, release polish
+
+### New agents + skill taxonomy (FEAT-A, FEAT-B, FEAT-C, FEAT-D)
+
+- **FEAT-A:** Distributed 11 third-party skills into the four-tier taxonomy (`universal/`, `workflow/`, `domain/`, `meta/`). All 11 skills carry `triggers:`, `When to use`, and `Done/Acceptance` sections — closes 29 advisory warnings.
+- **FEAT-B:** Routing-table wiring — new rows added for architect, uxdesigner, copywriter, plus backend/frontend/fullstack advisory, Python, TypeScript, React, AI engineering, CI/CD, IaC, database architecture, cloud architecture, UX methodology, API documentation, diagram methodology, multi-source research, and systematic debugging. Pass-2 cross-check validator added (`validate-routing-table.mjs`) with 5 edge-case fixtures; terraform external-plugin rows removed.
+- **FEAT-C:** Three new first-party role stubs (`agents/architect.md`, `agents/uxdesigner.md`, `agents/copywriter.md`). Each stub delegates to vendored 3rdparty specialists via the Agent tool.
+- **FEAT-D:** `### Skills you consult` blocks wired onto all 9 first-party agents so the routing-table Pass-2 cross-check validates end-to-end.
+
+### 3rdparty agent vendor + Slices 1–5
+
+- Vendored 21 third-party agents under `agents/3rdparty/` for delegation by architect, uxdesigner, and copywriter stubs.
+- Slices 1–5: extracted 11 additional skills from 3rdparty agent bodies into proper `skills/domain/` and `skills/workflow/` directories (`language-pro`, `devops-engineering`, `database-architecture`, `cloud-architecture`, `ux-methodology`, `react-engineering`, `api-documentation`, `diagram-methodology`, `research-coordination`, `systematic-debugging`, `reviewing-code` per-language tiers).
+
+### Release polish (v0.8.0 bundle)
+
+- README updated: 9 agents, 34 skills, tier structure, new specialist role descriptions, project structure block, pinned release bumped to v0.8.0.
+- `docs/governance.md`: `autonomous_safe: false` policy declared for architect/uxdesigner/copywriter prompts (same bar as lead).
+- `.claude/crew/workflow.md`: architect, uxdesigner, copywriter phases added to Preferred Sequence (conditional phases 5, 6, 10); non-code deliverable review gate added to Default Gate Policy.
+- `docs/routing-table.md`: H3 category headers added (9 groups) for scanability across 62+ rows; row content unchanged; Pass-1 + Pass-2 validators both pass.
+- `agents/lead.md`: 5-line dispatch decision rule — ADR/diagram/schema → architect; UI flow/component → uxdesigner; docs/release notes → copywriter; impl → builder; investigation → researcher.
+- Agent topology test added (`tests/agent-topology.test.mjs`) — pins exactly 9 first-party agents; fails on unexpected additions or removals.
+- Version bump: `package.json` + `marketplace.json` → `0.8.0`.
+
 ## v0.7.1 — 2026-06-03 — Dedupe overlapping cost reports in brief-me rollup (FEAT-036)
 
 ### Cost rollup deduplication

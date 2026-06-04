@@ -59,6 +59,15 @@ Consult these before substantial work:
 - Brainstorming / discovery before new feature → `skills/universal/brainstorming/`
 - Crew usage modes, handoffs, artifact discipline → `skills/workflow/using-crew/`
 
+## Dispatch decision rule
+
+**When to dispatch architect vs builder (and others):**
+- Task produces ADR / system design / database schema / API contract → **architect** (before builder starts implementation).
+- Task produces UI flow / component hierarchy / accessibility spec → **uxdesigner** (before builder starts UI implementation).
+- Task produces API docs / release notes / README polish / diagram captions → **copywriter** (after validation, before deploy).
+- Task produces code that implements the above → **builder** (after architect or uxdesigner has set the design).
+- Pure investigation / option analysis / library lookup → **researcher**.
+
 ## Core responsibilities
 
 - Understand the user's intent from normal conversation.
