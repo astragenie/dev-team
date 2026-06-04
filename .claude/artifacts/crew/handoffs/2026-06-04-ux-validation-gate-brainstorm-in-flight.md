@@ -3,7 +3,7 @@
 - **Date:** 2026-06-04
 - **From:** lead (brainstorming via superpowers:brainstorming skill)
 - **To:** lead (next session)
-- **State:** mid-brainstorm — Architecture + Components approved; Data flow section presented, awaiting "OK?" approval before Error handling section
+- **State:** mid-brainstorm — Architecture + Components + Data flow approved; Error handling + pivot contract section presented, awaiting "OK?" approval before Testing section
 - **Spec target path (not yet written):** `docs/superpowers/specs/2026-06-04-ux-validation-gate-design.md`
 
 ## Goal
@@ -88,7 +88,7 @@ Body sections (≤200 lines):
 8. Skip conditions (`playwright_not_configured` soft skip).
 9. Pivot signal (raw evidence only per Q3 — no pivot recommendation).
 
-### Data flow (PRESENTED — awaiting approval)
+### Data flow (APPROVED)
 
 Full transcript-resident sequence:
 
@@ -122,13 +122,58 @@ Full transcript-resident sequence:
 - **Skip path:** detect missing playwright config → soft skip,
   `validation_skipped --note playwright_not_configured`.
 
+### Error handling + pivot contract (PRESENTED — awaiting approval)
+
+**Validation-result `.md` body** — no interpretation, only evidence
+summary. Body contains: Verdict line, Summary line, Evidence section
+(link to `ux-evidence.json` + counts: screenshots, a11y violations,
+console errors, network failures, visual diffs over tolerance),
+Risks, Next. Next typically reads "lead routes per
+docs/routing-table.md" on fail.
+
+**Badge writing rules:**
+
+| Outcome | Badge | Note |
+|---|---|---|
+| `passed` | `validation_passed` | — |
+| `passed_with_notes` | `validation_passed` | `<count> minor issues; see evidence` |
+| `failed` | `validation_failed` | `<count> AC fail; <count> a11y serious; <count> console err; <count> visual diff` |
+| skip (no playwright) | `validation_skipped` | `playwright_not_configured` |
+| skill error (gate crashed) | `validation_skipped` | `ux-gate skill error: <message>` |
+
+**Lead's pivot decision tree** (lives in `docs/routing-table.md`, NOT
+in the skill — advisory mapping):
+
+| Failure dominant category | Pivot |
+|---|---|
+| `ac_results[*].status == fail` | routing-table row 84 → `/crew:fix` |
+| `a11y.violations[*]` serious/critical | row 84 + co-cite `concern:accessibility` skill set |
+| `console.errors[*]` runtime exception | row 95 → `gstack:/investigate` |
+| `visual.diffs[*]` over tolerance | row 84 → `/crew:fix` + frontend-advisory |
+| `network.failures[*]` 404 on asset | row 84 → `/crew:fix` (build/deploy issue) |
+| Multiple categories | lead splits per Pre-dispatch decomposition rule |
+
+**Gate self-failure modes:**
+
+1. `/qa` skill not installed → `validation_skipped --note "gstack:/qa
+   not available — install gstack plugin"`.
+2. `/qa` timeout (default 60s) → `validation_failed --note
+   "qa_timeout"`. Lead pivots to `/investigate`.
+3. AC extractor finds 0 ACs in slice file → `validation_skipped
+   --note "no_acceptance_criteria_in_slice"`. Authoring bug; lead
+   routes to slice author.
+4. Baseline missing for a route → /qa generates baseline + writes
+   `passed_with_notes --note "baseline_created_for <route>"`.
+   Reviewer commits baseline alongside slice code.
+
+**Circuit breaker** — out of scope for this skill. Loop's autonomous
+mode already has `priorAttempts` via `/loop:pr-fix`. Per-slice retry
+cap on UX-gate failures is a follow-up FEAT in loop, not in this
+skill's initial scope.
+
 ## Sections queued (not yet presented)
 
-1. **Error handling / pivot contract** — raw evidence shape detail
-   (per Q3), badge writing semantics, lead's pivot decision tree
-   referenced inline (mapping evidence categories to routing-table
-   rows for crew:fix / /investigate / /cso / /benchmark).
-2. **Testing** — how to test the skill itself. Likely a smoke FEAT
+1. **Testing** — how to test the skill itself. Likely a smoke FEAT
    tagged `surface:ui` that the skill exercises end-to-end against a
    fixture HTML page served from a local Python `http.server`. Also
    unit tests for the AC extractor + scenario translator.
