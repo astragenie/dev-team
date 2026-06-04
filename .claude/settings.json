@@ -65,8 +65,8 @@
       {
         "hooks": [
           {
-            "type": "prompt",
-            "prompt": "CREW SESSION-END CHECKPOINT: Before stopping, verify these items. Skip any that don't apply.\n\n1. UNCOMMITTED CHANGES: Run `git status --short`. If there are uncommitted changes from this session's work, either commit them or note explicitly that they are intentional WIP.\n\n2. WORKFLOW GATES: Check if the current run has pending gates (review_required, validation_expected). If so, either resolve them or record explicit skips via mark-badge.\n\n3. FINAL SYNTHESIS: If this was a substantial run (wrote a run-brief, dispatched subagents, produced code changes), write a final-synthesis artifact before stopping. Half-finished runs without synthesis lose context across sessions.\n\n4. HANDOFF: If work is mid-flight and will continue in a future session, write a handoff artifact capturing scope state, what's done, what's next, and risks.\n\nIf all items are clear or not applicable, stop normally. If any item needs action, address it now.",
+            "type": "command",
+            "command": "bash ${PWD}/.claude/hooks/session_end_checkpoint.sh",
             "description": "crew:session-end-checkpoint"
           }
         ]
