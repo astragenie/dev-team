@@ -3,6 +3,59 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.10.0 — 2026-06-04 — UX validation gate auto-triggered on UX/React tags + loop pin step 1
+
+### New workflow skill: ux-validation
+
+`skills/workflow/ux-validation/SKILL.md` — auto-triggered by `crew:validator` when a slice's FEAT frontmatter `tags:` array intersects with `{surface:ui, concern:ux, concern:accessibility}`. The skill orchestrates a single gstack `/qa` Playwright run with four checks (acceptance-criteria pass/fail + axe-core accessibility scan + console+404 scrape + visual regression vs consumer-repo `tests/playwright/baselines/`) and returns raw evidence. Validator stays read-only — `/qa` writes the evidence JSON to `.claude/artifacts/crew/validations/<stamp>-ux-evidence.json`. The lead reads the validation result and pivots per the existing routing-table; the skill never recommends a pivot target.
+
+Triggered states per the Skip + error cases table: tag intersection empty → silent exit; missing acceptance criteria → `validation_skipped`; no Playwright config → soft `validation_skipped`; `/qa` not available or non-zero exit → documented failure modes.
+
+### Pure helpers (TDD-tested)
+
+- `scripts/lib/ux-validation/extract-acs.mjs` — parse slice `## Acceptance criteria` block → `[{id, text}]`.
+- `scripts/lib/ux-validation/classify-scenario.mjs` — verb-keyword classification → `interaction | visibility | navigation | input | non_ui_ac`.
+- `scripts/lib/ux-validation/verdict.mjs` — apply pass/fail thresholds to evidence payload (failed > passed_with_notes > passed precedence).
+- `scripts/lib/ux-validation/discover-playwright.mjs` — locate consumer-repo Playwright config + base URL (config file → `package.json` script port heuristic).
+- `scripts/lib/ux-validation/qa-adapter.mjs` — assemble `/qa` CLI invocation with all four check flags.
+- `scripts/lib/ux-validation/index.mjs` — public re-export surface.
+
+### Validator agent wiring
+
+`agents/validator.md` — one new auto-load row in `### Skills you consult`:
+
+```
+- UX/React behavior (slice tags include `surface:ui`, `concern:ux`, or `concern:accessibility`) → `skills/workflow/ux-validation/`
+```
+
+Validator stays read-only (`disallowedTools: Write, Edit` unchanged); turn budget unchanged.
+
+### Tests + CI
+
+- `tests/ux-validation.test.mjs` — 28 unit tests across the 5 pure helpers (TDD-driven).
+- `tests/ux-validation-integration.test.mjs` — 3 integration tests asserting evidence parsing, verdict computation, and `/qa` invocation flag completeness against mocked evidence.
+- `scripts/e2e-smoke-ux.mjs` — end-to-end smoke against a fixture HTML page served via `python -m http.server`. Asserts verdict computation returns `failed` with all four evidence categories populated when the fixture is intentionally broken (404 on logo, missing alt, console.warn).
+- `tests/fixtures/ux-gate-smoke/` — fixture page, FEAT-SMOKE slice, baselines placeholder.
+- `package.json` — new `e2e:smoke:ux` npm script.
+- `.github/workflows/test.yml` — new CI step running `npm run e2e:smoke:ux`.
+
+Full test suite: 285/285 pass (+31 new).
+
+### Consumer-repo conventions
+
+The skill assumes the consumer repo has Playwright installed and either a `playwright.config.{ts,js,mts}` file with `baseURL` set, or a `playwright` script in `package.json` plus a `dev`/`start` script whose port is discoverable via `-p <port>` or `--port <port>`. When absent, the skill soft-skips with note `playwright_not_configured` rather than failing the validation gate.
+
+Visual regression baselines live in the **consumer repo** at `tests/playwright/baselines/` and use Playwright's native `toHaveScreenshot()` mechanism. Baselines are reviewed in PR like any code change; updates flow through `npx playwright test --update-snapshots`. Crew owns no baseline storage.
+
+### Marketplace pin step 1: loop 0.5.6 → 0.7.1
+
+`.claude-plugin/marketplace.json` — `plugins[name=loop].version` bumped from `0.5.6` to `0.7.1` as the first step of a stepwise bump to `0.7.2` (loop v0.7.2 released today; pin to 0.7.2 deferred pending validation per the user's stepwise preference). Loop v0.7.2 lands Option A from the dispatch-gap analysis: autonomous slice dispatch now routes through `crew:lead` instead of collapsing the lead workflow onto `crew:builder`.
+
+### Open follow-ups
+
+- Real `/qa` invocation (currently simulated in integration test and e2e smoke) — requires confirming gstack `/qa`'s actual CLI flag surface against the gstack plugin. Defer to a follow-up FEAT.
+- Marketplace pin step 2: bump loop pin to `0.7.2` after Option A grade-trend validation lands.
+
 ## v0.9.0 — 2026-06-04 — turn-reduction workflow, FEAT tag-schema, 3 new orchestrator skills, Pass-2 routing validator
 
 ### Dispatch + decomposition rules
