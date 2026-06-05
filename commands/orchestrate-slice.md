@@ -28,7 +28,9 @@ Run this after `/loop:slice start --id SLICE-NN`. It reads the slice file, class
 
    **Explicit overrides (check first):**
    - `needs_contract: true` → `NEEDS_CONTRACT = true`
+   - `needs_contract: false` → `NEEDS_CONTRACT = false` (suppresses all tag heuristics)
    - `needs_ux: true` → `NEEDS_UX = true`
+   - `needs_ux: false` → `NEEDS_UX = false` (suppresses all tag heuristics)
    - `skip:` includes `"architect"` → force `NEEDS_CONTRACT = false`
    - `skip:` includes `"uxdesigner"` → force `NEEDS_UX = false`
 
@@ -202,6 +204,8 @@ Builder handoff: <BUILDER_HANDOFF_PATH>
 Draft the CHANGELOG entry and release-notes section for this slice. Follow the format in CHANGELOG.md. Return the artifact path.
 ```
 
+Store the returned path as `COPYWRITER_PATH`.
+
 ---
 
 ### Step 7 — Document writer
@@ -218,6 +222,8 @@ Builder handoff: <BUILDER_HANDOFF_PATH>
 Update any README, CHANGELOG, or architecture docs that this slice requires. Return the artifact path.
 ```
 
+Store the returned path as `DOCWRITER_PATH`.
+
 ---
 
 ### Step 8 — Final synthesis
@@ -229,7 +235,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-final-synthesis \
   --repo "$PWD" \
   --title "orchestrate-slice: <SLICE-NN title>" \
   --outcome "PASS" \
-  --summary "<one-paragraph summary of what shipped, which specialists ran, and the contract artifact path>" \
+  --summary "<one-paragraph summary of what shipped, which specialists ran, CONTRACT_PATH, COPYWRITER_PATH, and DOCWRITER_PATH if set>" \
   --changed-files "<comma-separated list of all files changed by builder>" \
   --external-deltas "none"
 ```
