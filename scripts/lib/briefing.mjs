@@ -19,7 +19,6 @@ import {
   collectCostHealth,
   collectCostAggregate,
   collectModelCompliance,
-  collectHookHealth,
   fetchAutonomousLoopBrief
 } from "./briefing/collect.mjs";
 
@@ -74,8 +73,7 @@ export async function buildBriefingReport(repoPath) {
     routingTable,
     costHealth,
     costAggregate,
-    modelCompliance,
-    hookHealth
+    modelCompliance
   ] = await Promise.all([
     buildWakeUpBrief(repoPath, { readOnly: true }),
     collectGitActivity(repoPath),
@@ -85,9 +83,10 @@ export async function buildBriefingReport(repoPath) {
     checkRoutingTableStale(repoPath),
     collectCostHealth(repoPath),
     collectCostAggregate(repoPath),
-    collectModelCompliance(repoPath),
-    collectHookHealth(repoPath)
+    collectModelCompliance(repoPath)
   ]);
+  // reuse hookHealth already collected inside buildWakeUpBrief — avoids double read
+  const hookHealth = wakeUpBrief.hookHealth ?? { hooks: [] };
 
   // Attach cost summary to loop block when the plugin is installed, so the
   // user-facing "Autonomous Loop" section in brief-me renders it alongside
