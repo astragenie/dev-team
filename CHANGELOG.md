@@ -3,6 +3,16 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.14.1 — 2026-06-05 — loop@0.8.3
+
+### Marketplace
+
+`loop` bumped to `v0.8.3` — ceremony cleanup, SLICE-46 artifacts committed, tag aligned.
+
+Full test suite: 376/376 pass.
+
+---
+
 ## v0.14.0 — 2026-06-05 — scope-estimate + model compliance + observability + complexity extraction + loop@0.8.2
 
 ### Features
