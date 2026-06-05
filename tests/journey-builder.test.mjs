@@ -76,3 +76,31 @@ test("single UI AC returns [] (< 2 steps)", () => {
   const acs = [{ id: "AC-1", text: "user clicks submit" }];
   assert.deepEqual(buildJourney(acs, ""), []);
 });
+
+import { buildQaInvocation } from "../scripts/lib/ux-validation/qa-adapter.mjs";
+
+test("buildQaInvocation with scenario_chain uses chain as scenarios", () => {
+  const chain = [
+    { step: 1, verb: "navigate", target: "/app", expect: "page loads", ac_id: "AC-1" }
+  ];
+  const cmd = buildQaInvocation({
+    url: "http://localhost:3000",
+    scenarios: [],
+    baselineDir: "tests/baselines",
+    outputPath: "/tmp/out.json",
+    scenario_chain: chain
+  });
+  assert.ok(cmd.includes('"verb":"navigate"'), `expected chain in cmd, got: ${cmd}`);
+});
+
+test("buildQaInvocation without scenario_chain uses scenarios (backward compat)", () => {
+  const scenarios = [{ id: "AC-1", verb: "click", target: "button" }];
+  const cmd = buildQaInvocation({
+    url: "http://localhost:3000",
+    scenarios,
+    baselineDir: "tests/baselines",
+    outputPath: "/tmp/out.json"
+  });
+  assert.ok(cmd.includes('"id":"AC-1"'), `expected scenarios in cmd, got: ${cmd}`);
+  assert.ok(!cmd.includes('"verb":"navigate"'));
+});
