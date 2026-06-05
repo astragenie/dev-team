@@ -5,6 +5,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { parseThreshold, checkSubagentReturn } from "../scripts/lib/subagent-return/check.mjs";
+import { logHookError } from "./hook-error.mjs";
 
 /**
  * @param {string} repoPath
@@ -123,10 +124,6 @@ async function main() {
 }
 
 main().catch(async (err) => {
-  try {
-    await logEvent(process.cwd(), "uncaught", "unknown", String(err));
-  } catch {
-    // give up
-  }
+  await logHookError(process.cwd(), "check-subagent-return", err);
   process.exit(0);
 });

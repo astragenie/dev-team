@@ -9,6 +9,7 @@ import {
   evictLRU
 } from "../scripts/lib/cost-hygiene/state.mjs";
 import { decide } from "../scripts/lib/cost-hygiene/decide.mjs";
+import { logHookError } from "./hook-error.mjs";
 
 /**
  * @param {string} repoPath
@@ -127,10 +128,6 @@ async function main() {
 }
 
 main().catch(async (err) => {
-  try {
-    await logEvent(process.cwd(), "uncaught", "unknown", String(err));
-  } catch {
-    // give up
-  }
+  await logHookError(process.cwd(), "check-redundant-read", err);
   process.exit(0);
 });

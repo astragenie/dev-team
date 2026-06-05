@@ -3,6 +3,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { runChecks } from "../scripts/lib/preflight/checks.mjs";
+import { logHookError } from "./hook-error.mjs";
 
 /**
  * @param {string} repoPath
@@ -94,10 +95,6 @@ async function main() {
 }
 
 main().catch(async (err) => {
-  try {
-    await logEvent(process.cwd(), "uncaught", "unknown", String(err));
-  } catch {
-    // give up
-  }
+  await logHookError(process.cwd(), "preflight-shell", err);
   process.exit(0);
 });

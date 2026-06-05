@@ -18,6 +18,9 @@ jobs:
       - run: node ./scripts/validate-skills.mjs
       - run: node ./scripts/validate-agents.mjs
       - run: node ./scripts/validate-slices.mjs
+      - name: Validate synthesis artifacts (advisory)
+        continue-on-error: true
+        run: node ./scripts/validate-syntheses.mjs
       - name: Validate routing-table skill IDs (advisory)
         env:
           CREW_VALIDATE_ROUTING_TABLE: "1"

@@ -19,6 +19,7 @@ import {
   collectCostHealth,
   collectCostAggregate,
   collectModelCompliance,
+  collectHookHealth,
   fetchAutonomousLoopBrief
 } from "./briefing/collect.mjs";
 
@@ -49,6 +50,19 @@ import {
   recommendedNextStep
 } from "./briefing/render.mjs";
 
+/**
+ * @param {{ hooks: Array<{name: string, errorCount24h: number, status: string}> }} health
+ * @returns {string}
+ */
+export function formatHookHealthSection(health) {
+  const yellow = (health.hooks ?? []).filter((h) => h.status === "yellow");
+  if (yellow.length === 0) {
+    return "## Hook health\n\nAll hooks clean (0 errors in last 24h).\n";
+  }
+  const lines = yellow.map((h) => `- **${h.name}**: ${h.errorCount24h} error(s) in last 24h`);
+  return `## Hook health\n\n${lines.join("\n")}\n`;
+}
+
 /** @param {string} repoPath */
 export async function buildBriefingReport(repoPath) {
   const [
@@ -60,7 +74,8 @@ export async function buildBriefingReport(repoPath) {
     routingTable,
     costHealth,
     costAggregate,
-    modelCompliance
+    modelCompliance,
+    hookHealth
   ] = await Promise.all([
     buildWakeUpBrief(repoPath, { readOnly: true }),
     collectGitActivity(repoPath),
@@ -70,7 +85,8 @@ export async function buildBriefingReport(repoPath) {
     checkRoutingTableStale(repoPath),
     collectCostHealth(repoPath),
     collectCostAggregate(repoPath),
-    collectModelCompliance(repoPath)
+    collectModelCompliance(repoPath),
+    collectHookHealth(repoPath)
   ]);
 
   // Attach cost summary to loop block when the plugin is installed, so the
@@ -100,7 +116,9 @@ export async function buildBriefingReport(repoPath) {
     costHealth,
     costAggregate,
     modelCompliance,
+    hookHealth,
     sections: {
+      hookHealth: formatHookHealthSection(hookHealth),
       currentObjective,
       recentActivity: {
         latestArtifacts: artifacts,

@@ -8,6 +8,7 @@ import {
   recordReadContent,
   evictLRU
 } from "../scripts/lib/cost-hygiene/state.mjs";
+import { logHookError } from "./hook-error.mjs";
 
 /**
  * @param {string} repoPath
@@ -108,10 +109,6 @@ async function main() {
 }
 
 main().catch(async (err) => {
-  try {
-    await logEvent(process.cwd(), "uncaught", "unknown", String(err));
-  } catch {
-    // give up
-  }
+  await logHookError(process.cwd(), "record-read-content", err);
   process.exit(0);
 });

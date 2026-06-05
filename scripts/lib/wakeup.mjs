@@ -5,6 +5,7 @@ import { listApprovals } from "./approvals.mjs";
 import { listClaims } from "./claims.mjs";
 import { readDeploymentGuidanceSummary } from "./deployment-guidance.mjs";
 import { loadWorkflowState, summarizeWorkflowState } from "./workflow-state.mjs";
+import { collectHookHealth } from "./briefing/collect.mjs";
 
 const RUNS_DIR = [".claude", "artifacts", "crew", "runs"];
 const HANDOFFS_DIR = [".claude", "artifacts", "crew", "handoffs"];
@@ -325,7 +326,8 @@ export async function buildWakeUpBrief(repoPath, options = {}) {
     latestReview,
     latestValidationPlan,
     latestValidationResult,
-    latestDeploymentCheck
+    latestDeploymentCheck,
+    hookHealth
   ] = await Promise.all([
     listApprovals(repoPath, { status: "open", createIfMissing: !readOnly }),
     listClaims(repoPath, { createIfMissing: !readOnly }),
@@ -342,7 +344,8 @@ export async function buildWakeUpBrief(repoPath, options = {}) {
     latestArtifactByPrefix(repoPath, REVIEWS_DIR, "review-result"),
     latestArtifactByPrefix(repoPath, VALIDATIONS_DIR, "validation-plan"),
     latestArtifactByPrefix(repoPath, VALIDATIONS_DIR, "validation-result"),
-    latestArtifactByPrefix(repoPath, DEPLOYMENTS_DIR, "deployment-check")
+    latestArtifactByPrefix(repoPath, DEPLOYMENTS_DIR, "deployment-check"),
+    collectHookHealth(repoPath)
   ]);
 
   const historyPath = path.join(repoPath, ...HISTORY_PATH);
@@ -406,6 +409,7 @@ export async function buildWakeUpBrief(repoPath, options = {}) {
     recentEvents,
     latestArtifacts,
     workflowState,
+    hookHealth,
     memory,
     summary: buildWakeUpSummary({
       memory,

@@ -545,6 +545,48 @@ export async function collectModelCompliance(repoPath) {
   return computeModelCompliance(costs.recent);
 }
 
+const KNOWN_HOOKS = [
+  "check-redundant-read",
+  "record-read-content",
+  "preflight-shell",
+  "check-subagent-return"
+];
+const HOOK_HEALTH_TAIL = 100;
+const HOOK_HEALTH_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * @param {string} repoPath
+ * @returns {Promise<{ hooks: Array<{name: string, errorCount24h: number, status: "green"|"yellow"}> }>}
+ */
+export async function collectHookHealth(repoPath) {
+  const eventsPath = path.join(repoPath, ".claude", "logs", "events.jsonl");
+  /** @type {Array<Record<string,unknown>>} */
+  let raw = [];
+  try {
+    const text = await fs.readFile(eventsPath, "utf8");
+    const lines = text.trim().split("\n").filter(Boolean);
+    const tail = lines.slice(-HOOK_HEALTH_TAIL);
+    raw = tail.map((l) => {
+      try { return /** @type {Record<string,unknown>} */ (JSON.parse(l)); } catch { return {}; }
+    });
+  } catch {
+    // no events file — return all green
+  }
+  const cutoff = Date.now() - HOOK_HEALTH_WINDOW_MS;
+  const counts = new Map();
+  for (const e of raw) {
+    if (e.type !== "hook_error" || typeof e.hook !== "string") continue;
+    const ts = new Date(/** @type {string} */ (e.ts)).getTime();
+    if (isNaN(ts) || ts < cutoff) continue;
+    counts.set(e.hook, (counts.get(e.hook) ?? 0) + 1);
+  }
+  const hooks = KNOWN_HOOKS.map((name) => {
+    const errorCount24h = /** @type {number} */ (counts.get(name) ?? 0);
+    return { name, errorCount24h, status: /** @type {"green"|"yellow"} */ (errorCount24h > 0 ? "yellow" : "green") };
+  });
+  return { hooks };
+}
+
 /** @param {string} repoPath */
 export async function fetchAutonomousLoopBrief(repoPath) {
   try {
