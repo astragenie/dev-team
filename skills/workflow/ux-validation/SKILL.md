@@ -58,7 +58,7 @@ Detect at validator slice-start:
    Soft skip — no failure.
 
 4. **Build + run `/qa` invocation.** Call
-   `buildQaInvocation({url, scenarios, baselineDir, outputPath})`
+   `buildQaInvocation({url, scenarios, baselineDir, outputPath, scenario_chain})`
    with:
    - `url`: from step 3
    - `scenarios`: from step 2 (UI ACs only) — used when journey mode is inactive

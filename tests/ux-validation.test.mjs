@@ -83,6 +83,19 @@ test("classifyScenario falls back to non_ui_ac on no match", () => {
   assert.equal(classifyScenario(""), "non_ui_ac");
 });
 
+test("classifyScenario matches inflected verb forms", () => {
+  assert.equal(classifyScenario("user navigates to /home"), "navigation");
+  assert.equal(classifyScenario("user clicks the submit button"), "interaction");
+  assert.equal(classifyScenario("user fills the username field"), "input");
+  assert.equal(classifyScenario("form submits successfully"), "interaction");
+});
+
+test("classifyScenario does not over-match compound words", () => {
+  assert.equal(classifyScenario("showcase the portfolio"), "non_ui_ac");
+  assert.equal(classifyScenario("element is clickable"), "non_ui_ac");
+  assert.equal(classifyScenario("pressing concern"), "non_ui_ac");
+});
+
 import { computeVerdict } from "../scripts/lib/ux-validation/index.mjs";
 
 const EMPTY_EVIDENCE = {

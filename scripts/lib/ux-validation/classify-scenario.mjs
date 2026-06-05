@@ -4,13 +4,16 @@
 
 /** @type {ReadonlyArray<{name: "interaction" | "visibility" | "navigation" | "input", verbs: readonly string[]}>} */
 const SETS = [
-  { name: "interaction", verbs: ["click", "tap", "press", "submit"] },
+  {
+    name: "interaction",
+    verbs: ["click", "clicks", "clicked", "tap", "taps", "press", "presses", "submit", "submits"]
+  },
   {
     name: "visibility",
     verbs: ["see", "render", "renders", "display", "displays", "show", "shows"]
   },
-  { name: "navigation", verbs: ["navigate", "go to", "route"] },
-  { name: "input", verbs: ["type", "fill", "enter"] }
+  { name: "navigation", verbs: ["navigate", "navigates", "go to", "goes to", "route", "routes"] },
+  { name: "input", verbs: ["type", "types", "fill", "fills", "enter", "enters"] }
 ];
 
 /**
@@ -22,7 +25,7 @@ export function classifyScenario(acText) {
   const lower = acText.toLowerCase();
   for (const { name, verbs } of SETS) {
     for (const v of verbs) {
-      const re = new RegExp(`\\b${v}`, "i");
+      const re = new RegExp(`\\b${v}\\b`, "i");
       if (re.test(lower)) return name;
     }
   }
