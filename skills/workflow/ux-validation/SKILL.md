@@ -45,6 +45,13 @@ Detect at validator slice-start:
    `expect` from AC text via the verb position; when ambiguous,
    pass the raw AC text as both `target` and `expect`).
 
+2.5. **Build journey.** Call `buildJourney(acs, sliceContent)` from
+   `scripts/lib/ux-validation/journey-builder.mjs`. If the result is
+   `[]` (< 2 steps or no UI ACs), skip journey mode and proceed with
+   the existing per-AC `scenarios` list from Step 2. Otherwise store
+   the result as `scenario_chain` and pass it to `buildQaInvocation`
+   at Step 4 in place of `scenarios`.
+
 3. **Discover the consumer-repo Playwright URL.** Call
    `discoverPlaywrightConfig(repoPath)`. If `null`, write
    `validation_skipped --note playwright_not_configured` and exit.
@@ -54,7 +61,8 @@ Detect at validator slice-start:
    `buildQaInvocation({url, scenarios, baselineDir, outputPath})`
    with:
    - `url`: from step 3
-   - `scenarios`: from step 2 (UI ACs only)
+   - `scenarios`: from step 2 (UI ACs only) — used when journey mode is inactive
+   - `scenario_chain`: from step 2.5 (ordered journey steps) — when present, passed to `buildQaInvocation` instead of `scenarios`
    - `baselineDir`: `tests/playwright/baselines/`
    - `outputPath`:
      `.claude/artifacts/crew/validations/<timestamp>-ux-evidence.json`
