@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { registerWorkflowArtifact } from "./workflow-state.mjs";
+import { renderCostReportFrontmatter } from "./cost-hygiene/render-frontmatter.mjs";
 
 const ARTIFACT_ROOT = [".claude", "artifacts", "crew"];
 
@@ -282,67 +283,7 @@ const SIMPLE_RENDERERS = {
 
 // --- cost-report: complex, multi-section renderer split into helpers ---
 
-/**
- * @param {ArtifactFields} fields
- * @param {CostBreakdown | undefined} breakdown
- * @param {CostOutcome | null} outcome
- * @param {number} totalTokens
- * @param {number | string} cacheHitPct
- * @param {"slice" | "aggregate" | null} [variant] - when "slice", forces aggregate_all:false +
- *   source_count:1; when "aggregate", uses breakdown values (same as legacy); null = legacy.
- */
-// eslint-disable-next-line complexity -- FEAT-034 variant frontmatter rendering covers slice/aggregate/legacy paths
-function renderCostReportFrontmatter(
-  fields,
-  breakdown,
-  outcome,
-  totalTokens,
-  cacheHitPct,
-  variant = null
-) {
-  const durationMs = breakdown?.window?.durationMs || 0;
-  // [predicate, line]. Truthy predicate emits the line. Defers evaluation of
-  // the line string until we know it's emitted; keeps complexity flat instead
-  // of nesting if-pushes.
-  const phaseStr = fields.phase != null ? String(fields.phase) : "";
-
-  // Per-variant aggregate_all + source_count logic:
-  // - "slice":     always emit aggregate_all: false, source_count: 1
-  // - "aggregate": emit aggregate_all: true when breakdown.aggregateAll, source_count from sources
-  // - null/legacy: existing behaviour (aggregate_all: true only when truthy, source_count from sources)
-  const isSlice = variant === "slice";
-  const aggregateAllPredicate = isSlice ? true : Boolean(breakdown?.aggregateAll);
-  const aggregateAllLine = isSlice ? "aggregate_all: false" : "aggregate_all: true";
-  const sourceCountPredicate = isSlice ? true : Boolean(breakdown?.sources?.length);
-  const sourceCountLine = isSlice
-    ? "source_count: 1"
-    : `source_count: ${breakdown?.sources?.length ?? 0}`;
-
-  const optional = /** @type {Array<[unknown, function(): string]>} */ ([
-    [phaseStr.length > 0, () => `phase: ${JSON.stringify(phaseStr)}`],
-    [fields.feature, () => `feature: ${fields.feature}`],
-    [outcome?.sliceId, () => `slice: ${outcome.sliceId}`],
-    [true, () => `run_title: ${JSON.stringify(fields.runTitle || "")}`],
-    [breakdown?.usd != null, () => `usd: ${breakdown.usd}`],
-    [durationMs, () => `duration_ms: ${durationMs}`],
-    [totalTokens, () => `total_tokens: ${totalTokens}`],
-    [cacheHitPct !== "-", () => `cache_hit_pct: ${cacheHitPct}`],
-    [outcome?.gradeAvg != null, () => `grade_avg: ${outcome.gradeAvg}`],
-    [outcome?.reviewDecision, () => `review_decision: ${outcome.reviewDecision}`],
-    [outcome?.validationDecision, () => `validation_decision: ${outcome.validationDecision}`],
-    [breakdown?.sourceProject, () => `source_project: ${breakdown.sourceProject}`],
-    [breakdown?.autoDetected, () => `auto_detected: true`],
-    [aggregateAllPredicate, () => aggregateAllLine],
-    [sourceCountPredicate, () => sourceCountLine]
-  ]);
-  return [
-    "---",
-    "kind: cost-report",
-    ...optional.filter(([cond]) => cond).map(([, build]) => build()),
-    `created_at: ${nowIso()}`,
-    "---"
-  ];
-}
+// renderCostReportFrontmatter extracted to ./cost-hygiene/render-frontmatter.mjs
 
 /** @param {CostBreakdown | undefined} breakdown */
 function renderCostReportSources(breakdown) {

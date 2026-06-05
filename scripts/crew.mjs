@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 import path from "node:path";
+import { maybeEmitCostReport } from "./lib/cost-hygiene/emit-cost-report.mjs";
+import { costSliceHandler } from "./lib/cost-hygiene/cost-slice-handler.mjs";
 
 // Flag schema. Each entry maps a CLI flag to the flags-object key and the
 // arity (whether it consumes a value). Aliases (e.g. `--verdict` → `decision`)
@@ -405,69 +407,6 @@ async function emitCostAdvise(repoPath, { title, feature, phase }) {
   }
 }
 
-/** @param {string} repoPath @param {Record<string, any>} [options] */
-// eslint-disable-next-line complexity -- FEAT-034 slice/aggregate/legacy branching is inherent
-async function maybeEmitCostReport(repoPath, options = {}) {
-  const { runTitle, feature, phase } =
-    /** @type {{ runTitle?: string | null, feature?: string | null, phase?: string | null }} */ (
-      options
-    );
-  try {
-    const { loadWorkflowState } = await import("./lib/workflow-state.mjs");
-    const { computeSessionCost } = await import("./lib/session-cost.mjs");
-    const { collectOutcomeLinkage } = await import("./lib/outcome-linkage.mjs");
-    const { writeArtifact } = await import("./lib/artifacts.mjs");
-    const state = await loadWorkflowState(repoPath);
-    const run = state?.currentRun || null;
-    if (!run?.startedAt) return null;
-    const completedAt = run.completedAt || new Date().toISOString();
-    const title = runTitle || run.title || "cost-report";
-    const outcome = await collectOutcomeLinkage(repoPath, title);
-
-    // --- per-slice cost (single-source, this repo only) ---
-    const sliceCost = await computeSessionCost(repoPath, {
-      startedAt: run.startedAt,
-      completedAt,
-      aggregateAll: false
-    });
-    const sliceArtifact = await writeArtifact(repoPath, "cost-report-slice", {
-      title,
-      runTitle: title,
-      cost: sliceCost,
-      outcome,
-      feature: feature || null,
-      phase: phase || null
-    });
-
-    // --- aggregate cost (all sources) — only when multi-source is detected ---
-    let aggregateArtifact = null;
-    const aggregateCost = await computeSessionCost(repoPath, {
-      startedAt: run.startedAt,
-      completedAt,
-      aggregateAll: true
-    });
-    if (aggregateCost.sources && aggregateCost.sources.length > 1) {
-      aggregateArtifact = await writeArtifact(repoPath, "cost-report-aggregate", {
-        title,
-        runTitle: title,
-        cost: aggregateCost,
-        outcome,
-        feature: feature || null,
-        phase: phase || null
-      });
-    }
-
-    const adviseArtifact = await emitCostAdvise(repoPath, {
-      title: runTitle || null,
-      feature: feature || null,
-      phase: phase || null
-    });
-    return { report: sliceArtifact, aggregate: aggregateArtifact, advise: adviseArtifact };
-  } catch (err) {
-    return { error: err.message };
-  }
-}
-
 // Normalize an MSYS / Git Bash POSIX path like `/c/work/foo` to a Windows
 // path `C:/work/foo` when running on win32. Node's path.resolve treats a
 // leading "/" as drive-relative, so `/c/work` becomes `C:\c\work` (a phantom
@@ -794,7 +733,7 @@ const COMMANDS = {
       runTitle: flags.title || positionals.join(" ") || null,
       feature: flags.feature,
       phase: flags.phase
-    });
+    }, emitCostAdvise);
     return costArtifact ? { ...synthesis, costReport: costArtifact } : synthesis;
   },
 
@@ -816,73 +755,8 @@ const COMMANDS = {
       artifactPath: writePath
     };
   },
-  // eslint-disable-next-line complexity -- FEAT-034 slice/aggregate emission branching
-  "cost-slice": async (/** @type {CommandContext} */ { repoPath, flags }) => {
-    const { loadWorkflowState } = await import("./lib/workflow-state.mjs");
-    const { computeSessionCost } = await import("./lib/session-cost.mjs");
-    const { collectOutcomeLinkage } = await import("./lib/outcome-linkage.mjs");
-    const { writeArtifact } = await import("./lib/artifacts.mjs");
-    const state = await loadWorkflowState(repoPath);
-    const run = state?.currentRun || null;
-    const startedAt = flags.startedAt || run?.startedAt;
-    const completedAt = flags.completedAt || run?.completedAt || null;
-    const runTitle = flags.runTitle || flags.title || run?.title || "manual-cost-slice";
-    if (!startedAt) {
-      throw new Error("cost-slice requires --started-at or an active/last run with startedAt");
-    }
-    // Always emit a per-slice variant (single-source) for the current repo.
-    const sliceCost = await computeSessionCost(repoPath, {
-      startedAt,
-      completedAt,
-      sourceProject: flags.sourceProject,
-      aggregateAll: false
-    });
-    const outcome = await collectOutcomeLinkage(repoPath, runTitle);
-    const sliceArtifact = /** @type {Record<string, unknown>} */ (
-      await writeArtifact(repoPath, "cost-report-slice", {
-        title: runTitle,
-        runTitle,
-        cost: sliceCost,
-        outcome,
-        notes: flags.summary || null,
-        feature: flags.feature,
-        phase: flags.phase
-      })
-    );
-    sliceArtifact.cost = sliceCost;
-    sliceArtifact.outcome = outcome;
-
-    // When --aggregate-all is passed, also emit the aggregate variant when
-    // more than one source is detected.
-    let aggregateArtifact = null;
-    if (flags.aggregateAll === true) {
-      const aggregateCost = await computeSessionCost(repoPath, {
-        startedAt,
-        completedAt,
-        sourceProject: flags.sourceProject,
-        aggregateAll: true
-      });
-      if (aggregateCost.sources && aggregateCost.sources.length > 1) {
-        aggregateArtifact = /** @type {Record<string, unknown>} */ (
-          await writeArtifact(repoPath, "cost-report-aggregate", {
-            title: runTitle,
-            runTitle,
-            cost: aggregateCost,
-            outcome,
-            notes: flags.summary || null,
-            feature: flags.feature,
-            phase: flags.phase
-          })
-        );
-        aggregateArtifact.cost = aggregateCost;
-        aggregateArtifact.outcome = outcome;
-      }
-    }
-
-    return aggregateArtifact
-      ? { slice: sliceArtifact, aggregate: aggregateArtifact }
-      : sliceArtifact;
-  }
+  "cost-slice": (/** @type {CommandContext} */ { repoPath, flags }) =>
+    costSliceHandler({ repoPath, flags })
 };
 
 async function main() {
