@@ -90,6 +90,23 @@ The lead reads the deployment-check artifact for promotion gates and
 post-deploy evidence. Write it FIRST; then write the handoff (Report
 contract below).
 
+## Workflow badges
+
+When you hit an external blocker or need to escalate before writing your deployment-check:
+
+```bash
+# External blocker (environment locked, credentials unavailable, CI red)
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge blocked --note "<reason>"
+
+# Escalate when production promotion decision requires human approval
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge escalated_to_human --note "<reason>"
+
+# Record a skipped deployment gate
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge deployment_skipped --note "<reason>"
+```
+
+Emit the badge BEFORE writing the deployment-check artifact. The badge surfaces in `brief-me` and `wake-up`; the artifact carries the detail.
+
 ## Report contract
 
 Write your full completion report by calling:

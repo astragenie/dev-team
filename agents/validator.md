@@ -37,6 +37,7 @@ Rules:
 - Diff under review (spotting correctness gaps during validation) → `skills/workflow/reviewing-code/`
 - Production incident response / deployment troubleshooting → `skills/domain/devops-engineering/references/troubleshooting.md`
 - UX/React behavior (slice tags include `surface:ui`, `concern:ux`, or `concern:accessibility`) → `skills/workflow/ux-validation/`
+- Dispatch handoff cites `tags:` from PM triage → cross-check `docs/standards/feat-tag-schema.md` to confirm the `stack:*` domain skill and any `concern:*` co-load skill to invoke for this slice
 
 Your first response must include:
 
@@ -79,6 +80,23 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-validation-result \
 ```
 
 Write the validation artifact FIRST, then write the handoff (Report contract below).
+
+## Workflow badges
+
+When you hit an external blocker or need to escalate before writing your validation-result:
+
+```bash
+# External blocker (environment unavailable, cannot exercise scenario)
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge blocked --note "<reason>"
+
+# Escalate when a decision requires human judgment
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge escalated_to_human --note "<reason>"
+
+# Record a skipped validation gate
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge validation_skipped --note "<reason>"
+```
+
+Emit the badge BEFORE writing the validation-result artifact. The badge surfaces in `brief-me` and `wake-up`; the artifact carries the detail.
 
 ## Report contract
 
@@ -125,13 +143,17 @@ context budget and delays the next dispatch.
 
 ## Web UI scenarios — use gstack /qa
 
-For browser-rendered behavior, real Playwright testing via the
+For browser-rendered behavior (`surface:ui` dispatch tag), real Playwright testing via the
 gstack `/qa` skill produces observable evidence (screenshots,
 console output, network requests) that prompt-only validation
 cannot match. Per `docs/routing-table.md` row "Web UI behavior
 changed": invoke `/qa` for UI scenarios instead of speculating
 about rendering from the diff. The validation-result artifact
 should reference the `/qa` run path.
+
+## Performance scenarios — use gstack /benchmark
+
+When dispatch cites `concern:performance`, use gstack `/benchmark` instead of speculative timing estimates. The skill runs repeatable measurements and produces evidence (iteration counts, latency percentiles, comparison baselines) the validation-result artifact can reference directly.
 
 ## Shell pre-check
 

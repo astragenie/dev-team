@@ -75,6 +75,20 @@ via the Bash tool. The CLI persists the artifact under `.claude/artifacts/crew/h
 
 Completion, pause, blocker, context-budget end — **all** require writing a handoff via `write-handoff` BEFORE returning to the lead. Inline-only return (path + headline without a written artifact) is a contract violation. If the harness pauses you mid-task and you cannot complete, write a `--confidence low` handoff with `--risks "<what is still in progress>"` and return its path. The lead reads the handoff, not your inline reply.
 
+## Workflow badges
+
+When you hit an external blocker or need to escalate before writing your handoff:
+
+```bash
+# External blocker (source unavailable, external system unreachable)
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge blocked --note "<reason>"
+
+# Escalate when the question requires human judgment to answer
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge escalated_to_human --note "<reason>"
+```
+
+Emit the badge BEFORE writing the handoff. The badge surfaces in `brief-me` and `wake-up`; the handoff body carries the detail.
+
 ## Research depth threshold
 
 Stop investigating when you can answer the lead's question with confidence

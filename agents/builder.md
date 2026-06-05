@@ -44,6 +44,7 @@ Stay strictly within assigned scope:
 - IaC change (Terraform, Bicep, Helm, Ansible) → `skills/domain/devops-engineering/`
 - Terraform HCL authoring or operational issue → `skills/domain/terraform-ops-traps/`
 - Schema design / migration / database performance → `skills/domain/database-architecture/`
+- Dispatch handoff cites `tags:` from PM triage → cross-check `docs/standards/feat-tag-schema.md` to confirm the `stack:*` domain skill and any `concern:*` co-load skill to invoke for this slice
 
 ## TDD policy
 
@@ -140,6 +141,23 @@ Before writing the handoff, run all of these gates in order. Each must exit 0.
 Your handoff body MUST include a `## Self-Verify Gates` section listing one line per gate: command + exit code or PASS/FAIL + one-sentence summary of the result.
 
 Self-verify complements but does NOT replace the reviewer's independent gate. The reviewer re-runs anything fragile. A green self-verify is a prerequisite for handoff, not a substitute for review.
+
+## Workflow badges
+
+When you hit an external blocker or need to escalate before writing your handoff:
+
+```bash
+# External blocker (missing decision, API down, scope boundary crossed)
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge blocked --note "<reason>"
+
+# Escalate when a decision is beyond agent judgment
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge escalated_to_human --note "<reason>"
+
+# Record a skipped validation gate (when you own that decision)
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge validation_skipped --note "<reason>"
+```
+
+Emit the badge BEFORE writing the handoff. The badge surfaces in `brief-me` and `wake-up`; the handoff body carries the detail.
 
 ## Handoff before stop
 
