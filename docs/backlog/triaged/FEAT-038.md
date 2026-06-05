@@ -2,7 +2,7 @@
 id: FEAT-038
 title: "Workflow badge awareness in all subagents"
 priority: P2
-status: pending
+status: triaged
 category: workflow
 target_release: null
 autonomous_safe: false

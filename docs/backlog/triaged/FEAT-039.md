@@ -2,7 +2,7 @@
 id: FEAT-039
 title: "Tag-aware skill loading in builder, reviewer, and validator"
 priority: P2
-status: pending
+status: triaged
 category: workflow
 target_release: null
 autonomous_safe: false
