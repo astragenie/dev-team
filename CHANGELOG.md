@@ -3,6 +3,19 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.13.1 — 2026-06-05 — architect-feature doc fixes
+
+### Fixes
+
+- `commands/architect-feature.md`: revision subsection now uses `## Feature Revision — <date>`
+  prefix to avoid naming collision with orchestrate-slice's `## Revision — SLICE-NN` sections.
+- `commands/architect-feature.md`: Step 3 tag write-back warning path clarified to `exit 0`
+  after continuing to Step 4.
+- `tests/architect-feature.test.mjs`: +2 tests — re-run idempotency (Feature Revision prefix)
+  and `--auto-start` clean exit when no pending slice. 10/10 pass. Full suite: 316/316.
+
+---
+
 ## v0.13.0 — 2026-06-05 — architect-feature pipeline command
 
 ### New command: /crew:architect-feature
