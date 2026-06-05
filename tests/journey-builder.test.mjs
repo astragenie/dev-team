@@ -6,7 +6,13 @@ test("explicit ## User Journey parsed: 3 steps", () => {
   const slice = `# Slice\n## User Journey\n\n1. navigate to /dashboard\n2. click "New Project"\n3. fill form: name=Test → expect: form fills\n## Acceptance criteria\n`;
   const result = buildJourney([], slice);
   assert.equal(result.length, 3);
-  assert.deepEqual(result[0], { step: 1, verb: "navigate", target: "to /dashboard", expect: "no error / visible", ac_id: null });
+  assert.deepEqual(result[0], {
+    step: 1,
+    verb: "navigate",
+    target: "to /dashboard",
+    expect: "no error / visible",
+    ac_id: null
+  });
   assert.equal(result[2].expect, "form fills");
 });
 
