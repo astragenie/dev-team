@@ -15,8 +15,8 @@ WF_STATE="$REPO/.claude/state/workflow-state.json"
 # 1. Dirty working tree?
 DIRTY=$(git -C "$REPO" status --porcelain 2>/dev/null)
 if [ -n "$DIRTY" ]; then
-  echo "CREW SESSION-END CHECKPOINT [uncommitted changes]"
-  echo "Run 'git status --short'. Commit or note as intentional WIP."
+  echo "CREW SESSION-END CHECKPOINT [uncommitted changes]" >&2
+  echo "Run 'git status --short'. Commit or note as intentional WIP." >&2
   exit 2
 fi
 
@@ -32,8 +32,8 @@ try {
 EOF
 )
   if [ -n "$PENDING" ]; then
-    echo "CREW SESSION-END CHECKPOINT [pending gates: $PENDING]"
-    echo "Resolve or skip via mark-badge before stopping."
+    echo "CREW SESSION-END CHECKPOINT [pending gates: $PENDING]" >&2
+    echo "Resolve or skip via mark-badge before stopping." >&2
     exit 2
   fi
 
@@ -52,8 +52,8 @@ try {
 EOF
 )
   if [ "$SUBSTANTIAL" = "yes" ]; then
-    echo "CREW SESSION-END CHECKPOINT [synthesis missing]"
-    echo "Active run has run-brief + handoffs but no final-synthesis. Write one or note as intentional WIP."
+    echo "CREW SESSION-END CHECKPOINT [synthesis missing]" >&2
+    echo "Active run has run-brief + handoffs but no final-synthesis. Write one or note as intentional WIP." >&2
     exit 2
   fi
 fi
