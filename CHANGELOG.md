@@ -3,6 +3,55 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.11.0 — 2026-06-05 — /crew:orchestrate-slice command + architect contract schema
+
+### New command: /crew:orchestrate-slice
+
+`commands/orchestrate-slice.md` — tag-driven specialist dispatch ladder. Run after
+`/loop:slice start --id SLICE-NN`. Classifies the slice at Step 0 using frontmatter
+overrides (`needs_contract`, `needs_ux`, `skip:`) and tag heuristics, prints a one-line
+classification summary, then conditionally dispatches:
+
+- **Step 1** — `crew:architect` (contract artifact, immutable-first-write) — skip when `NEEDS_CONTRACT = false`
+- **Step 2** — `crew:uxdesigner` (UX spec, reads contract) — skip when `NEEDS_UX = false`
+- **Step 3** — `crew:builder` (implementation, reads contract + UX spec)
+- **Step 4** — `crew:reviewer` (requires `Contract Conformance: PASS/FAIL` section when contract exists; halts on `needs_fix`)
+- **Step 5** — `crew:validator` — skip when `BEHAVIOR_CHANGED = false`
+- **Step 6** — `crew:copywriter` — skip when `RELEASE_CONTENT = false`
+- **Step 7** — `loop:document-writer` (or copywriter fallback) — skip when `DOCS_NEEDED = false`
+- **Step 8** — `write-final-synthesis`
+
+Every dispatch is visible in the main thread. No hidden subagent lead.
+
+### Architect contract schema
+
+`agents/architect.md` gains `## Contract artifact schema` — defines the
+immutable-first-write rule for per-FEAT contract artifacts written to
+`.claude/artifacts/crew/designs/<FEAT-ID>-contracts.md`. Four required sections:
+TypeScript Interfaces / API Contracts / Event Schemas / Data Contracts. Downstream
+agents (builder, reviewer) read this file before starting work; reviewer checks
+conformance.
+
+### Agent prompt improvements (FEAT-038 + FEAT-039)
+
+All five specialist agents (`builder`, `deployer`, `researcher`, `reviewer`, `validator`)
+gain a `## Workflow badges` section with `blocked`, `escalated_to_human`, and
+`validation_skipped` badge emit patterns. `builder`, `reviewer`, and `validator` gain
+a FEAT tag schema cross-check hint pointing to `docs/standards/feat-tag-schema.md`.
+
+### Tests
+
+7 new structural tests in `tests/orchestrate-slice.test.mjs` covering command file shape,
+frontmatter, Steps 0–8 presence, required agent references, and architect schema section.
+
+Full test suite: 294/294 pass.
+
+### Closed backlog
+
+- FEAT-038: Workflow badge awareness in specialist agents ✓
+- FEAT-039: Tag-aware skill loading hints in builder/reviewer/validator ✓
+- FEAT-040: /crew:orchestrate-slice command ✓
+
 ## v0.10.0 — 2026-06-04 — UX validation gate auto-triggered on UX/React tags + loop pin step 1
 
 ### New workflow skill: ux-validation
