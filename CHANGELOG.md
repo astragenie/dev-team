@@ -3,6 +3,45 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.12.0 — 2026-06-05 — journey-builder sub-skill for ux-validation end-to-end journeys
+
+### New workflow sub-skill: journey-builder
+
+`skills/workflow/journey-builder/SKILL.md` — invoked by `ux-validation` at Step 2.5.
+Derives an ordered `scenario_chain` from a slice's `## User Journey` section (explicit
+override) or auto-derives from the AC list ordered navigation → input → interaction →
+visibility. Returns `[]` when fewer than 2 steps are derivable so downstream `/qa`
+invocation is skipped safely.
+
+### Pure helpers
+
+- `scripts/lib/ux-validation/journey-builder.mjs` — exports `buildJourney(acs, sliceContent)`.
+  Parses numbered `## User Journey` lists and classifies/sorts AC-derived steps.
+- `scripts/lib/ux-validation/qa-adapter.mjs` — `buildQaInvocation` now accepts
+  `scenario_chain`; backward compatible (param optional).
+
+### ux-validation wiring
+
+`skills/workflow/ux-validation/SKILL.md` gains Step 2.5 calling `journey-builder` before
+dispatching `/qa`, feeding the derived chain to the invocation.
+
+### Bug fix
+
+`classify-scenario.mjs` — verb regex changed from exact word-boundary (`\bverb\b`) to
+stem-prefix match (`\bverb`) so inflected forms ("navigates", "clicks", "types") classify
+correctly alongside base forms.
+
+### Tests
+
+- `tests/journey-builder.test.mjs` — 8 tests covering explicit override parsing,
+  auto-derive ordering, and the `< 2 steps → []` guard.
+
+Full test suite: 306/306 pass.
+
+### Closed backlog
+
+- FEAT-041: journey-builder sub-skill for ux-validation ✓
+
 ## v0.11.0 — 2026-06-05 — /crew:orchestrate-slice command + architect contract schema
 
 ### New command: /crew:orchestrate-slice
