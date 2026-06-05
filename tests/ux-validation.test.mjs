@@ -96,6 +96,21 @@ test("classifyScenario does not over-match compound words", () => {
   assert.equal(classifyScenario("pressing concern"), "non_ui_ac");
 });
 
+test("classifyScenario does not over-match derived visibility words", () => {
+  assert.equal(classifyScenario("renderable content is available"), "non_ui_ac");
+  assert.equal(classifyScenario("content was displayed successfully"), "non_ui_ac");
+});
+
+test("classifyScenario does not over-match derived navigation words", () => {
+  assert.equal(classifyScenario("navigational menu is accessible"), "non_ui_ac");
+  assert.equal(classifyScenario("router configuration loaded"), "non_ui_ac");
+});
+
+test("classifyScenario does not over-match derived input words", () => {
+  assert.equal(classifyScenario("typecheck passes without errors"), "non_ui_ac");
+  assert.equal(classifyScenario("fillable field is present"), "non_ui_ac");
+});
+
 import { computeVerdict } from "../scripts/lib/ux-validation/index.mjs";
 
 const EMPTY_EVIDENCE = {

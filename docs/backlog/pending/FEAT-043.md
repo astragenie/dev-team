@@ -8,6 +8,7 @@ target_release: null
 autonomous_safe: true
 cross_repo: null
 parent_spec: docs/superpowers/specs/2026-06-05-plugin-performance-stability-design.md
+plan: docs/superpowers/plans/2026-06-05-feat-c-prompt-doc-test-coverage.md
 related: [FEAT-044, FEAT-045, FEAT-046]
 phase: null
 tags: [concern:testing, concern:governance, surface:cli]

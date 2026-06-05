@@ -8,6 +8,7 @@ target_release: null
 autonomous_safe: true
 cross_repo: null
 parent_spec: docs/superpowers/specs/2026-06-05-plugin-performance-stability-design.md
+plan: docs/superpowers/plans/2026-06-05-feat-a-complexity-debt.md
 related: [FEAT-043, FEAT-045, FEAT-046]
 phase: null
 tags: [concern:architecture, surface:cli]

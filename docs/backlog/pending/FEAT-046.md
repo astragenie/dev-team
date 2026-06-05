@@ -8,6 +8,7 @@ target_release: null
 autonomous_safe: false
 cross_repo: null
 parent_spec: docs/superpowers/specs/2026-06-05-plugin-performance-stability-design.md
+plan: docs/superpowers/plans/2026-06-05-feat-d-builder-dispatch-reliability.md
 related: [FEAT-043, FEAT-044, FEAT-045]
 phase: null
 tags: [concern:reliability, surface:cli, stack:llm]
