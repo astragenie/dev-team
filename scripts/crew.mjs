@@ -294,6 +294,8 @@ function usage(target = null) {
       "  node scripts/crew.mjs resolve-approval --repo <path> --id <approval-id> --decision approved|rejected|canceled [--resolver <name>] [--note <text>]",
     "wake-up": "  node scripts/crew.mjs wake-up --repo <path>",
     "brief-me": "  node scripts/crew.mjs brief-me --repo <path>",
+    "scope-estimate":
+      "  node scripts/crew.mjs scope-estimate --files <path:lines[:eslintDisable],...>",
     "discover-deployment": "  node scripts/crew.mjs discover-deployment --repo <path>",
     "write-deployment-guidance":
       "  node scripts/crew.mjs write-deployment-guidance --repo <path> --title <text> [--discovery-status repo-derived|partial|live-verified] [--verified-from <a,b>] [--missing <a,b>] [--summary <text>] [--build <text>] [--deploy <text>]",
@@ -558,6 +560,19 @@ const COMMANDS = {
   "brief-me": async (/** @type {CommandContext} */ { repoPath }) => {
     const { buildBriefingReport } = await import("./lib/briefing.mjs");
     return buildBriefingReport(repoPath);
+  },
+  "scope-estimate": async (/** @type {CommandContext} */ { flags, positionals }) => {
+    const { estimateScope } = await import("./lib/scope-estimate.mjs");
+    const rawFiles = (flags.files || positionals.join(",") || "").split(",").filter(Boolean);
+    const files = rawFiles.map((entry) => {
+      const [p, linesStr, eslintDisableStr] = entry.split(":");
+      return {
+        path: p || "",
+        lines: parseInt(linesStr, 10) || 0,
+        eslintDisable: eslintDisableStr === "true"
+      };
+    });
+    return estimateScope({ files });
   },
   fleet: async (/** @type {CommandContext} */ { repoPath, flags }) => {
     const { buildFleetReport } = await import("./lib/fleet.mjs");
