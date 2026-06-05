@@ -101,8 +101,11 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge b
 # Escalate when production promotion decision requires human approval
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge escalated_to_human --note "<reason>"
 
-# Record a skipped deployment gate
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge deployment_skipped --note "<reason>"
+# Record a skipped dev deployment gate
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge dev_skipped --note "<reason>"
+
+# Record a skipped prod deployment gate
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge prod_skipped --note "<reason>"
 ```
 
 Emit the badge BEFORE writing the deployment-check artifact. The badge surfaces in `brief-me` and `wake-up`; the artifact carries the detail.
