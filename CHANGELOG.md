@@ -3,6 +3,32 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.13.0 — 2026-06-05 — architect-feature pipeline command
+
+### New command: /crew:architect-feature
+
+`commands/architect-feature.md` — researcher+architect pipeline that runs once per FEAT
+before slice 1. Produces a feature-level contracts artifact
+(`.claude/artifacts/crew/designs/<FEAT-ID>-contracts.md`) and infers `surface:*`,
+`stack:*`, and `concern:*` tags written back to FEAT frontmatter additively.
+
+**Steps:** locate FEAT → researcher context pass → architect contracts artifact → tag
+inference → tag write-back → optional `--auto-start` transition to first pending slice.
+
+Contracts artifact follows the schema defined in `agents/architect.md`: TypeScript
+Interfaces, API Contracts, Event Schemas, Data Contracts. Immutable-first-write:
+re-running appends under a new run header rather than overwriting.
+
+### Tests
+
+`tests/architect-feature.test.mjs` — 8 structural tests covering command existence,
+frontmatter, agent references, tag write-back shape, `--auto-start` flag, and error
+handling.
+
+Full test suite: 314/314 pass.
+
+---
+
 ## v0.12.0 — 2026-06-05 — journey-builder sub-skill for ux-validation end-to-end journeys
 
 ### New workflow sub-skill: journey-builder
