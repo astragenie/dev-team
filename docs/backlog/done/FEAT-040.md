@@ -2,7 +2,7 @@
 id: FEAT-040
 title: "/crew:orchestrate-slice — tag-driven specialist ladder command"
 priority: P2
-status: triaged
+status: done
 category: workflow
 target_release: null
 autonomous_safe: false
