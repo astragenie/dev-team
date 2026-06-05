@@ -48,6 +48,7 @@ are hard to hold in subagent context — a documented cause of the SLICE-13 buil
   and `collect-cost.mjs` (cost aggregation, cost-advisor invocation)
 - `cost-advisor.mjs` (874L): extract threshold logic into `cost-advisor-thresholds.mjs`
 - `session-cost.mjs` (844L): extract report rendering into `session-cost-render.mjs`
+- `workflow-state.mjs` (794L): extract badge read/write helpers into `workflow-state-badges.mjs`
 
 ### Constraints
 - All exports remain backward-compatible (re-export from original filename if needed)
@@ -58,7 +59,7 @@ are hard to hold in subagent context — a documented cause of the SLICE-13 buil
 ### Acceptance criteria
 - AC-1: Zero `eslint-disable-next-line complexity` suppressions remain in `crew.mjs` and `artifacts.mjs`
 - AC-2: ESLint complexity passes on all 3 previously-suppressed functions without suppression
-- AC-3: `collect.mjs` < 600L; `cost-advisor.mjs` < 500L; `session-cost.mjs` < 500L
+- AC-3: `collect.mjs` < 600L; `cost-advisor.mjs` < 500L; `session-cost.mjs` < 500L; `workflow-state.mjs` < 500L
 - AC-4: All existing tests pass (no behavior change); `npm run lint` zero warnings
 - AC-5: `scripts/lib/cost-hygiene/` contains the extracted helpers as named exports
 
