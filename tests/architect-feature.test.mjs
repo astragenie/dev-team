@@ -56,3 +56,21 @@ test("architect-feature documents FEAT-not-found error handling", async () => {
     "command must document FEAT-not-found error case"
   );
 });
+
+test("architect-feature documents re-run idempotency (Feature Revision prefix)", async () => {
+  const text = await fs.readFile(CMD, "utf8");
+  assert.match(
+    text,
+    /Feature Revision/,
+    "command must use 'Feature Revision' prefix to distinguish re-run sections from orchestrate-slice Revision sections"
+  );
+});
+
+test("architect-feature documents --auto-start clean exit when no pending slice", async () => {
+  const text = await fs.readFile(CMD, "utf8");
+  assert.match(
+    text,
+    /exit 0/,
+    "command must document exit 0 when no pending slice found under --auto-start"
+  );
+});

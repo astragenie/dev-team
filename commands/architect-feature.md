@@ -80,8 +80,10 @@ Contract artifact target: .claude/artifacts/crew/designs/<FEAT-ID>-contracts.md
 
 Read the researcher findings, FEAT file, and spec before producing anything.
 
-If the contract artifact already exists: add a ## Revision — <today's date> subsection
-to each relevant section. Do NOT remove or overwrite existing sections.
+If the contract artifact already exists: add a ## Feature Revision — <today's date>
+subsection to each relevant section. Do NOT remove or overwrite existing sections.
+(Use the "Feature Revision" prefix to distinguish from orchestrate-slice's
+"## Revision — SLICE-NN" subsections.)
 
 If the contract artifact does not exist: create it with these five sections (write
 "N/A — not applicable." for any section that does not apply):
@@ -113,7 +115,7 @@ Store the returned path as `CONTRACT_PATH`.
 2. Parse the `tags:` YAML list from that section.
    - If the section is absent: print
      `"Warning: ## Inferred Tags not found in contracts artifact — FEAT frontmatter unchanged"`
-     and skip to Step 4.
+     and continue to Step 4 (FEAT frontmatter unchanged). Exit 0 after Step 4.
 3. Read the FEAT file frontmatter. If `tags:` key is absent, treat current value as `[]`.
 4. Compute `net_new = inferred_tags - existing_tags` (set difference — additive only,
    never remove existing tags).
@@ -161,6 +163,6 @@ On success: invoke `orchestrate-slice <SLICE_ID>` from the main thread.
 
 ## Idempotency
 
-- **Contracts artifact:** architect adds `## Revision — <date>` rather than overwriting.
+- **Contracts artifact:** architect adds `## Feature Revision — <date>` rather than overwriting.
 - **Tag write-back:** additive merge — net-new tags only, never removes existing.
 - **`--auto-start`:** safe re-run — only triggers if a pending slice exists.
