@@ -2,7 +2,7 @@
 id: FEAT-044
 title: "Complexity debt reduction — extract suppressed functions + split oversized modules"
 priority: P1
-status: pending
+status: done
 category: quality
 target_release: null
 autonomous_safe: true
@@ -34,8 +34,8 @@ exceed 700 lines — a documented cause of the SLICE-13 builder context ceiling 
 
 ## Acceptance criteria
 
-- [ ] AC-1: Zero `eslint-disable-next-line complexity` suppressions remain in `crew.mjs` and `artifacts.mjs`
-- [ ] AC-2: ESLint complexity passes on all 3 previously-suppressed functions without suppression
-- [ ] AC-3: `collect.mjs` < 600L; `cost-advisor.mjs` < 500L; `session-cost.mjs` < 500L; `workflow-state.mjs` < 500L
-- [ ] AC-4: All existing tests pass (no behavior change); `npm run lint` zero warnings
-- [ ] AC-5: `scripts/lib/cost-hygiene/` contains extracted helpers as named exports
+- [x] AC-1: Zero `eslint-disable-next-line complexity` suppressions remain in `crew.mjs` and `artifacts.mjs`
+- [x] AC-2: ESLint complexity passes on all 3 previously-suppressed functions without suppression
+- [x] AC-3: `collect.mjs` < 600L; `cost-advisor.mjs` < 500L; `session-cost.mjs` < 500L; `workflow-state.mjs` < 500L
+- [x] AC-4: All existing tests pass (no behavior change); `npm run lint` zero warnings
+- [x] AC-5: `scripts/lib/cost-hygiene/` contains extracted helpers as named exports
