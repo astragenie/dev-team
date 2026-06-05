@@ -3,6 +3,76 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.14.0 — 2026-06-05 — scope-estimate + model compliance + observability + complexity extraction + loop@0.8.2
+
+### Features
+
+**`scope-estimate` sub-command (FEAT-046 Tasks 1–2)**
+
+`node crew.mjs scope-estimate [--size light|standard|heavy] [--repo <path>]` — new
+CLI sub-command backed by `scripts/lib/scope-estimate.mjs`. The pure classifier maps
+token-budget signals to a `light / standard / heavy` tier used by the builder dispatch
+protocol to pre-calibrate context ceiling expectations before a slice starts.
+
+**Model compliance field in `brief-me` (FEAT-046 Task 5)**
+
+`buildBriefingReport` now returns a `modelCompliance` field: `{ sonnetPct, compliant,
+sliceCount }`. `compliant` is `true` when Sonnet accounts for ≥ 60% of cost across
+recent slices. Surfaces the Sonnet-default discipline rule at a glance without requiring
+manual cost-report inspection.
+
+**Hook health observability in `brief-me` (FEAT-045)**
+
+All 4 hook scripts (`check-redundant-read`, `record-read-content`, `preflight-shell`,
+`check-subagent-return`) now emit structured `{ type: "hook_error", hook, error, ts }`
+events to `.claude/logs/events.jsonl` via `hooks/hook-error.mjs`. A new
+`collectHookHealth` function in `scripts/lib/briefing/collect.mjs` reads the last 100
+events and counts per-hook errors in a 24-hour window. `buildWakeUpBrief` includes a
+`hookHealth` field; `buildBriefingReport` surfaces a `## Hook health` section (green
+when clean, per-hook error counts when not). `formatHookHealthSection` is exported for
+testing.
+
+**`validate-syntheses.mjs` CI gate (FEAT-045)**
+
+`scripts/validate-syntheses.mjs` scans `final-synthesis` artifacts for `Grade missing`
+or `<timestamp>` placeholders and errors on any match. Added to CI as an advisory gate
+(`continue-on-error: true`). 14 synthesis artifacts with stale placeholders were
+fixed in the same release.
+
+### Refactors
+
+**Complexity debt extraction (FEAT-044)**
+
+Removed all 3 `eslint-disable-next-line complexity` suppressions from `crew.mjs` and
+`artifacts.mjs` by extracting into `scripts/lib/cost-hygiene/`:
+- `emit-cost-report.mjs` — `maybeEmitCostReport` (formerly suppressed at crew.mjs:407)
+- `cost-slice-handler.mjs` — cost-slice command handler (formerly suppressed at crew.mjs:804)
+- `render-frontmatter.mjs` — `renderCostReportFrontmatter` (formerly suppressed at artifacts.mjs:294)
+
+Four oversized modules split below AC-3 thresholds:
+- `collect.mjs` 955 → 530 L (extracted to `collect-cost-parser.mjs`)
+- `cost-advisor.mjs` 874 → 485 L (extracted to `cost-advisor-grades.mjs` + `cost-advisor-rules.mjs`)
+- `session-cost.mjs` 844 → 461 L (extracted to `session-cost-scanner.mjs`)
+- `workflow-state.mjs` 794 → 461 L (extracted to `workflow-state-gates.mjs`)
+
+### Bug fix
+
+**`brief-me` redundant `collectHookHealth` call eliminated**
+
+`buildBriefingReport` was calling `collectHookHealth(repoPath)` in its own `Promise.all`
+even though `buildWakeUpBrief` already collected it. Now reads `wakeUpBrief.hookHealth`
+directly — one fewer `events.jsonl` read per `brief-me` invocation.
+
+### Marketplace
+
+`loop` bumped to `v0.8.2` — architect classification tags for slices and features
+(FEAT-048); post-builder confidence update in `slice complete` (FEAT-046); module
+splits for `loop-installer.mts` and `auto-walker.mts` (FEAT-044/045).
+
+Full test suite: 376/376 pass.
+
+---
+
 ## v0.13.2 — 2026-06-05 — classify-scenario safety fix + loop@0.7.7
 
 ### Bug fix
