@@ -940,6 +940,36 @@ export async function collectCostAggregate(repoPath) {
   };
 }
 
+/**
+ * Compute Sonnet compliance across a set of cost reports.
+ * Returns null if no reports with modelMix are available.
+ * @param {Array<{modelMix?: Array<{model: string, usdPct: number}>|null}>} reports
+ * @returns {{ sonnetPct: number, compliant: boolean, sliceCount: number } | null}
+ */
+export function computeModelCompliance(reports) {
+  const valid = reports.filter((r) => Array.isArray(r.modelMix) && r.modelMix.length > 0);
+  if (valid.length === 0) return null;
+  const sonnetSlicePcts = valid.map((r) => {
+    const entry = r.modelMix.find((m) => /sonnet/i.test(m.model));
+    return entry ? entry.usdPct : 0;
+  });
+  const sonnetPct = sonnetSlicePcts.reduce((a, b) => a + b, 0) / sonnetSlicePcts.length;
+  return {
+    sonnetPct: Math.round(sonnetPct * 10) / 10,
+    compliant: sonnetPct >= 60,
+    sliceCount: valid.length
+  };
+}
+
+/**
+ * @param {string} repoPath
+ * @returns {Promise<{ sonnetPct: number, compliant: boolean, sliceCount: number } | null>}
+ */
+export async function collectModelCompliance(repoPath) {
+  const costs = await collectRecentCosts(repoPath, 5);
+  return computeModelCompliance(costs.recent);
+}
+
 /** @param {string} repoPath */
 export async function fetchAutonomousLoopBrief(repoPath) {
   try {
