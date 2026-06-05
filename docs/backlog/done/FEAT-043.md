@@ -2,7 +2,7 @@
 id: FEAT-043
 title: "Prompt & doc change test coverage — agent keyword assertions + negative regex tests"
 priority: P1
-status: pending
+status: done
 category: quality
 target_release: null
 autonomous_safe: true
