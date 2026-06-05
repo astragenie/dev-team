@@ -22,7 +22,7 @@ export function classifyScenario(acText) {
   const lower = acText.toLowerCase();
   for (const { name, verbs } of SETS) {
     for (const v of verbs) {
-      const re = new RegExp(`\\b${v}\\b`, "i");
+      const re = new RegExp(`\\b${v}`, "i");
       if (re.test(lower)) return name;
     }
   }
