@@ -45,6 +45,7 @@ Rules:
 - Diff under review (any code-bearing change) → `skills/workflow/reviewing-code/`
 - Security-sensitive change (auth, crypto, input handling, secrets, RBAC) → `skills/domain/security-advisory/`
 - Architecture sketch / system design decision in the diff → `skills/domain/architecture-advisory/`
+- Dispatch handoff cites `tags:` from PM triage → cross-check `docs/standards/feat-tag-schema.md` to confirm the `stack:*` domain skill and any `concern:*` co-load skill to invoke for this slice
 
 Your first response must include:
 
@@ -155,6 +156,23 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-review-result \
 For doc-only diffs, pass `--non-code` instead of `--test-summary`. For approved code-bearing reviews where tests are legitimately N/A, pass `--test-summary-skip-reason "<reason>"`.
 
 Write the review artifact FIRST, then write the handoff (Report contract below).
+
+## Workflow badges
+
+When you hit an external blocker or need to escalate before writing your review-result:
+
+```bash
+# External blocker (missing context, cannot access diff, scope unclear)
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge blocked --note "<reason>"
+
+# Escalate when a decision requires human judgment
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge escalated_to_human --note "<reason>"
+
+# Record a skipped review gate
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge review_skipped --note "<reason>"
+```
+
+Emit the badge BEFORE writing the review-result artifact. The badge surfaces in `brief-me` and `wake-up`; the artifact carries the detail.
 
 ## Report contract
 
