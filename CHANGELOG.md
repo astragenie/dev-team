@@ -3,6 +3,25 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.13.2 — 2026-06-05 — classify-scenario safety fix + loop@0.7.7
+
+### Bug fix
+
+`classify-scenario.mjs` — word-boundary safety restored. The v0.12.0 stem-prefix
+fix (`\bverb` without trailing `\b`) caused over-matching on compound words
+("showcase", "clickable", "presses"). Fix: explicit inflected forms added to each
+verb set (`navigates`, `clicks`, `fills`, etc.), trailing `\b` restored. 7 new
+regression tests (4 inflected-form positives, 3 over-match negatives).
+
+### Marketplace
+
+`loop` bumped to `v0.7.7` — wires `/crew:orchestrate-slice` as default dispatch
+instruction when installed `crew ≥ 0.11.0` (FEAT-047).
+
+Full test suite: 318/318 pass.
+
+---
+
 ## v0.13.1 — 2026-06-05 — architect-feature doc fixes
 
 ### Fixes
