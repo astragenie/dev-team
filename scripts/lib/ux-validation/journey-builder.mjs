@@ -37,11 +37,24 @@ function parseUserJourney(sliceContent) {
 }
 
 /**
- * @param {Array<{id: string, text: string}>} _acs
+ * @param {Array<{id: string, text: string}>} acs
  * @returns {ScenarioStep[]}
  */
-function deriveFromACs(_acs) {
-  return []; // implemented in Task 2
+function deriveFromACs(acs) {
+  const uiACs = acs.filter((ac) => classifyScenario(ac.text) !== "non_ui_ac");
+  if (uiACs.length === 0) return [];
+  const sorted = [...uiACs].sort((a, b) => {
+    const orderA = CATEGORY_ORDER[classifyScenario(a.text)] ?? 99;
+    const orderB = CATEGORY_ORDER[classifyScenario(b.text)] ?? 99;
+    return orderA - orderB; // stable sort preserves doc order for ties
+  });
+  return sorted.map((ac, i) => {
+    const text = ac.text.trim();
+    const firstSpace = text.indexOf(" ");
+    const verb = (firstSpace === -1 ? text : text.slice(0, firstSpace)).toLowerCase();
+    const target = firstSpace === -1 ? "" : text.slice(firstSpace + 1).trim();
+    return { step: i + 1, verb, target, expect: "no error / visible", ac_id: ac.id };
+  });
 }
 
 /**

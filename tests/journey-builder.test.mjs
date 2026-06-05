@@ -39,3 +39,40 @@ test("journey section stops at next ## header", () => {
   const result = buildJourney([], slice);
   assert.equal(result.length, 2);
 });
+
+test("navigation AC sorts before interaction AC", () => {
+  const acs = [
+    { id: "AC-1", text: "user can click the submit button" },
+    { id: "AC-2", text: "user should navigate to /dashboard" }
+  ];
+  const result = buildJourney(acs, "");
+  assert.equal(result[0].ac_id, "AC-2"); // navigation first
+  assert.equal(result[1].ac_id, "AC-1"); // interaction second
+});
+
+test("tie-breaking by document order within same category", () => {
+  const acs = [
+    { id: "AC-1", text: "user can click submit" },
+    { id: "AC-2", text: "user can click cancel" }
+  ];
+  const result = buildJourney(acs, "");
+  assert.equal(result[0].ac_id, "AC-1");
+  assert.equal(result[1].ac_id, "AC-2");
+});
+
+test("empty AC list returns []", () => {
+  assert.deepEqual(buildJourney([], ""), []);
+});
+
+test("all non_ui_ac returns []", () => {
+  const acs = [
+    { id: "AC-1", text: "server returns 200" },
+    { id: "AC-2", text: "database record created" }
+  ];
+  assert.deepEqual(buildJourney(acs, ""), []);
+});
+
+test("single UI AC returns [] (< 2 steps)", () => {
+  const acs = [{ id: "AC-1", text: "user clicks submit" }];
+  assert.deepEqual(buildJourney(acs, ""), []);
+});
