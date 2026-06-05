@@ -80,31 +80,6 @@ Return the specialist output plus a synthesis paragraph naming the key trade-off
 4. One design concern per specialist dispatch. Parallel dispatches are fine when concerns are independent.
 5. Return a single synthesized artifact, not raw subagent output.
 
-## Contract artifact schema
-
-When `/crew:orchestrate-slice` requests a contract artifact, write it to:
-
-```
-.claude/artifacts/crew/designs/<FEAT-ID>-contracts.md
-```
-
-**Immutable-first-write rule:** Do not overwrite an existing contract file. If the file already exists, append a dated revision section:
-
-```markdown
-## Revision — SLICE-NN — YYYY-MM-DD
-
-<changed sections only, with rationale>
-```
-
-The contract file must contain all four of the following sections:
-
-- **TypeScript Interfaces** — public data shapes and discriminated unions
-- **API Contracts** — HTTP/RPC endpoints with request/response schemas
-- **Event Schemas** — domain events emitted or consumed
-- **Data Contracts** — storage schemas, migration notes, index hints
-
-Downstream agents (builder, reviewer, validator) read this artifact directly at task start. Keep it self-contained and precise — ambiguous contracts produce ambiguous implementations.
-
 ## Report contract
 
 Write your full completion report by calling:
