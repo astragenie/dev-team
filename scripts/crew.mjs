@@ -729,11 +729,15 @@ const COMMANDS = {
       feature: flags.feature,
       phase: flags.phase
     });
-    const costArtifact = await maybeEmitCostReport(repoPath, {
-      runTitle: flags.title || positionals.join(" ") || null,
-      feature: flags.feature,
-      phase: flags.phase
-    }, emitCostAdvise);
+    const costArtifact = await maybeEmitCostReport(
+      repoPath,
+      {
+        runTitle: flags.title || positionals.join(" ") || null,
+        feature: flags.feature,
+        phase: flags.phase
+      },
+      emitCostAdvise
+    );
     return costArtifact ? { ...synthesis, costReport: costArtifact } : synthesis;
   },
 

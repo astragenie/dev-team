@@ -9,7 +9,11 @@ async function parseEvents(dir) {
   const p = path.join(dir, ".claude", "logs", "events.jsonl");
   try {
     const text = await fs.readFile(p, "utf8");
-    return text.trim().split("\n").filter(Boolean).map((l) => JSON.parse(l));
+    return text
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((l) => JSON.parse(l));
   } catch {
     return [];
   }

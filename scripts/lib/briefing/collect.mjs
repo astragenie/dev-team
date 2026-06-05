@@ -567,7 +567,11 @@ export async function collectHookHealth(repoPath) {
     const lines = text.trim().split("\n").filter(Boolean);
     const tail = lines.slice(-HOOK_HEALTH_TAIL);
     raw = tail.map((l) => {
-      try { return /** @type {Record<string,unknown>} */ (JSON.parse(l)); } catch { return {}; }
+      try {
+        return /** @type {Record<string,unknown>} */ (JSON.parse(l));
+      } catch {
+        return {};
+      }
     });
   } catch {
     // no events file — return all green
@@ -582,7 +586,11 @@ export async function collectHookHealth(repoPath) {
   }
   const hooks = KNOWN_HOOKS.map((name) => {
     const errorCount24h = /** @type {number} */ (counts.get(name) ?? 0);
-    return { name, errorCount24h, status: /** @type {"green"|"yellow"} */ (errorCount24h > 0 ? "yellow" : "green") };
+    return {
+      name,
+      errorCount24h,
+      status: /** @type {"green"|"yellow"} */ (errorCount24h > 0 ? "yellow" : "green")
+    };
   });
   return { hooks };
 }

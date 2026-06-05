@@ -18,7 +18,19 @@
  * @returns {Promise<Record<string, unknown> | null>}
  */
 async function maybeEmitAggregateSlice(opts) {
-  const { repoPath, startedAt, completedAt, runTitle, outcome, feature, phase, notes, sourceProject, writeArtifact, computeSessionCost } = opts;
+  const {
+    repoPath,
+    startedAt,
+    completedAt,
+    runTitle,
+    outcome,
+    feature,
+    phase,
+    notes,
+    sourceProject,
+    writeArtifact,
+    computeSessionCost
+  } = opts;
   const aggregateCost = await computeSessionCost(repoPath, {
     startedAt,
     completedAt,
@@ -53,13 +65,8 @@ async function maybeEmitAggregateSlice(opts) {
  */
 function resolveCostSliceParams(flags, run) {
   return {
-    startedAt:
-      /** @type {string | undefined} */ (flags.startedAt) ||
-      run?.startedAt,
-    completedAt:
-      /** @type {string | null} */ (flags.completedAt) ||
-      run?.completedAt ||
-      null,
+    startedAt: /** @type {string | undefined} */ (flags.startedAt) || run?.startedAt,
+    completedAt: /** @type {string | null} */ (flags.completedAt) || run?.completedAt || null,
     runTitle:
       /** @type {string | undefined} */ (flags.runTitle) ||
       /** @type {string | undefined} */ (flags.title) ||
@@ -129,7 +136,5 @@ export async function costSliceHandler({ repoPath, flags }) {
     computeSessionCost
   });
 
-  return aggregateArtifact
-    ? { slice: sliceArtifact, aggregate: aggregateArtifact }
-    : sliceArtifact;
+  return aggregateArtifact ? { slice: sliceArtifact, aggregate: aggregateArtifact } : sliceArtifact;
 }

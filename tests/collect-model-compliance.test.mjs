@@ -27,10 +27,7 @@ test("computeModelCompliance averages sonnetPct across reports", () => {
   ];
   const result = computeModelCompliance(reports);
   assert.ok(result, "must return result");
-  assert.ok(
-    Math.abs(result.sonnetPct - 70) < 1,
-    `expected ~70, got ${result.sonnetPct}`
-  );
+  assert.ok(Math.abs(result.sonnetPct - 70) < 1, `expected ~70, got ${result.sonnetPct}`);
   assert.equal(result.sliceCount, 2);
 });
 
@@ -67,10 +64,7 @@ test("computeModelCompliance flags compliant when sonnetPct >= 60", () => {
 });
 
 test("computeModelCompliance skips reports without modelMix", () => {
-  const reports = [
-    { modelMix: null },
-    { modelMix: [{ model: "claude-sonnet-4-6", usdPct: 75 }] }
-  ];
+  const reports = [{ modelMix: null }, { modelMix: [{ model: "claude-sonnet-4-6", usdPct: 75 }] }];
   const result = computeModelCompliance(reports);
   assert.ok(result !== null);
   assert.equal(result.sliceCount, 1);
@@ -80,9 +74,7 @@ test("computeModelCompliance skips reports without modelMix", () => {
 test("computeModelCompliance returns 0 sonnetPct when no sonnet entry present", () => {
   const reports = [
     {
-      modelMix: [
-        { model: "claude-opus-4-7", usdPct: 100 }
-      ]
+      modelMix: [{ model: "claude-opus-4-7", usdPct: 100 }]
     }
   ];
   const result = computeModelCompliance(reports);

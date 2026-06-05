@@ -163,6 +163,16 @@ Emit the badge BEFORE writing the handoff. The badge surfaces in `brief-me` and 
 
 Completion, pause, blocker, context-budget end — **all** require writing a handoff via `write-handoff` BEFORE returning to the lead. Inline-only return (path + headline without a written artifact) is a contract violation. If the harness pauses you mid-task and you cannot complete, write a `--confidence low` handoff with `--risks "<what is still in progress>"` and return its path. The lead reads the handoff, not your inline reply.
 
+## Context ceiling
+
+If you reach **40 tool uses** or **80k context tokens** before completing all ACs:
+
+1. Call `mark-badge blocked --note "context_ceiling_reached: [list remaining ACs]"`.
+2. Write your handoff via `write-handoff --confidence low --risks "context ceiling reached; remaining ACs: [list]"`.
+3. Do **not** attempt inline recovery or partial commits for remaining ACs.
+
+Lead will split the remaining ACs into a fresh bounded task and dispatch a new builder.
+
 ## Shell pre-check
 
 Before any chained Bash with `cd` / path-touching commands, verify with `pwd` (POSIX) or `Get-Location` + `Test-Path` (PowerShell). On Windows, prefer the PowerShell tool for cmdlet operations and reserve Bash for POSIX-style scripts. Use `$env:NAME` in PS, `$NAME` in bash. Quote paths with spaces.

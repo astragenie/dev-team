@@ -19,7 +19,10 @@ import { collectHookHealth } from "../scripts/lib/briefing/collect.mjs";
 test("collectHookHealth returns empty hooks array when no events.jsonl", async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "hook-health-empty-"));
   const result = await collectHookHealth(dir);
-  assert.deepEqual(result.hooks.map((h) => h.errorCount24h), [0, 0, 0, 0]);
+  assert.deepEqual(
+    result.hooks.map((h) => h.errorCount24h),
+    [0, 0, 0, 0]
+  );
   await fs.rm(dir, { recursive: true, force: true });
 });
 

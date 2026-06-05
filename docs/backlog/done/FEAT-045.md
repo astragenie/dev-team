@@ -2,7 +2,7 @@
 id: FEAT-045
 title: "Observability & artifact trail — hook health in brief-me + synthesis fixes + skill API check"
 priority: P1
-status: pending
+status: done
 category: observability
 target_release: null
 autonomous_safe: false
@@ -36,9 +36,9 @@ docs referencing library functions that no longer exist.
 
 ## Acceptance criteria
 
-- [ ] AC-1: `crew.mjs wake-up` output includes `hookHealth` field listing per-hook error counts
-- [ ] AC-2: `brief-me` text output includes `## Hook health` section (green when all 0)
-- [ ] AC-3: All 4 hook scripts have top-level try/catch emitting `hook_error` events to events.jsonl
-- [ ] AC-4: SLICE-10/11/12/13 synthesis artifacts have no `Grade missing` or `<timestamp>` placeholders
-- [ ] AC-5: `validate-skills.mjs` warns when `## Implementation` names a function not found in the referenced file
-- [ ] AC-6: `npm run lint` zero warnings; `node --test` passes
+- [x] AC-1: `crew.mjs wake-up` output includes `hookHealth` field listing per-hook error counts
+- [x] AC-2: `brief-me` text output includes `## Hook health` section (green when all 0)
+- [x] AC-3: All 4 hook scripts have top-level try/catch emitting `hook_error` events to events.jsonl
+- [x] AC-4: SLICE-10/11/12/13 synthesis artifacts have no `Grade missing` or `<timestamp>` placeholders
+- [x] AC-5: `validate-skills.mjs` warns when `## Implementation` names a function not found in the referenced file
+- [x] AC-6: `npm run lint` zero warnings; `node --test` passes

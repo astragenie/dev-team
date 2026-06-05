@@ -31,9 +31,13 @@ function resolveVariantLines(breakdown, isSlice) {
  */
 function buildOptionalLines(fields, breakdown, outcome, totalTokens, cacheHitPct, variant) {
   const durationMs = breakdown?.window?.durationMs || 0;
-  const { aggregateAllPredicate, aggregateAllLine, sourceCountPredicate, sourceCountLine } = variant;
+  const { aggregateAllPredicate, aggregateAllLine, sourceCountPredicate, sourceCountLine } =
+    variant;
   return /** @type {Array<[unknown, function(): string]>} */ ([
-    [fields.phase != null && String(fields.phase).length > 0, () => `phase: ${JSON.stringify(String(fields.phase))}`],
+    [
+      fields.phase != null && String(fields.phase).length > 0,
+      () => `phase: ${JSON.stringify(String(fields.phase))}`
+    ],
     [fields.feature, () => `feature: ${fields.feature}`],
     [outcome?.sliceId, () => `slice: ${outcome.sliceId}`],
     [true, () => `run_title: ${JSON.stringify(fields.runTitle || "")}`],
@@ -69,7 +73,14 @@ export function renderCostReportFrontmatter(
   variant = null
 ) {
   const variantLines = resolveVariantLines(breakdown, variant === "slice");
-  const optional = buildOptionalLines(fields, breakdown, outcome, totalTokens, cacheHitPct, variantLines);
+  const optional = buildOptionalLines(
+    fields,
+    breakdown,
+    outcome,
+    totalTokens,
+    cacheHitPct,
+    variantLines
+  );
   return [
     "---",
     "kind: cost-report",

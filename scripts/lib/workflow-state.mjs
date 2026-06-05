@@ -74,7 +74,6 @@ const WORKFLOW_STATE_PATH = [...STATE_DIR, "workflow-state.json"];
 // the legacy file up.
 const LEGACY_WORKFLOW_STATE_PATH = [".claude", "state", "engineering-os", "workflow-state.json"];
 
-
 function nowIso() {
   return new Date().toISOString();
 }

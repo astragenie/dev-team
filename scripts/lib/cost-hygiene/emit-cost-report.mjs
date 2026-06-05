@@ -17,7 +17,17 @@
  * @returns {Promise<unknown>}
  */
 async function maybeEmitAggregateCost(opts) {
-  const { repoPath, title, startedAt, completedAt, outcome, feature, phase, writeArtifact, computeSessionCost } = opts;
+  const {
+    repoPath,
+    title,
+    startedAt,
+    completedAt,
+    outcome,
+    feature,
+    phase,
+    writeArtifact,
+    computeSessionCost
+  } = opts;
   const aggregateCost = await computeSessionCost(repoPath, {
     startedAt,
     completedAt,
@@ -91,7 +101,11 @@ async function emitCostReportInner(repoPath, runTitle, feature, phase, emitCostA
  * @param {(repoPath: string, opts: { title: string | null, feature: string | null, phase: string | null }) => Promise<unknown>} [emitCostAdviseFn]
  * @returns {Promise<Record<string, unknown> | null>}
  */
-export async function maybeEmitCostReport(repoPath, options = {}, emitCostAdviseFn = async () => null) {
+export async function maybeEmitCostReport(
+  repoPath,
+  options = {},
+  emitCostAdviseFn = async () => null
+) {
   const { runTitle, feature, phase } =
     /** @type {{ runTitle?: string | null, feature?: string | null, phase?: string | null }} */ (
       options
