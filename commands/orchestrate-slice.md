@@ -150,6 +150,14 @@ Produce:
 - State transitions (loading / empty / error / success states for each component)
 - Copy and labels for all user-visible text
 - Accessibility requirements (keyboard nav, ARIA roles, color contrast notes)
+- `## API touchpoints` section listing every user action that triggers a network call, with matching operationId from the OpenAPI YAML. Example:
+    - "User clicks Save" → operationId `createThing`
+    - "List page loads" → operationId `listThings`
+- A YAML frontmatter block at the top of the file with `slice:`, `feat:`, and `contracts:` fields (where `contracts:` points to the FEAT YAML path).
+
+After writing the spec, run:
+  node ./scripts/validate-ux-spec.mjs <ux-spec-path>
+(must exit 0; every operationId referenced must exist in the FEAT YAML.)
 
 Return ONLY the artifact path on a single line.
 ```
