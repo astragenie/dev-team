@@ -10,8 +10,26 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
+import { spawn } from "node:child_process";
 import openapiTS, { astToString } from "openapi-typescript";
 import { parse as parseYaml } from "yaml";
+
+/**
+ * @param {string} yamlPath
+ * @returns {Promise<{ok: boolean, output: string}>}
+ */
+async function runRedoclyLint(yamlPath) {
+  return new Promise((resolve) => {
+    const proc = spawn("npx", ["--no-install", "redocly", "lint", yamlPath], {
+      stdio: ["ignore", "pipe", "pipe"],
+      shell: process.platform === "win32"
+    });
+    let output = "";
+    proc.stdout.on("data", (d) => (output += d.toString()));
+    proc.stderr.on("data", (d) => (output += d.toString()));
+    proc.on("close", (code) => resolve({ ok: code === 0, output }));
+  });
+}
 
 /**
  * @param {object} opts
@@ -32,6 +50,12 @@ export async function validateContracts(opts) {
   }
   if (!yaml.includes("openapi: 3.1")) {
     errors.push("YAML is not OpenAPI 3.1");
+  }
+  if (opts.runLint) {
+    const lint = await runRedoclyLint(opts.yamlPath);
+    if (!lint.ok) {
+      errors.push(`redocly lint failed:\n${lint.output}`);
+    }
   }
   let regeneratedTs = "";
   try {

@@ -53,3 +53,18 @@ test("validateContracts reports drift when committed TS differs from regenerated
     "expected a drift error: " + JSON.stringify(result.errors)
   );
 });
+
+test("validateContracts fails redocly lint on broken YAML", async () => {
+  const result = await validateContracts({
+    yamlPath: path.join(FIXTURE_DIR, "broken-missing-examples.openapi.yaml"),
+    tsOutPath: path.join(FIXTURE_DIR, "broken-missing-examples-contracts.ts"),
+    writeTs: false,
+    runLint: true,
+    checkDrift: false
+  });
+  assert.equal(result.ok, false);
+  assert.ok(
+    result.errors.some((e) => /redocly|operationId|operation-operationId/i.test(e)),
+    "expected a redocly error: " + JSON.stringify(result.errors)
+  );
+});
