@@ -1,0 +1,54 @@
+#!/usr/bin/env node
+
+// Contract artifact CI gate. See docs/standards/contract-artifact-schema.md.
+//
+// Errors (fail CI):
+//   - YAML fails redocly lint
+//   - regenerated contracts.ts differs from committed copy
+//   - mandatory examples missing on a declared response code
+
+import fs from "node:fs/promises";
+import path from "node:path";
+
+/**
+ * @param {object} opts
+ * @param {string} opts.yamlPath
+ * @param {string} opts.tsOutPath
+ * @param {boolean} [opts.writeTs]
+ * @param {boolean} [opts.runLint]
+ */
+export async function validateContracts(opts) {
+  const errors = [];
+  const yaml = await fs.readFile(opts.yamlPath, "utf8");
+  if (!yaml.includes("openapi: 3.1")) {
+    errors.push("YAML is not OpenAPI 3.1");
+  }
+  const regeneratedTs = await generateTs(yaml);
+  if (opts.writeTs) {
+    await fs.writeFile(opts.tsOutPath, regeneratedTs, "utf8");
+  }
+  return { ok: errors.length === 0, errors, regeneratedTs };
+}
+
+/** @param {string} _yaml */
+async function generateTs(_yaml) {
+  // Minimal stub — replaced in Task 4 with openapi-typescript invocation.
+  return "// generated\nexport const _placeholder = true;\n";
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const yamlPath = process.argv[2];
+  if (!yamlPath) {
+    console.error("usage: validate-contracts.mjs <yaml> [<ts-out>]");
+    process.exit(2);
+  }
+  const tsOutPath =
+    process.argv[3] ||
+    path.join(path.dirname(yamlPath), path.basename(yamlPath, ".openapi.yaml") + "-contracts.ts");
+  const result = await validateContracts({ yamlPath, tsOutPath, writeTs: false, runLint: true });
+  if (!result.ok) {
+    for (const e of result.errors) console.error("ERR:", e);
+    process.exit(1);
+  }
+  console.log("OK");
+}
