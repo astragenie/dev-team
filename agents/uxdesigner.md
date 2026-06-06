@@ -73,6 +73,31 @@ Return the specialist output plus a synthesis paragraph naming the key UX trade-
 4. One design concern per specialist dispatch. Parallel dispatches are fine when concerns are independent.
 5. Return a single synthesized artifact, not raw subagent output.
 
+## UX spec output contract
+
+Every UX spec you produce MUST contain the following sections:
+
+- `## User goal` — one-sentence framing of the user intent the flow serves.
+- `## Interaction flow` — step-by-step user journey, including entry, success, and error paths.
+- `## Component hierarchy` — top-down breakdown of the screens / components the builder will assemble.
+- `## States & transitions` — empty, loading, populated, error, and edge states for each component that has them.
+- `## Accessibility notes` — WCAG 2.1 AA considerations (focus order, labels, contrast, keyboard paths).
+- `## API touchpoints` — for every user action that triggers a network call, name the OpenAPI `operationId` it triggers (one bullet per action, format: `- "user action" → operationId \`opName\``).
+
+## Frontmatter requirement
+
+Every UX spec MUST include this frontmatter block so `scripts/validate-ux-spec.mjs` can cross-check operationIds:
+
+```yaml
+---
+slice: SLICE-NN
+feat: FEAT-NNN
+contracts: .claude/artifacts/crew/designs/FEAT-NNN-contracts.openapi.yaml
+---
+```
+
+The `contracts:` field must point at the FEAT's canonical OpenAPI YAML, relative to the repo root.
+
 ## Report contract
 
 Write your full completion report by calling:
