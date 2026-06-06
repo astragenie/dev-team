@@ -2,11 +2,14 @@
 
 // Contract artifact CI gate. See docs/standards/contract-artifact-schema.md.
 //
-// Task 1 scaffold (this file): only the OpenAPI 3.1 marker check is enforced.
-// Tasks 2–4 add the full gate list:
-//   - Task 2: regenerate contracts.ts via openapi-typescript
-//   - Task 3: drift detection (regenerated vs committed)
-//   - Task 4: redocly lint + mandatory examples per declared response code
+// Enforces (errors fail CI):
+//   - YAML is OpenAPI 3.1 (marker check on first line)
+//   - redocly lint --extends recommended (when runLint)
+//   - regenerated contracts.ts matches the committed copy (when checkDrift)
+//
+// CLI: validate-contracts.mjs <yaml> [<ts-out>] [--write]
+//   --write regenerates contracts.ts and skips the drift check
+//   without --write, runs lint + drift against the committed contracts.ts
 
 import fs from "node:fs/promises";
 import path from "node:path";

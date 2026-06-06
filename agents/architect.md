@@ -83,15 +83,9 @@ Return the specialist output plus a synthesis paragraph naming the key trade-off
 
 ## Contract artifact schema
 
-When `/crew:orchestrate-slice` requests a contract artifact, see the
-authoritative **Output contract — FEAT contract artifact** section
-below for the three-file shape (YAML canonical, TS derived, markdown
-companion). The legacy single-markdown format from v0.15.0 is no
-longer canonical — wire shapes live in the YAML, not in markdown.
-
-Downstream agents (builder-fe, builder-be, reviewer, validator, integrator)
-read the three artifacts directly at task start. Keep them self-contained
-and precise — ambiguous contracts produce ambiguous implementations.
+See **Output contract — FEAT contract artifact** below for the canonical
+three-file shape (YAML + TS + markdown). Downstream agents read all three
+at task start — keep each self-contained and precise.
 
 ## Report contract
 

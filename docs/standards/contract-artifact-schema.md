@@ -40,4 +40,4 @@ Revisions edit the YAML AND append `## Revision — SLICE-NN` to the markdown. T
 
 ## CI gate
 
-`.github/workflows/test.yml` runs `npm run validate:contracts -- <yaml>` for every FEAT contract YAML committed in the repo (see Task 10).
+`.github/workflows/test.yml` runs `node ./scripts/validate-contracts.mjs <yaml>` against every `tests/fixtures/openapi/*.openapi.yaml` committed in the repo. The valid fixture must exit 0; the negative fixture (`broken-missing-examples.openapi.yaml`) must exit non-zero. Either branch failing fails CI.
