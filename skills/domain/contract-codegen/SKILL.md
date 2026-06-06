@@ -70,10 +70,23 @@ Commit the regenerated handlers. CI hashes the regenerated output against the co
 
 ## BE recipes
 
-See FEAT-D — this section is added in that FEAT's slice 1.
+Pick the per-stack recipe that matches the FEAT's backend language. Each consumer repo
+declares its codegen tool in `.claude/loop.json` (see
+[`loop-json-schema.md`](./loop-json-schema.md)). Builder reads that config in its first
+step. Missing entry for the FEAT's stack →
+`mark-badge help_request --note "codegen tool not declared for stack:<X>"`.
+
+- C# / .NET — NSwag (default) or Kiota (alternative): see [`be-csharp.md`](./be-csharp.md)
+- Python — datamodel-code-generator + fastapi-code-generator: see [`be-python.md`](./be-python.md)
+- Go — oapi-codegen: see [`be-go.md`](./be-go.md)
+- Node — openapi-typescript-codegen: see [`be-node.md`](./be-node.md)
+
+All BE recipes follow the same contract: read the FEAT-scoped OpenAPI YAML, emit
+generated code under `apps/api/generated/feat-NNN/` (or per-stack equivalent), commit
+the output. CI hashes regenerated output against the committed copy; mismatch fails.
 
 ## Done when
 
 - All codegen commands exit 0
-- No diff in generated artifacts vs committed copy (FE: `src/api/`, `src/mocks/`; BE: per-stack — covered by FEAT-D)
+- No diff in generated artifacts vs committed copy (FE: `src/api/`, `src/mocks/`; BE: per-stack — see the relevant `be-*.md`)
 - Generated artifacts compile / typecheck
