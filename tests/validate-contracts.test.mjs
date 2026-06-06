@@ -20,3 +20,16 @@ test("validateContracts accepts a well-formed FEAT contract YAML", async () => {
   assert.equal(result.ok, true, JSON.stringify(result.errors));
   assert.ok(result.regeneratedTs.includes("export"), "TS output empty");
 });
+
+test("regenerated TS includes operation paths and Thing schema", async () => {
+  const result = await validateContracts({
+    yamlPath: path.join(FIXTURE_DIR, "valid-feat.openapi.yaml"),
+    tsOutPath: path.join(FIXTURE_DIR, "valid-feat-contracts.ts"),
+    writeTs: false,
+    runLint: false
+  });
+  assert.equal(result.ok, true);
+  assert.match(result.regeneratedTs, /\/things/);
+  assert.match(result.regeneratedTs, /Thing/);
+  assert.match(result.regeneratedTs, /export\s+(interface|type)\s+paths/);
+});

@@ -10,6 +10,8 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
+import openapiTS, { astToString } from "openapi-typescript";
+import { parse as parseYaml } from "yaml";
 
 /**
  * @param {object} opts
@@ -31,10 +33,11 @@ export async function validateContracts(opts) {
   return { ok: errors.length === 0, errors, regeneratedTs };
 }
 
-/** @param {string} _yaml */
-async function generateTs(_yaml) {
-  // Minimal stub — replaced in Task 2 with openapi-typescript invocation.
-  return "// generated\nexport const _placeholder = true;\n";
+/** @param {string} yaml */
+async function generateTs(yaml) {
+  const doc = parseYaml(yaml);
+  const ast = await openapiTS(doc);
+  return astToString(ast);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
