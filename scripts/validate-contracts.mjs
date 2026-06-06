@@ -10,6 +10,7 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
 import openapiTS, { astToString } from "openapi-typescript";
 import { parse as parseYaml } from "yaml";
@@ -103,7 +104,7 @@ function diffSummary(a, b) {
   return `committed=${aLines} lines, regenerated=${bLines} lines`;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const yamlPath = process.argv[2];
   if (!yamlPath) {
     console.error("usage: validate-contracts.mjs <yaml> [<ts-out>] [--write]");

@@ -2,6 +2,9 @@ openapi: 3.1.0
 info:
   title: Valid FEAT contract
   version: 0.1.0
+servers:
+  - url: https://api.example.com
+    description: Production
 components:
   securitySchemes:
     bearerAuth:
@@ -20,6 +23,7 @@ paths:
   /things:
     post:
       operationId: createThing
+      summary: Create a Thing
       security: [{ bearerAuth: [] }]
       x-idempotent: false
       x-ratelimit: { window: 1m, limit: 100 }

@@ -8,6 +8,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Create a Thing */
         post: operations["createThing"];
         delete?: never;
         options?: never;
