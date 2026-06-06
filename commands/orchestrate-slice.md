@@ -129,12 +129,13 @@ Store the returned path as `CONTRACT_YAML_PATH`. Derive `CONTRACT_MD_PATH` and `
 
 **Dispatch rules:**
 
-- Skip uxdesigner (Step 2) when `NEEDS_UX = false`.
-- Always run builder (Step 3) when `BEHAVIOR_CHANGED = true`. If `BEHAVIOR_CHANGED = false` AND `NEEDS_UX = false`, this slice has no implementation work — skip both and go to Step 4.
-- When BOTH `NEEDS_UX = true` AND `BEHAVIOR_CHANGED = true`: dispatch uxdesigner AND builder in PARALLEL — single message containing two `Agent` tool calls. They show as concurrent dispatches in the UI.
-- When only one branch fires: single dispatch as before — no spurious empty Agent call.
+- `SPLIT_BUILD = false` AND `NEEDS_UX = false` AND `BEHAVIOR_CHANGED = false` — no implementation work. Skip Steps 2 + 3, jump to Step 4.
+- `SPLIT_BUILD = false` AND only `NEEDS_UX = true` — dispatch `crew:uxdesigner` only.
+- `SPLIT_BUILD = false` AND only `BEHAVIOR_CHANGED = true` — dispatch `crew:builder` only (single-builder path, unchanged).
+- `SPLIT_BUILD = false` AND BOTH true — single message with TWO Agent calls: `crew:uxdesigner` + `crew:builder` (existing v0.15.0 behavior, unchanged).
+- `SPLIT_BUILD = true` — single message with THREE Agent calls: `crew:uxdesigner` + `crew:builder-fe` + `crew:builder-be`. All consume the same FEAT-scoped OpenAPI YAML path. Builder handoffs are scoped by role: `builder-fe-<SLICE>.md` and `builder-be-<SLICE>.md`.
 
-**Race-safety.** Both subagents read the same contracts artifact path computed deterministically from FEAT-ID alone (`.claude/artifacts/crew/designs/<FEAT-ID>-contracts.openapi.yaml`). UX spec artifact stays SLICE-scoped (`<FEAT-ID>-ux-<SLICE-NN>.md`) because UX covers one slice's interaction surface, not the FEAT's whole contract.
+Race-safety: each parallel agent writes its own artifact at a deterministic path. No shared mutable state. UX spec stays slice-scoped. OpenAPI YAML is read-only for both builders (drift → help_request).
 
 #### Step 2 prompt — `crew:uxdesigner`
 
@@ -189,6 +190,52 @@ Implement all acceptance criteria in the slice file. Follow TDD: write failing t
 Store the returned path as `BUILDER_HANDOFF_PATH`.
 
 When both branches fire, the orchestrator collects `UX_SPEC_PATH` AND `BUILDER_HANDOFF_PATH` before proceeding to Step 4.
+
+#### Step 3 (SPLIT_BUILD=true) prompts
+
+##### Step 3a — `crew:builder-fe`
+
+```
+Slice: <SLICE-NN title>
+Slice file: <absolute path>
+OpenAPI YAML: <CONTRACT_YAML_PATH>
+Contract markdown: <CONTRACT_MD_PATH>
+UX spec: <UX_SPEC_PATH or "none">
+
+Read the OpenAPI YAML before writing any FE code. Your implementation must conform to it. Regenerate orval clients and openapi-msw handlers as your FIRST step (see skills/domain/contract-codegen/ FE recipes).
+
+If you find a gap in the YAML, surface it as help_request — do not invent.
+
+A BE builder is working concurrently on the BE side; do NOT block on it — work from contracts + UX spec only. Integrator will exercise the real wire later.
+
+Implement all acceptance criteria related to FE. Follow TDD: write failing component tests first.
+
+Return the handoff artifact path.
+```
+
+Store the returned path as `BUILDER_FE_HANDOFF_PATH`.
+
+##### Step 3b — `crew:builder-be`
+
+```
+Slice: <SLICE-NN title>
+Slice file: <absolute path>
+OpenAPI YAML: <CONTRACT_YAML_PATH>
+Contract markdown: <CONTRACT_MD_PATH>
+Stack: <derived from FEAT stack:* tag>
+
+Read the OpenAPI YAML before writing any BE code. Your implementation must conform to it. Regenerate native types/stubs as your FIRST step (see skills/domain/contract-codegen/ BE recipes for your stack).
+
+If you find a gap in the YAML, surface it as help_request — do not invent.
+
+A FE builder is working concurrently on the FE side; do NOT block on it — work from contracts only. Integrator will exercise the real wire later.
+
+Implement all acceptance criteria related to BE + DB. Follow TDD: write failing tests first.
+
+Return the handoff artifact path.
+```
+
+Store the returned path as `BUILDER_BE_HANDOFF_PATH`.
 
 ---
 
