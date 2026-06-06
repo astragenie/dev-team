@@ -214,3 +214,27 @@ After a successful Edit / Write, do not Read the same file to verify. The tool w
   - Good: `grep -l "write-handoff" agents/{builder,reviewer,validator,deployer,researcher}.md`
 
 - **No re-Read after verification.** Once you've confirmed a file's content via Grep or Read, do not re-load it later in the same review. Trust your earlier observation.
+
+## SPLIT_BUILD conformance sections
+
+When the dispatch prompt provides both `Builder-fe handoff` and `Builder-be handoff`, your review-result artifact MUST include FOUR sections:
+
+### Contract Conformance (FE)
+- `PASS` — FE diff conforms to all wire shapes, routes, and example payloads in the OpenAPI YAML
+- `FAIL — <specific deviations>` — list which operationId / type / route differs and how
+
+### Contract Conformance (BE)
+- `PASS` — BE diff conforms to all wire shapes, routes, status codes, error responses, and `security` declarations
+- `FAIL — <specific deviations>`
+
+### UX Spec Conformance
+- `PASS` — FE implementation honors flows, hierarchy, state transitions, copy, a11y in the UX spec
+- `FAIL — <specific deviations>`
+- `N/A — slice has no user-visible behavior` (rare in SPLIT_BUILD)
+
+### Integration Conformance
+- `PASS` — integrator artifact at the provided path shows `Outcome: PASS` AND no `Drift detected` lines
+- `FAIL — <reason>` — link the artifact and quote the failing trace line
+- `N/A — <SKIP reason>` — integrator artifact shows SKIP; explain in one line
+
+When only a single `Builder handoff` is provided (SPLIT_BUILD=false), keep the existing single Contract Conformance + UX Spec Conformance behavior — do not add the FE/BE/Integration sections.

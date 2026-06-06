@@ -11,6 +11,10 @@ triggers: UI component, frontend stack, "**/*.tsx", React, Next.js, Tailwind, bu
 
 # Frontend Advisory
 
+## Input source
+
+Frontend work in a SPLIT_BUILD slice consumes the FEAT's OpenAPI YAML as the source of truth for wire shapes. Use `skills/domain/contract-codegen/` (FE recipes) to regenerate orval clients and openapi-msw handlers before any feature work. The derived `*-contracts.ts` is for type imports only; do not edit it.
+
 ## When to use
 
 - Building or reviewing React/Next.js UI components

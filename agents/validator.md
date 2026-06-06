@@ -180,3 +180,12 @@ After Grep locates a match, Read only the relevant lines with `offset` + `limit`
 ### Batch evidence-gathering calls
 
 When you need multiple independent checks (test runs, log greps, CLI inspections), issue them in a single parallel tool block. Sequential one-per-turn calls fragment the cache and waste turns.
+
+## SPLIT_BUILD short-circuit
+
+When the dispatch prompt provides an `Integration artifact:` path AND its `Outcome:` line reads `PASS`:
+
+- If the slice's Acceptance Criteria are all covered by the happy-path AC the integrator exercised, you MAY mark validation `PASS` by reference. Record this decision in your validation artifact under `## Short-circuit` with one line: `referenced integrator artifact <path>; no additional scenarios needed`.
+- If any AC requires multi-scenario coverage NOT exercised by the integrator (auth failure modes, pagination, rate-limit behavior, error envelope shapes beyond the happy path), do NOT short-circuit — run the full scenario set.
+
+The short-circuit decision is auditable in the validation artifact; reviewer can verify it later. Default to running the full set when in doubt.

@@ -1,0 +1,11 @@
+openapi: 3.1.0
+info:
+  title: Broken contract
+  version: 0.1.0
+paths:
+  /things:
+    post:
+      # operationId missing → redocly should error
+      responses:
+        '200':
+          description: OK

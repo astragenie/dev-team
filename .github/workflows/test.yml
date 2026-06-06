@@ -18,6 +18,31 @@ jobs:
       - run: node ./scripts/validate-skills.mjs
       - run: node ./scripts/validate-agents.mjs
       - run: node ./scripts/validate-slices.mjs
+      - name: Validate contracts (against committed fixtures)
+        run: |
+          for f in tests/fixtures/openapi/*.openapi.yaml; do
+            if [ "$(basename "$f")" = "broken-missing-examples.openapi.yaml" ]; then
+              # Negative fixture — expect failure
+              if node ./scripts/validate-contracts.mjs "$f"; then
+                echo "ERROR: negative fixture passed lint"
+                exit 1
+              fi
+            else
+              node ./scripts/validate-contracts.mjs "$f"
+            fi
+          done
+      - name: Validate UX spec fixtures
+        run: |
+          for f in tests/fixtures/ux-specs/*.md; do
+            if [ "$(basename "$f")" = "missing-operationid.md" ]; then
+              if node ./scripts/validate-ux-spec.mjs "$f"; then
+                echo "ERROR: negative fixture passed"
+                exit 1
+              fi
+            else
+              node ./scripts/validate-ux-spec.mjs "$f"
+            fi
+          done
       - name: Validate synthesis artifacts (advisory)
         continue-on-error: true
         run: node ./scripts/validate-syntheses.mjs

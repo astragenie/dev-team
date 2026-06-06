@@ -41,6 +41,9 @@ Run this after `/loop:slice start --id SLICE-NN`. It reads the slice file, class
    - tags include `stack:react` OR `stack:vue` → `NEEDS_UX = true`
    - tags include `surface:docs` only and no `surface:api`/`surface:ui` → `NEEDS_CONTRACT = false`, `NEEDS_UX = false`
    - tags include `stack:none` → `NEEDS_CONTRACT = false`, `NEEDS_UX = false`
+   - tags include BOTH (`surface:ui` OR `stack:react`) AND (`surface:api` OR `surface:schema` OR `stack:csharp` OR `stack:node` OR `stack:python` OR `stack:go`) → `SPLIT_BUILD = true`
+   - slice frontmatter `skip:` includes `"split-build"` → force `SPLIT_BUILD = false`
+   - otherwise → `SPLIT_BUILD = false`
 
    **AC-text heuristics (fallback when no tags):**
    - ACs mention both "frontend" and "backend" or "API" → `NEEDS_CONTRACT = true`
@@ -53,8 +56,12 @@ Run this after `/loop:slice start --id SLICE-NN`. It reads the slice file, class
 
 4. Print a one-line classification summary before any dispatch:
    ```
-   Classification: NEEDS_CONTRACT=<true|false> NEEDS_UX=<true|false> BEHAVIOR_CHANGED=<true|false> RELEASE_CONTENT=<true|false> DOCS_NEEDED=<true|false>
+   Classification: SPLIT_BUILD=<true|false> NEEDS_CONTRACT=<true|false> NEEDS_UX=<true|false> BEHAVIOR_CHANGED=<true|false> RELEASE_CONTENT=<true|false> DOCS_NEEDED=<true|false>
    ```
+
+The classification logic is also implemented in `scripts/orchestrate-slice-classify.mjs` (the source of truth for SPLIT_BUILD). When in doubt, run:
+  node ./scripts/orchestrate-slice-classify.mjs <slice-path>
+to see the deterministic answer.
 
 ---
 
@@ -64,13 +71,13 @@ Run this after `/loop:slice start --id SLICE-NN`. It reads the slice file, class
 
 Locate the FEAT ID from the slice frontmatter (`feat:` field or `FEAT-NNN` in the title). If none, derive from the slice ID (SLICE-NN → look up which FEAT owns this slice in the slice file body).
 
-Check whether `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.md` already exists. The artifact is FEAT-scoped (shared across all slices of the FEAT) — loop's `/loop:backlog-enrich` pass 2 and `/loop:slice-from-feature` on-demand trigger pre-populate it when missing.
+Check whether `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.openapi.yaml` already exists. The artifact is FEAT-scoped (shared across all slices of the FEAT) — loop's `/loop:backlog-enrich` pass 2 and `/loop:slice-from-feature` on-demand trigger pre-populate it when missing.
 
 **Decision tree:**
 
-1. **Artifact exists AND slice does NOT require a revision** → SKIP architect dispatch entirely. Set `CONTRACT_PATH = .claude/artifacts/crew/designs/<FEAT-ID>-contracts.md` from the existing file and continue to Step 2. Print:
+1. **Artifact exists AND slice does NOT require a revision** → SKIP architect dispatch entirely. Set `CONTRACT_YAML_PATH = .claude/artifacts/crew/designs/<FEAT-ID>-contracts.openapi.yaml` from the existing file (derive `CONTRACT_MD_PATH` and `CONTRACT_TS_PATH` by replacing `.openapi.yaml` with `.md` / `-contracts.ts`) and continue to Step 2. Print:
    ```
-   Step 1: contracts artifact already present at <CONTRACT_PATH>; skipping architect dispatch (no revision needed).
+   Step 1: contracts artifact already present at <CONTRACT_YAML_PATH>; skipping architect dispatch (no revision needed).
    ```
 
 2. **Artifact exists AND slice DOES require a revision** → instruct architect to read it and append a `## Revision — SLICE-NN` subsection. Use the dispatch prompt below with the existence-known branch.
@@ -95,35 +102,40 @@ FEAT tags: <tags array as comma-separated string>
 Acceptance criteria:
 <paste the full AC section text>
 
-Contract artifact target: .claude/artifacts/crew/designs/<FEAT-ID>-contracts.md
+Contract artifact target (canonical YAML): .claude/artifacts/crew/designs/<FEAT-ID>-contracts.openapi.yaml
+Contract markdown companion:               .claude/artifacts/crew/designs/<FEAT-ID>-contracts.md
+Derived TS (regenerated, committed):       .claude/artifacts/crew/designs/<FEAT-ID>-contracts.ts
 
-If the file already exists: read it, then add a ## Revision — SLICE-NN subsection with any new or changed interfaces. Do NOT remove existing sections.
-If the file does not exist: create it with these four sections (write "N/A — not applicable for this slice." for sections that do not apply):
-  ## TypeScript Interfaces
-  ## API Contracts
-  ## Event Schemas
-  ## Data Contracts
+If the YAML already exists: read it, then add the new operations / schemas for this slice. Bump `info.version` (semver) if any public operation changes. Append `## Revision — SLICE-NN` to the markdown.
+If the YAML does not exist: create it from scratch following `skills/domain/openapi-authoring/SKILL.md`.
 
-Be concrete — use real type names, route paths, and field names from the ACs. Avoid generic placeholders.
-Return ONLY the artifact path on a single line.
+After writing/revising the YAML, regenerate the TS:
+  node ./scripts/validate-contracts.mjs <yaml> --write
+
+Then run the validator without --write to confirm clean:
+  node ./scripts/validate-contracts.mjs <yaml>
+  (must exit 0; redocly lint + drift check must pass)
+
+Return ONLY the YAML path on a single line.
 ```
 
-Store the returned path as `CONTRACT_PATH`.
+Store the returned path as `CONTRACT_YAML_PATH`. Derive `CONTRACT_MD_PATH` and `CONTRACT_TS_PATH` from it (replace `.openapi.yaml` with `.md` / `-contracts.ts`).
 
 ---
 
 ### Steps 2 + 3 — UX designer + Builder (parallel when both fire)
 
-`crew:uxdesigner` and `crew:builder` both consume the FEAT-scoped contracts artifact (Step 1's `CONTRACT_PATH`) but NOT each other's output. Builder works from contracts + slice ACs; uxdesigner produces UX spec for reviewer to check separately. Both fire concurrently.
+`crew:uxdesigner` and `crew:builder` both consume the FEAT-scoped contracts artifact (Step 1's `CONTRACT_YAML_PATH` + `CONTRACT_MD_PATH`) but NOT each other's output. Builder works from contracts + slice ACs; uxdesigner produces UX spec for reviewer to check separately. Both fire concurrently.
 
 **Dispatch rules:**
 
-- Skip uxdesigner (Step 2) when `NEEDS_UX = false`.
-- Always run builder (Step 3) when `BEHAVIOR_CHANGED = true`. If `BEHAVIOR_CHANGED = false` AND `NEEDS_UX = false`, this slice has no implementation work — skip both and go to Step 4.
-- When BOTH `NEEDS_UX = true` AND `BEHAVIOR_CHANGED = true`: dispatch uxdesigner AND builder in PARALLEL — single message containing two `Agent` tool calls. They show as concurrent dispatches in the UI.
-- When only one branch fires: single dispatch as before — no spurious empty Agent call.
+- `SPLIT_BUILD = false` AND `NEEDS_UX = false` AND `BEHAVIOR_CHANGED = false` — no implementation work. Skip Steps 2 + 3, jump to Step 4.
+- `SPLIT_BUILD = false` AND only `NEEDS_UX = true` — dispatch `crew:uxdesigner` only.
+- `SPLIT_BUILD = false` AND only `BEHAVIOR_CHANGED = true` — dispatch `crew:builder` only (single-builder path, unchanged).
+- `SPLIT_BUILD = false` AND BOTH true — single message with TWO Agent calls: `crew:uxdesigner` + `crew:builder` (existing v0.15.0 behavior, unchanged).
+- `SPLIT_BUILD = true` — single message with THREE Agent calls: `crew:uxdesigner` + `crew:builder-fe` + `crew:builder-be`. All consume the same FEAT-scoped OpenAPI YAML path. Builder handoffs are scoped by role: `builder-fe-<SLICE>.md` and `builder-be-<SLICE>.md`.
 
-**Race-safety.** Both subagents read the same contracts artifact path computed deterministically from FEAT-ID alone (`.claude/artifacts/crew/designs/<FEAT-ID>-contracts.md`). UX spec artifact stays SLICE-scoped (`<FEAT-ID>-ux-<SLICE-NN>.md`) because UX covers one slice's interaction surface, not the FEAT's whole contract.
+Race-safety: each parallel agent writes its own artifact at a deterministic path. No shared mutable state. UX spec stays slice-scoped. OpenAPI YAML is read-only for both builders (drift → help_request).
 
 #### Step 2 prompt — `crew:uxdesigner`
 
@@ -131,7 +143,8 @@ Store the returned path as `CONTRACT_PATH`.
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
 FEAT tags: <tags array>
-Contract artifact: <CONTRACT_PATH or "none — no contract artifact for this slice">
+OpenAPI YAML: <CONTRACT_YAML_PATH or "none — no contract artifact for this slice">
+Contract markdown: <CONTRACT_MD_PATH or "none — no contract artifact for this slice">
 Acceptance criteria:
 <paste the full AC section text>
 
@@ -145,6 +158,14 @@ Produce:
 - State transitions (loading / empty / error / success states for each component)
 - Copy and labels for all user-visible text
 - Accessibility requirements (keyboard nav, ARIA roles, color contrast notes)
+- `## API touchpoints` section listing every user action that triggers a network call, with matching operationId from the OpenAPI YAML. Example:
+    - "User clicks Save" → operationId `createThing`
+    - "List page loads" → operationId `listThings`
+- A YAML frontmatter block at the top of the file with `slice:`, `feat:`, and `contracts:` fields (where `contracts:` points to the FEAT YAML path).
+
+After writing the spec, run:
+  node ./scripts/validate-ux-spec.mjs <ux-spec-path>
+(must exit 0; every operationId referenced must exist in the FEAT YAML.)
 
 Return ONLY the artifact path on a single line.
 ```
@@ -156,7 +177,8 @@ Store the returned path as `UX_SPEC_PATH`.
 ```
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
-Contract artifact: <CONTRACT_PATH or "none">
+OpenAPI YAML: <CONTRACT_YAML_PATH or "none">
+Contract markdown: <CONTRACT_MD_PATH or "none">
 
 Read the contract artifact before writing any code. Your implementation must conform to it. If you find a gap, surface it in your handoff as a help_request — do not invent a resolution.
 
@@ -169,6 +191,87 @@ Store the returned path as `BUILDER_HANDOFF_PATH`.
 
 When both branches fire, the orchestrator collects `UX_SPEC_PATH` AND `BUILDER_HANDOFF_PATH` before proceeding to Step 4.
 
+#### Step 3 (SPLIT_BUILD=true) prompts
+
+##### Step 3a — `crew:builder-fe`
+
+```
+Slice: <SLICE-NN title>
+Slice file: <absolute path>
+OpenAPI YAML: <CONTRACT_YAML_PATH>
+Contract markdown: <CONTRACT_MD_PATH>
+UX spec: <UX_SPEC_PATH or "none">
+
+Read the OpenAPI YAML before writing any FE code. Your implementation must conform to it. Regenerate orval clients and openapi-msw handlers as your FIRST step (see skills/domain/contract-codegen/ FE recipes).
+
+If you find a gap in the YAML, surface it as help_request — do not invent.
+
+A BE builder is working concurrently on the BE side; do NOT block on it — work from contracts + UX spec only. Integrator will exercise the real wire later.
+
+Implement all acceptance criteria related to FE. Follow TDD: write failing component tests first.
+
+Return the handoff artifact path.
+```
+
+Store the returned path as `BUILDER_FE_HANDOFF_PATH`.
+
+##### Step 3b — `crew:builder-be`
+
+```
+Slice: <SLICE-NN title>
+Slice file: <absolute path>
+OpenAPI YAML: <CONTRACT_YAML_PATH>
+Contract markdown: <CONTRACT_MD_PATH>
+Stack: <derived from FEAT stack:* tag>
+
+Read the OpenAPI YAML before writing any BE code. Your implementation must conform to it. Regenerate native types/stubs as your FIRST step (see skills/domain/contract-codegen/ BE recipes for your stack).
+
+If you find a gap in the YAML, surface it as help_request — do not invent.
+
+A FE builder is working concurrently on the FE side; do NOT block on it — work from contracts only. Integrator will exercise the real wire later.
+
+Implement all acceptance criteria related to BE + DB. Follow TDD: write failing tests first.
+
+Return the handoff artifact path.
+```
+
+Store the returned path as `BUILDER_BE_HANDOFF_PATH`.
+
+---
+
+### Step 3.5 — Integrator (SPLIT_BUILD only)
+
+**Skip when `SPLIT_BUILD = false`.**
+**Skip when slice frontmatter `skip:` includes `"integrator"`.**
+
+Pre-condition: both `BUILDER_FE_HANDOFF_PATH` and `BUILDER_BE_HANDOFF_PATH` must be set AND each handoff body's `## Self-Verify Gates` section must show PASS for all gates. If either side reports any FAIL: STOP. Print the failing handoff path; tell the user to run `/crew:fix` before re-running orchestrate-slice.
+
+When both PASS, identify the happy-path AC from the slice's Acceptance Criteria — pick the first AC tagged `happy` or, if no explicit tag, the first AC that mentions a status code (e.g. "201", "200") or "shows" / "returns" / "creates".
+
+Dispatch `crew:integrator` with this prompt:
+
+```
+Slice: <SLICE-NN title>
+Slice file: <absolute path>
+OpenAPI YAML: <CONTRACT_YAML_PATH>
+Contract markdown: <CONTRACT_MD_PATH>
+Builder-fe handoff: <BUILDER_FE_HANDOFF_PATH>
+Builder-be handoff: <BUILDER_BE_HANDOFF_PATH>
+happy_path_ac: <verbatim AC text>
+
+Run the integration-smoke procedure (see skills/workflow/integration-smoke/). Validate every response against the OpenAPI schema at runtime. Write the artifact at .claude/artifacts/crew/integrations/<SLICE-NN>-integration.md.
+
+Return the artifact path on a single line.
+```
+
+Store the returned path as `INTEGRATION_PATH`.
+
+If the artifact's `Outcome:` line reads `FAIL`: STOP. Print the artifact path; tell the user to run `/crew:fix --target integration` before re-running orchestrate-slice.
+
+If `Outcome: SKIP`: continue to Step 4. Reviewer marks Integration Conformance as `N/A — <SKIP reason>`.
+
+If `Outcome: PASS`: continue to Step 4.
+
 ---
 
 ### Step 4 — Reviewer
@@ -178,20 +281,17 @@ Dispatch `crew:reviewer` with this prompt:
 ```
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
-Contract artifact: <CONTRACT_PATH or "none">
+OpenAPI YAML: <CONTRACT_YAML_PATH or "none">
 UX spec: <UX_SPEC_PATH or "none">
-Builder handoff: <BUILDER_HANDOFF_PATH>
+Integration artifact: <INTEGRATION_PATH or "none">
 
-Review the implementation diff for correctness, test coverage, and regressions.
+When SPLIT_BUILD=true:
+  Builder-fe handoff: <BUILDER_FE_HANDOFF_PATH>
+  Builder-be handoff: <BUILDER_BE_HANDOFF_PATH>
+When SPLIT_BUILD=false:
+  Builder handoff: <BUILDER_HANDOFF_PATH>
 
-When a contract artifact is provided, your review-result artifact MUST include a "Contract Conformance" section with one of:
-  PASS — implementation conforms to all interfaces and shapes in the contract artifact.
-  FAIL — <list specific deviations: which interface/route/type differs from the contract and how>
-
-When a UX spec is provided, your review-result artifact MUST also include a "UX Spec Conformance" section with one of:
-  PASS — implementation honors the interaction flows, component hierarchy, state transitions, copy, and accessibility requirements in the UX spec.
-  FAIL — <list specific deviations: which screen/state/copy/a11y rule differs and how>
-  N/A — slice has no user-visible behavior to check against the UX spec (justify briefly)
+Review the implementation diff(s) for correctness, test coverage, regressions, and contract/UX/integration conformance per the rules in your agent prompt.
 
 Return the review-result artifact path.
 ```
@@ -211,10 +311,13 @@ Dispatch `crew:validator` with this prompt:
 ```
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
-Builder handoff: <BUILDER_HANDOFF_PATH>
+Builder handoff(s): <BUILDER_HANDOFF_PATH or BUILDER_FE_HANDOFF_PATH + BUILDER_BE_HANDOFF_PATH>
 Review result: <REVIEW_RESULT_PATH>
+Integration artifact: <INTEGRATION_PATH or "none">
 
-Validate that the implementation satisfies all acceptance criteria in the slice file. Run tests, check CLI output, or exercise the changed behavior as appropriate. Return the validation artifact path.
+Validate that the implementation satisfies all acceptance criteria in the slice file. If an Integration artifact is provided with Outcome: PASS, you may short-circuit per your agent prompt's SPLIT_BUILD short-circuit rule. Otherwise, run the full scenario set.
+
+Return the validation artifact path.
 ```
 
 Store the returned path as `VALIDATION_PATH`.
@@ -266,7 +369,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-final-synthesis \
   --repo "$PWD" \
   --title "orchestrate-slice: <SLICE-NN title>" \
   --outcome "PASS" \
-  --summary "<one-paragraph summary of what shipped, which specialists ran, CONTRACT_PATH, COPYWRITER_PATH, and DOCWRITER_PATH if set>" \
+  --summary "<one-paragraph summary of what shipped, which specialists ran, CONTRACT_YAML_PATH, COPYWRITER_PATH, and DOCWRITER_PATH if set>" \
   --changed-files "<comma-separated list of all files changed by builder>" \
   --external-deltas "none"
 ```

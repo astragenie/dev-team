@@ -1,15 +1,18 @@
 {
   "name": "crew-plugin",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "private": true,
   "type": "module",
   "devDependencies": {
     "@eslint/js": "^9.16.0",
+    "@redocly/cli": "^1.34.15",
     "@types/node": "^25.9.1",
     "eslint": "^9.16.0",
     "globals": "^15.13.0",
+    "openapi-typescript": "^7.13.0",
     "prettier": "^3.4.2",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "yaml": "^2.9.0"
   },
   "scripts": {
     "test": "node --test",
@@ -18,8 +21,10 @@
     "typecheck": "tsc --noEmit",
     "validate:skills": "node ./scripts/validate-skills.mjs",
     "validate:agents": "node ./scripts/validate-agents.mjs",
+    "validate:contracts": "node ./scripts/validate-contracts.mjs",
     "validate:routing-table": "node ./scripts/validate-routing-table.mjs",
     "validate:slices": "node ./scripts/validate-slices.mjs",
+    "validate:ux-spec": "node ./scripts/validate-ux-spec.mjs",
     "format": "prettier --write \"scripts/**/*.mjs\" \"tests/**/*.mjs\"",
     "format:check": "prettier --check \"scripts/**/*.mjs\" \"tests/**/*.mjs\"",
     "installer:install-global": "node ./scripts/crew.mjs install-global",

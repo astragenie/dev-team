@@ -1,6 +1,6 @@
-// tests/agent-topology.test.mjs — pin the exact set of 9 first-party agents.
-// Fails if a 10th agent is added without updating EXPECTED_AGENTS,
-// or if any of the 9 is removed or renamed.
+// tests/agent-topology.test.mjs — pin the exact set of first-party agents.
+// Fails if an agent is added without updating EXPECTED_AGENTS,
+// or if any expected agent is removed or renamed.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
@@ -17,9 +17,12 @@ const AGENTS_ROOT = path.join(repoRoot, "agents");
 const EXPECTED_AGENTS = new Set([
   "lead",
   "builder",
+  "builder-fe",
+  "builder-be",
   "reviewer",
   "validator",
   "deployer",
+  "integrator",
   "researcher",
   "architect",
   "uxdesigner",
@@ -35,7 +38,7 @@ async function readAgentName(filePath) {
   return nameLine ? nameLine[1].trim() : null;
 }
 
-test("agents/ root contains exactly the 9 expected first-party agents", async () => {
+test("agents/ root contains exactly the expected first-party agents", async () => {
   const entries = await fs.readdir(AGENTS_ROOT, { withFileTypes: true });
   const mdFiles = entries.filter((e) => e.isFile() && e.name.endsWith(".md"));
 
