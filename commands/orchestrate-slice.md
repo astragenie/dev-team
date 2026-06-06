@@ -64,13 +64,13 @@ Run this after `/loop:slice start --id SLICE-NN`. It reads the slice file, class
 
 Locate the FEAT ID from the slice frontmatter (`feat:` field or `FEAT-NNN` in the title). If none, derive from the slice ID (SLICE-NN → look up which FEAT owns this slice in the slice file body).
 
-Check whether `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.md` already exists. The artifact is FEAT-scoped (shared across all slices of the FEAT) — loop's `/loop:backlog-enrich` pass 2 and `/loop:slice-from-feature` on-demand trigger pre-populate it when missing.
+Check whether `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.openapi.yaml` already exists. The artifact is FEAT-scoped (shared across all slices of the FEAT) — loop's `/loop:backlog-enrich` pass 2 and `/loop:slice-from-feature` on-demand trigger pre-populate it when missing.
 
 **Decision tree:**
 
-1. **Artifact exists AND slice does NOT require a revision** → SKIP architect dispatch entirely. Set `CONTRACT_PATH = .claude/artifacts/crew/designs/<FEAT-ID>-contracts.md` from the existing file and continue to Step 2. Print:
+1. **Artifact exists AND slice does NOT require a revision** → SKIP architect dispatch entirely. Set `CONTRACT_YAML_PATH = .claude/artifacts/crew/designs/<FEAT-ID>-contracts.openapi.yaml` from the existing file (derive `CONTRACT_MD_PATH` and `CONTRACT_TS_PATH` by replacing `.openapi.yaml` with `.md` / `-contracts.ts`) and continue to Step 2. Print:
    ```
-   Step 1: contracts artifact already present at <CONTRACT_PATH>; skipping architect dispatch (no revision needed).
+   Step 1: contracts artifact already present at <CONTRACT_YAML_PATH>; skipping architect dispatch (no revision needed).
    ```
 
 2. **Artifact exists AND slice DOES require a revision** → instruct architect to read it and append a `## Revision — SLICE-NN` subsection. Use the dispatch prompt below with the existence-known branch.
@@ -95,26 +95,30 @@ FEAT tags: <tags array as comma-separated string>
 Acceptance criteria:
 <paste the full AC section text>
 
-Contract artifact target: .claude/artifacts/crew/designs/<FEAT-ID>-contracts.md
+Contract artifact target (canonical YAML): .claude/artifacts/crew/designs/<FEAT-ID>-contracts.openapi.yaml
+Contract markdown companion:               .claude/artifacts/crew/designs/<FEAT-ID>-contracts.md
+Derived TS (regenerated, committed):       .claude/artifacts/crew/designs/<FEAT-ID>-contracts.ts
 
-If the file already exists: read it, then add a ## Revision — SLICE-NN subsection with any new or changed interfaces. Do NOT remove existing sections.
-If the file does not exist: create it with these four sections (write "N/A — not applicable for this slice." for sections that do not apply):
-  ## TypeScript Interfaces
-  ## API Contracts
-  ## Event Schemas
-  ## Data Contracts
+If the YAML already exists: read it, then add the new operations / schemas for this slice. Bump `info.version` (semver) if any public operation changes. Append `## Revision — SLICE-NN` to the markdown.
+If the YAML does not exist: create it from scratch following `skills/domain/openapi-authoring/SKILL.md`.
 
-Be concrete — use real type names, route paths, and field names from the ACs. Avoid generic placeholders.
-Return ONLY the artifact path on a single line.
+After writing/revising the YAML, regenerate the TS:
+  node ./scripts/validate-contracts.mjs <yaml> --write
+
+Then run the validator without --write to confirm clean:
+  node ./scripts/validate-contracts.mjs <yaml>
+  (must exit 0; redocly lint + drift check must pass)
+
+Return ONLY the YAML path on a single line.
 ```
 
-Store the returned path as `CONTRACT_PATH`.
+Store the returned path as `CONTRACT_YAML_PATH`. Derive `CONTRACT_MD_PATH` and `CONTRACT_TS_PATH` from it (replace `.openapi.yaml` with `.md` / `-contracts.ts`).
 
 ---
 
 ### Steps 2 + 3 — UX designer + Builder (parallel when both fire)
 
-`crew:uxdesigner` and `crew:builder` both consume the FEAT-scoped contracts artifact (Step 1's `CONTRACT_PATH`) but NOT each other's output. Builder works from contracts + slice ACs; uxdesigner produces UX spec for reviewer to check separately. Both fire concurrently.
+`crew:uxdesigner` and `crew:builder` both consume the FEAT-scoped contracts artifact (Step 1's `CONTRACT_YAML_PATH` + `CONTRACT_MD_PATH`) but NOT each other's output. Builder works from contracts + slice ACs; uxdesigner produces UX spec for reviewer to check separately. Both fire concurrently.
 
 **Dispatch rules:**
 
@@ -123,7 +127,7 @@ Store the returned path as `CONTRACT_PATH`.
 - When BOTH `NEEDS_UX = true` AND `BEHAVIOR_CHANGED = true`: dispatch uxdesigner AND builder in PARALLEL — single message containing two `Agent` tool calls. They show as concurrent dispatches in the UI.
 - When only one branch fires: single dispatch as before — no spurious empty Agent call.
 
-**Race-safety.** Both subagents read the same contracts artifact path computed deterministically from FEAT-ID alone (`.claude/artifacts/crew/designs/<FEAT-ID>-contracts.md`). UX spec artifact stays SLICE-scoped (`<FEAT-ID>-ux-<SLICE-NN>.md`) because UX covers one slice's interaction surface, not the FEAT's whole contract.
+**Race-safety.** Both subagents read the same contracts artifact path computed deterministically from FEAT-ID alone (`.claude/artifacts/crew/designs/<FEAT-ID>-contracts.openapi.yaml`). UX spec artifact stays SLICE-scoped (`<FEAT-ID>-ux-<SLICE-NN>.md`) because UX covers one slice's interaction surface, not the FEAT's whole contract.
 
 #### Step 2 prompt — `crew:uxdesigner`
 
@@ -131,7 +135,8 @@ Store the returned path as `CONTRACT_PATH`.
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
 FEAT tags: <tags array>
-Contract artifact: <CONTRACT_PATH or "none — no contract artifact for this slice">
+OpenAPI YAML: <CONTRACT_YAML_PATH or "none — no contract artifact for this slice">
+Contract markdown: <CONTRACT_MD_PATH or "none — no contract artifact for this slice">
 Acceptance criteria:
 <paste the full AC section text>
 
@@ -156,7 +161,8 @@ Store the returned path as `UX_SPEC_PATH`.
 ```
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
-Contract artifact: <CONTRACT_PATH or "none">
+OpenAPI YAML: <CONTRACT_YAML_PATH or "none">
+Contract markdown: <CONTRACT_MD_PATH or "none">
 
 Read the contract artifact before writing any code. Your implementation must conform to it. If you find a gap, surface it in your handoff as a help_request — do not invent a resolution.
 
@@ -178,7 +184,8 @@ Dispatch `crew:reviewer` with this prompt:
 ```
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
-Contract artifact: <CONTRACT_PATH or "none">
+OpenAPI YAML: <CONTRACT_YAML_PATH or "none">
+Contract markdown: <CONTRACT_MD_PATH or "none">
 UX spec: <UX_SPEC_PATH or "none">
 Builder handoff: <BUILDER_HANDOFF_PATH>
 
@@ -266,7 +273,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-final-synthesis \
   --repo "$PWD" \
   --title "orchestrate-slice: <SLICE-NN title>" \
   --outcome "PASS" \
-  --summary "<one-paragraph summary of what shipped, which specialists ran, CONTRACT_PATH, COPYWRITER_PATH, and DOCWRITER_PATH if set>" \
+  --summary "<one-paragraph summary of what shipped, which specialists ran, CONTRACT_YAML_PATH, COPYWRITER_PATH, and DOCWRITER_PATH if set>" \
   --changed-files "<comma-separated list of all files changed by builder>" \
   --external-deltas "none"
 ```
