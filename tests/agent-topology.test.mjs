@@ -1,6 +1,6 @@
-// tests/agent-topology.test.mjs — pin the exact set of 9 first-party agents.
-// Fails if a 10th agent is added without updating EXPECTED_AGENTS,
-// or if any of the 9 is removed or renamed.
+// tests/agent-topology.test.mjs — pin the exact set of first-party agents.
+// Fails if an agent is added without updating EXPECTED_AGENTS,
+// or if any expected agent is removed or renamed.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
@@ -17,6 +17,7 @@ const AGENTS_ROOT = path.join(repoRoot, "agents");
 const EXPECTED_AGENTS = new Set([
   "lead",
   "builder",
+  "builder-fe",
   "reviewer",
   "validator",
   "deployer",
