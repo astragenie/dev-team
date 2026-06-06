@@ -2,10 +2,11 @@
 
 // Contract artifact CI gate. See docs/standards/contract-artifact-schema.md.
 //
-// Errors (fail CI):
-//   - YAML fails redocly lint
-//   - regenerated contracts.ts differs from committed copy
-//   - mandatory examples missing on a declared response code
+// Task 1 scaffold (this file): only the OpenAPI 3.1 marker check is enforced.
+// Tasks 2–4 add the full gate list:
+//   - Task 2: regenerate contracts.ts via openapi-typescript
+//   - Task 3: drift detection (regenerated vs committed)
+//   - Task 4: redocly lint + mandatory examples per declared response code
 
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -32,7 +33,7 @@ export async function validateContracts(opts) {
 
 /** @param {string} _yaml */
 async function generateTs(_yaml) {
-  // Minimal stub — replaced in Task 4 with openapi-typescript invocation.
+  // Minimal stub — replaced in Task 2 with openapi-typescript invocation.
   return "// generated\nexport const _placeholder = true;\n";
 }
 
