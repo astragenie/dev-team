@@ -46,11 +46,13 @@ export async function validateContracts(opts) {
       committedTs = await fs.readFile(opts.tsOutPath, "utf8");
       readOk = true;
     } catch {
-      errors.push(`drift: committed TS missing at ${opts.tsOutPath}`);
+      errors.push(
+        `drift: committed TS missing at ${opts.tsOutPath} — run with --write and commit the regenerated file`
+      );
     }
     if (readOk && committedTs !== regeneratedTs) {
       errors.push(
-        `drift: ${opts.tsOutPath} differs from regenerated TS (${diffSummary(committedTs, regeneratedTs)})`
+        `drift: ${opts.tsOutPath} differs from regenerated TS (${diffSummary(committedTs, regeneratedTs)}) — run with --write and commit the regenerated file`
       );
     }
   }

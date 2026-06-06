@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { writeFile, unlink } from "node:fs/promises";
 import { validateContracts } from "../scripts/validate-contracts.mjs";
 
 const FIXTURE_DIR = path.resolve(
@@ -34,12 +35,11 @@ test("regenerated TS includes operation paths and Thing schema", async () => {
   assert.match(result.regeneratedTs, /export\s+(interface|type)\s+paths/);
 });
 
-test("validateContracts reports drift when committed TS differs from regenerated", async () => {
+test("validateContracts reports drift when committed TS differs from regenerated", async (t) => {
   const yamlPath = path.join(FIXTURE_DIR, "valid-feat.openapi.yaml");
-  const driftedTsPath = path.join(FIXTURE_DIR, "drifted-contracts.ts");
-  await (
-    await import("node:fs/promises")
-  ).writeFile(driftedTsPath, "// out of date\nexport const stale = true;\n", "utf8");
+  const driftedTsPath = path.join(FIXTURE_DIR, `drifted-contracts-${process.pid}-${Date.now()}.ts`);
+  await writeFile(driftedTsPath, "// out of date\nexport const stale = true;\n", "utf8");
+  t.after(() => unlink(driftedTsPath).catch(() => {}));
   const result = await validateContracts({
     yamlPath,
     tsOutPath: driftedTsPath,
@@ -52,5 +52,4 @@ test("validateContracts reports drift when committed TS differs from regenerated
     result.errors.some((e) => /drift/i.test(e)),
     "expected a drift error: " + JSON.stringify(result.errors)
   );
-  await (await import("node:fs/promises")).unlink(driftedTsPath);
 });
