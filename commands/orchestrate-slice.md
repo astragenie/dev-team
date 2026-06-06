@@ -41,6 +41,9 @@ Run this after `/loop:slice start --id SLICE-NN`. It reads the slice file, class
    - tags include `stack:react` OR `stack:vue` → `NEEDS_UX = true`
    - tags include `surface:docs` only and no `surface:api`/`surface:ui` → `NEEDS_CONTRACT = false`, `NEEDS_UX = false`
    - tags include `stack:none` → `NEEDS_CONTRACT = false`, `NEEDS_UX = false`
+   - tags include BOTH (`surface:ui` OR `stack:react`) AND (`surface:api` OR `surface:schema` OR `stack:csharp` OR `stack:node` OR `stack:python` OR `stack:go`) → `SPLIT_BUILD = true`
+   - slice frontmatter `skip:` includes `"split-build"` → force `SPLIT_BUILD = false`
+   - otherwise → `SPLIT_BUILD = false`
 
    **AC-text heuristics (fallback when no tags):**
    - ACs mention both "frontend" and "backend" or "API" → `NEEDS_CONTRACT = true`
@@ -53,8 +56,12 @@ Run this after `/loop:slice start --id SLICE-NN`. It reads the slice file, class
 
 4. Print a one-line classification summary before any dispatch:
    ```
-   Classification: NEEDS_CONTRACT=<true|false> NEEDS_UX=<true|false> BEHAVIOR_CHANGED=<true|false> RELEASE_CONTENT=<true|false> DOCS_NEEDED=<true|false>
+   Classification: SPLIT_BUILD=<true|false> NEEDS_CONTRACT=<true|false> NEEDS_UX=<true|false> BEHAVIOR_CHANGED=<true|false> RELEASE_CONTENT=<true|false> DOCS_NEEDED=<true|false>
    ```
+
+The classification logic is also implemented in `scripts/orchestrate-slice-classify.mjs` (the source of truth for SPLIT_BUILD). When in doubt, run:
+  node ./scripts/orchestrate-slice-classify.mjs <slice-path>
+to see the deterministic answer.
 
 ---
 
