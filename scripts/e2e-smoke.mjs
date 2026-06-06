@@ -10,6 +10,28 @@ const execFile = promisify(execFileCallback);
 const rootPath = await fs.mkdtemp(path.join(os.tmpdir(), "crew-e2e-"));
 const repoPath = path.join(rootPath, "sample-repo");
 const cliPath = path.resolve("scripts/crew.mjs");
+const classifyScriptPath = path.resolve("scripts/orchestrate-slice-classify.mjs");
+const sliceFixturePath = path.resolve("tests/fixtures/slices/split-build-demo.md");
+const openapiFixturePath = path.resolve("tests/fixtures/openapi/valid-feat.openapi.yaml");
+
+/** @param {string} sampleRoot */
+async function scenarioSplitBuildClassification(sampleRoot) {
+  const sliceDir = path.join(sampleRoot, "docs", "ai-loop", "slices", "pending");
+  await fs.mkdir(sliceDir, { recursive: true });
+  const sliceTarget = path.join(sliceDir, "SLICE-901-split-build-demo.md");
+  await fs.copyFile(sliceFixturePath, sliceTarget);
+
+  const contractDir = path.join(sampleRoot, "docs", "contracts", "FEAT-DEMO");
+  await fs.mkdir(contractDir, { recursive: true });
+  await fs.copyFile(openapiFixturePath, path.join(contractDir, "openapi.yaml"));
+
+  const { stdout } = await execFile(process.execPath, [classifyScriptPath, sliceTarget]);
+  const json = JSON.parse(stdout);
+  if (json.SPLIT_BUILD !== true) {
+    throw new Error(`expected SPLIT_BUILD true, got: ${JSON.stringify(json)}`);
+  }
+  console.log("scenarioSplitBuildClassification: PASS");
+}
 
 async function main() {
   console.log(`Creating sample repo at ${repoPath}`);
@@ -55,6 +77,9 @@ async function main() {
   );
   console.log(`- Hook events configured: ${Object.keys(settings.hooks).join(", ")}`);
   console.log(`- Repo path: ${repoPath}`);
+
+  console.log("\nScenario: SPLIT_BUILD classification");
+  await scenarioSplitBuildClassification(repoPath);
 }
 
 main().catch((error) => {
