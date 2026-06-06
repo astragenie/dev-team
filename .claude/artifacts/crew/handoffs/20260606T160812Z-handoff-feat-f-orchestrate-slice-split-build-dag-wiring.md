@@ -1,0 +1,31 @@
+# Task Handoff: FEAT-F: orchestrate-slice SPLIT_BUILD DAG wiring
+
+- Created: 2026-06-06T16:08:12.518Z
+- From: builder
+- To: lead
+- Objective: orchestrate-slice now classifies and dispatches the FE/BE split path; reviewer enforces FE/BE/UX/Integration conformance; validator can short-circuit on integrator PASS; e2e smoke proves the classification
+- Allowed Scope:
+  - FEAT-F only — Step 0 classification
+  - Step 2+3 parallel dispatch
+  - Step 3.5 integrator gate
+  - Step 4 reviewer prompt
+  - reviewer agent SPLIT_BUILD section
+  - Step 5 validator prompt
+  - validator agent short-circuit section
+  - e2e smoke scenario
+  - classification module
+- Forbidden Scope: -
+- Deliverable: commands/orchestrate-slice.md + agents/reviewer.md + agents/validator.md + scripts/orchestrate-slice-classify.mjs + e2e smoke scenario + fixtures
+- Changed Files:
+  - commands/orchestrate-slice.md
+  - agents/reviewer.md
+  - agents/validator.md
+  - scripts/orchestrate-slice-classify.mjs
+  - tests/orchestrate-slice.test.mjs
+  - tests/fixtures/slices/split-build-demo.md
+  - tests/fixtures/slices/single-stack-demo.md
+  - scripts/e2e-smoke.mjs
+- Confidence: high
+- Risks: Integrator dispatch is only validated via classification + DAG narrative — full live wire-up not exercised in plugin's own CI (consumer repos run it). Acceptable: this plugin is content-heavy, not a runtime. FEAT-A handoff already flagged commands/architect-feature.md as still containing legacy 4-section markdown contract format; recommend a follow-up reconciliation FEAT but not blocking for v0.16.0.
+- Suggested Next Handoff: FEAT-F Task 9 — release prep: CHANGELOG, package.json, marketplace.json bumps to 0.16.0
+
