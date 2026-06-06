@@ -239,6 +239,41 @@ Store the returned path as `BUILDER_BE_HANDOFF_PATH`.
 
 ---
 
+### Step 3.5 — Integrator (SPLIT_BUILD only)
+
+**Skip when `SPLIT_BUILD = false`.**
+**Skip when slice frontmatter `skip:` includes `"integrator"`.**
+
+Pre-condition: both `BUILDER_FE_HANDOFF_PATH` and `BUILDER_BE_HANDOFF_PATH` must be set AND each handoff body's `## Self-Verify Gates` section must show PASS for all gates. If either side reports any FAIL: STOP. Print the failing handoff path; tell the user to run `/crew:fix` before re-running orchestrate-slice.
+
+When both PASS, identify the happy-path AC from the slice's Acceptance Criteria — pick the first AC tagged `happy` or, if no explicit tag, the first AC that mentions a status code (e.g. "201", "200") or "shows" / "returns" / "creates".
+
+Dispatch `crew:integrator` with this prompt:
+
+```
+Slice: <SLICE-NN title>
+Slice file: <absolute path>
+OpenAPI YAML: <CONTRACT_YAML_PATH>
+Contract markdown: <CONTRACT_MD_PATH>
+Builder-fe handoff: <BUILDER_FE_HANDOFF_PATH>
+Builder-be handoff: <BUILDER_BE_HANDOFF_PATH>
+happy_path_ac: <verbatim AC text>
+
+Run the integration-smoke procedure (see skills/workflow/integration-smoke/). Validate every response against the OpenAPI schema at runtime. Write the artifact at .claude/artifacts/crew/integrations/<SLICE-NN>-integration.md.
+
+Return the artifact path on a single line.
+```
+
+Store the returned path as `INTEGRATION_PATH`.
+
+If the artifact's `Outcome:` line reads `FAIL`: STOP. Print the artifact path; tell the user to run `/crew:fix --target integration` before re-running orchestrate-slice.
+
+If `Outcome: SKIP`: continue to Step 4. Reviewer marks Integration Conformance as `N/A — <SKIP reason>`.
+
+If `Outcome: PASS`: continue to Step 4.
+
+---
+
 ### Step 4 — Reviewer
 
 Dispatch `crew:reviewer` with this prompt:
