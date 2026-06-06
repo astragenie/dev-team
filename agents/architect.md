@@ -83,28 +83,15 @@ Return the specialist output plus a synthesis paragraph naming the key trade-off
 
 ## Contract artifact schema
 
-When `/crew:orchestrate-slice` requests a contract artifact, write it to:
+When `/crew:orchestrate-slice` requests a contract artifact, see the
+authoritative **Output contract — FEAT contract artifact** section
+below for the three-file shape (YAML canonical, TS derived, markdown
+companion). The legacy single-markdown format from v0.15.0 is no
+longer canonical — wire shapes live in the YAML, not in markdown.
 
-```
-.claude/artifacts/crew/designs/<FEAT-ID>-contracts.md
-```
-
-**Immutable-first-write rule:** Do not overwrite an existing contract file. If the file already exists, append a dated revision section:
-
-```markdown
-## Revision — SLICE-NN — YYYY-MM-DD
-
-<changed sections only, with rationale>
-```
-
-The contract file must contain all four of the following sections:
-
-- **TypeScript Interfaces** — public data shapes and discriminated unions
-- **API Contracts** — HTTP/RPC endpoints with request/response schemas
-- **Event Schemas** — domain events emitted or consumed
-- **Data Contracts** — storage schemas, migration notes, index hints
-
-Downstream agents (builder, reviewer, validator) read this artifact directly at task start. Keep it self-contained and precise — ambiguous contracts produce ambiguous implementations.
+Downstream agents (builder-fe, builder-be, reviewer, validator, integrator)
+read the three artifacts directly at task start. Keep them self-contained
+and precise — ambiguous contracts produce ambiguous implementations.
 
 ## Report contract
 
