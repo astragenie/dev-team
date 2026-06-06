@@ -31,6 +31,18 @@ jobs:
               node ./scripts/validate-contracts.mjs "$f"
             fi
           done
+      - name: Validate UX spec fixtures
+        run: |
+          for f in tests/fixtures/ux-specs/*.md; do
+            if [ "$(basename "$f")" = "missing-operationid.md" ]; then
+              if node ./scripts/validate-ux-spec.mjs "$f"; then
+                echo "ERROR: negative fixture passed"
+                exit 1
+              fi
+            else
+              node ./scripts/validate-ux-spec.mjs "$f"
+            fi
+          done
       - name: Validate synthesis artifacts (advisory)
         continue-on-error: true
         run: node ./scripts/validate-syntheses.mjs
