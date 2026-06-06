@@ -282,20 +282,16 @@ Dispatch `crew:reviewer` with this prompt:
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
 OpenAPI YAML: <CONTRACT_YAML_PATH or "none">
-Contract markdown: <CONTRACT_MD_PATH or "none">
 UX spec: <UX_SPEC_PATH or "none">
-Builder handoff: <BUILDER_HANDOFF_PATH>
+Integration artifact: <INTEGRATION_PATH or "none">
 
-Review the implementation diff for correctness, test coverage, and regressions.
+When SPLIT_BUILD=true:
+  Builder-fe handoff: <BUILDER_FE_HANDOFF_PATH>
+  Builder-be handoff: <BUILDER_BE_HANDOFF_PATH>
+When SPLIT_BUILD=false:
+  Builder handoff: <BUILDER_HANDOFF_PATH>
 
-When a contract artifact is provided, your review-result artifact MUST include a "Contract Conformance" section with one of:
-  PASS — implementation conforms to all interfaces and shapes in the contract artifact.
-  FAIL — <list specific deviations: which interface/route/type differs from the contract and how>
-
-When a UX spec is provided, your review-result artifact MUST also include a "UX Spec Conformance" section with one of:
-  PASS — implementation honors the interaction flows, component hierarchy, state transitions, copy, and accessibility requirements in the UX spec.
-  FAIL — <list specific deviations: which screen/state/copy/a11y rule differs and how>
-  N/A — slice has no user-visible behavior to check against the UX spec (justify briefly)
+Review the implementation diff(s) for correctness, test coverage, regressions, and contract/UX/integration conformance per the rules in your agent prompt.
 
 Return the review-result artifact path.
 ```
