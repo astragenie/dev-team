@@ -21,6 +21,7 @@
     "typecheck": "tsc --noEmit",
     "validate:skills": "node ./scripts/validate-skills.mjs",
     "validate:agents": "node ./scripts/validate-agents.mjs",
+    "validate:contracts": "node ./scripts/validate-contracts.mjs",
     "validate:routing-table": "node ./scripts/validate-routing-table.mjs",
     "validate:slices": "node ./scripts/validate-slices.mjs",
     "format": "prettier --write \"scripts/**/*.mjs\" \"tests/**/*.mjs\"",

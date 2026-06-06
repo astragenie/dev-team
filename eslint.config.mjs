@@ -14,6 +14,9 @@ import js from "@eslint/js";
 import globals from "globals";
 
 export default [
+  {
+    ignores: ["tests/fixtures/**", "**/*.openapi.yaml"]
+  },
   js.configs.recommended,
   {
     languageOptions: {
