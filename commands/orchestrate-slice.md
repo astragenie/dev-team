@@ -311,10 +311,13 @@ Dispatch `crew:validator` with this prompt:
 ```
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
-Builder handoff: <BUILDER_HANDOFF_PATH>
+Builder handoff(s): <BUILDER_HANDOFF_PATH or BUILDER_FE_HANDOFF_PATH + BUILDER_BE_HANDOFF_PATH>
 Review result: <REVIEW_RESULT_PATH>
+Integration artifact: <INTEGRATION_PATH or "none">
 
-Validate that the implementation satisfies all acceptance criteria in the slice file. Run tests, check CLI output, or exercise the changed behavior as appropriate. Return the validation artifact path.
+Validate that the implementation satisfies all acceptance criteria in the slice file. If an Integration artifact is provided with Outcome: PASS, you may short-circuit per your agent prompt's SPLIT_BUILD short-circuit rule. Otherwise, run the full scenario set.
+
+Return the validation artifact path.
 ```
 
 Store the returned path as `VALIDATION_PATH`.
