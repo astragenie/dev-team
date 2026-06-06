@@ -1,5 +1,5 @@
 {
-  "preset": "dotnet-aspire-python",
+  "preset": "typescript-plugin-dev",
   "loop": {
     "aiLoopRoot": "docs/ai-loop",
     "backlogPath": "docs/backlog",
