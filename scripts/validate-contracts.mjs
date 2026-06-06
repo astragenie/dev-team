@@ -19,6 +19,7 @@ import { parse as parseYaml } from "yaml";
  * @param {string} opts.tsOutPath
  * @param {boolean} [opts.writeTs]
  * @param {boolean} [opts.runLint]
+ * @param {boolean} [opts.checkDrift]
  */
 export async function validateContracts(opts) {
   const errors = [];
@@ -38,6 +39,21 @@ export async function validateContracts(opts) {
   } catch (err) {
     errors.push(`Failed to generate TS from YAML: ${err.message}`);
   }
+  if (opts.checkDrift && regeneratedTs) {
+    let committedTs = "";
+    let readOk = false;
+    try {
+      committedTs = await fs.readFile(opts.tsOutPath, "utf8");
+      readOk = true;
+    } catch {
+      errors.push(`drift: committed TS missing at ${opts.tsOutPath}`);
+    }
+    if (readOk && committedTs !== regeneratedTs) {
+      errors.push(
+        `drift: ${opts.tsOutPath} differs from regenerated TS (${diffSummary(committedTs, regeneratedTs)})`
+      );
+    }
+  }
   if (opts.writeTs && regeneratedTs) {
     await fs.writeFile(opts.tsOutPath, regeneratedTs, "utf8");
   }
@@ -51,16 +67,37 @@ async function generateTs(yaml) {
   return astToString(ast);
 }
 
+/**
+ * @param {string} a
+ * @param {string} b
+ */
+function diffSummary(a, b) {
+  const aLines = a.split(/\r?\n/).length;
+  const bLines = b.split(/\r?\n/).length;
+  return `committed=${aLines} lines, regenerated=${bLines} lines`;
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
   const yamlPath = process.argv[2];
   if (!yamlPath) {
-    console.error("usage: validate-contracts.mjs <yaml> [<ts-out>]");
+    console.error("usage: validate-contracts.mjs <yaml> [<ts-out>] [--write]");
     process.exit(2);
   }
   const tsOutPath =
-    process.argv[3] ||
-    path.join(path.dirname(yamlPath), path.basename(yamlPath, ".openapi.yaml") + "-contracts.ts");
-  const result = await validateContracts({ yamlPath, tsOutPath, writeTs: false, runLint: true });
+    process.argv[3] && !process.argv[3].startsWith("--")
+      ? process.argv[3]
+      : path.join(
+          path.dirname(yamlPath),
+          path.basename(yamlPath, ".openapi.yaml") + "-contracts.ts"
+        );
+  const writeTs = process.argv.includes("--write");
+  const result = await validateContracts({
+    yamlPath,
+    tsOutPath,
+    writeTs,
+    runLint: true,
+    checkDrift: !writeTs
+  });
   if (!result.ok) {
     for (const e of result.errors) console.error("ERR:", e);
     process.exit(1);
