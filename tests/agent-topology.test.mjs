@@ -18,6 +18,7 @@ const EXPECTED_AGENTS = new Set([
   "lead",
   "builder",
   "builder-fe",
+  "builder-be",
   "reviewer",
   "validator",
   "deployer",
