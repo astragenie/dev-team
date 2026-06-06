@@ -3,6 +3,21 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.16.0 — 2026-06-06
+
+Frontend/backend builder split. OpenAPI 3.1 canonical. New agents and skills:
+
+- **FEAT-A** Architect emits OpenAPI YAML (canonical) + derived contracts.ts + narrowed companion markdown. `skills/domain/openapi-authoring/` defines the quality bar; `scripts/validate-contracts.mjs` enforces it (redocly lint + drift gate).
+- **FEAT-B** UX specs mandate `## API touchpoints` referencing OpenAPI operationIds. `scripts/validate-ux-spec.mjs` cross-checks references.
+- **FEAT-C** `crew:builder-fe` — React + TS specialist consuming OpenAPI via orval + openapi-msw. `skills/domain/contract-codegen/` FE recipes.
+- **FEAT-D** `crew:builder-be` — backend specialist supporting C#/.NET, Node, Python, Go (routed by FEAT `stack:*` tag). `skills/domain/contract-codegen/` BE recipes (NSwag/Kiota, datamodel-code-generator+fastapi-code-generator, oapi-codegen, openapi-typescript-codegen).
+- **FEAT-E** `crew:integrator` + `skills/workflow/integration-smoke/` — live wire-up smoke with runtime OpenAPI response validation. `.claude/loop.json` `stack.run.{fe,be}` + `stack.integration.env_required` keys.
+- **FEAT-F** `/crew:orchestrate-slice` classifies SPLIT_BUILD slices and dispatches the FE+BE+UX trio in parallel. Step 3.5 integrator gate. Reviewer emits FE/BE/UX/Integration conformance sections. Validator short-circuits on integrator PASS.
+
+Single-stack slices continue to use the original `crew:builder` path unchanged. SPLIT_BUILD activates only when classification fires.
+
+---
+
 ## v0.15.0 — 2026-06-06 — orchestrate-slice: FEAT-scoped contract no-op + parallel UX/builder
 
 ### Behavior changes — `commands/orchestrate-slice.md`
