@@ -49,6 +49,7 @@ I do not own:
 - IaC architecture concerns (Terraform, Bicep, Helm) → `skills/domain/devops-engineering/`
 - Diagram authoring (architecture, flowcharts, ERDs) → `skills/domain/diagram-methodology/`
 - SPEC authoring / large-scope FEAT decomposition → `skills/workflow/spec-decomposition/`
+- Emitting a FEAT contract artifact (OpenAPI YAML + companion markdown) → `skills/domain/openapi-authoring/`
 
 ## Delegation map
 
@@ -144,3 +145,15 @@ When dispatching multiple independent specialists (e.g., backend-architect + dat
 ### No re-Read after Edit/Write
 
 After a successful Edit / Write, do not Read the same file to verify. The tool would have errored on failure.
+
+## Output contract — FEAT contract artifact
+
+When dispatched to produce or revise a FEAT contract, emit THREE files at FEAT-scoped paths:
+
+1. `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.openapi.yaml` — OpenAPI 3.1 (canonical). Follow `skills/domain/openapi-authoring/SKILL.md`.
+2. `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.md` — Decision rationale + Data Contracts + Revisions. Do NOT duplicate wire shapes from the YAML.
+3. `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.ts` — Regenerate via `node ./scripts/validate-contracts.mjs <yaml> --write`. Commit.
+
+After emission, run `node ./scripts/validate-contracts.mjs <yaml>` and include its PASS/FAIL in your start acknowledgement.
+
+Return ONLY the YAML path on a single line. The TS path and markdown path are derived deterministically and need no separate return.
