@@ -36,7 +36,7 @@ async function readAgentName(filePath) {
   return nameLine ? nameLine[1].trim() : null;
 }
 
-test("agents/ root contains exactly the 9 expected first-party agents", async () => {
+test("agents/ root contains exactly the expected first-party agents", async () => {
   const entries = await fs.readdir(AGENTS_ROOT, { withFileTypes: true });
   const mdFiles = entries.filter((e) => e.isFile() && e.name.endsWith(".md"));
 
