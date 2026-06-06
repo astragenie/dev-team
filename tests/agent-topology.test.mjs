@@ -22,6 +22,7 @@ const EXPECTED_AGENTS = new Set([
   "reviewer",
   "validator",
   "deployer",
+  "integrator",
   "researcher",
   "architect",
   "uxdesigner",
