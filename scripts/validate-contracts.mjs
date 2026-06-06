@@ -22,12 +22,23 @@ import { parse as parseYaml } from "yaml";
  */
 export async function validateContracts(opts) {
   const errors = [];
-  const yaml = await fs.readFile(opts.yamlPath, "utf8");
+  let yaml = "";
+  try {
+    yaml = await fs.readFile(opts.yamlPath, "utf8");
+  } catch (err) {
+    errors.push(`Cannot read ${opts.yamlPath}: ${err.message}`);
+    return { ok: false, errors, regeneratedTs: "" };
+  }
   if (!yaml.includes("openapi: 3.1")) {
     errors.push("YAML is not OpenAPI 3.1");
   }
-  const regeneratedTs = await generateTs(yaml);
-  if (opts.writeTs) {
+  let regeneratedTs = "";
+  try {
+    regeneratedTs = await generateTs(yaml);
+  } catch (err) {
+    errors.push(`Failed to generate TS from YAML: ${err.message}`);
+  }
+  if (opts.writeTs && regeneratedTs) {
     await fs.writeFile(opts.tsOutPath, regeneratedTs, "utf8");
   }
   return { ok: errors.length === 0, errors, regeneratedTs };
