@@ -3,6 +3,54 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.15.0 — 2026-06-06 — orchestrate-slice: FEAT-scoped contract no-op + parallel UX/builder
+
+### Behavior changes — `commands/orchestrate-slice.md`
+
+Three edits close the loop-to-orchestrator efficiency story that loop's
+v0.11.0 set up:
+
+**Step 1 — FEAT-scoped contracts artifact no-op (loop FEAT-050 AC-3).**
+When `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.md` already exists
+AND the slice does NOT require a revision, Step 1 SKIPS the `crew:architect`
+dispatch entirely. Sets `CONTRACT_PATH` from the existing file and continues
+to Step 2. The artifact is FEAT-scoped (shared across all slices of a FEAT) —
+loop's `/loop:backlog-enrich` pass 2 and `/loop:slice-from-feature` on-demand
+trigger pre-populate it. Loop and crew now agree on the canonical path.
+
+**Step 1 — revision-required heuristic (loop FEAT-050 AC-4).** A slice
+requires a contract revision when ANY of: (a) slice frontmatter has
+`revises_contract: true` (explicit, highest precedence); (b) slice AC text
+contains substring `new endpoint` / `new event` / `new schema` /
+`breaking change` / `new type` / `new interface` / `new field` /
+`rename field` / `remove field` (case-insensitive); (c) `## In scope`
+bullets mention `public API`, `export`, `interface`, or `schema`. Default
+to revision on ambiguity — a redundant Revision subsection is cheap.
+
+**Steps 2 + 3 — parallel uxdesigner + builder dispatch (loop FEAT-051).**
+`crew:uxdesigner` and `crew:builder` both consume Step 1's `CONTRACT_PATH`
+but NOT each other's output. When BOTH `NEEDS_UX = true` AND
+`BEHAVIOR_CHANGED = true`, the orchestrator dispatches them concurrently
+in a single message — two `Agent` tool calls in parallel. Roughly halves
+wall-clock for UX-heavy slices. Builder no longer reads UX spec (works
+from contracts + ACs only); reviewer checks UX spec conformance separately
+in Step 4 via a new "UX Spec Conformance" section in the review-result.
+
+### No breaking changes
+
+The `dispatchInstruction` callers receive (`/crew:orchestrate-slice --id
+SLICE-NN`) is unchanged. Single-branch flows (NEEDS_UX OR BEHAVIOR_CHANGED
+but not both) behave exactly as before — no spurious empty Agent call.
+
+### Pairs with loop v0.11.0
+
+Loop's contracts-artifact triggers populate the artifact this Step 1 no-op
+reads. Without this commit, loop's v0.11.0 gain was invisible to
+`/crew:orchestrate-slice`. With this commit, the full FEAT-scoped pipeline
+ships end-to-end.
+
+---
+
 ## v0.14.1 — 2026-06-05 — loop@0.8.3
 
 ### Marketplace

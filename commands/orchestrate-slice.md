@@ -64,9 +64,26 @@ Run this after `/loop:slice start --id SLICE-NN`. It reads the slice file, class
 
 Locate the FEAT ID from the slice frontmatter (`feat:` field or `FEAT-NNN` in the title). If none, derive from the slice ID (SLICE-NN → look up which FEAT owns this slice in the slice file body).
 
-Check whether `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.md` already exists:
-- **Exists**: instruct architect to read it and extend with a `## Revision — SLICE-NN` subsection rather than overwrite.
-- **Does not exist**: instruct architect to create it from scratch.
+Check whether `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.md` already exists. The artifact is FEAT-scoped (shared across all slices of the FEAT) — loop's `/loop:backlog-enrich` pass 2 and `/loop:slice-from-feature` on-demand trigger pre-populate it when missing.
+
+**Decision tree:**
+
+1. **Artifact exists AND slice does NOT require a revision** → SKIP architect dispatch entirely. Set `CONTRACT_PATH = .claude/artifacts/crew/designs/<FEAT-ID>-contracts.md` from the existing file and continue to Step 2. Print:
+   ```
+   Step 1: contracts artifact already present at <CONTRACT_PATH>; skipping architect dispatch (no revision needed).
+   ```
+
+2. **Artifact exists AND slice DOES require a revision** → instruct architect to read it and append a `## Revision — SLICE-NN` subsection. Use the dispatch prompt below with the existence-known branch.
+
+3. **Artifact does NOT exist** → instruct architect to create it from scratch. Use the dispatch prompt below with the creation branch.
+
+**Revision-required heuristic.** A slice requires a contract revision when ANY of the following holds:
+
+- Slice frontmatter has `revises_contract: true` (explicit, highest precedence)
+- Slice AC text contains any of: `"new endpoint"`, `"new event"`, `"new schema"`, `"breaking change"`, `"new type"`, `"new interface"`, `"new field"`, `"rename field"`, `"remove field"` (case-insensitive)
+- Slice introduces a new public surface called out in its `## In scope` bullets (look for terms like `"public API"`, `"export"`, `"interface"`, `"schema"`)
+
+When in doubt, default to revision — a redundant `## Revision — SLICE-NN` block is cheap; a missing one drifts the contract.
 
 Dispatch `crew:architect` with this prompt (fill in `<...>` placeholders from slice data):
 
@@ -95,11 +112,20 @@ Store the returned path as `CONTRACT_PATH`.
 
 ---
 
-### Step 2 — UX designer (UI spec)
+### Steps 2 + 3 — UX designer + Builder (parallel when both fire)
 
-**Skip when `NEEDS_UX = false`.**
+`crew:uxdesigner` and `crew:builder` both consume the FEAT-scoped contracts artifact (Step 1's `CONTRACT_PATH`) but NOT each other's output. Builder works from contracts + slice ACs; uxdesigner produces UX spec for reviewer to check separately. Both fire concurrently.
 
-Dispatch `crew:uxdesigner` with this prompt:
+**Dispatch rules:**
+
+- Skip uxdesigner (Step 2) when `NEEDS_UX = false`.
+- Always run builder (Step 3) when `BEHAVIOR_CHANGED = true`. If `BEHAVIOR_CHANGED = false` AND `NEEDS_UX = false`, this slice has no implementation work — skip both and go to Step 4.
+- When BOTH `NEEDS_UX = true` AND `BEHAVIOR_CHANGED = true`: dispatch uxdesigner AND builder in PARALLEL — single message containing two `Agent` tool calls. They show as concurrent dispatches in the UI.
+- When only one branch fires: single dispatch as before — no spurious empty Agent call.
+
+**Race-safety.** Both subagents read the same contracts artifact path computed deterministically from FEAT-ID alone (`.claude/artifacts/crew/designs/<FEAT-ID>-contracts.md`). UX spec artifact stays SLICE-scoped (`<FEAT-ID>-ux-<SLICE-NN>.md`) because UX covers one slice's interaction surface, not the FEAT's whole contract.
+
+#### Step 2 prompt — `crew:uxdesigner`
 
 ```
 Slice: <SLICE-NN title>
@@ -125,24 +151,23 @@ Return ONLY the artifact path on a single line.
 
 Store the returned path as `UX_SPEC_PATH`.
 
----
-
-### Step 3 — Builder
-
-Dispatch `crew:builder` with this prompt:
+#### Step 3 prompt — `crew:builder`
 
 ```
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
 Contract artifact: <CONTRACT_PATH or "none">
-UX spec: <UX_SPEC_PATH or "none">
 
-Read the contract artifact and UX spec before writing any code. Your implementation must satisfy both. If you find a gap or conflict in either artifact, surface it in your handoff as a help_request — do not invent a resolution on your own.
+Read the contract artifact before writing any code. Your implementation must conform to it. If you find a gap, surface it in your handoff as a help_request — do not invent a resolution.
+
+A UX spec is being authored concurrently by crew:uxdesigner if the slice needs UI. You do NOT block on it — work from contracts + slice ACs only. Reviewer will check UX-spec conformance separately in Step 4.
 
 Implement all acceptance criteria in the slice file. Follow TDD: write failing tests first, then implementation. Return the handoff artifact path.
 ```
 
 Store the returned path as `BUILDER_HANDOFF_PATH`.
+
+When both branches fire, the orchestrator collects `UX_SPEC_PATH` AND `BUILDER_HANDOFF_PATH` before proceeding to Step 4.
 
 ---
 
@@ -154,6 +179,7 @@ Dispatch `crew:reviewer` with this prompt:
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
 Contract artifact: <CONTRACT_PATH or "none">
+UX spec: <UX_SPEC_PATH or "none">
 Builder handoff: <BUILDER_HANDOFF_PATH>
 
 Review the implementation diff for correctness, test coverage, and regressions.
@@ -161,6 +187,11 @@ Review the implementation diff for correctness, test coverage, and regressions.
 When a contract artifact is provided, your review-result artifact MUST include a "Contract Conformance" section with one of:
   PASS — implementation conforms to all interfaces and shapes in the contract artifact.
   FAIL — <list specific deviations: which interface/route/type differs from the contract and how>
+
+When a UX spec is provided, your review-result artifact MUST also include a "UX Spec Conformance" section with one of:
+  PASS — implementation honors the interaction flows, component hierarchy, state transitions, copy, and accessibility requirements in the UX spec.
+  FAIL — <list specific deviations: which screen/state/copy/a11y rule differs and how>
+  N/A — slice has no user-visible behavior to check against the UX spec (justify briefly)
 
 Return the review-result artifact path.
 ```
