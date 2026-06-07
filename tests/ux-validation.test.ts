@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { extractACs } from "../scripts/lib/ux-validation/index.mjs";
+import { extractACs } from "../scripts/lib/ux-validation/index.ts";
 
 test("extractACs returns empty array on empty input", () => {
   assert.deepEqual(extractACs(""), []);
@@ -49,7 +49,7 @@ test("extractACs stops at next ## header", () => {
   assert.deepEqual(extractACs(content), [{ id: "AC-1", text: "first" }]);
 });
 
-import { classifyScenario } from "../scripts/lib/ux-validation/index.mjs";
+import { classifyScenario } from "../scripts/lib/ux-validation/index.ts";
 
 test("classifyScenario detects interaction verbs", () => {
   assert.equal(classifyScenario("user can click submit"), "interaction");
@@ -111,7 +111,7 @@ test("classifyScenario does not over-match derived input words", () => {
   assert.equal(classifyScenario("fillable field is present"), "non_ui_ac");
 });
 
-import { computeVerdict } from "../scripts/lib/ux-validation/index.mjs";
+import { computeVerdict } from "../scripts/lib/ux-validation/index.ts";
 
 const EMPTY_EVIDENCE = {
   ac_results: [],
@@ -206,7 +206,7 @@ test("computeVerdict returns passed when visual diff under tolerance", () => {
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { discoverPlaywrightConfig } from "../scripts/lib/ux-validation/index.mjs";
+import { discoverPlaywrightConfig } from "../scripts/lib/ux-validation/index.ts";
 
 async function tmpRepo(prefix: string) {
   return await fs.mkdtemp(path.join(os.tmpdir(), prefix));
@@ -256,7 +256,7 @@ test("discoverPlaywrightConfig returns null when config file lacks baseURL", asy
   assert.equal(await discoverPlaywrightConfig(repo), null);
 });
 
-import { buildQaInvocation } from "../scripts/lib/ux-validation/index.mjs";
+import { buildQaInvocation } from "../scripts/lib/ux-validation/index.ts";
 
 test("buildQaInvocation emits all 4 check flags", () => {
   const cmd = buildQaInvocation({

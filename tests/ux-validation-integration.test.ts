@@ -6,7 +6,7 @@ import {
   classifyScenario,
   computeVerdict,
   buildQaInvocation
-} from "../scripts/lib/ux-validation/index.mjs";
+} from "../scripts/lib/ux-validation/index.ts";
 
 test("integration: full pipeline passes on clean evidence", async () => {
   const sliceContent = `# Slice

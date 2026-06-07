@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildJourney } from "../scripts/lib/ux-validation/journey-builder.mjs";
+import { buildJourney } from "../scripts/lib/ux-validation/journey-builder.ts";
 
 test("explicit ## User Journey parsed: 3 steps", () => {
   const slice = `# Slice\n## User Journey\n\n1. navigate to /dashboard\n2. click "New Project"\n3. fill form: name=Test → expect: form fills\n## Acceptance criteria\n`;
@@ -83,7 +83,7 @@ test("single UI AC returns [] (< 2 steps)", () => {
   assert.deepEqual(buildJourney(acs, ""), []);
 });
 
-import { buildQaInvocation } from "../scripts/lib/ux-validation/qa-adapter.mjs";
+import { buildQaInvocation } from "../scripts/lib/ux-validation/qa-adapter.ts";
 
 test("buildQaInvocation with scenario_chain uses chain as scenarios", () => {
   const chain = [
