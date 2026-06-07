@@ -1,0 +1,31 @@
+# Task Handoff: FEAT-046 SLICE-18: builder dispatch reliability — all ACs complete
+
+- Created: 2026-06-07T09:58:27.615Z
+- From: builder
+- To: lead
+- Objective: All 6 ACs for FEAT-046 SLICE-18 are complete: scope-estimate CLI, builder context-ceiling protocol, lead ceiling-recovery reference, brief-me modelCompliance field, 8 unit tests, and validate-agents passes.
+- Allowed Scope:
+  - scripts/lib/scope-estimate.mjs
+  - scripts/crew.mjs scope-estimate command
+  - tests/scope-estimate.test.mjs
+  - agents/builder.md ## Context ceiling section
+  - agents/lead.md model-selection scope-estimate reference
+  - scripts/lib/briefing/collect.mjs collectModelCompliance
+  - scripts/lib/briefing.mjs modelCompliance wire-up
+  - tests/collect-model-compliance.test.mjs
+- Forbidden Scope: -
+- Deliverable: scope-estimate pure function + CLI sub-command (light/standard/heavy tier); builder.md Context ceiling section with context_ceiling_reached and DONE_WITH_CONCERNS; lead.md scope-estimate dispatch reference; brief-me modelCompliance field (sonnetPct + compliant); 8 scope-estimate unit tests + 5 collect-model-compliance tests
+- Changed Files:
+  - scripts/lib/scope-estimate.mjs
+  - scripts/crew.mjs
+  - tests/scope-estimate.test.mjs
+  - agents/builder.md
+  - agents/lead.md
+  - scripts/lib/briefing/collect.mjs
+  - scripts/lib/briefing.mjs
+  - tests/collect-model-compliance.test.mjs
+  - tests/cli.test.mjs
+- Confidence: high
+- Risks: The builder.md DONE_WITH_CONCERNS term was added in SLICE-18 (it was absent from the rev2 approved by review on 2026-06-05). The approved rev2 reviewer noted the wording used mark-badge blocked instead — this addition is additive and does not contradict the approved mechanism.
+- Suggested Next Handoff: crew:reviewer to verify all 6 ACs and validate-agents gate; then loop:slice-complete for SLICE-18 ceremony
+

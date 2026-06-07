@@ -2,7 +2,7 @@
 id: FEAT-046
 title: Builder dispatch reliability — scope-estimate CLI + context ceiling protocol + model compliance signal
 priority: P2
-status: triaged
+status: in-progress
 category: workflow
 target_release: null
 autonomous_safe: true
@@ -26,6 +26,8 @@ pm_dependency_depth: 0.5
 migration_note: legacy PM schema preserved as pm_legacy_*; new dimensions defaulted to 0.5 on 2026-06-07
 triage_notes: "autonomous_safe inferred: AC count=6, derived_from=null → true"
 updated: 2026-06-07
+started_at: 2026-06-07
+slices: [SLICE-18]
 ---
 # FEAT-046 — Builder dispatch reliability
 

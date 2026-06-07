@@ -171,7 +171,11 @@ If you reach **40 tool uses** or **80k context tokens** before completing all AC
 2. Write your handoff via `write-handoff --confidence low --risks "context ceiling reached; remaining ACs: [list]"`.
 3. Do **not** attempt inline recovery or partial commits for remaining ACs.
 
+Return `DONE_WITH_CONCERNS: context ceiling reached — see handoff for scope completed so far.`
+
 Lead will split the remaining ACs into a fresh bounded task and dispatch a new builder.
+
+Use `node scripts/crew.mjs scope-estimate --files <path:lines,...>` before starting to get a tier estimate. For `heavy` tier, split the work into smaller sub-tasks before starting.
 
 ## Shell pre-check
 
