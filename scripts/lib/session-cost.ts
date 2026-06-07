@@ -159,10 +159,7 @@ interface ResolvedScanSources {
   autoDetected: boolean;
 }
 
-async function resolveAggregateAll(
-  startMs: number,
-  endMs: number
-): Promise<Map<string, string[]>> {
+async function resolveAggregateAll(startMs: number, endMs: number): Promise<Map<string, string[]>> {
   const sessionsBySource = new Map<string, string[]>();
   const active = await listActiveProjectDirs({ startMs, endMs });
   for (const { slug, dir } of active) {
@@ -182,7 +179,11 @@ async function resolveSingleSource(
   endIso: string,
   startMs: number,
   endMs: number
-): Promise<{ sessionsBySource: Map<string, string[]>; effectiveSlug: string; autoDetected: boolean }> {
+): Promise<{
+  sessionsBySource: Map<string, string[]>;
+  effectiveSlug: string;
+  autoDetected: boolean;
+}> {
   let effectiveSlug = sourceProject ?? slugifyRepoPath(repoPath);
   let autoDetected = false;
   let initialFiles = await listProjectSessions(repoPath, effectiveSlug);
@@ -216,7 +217,15 @@ async function resolveScanSources({
     const sessionsBySource = await resolveAggregateAll(startMs, endMs);
     return { sessionsBySource, effectiveSlug: "aggregate", autoDetected: false };
   }
-  return resolveSingleSource(repoPath, sourceProject, autoDetect, startedAt, endIso, startMs, endMs);
+  return resolveSingleSource(
+    repoPath,
+    sourceProject,
+    autoDetect,
+    startedAt,
+    endIso,
+    startMs,
+    endMs
+  );
 }
 
 type ByModel = Record<
@@ -241,7 +250,12 @@ function priceByModel(byModel: ByModel, pricing: Pricing): number {
 
 type PerSourceState = Map<
   string,
-  { messages: number; tokens: Record<string, number>; modelTokens: Record<string, Record<string, number>>; touched: boolean }
+  {
+    messages: number;
+    tokens: Record<string, number>;
+    modelTokens: Record<string, Record<string, number>>;
+    touched: boolean;
+  }
 >;
 
 interface SourceBreakdownEntry {
@@ -325,9 +339,10 @@ function buildToolUsage(
     .sort((a, b) => b.count - a.count);
 }
 
-function buildSessionFileMap(
-  sessionsBySource: Map<string, string[]>
-): { fileToSlug: Map<string, string>; sessions: string[] } {
+function buildSessionFileMap(sessionsBySource: Map<string, string[]>): {
+  fileToSlug: Map<string, string>;
+  sessions: string[];
+} {
   const fileToSlug = new Map<string, string>();
   const sessions: string[] = [];
   for (const [slug, files] of sessionsBySource.entries()) {
@@ -353,9 +368,24 @@ function assembleCostResult(
   startMs: number,
   endMs: number
 ): Record<string, unknown> {
-  const { totals, byModel, messagesCounted, sessionsScanned, toolUseCounts, toolFailureCounts,
-    toolResultSizes, filesRead, compactionCount, userMsgCount, userMsgTotalLen,
-    skillInvocations, subagentDispatches, turnsBeforeFirstTool, perSourceState, toolCachePrime } = scan;
+  const {
+    totals,
+    byModel,
+    messagesCounted,
+    sessionsScanned,
+    toolUseCounts,
+    toolFailureCounts,
+    toolResultSizes,
+    filesRead,
+    compactionCount,
+    userMsgCount,
+    userMsgTotalLen,
+    skillInvocations,
+    subagentDispatches,
+    turnsBeforeFirstTool,
+    perSourceState,
+    toolCachePrime
+  } = scan;
   const totalUsd = priceByModel(byModel, pricing);
   const sources = computeSourceBreakdown(perSourceState, pricing);
   const modelMix = buildModelMix(byModel, messagesCounted, totalUsd);
@@ -366,22 +396,44 @@ function assembleCostResult(
   const conversation = {
     userMsgCount,
     userMsgAvgLen: userMsgCount > 0 ? Math.round(userMsgTotalLen / userMsgCount) : 0,
-    userMsgTotalLen, turnsBeforeFirstTool, compactionCount, skillInvocations, subagentDispatches
+    userMsgTotalLen,
+    turnsBeforeFirstTool,
+    compactionCount,
+    skillInvocations,
+    subagentDispatches
   };
   const toolCachePrimeArr = Object.entries(toolCachePrime)
     .map(([name, v]) => ({
-      name, calls: v.calls, totalResultBytes: v.totalResultBytes,
+      name,
+      calls: v.calls,
+      totalResultBytes: v.totalResultBytes,
       attributedCacheCreate: Math.round(v.attributedCacheCreate),
-      ratio: v.totalResultBytes > 0 ? Number((v.attributedCacheCreate / v.totalResultBytes).toFixed(2)) : null
+      ratio:
+        v.totalResultBytes > 0
+          ? Number((v.attributedCacheCreate / v.totalResultBytes).toFixed(2))
+          : null
     }))
     .sort((a, b) => b.attributedCacheCreate - a.attributedCacheCreate);
   return {
     window: { start: startedAt, end: endIso, durationMs: endMs - startMs },
-    totals, usd: Number(totalUsd.toFixed(4)), byModel, modelMix, messagesCounted, sessionsScanned,
-    sessionsAvailable: sessions.length, sourceProject: effectiveSlug, autoDetected, aggregateAll,
-    sources, pricingFallback: pricing.fallback, toolUsage, toolResultSizes: sizeStats,
-    fileReReadCount, fileReReadTopPaths: fileReReadEntries.slice(0, 5).map(([p, c]) => ({ path: p, reads: c })),
-    conversation, toolCachePrime: toolCachePrimeArr
+    totals,
+    usd: Number(totalUsd.toFixed(4)),
+    byModel,
+    modelMix,
+    messagesCounted,
+    sessionsScanned,
+    sessionsAvailable: sessions.length,
+    sourceProject: effectiveSlug,
+    autoDetected,
+    aggregateAll,
+    sources,
+    pricingFallback: pricing.fallback,
+    toolUsage,
+    toolResultSizes: sizeStats,
+    fileReReadCount,
+    fileReReadTopPaths: fileReReadEntries.slice(0, 5).map(([p, c]) => ({ path: p, reads: c })),
+    conversation,
+    toolCachePrime: toolCachePrimeArr
   };
 }
 
@@ -410,10 +462,27 @@ export async function computeSessionCost(
   }
   const pricing = await loadPricing();
   const { sessionsBySource, effectiveSlug, autoDetected } = await resolveScanSources({
-    aggregateAll, sourceProject, autoDetect, repoPath, startedAt, endIso, startMs, endMs
+    aggregateAll,
+    sourceProject,
+    autoDetect,
+    repoPath,
+    startedAt,
+    endIso,
+    startMs,
+    endMs
   });
   const { fileToSlug, sessions } = buildSessionFileMap(sessionsBySource);
   const scan = await scanSessions({ sessions, fileToSlug, startMs, endMs });
-  return assembleCostResult(scan, pricing, sessions, effectiveSlug, autoDetected, aggregateAll,
-    startedAt, endIso, startMs, endMs);
+  return assembleCostResult(
+    scan,
+    pricing,
+    sessions,
+    effectiveSlug,
+    autoDetected,
+    aggregateAll,
+    startedAt,
+    endIso,
+    startMs,
+    endMs
+  );
 }

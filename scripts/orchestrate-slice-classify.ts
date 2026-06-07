@@ -41,7 +41,12 @@ function hasBackend(tags: string[]) {
   return tagsHaveAny(tags, BE_SURFACE) || tagsHaveAny(tags, BE_STACK);
 }
 
-function computeNeedsContract(fm: Record<string, unknown> | null, tags: string[], FE: boolean, BE: boolean) {
+function computeNeedsContract(
+  fm: Record<string, unknown> | null,
+  tags: string[],
+  FE: boolean,
+  BE: boolean
+) {
   if (fm?.needs_contract === true) return true;
   if (fm?.needs_contract === false) return false;
   return tagsHaveAny(tags, BE_SURFACE) || (FE && BE);

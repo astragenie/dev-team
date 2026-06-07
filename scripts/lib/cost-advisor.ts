@@ -1,7 +1,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { computeGrade, type GradeLetter } from "./cost-advisor-grades.ts";
-import { applyRules, type SummaryRecord, type BaselineRecord, type Finding } from "./cost-advisor-rules.ts";
+import {
+  applyRules,
+  type SummaryRecord,
+  type BaselineRecord,
+  type Finding
+} from "./cost-advisor-rules.ts";
 
 // Cost reports now land in cost/ (Item 1 split). Older reports may still
 // live in the legacy runs/ dir, so loadReports scans both for backward compat.
@@ -149,9 +154,7 @@ async function collectReportFiles(
   return files;
 }
 
-async function parseReportFiles(
-  top: Array<{ dir: string; name: string }>
-): Promise<RawReport[]> {
+async function parseReportFiles(top: Array<{ dir: string; name: string }>): Promise<RawReport[]> {
   const reports: RawReport[] = [];
   for (const { dir, name } of top) {
     const f = path.join(dir, name);
@@ -281,9 +284,19 @@ function extractFmFields(
   r: RawReport
 ): Pick<
   SummaryRecord,
-  | "path" | "sliceId" | "usd" | "durationMs" | "totalTokens" | "cacheHitPct"
-  | "gradeAvg" | "reviewDecision" | "validationDecision" | "sourceProject"
-  | "autoDetected" | "aggregateAll" | "sourceCount"
+  | "path"
+  | "sliceId"
+  | "usd"
+  | "durationMs"
+  | "totalTokens"
+  | "cacheHitPct"
+  | "gradeAvg"
+  | "reviewDecision"
+  | "validationDecision"
+  | "sourceProject"
+  | "autoDetected"
+  | "aggregateAll"
+  | "sourceCount"
 > {
   return {
     path: r.path,
@@ -329,8 +342,13 @@ function summarizeReport(r: RawReport): SummaryRecord {
 
 // ---- trend detection ----
 
-function checkCompactionDrift(r0: SummaryRecord, r1: SummaryRecord, r2: SummaryRecord): Finding | null {
-  if (!(r0.compactionCount > r1.compactionCount && r1.compactionCount > r2.compactionCount)) return null;
+function checkCompactionDrift(
+  r0: SummaryRecord,
+  r1: SummaryRecord,
+  r2: SummaryRecord
+): Finding | null {
+  if (!(r0.compactionCount > r1.compactionCount && r1.compactionCount > r2.compactionCount))
+    return null;
   return {
     id: "compaction-drift",
     severity: "medium",
@@ -340,8 +358,17 @@ function checkCompactionDrift(r0: SummaryRecord, r1: SummaryRecord, r2: SummaryR
   };
 }
 
-function checkSubagentCreep(r0: SummaryRecord, r1: SummaryRecord, r2: SummaryRecord): Finding | null {
-  if (!(r0.subagentDispatches > r1.subagentDispatches && r1.subagentDispatches > r2.subagentDispatches)) return null;
+function checkSubagentCreep(
+  r0: SummaryRecord,
+  r1: SummaryRecord,
+  r2: SummaryRecord
+): Finding | null {
+  if (
+    !(
+      r0.subagentDispatches > r1.subagentDispatches && r1.subagentDispatches > r2.subagentDispatches
+    )
+  )
+    return null;
   return {
     id: "subagent-creep",
     severity: "medium",
@@ -351,7 +378,11 @@ function checkSubagentCreep(r0: SummaryRecord, r1: SummaryRecord, r2: SummaryRec
   };
 }
 
-function checkCostRegression(r0: SummaryRecord, r1: SummaryRecord, r2: SummaryRecord): Finding | null {
+function checkCostRegression(
+  r0: SummaryRecord,
+  r1: SummaryRecord,
+  r2: SummaryRecord
+): Finding | null {
   const med = median([r0.usd, r1.usd, r2.usd]);
   if (!(med > 0 && r0.usd > med * 1.2)) return null;
   const pctAbove = (((r0.usd - med) / med) * 100).toFixed(0);
@@ -433,7 +464,10 @@ function buildAggregateFlags(summaries: SummaryRecord[], baseline: BaselineRecor
 
 export async function buildCostAdvisor(
   repoPath: string,
-  { limit = 10, nameFilter = null }: { limit?: number; nameFilter?: ((name: string) => boolean) | null } = {}
+  {
+    limit = 10,
+    nameFilter = null
+  }: { limit?: number; nameFilter?: ((name: string) => boolean) | null } = {}
 ): Promise<CostAdvisorResult> {
   const reports = await loadReports(repoPath, limit, nameFilter);
   if (reports.length === 0) {
@@ -443,7 +477,11 @@ export async function buildCostAdvisor(
   const target = summaries[0] as SummaryRecord;
   const baseline = buildBaseline(summaries.slice(1));
   const slug = repoOwnSlug(repoPath);
-  const recommendations = applyRules(target, baseline, ...(slug != null ? [{ repoOwnSlug: slug }] : [{}]));
+  const recommendations = applyRules(
+    target,
+    baseline,
+    ...(slug != null ? [{ repoOwnSlug: slug }] : [{}])
+  );
   const grade = computeGrade(target);
   const aggregateFlags = buildAggregateFlags(summaries, baseline);
   return { reports: summaries, target, baseline, recommendations, aggregateFlags, grade };

@@ -3,16 +3,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { runChecks } from "../scripts/lib/preflight/checks.ts";
-import { logHookError } from "./hook-error.mjs";
+import { logHookError } from "./hook-error.ts";
 
-/**
- * @param {string} repoPath
- * @param {string} code
- * @param {string} sessionId
- * @param {string} detail
- * @returns {Promise<void>}
- */
-async function logEvent(repoPath, code, sessionId, detail) {
+async function logEvent(repoPath: string, code: string, sessionId: string, detail: string): Promise<void> {
   try {
     const dir = path.join(repoPath, ".claude", "logs");
     await fs.mkdir(dir, { recursive: true });
@@ -28,11 +21,7 @@ async function logEvent(repoPath, code, sessionId, detail) {
   }
 }
 
-/**
- * @param {string} raw
- * @returns {{ session_id: string, tool_name: string, command: string, cwd: string } | null}
- */
-function parseInput(raw) {
+function parseInput(raw: string): { session_id: string; tool_name: string; command: string; cwd: string } | null {
   try {
     const obj = JSON.parse(raw);
     if (
@@ -58,12 +47,9 @@ function parseInput(raw) {
   }
 }
 
-/**
- * @returns {Promise<string>}
- */
-async function readStdin() {
-  const chunks = [];
-  for await (const chunk of process.stdin) chunks.push(chunk);
+async function readStdin(): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
   return Buffer.concat(chunks).toString("utf8");
 }
 
@@ -78,7 +64,7 @@ async function main() {
   }
   const { session_id, tool_name, command, cwd } = input;
 
-  let warnings;
+  let warnings: string[];
   try {
     const result = await runChecks({ toolName: tool_name, command, cwd });
     warnings = result.warnings;

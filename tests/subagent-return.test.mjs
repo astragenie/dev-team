@@ -11,7 +11,7 @@ import {
 } from "../scripts/lib/subagent-return/check.ts";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-const HOOK_PATH = path.join(__dirname, "..", "hooks", "check-subagent-return.mjs");
+const HOOK_PATH = path.join(__dirname, "..", "hooks", "check-subagent-return.ts");
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -22,7 +22,7 @@ const HOOK_PATH = path.join(__dirname, "..", "hooks", "check-subagent-return.mjs
  */
 function runHook(stdin, env = {}) {
   return new Promise((resolve) => {
-    const proc = spawn("node", [HOOK_PATH], {
+    const proc = spawn("node", ["--experimental-strip-types", HOOK_PATH], {
       env: { ...process.env, ...env }
     });
     let stdout = "";
@@ -120,7 +120,7 @@ test("AC-6: default-on — no env var set + body=1000 no path → warn", async (
     Object.entries(process.env).filter(([k]) => k !== "CREW_SUBAGENT_INLINE_THRESHOLD")
   );
   const result = await new Promise((resolve) => {
-    const proc = spawn("node", [HOOK_PATH], { env: cleanEnv });
+    const proc = spawn("node", ["--experimental-strip-types", HOOK_PATH], { env: cleanEnv });
     let stdout = "";
     let stderr = "";
     proc.stdout.on("data", (b) => (stdout += b.toString("utf8")));

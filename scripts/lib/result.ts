@@ -18,7 +18,5 @@ export const err = <E>(error: E): Result<never, E> => ({ ok: false, error });
 export const map = <T, U, E>(r: Result<T, E>, f: (t: T) => U): Result<U, E> =>
   r.ok ? ok(f(r.value)) : r;
 
-export const flatMap = <T, U, E>(
-  r: Result<T, E>,
-  f: (t: T) => Result<U, E>
-): Result<U, E> => (r.ok ? f(r.value) : r);
+export const flatMap = <T, U, E>(r: Result<T, E>, f: (t: T) => Result<U, E>): Result<U, E> =>
+  r.ok ? f(r.value) : r;

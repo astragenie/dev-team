@@ -123,7 +123,10 @@ export async function costSliceHandler({
     sourceProject,
     aggregateAll: false
   });
-  const outcome = (await collectOutcomeLinkage(repoPath, runTitle)) as unknown as Record<string, unknown>;
+  const outcome = (await collectOutcomeLinkage(repoPath, runTitle)) as unknown as Record<
+    string,
+    unknown
+  >;
   const writeResult = await writeArt(repoPath, "cost-report-slice", {
     title: runTitle,
     runTitle,

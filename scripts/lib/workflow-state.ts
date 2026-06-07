@@ -64,7 +64,11 @@ export interface ArtifactRef {
 }
 
 type RegisterFields = RunFields &
-  BadgeOptions & { decision?: string | undefined; environment?: string | undefined; status?: string | undefined };
+  BadgeOptions & {
+    decision?: string | undefined;
+    environment?: string | undefined;
+    status?: string | undefined;
+  };
 
 // ---------------------------------------------------------------------------
 // Private utilities
@@ -270,21 +274,13 @@ export async function markWorkflowBadge(
 // Artifact handlers — per-kind dispatch (AC-8: extracted from registerWorkflowArtifact)
 // ---------------------------------------------------------------------------
 
-type ArtifactHandler = (
-  run: WorkflowRun,
-  artifact: ArtifactRef,
-  fields: RegisterFields
-) => void;
+type ArtifactHandler = (run: WorkflowRun, artifact: ArtifactRef, fields: RegisterFields) => void;
 
 function handleHandoff(run: WorkflowRun, artifact: ArtifactRef): void {
   run.artifacts.handoffs = [...(run.artifacts.handoffs || []), artifact.path].slice(-10);
 }
 
-function handleReviewResult(
-  run: WorkflowRun,
-  artifact: ArtifactRef,
-  fields: RegisterFields
-): void {
+function handleReviewResult(run: WorkflowRun, artifact: ArtifactRef, fields: RegisterFields): void {
   run.artifacts.reviewResult = artifact.path;
   applyBadge(
     run,
@@ -370,11 +366,7 @@ const ARTIFACT_HANDLERS: Record<string, ArtifactHandler> = {
   "final-synthesis": handleFinalSynthesis
 };
 
-function applyArtifactToRun(
-  run: WorkflowRun,
-  artifact: ArtifactRef,
-  fields: RegisterFields
-): void {
+function applyArtifactToRun(run: WorkflowRun, artifact: ArtifactRef, fields: RegisterFields): void {
   const handler = ARTIFACT_HANDLERS[artifact.kind];
   if (handler) {
     handler(run, artifact, fields);

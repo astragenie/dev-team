@@ -129,7 +129,9 @@ if (isMainEntry()) {
     console.log("Manifests OK:");
     console.log(`  plugin.json     ${result.plugin["name"]}@${result.plugin["version"]}`);
     console.log(`  package.json    ${result.pkg["name"]}@${result.pkg["version"]}`);
-    console.log(`  marketplace.json (${(result.marketplace["plugins"] as unknown[]).length} entries)`);
+    console.log(
+      `  marketplace.json (${(result.marketplace["plugins"] as unknown[]).length} entries)`
+    );
     for (const entry of result.marketplace["plugins"] as Array<Record<string, unknown>>) {
       console.log(`    - ${entry["name"]}@${entry["version"]}`);
     }

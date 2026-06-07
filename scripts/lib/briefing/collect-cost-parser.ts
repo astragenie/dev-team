@@ -44,9 +44,7 @@ export function parseFrontmatterBlock(text: string): Record<string, string> {
 
 export function parseModelMix(text: string): ModelMixEntry[] {
   const out: ModelMixEntry[] = [];
-  const section = text
-    .split(/^##\s+/m)
-    .find((s: string) => s.startsWith("Model Mix"));
+  const section = text.split(/^##\s+/m).find((s: string) => s.startsWith("Model Mix"));
   if (!section) return out;
   for (const line of section.split(/\r?\n/)) {
     const m = line.match(
@@ -67,9 +65,7 @@ export function parseModelMix(text: string): ModelMixEntry[] {
 export function parseToolUsage(text: string): { toolCalls: number; toolFailures: number } {
   let toolCalls = 0;
   let toolFailures = 0;
-  const section = text
-    .split(/^##\s+/m)
-    .find((s: string) => s.startsWith("Tool Usage"));
+  const section = text.split(/^##\s+/m).find((s: string) => s.startsWith("Tool Usage"));
   if (section) {
     for (const line of section.split(/\r?\n/)) {
       const m = line.match(/^-\s+\S+:\s*([\d,]+)(?:\s*\((\d+)\s+failed\))?/);
@@ -84,9 +80,7 @@ export function parseToolUsage(text: string): { toolCalls: number; toolFailures:
 
 export function computeDominantModel(modelMix: ModelMixEntry[]): DominantModel | null {
   const dominantEntry =
-    modelMix.find((m: ModelMixEntry) => !/^<|unknown/i.test(m.model)) ||
-    modelMix[0] ||
-    null;
+    modelMix.find((m: ModelMixEntry) => !/^<|unknown/i.test(m.model)) || modelMix[0] || null;
   if (!dominantEntry) return null;
   return { model: dominantEntry.model, pct: dominantEntry.msgPct };
 }

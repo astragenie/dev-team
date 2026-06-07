@@ -82,7 +82,10 @@ async function emitCostReportInner(
   if (!run?.startedAt) return null as unknown as Record<string, unknown>;
   const completedAt = run.completedAt || new Date().toISOString();
   const title = runTitle || run.title || "cost-report";
-  const outcome = (await collectOutcomeLinkage(repoPath, title)) as unknown as Record<string, unknown>;
+  const outcome = (await collectOutcomeLinkage(repoPath, title)) as unknown as Record<
+    string,
+    unknown
+  >;
   const sliceCost = await computeSessionCost(repoPath, {
     startedAt: run.startedAt,
     completedAt,

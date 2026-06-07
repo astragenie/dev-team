@@ -343,9 +343,7 @@ function renderCostReportOutcome(outcome: CostOutcome | null | undefined): strin
   if (!outcome?.sliceId) return [];
   const lines = ["## Outcome Linkage", ""];
   lines.push(renderField("Slice", outcome.sliceId));
-  lines.push(
-    renderField("Grade Avg", outcome.gradeAvg != null ? String(outcome.gradeAvg) : "-")
-  );
+  lines.push(renderField("Grade Avg", outcome.gradeAvg != null ? String(outcome.gradeAvg) : "-"));
   lines.push(renderField("Review Decision", outcome.reviewDecision ?? "-"));
   lines.push(renderField("Validation Decision", outcome.validationDecision ?? "-"));
   if (outcome.scores) {

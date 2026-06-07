@@ -8,7 +8,7 @@ import path from "node:path";
 import url from "node:url";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-const HOOK_PATH = path.join(__dirname, "..", "hooks", "check-redundant-read.mjs");
+const HOOK_PATH = path.join(__dirname, "..", "hooks", "check-redundant-read.ts");
 
 async function makeRepo() {
   return await fs.mkdtemp(path.join(os.tmpdir(), "cost-hygiene-hook-"));
@@ -24,7 +24,9 @@ async function cleanup(dir) {
  */
 function runHook(stdin, env = {}) {
   return new Promise((resolve) => {
-    const proc = spawn("node", [HOOK_PATH], { env: { ...process.env, ...env } });
+    const proc = spawn("node", ["--experimental-strip-types", HOOK_PATH], {
+      env: { ...process.env, ...env }
+    });
     let stdout = "";
     let stderr = "";
     proc.stdout.on("data", (b) => (stdout += b.toString("utf8")));
@@ -116,7 +118,7 @@ test("hook with malformed stdin exits 0 silently", async () => {
   assert.equal(result.stdout, "");
 });
 
-const POST_HOOK_PATH = path.join(__dirname, "..", "hooks", "record-read-content.mjs");
+const POST_HOOK_PATH = path.join(__dirname, "..", "hooks", "record-read-content.ts");
 
 /**
  * @param {string} stdin
@@ -125,7 +127,9 @@ const POST_HOOK_PATH = path.join(__dirname, "..", "hooks", "record-read-content.
  */
 function runPostHook(stdin, env = {}) {
   return new Promise((resolve) => {
-    const proc = spawn("node", [POST_HOOK_PATH], { env: { ...process.env, ...env } });
+    const proc = spawn("node", ["--experimental-strip-types", POST_HOOK_PATH], {
+      env: { ...process.env, ...env }
+    });
     let stdout = "";
     let stderr = "";
     proc.stdout.on("data", (b) => (stdout += b.toString("utf8")));

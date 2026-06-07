@@ -19,9 +19,7 @@ import { installGlobal } from "./installer/global.ts";
 
 export { auditRepo, installGlobal };
 
-export async function bootstrapRepo(
-  repoPath: string
-): Promise<
+export async function bootstrapRepo(repoPath: string): Promise<
   Result<
     {
       mode: string;

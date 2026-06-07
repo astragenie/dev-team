@@ -109,14 +109,27 @@ function buildSummary(params: {
   autonomousLoopBrief: unknown;
   runHealth: string | null;
 }): Record<string, unknown> {
-  const { gitActivity, wakeUpBrief, artifacts, deploymentClues, costs, routingTable, autonomousLoopBrief, runHealth } = params;
-  const workflow = wakeUpBrief.workflow as { hasActiveRun?: boolean; pendingBadges?: string[] } | undefined;
+  const {
+    gitActivity,
+    wakeUpBrief,
+    artifacts,
+    deploymentClues,
+    costs,
+    routingTable,
+    autonomousLoopBrief,
+    runHealth
+  } = params;
+  const workflow = wakeUpBrief.workflow as
+    | { hasActiveRun?: boolean; pendingBadges?: string[] }
+    | undefined;
   return {
     isGitRepo: gitActivity.isGitRepo,
     hasActiveWorkflow: workflow?.hasActiveRun ?? false,
     pendingWorkflowBadges: workflow?.pendingBadges ?? [],
     hasRecentArtifacts: artifacts.length > 0,
-    hasDeploymentGuidance: Boolean((wakeUpBrief.repoGuidance as { deployment?: unknown } | undefined)?.deployment),
+    hasDeploymentGuidance: Boolean(
+      (wakeUpBrief.repoGuidance as { deployment?: unknown } | undefined)?.deployment
+    ),
     discoveredDeploymentClues: deploymentClues.clues?.length ?? 0,
     autonomousLoopInstalled: Boolean(autonomousLoopBrief),
     costReports: costs.dedupedCount,

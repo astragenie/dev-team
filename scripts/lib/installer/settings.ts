@@ -35,10 +35,7 @@ export function isCrewHook(entry: HookEntry | null | undefined): boolean {
   });
 }
 
-export function mergeHooks(
-  existingHooks: HooksMap = {},
-  desiredHooks: HooksMap = {}
-): HooksMap {
+export function mergeHooks(existingHooks: HooksMap = {}, desiredHooks: HooksMap = {}): HooksMap {
   const result: HooksMap = { ...existingHooks };
   for (const [eventName, hookDefs] of Object.entries(desiredHooks)) {
     const current = Array.isArray(result[eventName]) ? (result[eventName] as HookEntry[]) : [];

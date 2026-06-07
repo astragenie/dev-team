@@ -15,12 +15,11 @@
  * See: standards/typescript/coding-conventions.md §Runtime validation with Zod,
  *      docs/superpowers/specs/2026-06-07-ts-migration-and-perf-design.md §Boundary validation policy.
  */
-import { z } from 'zod';
+import { z } from "zod";
 
-const IsoDate = z.string().refine(
-  (s) => !Number.isNaN(Date.parse(s)),
-  { message: 'expected ISO 8601 date string' }
-);
+const IsoDate = z
+  .string()
+  .refine((s) => !Number.isNaN(Date.parse(s)), { message: "expected ISO 8601 date string" });
 
 const GateEntry = z.object({
   status: z.string(),

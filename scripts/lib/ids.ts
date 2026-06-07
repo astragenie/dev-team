@@ -9,12 +9,12 @@
 declare const __brand: unique symbol;
 export type Brand<T, B> = T & { readonly [__brand]: B };
 
-export type RepoPath = Brand<string, 'RepoPath'>;
-export type SliceId = Brand<string, 'SliceId'>;
-export type FeatId = Brand<string, 'FeatId'>;
-export type ArtifactPath = Brand<string, 'ArtifactPath'>;
-export type CostReportPath = Brand<string, 'CostReportPath'>;
-export type BadgeName = Brand<string, 'BadgeName'>;
+export type RepoPath = Brand<string, "RepoPath">;
+export type SliceId = Brand<string, "SliceId">;
+export type FeatId = Brand<string, "FeatId">;
+export type ArtifactPath = Brand<string, "ArtifactPath">;
+export type CostReportPath = Brand<string, "CostReportPath">;
+export type BadgeName = Brand<string, "BadgeName">;
 
 export const RepoPath = (s: string): RepoPath => s as RepoPath;
 export const SliceId = (s: string): SliceId => s as SliceId;

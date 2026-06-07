@@ -1,0 +1,3 @@
+{"type":"slice_start","sliceId":"SLICE-43","timestamp":"2026-06-07T15:49:05.767Z","featureId":"FEAT-119","title":"SLICE-43","planPath":"C:\\work\\mega\\hero-crew\\.claude\\artifacts\\loop\\plans\\20260607T154905Z-plan-SLICE-43.md","requiresApprovalGate":false}
+{"type":"slice_start","sliceId":"SLICE-43","timestamp":"2026-06-07T16:14:46.963Z","featureId":"FEAT-119","title":"SLICE-43","planPath":"C:\\work\\mega\\hero-crew\\.claude\\artifacts\\loop\\plans\\20260607T161446Z-plan-SLICE-43.md","requiresApprovalGate":false}
+{"type":"slice_complete","sliceId":"SLICE-43","timestamp":"2026-06-07T16:14:51.754Z","featureId":"FEAT-119","featureMovedTo":null,"validationSatisfied":false}

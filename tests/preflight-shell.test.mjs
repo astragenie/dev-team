@@ -8,7 +8,7 @@ import path from "node:path";
 import url from "node:url";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-const HOOK_PATH = path.join(__dirname, "..", "hooks", "preflight-shell.mjs");
+const HOOK_PATH = path.join(__dirname, "..", "hooks", "preflight-shell.ts");
 
 /**
  * @param {string} stdin
@@ -17,7 +17,7 @@ const HOOK_PATH = path.join(__dirname, "..", "hooks", "preflight-shell.mjs");
  */
 function runHook(stdin, env = {}) {
   return new Promise((resolve) => {
-    const proc = spawn("node", [HOOK_PATH], {
+    const proc = spawn("node", ["--experimental-strip-types", HOOK_PATH], {
       env: { ...process.env, ...env }
     });
     let stdout = "";
@@ -81,7 +81,7 @@ test("AC-6b: hook runs with no env var set (truly unset)", async () => {
     const cleanEnv = Object.fromEntries(
       Object.entries(process.env).filter(([k]) => k !== "CREW_TOOL_PREFLIGHT")
     );
-    const proc = spawn("node", [HOOK_PATH], { env: cleanEnv });
+    const proc = spawn("node", ["--experimental-strip-types", HOOK_PATH], { env: cleanEnv });
     let stdout = "";
     let stderr = "";
     proc.stdout.on("data", (b) => (stdout += b.toString("utf8")));

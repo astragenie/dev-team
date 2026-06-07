@@ -27,9 +27,7 @@ export async function auditRepo(repoPath: string): Promise<AuditResult> {
     hasDotClaude: await pathExists(path.join(repoPath, ".claude")),
     hasSettings: await pathExists(path.join(repoPath, ".claude", "settings.json")),
     hasHarnessLayer: await pathExists(path.join(repoPath, ".claude", "artifacts", "crew")),
-    hasStateLayer: await pathExists(
-      path.join(repoPath, ".claude", "state", "crew", "claims.json")
-    ),
+    hasStateLayer: await pathExists(path.join(repoPath, ".claude", "state", "crew", "claims.json")),
     hasWorkflowState: await pathExists(
       path.join(repoPath, ".claude", "state", "crew", "workflow-state.json")
     ),

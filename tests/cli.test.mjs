@@ -18,7 +18,13 @@ async function makeTempDir(prefix) {
 test("CLI init creates a harnessed repo", async () => {
   const rootPath = await makeTempDir("crew-cli-init-");
   const repoPath = path.join(rootPath, "app");
-  const { stdout } = await execFile("node", ["--experimental-strip-types", cliPath, "init", "--repo", repoPath]);
+  const { stdout } = await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "init",
+    "--repo",
+    repoPath
+  ]);
   const result = JSON.parse(stdout);
 
   assert.equal(result.mode, "init");
@@ -34,7 +40,13 @@ test("CLI bootstrap preserves existing CLAUDE.md content", async () => {
   const repoPath = await makeTempDir("crew-cli-bootstrap-");
   await fs.writeFile(path.join(repoPath, "CLAUDE.md"), "# Existing\n");
 
-  const { stdout } = await execFile("node", ["--experimental-strip-types", cliPath, "bootstrap", "--repo", repoPath]);
+  const { stdout } = await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "bootstrap",
+    "--repo",
+    repoPath
+  ]);
   const result = JSON.parse(stdout);
   const claudeMd = await fs.readFile(path.join(repoPath, "CLAUDE.md"), "utf8");
 
@@ -123,7 +135,13 @@ test("CLI approval requests can be listed and resolved", async () => {
   assert.equal(requestResult.status, "open");
   assert.equal(requestResult.approver, "user");
 
-  const openOutput = await execFile("node", ["--experimental-strip-types", cliPath, "show-approvals", "--repo", repoPath]);
+  const openOutput = await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "show-approvals",
+    "--repo",
+    repoPath
+  ]);
   const openResult = JSON.parse(openOutput.stdout);
   assert.equal(openResult.approvals.length, 1);
   assert.equal(openResult.approvals[0].id, requestResult.id);
@@ -463,7 +481,13 @@ test("CLI wake-up brief summarizes repo memory and state", async () => {
     "passed"
   ]);
 
-  const wakeUpOutput = await execFile("node", ["--experimental-strip-types", cliPath, "wake-up", "--repo", repoPath]);
+  const wakeUpOutput = await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "wake-up",
+    "--repo",
+    repoPath
+  ]);
   const wakeUpResult = JSON.parse(wakeUpOutput.stdout);
 
   assert.equal(wakeUpResult.summary.memoryPolicy, "bounded-v1");
@@ -567,7 +591,13 @@ test("CLI brief-me synthesizes workflow state, git activity, and next step", asy
 
   await fs.writeFile(path.join(repoPath, "notes.txt"), "untracked\n");
 
-  const briefOutput = await execFile("node", ["--experimental-strip-types", cliPath, "brief-me", "--repo", repoPath]);
+  const briefOutput = await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "brief-me",
+    "--repo",
+    repoPath
+  ]);
   const briefResult = JSON.parse(briefOutput.stdout);
 
   assert.equal(briefResult.repoPath, repoPath);
@@ -602,7 +632,13 @@ test("CLI brief-me is read-only for an uninitialized repo", async () => {
   const repoPath = await makeTempDir("crew-cli-brief-me-readonly-");
   await fs.writeFile(path.join(repoPath, "README.md"), "# Plain repo\n");
 
-  const briefOutput = await execFile("node", ["--experimental-strip-types", cliPath, "brief-me", "--repo", repoPath]);
+  const briefOutput = await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "brief-me",
+    "--repo",
+    repoPath
+  ]);
   const briefResult = JSON.parse(briefOutput.stdout);
 
   assert.equal(briefResult.repoPath, repoPath);
@@ -642,7 +678,13 @@ test("CLI brief-me surfaces failed gates before generic next steps", async () =>
     "Missing null guard"
   ]);
 
-  const briefOutput = await execFile("node", ["--experimental-strip-types", cliPath, "brief-me", "--repo", repoPath]);
+  const briefOutput = await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "brief-me",
+    "--repo",
+    repoPath
+  ]);
   const briefResult = JSON.parse(briefOutput.stdout);
 
   assert.match(
@@ -669,9 +711,23 @@ test("CLI workflow state tracks gate badges and artifact progress", async () => 
     "assisted single-session"
   ]);
 
-  await execFile("node", ["--experimental-strip-types", cliPath, "mark-badge", "--repo", repoPath, "--badge", "review_required"]);
+  await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "mark-badge",
+    "--repo",
+    repoPath,
+    "--badge",
+    "review_required"
+  ]);
 
-  let workflowOutput = await execFile("node", ["--experimental-strip-types", cliPath, "show-workflow-state", "--repo", repoPath]);
+  let workflowOutput = await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "show-workflow-state",
+    "--repo",
+    repoPath
+  ]);
   let workflowResult = JSON.parse(workflowOutput.stdout);
   assert.equal(workflowResult.summary.currentRun.gates.review.status, "required");
   assert.deepEqual(workflowResult.summary.pendingBadges, ["review_required"]);
@@ -700,7 +756,13 @@ test("CLI workflow state tracks gate badges and artifact progress", async () => 
     "local"
   ]);
 
-  workflowOutput = await execFile("node", ["--experimental-strip-types", cliPath, "show-workflow-state", "--repo", repoPath]);
+  workflowOutput = await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "show-workflow-state",
+    "--repo",
+    repoPath
+  ]);
   workflowResult = JSON.parse(workflowOutput.stdout);
   assert.equal(workflowResult.summary.currentRun.gates.review.status, "passed");
   assert.equal(workflowResult.summary.currentRun.gates.validation.status, "expected");
@@ -718,7 +780,13 @@ test("CLI workflow state tracks gate badges and artifact progress", async () => 
     "passed"
   ]);
 
-  workflowOutput = await execFile("node", ["--experimental-strip-types", cliPath, "show-workflow-state", "--repo", repoPath]);
+  workflowOutput = await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "show-workflow-state",
+    "--repo",
+    repoPath
+  ]);
   workflowResult = JSON.parse(workflowOutput.stdout);
   assert.equal(workflowResult.summary.currentRun.gates.validation.status, "passed");
   assert.deepEqual(workflowResult.summary.pendingBadges, []);
@@ -733,7 +801,13 @@ test("CLI workflow state tracks gate badges and artifact progress", async () => 
     "dev_deploy_expected"
   ]);
 
-  workflowOutput = await execFile("node", ["--experimental-strip-types", cliPath, "show-workflow-state", "--repo", repoPath]);
+  workflowOutput = await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "show-workflow-state",
+    "--repo",
+    repoPath
+  ]);
   workflowResult = JSON.parse(workflowOutput.stdout);
   assert.equal(workflowResult.summary.currentRun.gates.deployment.dev.status, "expected");
   assert.deepEqual(workflowResult.summary.pendingBadges, ["dev_deploy_expected"]);
@@ -758,7 +832,13 @@ test("CLI workflow state tracks gate badges and artifact progress", async () => 
     "passed"
   ]);
 
-  workflowOutput = await execFile("node", ["--experimental-strip-types", cliPath, "show-workflow-state", "--repo", repoPath]);
+  workflowOutput = await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "show-workflow-state",
+    "--repo",
+    repoPath
+  ]);
   workflowResult = JSON.parse(workflowOutput.stdout);
   assert.equal(workflowResult.summary.currentRun.gates.deployment.dev.status, "passed");
   assert.deepEqual(workflowResult.summary.pendingBadges, []);
@@ -803,7 +883,13 @@ test("CLI workflow state and brief-me surface missing artifact write-backs after
   assert.deepEqual(workflowResult.summary.pendingBadges, []);
   assert.deepEqual(workflowResult.summary.missingArtifactWrites, ["review_result_missing"]);
 
-  const briefOutput = await execFile("node", ["--experimental-strip-types", cliPath, "brief-me", "--repo", repoPath]);
+  const briefOutput = await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "brief-me",
+    "--repo",
+    repoPath
+  ]);
   const briefResult = JSON.parse(briefOutput.stdout);
   assert.match(
     briefResult.sections.blockedOrMissing.join("\n"),
@@ -837,7 +923,13 @@ test("CLI workflow state and brief-me surface missing run briefs after meaningfu
   assert.deepEqual(workflowResult.summary.pendingBadges, ["review_required"]);
   assert.deepEqual(workflowResult.summary.missingArtifactWrites, []);
 
-  const briefOutput = await execFile("node", ["--experimental-strip-types", cliPath, "brief-me", "--repo", repoPath]);
+  const briefOutput = await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "brief-me",
+    "--repo",
+    repoPath
+  ]);
   const briefResult = JSON.parse(briefOutput.stdout);
   assert.match(
     briefResult.sections.blockedOrMissing.join("\n"),
@@ -863,7 +955,15 @@ test("CLI blocks final synthesis when workflow badges are still pending", async 
     "single-session"
   ]);
 
-  await execFile("node", ["--experimental-strip-types", cliPath, "mark-badge", "--repo", repoPath, "--badge", "review_required"]);
+  await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "mark-badge",
+    "--repo",
+    repoPath,
+    "--badge",
+    "review_required"
+  ]);
 
   await assert.rejects(
     () =>
@@ -987,7 +1087,12 @@ test("write-final-synthesis accepts --external-deltas none and renders the secti
 });
 
 test("CLI subcommand help works without error", async () => {
-  const helpOutput = await execFile("node", ["--experimental-strip-types", cliPath, "write-review-result", "--help"]);
+  const helpOutput = await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "write-review-result",
+    "--help"
+  ]);
 
   assert.match(helpOutput.stdout, /write-review-result/);
   assert.match(helpOutput.stdout, /--verdict/);
@@ -995,9 +1100,13 @@ test("CLI subcommand help works without error", async () => {
 
 test("CLI install-global writes managed global memory into HOME", async () => {
   const homePath = await makeTempDir("crew-cli-global-home-");
-  const installOutput = await execFile("node", ["--experimental-strip-types", cliPath, "install-global"], {
-    env: { ...process.env, HOME: homePath }
-  });
+  const installOutput = await execFile(
+    "node",
+    ["--experimental-strip-types", cliPath, "install-global"],
+    {
+      env: { ...process.env, HOME: homePath }
+    }
+  );
   const result = JSON.parse(installOutput.stdout);
 
   assert.equal(result.mode, "install-global");
@@ -1012,9 +1121,13 @@ test("CLI install-global writes managed global memory into HOME", async () => {
     "~/.claude/CLAUDE.md"
   ]);
 
-  const repeatOutput = await execFile("node", ["--experimental-strip-types", cliPath, "install-global"], {
-    env: { ...process.env, HOME: homePath }
-  });
+  const repeatOutput = await execFile(
+    "node",
+    ["--experimental-strip-types", cliPath, "install-global"],
+    {
+      env: { ...process.env, HOME: homePath }
+    }
+  );
   const repeatResult = JSON.parse(repeatOutput.stdout);
   assert.deepEqual(repeatResult.writes, []);
 });
@@ -1176,7 +1289,13 @@ test("brief-me surfaces blocked in pending badges", async () => {
     "--note",
     "Reason"
   ]);
-  const out = await execFile("node", ["--experimental-strip-types", cliPath, "brief-me", "--repo", repoPath]);
+  const out = await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "brief-me",
+    "--repo",
+    repoPath
+  ]);
   const brief = JSON.parse(out.stdout);
   assert.ok(
     (brief.pendingBadges || brief.workflow?.pendingBadges || []).includes("blocked") ||
@@ -1189,7 +1308,13 @@ test("brief-me reports routingTableStale=false when file recent or absent", asyn
   const repoPath = await makeTempDir("crew-cli-routing-fresh-");
   await execFile("node", ["--experimental-strip-types", cliPath, "init", "--repo", repoPath]);
   // file absent
-  const out1 = await execFile("node", ["--experimental-strip-types", cliPath, "brief-me", "--repo", repoPath]);
+  const out1 = await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "brief-me",
+    "--repo",
+    repoPath
+  ]);
   const brief1 = JSON.parse(out1.stdout);
   const summary1 = brief1.summary || {};
   assert.equal(summary1.routingTablePresent, false);
@@ -1198,7 +1323,13 @@ test("brief-me reports routingTableStale=false when file recent or absent", asyn
   // file present + fresh
   await fs.mkdir(path.join(repoPath, "docs"), { recursive: true });
   await fs.writeFile(path.join(repoPath, "docs", "routing-table.md"), "# Routing table\n");
-  const out2 = await execFile("node", ["--experimental-strip-types", cliPath, "brief-me", "--repo", repoPath]);
+  const out2 = await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "brief-me",
+    "--repo",
+    repoPath
+  ]);
   const brief2 = JSON.parse(out2.stdout);
   const summary2 = brief2.summary || {};
   assert.equal(summary2.routingTablePresent, true);
@@ -1214,7 +1345,13 @@ test("brief-me reports routingTableStale=true when mtime > 30 days old", async (
   const oldTime = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000);
   await fs.utimes(filePath, oldTime, oldTime);
 
-  const out = await execFile("node", ["--experimental-strip-types", cliPath, "brief-me", "--repo", repoPath]);
+  const out = await execFile("node", [
+    "--experimental-strip-types",
+    cliPath,
+    "brief-me",
+    "--repo",
+    repoPath
+  ]);
   const brief = JSON.parse(out.stdout);
   const summary = brief.summary || {};
   assert.equal(summary.routingTableStale, true);

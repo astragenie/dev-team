@@ -78,11 +78,7 @@ type RuleTriggerFn = (
   ctx?: RuleContext
 ) => boolean;
 
-type RuleStringFn = (
-  target: SummaryRecord,
-  baseline?: BaselineRecord,
-  ctx?: RuleContext
-) => string;
+type RuleStringFn = (target: SummaryRecord, baseline?: BaselineRecord, ctx?: RuleContext) => string;
 
 export interface CostRule {
   id: string;
@@ -220,10 +216,7 @@ function messageExplorationHeavy(s: SummaryRecord): string {
   return `Exploration:execution tool ratio is ${s.explorationRatio.toFixed(1)}:1 (Reads/Greps/Bashes vs Edits/Writes).`;
 }
 
-function triggerExpensiveFailure(
-  s: SummaryRecord,
-  base?: BaselineRecord
-): boolean {
+function triggerExpensiveFailure(s: SummaryRecord, base?: BaselineRecord): boolean {
   return base != null && s.usd > base.usdP75 && s.reviewDecision === "rejected";
 }
 

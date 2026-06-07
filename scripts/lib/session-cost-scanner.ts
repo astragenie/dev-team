@@ -338,7 +338,12 @@ export interface ScanSessionsResult {
   turnsBeforeFirstTool: number;
   perSourceState: Map<
     string,
-    { messages: number; tokens: Record<string, number>; modelTokens: Record<string, Record<string, number>>; touched: boolean }
+    {
+      messages: number;
+      tokens: Record<string, number>;
+      modelTokens: Record<string, Record<string, number>>;
+      touched: boolean;
+    }
   >;
   toolCachePrime: Record<string, CachePrimeEntry>;
 }
@@ -363,7 +368,12 @@ export async function scanSessions({
   const toolNameById = new Map<string, string>();
   const perSourceState = new Map<
     string,
-    { messages: number; tokens: Record<string, number>; modelTokens: Record<string, Record<string, number>>; touched: boolean }
+    {
+      messages: number;
+      tokens: Record<string, number>;
+      modelTokens: Record<string, Record<string, number>>;
+      touched: boolean;
+    }
   >();
   const counters: Counters = {
     messagesCounted: 0,
@@ -499,7 +509,7 @@ export function attributeCachePrime(ctx: ScanCtx, usage: Record<string, unknown>
   if (!pending.length || !usage) return;
   const cc = usage["cache_creation"] as Record<string, number> | null | undefined;
   const cacheCreate = cc
-    ? ((cc["ephemeral_5m_input_tokens"] ?? 0) + (cc["ephemeral_1h_input_tokens"] ?? 0))
+    ? (cc["ephemeral_5m_input_tokens"] ?? 0) + (cc["ephemeral_1h_input_tokens"] ?? 0)
     : ((usage["cache_creation_input_tokens"] as number | undefined) ?? 0);
   if (cacheCreate <= 0) return;
   const sizes = pending.map((tu) => ctx.cachePrimeState.pendingResultSizes[tu.id] ?? 0);

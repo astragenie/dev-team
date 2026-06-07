@@ -19,7 +19,7 @@ async function parseEvents(dir) {
   }
 }
 
-import { logHookError } from "../hooks/hook-error.mjs";
+import { logHookError } from "../hooks/hook-error.ts";
 
 test("logHookError emits structured hook_error event to events.jsonl", async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "hook-err-"));

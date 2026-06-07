@@ -72,7 +72,12 @@ function checkTier(fm: Record<string, string>, label: string, errors: string[]) 
   }
 }
 
-function checkDirectoryName(filePath: string, fm: Record<string, string>, label: string, errors: string[]) {
+function checkDirectoryName(
+  filePath: string,
+  fm: Record<string, string>,
+  label: string,
+  errors: string[]
+) {
   if (!fm["name"]) return;
   const dirName = path.basename(path.dirname(filePath));
   if (dirName !== fm["name"]) {
@@ -129,7 +134,12 @@ export async function validateSkills(skillsRoot = SKILLS_ROOT) {
   const files = await findSkillFiles(skillsRoot);
   const errors: string[] = [];
   const warnings: string[] = [];
-  const skills: Array<{ label: string; filePath: string; fm: Record<string, string>; text: string }> = [];
+  const skills: Array<{
+    label: string;
+    filePath: string;
+    fm: Record<string, string>;
+    text: string;
+  }> = [];
 
   for (const filePath of files) {
     const label = path.relative(path.dirname(skillsRoot), filePath).replace(/\\/g, "/");

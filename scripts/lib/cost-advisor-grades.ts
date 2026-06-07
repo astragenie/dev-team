@@ -77,7 +77,10 @@ function gradeCountMetrics(targetMap: Record<string, number>): GradeLetter {
     const val = targetMap[key] ?? 0;
     let metricGrade: GradeLetter = "F";
     for (const [max, g] of thresholds) {
-      if (val <= max) { metricGrade = g; break; }
+      if (val <= max) {
+        metricGrade = g;
+        break;
+      }
     }
     grade = worseGrade(grade, metricGrade);
   }

@@ -67,7 +67,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/check-redundant-read.mjs\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/check-redundant-read.ts\""
           }
         ]
       },
@@ -76,7 +76,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/preflight-shell.mjs\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/preflight-shell.ts\""
           }
         ]
       },
@@ -85,7 +85,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/preflight-shell.mjs\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/preflight-shell.ts\""
           }
         ]
       }
@@ -96,7 +96,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/record-read-content.mjs\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/record-read-content.ts\""
           }
         ]
       },
@@ -105,7 +105,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/check-subagent-return.mjs\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/check-subagent-return.ts\""
           }
         ]
       }

@@ -106,7 +106,10 @@ test("env-skip: no env var set exits 0 with skip message", async () => {
   envWithoutFlag.CREW_VALIDATE_ROUTING_TABLE_REPO_ROOT = tmpDir;
   envWithoutFlag.CREW_VALIDATE_ROUTING_TABLE_FILE = path.join(tmpDir, "docs", "routing-table.md");
   envWithoutFlag.CREW_VALIDATE_ROUTING_TABLE_PLUGINS_JSON = pluginsJsonPath;
-  const result = spawnSync("node", ["--experimental-strip-types", scriptPath], { env: envWithoutFlag, encoding: "utf8" });
+  const result = spawnSync("node", ["--experimental-strip-types", scriptPath], {
+    env: envWithoutFlag,
+    encoding: "utf8"
+  });
   assert.equal(result.status, 0, `Expected exit 0 when env not set, got ${result.status}`);
   assert.match(result.stdout, /skipped/, "Should print skip message");
 });

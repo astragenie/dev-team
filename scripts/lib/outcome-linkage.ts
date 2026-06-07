@@ -69,8 +69,7 @@ async function findLatestMatching(dir: string, sliceNumber: string): Promise<str
 
 function parseDecision(text: string | null): string | null {
   if (!text) return null;
-  const m =
-    text.match(/^-\s*Decision:\s*([\w_-]+)/im) || text.match(/^decision:\s*([\w_-]+)/im);
+  const m = text.match(/^-\s*Decision:\s*([\w_-]+)/im) || text.match(/^decision:\s*([\w_-]+)/im);
   return m && m[1] !== undefined ? m[1] : null;
 }
 
@@ -85,7 +84,10 @@ export interface OutcomeLinkageResult {
   validationDecision?: string | null;
 }
 
-async function findArtifactDecision(dir: string, sliceNumber: string): Promise<{
+async function findArtifactDecision(
+  dir: string,
+  sliceNumber: string
+): Promise<{
   filePath: string | null;
   decision: string | null;
 }> {

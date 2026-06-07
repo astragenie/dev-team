@@ -8,11 +8,7 @@ import { getCachedArtifact } from "../artifact-cache.mjs";
 const DEPLOYMENT_GUIDANCE_PATH = [".claude", "crew", "deployment.md"] as const;
 // Legacy path retained for read-side fallback so repos installed before the
 // engineering-os -> crew rename still surface their deployment guidance.
-const LEGACY_DEPLOYMENT_GUIDANCE_PATH = [
-  ".claude",
-  "engineering-os",
-  "deployment.md"
-] as const;
+const LEGACY_DEPLOYMENT_GUIDANCE_PATH = [".claude", "engineering-os", "deployment.md"] as const;
 const MAX_CLUES = 30;
 const MAX_DEPTH = 3;
 const IGNORED_DIRS = new Set([
@@ -54,15 +50,7 @@ const DEPLOYMENT_DIR_HINTS = new Set([
   "terraform",
   "manifests"
 ]);
-const DEPLOYMENT_EXTENSIONS = new Set([
-  ".yaml",
-  ".yml",
-  ".json",
-  ".toml",
-  ".tf",
-  ".tfvars",
-  ".sh"
-]);
+const DEPLOYMENT_EXTENSIONS = new Set([".yaml", ".yml", ".json", ".toml", ".tf", ".tfvars", ".sh"]);
 
 async function pathExists(targetPath: string): Promise<boolean> {
   try {

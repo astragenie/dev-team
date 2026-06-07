@@ -328,12 +328,7 @@ function usage(target: string | null = null) {
 
   const subcommandsMap = subcommands as Record<string, string | undefined>;
   if (target && subcommandsMap[target]) {
-    return [
-      "Engineering OS installer",
-      "",
-      "Usage:",
-      subcommandsMap[target]
-    ].join("\n");
+    return ["Engineering OS installer", "", "Usage:", subcommandsMap[target]].join("\n");
   }
 
   return ["Engineering OS installer", "", "Usage:", ...Object.values(subcommands)].join("\n");
@@ -401,11 +396,16 @@ async function emitCostAdvise(
     const { buildCostAdvisor, renderCostAdvisorMarkdown } = await import("./lib/cost-advisor.ts");
     const advisor = await buildCostAdvisor(repoPath, { limit: 10 });
     const md = renderCostAdvisorMarkdown(advisor);
-    const advisePath = await writeCostAdviseArtifact(repoPath, md, advisor as unknown as Record<string, unknown>, {
-      title,
-      feature,
-      phase
-    });
+    const advisePath = await writeCostAdviseArtifact(
+      repoPath,
+      md,
+      advisor as unknown as Record<string, unknown>,
+      {
+        title,
+        feature,
+        phase
+      }
+    );
     return {
       path: advisePath,
       recommendations: advisor.recommendations?.length || 0,
@@ -477,7 +477,11 @@ const COMMANDS = {
   },
   release: async ({ repoPath, flags, positionals }: CommandContext) => {
     const { releaseFiles } = await import("./lib/claims.ts");
-    const result = await releaseFiles(repoPath, positionals, flags.owner !== null ? { owner: flags.owner } : {});
+    const result = await releaseFiles(
+      repoPath,
+      positionals,
+      flags.owner !== null ? { owner: flags.owner } : {}
+    );
     if (!result.ok) {
       console.error(result.error.message);
       process.exit(1);
@@ -507,7 +511,10 @@ const COMMANDS = {
   "show-approvals": async ({ repoPath, flags }: CommandContext) => {
     const { listApprovals } = await import("./lib/approvals.ts");
     return {
-      approvals: await listApprovals(repoPath, { status: flags.status ?? undefined, approver: flags.approver })
+      approvals: await listApprovals(repoPath, {
+        status: flags.status ?? undefined,
+        approver: flags.approver
+      })
     };
   },
   "resolve-approval": async ({ repoPath, flags }: CommandContext) => {
@@ -557,9 +564,7 @@ const COMMANDS = {
     const { discoverDeploymentClues } = await import("./lib/deployment-guidance/read.ts");
     return discoverDeploymentClues(repoPath);
   },
-  "write-deployment-guidance": async (
-    { repoPath, flags, positionals }: CommandContext
-  ) => {
+  "write-deployment-guidance": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { writeDeploymentGuidance } = await import("./lib/deployment-guidance/write.ts");
     const r = await writeDeploymentGuidance(repoPath, {
       title: flags.title || positionals.join(" ") || "Repo Deployment Model",
@@ -614,7 +619,7 @@ const COMMANDS = {
       mode: flags.mode ?? undefined,
       pace: flags.pace ?? undefined,
       owner: flags.owner || "lead-session",
-      status: flags.status === "open" ? "active" : flags.status ?? undefined,
+      status: flags.status === "open" ? "active" : (flags.status ?? undefined),
       summary: flags.summary ?? undefined,
       scope: flags.scope ?? undefined,
       outOfScope: flags.outOfScope ?? undefined,
@@ -687,9 +692,7 @@ const COMMANDS = {
     if (!r.ok) throw r.error;
     return r.value;
   },
-  "write-validation-plan": async (
-    { repoPath, flags, positionals }: CommandContext
-  ) => {
+  "write-validation-plan": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
     const r = await writeArtifact(repoPath, "validation-plan", {
       title: flags.title || positionals.join(" ") || "Validation Plan",
@@ -708,9 +711,7 @@ const COMMANDS = {
     if (!r.ok) throw r.error;
     return r.value;
   },
-  "write-validation-result": async (
-    { repoPath, flags, positionals }: CommandContext
-  ) => {
+  "write-validation-result": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
     const r = await writeArtifact(repoPath, "validation-result", {
       title: flags.title || positionals.join(" ") || "Validation Result",
@@ -730,9 +731,7 @@ const COMMANDS = {
     if (!r.ok) throw r.error;
     return r.value;
   },
-  "write-deployment-check": async (
-    { repoPath, flags, positionals }: CommandContext
-  ) => {
+  "write-deployment-check": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
     const r = await writeArtifact(repoPath, "deployment-check", {
       title: flags.title || positionals.join(" ") || "Deployment Check",
@@ -755,9 +754,7 @@ const COMMANDS = {
     if (!r.ok) throw r.error;
     return r.value;
   },
-  "write-final-synthesis": async (
-    { repoPath, flags, positionals }: CommandContext
-  ) => {
+  "write-final-synthesis": async ({ repoPath, flags, positionals }: CommandContext) => {
     if (flags.externalDeltas === null || flags.externalDeltas === undefined) {
       throw new Error(
         "write-final-synthesis requires --external-deltas. " +
@@ -771,7 +768,7 @@ const COMMANDS = {
     const synthResult = await writeArtifact(repoPath, "final-synthesis", {
       title: flags.title || positionals.join(" ") || "Final Synthesis",
       owner: flags.owner || "lead-session",
-      status: flags.status === "open" ? "completed" : flags.status ?? undefined,
+      status: flags.status === "open" ? "completed" : (flags.status ?? undefined),
       summary: flags.summary ?? undefined,
       files: flags.files ?? undefined,
       evidence: flags.evidence ?? undefined,
@@ -801,11 +798,16 @@ const COMMANDS = {
     const { buildCostAdvisor, renderCostAdvisorMarkdown } = await import("./lib/cost-advisor.ts");
     const advisor = await buildCostAdvisor(repoPath, { limit: 10 });
     const md = renderCostAdvisorMarkdown(advisor);
-    const writePath = await writeCostAdviseArtifact(repoPath, md, advisor as unknown as Record<string, unknown>, {
-      title: flags.title,
-      feature: flags.feature,
-      phase: flags.phase
-    });
+    const writePath = await writeCostAdviseArtifact(
+      repoPath,
+      md,
+      advisor as unknown as Record<string, unknown>,
+      {
+        title: flags.title,
+        feature: flags.feature,
+        phase: flags.phase
+      }
+    );
     return {
       target: advisor.target?.sliceId || advisor.target?.runTitle || null,
       recommendations: advisor.recommendations,
@@ -815,8 +817,7 @@ const COMMANDS = {
       artifactPath: writePath
     };
   },
-  "cost-slice": ({ repoPath, flags }: CommandContext) =>
-    costSliceHandler({ repoPath, flags })
+  "cost-slice": ({ repoPath, flags }: CommandContext) => costSliceHandler({ repoPath, flags })
 };
 
 async function main() {

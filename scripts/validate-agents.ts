@@ -54,7 +54,12 @@ function checkRequiredFields(fm: Record<string, string>, label: string, errors: 
   }
 }
 
-function checkFileName(filePath: string, fm: Record<string, string>, label: string, errors: string[]) {
+function checkFileName(
+  filePath: string,
+  fm: Record<string, string>,
+  label: string,
+  errors: string[]
+) {
   if (!fm["name"]) return;
   const baseName = path.basename(filePath, ".md");
   if (baseName !== fm["name"]) {
@@ -71,7 +76,12 @@ function checkLineCount(text: string, label: string, errors: string[]) {
   }
 }
 
-function checkRequiredSections(text: string, fm: Record<string, string>, label: string, errors: string[]) {
+function checkRequiredSections(
+  text: string,
+  fm: Record<string, string>,
+  label: string,
+  errors: string[]
+) {
   // The lead is a user-facing coordinator; it writes final-synthesis,
   // not handoffs to itself. The Report contract requirement applies to
   // teammate roles that hand off back to the lead.
@@ -106,7 +116,12 @@ function checkDuplicateNames(
 export async function validateAgents(agentsRoot = AGENTS_ROOT) {
   const files = await findAgentFiles(agentsRoot);
   const errors: string[] = [];
-  const agents: Array<{ label: string; filePath: string; fm: Record<string, string>; text: string }> = [];
+  const agents: Array<{
+    label: string;
+    filePath: string;
+    fm: Record<string, string>;
+    text: string;
+  }> = [];
 
   for (const filePath of files) {
     const label = path.relative(path.dirname(agentsRoot), filePath).replace(/\\/g, "/");

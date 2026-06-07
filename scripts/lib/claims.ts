@@ -180,10 +180,7 @@ async function saveClaimsState(repoPath: string, state: ClaimsState): Promise<vo
   await fs.writeFile(claimsPath, `${JSON.stringify(state, null, 2)}\n`);
 }
 
-async function appendHistoryEvent(
-  repoPath: string,
-  event: Record<string, unknown>
-): Promise<void> {
+async function appendHistoryEvent(repoPath: string, event: Record<string, unknown>): Promise<void> {
   const historyPath = path.join(repoPath, ...HISTORY_PATH);
   await fs.appendFile(historyPath, `${JSON.stringify({ timestamp: nowIso(), ...event })}\n`);
 }
@@ -382,9 +379,7 @@ export async function inspectClaims(
     return { owner, owned, conflicts, available: [] };
   }
 
-  const requested = [
-    ...new Set(filePaths.map((inputPath) => toRepoRelative(repoPath, inputPath)))
-  ];
+  const requested = [...new Set(filePaths.map((inputPath) => toRepoRelative(repoPath, inputPath)))];
   const owned: ClaimRecord[] = [];
   const conflicts: ClaimRecord[] = [];
   const available: Array<{ path: string }> = [];

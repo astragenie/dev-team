@@ -3,21 +3,15 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import {
+  type SessionState,
   loadSession,
   saveSession,
   recordReadContent,
   evictLRU
 } from "../scripts/lib/cost-hygiene/state.ts";
-import { logHookError } from "./hook-error.mjs";
+import { logHookError } from "./hook-error.ts";
 
-/**
- * @param {string} repoPath
- * @param {string} code
- * @param {string} sessionId
- * @param {string} detail
- * @returns {Promise<void>}
- */
-async function logEvent(repoPath, code, sessionId, detail) {
+async function logEvent(repoPath: string, code: string, sessionId: string, detail: string): Promise<void> {
   try {
     const dir = path.join(repoPath, ".claude", "logs");
     await fs.mkdir(dir, { recursive: true });
@@ -33,11 +27,7 @@ async function logEvent(repoPath, code, sessionId, detail) {
   }
 }
 
-/**
- * @param {string} raw
- * @returns {{session_id: string, file_path: string, content: string, cwd: string} | null}
- */
-function parseInput(raw) {
+function parseInput(raw: string): { session_id: string; file_path: string; content: string; cwd: string } | null {
   try {
     const obj = JSON.parse(raw);
     if (
@@ -65,19 +55,26 @@ function parseInput(raw) {
   }
 }
 
-/**
- * @returns {Promise<string>}
- */
-async function readStdin() {
-  const chunks = [];
-  for await (const chunk of process.stdin) chunks.push(chunk);
+async function readStdin(): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
   return Buffer.concat(chunks).toString("utf8");
 }
 
-/**
- * @returns {Promise<void>}
- */
-async function main() {
+async function loadState(
+  cwd: string,
+  sessionId: string,
+  onError: (msg: string) => Promise<void>
+): Promise<SessionState | null> {
+  try {
+    return await loadSession(cwd, sessionId);
+  } catch (err) {
+    await onError(String(err));
+    return null;
+  }
+}
+
+async function main(): Promise<void> {
   if (process.env.CREW_COST_HYGIENE !== "1") {
     process.exit(0);
   }
@@ -89,20 +86,17 @@ async function main() {
   const { session_id, file_path, content, cwd } = input;
   const absPath = path.resolve(cwd, file_path);
 
-  /** @type {import("../scripts/lib/cost-hygiene/state.mjs").SessionState} */
-  let state;
-  try {
-    state = await loadSession(cwd, session_id);
-  } catch (err) {
-    await logEvent(cwd, "state-load-fail", session_id, String(err));
+  const state = await loadState(cwd, session_id, (msg) =>
+    logEvent(cwd, "state-load-fail", session_id, msg)
+  );
+  if (state === null) {
     process.exit(0);
   }
 
-  state = recordReadContent(state, absPath, content);
-  state = evictLRU(state, absPath);
+  const updated = evictLRU(recordReadContent(state, absPath, content), absPath);
 
   try {
-    await saveSession(cwd, session_id, state);
+    await saveSession(cwd, session_id, updated);
   } catch (err) {
     await logEvent(cwd, "state-write-fail", session_id, String(err));
   }

@@ -7,7 +7,7 @@ export default defineConfig({
     output: {
       target: "tests/fixtures/orval/feat-demo.client.ts",
       client: "fetch",
-      mode: "single",
-    },
-  },
+      mode: "single"
+    }
+  }
 });

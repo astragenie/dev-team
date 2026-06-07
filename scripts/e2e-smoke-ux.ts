@@ -60,9 +60,9 @@ function simulateQaEvidence() {
       violations: [{ rule: "image-alt", severity: "serious", nodes: ["img#logo"] }],
       passes_count: 12
     },
-    console: { errors: /** @type {string[]} */ ([]), warnings: ["ux-gate-smoke: warning fixture"] },
+    console: { errors: /** @type {string[]} */ [], warnings: ["ux-gate-smoke: warning fixture"] },
     network: { failures: [{ url: "/logo-does-not-exist.png", status: 404 }] },
-    visual: { diffs: /** @type {Array<{route: string, pct: number, tolerance: number}>} */ ([]) }
+    visual: { diffs: /** @type {Array<{route: string, pct: number, tolerance: number}>} */ [] }
   };
 }
 

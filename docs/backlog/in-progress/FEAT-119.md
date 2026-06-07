@@ -2,7 +2,7 @@
 id: FEAT-119
 title: TS Phase 3.2 — hooks migration (hooks/*.mjs → .ts)
 priority: P1
-status: triaged
+status: in-progress
 category: code-quality
 target_release: null
 autonomous_safe: true
@@ -24,10 +24,11 @@ pm_effort_estimate: 0.5
 pm_technical_risk: 0.5
 pm_dependency_depth: 0.5
 updated: 2026-06-07
-slices: []
+slices: [SLICE-43]
 slices_complete: []
 migration_note: legacy PM schema preserved as pm_legacy_*; new dimensions defaulted to 0.5 on 2026-06-07
 triage_notes: "autonomous_safe inferred: AC count=5, derived_from=null → true"
+started_at: 2026-06-07
 ---
 # FEAT-119 — TS Phase 3.2: hooks migration
 

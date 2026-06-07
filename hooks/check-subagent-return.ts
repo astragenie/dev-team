@@ -5,16 +5,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { parseThreshold, checkSubagentReturn } from "../scripts/lib/subagent-return/check.ts";
-import { logHookError } from "./hook-error.mjs";
+import { logHookError } from "./hook-error.ts";
 
-/**
- * @param {string} repoPath
- * @param {string} code
- * @param {string} sessionId
- * @param {string} detail
- * @returns {Promise<void>}
- */
-async function logEvent(repoPath, code, sessionId, detail) {
+async function logEvent(repoPath: string, code: string, sessionId: string, detail: string): Promise<void> {
   try {
     const dir = path.join(repoPath, ".claude", "logs");
     await fs.mkdir(dir, { recursive: true });
@@ -30,14 +23,7 @@ async function logEvent(repoPath, code, sessionId, detail) {
   }
 }
 
-/**
- * Extract the subagent return body from a PostToolUse Agent payload.
- * Tries tool_response.content, tool_response.body, then tool_response as string.
- *
- * @param {unknown} toolResponse
- * @returns {string | null}
- */
-function extractBody(toolResponse) {
+function extractBody(toolResponse: unknown): string | null {
   if (toolResponse === null || toolResponse === undefined) {
     return null;
   }
@@ -45,7 +31,7 @@ function extractBody(toolResponse) {
     return toolResponse.length > 0 ? toolResponse : null;
   }
   if (typeof toolResponse === "object") {
-    const obj = /** @type {Record<string, unknown>} */ (toolResponse);
+    const obj = toolResponse as Record<string, unknown>;
     if (typeof obj["content"] === "string") {
       return obj["content"].length > 0 ? obj["content"] : null;
     }
@@ -56,11 +42,7 @@ function extractBody(toolResponse) {
   return null;
 }
 
-/**
- * @param {string} raw
- * @returns {{ session_id: string; cwd: string; tool_name: string; body: string } | null}
- */
-function parseInput(raw) {
+function parseInput(raw: string): { session_id: string; cwd: string; tool_name: string; body: string } | null {
   try {
     const obj = JSON.parse(raw);
     if (
@@ -87,19 +69,13 @@ function parseInput(raw) {
   }
 }
 
-/**
- * @returns {Promise<string>}
- */
-async function readStdin() {
-  const chunks = [];
-  for await (const chunk of process.stdin) chunks.push(chunk);
+async function readStdin(): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
   return Buffer.concat(chunks).toString("utf8");
 }
 
-/**
- * @returns {Promise<void>}
- */
-async function main() {
+async function main(): Promise<void> {
   if (process.env.CREW_SUBAGENT_INLINE_THRESHOLD === "0") {
     process.exit(0);
   }
@@ -116,7 +92,7 @@ async function main() {
   const { warnings } = checkSubagentReturn({ body, threshold });
 
   if (warnings.length > 0) {
-    await logEvent(cwd, "inline-return-warn", session_id, warnings[0]);
+    await logEvent(cwd, "inline-return-warn", session_id, warnings[0] ?? "");
     process.stdout.write(
       JSON.stringify({ decision: "approve", systemMessage: warnings.join("\n") })
     );

@@ -242,14 +242,13 @@ export const GATE_STATUS_GETTERS: Array<(gates: RunGates) => string | undefined>
   (gates) => gates.deployment?.prod?.status
 ];
 
-export const PHASE_ARTIFACT_GETTERS: Array<
-  (artifacts: RunArtifacts) => string | null | undefined
-> = [
-  (artifacts) => artifacts.reviewResult,
-  (artifacts) => artifacts.validationResult,
-  (artifacts) => artifacts.deploymentChecks?.dev,
-  (artifacts) => artifacts.deploymentChecks?.prod
-];
+export const PHASE_ARTIFACT_GETTERS: Array<(artifacts: RunArtifacts) => string | null | undefined> =
+  [
+    (artifacts) => artifacts.reviewResult,
+    (artifacts) => artifacts.validationResult,
+    (artifacts) => artifacts.deploymentChecks?.dev,
+    (artifacts) => artifacts.deploymentChecks?.prod
+  ];
 
 export function hasCompletedPhaseEvidence(run: WorkflowRun | null | undefined): boolean {
   if (!run) return false;
