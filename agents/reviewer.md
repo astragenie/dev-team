@@ -149,9 +149,12 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-review-result \
   --files "<comma-separated files reviewed>" \
   --test-summary "<test coverage assessment or 'N/A — doc-only'>" \
   --validation-evidence "<test totals + gates re-run + verdict, or omit if conditions not met>" \
+  --findings "🔴:N,🟡:N,❓:N" \
   --risks "<residual risks or 'none'>" \
   --next "<required follow-up or 'none'>"
 ```
+
+Pass `--findings "🔴:N,🟡:N,❓:N"` where N counts your bug/risk/question signals for this review.
 
 For doc-only diffs, pass `--non-code` instead of `--test-summary`. For approved code-bearing reviews where tests are legitimately N/A, pass `--test-summary-skip-reason "<reason>"`.
 

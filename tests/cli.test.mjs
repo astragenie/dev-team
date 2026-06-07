@@ -1488,3 +1488,48 @@ test("write-review-result with --validation-evidence empty string treats it as o
     "artifact should have no Validation Evidence section when flag is empty string"
   );
 });
+
+// ── findings flag tests (FEAT-037) ──────────────────────────────────────────
+
+test("write-validation-result: --findings persisted in frontmatter", async () => {
+  const repoPath = await makeTempDir("crew-wvr-findings-");
+  try {
+    await execFile("node", [cliPath, "init", "--repo", repoPath]);
+    const out = await execFile("node", [
+      cliPath,
+      "write-validation-result",
+      "--repo", repoPath,
+      "--title", "Findings validation",
+      "--decision", "passed",
+      "--evidence", "manual smoke",
+      "--findings", "pass:2,partial:0,fail:1"
+    ]);
+    const result = JSON.parse(out.stdout);
+    const body = await fs.readFile(result.path, "utf8");
+    assert.match(body, /findings:.*pass:2,partial:0,fail:1/, "validation artifact must contain findings");
+  } finally {
+    await fs.rm(repoPath, { recursive: true, force: true });
+  }
+});
+
+test("write-deployment-check: --findings persisted in frontmatter", async () => {
+  const repoPath = await makeTempDir("crew-wdc-findings-");
+  try {
+    await execFile("node", [cliPath, "init", "--repo", repoPath]);
+    const out = await execFile("node", [
+      cliPath,
+      "write-deployment-check",
+      "--repo", repoPath,
+      "--title", "Findings deploy",
+      "--environment", "dev",
+      "--decision", "passed",
+      "--evidence", "health check",
+      "--findings", "healthy:1,degraded:0,down:0"
+    ]);
+    const result = JSON.parse(out.stdout);
+    const body = await fs.readFile(result.path, "utf8");
+    assert.match(body, /findings:.*healthy:1,degraded:0,down:0/, "deployment artifact must contain findings");
+  } finally {
+    await fs.rm(repoPath, { recursive: true, force: true });
+  }
+});

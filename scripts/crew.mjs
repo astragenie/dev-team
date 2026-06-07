@@ -42,6 +42,7 @@ const FLAG_SPEC = {
   "--extra-root": { key: "extraRoot" },
   "--feature": { key: "feature" },
   "--files": { key: "files" },
+  "--findings": { key: "findings" },
   "--from": { key: "from" },
   "--goal": { key: "goal" },
   "--id": { key: "id" },
@@ -638,7 +639,8 @@ const COMMANDS = {
       testSummary: flags.testSummary,
       testSummarySkipReason: flags.testSummarySkipReason,
       validationEvidence: flags.validationEvidence,
-      nonCode: flags.nonCode
+      nonCode: flags.nonCode,
+      findings: flags.findings ?? null
     });
   },
   "write-validation-plan": async (
@@ -676,7 +678,8 @@ const COMMANDS = {
       risks: flags.risks,
       next: flags.next,
       feature: flags.feature,
-      phase: flags.phase
+      phase: flags.phase,
+      findings: flags.findings ?? null
     });
   },
   "write-deployment-check": async (
@@ -698,7 +701,8 @@ const COMMANDS = {
       risks: flags.risks,
       next: flags.next,
       feature: flags.feature,
-      phase: flags.phase
+      phase: flags.phase,
+      findings: flags.findings ?? null
     });
   },
   "write-final-synthesis": async (

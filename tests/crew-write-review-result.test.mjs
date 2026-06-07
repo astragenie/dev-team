@@ -213,3 +213,31 @@ test("write-review-result: approved + --test-summary-skip-reason exits 0 and wri
     await cleanup(repoPath);
   }
 });
+
+// Scenario 7: --findings flag persisted in artifact frontmatter
+test("write-review-result: --findings persisted in artifact frontmatter", async () => {
+  const repoPath = await makeTempRepo("crew-wrr-findings-");
+  try {
+    const { status, stdout } = runCli([
+      "write-review-result",
+      "--repo",
+      repoPath,
+      "--title",
+      "Findings review",
+      "--decision",
+      "approved",
+      "--summary",
+      "looks good",
+      "--test-summary",
+      "all pass",
+      "--findings",
+      "🔴:1,🟡:2,❓:0"
+    ]);
+    assert.equal(status, 0, "expected exit 0 with --findings");
+    const result = JSON.parse(stdout);
+    const body = await fs.readFile(result.path, "utf8");
+    assert.match(body, /findings:.*🔴:1,🟡:2,❓:0/, "artifact must contain findings frontmatter");
+  } finally {
+    await cleanup(repoPath);
+  }
+});

@@ -28,6 +28,7 @@ function timestampSlug() {
  *   feature?: string, slice?: string, phase?: string | number,
  *   cost?: CostBreakdown, outcome?: CostOutcome | null, notes?: string, runTitle?: string,
  *   force?: boolean,
+ *   findings?: string | null,
  *   _reportVariant?: "slice" | "aggregate" | null
  * }} ArtifactFields
  *
@@ -71,6 +72,9 @@ function renderOptionalFrontmatter(fields) {
   }
   if (fields.validationEvidence) {
     lines.push(`validation_evidence: ${JSON.stringify(fields.validationEvidence)}`);
+  }
+  if (fields.findings) {
+    lines.push(`findings: ${JSON.stringify(fields.findings)}`);
   }
   if (lines.length === 0) {
     return "";

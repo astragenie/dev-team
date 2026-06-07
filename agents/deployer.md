@@ -82,9 +82,12 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-deployment-check \
   --summary "<one-sentence verdict>" \
   --evidence "<concrete evidence: output, logs, URLs, revision SHAs>" \
   --files "<comma-separated files / surfaces touched>" \
+  --findings "healthy:N,degraded:N,down:N" \
   --risks "<residual risks or 'none'>" \
   --next "<required follow-up or 'none'>"
 ```
+
+Pass `--findings "healthy:N,degraded:N,down:N"` counting environment health signals.
 
 The lead reads the deployment-check artifact for promotion gates and
 post-deploy evidence. Write it FIRST; then write the handoff (Report

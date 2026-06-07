@@ -62,6 +62,52 @@ export function formatHookHealthSection(health) {
   return `## Hook health\n\n${lines.join("\n")}\n`;
 }
 
+/**
+ * Aggregate findings from recent artifacts into a human-readable runHealth string.
+ * Scans artifacts with non-null `findings` fields; tallies the emoji signals
+ * (🔴/🟡/❓ for reviewer, pass/partial/fail for validator, healthy/degraded/down
+ * for deployer) and produces a compact summary string like "2🔴 1🟡 across reviewer".
+ * Returns null when no artifacts carry findings.
+ *
+ * @param {Array<{kind?: string, label?: string, findings?: string | null}>} artifacts
+ * @returns {string | null}
+ */
+export function computeRunHealth(artifacts) {
+  const relevant = artifacts.filter(
+    (a) => a && typeof a.findings === "string" && a.findings.length > 0
+  );
+  if (relevant.length === 0) {
+    return null;
+  }
+
+  /**
+   * @param {string} findings
+   * @returns {Array<{key: string, count: number}>}
+   */
+  function parseFindings(findings) {
+    return findings.split(",").map((part) => {
+      const colonIdx = part.indexOf(":");
+      if (colonIdx === -1) return { key: part.trim(), count: 0 };
+      const key = part.slice(0, colonIdx).trim();
+      const count = Number.parseInt(part.slice(colonIdx + 1).trim(), 10);
+      return { key, count: Number.isFinite(count) ? count : 0 };
+    });
+  }
+
+  /** @type {string[]} */
+  const parts = [];
+  for (const artifact of relevant) {
+    const label = artifact.label || artifact.kind || "artifact";
+    const parsed = parseFindings(/** @type {string} */ (artifact.findings));
+    const nonZero = parsed.filter((p) => p.count > 0);
+    if (nonZero.length === 0) continue;
+    const tokens = nonZero.map((p) => `${p.count}${p.key}`).join(" ");
+    parts.push(`${tokens} across ${label.toLowerCase()}`);
+  }
+
+  return parts.length > 0 ? parts.join(", ") : null;
+}
+
 /** @param {string} repoPath */
 export async function buildBriefingReport(repoPath) {
   const [
@@ -96,6 +142,7 @@ export async function buildBriefingReport(repoPath) {
   }
 
   const artifacts = await collectRelevantArtifacts(wakeUpBrief);
+  const runHealth = computeRunHealth(artifacts);
   const currentObjective = buildCurrentObjective(wakeUpBrief, artifacts);
   const blockedOrMissing = buildBlockedOrMissing(wakeUpBrief, deploymentClues, gitActivity);
   const reminders = buildImportantReminders(
@@ -116,6 +163,7 @@ export async function buildBriefingReport(repoPath) {
     costAggregate,
     modelCompliance,
     hookHealth,
+    runHealth,
     sections: {
       hookHealth: formatHookHealthSection(hookHealth),
       currentObjective,
@@ -148,7 +196,8 @@ export async function buildBriefingReport(repoPath) {
       recentCostUsdAvg: costs.avgUsdRecent || 0,
       routingTablePresent: routingTable.present,
       routingTableStale: routingTable.stale,
-      routingTableAgeDays: routingTable.ageDays
+      routingTableAgeDays: routingTable.ageDays,
+      runHealth
     },
     autonomousLoop: autonomousLoopBrief,
     costs,

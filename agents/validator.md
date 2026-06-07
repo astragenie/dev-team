@@ -75,9 +75,12 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-validation-result \
   --summary "<one-sentence validation verdict>" \
   --evidence "<concrete evidence: command output, test results, observed behavior>" \
   --files "<comma-separated files/surfaces checked>" \
+  --findings "pass:N,partial:N,fail:N" \
   --risks "<residual risks or 'none'>" \
   --next "<required follow-up or 'none'>"
 ```
+
+Pass `--findings "pass:N,partial:N,fail:N"` counting scenario outcomes.
 
 Write the validation artifact FIRST, then write the handoff (Report contract below).
 
