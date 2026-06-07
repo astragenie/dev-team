@@ -1,13 +1,14 @@
 ---
 id: SLICE-18
-status: pending
+status: completed
 feature: FEAT-046
 phase: null
 priority: P2
 target_release: null
-requires_validation: true
+requires_validation: false
 created: 2026-06-07
 updated: 2026-06-07
+completed_at: 2026-06-07
 ---
 # SLICE-18: # FEAT-046 — Builder dispatch reliability
 
