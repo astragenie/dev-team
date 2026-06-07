@@ -5,7 +5,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { computeGrade } from "../scripts/lib/cost-advisor.mjs";
+import { computeGrade } from "../scripts/lib/cost-advisor.ts";
 
 // Grade thresholds (from SLICE-05 spec):
 //   A: cache hit >=98%, compactions <=1, subagents <=2, re-reads <=3,  tool failure rate <=3%

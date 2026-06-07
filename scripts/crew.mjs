@@ -390,7 +390,7 @@ async function writeCostAdviseArtifact(repoPath, md, advisor, options = {}) {
 /** @param {string} repoPath @param {{ title: string | null, feature: string | null, phase: string | null }} opts */
 async function emitCostAdvise(repoPath, { title, feature, phase }) {
   try {
-    const { buildCostAdvisor, renderCostAdvisorMarkdown } = await import("./lib/cost-advisor.mjs");
+    const { buildCostAdvisor, renderCostAdvisorMarkdown } = await import("./lib/cost-advisor.ts");
     const advisor = await buildCostAdvisor(repoPath, { limit: 10 });
     const md = renderCostAdvisorMarkdown(advisor);
     const advisePath = await writeCostAdviseArtifact(repoPath, md, advisor, {
@@ -788,7 +788,7 @@ const COMMANDS = {
   },
 
   "cost-advise": async (/** @type {CommandContext} */ { repoPath, flags }) => {
-    const { buildCostAdvisor, renderCostAdvisorMarkdown } = await import("./lib/cost-advisor.mjs");
+    const { buildCostAdvisor, renderCostAdvisorMarkdown } = await import("./lib/cost-advisor.ts");
     const advisor = await buildCostAdvisor(repoPath, { limit: 10 });
     const md = renderCostAdvisorMarkdown(advisor);
     const writePath = await writeCostAdviseArtifact(repoPath, md, advisor, {

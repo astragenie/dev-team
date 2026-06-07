@@ -102,7 +102,7 @@ export async function costSliceHandler({
   flags
 }: CostSliceContext): Promise<Record<string, unknown>> {
   const { loadWorkflowState } = await import("../workflow-state.ts");
-  const { computeSessionCost: computeCost } = await import("../session-cost.mjs");
+  const { computeSessionCost: computeCost } = await import("../session-cost.ts");
   const { collectOutcomeLinkage } = await import("../outcome-linkage.ts");
   const { writeArtifact: writeArt } = await import("../artifacts/write.ts");
   // Cast to permissive signatures to avoid cross-.mjs JSDoc type mismatches.

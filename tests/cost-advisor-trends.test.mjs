@@ -5,7 +5,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { detectTrends } from "../scripts/lib/cost-advisor.mjs";
+import { detectTrends } from "../scripts/lib/cost-advisor.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers — synthetic summarized reports (newest first, same shape as

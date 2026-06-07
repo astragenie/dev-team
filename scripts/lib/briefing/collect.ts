@@ -7,7 +7,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
-import { buildCostAdvisor } from "../cost-advisor.mjs";
+import { buildCostAdvisor } from "../cost-advisor.ts";
 import {
   parseCostReportText,
   dedupeForRollup,
