@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { decide } from "../scripts/lib/cost-hygiene/decide.mjs";
+import { decide } from "../scripts/lib/cost-hygiene/decide.ts";
 
 const T0 = "2026-05-28T18:00:00.000Z";
 const T1 = "2026-05-28T18:05:00.000Z";

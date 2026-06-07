@@ -1,43 +1,32 @@
-// scripts/lib/cost-hygiene/state.mjs
+// scripts/lib/cost-hygiene/state.ts
 import fs from "node:fs/promises";
 import path from "node:path";
 
 const STATE_DIR_REL = path.join(".claude", "state", "cost-hygiene");
 
-/**
- * @typedef {Object} StoredEntry
- * @property {number} read_count
- * @property {string} first_read_at
- * @property {string} last_read_at
- * @property {string} mtime_at_last_read
- * @property {number} size_at_last_read
- * @property {number} content_bytes
- * @property {string | null} content
- */
+export interface StoredEntry {
+  read_count: number;
+  first_read_at: string;
+  last_read_at: string;
+  mtime_at_last_read: string;
+  size_at_last_read: number;
+  content_bytes: number;
+  content: string | null;
+}
 
-/**
- * @typedef {Object} SessionState
- * @property {string} session_id
- * @property {string} first_seen
- * @property {string} last_seen
- * @property {number} total_bytes
- * @property {Record<string, StoredEntry>} entries
- */
+export interface SessionState {
+  session_id: string;
+  first_seen: string;
+  last_seen: string;
+  total_bytes: number;
+  entries: Record<string, StoredEntry>;
+}
 
-/**
- * @param {string} repoPath
- * @param {string} sessionId
- * @returns {string}
- */
-function statePath(repoPath, sessionId) {
+function statePath(repoPath: string, sessionId: string): string {
   return path.join(repoPath, STATE_DIR_REL, `${sessionId}.json`);
 }
 
-/**
- * @param {string} sessionId
- * @returns {SessionState}
- */
-function emptyState(sessionId) {
+function emptyState(sessionId: string): SessionState {
   const nowIso = new Date().toISOString();
   return {
     session_id: sessionId,
@@ -48,13 +37,11 @@ function emptyState(sessionId) {
   };
 }
 
-/**
- * @param {string} repoPath
- * @param {string} sessionId
- * @param {SessionState} state
- * @returns {Promise<void>}
- */
-export async function saveSession(repoPath, sessionId, state) {
+export async function saveSession(
+  repoPath: string,
+  sessionId: string,
+  state: SessionState
+): Promise<void> {
   const file = statePath(repoPath, sessionId);
   const dir = path.dirname(file);
   await fs.mkdir(dir, { recursive: true });
@@ -64,25 +51,20 @@ export async function saveSession(repoPath, sessionId, state) {
   await fs.rename(tempFile, file);
 }
 
-/**
- * @param {string} repoPath
- * @param {string} sessionId
- * @returns {Promise<SessionState>}
- */
-export async function loadSession(repoPath, sessionId) {
+export async function loadSession(repoPath: string, sessionId: string): Promise<SessionState> {
   await cleanupStaleTempFiles(repoPath, sessionId);
   const file = statePath(repoPath, sessionId);
   try {
     const raw = await fs.readFile(file, "utf8");
-    const parsed = /** @type {SessionState} */ (JSON.parse(raw));
+    const parsed: unknown = JSON.parse(raw);
     if (
       typeof parsed === "object" &&
       parsed !== null &&
-      typeof parsed.session_id === "string" &&
-      typeof parsed.entries === "object" &&
-      parsed.entries !== null
+      typeof (parsed as Record<string, unknown>).session_id === "string" &&
+      typeof (parsed as Record<string, unknown>).entries === "object" &&
+      (parsed as Record<string, unknown>).entries !== null
     ) {
-      return parsed;
+      return parsed as SessionState;
     }
     return emptyState(sessionId);
   } catch {
@@ -92,16 +74,14 @@ export async function loadSession(repoPath, sessionId) {
 
 const PER_FILE_CAP_BYTES = 50 * 1024;
 
-/**
- * @param {SessionState} state
- * @param {string} filePath
- * @param {string} mtime
- * @param {number} size
- * @param {string} now
- * @returns {SessionState}
- */
-export function recordRead(state, filePath, mtime, size, now) {
-  const existing = state.entries[filePath];
+export function recordRead(
+  state: SessionState,
+  filePath: string,
+  mtime: string,
+  size: number,
+  now: string
+): SessionState {
+  const existing: StoredEntry | undefined = state.entries[filePath];
   if (existing) {
     existing.read_count += 1;
     existing.last_read_at = now;
@@ -121,13 +101,11 @@ export function recordRead(state, filePath, mtime, size, now) {
   return state;
 }
 
-/**
- * @param {SessionState} state
- * @param {string} filePath
- * @param {string} content
- * @returns {SessionState}
- */
-export function recordReadContent(state, filePath, content) {
+export function recordReadContent(
+  state: SessionState,
+  filePath: string,
+  content: string
+): SessionState {
   const entry = state.entries[filePath];
   if (!entry) return state;
   const previousBytes = entry.content_bytes;
@@ -146,12 +124,7 @@ export function recordReadContent(state, filePath, content) {
 
 const SESSION_CAP_BYTES = 2_000_000;
 
-/**
- * @param {SessionState} state
- * @param {string | null} protectedPath
- * @returns {SessionState}
- */
-export function evictLRU(state, protectedPath = null) {
+export function evictLRU(state: SessionState, protectedPath: string | null = null): SessionState {
   if (state.total_bytes <= SESSION_CAP_BYTES) return state;
   const entries = Object.entries(state.entries)
     .filter(([p]) => p !== protectedPath)
@@ -166,12 +139,7 @@ export function evictLRU(state, protectedPath = null) {
 
 const TEMP_FILE_MAX_AGE_MS = 60_000;
 
-/**
- * @param {string} repoPath
- * @param {string} sessionId
- * @returns {Promise<void>}
- */
-async function cleanupStaleTempFiles(repoPath, sessionId) {
+async function cleanupStaleTempFiles(repoPath: string, sessionId: string): Promise<void> {
   const dir = path.join(repoPath, STATE_DIR_REL);
   let files;
   try {

@@ -7,8 +7,8 @@ import {
   saveSession,
   recordRead,
   evictLRU
-} from "../scripts/lib/cost-hygiene/state.mjs";
-import { decide } from "../scripts/lib/cost-hygiene/decide.mjs";
+} from "../scripts/lib/cost-hygiene/state.ts";
+import { decide } from "../scripts/lib/cost-hygiene/decide.ts";
 import { logHookError } from "./hook-error.mjs";
 
 /**

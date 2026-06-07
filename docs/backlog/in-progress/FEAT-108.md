@@ -2,7 +2,7 @@
 id: FEAT-108
 title: TS Phase 1.3 — migrate cost-hygiene leaves to .ts
 priority: P1
-status: triaged
+status: in-progress
 category: code-quality
 target_release: null
 autonomous_safe: true
@@ -26,8 +26,9 @@ pm_dependency_depth: 0.5
 migration_note: legacy PM schema preserved as pm_legacy_*; new dimensions defaulted to 0.5 on 2026-06-07
 triage_notes: "autonomous_safe inferred: AC count=7, derived_from=null → true"
 updated: 2026-06-07
-slices: []
-slices_complete: []
+slices: [SLICE-31, SLICE-32]
+slices_complete: [SLICE-32]
+started_at: 2026-06-07
 ---
 # FEAT-108 — TS Phase 1.3: cost-hygiene leaf modules
 

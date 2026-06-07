@@ -1,37 +1,29 @@
-// scripts/lib/cost-hygiene/decide.mjs
+// scripts/lib/cost-hygiene/decide.ts
 
-/**
- * @typedef {Object} StoredEntry
- * @property {number} read_count
- * @property {string} first_read_at
- * @property {string} last_read_at
- * @property {string} mtime_at_last_read
- * @property {number} size_at_last_read
- * @property {number} content_bytes
- * @property {string | null} content
- */
+export interface StoredEntry {
+  read_count: number;
+  first_read_at: string;
+  last_read_at: string;
+  mtime_at_last_read: string;
+  size_at_last_read: number;
+  content_bytes: number;
+  content: string | null;
+}
 
-/**
- * @typedef {Object} DecideInput
- * @property {string} path
- * @property {StoredEntry | null} storedEntry
- * @property {string} currentMtime
- * @property {number} currentSize
- * @property {string} now
- */
+export interface DecideInput {
+  path: string;
+  storedEntry: StoredEntry | null;
+  currentMtime: string;
+  currentSize: number;
+  now: string;
+}
 
-/**
- * @typedef {Object} DecideResult
- * @property {"pass" | "warn"} action
- * @property {string | null} message
- */
+export interface DecideResult {
+  action: "pass" | "warn";
+  message: string | null;
+}
 
-/**
- * @param {StoredEntry} entry
- * @param {string} path
- * @returns {string}
- */
-function formatWarning(entry, path) {
+function formatWarning(entry: StoredEntry, path: string): string {
   const count = entry.read_count;
   const countLabel = count === 1 ? "1 time" : `${count} times`;
   const mtime = entry.mtime_at_last_read;
@@ -46,11 +38,7 @@ function formatWarning(entry, path) {
   );
 }
 
-/**
- * @param {DecideInput} input
- * @returns {DecideResult}
- */
-export function decide(input) {
+export function decide(input: DecideInput): DecideResult {
   const { path, storedEntry, currentMtime } = input;
   if (storedEntry === null) {
     return { action: "pass", message: null };

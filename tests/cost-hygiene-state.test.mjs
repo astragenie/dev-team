@@ -10,7 +10,7 @@ import {
   recordRead,
   recordReadContent,
   evictLRU
-} from "../scripts/lib/cost-hygiene/state.mjs";
+} from "../scripts/lib/cost-hygiene/state.ts";
 
 async function makeRepo() {
   return await fs.mkdtemp(path.join(os.tmpdir(), "cost-hygiene-"));

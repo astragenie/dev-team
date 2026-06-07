@@ -7,7 +7,7 @@ import {
   saveSession,
   recordReadContent,
   evictLRU
-} from "../scripts/lib/cost-hygiene/state.mjs";
+} from "../scripts/lib/cost-hygiene/state.ts";
 import { logHookError } from "./hook-error.mjs";
 
 /**
