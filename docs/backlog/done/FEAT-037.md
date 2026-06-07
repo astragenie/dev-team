@@ -2,7 +2,7 @@
 id: FEAT-037
 title: Cross-agent severity signals + brief-me health aggregation
 priority: P2
-status: in-progress
+status: done
 category: observability
 target_release: null
 autonomous_safe: true
@@ -14,6 +14,8 @@ triage_notes: "autonomous_safe inferred: AC count=8, derived_from=null → true"
 updated: 2026-06-07
 started_at: 2026-06-07
 slices: [SLICE-17]
+slices_complete: [SLICE-17]
+completed_at: 2026-06-07
 ---
 # FEAT-037 — Cross-agent severity signals + brief-me health aggregation
 

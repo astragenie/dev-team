@@ -1,13 +1,14 @@
 ---
 id: SLICE-17
-status: pending
+status: completed
 feature: FEAT-037
 phase: null
 priority: P2
 target_release: null
-requires_validation: true
+requires_validation: false
 created: 2026-06-07
 updated: 2026-06-07
+completed_at: 2026-06-07
 ---
 # SLICE-17: # FEAT-037 — Cross-agent severity signals + brief-me health aggregation
 
