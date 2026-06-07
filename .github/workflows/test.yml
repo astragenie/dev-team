@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - run: npm ci
       - run: node ./scripts/validate-manifests.mjs
       - run: node ./scripts/validate-skills.mjs
@@ -54,7 +54,10 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm run typecheck
-      - run: node --test
+      - name: Validate type-graph (advisory, becomes blocking in Phase 5)
+        continue-on-error: true
+        run: npm run validate:typegraph
+      - run: node --test --experimental-strip-types
       - run: node ./scripts/e2e-smoke.mjs
       - name: e2e smoke — ux validation
         run: npm run e2e:smoke:ux

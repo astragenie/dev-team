@@ -12,10 +12,11 @@
     "openapi-typescript": "^7.13.0",
     "prettier": "^3.4.2",
     "typescript": "^6.0.3",
-    "yaml": "^2.9.0"
+    "yaml": "^2.9.0",
+    "zod": "^3.25.76"
   },
   "scripts": {
-    "test": "node --test",
+    "test": "node --test --experimental-strip-types",
     "validate:manifests": "node ./scripts/validate-manifests.mjs",
     "lint": "eslint scripts tests eslint.config.mjs",
     "typecheck": "tsc --noEmit",
@@ -24,6 +25,7 @@
     "validate:contracts": "node ./scripts/validate-contracts.mjs",
     "validate:routing-table": "node ./scripts/validate-routing-table.mjs",
     "validate:slices": "node ./scripts/validate-slices.mjs",
+    "validate:typegraph": "node ./scripts/validate-typegraph.mjs",
     "validate:ux-spec": "node ./scripts/validate-ux-spec.mjs",
     "format": "prettier --write \"scripts/**/*.mjs\" \"tests/**/*.mjs\"",
     "format:check": "prettier --check \"scripts/**/*.mjs\" \"tests/**/*.mjs\"",

@@ -11,6 +11,7 @@ depends_on: []
 slices: [SLICE-09]
 derived_from: null
 autonomous_safe: false
+deferred: true
 triage_notes: "autonomous_safe inferred: AC count=0, derived_from=null → false"
 ---
 ## Description

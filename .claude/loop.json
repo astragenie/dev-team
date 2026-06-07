@@ -6,7 +6,8 @@
     "backlogRoot": "docs/backlog",
     "slicesRoot": "docs/ai-loop/slices",
     "phaseGateArtifactDir": ".claude/artifacts/crew/validations",
-    "maxIterations": 25
+    "maxIterations": 25,
+    "costStopThreshold": 10
   },
   "stack": {
     "build": [

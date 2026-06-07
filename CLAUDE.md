@@ -45,7 +45,9 @@ External-plugin skills (`context7`, `microsoft-docs:*`, `plugin-dev:*`, `terrafo
 
 ## Local commands
 
-- `npm test` — full test suite (`node --test`).
+Requires Node 22.6+ (strip-types runtime; see `docs/superpowers/specs/2026-06-07-ts-migration-and-perf-design.md`).
+
+- `npm test` — full test suite (`node --test --experimental-strip-types`).
 - `npm run lint` — ESLint flat config.
 - `npm run format` / `npm run format:check` — Prettier.
 - `npm run e2e:smoke` — end-to-end smoke against a temp sample repo.

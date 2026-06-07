@@ -44,6 +44,8 @@ For ownership, prompt size bar, lessons-to-standards pipeline, and the three-tes
 
 ## Install
 
+**Requirements:** Node.js 22.6+ (the plugin uses `--experimental-strip-types` to run TypeScript sources without a build step).
+
 Add the marketplace and install the plugin in Claude Code:
 
 ```
