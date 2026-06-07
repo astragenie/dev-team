@@ -433,19 +433,24 @@ function normalizeMsysPath(value) {
 // table replaces a 240-line else-if chain. Adding a command = one entry.
 const COMMANDS = {
   "install-global": async () => {
-    const { installGlobal } = await import("./lib/installer.mjs");
+    const { installGlobal } = await import("./lib/installer.ts");
     return installGlobal();
   },
   audit: async (/** @type {CommandContext} */ { repoPath }) => {
-    const { auditRepo } = await import("./lib/installer.mjs");
+    const { auditRepo } = await import("./lib/installer.ts");
     return auditRepo(repoPath);
   },
   bootstrap: async (/** @type {CommandContext} */ { repoPath }) => {
-    const { bootstrapRepo } = await import("./lib/installer.mjs");
-    return bootstrapRepo(repoPath);
+    const { bootstrapRepo } = await import("./lib/installer.ts");
+    const result = await bootstrapRepo(repoPath);
+    if (!result.ok) {
+      console.error(`Repository path does not exist: ${repoPath}`);
+      process.exit(1);
+    }
+    return result.value;
   },
   init: async (/** @type {CommandContext} */ { repoPath, flags }) => {
-    const { initRepo } = await import("./lib/installer.mjs");
+    const { initRepo } = await import("./lib/installer.ts");
     return initRepo(repoPath, { allowExisting: flags.allowExisting });
   },
 

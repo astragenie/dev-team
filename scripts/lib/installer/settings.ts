@@ -12,12 +12,20 @@ import path from "node:path";
 import { indentJson, writeFileIfChanged } from "./util.ts";
 import { DEFAULT_SETTINGS } from "./templates.ts";
 
-/** @param {{ hooks?: Array<{command?: string, description?: string}> } | null | undefined} entry */
-export function isCrewHook(entry) {
+interface HookEntry {
+  command?: string;
+  description?: string;
+  hooks?: Array<{ command?: string; description?: string }>;
+  [key: string]: unknown;
+}
+
+type HooksMap = Record<string, HookEntry[]>;
+
+export function isCrewHook(entry: HookEntry | null | undefined): boolean {
   const hooks = Array.isArray(entry?.hooks) ? entry.hooks : [];
   return hooks.some((hook) => {
-    const command = hook?.command || "";
-    const description = hook?.description || "";
+    const command = hook?.command ?? "";
+    const description = hook?.description ?? "";
     return (
       command.includes(".claude/hooks/log_event.sh") ||
       command.includes(".claude/hooks/check_git_gate.sh") ||
@@ -27,14 +35,13 @@ export function isCrewHook(entry) {
   });
 }
 
-/**
- * @param {Record<string, unknown[]>} [existingHooks]
- * @param {Record<string, unknown[]>} [desiredHooks]
- */
-export function mergeHooks(existingHooks = {}, desiredHooks = {}) {
-  const result = { ...existingHooks };
+export function mergeHooks(
+  existingHooks: HooksMap = {},
+  desiredHooks: HooksMap = {}
+): HooksMap {
+  const result: HooksMap = { ...existingHooks };
   for (const [eventName, hookDefs] of Object.entries(desiredHooks)) {
-    const current = Array.isArray(result[eventName]) ? result[eventName] : [];
+    const current = Array.isArray(result[eventName]) ? (result[eventName] as HookEntry[]) : [];
     const preserved = current.filter((entry) => !isCrewHook(entry));
     const nextEntries = [...preserved];
     const seen = new Set(nextEntries.map((item) => JSON.stringify(item)));
@@ -50,17 +57,15 @@ export function mergeHooks(existingHooks = {}, desiredHooks = {}) {
   return result;
 }
 
-/**
- * @param {string} repoPath
- * @param {string[]} writes
- */
-export async function updateSettings(repoPath, writes) {
+export async function updateSettings(repoPath: string, writes: string[]): Promise<void> {
   const settingsPath = path.join(repoPath, ".claude", "settings.json");
-  const existing = await fs.readFile(settingsPath, "utf8").catch(/** @returns {null} */ () => null);
-  const current = existing ? JSON.parse(existing) : {};
+  const existing = await fs.readFile(settingsPath, "utf8").catch((): null => null);
+  const current: { hooks?: HooksMap; [key: string]: unknown } = existing
+    ? (JSON.parse(existing) as { hooks?: HooksMap; [key: string]: unknown })
+    : {};
   const next = {
     ...current,
-    hooks: mergeHooks(current.hooks, DEFAULT_SETTINGS.hooks)
+    hooks: mergeHooks(current.hooks, DEFAULT_SETTINGS.hooks as HooksMap)
   };
 
   const changed = await writeFileIfChanged(settingsPath, indentJson(next));

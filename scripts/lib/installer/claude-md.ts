@@ -15,8 +15,7 @@ import {
   LEGACY_CLAUDE_MARKER_START
 } from "./templates.ts";
 
-/** @param {string} existing */
-function replaceLegacyMarkerBlock(existing) {
+function replaceLegacyMarkerBlock(existing: string): string | null {
   const startIndex = existing.indexOf(LEGACY_CLAUDE_MARKER_START);
   const endIndex = existing.indexOf(LEGACY_CLAUDE_MARKER_END);
   if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) {
@@ -31,13 +30,9 @@ function replaceLegacyMarkerBlock(existing) {
   return `${parts.join("\n\n")}\n`;
 }
 
-/**
- * @param {string} repoPath
- * @param {string[]} writes
- */
-export async function updateClaudeMd(repoPath, writes) {
+export async function updateClaudeMd(repoPath: string, writes: string[]): Promise<void> {
   const claudePath = path.join(repoPath, "CLAUDE.md");
-  const existing = await fs.readFile(claudePath, "utf8").catch(/** @returns {null} */ () => null);
+  const existing = await fs.readFile(claudePath, "utf8").catch((): null => null);
 
   if (existing === null) {
     const contents = [

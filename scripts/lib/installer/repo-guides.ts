@@ -8,12 +8,8 @@ import path from "node:path";
 import { writeFileIfChanged } from "./util.ts";
 import { CONSTITUTION_TEMPLATE, PROTOCOL_TEMPLATE, WORKFLOW_TEMPLATE } from "./templates.ts";
 
-/**
- * @param {string} repoPath
- * @param {string[]} writes
- */
-export async function writeRepoLocalGuides(repoPath, writes) {
-  const guides = [
+export async function writeRepoLocalGuides(repoPath: string, writes: string[]): Promise<void> {
+  const guides: Array<[string, string]> = [
     [path.join(repoPath, ".claude", "crew", "constitution.md"), `${CONSTITUTION_TEMPLATE}\n`],
     [path.join(repoPath, ".claude", "crew", "workflow.md"), `${WORKFLOW_TEMPLATE}\n`],
     [path.join(repoPath, ".claude", "crew", "protocol.md"), `${PROTOCOL_TEMPLATE}\n`]

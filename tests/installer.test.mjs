@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
 
-import { auditRepo, bootstrapRepo, initRepo, installGlobal } from "../scripts/lib/installer.mjs";
+import { auditRepo, bootstrapRepo, initRepo, installGlobal } from "../scripts/lib/installer.ts";
 
 const execFile = promisify(execFileCallback);
 
@@ -21,7 +21,9 @@ test("bootstrap adds harness files to an existing repo and preserves CLAUDE.md",
     "# Existing Repo Rules\n\nKeep tests fast.\n"
   );
 
-  const result = await bootstrapRepo(repoPath);
+  const bootstrapResult = await bootstrapRepo(repoPath);
+  assert.ok(bootstrapResult.ok, "bootstrapRepo should succeed");
+  const result = bootstrapResult.value;
   const claudeMd = await fs.readFile(path.join(repoPath, "CLAUDE.md"), "utf8");
   const workflowMd = await fs.readFile(
     path.join(repoPath, ".claude", "crew", "workflow.md"),

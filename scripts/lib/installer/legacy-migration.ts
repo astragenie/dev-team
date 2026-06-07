@@ -12,12 +12,8 @@ import path from "node:path";
 
 import { ensureDir, pathExists } from "./util.ts";
 
-/**
- * @param {string} repoPath
- * @param {string[]} writes
- */
-export async function migrateLegacyHarness(repoPath, writes) {
-  const moves = [
+export async function migrateLegacyHarness(repoPath: string, writes: string[]): Promise<void> {
+  const moves: Array<[string, string]> = [
     [path.join(repoPath, ".claude", "engineering-os"), path.join(repoPath, ".claude", "crew")],
     [
       path.join(repoPath, ".claude", "state", "engineering-os"),
@@ -38,13 +34,12 @@ export async function migrateLegacyHarness(repoPath, writes) {
   }
 }
 
-/**
- * @param {string} legacyDir
- * @param {string} targetDir
- * @param {string} repoPath
- * @param {string[]} writes
- */
-async function migrateDirectoryTree(legacyDir, targetDir, repoPath, writes) {
+async function migrateDirectoryTree(
+  legacyDir: string,
+  targetDir: string,
+  repoPath: string,
+  writes: string[]
+): Promise<void> {
   const entries = await fs.readdir(legacyDir, { withFileTypes: true });
   for (const entry of entries) {
     const legacyPath = path.join(legacyDir, entry.name);
@@ -61,13 +56,12 @@ async function migrateDirectoryTree(legacyDir, targetDir, repoPath, writes) {
   }
 }
 
-/**
- * @param {string} legacyPath
- * @param {string} targetPath
- * @param {string} repoPath
- * @param {string[]} writes
- */
-async function migrateOneFile(legacyPath, targetPath, repoPath, writes) {
+async function migrateOneFile(
+  legacyPath: string,
+  targetPath: string,
+  repoPath: string,
+  writes: string[]
+): Promise<void> {
   const targetExists = await pathExists(targetPath);
   if (!targetExists) {
     await ensureDir(path.dirname(targetPath));
@@ -88,8 +82,7 @@ async function migrateOneFile(legacyPath, targetPath, repoPath, writes) {
   await fs.unlink(legacyPath);
 }
 
-/** @param {string} dirPath */
-async function removeEmptyTree(dirPath) {
+async function removeEmptyTree(dirPath: string): Promise<void> {
   if (!(await pathExists(dirPath))) {
     return;
   }

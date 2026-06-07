@@ -5,7 +5,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { ensureDir, writeFileIfChanged } from "./util.ts";
+import { ensureDir, pathExists, writeFileIfChanged } from "./util.ts";
 import {
   CONSTITUTION_TEMPLATE,
   GLOBAL_MEMORY_VERSION,
@@ -13,6 +13,7 @@ import {
   WORKFLOW_TEMPLATE
 } from "./templates.ts";
 import { buildWelcome } from "./welcome.ts";
+import { type Result, ok, err } from "../result.ts";
 
 const GLOBAL_IMPORT_LINES = ["@~/.claude/crew/constitution.md", "@~/.claude/crew/workflow.md"];
 
@@ -21,8 +22,16 @@ const LEGACY_GLOBAL_IMPORT_LINES = [
   "@~/.claude/engineering-os/workflow.md"
 ];
 
-/** @param {string} homeDir */
-function globalPaths(homeDir) {
+interface GlobalPaths {
+  globalDir: string;
+  legacyGlobalDir: string;
+  constitution: string;
+  workflow: string;
+  metadata: string;
+  claudeMd: string;
+}
+
+function globalPaths(homeDir: string): GlobalPaths {
   const globalDir = path.join(homeDir, ".claude", "crew");
   return {
     globalDir,
@@ -34,23 +43,30 @@ function globalPaths(homeDir) {
   };
 }
 
-/** @param {string} targetPath */
-async function pathExists(targetPath) {
-  try {
-    await fs.access(targetPath);
-    return true;
-  } catch {
-    return false;
-  }
+function resolveHomeDir(): Result<string, "no-home-dir"> {
+  const home = process.env["HOME"] ?? process.env["USERPROFILE"];
+  if (!home) return err("no-home-dir");
+  return ok(home);
 }
 
-export async function inspectGlobalInstall() {
-  const homeDir = process.env.HOME || process.env.USERPROFILE;
+export interface GlobalInstallState {
+  hasGlobalMemory: boolean;
+  globalMemoryVersion: string | null;
+  expectedGlobalMemoryVersion: string;
+  globalMemoryStale: boolean;
+  hasGlobalImports: boolean;
+  globalMemoryPath: string;
+}
+
+export async function inspectGlobalInstall(): Promise<GlobalInstallState> {
+  const homeResult = resolveHomeDir();
+  if (!homeResult.ok) throw new Error("HOME or USERPROFILE not set");
+  const homeDir = homeResult.value;
   const paths = globalPaths(homeDir);
   const metadata = await fs
     .readFile(paths.metadata, "utf8")
-    .then(/** @returns {Record<string, unknown>} */ (raw) => JSON.parse(raw))
-    .catch(/** @returns {null} */ () => null);
+    .then((raw): Record<string, unknown> => JSON.parse(raw) as Record<string, unknown>)
+    .catch((): null => null);
   const hasImports = await fs
     .readFile(paths.claudeMd, "utf8")
     .then((raw) => GLOBAL_IMPORT_LINES.every((line) => raw.includes(line)))
@@ -59,47 +75,62 @@ export async function inspectGlobalInstall() {
   const hasConstitution = await pathExists(paths.constitution);
   const hasWorkflow = await pathExists(paths.workflow);
   const hasGlobalMemory = hasConstitution && hasWorkflow && hasImports;
+  const metadataVersion =
+    metadata !== null && typeof metadata["version"] === "string" ? metadata["version"] : null;
 
   return {
     hasGlobalMemory,
-    globalMemoryVersion: metadata?.version || null,
+    globalMemoryVersion: metadataVersion,
     expectedGlobalMemoryVersion: GLOBAL_MEMORY_VERSION,
-    globalMemoryStale: hasGlobalMemory && metadata?.version !== GLOBAL_MEMORY_VERSION,
+    globalMemoryStale: hasGlobalMemory && metadataVersion !== GLOBAL_MEMORY_VERSION,
     hasGlobalImports: hasImports,
     globalMemoryPath: path.join(homeDir, ".claude", "crew")
   };
 }
 
-export async function installGlobal() {
-  const homeDir = process.env.HOME || process.env.USERPROFILE;
-  const paths = globalPaths(homeDir);
-  /** @type {string[]} */
-  const writes = [];
-
-  await migrateGlobalLegacy(paths, writes);
-
+async function writeGlobalFiles(paths: GlobalPaths, writes: string[]): Promise<void> {
   const constitutionChanged = await writeFileIfChanged(
     paths.constitution,
     `${CONSTITUTION_TEMPLATE}\n`
   );
-  if (constitutionChanged) {
-    writes.push("~/.claude/crew/constitution.md");
-  }
+  if (constitutionChanged) writes.push("~/.claude/crew/constitution.md");
 
   const workflowChanged = await writeFileIfChanged(paths.workflow, `${WORKFLOW_TEMPLATE}\n`);
-  if (workflowChanged) {
-    writes.push("~/.claude/crew/workflow.md");
-  }
+  if (workflowChanged) writes.push("~/.claude/crew/workflow.md");
 
   const metadataChanged = await writeFileIfChanged(
     paths.metadata,
     `${JSON.stringify(GLOBAL_METADATA_TEMPLATE, null, 2)}\n`
   );
-  if (metadataChanged) {
-    writes.push("~/.claude/crew/metadata.json");
-  }
+  if (metadataChanged) writes.push("~/.claude/crew/metadata.json");
+}
 
-  let existing = await fs.readFile(paths.claudeMd, "utf8").catch(() => "");
+export async function installGlobal(): Promise<{
+  mode: string;
+  writes: string[];
+  global: GlobalInstallState;
+  welcome: ReturnType<typeof buildWelcome>;
+}> {
+  const homeResult = resolveHomeDir();
+  if (!homeResult.ok) throw new Error("HOME or USERPROFILE not set");
+  const homeDir = homeResult.value;
+  const paths = globalPaths(homeDir);
+  const writes: string[] = [];
+
+  await migrateGlobalLegacy(paths, writes);
+  await writeGlobalFiles(paths, writes);
+  await ensureGlobalImports(paths, writes);
+
+  return {
+    mode: "install-global",
+    writes,
+    global: await inspectGlobalInstall(),
+    welcome: buildWelcome({ mode: "install-global", repoScoped: false })
+  };
+}
+
+async function ensureGlobalImports(paths: GlobalPaths, writes: string[]): Promise<void> {
+  let existing = await fs.readFile(paths.claudeMd, "utf8").catch((): string => "");
   let claudeMdChanged = false;
   for (const legacyLine of LEGACY_GLOBAL_IMPORT_LINES) {
     if (existing.includes(legacyLine)) {
@@ -122,20 +153,9 @@ export async function installGlobal() {
     await fs.writeFile(paths.claudeMd, next);
     writes.push("~/.claude/CLAUDE.md");
   }
-
-  return {
-    mode: "install-global",
-    writes,
-    global: await inspectGlobalInstall(),
-    welcome: buildWelcome({ mode: "install-global", repoScoped: false })
-  };
 }
 
-/**
- * @param {ReturnType<typeof globalPaths>} paths
- * @param {string[]} writes
- */
-async function migrateGlobalLegacy(paths, writes) {
+async function migrateGlobalLegacy(paths: GlobalPaths, writes: string[]): Promise<void> {
   if (!(await pathExists(paths.legacyGlobalDir))) {
     return;
   }

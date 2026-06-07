@@ -18,12 +18,8 @@ import {
   STATE_README_TEMPLATE
 } from "./templates.ts";
 
-/**
- * @param {string} repoPath
- * @param {string[]} writes
- */
-export async function writeHarnessFiles(repoPath, writes) {
-  const refreshFiles = [
+export async function writeHarnessFiles(repoPath: string, writes: string[]): Promise<void> {
+  const refreshFiles: Array<[string, string]> = [
     [
       path.join(repoPath, ".claude", "artifacts", "crew", "README.md"),
       `${ARTIFACT_README_TEMPLATE}\n`
@@ -46,7 +42,7 @@ export async function writeHarnessFiles(repoPath, writes) {
     }
   }
 
-  const seedFiles = [
+  const seedFiles: Array<[string, string]> = [
     [
       path.join(repoPath, ".claude", "state", "crew", "claims.json"),
       `${JSON.stringify(CLAIMS_TEMPLATE, null, 2)}\n`
