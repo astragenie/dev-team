@@ -2,7 +2,7 @@
 id: FEAT-124
 title: Consolidate crew:copywriter → loop:document-writer
 priority: P2
-status: triaged
+status: in-progress
 category: refactor
 target_release: null
 autonomous_safe: false
@@ -11,7 +11,7 @@ parent_spec: null
 plan: null
 related: [FEAT-123]
 phase: null
-tags: ["surface:agents", "concern:dx", "concern:naming"]
+tags: ["surface:agents", "concern:dx", "concern:naming", "stack:none", "surface:docs", "concern:governance"]
 pm_customer_impact: 0.4
 pm_demand_signal: null
 pm_technical_feasibility: 0.55
@@ -22,7 +22,7 @@ updated: 2026-06-07
 created: 2026-06-07
 triaged_at: 2026-06-07
 triage_notes: "autonomous_safe=false: cross-repo (hero-crew + loop marketplace coordination) and agent prompt edits to loop:document-writer; coordinated release requires human approval per loop rules."
-slices: []
+slices: [SLICE-46, SLICE-47]
 depends_on: []
 ---
 
