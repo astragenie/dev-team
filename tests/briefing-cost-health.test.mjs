@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
-import { collectCostHealth, collectCostAggregate } from "../scripts/lib/briefing/collect.mjs";
+import { collectCostHealth, collectCostAggregate } from "../scripts/lib/briefing/collect.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers — build a minimal temp repo with seeded cost reports
@@ -47,7 +47,6 @@ function makeCostReportText({
 } = {}) {
   // cost-advisor.mjs reads metrics from YAML frontmatter (parseFrontmatter).
   // Body fallback patterns cover fields not surfaced via frontmatter.
-  const _toolFailureRate = toolCalls > 0 ? Number((toolFailures / toolCalls).toFixed(4)) : 0;
   return `---
 usd: ${usd.toFixed(4)}
 cache_hit_pct: ${cacheHitPct}
@@ -258,7 +257,7 @@ test("collectCostHealth: reportCount reflects number of cost reports found", asy
 // ---------------------------------------------------------------------------
 
 test("buildBriefingReport: summary.costHealth is present when cost reports exist", async () => {
-  const { buildBriefingReport } = await import("../scripts/lib/briefing.mjs");
+  const { buildBriefingReport } = await import("../scripts/lib/briefing.ts");
   const reportText = makeCostReportText({ cacheHitPct: 96 });
   const tmpDir = await makeTempRepo([reportText]);
   // Need a minimal git repo for buildBriefingReport to not fail
@@ -279,7 +278,7 @@ test("buildBriefingReport: summary.costHealth is present when cost reports exist
 // ---------------------------------------------------------------------------
 
 test("buildBriefingReport: costHealth is null when no cost reports exist", async () => {
-  const { buildBriefingReport } = await import("../scripts/lib/briefing.mjs");
+  const { buildBriefingReport } = await import("../scripts/lib/briefing.ts");
   const tmpDir = await makeTempRepo([]); // no reports
   try {
     const result = await buildBriefingReport(tmpDir);
@@ -523,7 +522,7 @@ test("collectCostAggregate: returns null in legacy-only world (no aggregate-vari
 
 // AC-5: buildBriefingReport exposes costAggregate field
 test("buildBriefingReport: exposes costAggregate field at top level", async () => {
-  const { buildBriefingReport } = await import("../scripts/lib/briefing.mjs");
+  const { buildBriefingReport } = await import("../scripts/lib/briefing.ts");
   const sliceText = makeSliceVariantText({ cacheHitPct: 96 });
   const tmpDir = await makeTempRepoWithVariants({ sliceFiles: [sliceText] });
   try {

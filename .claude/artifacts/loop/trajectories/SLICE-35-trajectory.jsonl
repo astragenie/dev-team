@@ -1,0 +1,2 @@
+{"type":"slice_start","sliceId":"SLICE-35","timestamp":"2026-06-07T11:22:25.618Z","featureId":"FEAT-111","title":"SLICE-35","planPath":"C:\\work\\mega\\hero-crew\\.claude\\artifacts\\loop\\plans\\20260607T112225Z-plan-SLICE-35.md","requiresApprovalGate":false}
+{"type":"slice_complete","sliceId":"SLICE-35","timestamp":"2026-06-07T11:49:12.870Z","featureId":"FEAT-111","featureMovedTo":"C:\\work\\mega\\hero-crew\\docs\\backlog\\done\\FEAT-111.md","validationSatisfied":true}

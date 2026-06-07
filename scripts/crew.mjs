@@ -498,7 +498,7 @@ const COMMANDS = {
     return buildWakeUpBrief(repoPath);
   },
   "brief-me": async (/** @type {CommandContext} */ { repoPath }) => {
-    const { buildBriefingReport } = await import("./lib/briefing.mjs");
+    const { buildBriefingReport } = await import("./lib/briefing.ts");
     return buildBriefingReport(repoPath);
   },
   "scope-estimate": async (/** @type {CommandContext} */ { flags, positionals }) => {

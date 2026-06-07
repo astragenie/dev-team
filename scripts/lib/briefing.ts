@@ -1,5 +1,5 @@
-// brief-me orchestrator. Coordinates data collection (./briefing/collect.mjs)
-// and rendering (./briefing/render.mjs) and assembles the final report shape
+// brief-me orchestrator. Coordinates data collection (./briefing/collect.ts)
+// and rendering (./briefing/render.ts) and assembles the final report shape
 // consumed by the CLI's `brief-me` subcommand.
 //
 // Pre-split this file was 821 lines mixing git probing, filesystem reads,
@@ -20,12 +20,12 @@ import {
   collectCostAggregate,
   collectModelCompliance,
   fetchAutonomousLoopBrief
-} from "./briefing/collect.mjs";
+} from "./briefing/collect.ts";
+import type { HookHealth, ArtifactEntry, WakeUpBriefLike } from "./briefing/collect.ts";
 
 const ROUTING_TABLE_STALE_DAYS = 30;
 
-/** @param {string} repoPath */
-async function checkRoutingTableStale(repoPath) {
+async function checkRoutingTableStale(repoPath: string) {
   const candidate = path.join(repoPath, "docs", "routing-table.md");
   try {
     const stat = await fs.stat(candidate);
@@ -40,6 +40,7 @@ async function checkRoutingTableStale(repoPath) {
     return { present: false, stale: false, ageDays: null };
   }
 }
+
 import {
   buildBlockedOrMissing,
   buildCurrentObjective,
@@ -49,11 +50,7 @@ import {
   recommendedNextStep
 } from "./briefing/render.ts";
 
-/**
- * @param {{ hooks: Array<{name: string, errorCount24h: number, status: string}> }} health
- * @returns {string}
- */
-export function formatHookHealthSection(health) {
+export function formatHookHealthSection(health: HookHealth): string {
   const yellow = (health.hooks ?? []).filter((h) => h.status === "yellow");
   if (yellow.length === 0) {
     return "## Hook health\n\nAll hooks clean (0 errors in last 24h).\n";
@@ -68,23 +65,18 @@ export function formatHookHealthSection(health) {
  * (🔴/🟡/❓ for reviewer, pass/partial/fail for validator, healthy/degraded/down
  * for deployer) and produces a compact summary string like "2🔴 1🟡 across reviewer".
  * Returns null when no artifacts carry findings.
- *
- * @param {Array<{kind?: string, label?: string, findings?: string | null}>} artifacts
- * @returns {string | null}
  */
-export function computeRunHealth(artifacts) {
+export function computeRunHealth(
+  artifacts: Array<{ kind?: string; label?: string; findings?: unknown }>
+): string | null {
   const relevant = artifacts.filter(
-    (a) => a && typeof a.findings === "string" && a.findings.length > 0
+    (a) => a && typeof a.findings === "string" && (a.findings as string).length > 0
   );
   if (relevant.length === 0) {
     return null;
   }
 
-  /**
-   * @param {string} findings
-   * @returns {Array<{key: string, count: number}>}
-   */
-  function parseFindings(findings) {
+  function parseFindings(findings: string): Array<{ key: string; count: number }> {
     return findings.split(",").map((part) => {
       const colonIdx = part.indexOf(":");
       if (colonIdx === -1) return { key: part.trim(), count: 0 };
@@ -94,11 +86,10 @@ export function computeRunHealth(artifacts) {
     });
   }
 
-  /** @type {string[]} */
-  const parts = [];
+  const parts: string[] = [];
   for (const artifact of relevant) {
-    const label = artifact.label || artifact.kind || "artifact";
-    const parsed = parseFindings(/** @type {string} */ (artifact.findings));
+    const label = artifact.label ?? artifact.kind ?? "artifact";
+    const parsed = parseFindings(artifact.findings as string);
     const nonZero = parsed.filter((p) => p.count > 0);
     if (nonZero.length === 0) continue;
     const tokens = nonZero.map((p) => `${p.count}${p.key}`).join(" ");
@@ -108,10 +99,39 @@ export function computeRunHealth(artifacts) {
   return parts.length > 0 ? parts.join(", ") : null;
 }
 
-/** @param {string} repoPath */
-export async function buildBriefingReport(repoPath) {
+function buildSummary(params: {
+  gitActivity: { isGitRepo: boolean };
+  wakeUpBrief: WakeUpBriefLike;
+  artifacts: unknown[];
+  deploymentClues: { clues?: unknown[] };
+  costs: { dedupedCount: number; sumUsdRecent?: number; avgUsdRecent?: number };
+  routingTable: { present: boolean; stale: boolean; ageDays: number | null };
+  autonomousLoopBrief: unknown;
+  runHealth: string | null;
+}): Record<string, unknown> {
+  const { gitActivity, wakeUpBrief, artifacts, deploymentClues, costs, routingTable, autonomousLoopBrief, runHealth } = params;
+  const workflow = wakeUpBrief.workflow as { hasActiveRun?: boolean; pendingBadges?: string[] } | undefined;
+  return {
+    isGitRepo: gitActivity.isGitRepo,
+    hasActiveWorkflow: workflow?.hasActiveRun ?? false,
+    pendingWorkflowBadges: workflow?.pendingBadges ?? [],
+    hasRecentArtifacts: artifacts.length > 0,
+    hasDeploymentGuidance: Boolean((wakeUpBrief.repoGuidance as { deployment?: unknown } | undefined)?.deployment),
+    discoveredDeploymentClues: deploymentClues.clues?.length ?? 0,
+    autonomousLoopInstalled: Boolean(autonomousLoopBrief),
+    costReports: costs.dedupedCount,
+    recentCostUsdSum: costs.sumUsdRecent ?? 0,
+    recentCostUsdAvg: costs.avgUsdRecent ?? 0,
+    routingTablePresent: routingTable.present,
+    routingTableStale: routingTable.stale,
+    routingTableAgeDays: routingTable.ageDays,
+    runHealth
+  };
+}
+
+export async function buildBriefingReport(repoPath: string): Promise<Record<string, unknown>> {
   const [
-    wakeUpBrief,
+    wakeUpBriefRaw,
     gitActivity,
     deploymentClues,
     autonomousLoopBrief,
@@ -131,17 +151,26 @@ export async function buildBriefingReport(repoPath) {
     collectCostAggregate(repoPath),
     collectModelCompliance(repoPath)
   ]);
+
+  // Cast the JS wakeUpBrief to satisfy the typed render functions.
+  // buildWakeUpBrief is a JS module (checkJs:false); cast through unknown
+  // to the WakeUpBrief shape expected by the render layer.
+  type RenderWakeUpBrief = Parameters<typeof buildCurrentObjective>[0];
+  const wakeUpBrief = wakeUpBriefRaw as unknown as RenderWakeUpBrief;
+
   // reuse hookHealth already collected inside buildWakeUpBrief — avoids double read
-  const hookHealth = wakeUpBrief.hookHealth ?? { hooks: [] };
+  const hookHealth: HookHealth = (wakeUpBrief.hookHealth as HookHealth | undefined) ?? {
+    hooks: []
+  };
 
   // Attach cost summary to loop block when the plugin is installed, so the
   // user-facing "Autonomous Loop" section in brief-me renders it alongside
   // backlog counts and grades. Also expose top-level for non-loop users.
   if (autonomousLoopBrief && costs.recent.length > 0) {
-    autonomousLoopBrief.costs = costs;
+    (autonomousLoopBrief as Record<string, unknown>)["costs"] = costs;
   }
 
-  const artifacts = await collectRelevantArtifacts(wakeUpBrief);
+  const artifacts: ArtifactEntry[] = await collectRelevantArtifacts(wakeUpBrief as WakeUpBriefLike);
   const runHealth = computeRunHealth(artifacts);
   const currentObjective = buildCurrentObjective(wakeUpBrief, artifacts);
   const blockedOrMissing = buildBlockedOrMissing(wakeUpBrief, deploymentClues, gitActivity);
@@ -156,7 +185,7 @@ export async function buildBriefingReport(repoPath) {
   const retrievalGuide = buildRetrievalGuide(wakeUpBrief, artifacts);
 
   return {
-    repoPath: wakeUpBrief.repoPath,
+    repoPath: wakeUpBrief.repoPath as string,
     wakeUp: wakeUpBrief,
     git: gitActivity,
     costHealth,
@@ -183,22 +212,16 @@ export async function buildBriefingReport(repoPath) {
       recommendedNextStep: nextStep,
       secondaryOptions
     },
-    summary: {
-      isGitRepo: gitActivity.isGitRepo,
-      hasActiveWorkflow: wakeUpBrief.workflow.hasActiveRun,
-      pendingWorkflowBadges: wakeUpBrief.workflow.pendingBadges,
-      hasRecentArtifacts: artifacts.length > 0,
-      hasDeploymentGuidance: Boolean(wakeUpBrief.repoGuidance?.deployment),
-      discoveredDeploymentClues: deploymentClues.clues.length,
-      autonomousLoopInstalled: Boolean(autonomousLoopBrief),
-      costReports: costs.dedupedCount,
-      recentCostUsdSum: costs.sumUsdRecent || 0,
-      recentCostUsdAvg: costs.avgUsdRecent || 0,
-      routingTablePresent: routingTable.present,
-      routingTableStale: routingTable.stale,
-      routingTableAgeDays: routingTable.ageDays,
+    summary: buildSummary({
+      gitActivity,
+      wakeUpBrief: wakeUpBrief as WakeUpBriefLike,
+      artifacts,
+      deploymentClues: deploymentClues as { clues?: unknown[] },
+      costs,
+      routingTable,
+      autonomousLoopBrief,
       runHealth
-    },
+    }),
     autonomousLoop: autonomousLoopBrief,
     costs,
     routingTable

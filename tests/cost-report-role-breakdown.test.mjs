@@ -10,7 +10,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { writeArtifact } from "../scripts/lib/artifacts.mjs";
-import { collectRecentCosts } from "../scripts/lib/briefing/collect.mjs";
+import { collectRecentCosts } from "../scripts/lib/briefing/collect.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers

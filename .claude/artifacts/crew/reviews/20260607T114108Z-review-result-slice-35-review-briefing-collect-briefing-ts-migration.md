@@ -1,0 +1,43 @@
+# Review Result: SLICE-35 review: briefing collect + briefing.ts migration
+
+- Created: 2026-06-07T11:41:08.165Z
+- Reviewer: reviewer
+- Decision: rejected
+- Summary: AC-3 and AC-6 both unmet: collectRecentCosts and buildBriefingReport lack explicit return type annotations, and six functions across the two files exceed the 30-line SRP split threshold mandated by AC-6.
+- Evidence Checked:
+  - collect.ts: collectRecentCosts (489
+  - 47 lines
+  - no explicit return type)
+  - parseWorkingTree (174
+  - 54 lines)
+  - collectGitActivity (249
+  - 34 lines)
+  - collectRelevantArtifacts (342
+  - 51 lines)
+  - collectCostHealth (548
+  - 34 lines)
+  - collectRecentCosts (489
+  - 47 lines); briefing.ts: buildBriefingReport (102
+  - 103 lines
+  - no explicit return type)
+  - computeRunHealth (69
+  - 31 lines); tsc --noEmit: exit 0 (builder-confirmed); 433/433 tests pass; no any type annotations found; caller imports updated correctly (.mjs -> .ts in wakeup.mjs
+  - crew.mjs
+  - all 6 test files); noUncheckedIndexedAccess guarded via ?. and ?? throughout; non-null assertion on line 478 is safe (Map.has() guard precedes it); FEAT-110 precedent shows Result<T
+  - E> was also not applied in sibling leaf files
+  - so AC-5 gap appears systemic but cannot be confirmed addressed without FEAT-111 AC-5 evidence
+- Files Reviewed:
+  - scripts/lib/briefing/collect.ts
+  - scripts/lib/briefing.ts
+  - scripts/lib/wakeup.mjs
+  - scripts/crew.mjs
+  - tests/brief-me-hook-health.test.mjs
+  - tests/briefing-cost-health.test.mjs
+  - tests/briefing-cost-rollup-dedupe.test.mjs
+  - tests/collect-hook-health.test.mjs
+  - tests/collect-model-compliance.test.mjs
+  - tests/cost-report-role-breakdown.test.mjs
+- Test Adequacy: 433/433 tests pass (builder-confirmed), tsc --noEmit clean; this is a refactor-by-rename so TDD gate is exempt — existing suite is the contract
+- Risks: collectRecentCosts inferred return type is a two-branch union (early-return shape vs full shape) that callers in briefing.ts access via sumUsdRecent ?? 0 / avgUsdRecent ?? 0 with nullish coalescing — runtime safe, but the missing explicit type means the contract is invisible to future callers and breaks stricter --isolatedDeclarations if that flag is ever added; buildBriefingReport return type being untyped means callers in crew.mjs accept an opaque any-equivalent inference chain
+- Required Follow-up: Builder to: (1) add explicit return type to collectRecentCosts (define a CostSummary interface or inline union), (2) add explicit return type to buildBriefingReport (define a BriefingReport interface), (3) split parseWorkingTree into parseStatusCounts() + parseWorkingTree() shell, (4) split collectRelevantArtifacts by extracting the candidates-map-and-resolve block into resolveRunArtifacts(), (5) split collectRecentCosts by extracting the rollup aggregation block into aggregateCostRollup(), (6) split buildBriefingReport by extracting the sections assembly into assembleSections() or similar; re-run tsc + npm test after each split
+

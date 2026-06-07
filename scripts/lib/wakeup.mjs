@@ -7,7 +7,7 @@ import { readDeploymentGuidanceSummary } from "./deployment-guidance.mjs";
 import { readFileIfExists } from "./fs-utils.mjs";
 import { tailReadJsonl } from "./jsonl.mjs";
 import { loadWorkflowState, summarizeWorkflowState } from "./workflow-state.mjs";
-import { collectHookHealth } from "./briefing/collect.mjs";
+import { collectHookHealth } from "./briefing/collect.ts";
 
 const RUNS_DIR = [".claude", "artifacts", "crew", "runs"];
 const HANDOFFS_DIR = [".claude", "artifacts", "crew", "handoffs"];

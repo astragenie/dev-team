@@ -14,7 +14,7 @@ async function makeRepo(events) {
   return dir;
 }
 
-import { collectHookHealth } from "../scripts/lib/briefing/collect.mjs";
+import { collectHookHealth } from "../scripts/lib/briefing/collect.ts";
 
 test("collectHookHealth returns empty hooks array when no events.jsonl", async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "hook-health-empty-"));

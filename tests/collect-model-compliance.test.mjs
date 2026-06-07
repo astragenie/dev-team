@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { computeModelCompliance } from "../scripts/lib/briefing/collect.mjs";
+import { computeModelCompliance } from "../scripts/lib/briefing/collect.ts";
 
 // Cost reports expose usdPct on a 0-100 scale (matches parseModelMix in
 // briefing/collect.mjs). All test data below uses that scale.

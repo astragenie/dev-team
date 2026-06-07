@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
-import { collectRecentCosts } from "../scripts/lib/briefing/collect.mjs";
+import { collectRecentCosts } from "../scripts/lib/briefing/collect.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
