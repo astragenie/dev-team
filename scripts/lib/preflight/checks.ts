@@ -181,13 +181,28 @@ export function checkUnquotedWindowsPathSpace({ command }: CommandInput): string
 
     const token = command.slice(startIdx, tokenEnd);
 
-    // Check: is there a space right after the token, followed by non-operator content?
-    // This indicates the path continues past the space (unquoted path with embedded space).
+    // Check: is there a space right after the token, followed by content that
+    // actually looks like a continuation of the path? A real embedded-space
+    // path like `C:\Program Files\app.exe` splits into shell tokens where the
+    // second piece (`Files\app.exe`) still contains a path separator. Normal
+    // follow-on args like `git -C C:/x status` should NOT warn — `status` is
+    // clearly a separate argument.
     if (tokenEnd < command.length && (command[tokenEnd] === " " || command[tokenEnd] === "\t")) {
       const afterSpace = command.slice(tokenEnd).trimStart();
-      // If next portion starts with an operator or end-of-string, it's fine
-      if (!/^(&&|;|\|+|>|<)/.test(afterSpace) && afterSpace.length > 0) {
-        warnings.push(`Windows path with space should be quoted: ${token}`);
+      if (/^(&&|;|\|+|>|<)/.test(afterSpace) || afterSpace.length === 0) {
+        continue;
+      }
+      const nextTokenMatch = afterSpace.match(/^(\S+)/);
+      if (!nextTokenMatch) continue;
+      const nextToken = nextTokenMatch[1] ?? "";
+      const looksLikeContinuation =
+        /[\\/]/.test(nextToken) &&
+        !nextToken.startsWith("-") &&
+        !nextToken.startsWith('"') &&
+        !nextToken.startsWith("'") &&
+        !/^[A-Za-z]:[/\\]/.test(nextToken);
+      if (looksLikeContinuation) {
+        warnings.push(`Windows path with space should be quoted: ${token} ${nextToken}`);
         break;
       }
     }

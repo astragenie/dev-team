@@ -179,6 +179,31 @@ test("AC-9b: quoted Windows path with space is silent", async () => {
   }
 });
 
+test("AC-9c: Windows path followed by normal arg (no separator) is silent", async () => {
+  // Regression: previously the heuristic warned on any Windows path followed by
+  // a space + non-operator, including innocent `git -C C:/x status` calls.
+  // The fix narrows the check: only warn when the next token actually looks
+  // like a path continuation (contains `/` or `\`).
+  const command = "git -C C:/work/mega/hero-crew status --short";
+  const result = await runHook(makeStdin("Bash", command, process.cwd()));
+  assert.equal(result.exitCode, 0);
+  if (result.stdout !== "") {
+    const parsed = JSON.parse(result.stdout);
+    assert.doesNotMatch(parsed.systemMessage, /[Ww]indows path/);
+  }
+});
+
+test("AC-9d: Windows path piped to operator is silent", async () => {
+  // Operators (&&, ;, |, >, <) after the path are not continuations.
+  const command = "ls C:/work/mega/foo/bar.json; echo done";
+  const result = await runHook(makeStdin("Bash", command, process.cwd()));
+  assert.equal(result.exitCode, 0);
+  if (result.stdout !== "") {
+    const parsed = JSON.parse(result.stdout);
+    assert.doesNotMatch(parsed.systemMessage, /[Ww]indows path/);
+  }
+});
+
 // ── AC-10: Failure mode 4 — unterminated here-doc ───────────────────────────
 
 test("AC-10a: unterminated here-doc triggers warn", async () => {
