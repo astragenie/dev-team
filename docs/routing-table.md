@@ -104,8 +104,8 @@ _API documentation, diagram authoring, commit messages, handoff CLI._
 
 | Signal | Route to | Notes |
 |---|---|---|
-| **API documentation authoring** (OpenAPI specs, SDK reference guides, integration guides, error documentation, versioning, deprecation notices) | copywriter | Load `skills/workflow/api-documentation/`. Co-cite `skills/domain/backend-advisory/` for API design concerns. |
-| **Diagram authoring** (architecture diagrams, flowcharts, sequence diagrams, ERDs, state machines, dependency graphs, Mermaid / PlantUML / Draw.io) | copywriter / architect | Load `skills/domain/diagram-methodology/`. Architect uses for ADR diagrams; copywriter uses for docs-embedded diagrams. |
+| **API documentation authoring** (OpenAPI specs, SDK reference guides, integration guides, error documentation, versioning, deprecation notices) | `loop:document-writer` | Load `skills/workflow/api-documentation/`. Co-cite `skills/domain/backend-advisory/` for API design concerns. |
+| **Diagram authoring** (architecture diagrams, flowcharts, sequence diagrams, ERDs, state machines, dependency graphs, Mermaid / PlantUML / Draw.io) | `loop:document-writer` / architect | Load `skills/domain/diagram-methodology/`. Architect uses for ADR diagrams; `loop:document-writer` uses for docs-embedded diagrams. |
 | **Authoring a git commit message** (after a code change is complete and staged) | builder | Load `skills/workflow/git-commit/` for commit-message format, conventional-commit style, and co-author footers. |
 | **Subagent completion report** (any role finishing a delegated task) | role via `write-handoff` CLI | Agent calls `node ... crew.mjs write-handoff` via Bash; returns path + 1–3 sentence headline. Lead reads the full report from the path on demand. Inline returns re-inflate lead context. |
 
@@ -127,7 +127,7 @@ _Plugin authoring, agent edits, cost analysis, model selection, autonomous_safe 
 | **Cost analysis or optimization** (expensive operations, token burn investigation) | researcher (read-only) + lead decision | Researcher investigates and reports; lead decides on action (optimize, accept, defer). |
 | **Editing this plugin's own `agents/*.md`** (any change to lead/builder/reviewer/validator/deployer/researcher prompts) | builder via **`plugin-dev:agent-development`** | Catches frontmatter weakness, tool over-scope, weak `description:` triggers. Downstream reviewer gate: see existing **Plugin shape change** row — do **not** skip the reviewer step. Co-cite: `skills/domain/prompt-engineering/` for prompt-authoring discipline. |
 | **Editing this plugin's own `skills/**/SKILL.md`** (authoring new skills or modifying existing ones) | builder via **`plugin-dev:skill-development`** | Builder-side complement to FEAT-017's reviewer-side wiring. Pairs with `scripts/validate-skills.mjs` (CI gate, hard-fail) + downstream reviewer via **Skill shape change** row — do **not** skip the reviewer step. Co-cite: `skills/meta/skill-creator/` for skill-authoring methodology. |
-| **Lead-prompt edit or specialist-agent prompt edit** (any change to `agents/{lead,architect,uxdesigner,copywriter}.md`) | builder + human-in-loop review | All four are `autonomous_safe: false` — changes require human-in-loop review before merging. See `docs/governance.md` autonomous_safe policy section. |
+| **Lead-prompt edit or specialist-agent prompt edit** (any change to `agents/{lead,architect,uxdesigner}.md`) | builder + human-in-loop review | All three are `autonomous_safe: false` — changes require human-in-loop review before merging. See `docs/governance.md` autonomous_safe policy section. |
 
 ---
 

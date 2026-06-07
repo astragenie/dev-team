@@ -1,4 +1,10 @@
-type ScenarioStep = { step: number; verb: string; target: string; expect: string; ac_id: string | null };
+type ScenarioStep = {
+  step: number;
+  verb: string;
+  target: string;
+  expect: string;
+  ac_id: string | null;
+};
 
 export function buildQaInvocation({
   url,

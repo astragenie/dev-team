@@ -1,13 +1,24 @@
 import { classifyScenario } from "./classify-scenario.ts";
 
-type ScenarioStep = { step: number; verb: string; target: string; expect: string; ac_id: string | null };
+type ScenarioStep = {
+  step: number;
+  verb: string;
+  target: string;
+  expect: string;
+  ac_id: string | null;
+};
 
 const JOURNEY_HEADER_RE = /^##\s+User Journey\s*$/i;
 const NEXT_HEADER_RE = /^##\s+/;
 const STEP_LINE_RE = /^\d+\.\s+(.+)$/;
 const EXPECT_SPLIT_RE = /\s*→\s*expect:\s*/i;
 
-const CATEGORY_ORDER: Record<string, number> = { navigation: 0, input: 1, interaction: 2, visibility: 3 };
+const CATEGORY_ORDER: Record<string, number> = {
+  navigation: 0,
+  input: 1,
+  interaction: 2,
+  visibility: 3
+};
 
 function parseUserJourney(sliceContent: string): ScenarioStep[] | null {
   if (!sliceContent) return null;

@@ -3,6 +3,32 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.20.0 — 2026-06-07 — hard cut crew:copywriter (FEAT-124)
+
+### Removed
+
+- `crew:copywriter` agent (FEAT-124). The documentation-writer scope has
+  consolidated into `loop:document-writer`, which was extended in loop v0.29.0
+  to cover API reference docs, diagram captions, and architecture narrative.
+
+### Changed
+
+- `commands/orchestrate-slice.md` Step 6 + Step 7 now dispatch
+  `loop:document-writer` instead of `crew:copywriter`. The Step 7 fallback
+  chain is removed.
+- `docs/routing-table.md` — "API documentation authoring" and "Diagram
+  authoring" rows now route to `loop:document-writer`. "Lead-prompt or
+  specialist-agent prompt edit" enumeration no longer includes `copywriter`.
+
+### Breaking
+
+- **`crew:copywriter` no longer exists.** Any caller dispatching
+  `subagent_type: crew:copywriter` will see a `subagent-not-found` error.
+  Migration: replace with `subagent_type: loop:document-writer`. Loop v0.29.0
+  is the minimum required version (pinned in `marketplace.json`).
+
+---
+
 ## v0.19.0 — 2026-06-07
 
 - **feat(orchestrate-slice):** integrate with loop `resolve-skills` CLI. Builders now receive a preset-resolved `## Required skills (resolved)` block injected at the top of their dispatch prompt when the `loop` plugin is installed alongside crew. Falls back silently when loop is absent or returns no match. Closes loop upstream-request `docs/upstream-requests/2026-06-07-hero-crew-orchestrate-slice-surface-stack-routing.md` (superseded — no FEAT-level reader needed; loop's resolver is the contract).

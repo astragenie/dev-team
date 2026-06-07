@@ -335,7 +335,59 @@ If `Outcome: PASS`: continue to Step 4.
 
 ---
 
+### Step 4.5 — Short-slice size check and dispatch-order determination
+
+Before dispatching reviewer and validator, determine the `SHORT_SLICE` flag from the
+builder handoff so that short slices with observable behavior run validator first.
+
+**Compute `SHORT_SLICE`:**
+
+A slice is short when EITHER gate passes (lower-bar wins):
+- AC count ≤ 6 (count `[ ]` lines in the slice file's Acceptance Criteria section), OR
+- Builder handoff changed-files count ≤ 10 (count the files listed under `## Changed files`
+  or equivalent in `BUILDER_HANDOFF_PATH`).
+
+Cross-plugin slices are always treated as long regardless of the counts above.
+
+```
+SHORT_SLICE = (acCount ≤ 6  OR  changedFilesCount ≤ 10)  AND  NOT cross_plugin
+```
+
+`isShortSlice()` in `scripts/orchestrate-slice-classify.ts` implements this logic and can
+be called directly:
+
+```bash
+node -e "
+  import('./scripts/orchestrate-slice-classify.ts').then(m =>
+    console.log(m.isShortSlice({ acCount: <N>, changedFilesCount: <M> }))
+  );
+"
+```
+
+**Derive `DISPATCH_ORDER`:**
+
+| Condition | `DISPATCH_ORDER` | Effect |
+|---|---|---|
+| `SHORT_SLICE = true` AND `BEHAVIOR_CHANGED = true` | `validator_first` | Run Step 5 (validator) before Step 4 (reviewer); reviewer receives `VALIDATION_PATH` as additional input. |
+| Any other combination (long slice, cross-plugin, `BEHAVIOR_CHANGED = false`) | `reviewer_first` | Run Step 4 (reviewer) before Step 5 (validator) — current default order. |
+
+Print the outcome before proceeding:
+
+```
+SHORT_SLICE=<true|false>  DISPATCH_ORDER=<validator_first|reviewer_first>
+```
+
+---
+
 ### Step 4 — Reviewer
+
+**When `DISPATCH_ORDER = validator_first`**: run Step 5 (validator) FIRST, store
+`VALIDATION_PATH`, then return here. The reviewer prompt receives `VALIDATION_PATH` as
+additional input so the reviewer can confirm validator findings rather than independently
+re-verify.
+
+**When `DISPATCH_ORDER = reviewer_first`** (default for long slices, cross-plugin slices,
+>10 changed files AND ≥7 ACs): run this step first before Step 5.
 
 Dispatch `crew:reviewer` with this prompt:
 
@@ -352,7 +404,14 @@ When SPLIT_BUILD=true:
 When SPLIT_BUILD=false:
   Builder handoff: <BUILDER_HANDOFF_PATH>
 
+[When DISPATCH_ORDER=validator_first — include the following line:]
+Validation result: <VALIDATION_PATH>
+
 Review the implementation diff(s) for correctness, test coverage, regressions, and contract/UX/integration conformance per the rules in your agent prompt.
+
+When a Validation result is provided: you may treat the validator's scenario evidence as
+authoritative for runtime behavior and scope your review to code quality, contract
+conformance, and test coverage rather than re-running scenarios independently.
 
 Return the review-result artifact path.
 ```
@@ -367,13 +426,19 @@ Store the returned path as `REVIEW_RESULT_PATH`.
 
 **Skip when `BEHAVIOR_CHANGED = false`.**
 
+**When `DISPATCH_ORDER = validator_first`**: this step runs BEFORE Step 4. After
+`VALIDATION_PATH` is stored, return to Step 4 to dispatch the reviewer.
+
+**When `DISPATCH_ORDER = reviewer_first`** (default — long slices, cross-plugin, >10
+changed files AND ≥7 ACs): this step runs after Step 4 as usual.
+
 Dispatch `crew:validator` with this prompt:
 
 ```
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
 Builder handoff(s): <BUILDER_HANDOFF_PATH or BUILDER_FE_HANDOFF_PATH + BUILDER_BE_HANDOFF_PATH>
-Review result: <REVIEW_RESULT_PATH>
+Review result: <REVIEW_RESULT_PATH or "none — validator running before reviewer (validator_first order)">
 Integration artifact: <INTEGRATION_PATH or "none">
 
 Validate that the implementation satisfies all acceptance criteria in the slice file. If an Integration artifact is provided with Outcome: PASS, you may short-circuit per your agent prompt's SPLIT_BUILD short-circuit rule. Otherwise, run the full scenario set.
@@ -385,11 +450,11 @@ Store the returned path as `VALIDATION_PATH`.
 
 ---
 
-### Step 6 — Copywriter
+### Step 6 — Document writer (CHANGELOG)
 
 **Skip when `RELEASE_CONTENT = false`.**
 
-Dispatch `crew:copywriter` with this prompt:
+Dispatch `loop:document-writer` with this prompt:
 
 ```
 Slice: <SLICE-NN title>
@@ -407,7 +472,7 @@ Store the returned path as `COPYWRITER_PATH`.
 
 **Skip when `DOCS_NEEDED = false`.**
 
-If the `loop:document-writer` agent is available (check `agents/` for `document-writer.md` or equivalent), dispatch it. Otherwise dispatch `crew:copywriter`. Prompt:
+Dispatch `loop:document-writer` with this prompt:
 
 ```
 Slice: <SLICE-NN title>
