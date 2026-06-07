@@ -124,7 +124,6 @@ export async function ensureWorkflowStateScaffold(repoPath) {
   );
 }
 
-
 /**
  * @param {string} repoPath
  * @param {LoadOptions} [options]

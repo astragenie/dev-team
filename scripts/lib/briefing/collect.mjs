@@ -203,7 +203,6 @@ function collectArtifactActivity(wakeUpBrief) {
     .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
 }
 
-
 /**
  * @param {string} body
  * @param {string} label
@@ -386,7 +385,9 @@ export async function collectRecentCosts(repoPath, limit = 5) {
   );
   const recent = results
     .filter((r) => r.status === "fulfilled")
-    .map((r) => /** @type {PromiseFulfilledResult<ReturnType<typeof parseCostReportText>>} */ (r).value);
+    .map(
+      (r) => /** @type {PromiseFulfilledResult<ReturnType<typeof parseCostReportText>>} */ (r).value
+    );
 
   // Deduplicate overlapping windows before computing rollup sums.
   // recent[] is kept whole for per-row table rendering.

@@ -14,7 +14,9 @@ async function writeTmp(content) {
 }
 
 test("getCachedArtifact: returns parsed frontmatter and body", async () => {
-  const { dir, filePath } = await writeTmp("---\nid: SLICE-1\ntitle: Test\n---\n# Heading\nBody text.");
+  const { dir, filePath } = await writeTmp(
+    "---\nid: SLICE-1\ntitle: Test\n---\n# Heading\nBody text."
+  );
   try {
     const result = await getCachedArtifact(filePath);
     assert.equal(result.fm.id, "SLICE-1");

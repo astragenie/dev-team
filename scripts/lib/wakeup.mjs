@@ -40,7 +40,6 @@ async function pathExists(targetPath) {
   }
 }
 
-
 /**
  * @param {string} filePath
  * @returns {Promise<object | null>}

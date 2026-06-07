@@ -3,6 +3,23 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.17.0 — 2026-06-07
+
+TypeScript Phase 0 foundation, cross-agent severity signals, builder dispatch reliability, and 5 performance wins.
+
+- **FEAT-100** TS migration Phase 0: `tsconfig.json` with `--experimental-strip-types`, `allowJs+checkJs:false`, strict mode. New `scripts/lib/result.ts` (`Result<T,E>`), `ids.ts` (branded IDs), `schemas.ts` (Zod workflow-state schema). `validate-typegraph.mjs` advisory gate in CI. Node CI bumped to v22.
+- **FEAT-037** Cross-agent severity signals: `--findings` flag on `write-review-result`, `write-validation-result`, `write-deployment-check`. Persisted in artifact frontmatter. `computeRunHealth()` aggregates to `brief-me` `runHealth` field. Reviewer/validator/deployer prompts emit structured `🔴:N,🟡:N,❓:N` signals.
+- **FEAT-046** Builder dispatch reliability: `## Context ceiling` section in `agents/builder.md` with `context_ceiling_reached` + `DONE_WITH_CONCERNS` protocol. `scope-estimate` CLI sub-command (`light/standard/heavy` tier). Lead ceiling-recovery rule.
+- **FEAT-101** `tailReadJsonl` helper in `scripts/lib/jsonl.mjs` — tail-reads last 64 KB of JSONL instead of full file. Replaces full `readFile` in `collectHookHealth` and `wakeup.mjs`.
+- **FEAT-102** Parallel cost-report reads: `collectRecentCosts` uses `Promise.allSettled` instead of sequential for-loop.
+- **FEAT-103** Mtime-keyed artifact cache: `getCachedArtifact(absPath)` in `scripts/lib/artifact-cache.mjs`. `readArtifactSummary` and `readDeploymentGuidanceSummary` use cached stat+read+parse.
+- **FEAT-104** Mtime-keyed directory listing cache: `getCachedDirFiles(dir, filter)` in `scripts/lib/dir-cache.mjs`. `listProjectSessions` uses it instead of raw `readdir`.
+- **FEAT-105** `readFileIfExists(path)` helper in `scripts/lib/fs-utils.mjs` — ENOENT-only catch, re-throws all other errors. Replaces `pathExists/pathReadable + readFile` patterns in `wakeup.mjs`, `workflow-state.mjs`, `fleet.mjs`, `outcome-linkage.mjs`.
+
+433 tests. Lint clean. Node ≥ 22.6 required (strip-types runtime).
+
+---
+
 ## v0.16.0 — 2026-06-06
 
 Frontend/backend builder split. OpenAPI 3.1 canonical. New agents and skills:
