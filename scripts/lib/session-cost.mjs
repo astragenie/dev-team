@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { scanSessions, percentile, readJsonlLines } from "./session-cost-scanner.mjs";
+import { getCachedDirFiles } from "./dir-cache.mjs";
 
 const PROJECTS_ROOT = path.join(os.homedir(), ".claude", "projects");
 
@@ -69,16 +70,7 @@ async function listProjectSessions(repoPath, sourceProjectSlug = null) {
   // unset, the default behaviour resolves the session dir from repoPath.
   const slug = sourceProjectSlug || slugifyRepoPath(repoPath);
   const dir = path.join(PROJECTS_ROOT, slug);
-  let entries;
-  try {
-    entries = await fs.readdir(dir, { withFileTypes: true });
-  } catch (err) {
-    if (err.code === "ENOENT") return [];
-    throw err;
-  }
-  return entries
-    .filter((e) => e.isFile() && e.name.endsWith(".jsonl"))
-    .map((e) => path.join(dir, e.name));
+  return getCachedDirFiles(dir, (name) => name.endsWith(".jsonl"));
 }
 
 // Auto-detect the Claude project dir that actually has activity in the
