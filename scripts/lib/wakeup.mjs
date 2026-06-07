@@ -4,6 +4,7 @@ import path from "node:path";
 import { listApprovals } from "./approvals.mjs";
 import { listClaims } from "./claims.mjs";
 import { readDeploymentGuidanceSummary } from "./deployment-guidance.mjs";
+import { readFileIfExists } from "./fs-utils.mjs";
 import { loadWorkflowState, summarizeWorkflowState } from "./workflow-state.mjs";
 import { collectHookHealth } from "./briefing/collect.mjs";
 
@@ -84,10 +85,8 @@ async function readRecentJsonl(filePath, count, maxBytes = JSONL_TAIL_BYTES) {
  * @returns {Promise<object | null>}
  */
 async function readJson(filePath) {
-  if (!(await pathExists(filePath))) {
-    return null;
-  }
-  return JSON.parse(await fs.readFile(filePath, "utf8"));
+  const text = await readFileIfExists(filePath);
+  return text === null ? null : JSON.parse(text);
 }
 
 /**

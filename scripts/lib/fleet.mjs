@@ -5,6 +5,7 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
+import { readFileIfExists } from "./fs-utils.mjs";
 
 /** @param {string} p */
 async function pathExists(p) {
@@ -121,18 +122,14 @@ export async function collectFleetWorktrees(
 
   // Always include self if includeSelf and self wasn't found via sibling scan.
   if (includeSelf && !seen.has(path.resolve(selfProgress))) {
-    if (await pathExists(selfProgress)) {
-      try {
-        const text = await fs.readFile(selfProgress, "utf8");
-        const selfName = path.basename(currentRepoPath);
-        items.push({
-          ...parseSliceProgress(text, selfName),
-          progressPath: path.resolve(selfProgress),
-          isSelf: true
-        });
-      } catch {
-        // best-effort
-      }
+    const text = await readFileIfExists(selfProgress);
+    if (text !== null) {
+      const selfName = path.basename(currentRepoPath);
+      items.push({
+        ...parseSliceProgress(text, selfName),
+        progressPath: path.resolve(selfProgress),
+        isSelf: true
+      });
     }
   }
 

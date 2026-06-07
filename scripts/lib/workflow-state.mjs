@@ -5,6 +5,7 @@ import {
   createRun,
   summarizeMissingArtifactWritesForRun
 } from "./workflow-state-gates.mjs";
+import { readFileIfExists } from "./fs-utils.mjs";
 
 /**
  * @typedef {{ status: string, updatedAt: string, note?: string }} GateEntry
@@ -123,18 +124,6 @@ export async function ensureWorkflowStateScaffold(repoPath) {
   );
 }
 
-/**
- * @param {string} filePath
- * @returns {Promise<boolean>}
- */
-async function pathReadable(filePath) {
-  try {
-    await fs.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 /**
  * @param {string} repoPath
@@ -143,13 +132,15 @@ async function pathReadable(filePath) {
  */
 export async function loadWorkflowState(repoPath, options = {}) {
   const workflowPath = path.join(repoPath, ...WORKFLOW_STATE_PATH);
-  if (await pathReadable(workflowPath)) {
-    return JSON.parse(await fs.readFile(workflowPath, "utf8"));
+  const workflowText = await readFileIfExists(workflowPath);
+  if (workflowText !== null) {
+    return JSON.parse(workflowText);
   }
 
   const legacyPath = path.join(repoPath, ...LEGACY_WORKFLOW_STATE_PATH);
-  if (await pathReadable(legacyPath)) {
-    return JSON.parse(await fs.readFile(legacyPath, "utf8"));
+  const legacyText = await readFileIfExists(legacyPath);
+  if (legacyText !== null) {
+    return JSON.parse(legacyText);
   }
 
   if (options.createIfMissing === false) {

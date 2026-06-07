@@ -14,8 +14,9 @@ function extractSliceId(text) {
 async function readIfExists(file) {
   try {
     return await fs.readFile(file, "utf8");
-  } catch {
-    return null;
+  } catch (err) {
+    if (/** @type {NodeJS.ErrnoException} */ (err).code === "ENOENT") return null;
+    throw err;
   }
 }
 
