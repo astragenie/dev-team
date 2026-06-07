@@ -2,7 +2,7 @@
 id: FEAT-102
 title: Perf win 2 — parallelize artifact reads in briefing/collect
 priority: P2
-status: in-progress
+status: done
 category: perf
 target_release: null
 autonomous_safe: true
@@ -28,6 +28,8 @@ triage_notes: "autonomous_safe inferred: AC count=5, derived_from=null → true"
 updated: 2026-06-07
 started_at: 2026-06-07
 slices: [SLICE-20]
+slices_complete: [SLICE-20]
+completed_at: 2026-06-07
 ---
 # FEAT-102 — Perf win 2: parallelize artifact reads
 
