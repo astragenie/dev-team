@@ -2,7 +2,7 @@
 id: FEAT-100
 title: "TS migration Phase 0 — foundation (tsconfig strict, Result/ids/schemas, Node 22, baseline)"
 priority: P1
-status: pending
+status: triaged
 category: code-quality
 target_release: null
 autonomous_safe: true
@@ -11,13 +11,21 @@ parent_spec: docs/superpowers/specs/2026-06-07-ts-migration-and-perf-design.md
 plan: docs/superpowers/plans/2026-06-07-ts-migration-phase-0-foundation.md
 related: [FEAT-101, FEAT-102, FEAT-103, FEAT-104, FEAT-105]
 phase: null
-tags: [concern:code-quality, surface:tooling, stack:typescript, stack:node]
-pm_customer_impact: null
+tags: ["concern:code-quality", "surface:tooling", "stack:typescript", "stack:node"]
+pm_customer_impact: 0.5
 pm_demand_signal: null
 pm_technical_feasibility: null
 pm_scope_risk: null
-pm_strategic_alignment: null
+pm_strategic_alignment: 0.5
 pm_composite: null
+pm_legacy_demand_signal: null
+pm_legacy_customer_impact: null
+pm_effort_estimate: 0.5
+pm_technical_risk: 0.5
+pm_dependency_depth: 0.5
+migration_note: legacy PM schema preserved as pm_legacy_*; new dimensions defaulted to 0.5 on 2026-06-07
+triage_notes: "autonomous_safe inferred: AC count=12, derived_from=null → true"
+updated: 2026-06-07
 ---
 # FEAT-100 — TS migration Phase 0: foundation
 

@@ -2,17 +2,17 @@
 id: FEAT-029
 title: Promote cost-hygiene reread hook to default-on
 priority: P0
-status: deferred
+status: triaged
 category: performance
 target_release: v0.3.12
 created: 2026-06-01
-updated: 2026-06-02
+updated: 2026-06-07
 depends_on: []
 slices: [SLICE-09]
 derived_from: null
-autonomous_safe: true
+autonomous_safe: false
+triage_notes: "autonomous_safe inferred: AC count=0, derived_from=null → false"
 ---
-
 ## Description
 
 The cost-hygiene reread hook shipped in v0.3.11 as `CREW_COST_HYGIENE`

@@ -1,8 +1,8 @@
 ---
 id: FEAT-104
-title: "Perf win 9 — cache payloads readdir per process with mtime invalidation"
+title: Perf win 9 — cache payloads readdir per process with mtime invalidation
 priority: P3
-status: pending
+status: triaged
 category: perf
 target_release: null
 autonomous_safe: true
@@ -11,13 +11,21 @@ parent_spec: docs/superpowers/specs/2026-06-07-ts-migration-and-perf-design.md
 plan: null
 related: [FEAT-100, FEAT-101, FEAT-102, FEAT-103, FEAT-105]
 phase: null
-tags: [concern:performance, surface:cli, stack:node]
-pm_customer_impact: null
+tags: ["concern:performance", "surface:cli", "stack:node"]
+pm_customer_impact: 0.5
 pm_demand_signal: null
 pm_technical_feasibility: null
 pm_scope_risk: null
-pm_strategic_alignment: null
+pm_strategic_alignment: 0.5
 pm_composite: null
+pm_legacy_demand_signal: null
+pm_legacy_customer_impact: null
+pm_effort_estimate: 0.5
+pm_technical_risk: 0.5
+pm_dependency_depth: 0.5
+migration_note: legacy PM schema preserved as pm_legacy_*; new dimensions defaulted to 0.5 on 2026-06-07
+triage_notes: "autonomous_safe inferred: AC count=5, derived_from=null → true"
+updated: 2026-06-07
 ---
 # FEAT-104 — Perf win 9: cache payloads readdir
 
