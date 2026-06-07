@@ -2,21 +2,26 @@
 // Auto-emits cost-report artifacts after write-final-synthesis.
 // Non-fatal: returns null / { error } on failure so the synthesis result still surfaces.
 
-/**
- * @param {{
- *   repoPath: string,
- *   title: string,
- *   startedAt: string,
- *   completedAt: string,
- *   outcome: Record<string, unknown>,
- *   feature: string | null,
- *   phase: string | null,
- *   writeArtifact: (repoPath: string, kind: string, fields: Record<string, unknown>) => Promise<unknown>,
- *   computeSessionCost: (repoPath: string, opts: Record<string, unknown>) => Promise<Record<string, unknown>>
- * }} opts
- * @returns {Promise<unknown>}
- */
-async function maybeEmitAggregateCost(opts) {
+interface MaybeEmitAggregateCostOpts {
+  repoPath: string;
+  title: string;
+  startedAt: string;
+  completedAt: string;
+  outcome: Record<string, unknown>;
+  feature: string | null;
+  phase: string | null;
+  writeArtifact: (
+    repoPath: string,
+    kind: string,
+    fields: Record<string, unknown>
+  ) => Promise<unknown>;
+  computeSessionCost: (
+    repoPath: string,
+    opts: Record<string, unknown>
+  ) => Promise<Record<string, unknown>>;
+}
+
+async function maybeEmitAggregateCost(opts: MaybeEmitAggregateCostOpts): Promise<unknown> {
   const {
     repoPath,
     title,
@@ -33,7 +38,7 @@ async function maybeEmitAggregateCost(opts) {
     completedAt,
     aggregateAll: true
   });
-  const sources = /** @type {unknown[] | undefined} */ (aggregateCost.sources);
+  const sources = aggregateCost["sources"] as unknown[] | undefined;
   if (!sources || sources.length <= 1) return null;
   return writeArtifact(repoPath, "cost-report-aggregate", {
     title,
@@ -45,25 +50,36 @@ async function maybeEmitAggregateCost(opts) {
   });
 }
 
-/**
- * @param {string} repoPath
- * @param {string | null} runTitle
- * @param {string | null} feature
- * @param {string | null} phase
- * @param {(repoPath: string, opts: { title: string | null, feature: string | null, phase: string | null }) => Promise<unknown>} emitCostAdviseFn
- * @returns {Promise<Record<string, unknown>>}
- */
-async function emitCostReportInner(repoPath, runTitle, feature, phase, emitCostAdviseFn) {
+async function emitCostReportInner(
+  repoPath: string,
+  runTitle: string | null,
+  feature: string | null,
+  phase: string | null,
+  emitCostAdviseFn: (
+    repoPath: string,
+    opts: { title: string | null; feature: string | null; phase: string | null }
+  ) => Promise<unknown>
+): Promise<Record<string, unknown>> {
   const { loadWorkflowState } = await import("../workflow-state.mjs");
-  const { computeSessionCost } = await import("../session-cost.mjs");
+  const { computeSessionCost: computeCost } = await import("../session-cost.mjs");
   const { collectOutcomeLinkage } = await import("../outcome-linkage.mjs");
-  const { writeArtifact } = await import("../artifacts.mjs");
+  const { writeArtifact: writeArt } = await import("../artifacts.mjs");
+  // Cast to permissive signatures to avoid cross-.mjs JSDoc type mismatches.
+  const computeSessionCost = computeCost as (
+    repoPath: string,
+    opts: Record<string, unknown>
+  ) => Promise<Record<string, unknown>>;
+  const writeArtifact = writeArt as (
+    repoPath: string,
+    kind: string,
+    fields: Record<string, unknown>
+  ) => Promise<unknown>;
   const state = await loadWorkflowState(repoPath);
   const run = state?.currentRun || null;
-  if (!run?.startedAt) return null;
+  if (!run?.startedAt) return null as unknown as Record<string, unknown>;
   const completedAt = run.completedAt || new Date().toISOString();
   const title = runTitle || run.title || "cost-report";
-  const outcome = await collectOutcomeLinkage(repoPath, title);
+  const outcome = (await collectOutcomeLinkage(repoPath, title)) as Record<string, unknown>;
   const sliceCost = await computeSessionCost(repoPath, {
     startedAt: run.startedAt,
     completedAt,
@@ -95,21 +111,16 @@ async function emitCostReportInner(repoPath, runTitle, feature, phase, emitCostA
 /**
  * Auto-emit a cost-report artifact when a run window is available.
  * Designed to be called immediately after write-final-synthesis.
- *
- * @param {string} repoPath
- * @param {{ runTitle?: string | null, feature?: string | null, phase?: string | null }} [options]
- * @param {(repoPath: string, opts: { title: string | null, feature: string | null, phase: string | null }) => Promise<unknown>} [emitCostAdviseFn]
- * @returns {Promise<Record<string, unknown> | null>}
  */
 export async function maybeEmitCostReport(
-  repoPath,
-  options = {},
-  emitCostAdviseFn = async () => null
-) {
-  const { runTitle, feature, phase } =
-    /** @type {{ runTitle?: string | null, feature?: string | null, phase?: string | null }} */ (
-      options
-    );
+  repoPath: string,
+  options: { runTitle?: string | null; feature?: string | null; phase?: string | null } = {},
+  emitCostAdviseFn: (
+    repoPath: string,
+    opts: { title: string | null; feature: string | null; phase: string | null }
+  ) => Promise<unknown> = async () => null
+): Promise<Record<string, unknown> | null> {
+  const { runTitle, feature, phase } = options;
   try {
     return await emitCostReportInner(
       repoPath,
@@ -119,6 +130,6 @@ export async function maybeEmitCostReport(
       emitCostAdviseFn
     );
   } catch (err) {
-    return { error: /** @type {Error} */ (err).message };
+    return { error: (err as Error).message };
   }
 }

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import path from "node:path";
-import { maybeEmitCostReport } from "./lib/cost-hygiene/emit-cost-report.mjs";
-import { costSliceHandler } from "./lib/cost-hygiene/cost-slice-handler.mjs";
+import { maybeEmitCostReport } from "./lib/cost-hygiene/emit-cost-report.ts";
+import { costSliceHandler } from "./lib/cost-hygiene/cost-slice-handler.ts";
 
 // Flag schema. Each entry maps a CLI flag to the flags-object key and the
 // arity (whether it consumes a value). Aliases (e.g. `--verdict` → `decision`)

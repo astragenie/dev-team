@@ -9,7 +9,7 @@ import fs from "node:fs/promises";
 
 const PROJECTS_ROOT = path.join(os.homedir(), ".claude", "projects");
 
-function emptyTotals() {
+function emptyTotals(): Record<string, number> {
   return {
     input: 0,
     cache_create_5m: 0,
@@ -19,56 +19,98 @@ function emptyTotals() {
   };
 }
 
-/**
- * @typedef {{ calls: number, totalResultBytes: number, attributedCacheCreate: number }} CachePrimeEntry
- * @typedef {{ messagesCounted: number, sessionsScanned: number, compactionCount: number, userMsgCount: number, userMsgTotalLen: number, skillInvocations: number, subagentDispatches: number, turnsBeforeFirstTool: number }} Counters
- * @typedef {{ sawFirstTool: boolean }} Flags
- * @typedef {{ pendingToolUses: Array<{id: string, name: string}>, pendingResultSizes: Record<string, number> }} CachePrimeState
- * @typedef {{ totals: Record<string, number>, byModel: Record<string, {tokens: Record<string, number>, usd: number, messages: number, pricedAs?: string}>, toolUseCounts: Record<string, number>, toolFailureCounts: Record<string, number>, toolResultSizes: number[], filesRead: Record<string, number>, toolNameById: Map<string, string>, counters: Counters, flags: Flags, ensureSource: (slug: string) => {messages: number, tokens: Record<string, number>, modelTokens: Record<string, Record<string, number>>, touched: boolean}, toolCachePrime: Record<string, CachePrimeEntry>, cachePrimeState: CachePrimeState }} ScanCtx
- */
+export interface CachePrimeEntry {
+  calls: number;
+  totalResultBytes: number;
+  attributedCacheCreate: number;
+}
+
+export interface Counters {
+  messagesCounted: number;
+  sessionsScanned: number;
+  compactionCount: number;
+  userMsgCount: number;
+  userMsgTotalLen: number;
+  skillInvocations: number;
+  subagentDispatches: number;
+  turnsBeforeFirstTool: number;
+}
+
+export interface Flags {
+  sawFirstTool: boolean;
+}
+
+export interface CachePrimeState {
+  pendingToolUses: Array<{ id: string; name: string }>;
+  pendingResultSizes: Record<string, number>;
+}
+
+export interface SourceEntry {
+  messages: number;
+  tokens: Record<string, number>;
+  modelTokens: Record<string, Record<string, number>>;
+  touched: boolean;
+}
+
+export interface ScanCtx {
+  totals: Record<string, number>;
+  byModel: Record<
+    string,
+    { tokens: Record<string, number>; usd: number; messages: number; pricedAs?: string }
+  >;
+  toolUseCounts: Record<string, number>;
+  toolFailureCounts: Record<string, number>;
+  toolResultSizes: number[];
+  filesRead: Record<string, number>;
+  toolNameById: Map<string, string>;
+  counters: Counters;
+  flags: Flags;
+  ensureSource: (slug: string) => SourceEntry;
+  toolCachePrime: Record<string, CachePrimeEntry>;
+  cachePrimeState: CachePrimeState;
+}
+
+export interface JsonlLine {
+  type?: string;
+  timestamp?: string;
+  isMeta?: boolean;
+  message?: {
+    usage?: Record<string, unknown>;
+    content?: unknown;
+    model?: string;
+  };
+}
 
 /**
  * @param {Record<string, number>} target
  * @param {Record<string, number>} source
- * @returns {void}
  */
-export function addTotals(target, source) {
-  for (const k of Object.keys(target)) target[k] += source[k] || 0;
+export function addTotals(target: Record<string, number>, source: Record<string, number>): void {
+  for (const k of Object.keys(target)) {
+    target[k] = (target[k] ?? 0) + (source[k] ?? 0);
+  }
 }
 
-/**
- * @param {string} file
- * @returns {AsyncGenerator<{type?: string, timestamp?: string, isMeta?: boolean, message?: {usage?: Record<string, unknown>, content?: unknown, model?: string}}>}
- */
-export async function* readJsonlLines(file) {
+export async function* readJsonlLines(file: string): AsyncGenerator<JsonlLine> {
   const stream = createReadStream(file, { encoding: "utf8" });
   const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
   for await (const line of rl) {
     if (!line) continue;
     try {
-      yield JSON.parse(line);
+      yield JSON.parse(line) as JsonlLine;
     } catch {
       // skip malformed lines
     }
   }
 }
 
-/**
- * @param {number[]} sortedArr
- * @param {number} p
- * @returns {number}
- */
-export function percentile(sortedArr, p) {
+export function percentile(sortedArr: number[], p: number): number {
   if (sortedArr.length === 0) return 0;
   const idx = Math.min(sortedArr.length - 1, Math.floor((p / 100) * sortedArr.length));
-  return sortedArr[idx];
+  return sortedArr[idx] ?? 0;
 }
 
-/**
- * @param {unknown} value
- * @returns {number}
- */
-export function approxSize(value) {
+export function approxSize(value: unknown): number {
   if (value == null) return 0;
   if (typeof value === "string") return value.length;
   try {
@@ -79,36 +121,44 @@ export function approxSize(value) {
 }
 
 // Walk a content array and collect tool_use / tool_result / text signals.
-/**
- * @param {unknown} content
- * @returns {{ toolUses: Array<{id: string, name: string, input: unknown}>, toolResults: Array<{id: string, size: number, isError: boolean}>, textLen: number }}
- */
-export function inspectContent(content) {
-  /** @type {{ toolUses: Array<{id: string, name: string, input: unknown}>, toolResults: Array<{id: string, size: number, isError: boolean}>, textLen: number }} */
-  const out = { toolUses: [], toolResults: [], textLen: 0 };
+export function inspectContent(content: unknown): {
+  toolUses: Array<{ id: string; name: string; input: unknown }>;
+  toolResults: Array<{ id: string; size: number; isError: boolean }>;
+  textLen: number;
+} {
+  const out: {
+    toolUses: Array<{ id: string; name: string; input: unknown }>;
+    toolResults: Array<{ id: string; size: number; isError: boolean }>;
+    textLen: number;
+  } = { toolUses: [], toolResults: [], textLen: 0 };
   if (!Array.isArray(content)) {
     if (typeof content === "string") out.textLen = content.length;
     return out;
   }
   for (const block of content) {
     if (!block || typeof block !== "object") continue;
-    if (block.type === "tool_use") {
-      out.toolUses.push({ id: block.id, name: block.name, input: block.input });
-    } else if (block.type === "tool_result") {
-      out.toolResults.push({
-        id: block.tool_use_id,
-        size: approxSize(block.content),
-        isError: Boolean(block.is_error)
+    const b = block as Record<string, unknown>;
+    if (b["type"] === "tool_use") {
+      out.toolUses.push({
+        id: b["id"] as string,
+        name: b["name"] as string,
+        input: b["input"]
       });
-    } else if (block.type === "text") {
-      out.textLen += (block.text || "").length;
+    } else if (b["type"] === "tool_result") {
+      out.toolResults.push({
+        id: b["tool_use_id"] as string,
+        size: approxSize(b["content"]),
+        isError: Boolean(b["is_error"])
+      });
+    } else if (b["type"] === "text") {
+      out.textLen += ((b["text"] as string | undefined) || "").length;
     }
   }
   return out;
 }
 
 // Iterates project dir subdirectories. Filters non-dir entries up-front.
-async function listProjectDirEntries() {
+async function listProjectDirEntries(): Promise<string[]> {
   try {
     const entries = await fs.readdir(PROJECTS_ROOT, { withFileTypes: true });
     return entries.filter((e) => e.isDirectory()).map((e) => e.name);
@@ -118,11 +168,7 @@ async function listProjectDirEntries() {
 }
 
 // Lists .jsonl files in a single project dir, or empty array on any error.
-/**
- * @param {string} dir
- * @returns {Promise<string[]>}
- */
-async function listJsonlInDir(dir) {
+async function listJsonlInDir(dir: string): Promise<string[]> {
   try {
     return (await fs.readdir(dir)).filter((f) => f.endsWith(".jsonl"));
   } catch {
@@ -132,13 +178,11 @@ async function listJsonlInDir(dir) {
 
 // Counts assistant turns with billable usage inside [startMs, endMs] across
 // every .jsonl file in `dir`.
-/**
- * @param {string} dir
- * @param {number} startMs
- * @param {number} endMs
- * @returns {Promise<number>}
- */
-async function countInWindowAssistantTurns(dir, startMs, endMs) {
+async function countInWindowAssistantTurns(
+  dir: string,
+  startMs: number,
+  endMs: number
+): Promise<number> {
   const files = await listJsonlInDir(dir);
   let count = 0;
   for (const f of files) {
@@ -157,13 +201,15 @@ async function countInWindowAssistantTurns(dir, startMs, endMs) {
 // Build a list of project dirs that have at least one in-window assistant
 // turn. Used by aggregateAll mode to scope summation to relevant dirs only
 // (skips unrelated ambient sessions).
-/**
- * @param {{ startMs: number, endMs: number }} opts
- * @returns {Promise<Array<{slug: string, dir: string}>>}
- */
-export async function listActiveProjectDirs({ startMs, endMs }) {
+export async function listActiveProjectDirs({
+  startMs,
+  endMs
+}: {
+  startMs: number;
+  endMs: number;
+}): Promise<Array<{ slug: string; dir: string }>> {
   const slugs = await listProjectDirEntries();
-  const active = [];
+  const active: Array<{ slug: string; dir: string }> = [];
   for (const slug of slugs) {
     const dir = path.join(PROJECTS_ROOT, slug);
     const count = await countInWindowAssistantTurns(dir, startMs, endMs);
@@ -172,16 +218,35 @@ export async function listActiveProjectDirs({ startMs, endMs }) {
   return active;
 }
 
+export interface ResolveScanSourcesInput {
+  aggregateAll: boolean;
+  sourceProject: string | null;
+  autoDetect: boolean;
+  repoPath: string;
+  startedAt: string;
+  endIso: string;
+  startMs: number;
+  endMs: number;
+  slugifyRepoPath: (p: string) => string;
+  listProjectSessions: (repoPath: string, slug: string | null) => Promise<string[]>;
+  autoDetectSourceProject: (opts: {
+    startedAt: string;
+    completedAt: string;
+  }) => Promise<string | null>;
+}
+
+export interface ResolveScanSourcesResult {
+  sessionsBySource: Map<string, string[]>;
+  effectiveSlug: string;
+  autoDetected: boolean;
+}
+
 // Decides which `~/.claude/projects/<slug>/` directories to scan.
 // Three modes:
 //   - aggregateAll: every project dir with in-window activity.
 //   - explicit sourceProject: scan only that dir.
 //   - default: scan the repo-derived dir; if empty + autoDetect enabled,
 //     fall back to the busiest in-window project.
-/**
- * @param {{ aggregateAll: boolean, sourceProject: string|null, autoDetect: boolean, repoPath: string, startedAt: string, endIso: string, startMs: number, endMs: number, slugifyRepoPath: (p: string) => string, listProjectSessions: (repoPath: string, slug: string|null) => Promise<string[]>, autoDetectSourceProject: (opts: {startedAt: string, completedAt: string}) => Promise<string|null> }} opts
- * @returns {Promise<{ sessionsBySource: Map<string, string[]>, effectiveSlug: string, autoDetected: boolean }>}
- */
 export async function resolveScanSources({
   aggregateAll,
   sourceProject,
@@ -194,8 +259,8 @@ export async function resolveScanSources({
   slugifyRepoPath,
   listProjectSessions,
   autoDetectSourceProject
-}) {
-  const sessionsBySource = new Map();
+}: ResolveScanSourcesInput): Promise<ResolveScanSourcesResult> {
+  const sessionsBySource = new Map<string, string[]>();
   let effectiveSlug = sourceProject || slugifyRepoPath(repoPath);
   let autoDetected = false;
 
@@ -229,13 +294,11 @@ export async function resolveScanSources({
 // True iff any .jsonl session file has at least one assistant turn with
 // usage data inside [startMs, endMs]. Short-circuits as soon as one match
 // is found.
-/**
- * @param {string[]} files
- * @param {number} startMs
- * @param {number} endMs
- * @returns {Promise<boolean>}
- */
-export async function sessionsHaveInWindowAssistantTurns(files, startMs, endMs) {
+export async function sessionsHaveInWindowAssistantTurns(
+  files: string[],
+  startMs: number,
+  endMs: number
+): Promise<boolean> {
   for (const file of files) {
     for await (const obj of readJsonlLines(file)) {
       if (obj?.type !== "assistant") continue;
@@ -248,24 +311,61 @@ export async function sessionsHaveInWindowAssistantTurns(files, startMs, endMs) 
   return false;
 }
 
+export interface ScanSessionsInput {
+  sessions: string[];
+  fileToSlug: Map<string, string>;
+  startMs: number;
+  endMs: number;
+}
+
+export interface ScanSessionsResult {
+  totals: Record<string, number>;
+  byModel: Record<
+    string,
+    { tokens: Record<string, number>; usd: number; messages: number; pricedAs?: string }
+  >;
+  messagesCounted: number;
+  sessionsScanned: number;
+  toolUseCounts: Record<string, number>;
+  toolFailureCounts: Record<string, number>;
+  toolResultSizes: number[];
+  filesRead: Record<string, number>;
+  compactionCount: number;
+  userMsgCount: number;
+  userMsgTotalLen: number;
+  skillInvocations: number;
+  subagentDispatches: number;
+  turnsBeforeFirstTool: number;
+  perSourceState: Map<
+    string,
+    { messages: number; tokens: Record<string, number>; modelTokens: Record<string, Record<string, number>>; touched: boolean }
+  >;
+  toolCachePrime: Record<string, CachePrimeEntry>;
+}
+
 // Scans every .jsonl session file, accumulating token usage, tool stats,
 // conversation-shape counters, and per-source attribution.
-/**
- * @param {{ sessions: string[], fileToSlug: Map<string, string>, startMs: number, endMs: number }} opts
- * @returns {Promise<{totals: Record<string, number>, byModel: Record<string, {tokens: Record<string, number>, usd: number, messages: number, pricedAs?: string}>, messagesCounted: number, sessionsScanned: number, toolUseCounts: Record<string, number>, toolFailureCounts: Record<string, number>, toolResultSizes: number[], filesRead: Record<string, number>, compactionCount: number, userMsgCount: number, userMsgTotalLen: number, skillInvocations: number, subagentDispatches: number, turnsBeforeFirstTool: number, perSourceState: Map<string, {messages: number, tokens: Record<string, number>, modelTokens: Record<string, Record<string, number>>, touched: boolean}>, toolCachePrime: Record<string, {calls: number, totalResultBytes: number, attributedCacheCreate: number}>}>}
- */
-export async function scanSessions({ sessions, fileToSlug, startMs, endMs }) {
+export async function scanSessions({
+  sessions,
+  fileToSlug,
+  startMs,
+  endMs
+}: ScanSessionsInput): Promise<ScanSessionsResult> {
   const totals = emptyTotals();
-  const byModel =
-    /** @type {Record<string, {tokens: Record<string, number>, usd: number, messages: number, pricedAs?: string}>} */ ({});
-  const toolUseCounts = /** @type {Record<string, number>} */ ({});
-  const toolFailureCounts = /** @type {Record<string, number>} */ ({});
-  /** @type {number[]} */
-  const toolResultSizes = [];
-  const filesRead = /** @type {Record<string, number>} */ ({});
-  const toolNameById = new Map();
-  const perSourceState = new Map();
-  const counters = {
+  const byModel: Record<
+    string,
+    { tokens: Record<string, number>; usd: number; messages: number; pricedAs?: string }
+  > = {};
+  const toolUseCounts: Record<string, number> = {};
+  const toolFailureCounts: Record<string, number> = {};
+  const toolResultSizes: number[] = [];
+  const filesRead: Record<string, number> = {};
+  const toolNameById = new Map<string, string>();
+  const perSourceState = new Map<
+    string,
+    { messages: number; tokens: Record<string, number>; modelTokens: Record<string, Record<string, number>>; touched: boolean }
+  >();
+  const counters: Counters = {
     messagesCounted: 0,
     sessionsScanned: 0,
     compactionCount: 0,
@@ -275,16 +375,14 @@ export async function scanSessions({ sessions, fileToSlug, startMs, endMs }) {
     subagentDispatches: 0,
     turnsBeforeFirstTool: 0
   };
-  const flags = { sawFirstTool: false };
-  const toolCachePrime =
-    /** @type {Record<string, {calls: number, totalResultBytes: number, attributedCacheCreate: number}>} */ ({});
-  const cachePrimeState = {
-    pendingToolUses: /** @type {Array<{id: string, name: string}>} */ ([]),
-    pendingResultSizes: /** @type {Record<string, number>} */ ({})
+  const flags: Flags = { sawFirstTool: false };
+  const toolCachePrime: Record<string, CachePrimeEntry> = {};
+  const cachePrimeState: CachePrimeState = {
+    pendingToolUses: [],
+    pendingResultSizes: {}
   };
 
-  /** @param {string} slug */
-  const ensureSource = (slug) => {
+  const ensureSource = (slug: string): SourceEntry => {
     if (!perSourceState.has(slug)) {
       perSourceState.set(slug, {
         messages: 0,
@@ -293,10 +391,10 @@ export async function scanSessions({ sessions, fileToSlug, startMs, endMs }) {
         touched: false
       });
     }
-    return perSourceState.get(slug);
+    return perSourceState.get(slug)!;
   };
 
-  const ctx = {
+  const ctx: ScanCtx = {
     totals,
     byModel,
     toolUseCounts,
@@ -349,20 +447,19 @@ export async function scanSessions({ sessions, fileToSlug, startMs, endMs }) {
   };
 }
 
-/**
- * @param {ScanCtx} ctx
- * @param {string} model
- * @param {Record<string, number>} tokens
- * @param {string} file
- * @param {Map<string, string>} fileToSlug
- */
-export function recordTokenUsage(ctx, model, tokens, file, fileToSlug) {
+export function recordTokenUsage(
+  ctx: ScanCtx,
+  model: string,
+  tokens: Record<string, number>,
+  file: string,
+  fileToSlug: Map<string, string>
+): void {
   addTotals(ctx.totals, tokens);
   if (!ctx.byModel[model]) {
     ctx.byModel[model] = { tokens: emptyTotals(), usd: 0, messages: 0 };
   }
-  addTotals(ctx.byModel[model].tokens, tokens);
-  ctx.byModel[model].messages += 1;
+  addTotals(ctx.byModel[model]!.tokens, tokens);
+  ctx.byModel[model]!.messages += 1;
   ctx.counters.messagesCounted += 1;
 
   const srcSlug = fileToSlug.get(file);
@@ -370,58 +467,51 @@ export function recordTokenUsage(ctx, model, tokens, file, fileToSlug) {
     const s = ctx.ensureSource(srcSlug);
     addTotals(s.tokens, tokens);
     if (!s.modelTokens[model]) s.modelTokens[model] = emptyTotals();
-    addTotals(s.modelTokens[model], tokens);
+    addTotals(s.modelTokens[model]!, tokens);
     s.messages += 1;
     s.touched = true;
   }
 }
 
 // Maps tool-use names to the counter they bump on the context.
-export const TOOL_COUNTERS = {
-  /** @param {ScanCtx} ctx */
+export const TOOL_COUNTERS: Partial<Record<string, (ctx: ScanCtx) => void>> = {
   Skill: (ctx) => (ctx.counters.skillInvocations += 1),
-  /** @param {ScanCtx} ctx */
   Agent: (ctx) => (ctx.counters.subagentDispatches += 1)
 };
 
-/**
- * @param {ScanCtx} ctx
- * @param {{id: string, name: string, input: unknown}} tu
- */
-export function recordToolUse(ctx, tu) {
+export function recordToolUse(
+  ctx: ScanCtx,
+  tu: { id: string; name: string; input: unknown }
+): void {
   ctx.flags.sawFirstTool = true;
-  ctx.toolUseCounts[tu.name] = (ctx.toolUseCounts[tu.name] || 0) + 1;
+  ctx.toolUseCounts[tu.name] = (ctx.toolUseCounts[tu.name] ?? 0) + 1;
   if (tu.id) ctx.toolNameById.set(tu.id, tu.name);
-  TOOL_COUNTERS[/** @type {keyof typeof TOOL_COUNTERS} */ (tu.name)]?.(ctx);
+  TOOL_COUNTERS[tu.name]?.(ctx);
   if (tu.name === "Read") {
-    const inp = /** @type {Record<string, unknown>} */ (tu.input);
-    const p = /** @type {string|undefined} */ (inp?.file_path);
-    if (p) ctx.filesRead[p] = (ctx.filesRead[p] || 0) + 1;
+    const inp = tu.input as Record<string, unknown>;
+    const p = inp?.["file_path"] as string | undefined;
+    if (p) ctx.filesRead[p] = (ctx.filesRead[p] ?? 0) + 1;
   }
 }
 
-/**
- * @param {ScanCtx} ctx
- * @param {Record<string, unknown>} usage
- */
-export function attributeCachePrime(ctx, usage) {
+export function attributeCachePrime(ctx: ScanCtx, usage: Record<string, unknown>): void {
   const pending = ctx.cachePrimeState.pendingToolUses;
   if (!pending.length || !usage) return;
-  const cc = /** @type {Record<string, number>|null|undefined} */ (usage.cache_creation);
+  const cc = usage["cache_creation"] as Record<string, number> | null | undefined;
   const cacheCreate = cc
-    ? (cc.ephemeral_5m_input_tokens || 0) + (cc.ephemeral_1h_input_tokens || 0)
-    : /** @type {number} */ (usage.cache_creation_input_tokens) || 0;
+    ? ((cc["ephemeral_5m_input_tokens"] ?? 0) + (cc["ephemeral_1h_input_tokens"] ?? 0))
+    : ((usage["cache_creation_input_tokens"] as number | undefined) ?? 0);
   if (cacheCreate <= 0) return;
-  const sizes = pending.map((tu) => ctx.cachePrimeState.pendingResultSizes[tu.id] || 0);
+  const sizes = pending.map((tu) => ctx.cachePrimeState.pendingResultSizes[tu.id] ?? 0);
   const totalSize = sizes.reduce((a, b) => a + b, 0);
   for (let i = 0; i < pending.length; i += 1) {
-    const tu = pending[i];
-    const weight = totalSize > 0 ? sizes[i] / totalSize : 1 / pending.length;
+    const tu = pending[i]!;
+    const weight = totalSize > 0 ? (sizes[i] ?? 0) / totalSize : 1 / pending.length;
     const attributed = cacheCreate * weight;
     if (!ctx.toolCachePrime[tu.name]) {
       ctx.toolCachePrime[tu.name] = { calls: 0, totalResultBytes: 0, attributedCacheCreate: 0 };
     }
-    ctx.toolCachePrime[tu.name].attributedCacheCreate += attributed;
+    ctx.toolCachePrime[tu.name]!.attributedCacheCreate += attributed;
   }
 }
 
@@ -429,19 +519,17 @@ export function attributeCachePrime(ctx, usage) {
 // assistant messages with no real LLM call. They show $0 cost but pollute
 // byModel/modelMix output. Filter them out at capture time.
 export const SYNTHETIC_MODEL_PREFIXES = ["<synthetic>", "<", "synthetic"];
-/** @param {string} model */
-export function isSyntheticModel(model) {
+export function isSyntheticModel(model: string): boolean {
   if (!model) return false;
   return SYNTHETIC_MODEL_PREFIXES.some((p) => model.startsWith(p));
 }
 
-/**
- * @param {{type?: string, timestamp?: string, isMeta?: boolean, message?: {usage?: Record<string, unknown>, content?: unknown, model?: string}}} obj
- * @param {string} file
- * @param {Map<string, string>} fileToSlug
- * @param {ScanCtx} ctx
- */
-export function handleAssistantTurn(obj, file, fileToSlug, ctx) {
+export function handleAssistantTurn(
+  obj: JsonlLine,
+  file: string,
+  fileToSlug: Map<string, string>,
+  ctx: ScanCtx
+): boolean {
   const usage = obj?.message?.usage;
   const touched = Boolean(usage);
   if (usage) {
@@ -467,12 +555,8 @@ export function handleAssistantTurn(obj, file, fileToSlug, ctx) {
   return touched;
 }
 
-/**
- * @param {Record<string, unknown>} usage
- * @returns {Record<string, number>}
- */
-function tokensFromUsage(usage) {
-  const out = {
+function tokensFromUsage(usage: Record<string, unknown>): Record<string, number> {
+  const out: Record<string, number> = {
     input: 0,
     cache_create_5m: 0,
     cache_create_1h: 0,
@@ -480,28 +564,24 @@ function tokensFromUsage(usage) {
     output: 0
   };
   if (!usage || typeof usage !== "object") return out;
-  out.input = /** @type {number} */ (usage.input_tokens) || 0;
-  out.cache_read = /** @type {number} */ (usage.cache_read_input_tokens) || 0;
-  out.output = /** @type {number} */ (usage.output_tokens) || 0;
+  out["input"] = (usage["input_tokens"] as number | undefined) ?? 0;
+  out["cache_read"] = (usage["cache_read_input_tokens"] as number | undefined) ?? 0;
+  out["output"] = (usage["output_tokens"] as number | undefined) ?? 0;
 
-  const cc = usage.cache_creation;
+  const cc = usage["cache_creation"];
   if (cc && typeof cc === "object") {
-    const cc2 = /** @type {Record<string, number>} */ (cc);
-    out.cache_create_5m = cc2.ephemeral_5m_input_tokens || 0;
-    out.cache_create_1h = cc2.ephemeral_1h_input_tokens || 0;
+    const cc2 = cc as Record<string, number>;
+    out["cache_create_5m"] = cc2["ephemeral_5m_input_tokens"] ?? 0;
+    out["cache_create_1h"] = cc2["ephemeral_1h_input_tokens"] ?? 0;
   } else {
-    out.cache_create_5m = /** @type {number} */ (usage.cache_creation_input_tokens) || 0;
+    out["cache_create_5m"] = (usage["cache_creation_input_tokens"] as number | undefined) ?? 0;
   }
   return out;
 }
 
 // Updates ctx with tool-result sizes/failures, conversation-shape counters,
 // and compaction signals from one user turn.
-/**
- * @param {{type?: string, timestamp?: string, isMeta?: boolean, message?: {usage?: Record<string, unknown>, content?: unknown, model?: string}}} obj
- * @param {ScanCtx} ctx
- */
-export function handleUserTurn(obj, ctx) {
+export function handleUserTurn(obj: JsonlLine, ctx: ScanCtx): void {
   if (obj.isMeta) {
     ctx.counters.compactionCount += 1;
     return;
@@ -520,12 +600,12 @@ export function handleUserTurn(obj, ctx) {
             attributedCacheCreate: 0
           };
         }
-        ctx.toolCachePrime[toolName].calls += 1;
-        ctx.toolCachePrime[toolName].totalResultBytes += tr.size || 0;
+        ctx.toolCachePrime[toolName]!.calls += 1;
+        ctx.toolCachePrime[toolName]!.totalResultBytes += tr.size || 0;
       }
       if (tr.isError && tr.id) {
         const errToolName = ctx.toolNameById.get(tr.id) || "unknown";
-        ctx.toolFailureCounts[errToolName] = (ctx.toolFailureCounts[errToolName] || 0) + 1;
+        ctx.toolFailureCounts[errToolName] = (ctx.toolFailureCounts[errToolName] ?? 0) + 1;
       }
     }
   } else {

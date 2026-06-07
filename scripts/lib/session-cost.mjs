@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
-import { scanSessions, percentile, readJsonlLines } from "./session-cost-scanner.mjs";
+import { scanSessions, percentile, readJsonlLines } from "./session-cost-scanner.ts";
 import { getCachedDirFiles } from "./dir-cache.mjs";
 
 const PROJECTS_ROOT = path.join(os.homedir(), ".claude", "projects");
