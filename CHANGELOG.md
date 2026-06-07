@@ -3,6 +3,12 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.18.1 — 2026-06-07
+
+- **FEAT-121/Phase5** `scripts/lib/ux-validation/*.mjs` → `.ts`. TS migration now 100% complete — zero `.mjs` source files remain. 437 tests pass.
+
+---
+
 ## v0.18.0 — 2026-06-07
 
 TypeScript migration Phases 1–4 complete. All scripts, hooks, and test files now `.ts`. Full strict mode enforced end-to-end via `--experimental-strip-types` (Node 22.6+).
