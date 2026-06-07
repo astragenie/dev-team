@@ -5,7 +5,7 @@ feature: FEAT-103
 phase: null
 priority: P3
 target_release: null
-requires_validation: true
+requires_validation: false
 created: 2026-06-07
 updated: 2026-06-07
 ---

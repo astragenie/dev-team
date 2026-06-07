@@ -14,6 +14,7 @@ import {
   aggregateRoleDispatches
 } from "./collect-cost-parser.mjs";
 import { tailReadJsonl } from "../jsonl.mjs";
+import { getCachedArtifact } from "../artifact-cache.mjs";
 
 const execFile = promisify(execFileCallback);
 const BRANCH_COMMITS_LIMIT = 5;
@@ -202,33 +203,6 @@ function collectArtifactActivity(wakeUpBrief) {
     .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
 }
 
-/**
- * Parse YAML frontmatter from artifact body. Returns key-value pairs for
- * simple scalar fields (strings). Stops at the closing `---` delimiter.
- * @param {string} body
- * @returns {Record<string, string>}
- */
-function parseFrontmatter(body) {
-  const result = /** @type {Record<string, string>} */ ({});
-  if (!body.startsWith("---")) {
-    return result;
-  }
-  const endIdx = body.indexOf("\n---", 3);
-  if (endIdx === -1) {
-    return result;
-  }
-  const block = body.slice(4, endIdx);
-  for (const line of block.split("\n")) {
-    const colonIdx = line.indexOf(":");
-    if (colonIdx === -1) continue;
-    const key = line.slice(0, colonIdx).trim();
-    const rawVal = line.slice(colonIdx + 1).trim();
-    // Strip surrounding quotes if present (JSON-style or bare)
-    const val = rawVal.startsWith('"') ? JSON.parse(rawVal) : rawVal;
-    result[key] = val;
-  }
-  return result;
-}
 
 /**
  * @param {string} body
@@ -244,21 +218,21 @@ function extractMarkdownField(body, label) {
  * @param {string} [fallbackTitle]
  */
 async function readArtifactSummary(filePath, fallbackTitle = "") {
-  if (!filePath || !(await pathExists(filePath))) {
-    return null;
+  if (!filePath) return null;
+  let cached;
+  try {
+    cached = await getCachedArtifact(filePath);
+  } catch (err) {
+    if (/** @type {NodeJS.ErrnoException} */ (err).code === "ENOENT") return null;
+    throw err;
   }
-
-  const stat = await fs.stat(filePath);
-  const body = await fs.readFile(filePath, "utf8");
-  const fm = parseFrontmatter(body);
-  // Title comes from the first non-frontmatter heading
+  const { fm, body, mtimeMs } = cached;
   const bodyAfterFm = body.startsWith("---") ? body.slice(body.indexOf("\n---", 3) + 4) : body;
   const [heading = ""] = bodyAfterFm.split("\n");
-
   return {
     path: filePath,
     title: heading.replace(/^#\s+/, "").trim() || fallbackTitle,
-    updatedAt: stat.mtime.toISOString(),
+    updatedAt: new Date(mtimeMs).toISOString(),
     goal: extractMarkdownField(body, "Goal"),
     mode: extractMarkdownField(body, "Mode"),
     next: extractMarkdownField(body, "Next"),

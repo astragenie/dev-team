@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { getCachedArtifact } from "./artifact-cache.mjs";
 
 const DEPLOYMENT_GUIDANCE_PATH = [".claude", "crew", "deployment.md"];
 // Legacy path retained for read-side fallback so repos installed before the
@@ -246,15 +247,14 @@ export async function readDeploymentGuidanceSummary(repoPath) {
     return null;
   }
 
-  const stat = await fs.stat(filePath);
-  const body = await fs.readFile(filePath, "utf8");
+  const { body, mtimeMs } = await getCachedArtifact(filePath);
   const [heading = ""] = body.split("\n");
   return {
     path: filePath,
     title: heading.replace(/^#\s+/, "").trim(),
     summary: extractField(body, "Summary"),
     discoveryStatus: extractField(body, "Discovery Status"),
-    updatedAt: stat.mtime.toISOString()
+    updatedAt: new Date(mtimeMs).toISOString()
   };
 }
 
