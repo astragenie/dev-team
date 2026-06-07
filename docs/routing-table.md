@@ -102,6 +102,13 @@ _Library lookups, MS docs, bug root cause, multi-source synthesis._
 
 _API documentation, diagram authoring, commit messages, handoff CLI._
 
+<!-- Migration note (FEAT-124, hero-crew v0.20.0, 2026-06-07 — TTL 2026-12-07):
+     The prior hero-crew copywriter agent (subagent identifier: crew + colon
+     + copywriter) was hard-removed in v0.20.0. Any external workflow still
+     dispatching that identifier should migrate to subagent identifier
+     loop + colon + document-writer. Loop v0.29.0 is the minimum required
+     version (scope-extended to cover API docs + diagram captions). -->
+
 | Signal | Route to | Notes |
 |---|---|---|
 | **API documentation authoring** (OpenAPI specs, SDK reference guides, integration guides, error documentation, versioning, deprecation notices) | `loop:document-writer` | Load `skills/workflow/api-documentation/`. Co-cite `skills/domain/backend-advisory/` for API design concerns. |

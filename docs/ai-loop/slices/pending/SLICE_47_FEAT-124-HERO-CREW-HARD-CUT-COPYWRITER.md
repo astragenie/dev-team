@@ -16,6 +16,13 @@ created: 2026-06-07
 
 Ships after SLICE-46 lands in loop v0.29.0. Hard-cut decision per FEAT-124 user confirmation (no shim).
 
+## Decision record — shim vs hard cut
+
+**Decision:** Hard cut (no shim).
+**Rationale (user, 2026-06-07):** Only 2 in-tree callsites depend on `crew:copywriter`. Shim adds maintenance burden across 2 repos for an unknown number of external consumers. Per architect's alternative recommendation in `.claude/artifacts/crew/designs/FEAT-124-contracts.md` § Design notes § Deprecation strategy.
+**Sign-off:** User explicit via AskUserQuestion in foreground session — "Hard cut now" + "Loop v0.29.0 first, then hero-crew v0.20.0 minor (Recommended)".
+**Mitigation for external consumers:** CHANGELOG `### Breaking` entry + routing-table migration comment row with 6-month TTL.
+
 ## Parent feature
 
 FEAT-124 — Consolidate `crew:copywriter` → `loop:document-writer`. See `.claude/artifacts/crew/designs/FEAT-124-contracts.md`.

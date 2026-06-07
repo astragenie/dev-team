@@ -1,5 +1,5 @@
 ---
-description: Orchestrate the full specialist ladder for a slice — classify by FEAT tags, dispatch architect (contracts), uxdesigner (UI spec), builder, reviewer, validator, copywriter, doc-writer in sequence. Every dispatch is visible in the main thread.
+description: Orchestrate the full specialist ladder for a slice — classify by FEAT tags, dispatch architect (contracts), uxdesigner (UI spec), builder, reviewer, validator, doc-writer in sequence. Every dispatch is visible in the main thread.
 ---
 
 # Orchestrate Slice
@@ -464,7 +464,7 @@ Builder handoff: <BUILDER_HANDOFF_PATH>
 Draft the CHANGELOG entry and release-notes section for this slice. Follow the format in CHANGELOG.md. Return the artifact path.
 ```
 
-Store the returned path as `COPYWRITER_PATH`.
+Store the returned path as `CHANGELOG_WRITER_PATH`.
 
 ---
 
@@ -495,7 +495,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-final-synthesis \
   --repo "$PWD" \
   --title "orchestrate-slice: <SLICE-NN title>" \
   --outcome "PASS" \
-  --summary "<one-paragraph summary of what shipped, which specialists ran, CONTRACT_YAML_PATH, COPYWRITER_PATH, and DOCWRITER_PATH if set>" \
+  --summary "<one-paragraph summary of what shipped, which specialists ran, CONTRACT_YAML_PATH, CHANGELOG_WRITER_PATH, and DOCWRITER_PATH if set>" \
   --changed-files "<comma-separated list of all files changed by builder>" \
   --external-deltas "none"
 ```
