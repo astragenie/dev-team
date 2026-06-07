@@ -2,9 +2,9 @@
 id: FEAT-124
 title: Consolidate crew:copywriter → loop:document-writer
 priority: P2
-status: in-progress
+status: done
 category: refactor
-target_release: null
+target_release: v0.20.0
 autonomous_safe: false
 cross_repo: hero-crew,loop
 parent_spec: null

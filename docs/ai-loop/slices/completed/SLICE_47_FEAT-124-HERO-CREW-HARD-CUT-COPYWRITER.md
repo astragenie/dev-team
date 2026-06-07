@@ -1,17 +1,18 @@
 ---
 id: SLICE-47
 feature: FEAT-124
-title: Hero-crew side — hard cut crew:copywriter, update routing-table + commands
-status: pending
+title: "Hero-crew side — hard cut crew:copywriter, update routing-table + commands"
+status: completed
 priority: P2
 autonomous_safe: false
 cross_repo: hero-crew
-target_repo: C:\work\mega\hero-crew
+target_repo: "C:\work\mega\hero-crew"
 target_release: hero-crew v0.20.0
 depends_on: [SLICE-46]
 created: 2026-06-07
+completed_at: 2026-06-07
+updated: 2026-06-07
 ---
-
 # SLICE-47: Hero-crew side — hard cut crew:copywriter
 
 Ships after SLICE-46 lands in loop v0.29.0. Hard-cut decision per FEAT-124 user confirmation (no shim).
