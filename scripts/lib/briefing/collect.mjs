@@ -404,17 +404,15 @@ export async function collectRecentCosts(repoPath, limit = 5) {
       roleDispatches: /** @type {Record<string, number>} */ ({})
     };
 
-  /** @type {ReturnType<typeof parseCostReportText>[]} */
-  const recent = [];
-  for (const filePath of sorted) {
-    try {
+  const results = await Promise.allSettled(
+    sorted.map(async (filePath) => {
       const text = await fs.readFile(filePath, "utf8");
-      const report = parseCostReportText(filePath, text);
-      recent.push(report);
-    } catch {
-      // skip unreadable file
-    }
-  }
+      return parseCostReportText(filePath, text);
+    })
+  );
+  const recent = results
+    .filter((r) => r.status === "fulfilled")
+    .map((r) => /** @type {PromiseFulfilledResult<ReturnType<typeof parseCostReportText>>} */ (r).value);
 
   // Deduplicate overlapping windows before computing rollup sums.
   // recent[] is kept whole for per-row table rendering.
