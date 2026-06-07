@@ -3,6 +3,13 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.18.2 — 2026-06-07
+
+- **fix(preflight):** narrow Windows-path-space heuristic to actual continuations. Previous check fired on any Windows path followed by `space + non-operator`, flagging innocent `git -C C:/work/mega/repo status` calls. New rule: only warn when the next shell token actually looks like a path continuation (contains `/` or `\\`, and isn't a flag, quote, or new drive letter). Real `C:\\Program Files\\app.exe` splits still warn correctly. Adds AC-9c (false-positive regression) and AC-9d (operator suffix) tests.
+- **chore:** sync `.claude-plugin/plugin.json` version (was stale at 0.17.0) with `package.json` + `marketplace.json`.
+
+---
+
 ## v0.18.1 — 2026-06-07
 
 - **FEAT-121/Phase5** `scripts/lib/ux-validation/*.mjs` → `.ts`. TS migration now 100% complete — zero `.mjs` source files remain. 437 tests pass.
