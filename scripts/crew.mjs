@@ -502,7 +502,7 @@ const COMMANDS = {
     return buildBriefingReport(repoPath);
   },
   "scope-estimate": async (/** @type {CommandContext} */ { flags, positionals }) => {
-    const { estimateScope } = await import("./lib/scope-estimate.mjs");
+    const { estimateScope } = await import("./lib/scope-estimate.ts");
     const rawFiles = (flags.files || positionals.join(",") || "").split(",").filter(Boolean);
     const files = rawFiles.map((entry) => {
       const [p, linesStr, eslintDisableStr] = entry.split(":");

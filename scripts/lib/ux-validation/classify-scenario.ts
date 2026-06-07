@@ -1,9 +1,11 @@
-// Verb-keyword classification for an AC text.
-// Returns one of: "interaction", "visibility", "navigation", "input",
-// or "non_ui_ac" when no verb set matches. Case-insensitive.
+type ScenarioType = "interaction" | "visibility" | "navigation" | "input" | "non_ui_ac";
 
-/** @type {ReadonlyArray<{name: "interaction" | "visibility" | "navigation" | "input", verbs: readonly string[]}>} */
-const SETS = [
+interface ScenarioSet {
+  name: Exclude<ScenarioType, "non_ui_ac">;
+  verbs: readonly string[];
+}
+
+const SETS: ReadonlyArray<ScenarioSet> = [
   {
     name: "interaction",
     verbs: ["click", "clicks", "clicked", "tap", "taps", "press", "presses", "submit", "submits"]
@@ -16,11 +18,7 @@ const SETS = [
   { name: "input", verbs: ["type", "types", "fill", "fills", "enter", "enters"] }
 ];
 
-/**
- * @param {string} acText
- * @returns {"interaction" | "visibility" | "navigation" | "input" | "non_ui_ac"}
- */
-export function classifyScenario(acText) {
+export function classifyScenario(acText: string): ScenarioType {
   if (!acText) return "non_ui_ac";
   const lower = acText.toLowerCase();
   for (const { name, verbs } of SETS) {

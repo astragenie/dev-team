@@ -1,4 +1,4 @@
-import { classifyScenario } from "./classify-scenario.mjs";
+import { classifyScenario } from "./classify-scenario.ts";
 
 /** @typedef {{ step: number, verb: string, target: string, expect: string, ac_id: string | null }} ScenarioStep */
 

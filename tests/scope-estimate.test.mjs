@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { estimateScope } from "../scripts/lib/scope-estimate.mjs";
+import { estimateScope } from "../scripts/lib/scope-estimate.ts";
 
 // Tier rules:
 //   light:    totalLines < 300 AND fileCount <= 2 AND no eslintDisable

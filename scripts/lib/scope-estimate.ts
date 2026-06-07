@@ -2,12 +2,20 @@ const LIGHT_LINES = 300;
 const HEAVY_LINES = 800;
 const HEAVY_FILES = 6;
 
-/**
- * @typedef {{ path: string, lines: number, eslintDisable?: boolean }} FileEntry
- * @param {{ files: FileEntry[] }} options
- * @returns {{ tier: "light"|"standard"|"heavy", reason: string }}
- */
-export function estimateScope({ files }) {
+interface FileEntry {
+  path: string;
+  lines: number;
+  eslintDisable?: boolean;
+}
+
+type ScopeTier = "light" | "standard" | "heavy";
+
+interface ScopeEstimate {
+  tier: ScopeTier;
+  reason: string;
+}
+
+export function estimateScope({ files }: { files: FileEntry[] }): ScopeEstimate {
   const totalLines = files.reduce((sum, f) => sum + f.lines, 0);
   const fileCount = files.length;
   const hasEslintDisable = files.some((f) => f.eslintDisable === true);
