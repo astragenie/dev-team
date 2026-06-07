@@ -2,15 +2,16 @@
 id: SLICE-46
 feature: FEAT-124
 title: Loop side — extend document-writer scope (API docs + diagram captions)
-status: pending
+status: completed
 priority: P2
 autonomous_safe: false
 cross_repo: loop
-target_repo: C:\work\mega\loop
+target_repo: "C:\work\mega\loop"
 target_release: loop v0.29.0
 created: 2026-06-07
+completed_at: 2026-06-07
+updated: 2026-06-07
 ---
-
 # SLICE-46: Loop side — extend document-writer scope
 
 Ships first per FEAT-124 sequencing decision. Hero-crew SLICE-47 depends on this landing.
