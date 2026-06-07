@@ -4,7 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { collectFleetWorktrees, renderFleet, buildFleetReport } from "../scripts/lib/fleet.mjs";
+import { collectFleetWorktrees, renderFleet, buildFleetReport } from "../scripts/lib/fleet.ts";
 
 async function makeTempDir(prefix) {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));

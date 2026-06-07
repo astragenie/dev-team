@@ -537,7 +537,7 @@ const COMMANDS = {
     return estimateScope({ files });
   },
   fleet: async (/** @type {CommandContext} */ { repoPath, flags }) => {
-    const { buildFleetReport } = await import("./lib/fleet.mjs");
+    const { buildFleetReport } = await import("./lib/fleet.ts");
     return buildFleetReport(repoPath, {
       extraRoots: flags.extraRoot ? [flags.extraRoot] : [],
       includeSelf: !flags.noSelf

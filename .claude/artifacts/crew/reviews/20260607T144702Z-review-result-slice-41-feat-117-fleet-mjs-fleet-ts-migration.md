@@ -1,0 +1,32 @@
+# Review Result: SLICE-41 FEAT-117: fleet.mjs → fleet.ts migration
+
+- Created: 2026-06-07T14:47:02.419Z
+- Reviewer: reviewer
+- Decision: rejected
+- Summary: AC-3 violated: extractProgressFields has 31 body lines (≤30 required); all other gates pass (437/437, tsc exit 0, lint clean, no any, exports preserved).
+- Evidence Checked:
+  - 1) extractProgressFields body: lines 55-85 in fleet.ts = 31 lines (body opens at line 54
+  - closes at line 86); AC-3 requires ≤30 — fails by 1; 2) no 'any' usage confirmed; 3) all noUncheckedIndexedAccess guards present (regex match[1] ?? fallback on lines 64
+  - 70
+  - 71
+  - 80
+  - 81); 4) exports collectFleetWorktrees + renderFleet + buildFleetReport preserved plus additive FleetItem interface export; 5) crew.mjs fleet import updated (line 540: fleet.mjs → fleet.ts); 6) tests/fleet.test.mjs import updated (.mjs → .ts); 7) npm test 437/437 pass; 8) npm run lint exit 0; 9) npm run typecheck exit 0; 10) all other functions ≤30 body lines (pathExists:6
+  - parseSliceProgress:4
+  - findSliceProgressFiles:25
+  - loadProgressItem:6
+  - deduplicateAndLoad:13
+  - collectFleetWorktrees:22
+  - formatAge:9
+  - renderErrorRow:1
+  - renderItemRow:10
+  - renderFleet:20
+  - buildFleetReport:3)
+- Files Reviewed:
+  - scripts/lib/fleet.ts
+  - scripts/lib/fleet.mjs (deleted)
+  - tests/fleet.test.mjs
+  - scripts/crew.mjs
+- Test Adequacy: 437/437 tests pass including fleet-specific tests (collectFleetWorktrees, renderFleet, buildFleetReport); fleet.test.mjs import updated to fleet.ts; no new tests needed for pure TS migration
+- Risks: extractProgressFields at 31 body lines violates AC-3; trivial fix (move one inner comment or extract the inProgressMatch block into a 2-line helper)
+- Required Follow-up: Builder must trim extractProgressFields to ≤30 body lines (e.g. extract the inProgressMatch block into a named helper), re-run npm test + npm run typecheck to confirm clean, then re-submit for re-review
+
