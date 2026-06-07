@@ -1,6 +1,6 @@
 ---
 id: SLICE-21
-status: pending
+status: completed
 feature: FEAT-103
 phase: null
 priority: P3
@@ -8,6 +8,7 @@ target_release: null
 requires_validation: false
 created: 2026-06-07
 updated: 2026-06-07
+completed_at: 2026-06-07
 ---
 # SLICE-21: # FEAT-103 — Perf win 4: memoize hot frontmatter reads
 
