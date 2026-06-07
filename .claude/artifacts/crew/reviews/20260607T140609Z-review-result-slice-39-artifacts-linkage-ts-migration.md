@@ -1,0 +1,34 @@
+# Review Result: SLICE-39: artifacts+linkage .ts migration
+
+- Created: 2026-06-07T14:06:09.186Z
+- Reviewer: reviewer
+- Decision: rejected
+- Summary: AC-5 violation: emit-cost-report.ts casts writeArt to permissive type and never unwraps Result<T,E>, silently returning the wrapper object as the artifact; two functions also exceed the 30-line AC-7 limit.
+- Evidence Checked:
+  - git diff HEAD (unstaged)
+  - scripts/lib/artifacts/write.ts
+  - scripts/lib/artifacts/read.ts
+  - scripts/lib/artifacts/types.ts
+  - scripts/lib/outcome-linkage.ts
+  - scripts/lib/deployment-guidance/read.ts
+  - scripts/lib/deployment-guidance/write.ts
+  - scripts/lib/cost-hygiene/emit-cost-report.ts
+  - scripts/lib/cost-hygiene/cost-slice-handler.ts
+  - scripts/crew.mjs
+  - tests/regression.test.mjs
+  - tests/cost-report-emission.test.mjs
+  - npx tsc --noEmit exit 0
+  - node --test 437/437 pass
+  - npm run lint exit 0
+  - gstack-health 10.0/10
+- Files Reviewed:
+  - scripts/lib/artifacts/read.ts
+  - scripts/lib/artifacts/write.ts
+  - scripts/lib/artifacts/types.ts
+  - scripts/lib/outcome-linkage.ts
+  - scripts/lib/deployment-guidance/read.ts
+  - scripts/lib/deployment-guidance/write.ts
+- Test Adequacy: 437 pass / 0 fail; existing tests updated for Result unwrap pattern (BUG-C regression test correctly migrated); no coverage for emit-cost-report.ts wrong-shape regression path
+- Risks: emit-cost-report.ts writeArt cast silently returns Result wrapper as artifact value — cost and outcome fields are set on wrong object shape; two functions exceed 30-line AC-7 limit (buildRepoLayoutBlock 56 lines, collectOutcomeLinkage 32 lines)
+- Required Follow-up: Fix emit-cost-report.ts: either (a) unwrap writeArt result inline like cost-slice-handler.ts does, or (b) create a local writeArtifact wrapper that unwraps Result — must NOT use the cast-to-permissive-type pattern. Add a test that exercises emitCostReportInner and asserts the returned sliceArtifact has no .ok/.value/.error fields. Optionally split buildRepoLayoutBlock to satisfy AC-7 (borderline at 56 lines), and collectOutcomeLinkage (32 lines — one over limit).
+

@@ -1,7 +1,7 @@
 // Extracted from scripts/lib/artifacts.mjs — renderCostReportFrontmatter.
 // Kept in cost-hygiene/ because it formats cost-report YAML frontmatter.
 
-import type { ArtifactFields, CostBreakdown, CostOutcome } from "../artifacts.mjs";
+import type { ArtifactFields, CostBreakdown, CostOutcome } from "../artifacts/types.ts";
 
 function nowIso(): string {
   return new Date().toISOString();

@@ -62,24 +62,27 @@ async function emitCostReportInner(
 ): Promise<Record<string, unknown>> {
   const { loadWorkflowState } = await import("../workflow-state.ts");
   const { computeSessionCost: computeCost } = await import("../session-cost.mjs");
-  const { collectOutcomeLinkage } = await import("../outcome-linkage.mjs");
-  const { writeArtifact: writeArt } = await import("../artifacts.mjs");
-  // Cast to permissive signatures to avoid cross-.mjs JSDoc type mismatches.
+  const { collectOutcomeLinkage } = await import("../outcome-linkage.ts");
+  const { writeArtifact: writeArt } = await import("../artifacts/write.ts");
   const computeSessionCost = computeCost as (
     repoPath: string,
     opts: Record<string, unknown>
   ) => Promise<Record<string, unknown>>;
-  const writeArtifact = writeArt as (
-    repoPath: string,
+  const writeArtifact = async (
+    rp: string,
     kind: string,
     fields: Record<string, unknown>
-  ) => Promise<unknown>;
+  ): Promise<Record<string, unknown>> => {
+    const r = await writeArt(rp, kind, fields as import("../artifacts/write.ts").ArtifactFields);
+    if (!r.ok) throw r.error;
+    return r.value as unknown as Record<string, unknown>;
+  };
   const state = await loadWorkflowState(repoPath);
   const run = state?.currentRun || null;
   if (!run?.startedAt) return null as unknown as Record<string, unknown>;
   const completedAt = run.completedAt || new Date().toISOString();
   const title = runTitle || run.title || "cost-report";
-  const outcome = (await collectOutcomeLinkage(repoPath, title)) as Record<string, unknown>;
+  const outcome = (await collectOutcomeLinkage(repoPath, title)) as unknown as Record<string, unknown>;
   const sliceCost = await computeSessionCost(repoPath, {
     startedAt: run.startedAt,
     completedAt,
@@ -90,8 +93,8 @@ async function emitCostReportInner(
     runTitle: title,
     cost: sliceCost,
     outcome,
-    feature,
-    phase
+    ...(feature != null ? { feature } : {}),
+    ...(phase != null ? { phase } : {})
   });
   const aggregateArtifact = await maybeEmitAggregateCost({
     repoPath,

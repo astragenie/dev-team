@@ -269,14 +269,13 @@ test("BUG-C: deployment-result is no longer a supported artifact kind (dead bran
   // `deployment-check`. Confirm the artifact module rejects the removed
   // kind so future refactors don't reintroduce dead code under the old name.
   const { writeArtifact } = await import(
-    pathToFileURL(path.join(repoRoot, "scripts", "lib", "artifacts.mjs")).href
+    pathToFileURL(path.join(repoRoot, "scripts", "lib", "artifacts", "write.ts")).href
   );
   const repoPath = await initRepo("crew-bug-c-deployment-result-removed-");
 
-  await assert.rejects(
-    () => writeArtifact(repoPath, "deployment-result", { title: "Should fail" }),
-    /Unsupported artifact kind: deployment-result/
-  );
+  const result = await writeArtifact(repoPath, "deployment-result", { title: "Should fail" });
+  assert.strictEqual(result.ok, false);
+  assert.match(result.error.message, /Unsupported artifact kind: deployment-result/);
 });
 
 test("BUG-E: discover-deployment uses POSIX separators in clue paths on all platforms", async () => {

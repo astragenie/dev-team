@@ -2,7 +2,7 @@
 id: FEAT-115
 title: TS Phase 2.2 — migrate artifacts + linkage modules to .ts
 priority: P1
-status: triaged
+status: done
 category: code-quality
 target_release: null
 autonomous_safe: true
@@ -26,8 +26,10 @@ pm_dependency_depth: 0.5
 migration_note: legacy PM schema preserved as pm_legacy_*; new dimensions defaulted to 0.5 on 2026-06-07
 triage_notes: "autonomous_safe inferred: AC count=8, derived_from=null → true"
 updated: 2026-06-07
-slices: []
-slices_complete: []
+slices: [SLICE-39]
+slices_complete: [SLICE-39]
+started_at: 2026-06-07
+completed_at: 2026-06-07
 ---
 # FEAT-115 — TS Phase 2.2: artifacts + linkage modules
 

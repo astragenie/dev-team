@@ -9,7 +9,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { discoverDeploymentClues } from "./deployment-guidance.mjs";
+import { discoverDeploymentClues } from "./deployment-guidance/read.ts";
 import { buildWakeUpBrief } from "./wakeup.mjs";
 
 import {

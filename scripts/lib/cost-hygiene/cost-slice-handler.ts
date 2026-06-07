@@ -103,17 +103,12 @@ export async function costSliceHandler({
 }: CostSliceContext): Promise<Record<string, unknown>> {
   const { loadWorkflowState } = await import("../workflow-state.ts");
   const { computeSessionCost: computeCost } = await import("../session-cost.mjs");
-  const { collectOutcomeLinkage } = await import("../outcome-linkage.mjs");
-  const { writeArtifact: writeArt } = await import("../artifacts.mjs");
+  const { collectOutcomeLinkage } = await import("../outcome-linkage.ts");
+  const { writeArtifact: writeArt } = await import("../artifacts/write.ts");
   // Cast to permissive signatures to avoid cross-.mjs JSDoc type mismatches.
   const computeSessionCost = computeCost as (
     repoPath: string,
     opts: Record<string, unknown>
-  ) => Promise<Record<string, unknown>>;
-  const writeArtifact = writeArt as (
-    repoPath: string,
-    kind: string,
-    fields: Record<string, unknown>
   ) => Promise<Record<string, unknown>>;
   const state = await loadWorkflowState(repoPath);
   const run = state?.currentRun || null;
@@ -128,16 +123,18 @@ export async function costSliceHandler({
     sourceProject,
     aggregateAll: false
   });
-  const outcome = (await collectOutcomeLinkage(repoPath, runTitle)) as Record<string, unknown>;
-  const sliceArtifact = await writeArtifact(repoPath, "cost-report-slice", {
+  const outcome = (await collectOutcomeLinkage(repoPath, runTitle)) as unknown as Record<string, unknown>;
+  const writeResult = await writeArt(repoPath, "cost-report-slice", {
     title: runTitle,
     runTitle,
     cost: sliceCost,
     outcome,
-    notes,
-    feature,
-    phase
+    ...(notes != null ? { notes } : {}),
+    ...(feature != null ? { feature } : {}),
+    ...(phase != null ? { phase } : {})
   });
+  if (!writeResult.ok) throw writeResult.error;
+  const sliceArtifact: Record<string, unknown> = { ...writeResult.value };
   sliceArtifact["cost"] = sliceCost;
   sliceArtifact["outcome"] = outcome;
 
@@ -145,15 +142,25 @@ export async function costSliceHandler({
     return sliceArtifact;
   }
 
+  const writeArtifact = async (
+    rp: string,
+    kind: string,
+    fields: Record<string, unknown>
+  ): Promise<Record<string, unknown>> => {
+    const r = await writeArt(rp, kind, fields as import("../artifacts/write.ts").ArtifactFields);
+    if (!r.ok) throw r.error;
+    return r.value as unknown as Record<string, unknown>;
+  };
+
   const aggregateArtifact = await maybeEmitAggregateSlice({
     repoPath,
     startedAt,
     completedAt,
     runTitle,
     outcome,
-    feature: feature || null,
-    phase: phase || null,
-    notes: notes || null,
+    feature: feature ?? null,
+    phase: phase ?? null,
+    notes: notes ?? null,
     sourceProject,
     writeArtifact,
     computeSessionCost

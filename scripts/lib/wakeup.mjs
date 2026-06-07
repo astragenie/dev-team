@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { listApprovals } from "./approvals.ts";
 import { listClaims } from "./claims.ts";
-import { readDeploymentGuidanceSummary } from "./deployment-guidance.mjs";
+import { readDeploymentGuidanceSummary } from "./deployment-guidance/read.ts";
 import { readFileIfExists } from "./fs-utils.mjs";
 import { tailReadJsonl } from "./jsonl.mjs";
 import { loadWorkflowState, summarizeWorkflowState } from "./workflow-state.ts";

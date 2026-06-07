@@ -544,14 +544,14 @@ const COMMANDS = {
     });
   },
   "discover-deployment": async (/** @type {CommandContext} */ { repoPath }) => {
-    const { discoverDeploymentClues } = await import("./lib/deployment-guidance.mjs");
+    const { discoverDeploymentClues } = await import("./lib/deployment-guidance/read.ts");
     return discoverDeploymentClues(repoPath);
   },
   "write-deployment-guidance": async (
     /** @type {CommandContext} */ { repoPath, flags, positionals }
   ) => {
-    const { writeDeploymentGuidance } = await import("./lib/deployment-guidance.mjs");
-    return writeDeploymentGuidance(repoPath, {
+    const { writeDeploymentGuidance } = await import("./lib/deployment-guidance/write.ts");
+    const r = await writeDeploymentGuidance(repoPath, {
       title: flags.title || positionals.join(" ") || "Repo Deployment Model",
       owner: flags.owner || "lead-session",
       summary: flags.summary,
@@ -569,6 +569,8 @@ const COMMANDS = {
       refreshWhen: flags.refreshWhen,
       next: flags.next
     });
+    if (!r.ok) throw r.error;
+    return r.value;
   },
 
   "show-workflow-state": async (/** @type {CommandContext} */ { repoPath }) => {
@@ -595,8 +597,8 @@ const COMMANDS = {
   },
 
   "write-run-brief": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
-    const { writeArtifact } = await import("./lib/artifacts.mjs");
-    return writeArtifact(repoPath, "run-brief", {
+    const { writeArtifact } = await import("./lib/artifacts/write.ts");
+    const r = await writeArtifact(repoPath, "run-brief", {
       title: flags.title || positionals.join(" ") || "Run Brief",
       goal: flags.goal,
       mode: flags.mode,
@@ -611,10 +613,12 @@ const COMMANDS = {
       feature: flags.feature,
       phase: flags.phase
     });
+    if (!r.ok) throw r.error;
+    return r.value;
   },
   "write-handoff": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
-    const { writeArtifact } = await import("./lib/artifacts.mjs");
-    return writeArtifact(repoPath, "handoff", {
+    const { writeArtifact } = await import("./lib/artifacts/write.ts");
+    const r = await writeArtifact(repoPath, "handoff", {
       title: flags.title || positionals.join(" ") || "Task Handoff",
       from: flags.from || flags.owner || "lead-session",
       to: flags.to,
@@ -631,6 +635,8 @@ const COMMANDS = {
       phase: flags.phase,
       repoContext: flags.repoContext
     });
+    if (!r.ok) throw r.error;
+    return r.value;
   },
   "write-review-result": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
     const decision = flags.decision;
@@ -650,8 +656,8 @@ const COMMANDS = {
       );
       process.exit(2);
     }
-    const { writeArtifact } = await import("./lib/artifacts.mjs");
-    return writeArtifact(repoPath, "review-result", {
+    const { writeArtifact } = await import("./lib/artifacts/write.ts");
+    const r = await writeArtifact(repoPath, "review-result", {
       title: flags.title || positionals.join(" ") || "Review Result",
       reviewer: flags.reviewer || flags.owner || "reviewer",
       decision,
@@ -668,12 +674,14 @@ const COMMANDS = {
       nonCode: flags.nonCode,
       findings: flags.findings ?? null
     });
+    if (!r.ok) throw r.error;
+    return r.value;
   },
   "write-validation-plan": async (
     /** @type {CommandContext} */ { repoPath, flags, positionals }
   ) => {
-    const { writeArtifact } = await import("./lib/artifacts.mjs");
-    return writeArtifact(repoPath, "validation-plan", {
+    const { writeArtifact } = await import("./lib/artifacts/write.ts");
+    const r = await writeArtifact(repoPath, "validation-plan", {
       title: flags.title || positionals.join(" ") || "Validation Plan",
       validator: flags.validator || flags.owner || "validator",
       owner: flags.owner || "lead-session",
@@ -687,12 +695,14 @@ const COMMANDS = {
       feature: flags.feature,
       phase: flags.phase
     });
+    if (!r.ok) throw r.error;
+    return r.value;
   },
   "write-validation-result": async (
     /** @type {CommandContext} */ { repoPath, flags, positionals }
   ) => {
-    const { writeArtifact } = await import("./lib/artifacts.mjs");
-    return writeArtifact(repoPath, "validation-result", {
+    const { writeArtifact } = await import("./lib/artifacts/write.ts");
+    const r = await writeArtifact(repoPath, "validation-result", {
       title: flags.title || positionals.join(" ") || "Validation Result",
       validator: flags.validator || flags.owner || "validator",
       environment: flags.environment,
@@ -707,12 +717,14 @@ const COMMANDS = {
       phase: flags.phase,
       findings: flags.findings ?? null
     });
+    if (!r.ok) throw r.error;
+    return r.value;
   },
   "write-deployment-check": async (
     /** @type {CommandContext} */ { repoPath, flags, positionals }
   ) => {
-    const { writeArtifact } = await import("./lib/artifacts.mjs");
-    return writeArtifact(repoPath, "deployment-check", {
+    const { writeArtifact } = await import("./lib/artifacts/write.ts");
+    const r = await writeArtifact(repoPath, "deployment-check", {
       title: flags.title || positionals.join(" ") || "Deployment Check",
       deployer: flags.deployer || flags.owner || "deployer",
       environment: flags.environment,
@@ -730,6 +742,8 @@ const COMMANDS = {
       phase: flags.phase,
       findings: flags.findings ?? null
     });
+    if (!r.ok) throw r.error;
+    return r.value;
   },
   "write-final-synthesis": async (
     /** @type {CommandContext} */ { repoPath, flags, positionals }
@@ -743,8 +757,8 @@ const COMMANDS = {
           "A silent default is how renamed env vars silently fall back to old defaults in prod."
       );
     }
-    const { writeArtifact } = await import("./lib/artifacts.mjs");
-    const synthesis = await writeArtifact(repoPath, "final-synthesis", {
+    const { writeArtifact } = await import("./lib/artifacts/write.ts");
+    const synthResult = await writeArtifact(repoPath, "final-synthesis", {
       title: flags.title || positionals.join(" ") || "Final Synthesis",
       owner: flags.owner || "lead-session",
       status: flags.status === "open" ? "completed" : flags.status,
@@ -759,6 +773,8 @@ const COMMANDS = {
       feature: flags.feature,
       phase: flags.phase
     });
+    if (!synthResult.ok) throw synthResult.error;
+    const synthesis = synthResult.value;
     const costArtifact = await maybeEmitCostReport(
       repoPath,
       {
