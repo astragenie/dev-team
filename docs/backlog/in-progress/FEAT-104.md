@@ -2,7 +2,7 @@
 id: FEAT-104
 title: Perf win 9 — cache payloads readdir per process with mtime invalidation
 priority: P3
-status: triaged
+status: in-progress
 category: perf
 target_release: null
 autonomous_safe: true
@@ -26,6 +26,8 @@ pm_dependency_depth: 0.5
 migration_note: legacy PM schema preserved as pm_legacy_*; new dimensions defaulted to 0.5 on 2026-06-07
 triage_notes: "autonomous_safe inferred: AC count=5, derived_from=null → true"
 updated: 2026-06-07
+started_at: 2026-06-07
+slices: [SLICE-22]
 ---
 # FEAT-104 — Perf win 9: cache payloads readdir
 

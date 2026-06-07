@@ -2,7 +2,7 @@
 id: FEAT-105
 title: Perf win 10 — replace stat-before-read with try/catch ENOENT
 priority: P3
-status: triaged
+status: done
 category: perf
 target_release: null
 autonomous_safe: true
@@ -26,6 +26,10 @@ pm_dependency_depth: 0.5
 migration_note: legacy PM schema preserved as pm_legacy_*; new dimensions defaulted to 0.5 on 2026-06-07
 triage_notes: "autonomous_safe inferred: AC count=7, derived_from=null → true"
 updated: 2026-06-07
+started_at: 2026-06-07
+slices: [SLICE-23, SLICE-28]
+slices_complete: [SLICE-28, SLICE-23]
+completed_at: 2026-06-07
 ---
 # FEAT-105 — Perf win 10: skip stat-before-read
 

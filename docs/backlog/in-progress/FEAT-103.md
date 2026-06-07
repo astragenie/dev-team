@@ -2,7 +2,7 @@
 id: FEAT-103
 title: "Perf win 4 — memoize hot frontmatter reads keyed by (path, mtime)"
 priority: P3
-status: triaged
+status: in-progress
 category: perf
 target_release: null
 autonomous_safe: true
@@ -26,6 +26,8 @@ pm_dependency_depth: 0.5
 migration_note: legacy PM schema preserved as pm_legacy_*; new dimensions defaulted to 0.5 on 2026-06-07
 triage_notes: "autonomous_safe inferred: AC count=7, derived_from=null → true"
 updated: 2026-06-07
+started_at: 2026-06-07
+slices: [SLICE-21]
 ---
 # FEAT-103 — Perf win 4: memoize hot frontmatter reads
 

@@ -1,6 +1,6 @@
 ---
 id: SLICE-28
-status: pending
+status: completed
 feature: FEAT-105
 phase: null
 priority: P3
@@ -8,6 +8,7 @@ target_release: null
 requires_validation: false
 created: 2026-06-07
 updated: 2026-06-07
+completed_at: 2026-06-07
 ---
 # SLICE-28: # FEAT-105 — Perf win 10: skip stat-before-read
 
