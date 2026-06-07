@@ -3,6 +3,13 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.19.0 — 2026-06-07
+
+- **feat(orchestrate-slice):** integrate with loop `resolve-skills` CLI. Builders now receive a preset-resolved `## Required skills (resolved)` block injected at the top of their dispatch prompt when the `loop` plugin is installed alongside crew. Falls back silently when loop is absent or returns no match. Closes loop upstream-request `docs/upstream-requests/2026-06-07-hero-crew-orchestrate-slice-surface-stack-routing.md` (superseded — no FEAT-level reader needed; loop's resolver is the contract).
+- New `Step 2.5 — Resolve builder skills` between architect and builder dispatches. Reads `.claude/loop.json` preset, walks LOOP_PLUGIN_ROOT discovery, runs `node loop.mjs resolve-skills` for each builder variant (fe / be / single per SPLIT_BUILD), pipes through jq to extract `.dispatchInstructionBlock`, prepends to the respective Step 3 / 3a / 3b prompt.
+
+---
+
 ## v0.18.2 — 2026-06-07
 
 - **fix(preflight):** narrow Windows-path-space heuristic to actual continuations. Previous check fired on any Windows path followed by `space + non-operator`, flagging innocent `git -C C:/work/mega/repo status` calls. New rule: only warn when the next shell token actually looks like a path continuation (contains `/` or `\\`, and isn't a flag, quote, or new drive letter). Real `C:\\Program Files\\app.exe` splits still warn correctly. Adds AC-9c (false-positive regression) and AC-9d (operator suffix) tests.

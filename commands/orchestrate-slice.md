@@ -123,6 +123,55 @@ Store the returned path as `CONTRACT_YAML_PATH`. Derive `CONTRACT_MD_PATH` and `
 
 ---
 
+### Step 2.5 — Resolve builder skills (optional, when loop plugin is installed)
+
+If the `loop` plugin is installed at >= v0.27.0, resolve the builder skill
+loadout from the repo preset BEFORE dispatching builder(s). The resolved
+`## Required skills (resolved)` Markdown block is prepended to each builder
+dispatch prompt so the builder invokes the right `Skill` tools as Step 0
+before any code work. Falls back silently when loop is absent or returns no
+match — builder uses its own baked-in routing table.
+
+Locate the loop plugin root:
+
+```bash
+LOOP_ROOT="${LOOP_PLUGIN_ROOT:-$(find "${HOME}/.claude/plugins/cache/loop/loop" -maxdepth 1 -type d 2>/dev/null | sort -V | tail -1)}"
+PRESET_NAME=$(grep -oP '"preset"\s*:\s*"\K[^"]+' .claude/loop.json 2>/dev/null)
+```
+
+If `LOOP_ROOT` is empty or `PRESET_NAME` is empty, SKIP this step — no
+resolved block; proceed to Step 3 with the existing prompt shape.
+
+Otherwise run, **per variant**:
+
+```bash
+# SPLIT_BUILD = true
+FE_BLOCK=$(node "${LOOP_ROOT}/scripts/loop.mjs" resolve-skills \
+  --variant fe \
+  --preset "${LOOP_ROOT}/scripts/presets/${PRESET_NAME}.json" \
+  --override .claude/loop.json 2>/dev/null | jq -r '.dispatchInstructionBlock // empty')
+
+BE_BLOCK=$(node "${LOOP_ROOT}/scripts/loop.mjs" resolve-skills \
+  --variant be \
+  --preset "${LOOP_ROOT}/scripts/presets/${PRESET_NAME}.json" \
+  --override .claude/loop.json 2>/dev/null | jq -r '.dispatchInstructionBlock // empty')
+
+# SPLIT_BUILD = false
+SINGLE_BLOCK=$(node "${LOOP_ROOT}/scripts/loop.mjs" resolve-skills \
+  --variant single \
+  --preset "${LOOP_ROOT}/scripts/presets/${PRESET_NAME}.json" \
+  --override .claude/loop.json 2>/dev/null | jq -r '.dispatchInstructionBlock // empty')
+```
+
+Each block is empty string when:
+- CLI exits 2 (split mismatch, empty skills, or no match)
+- jq cannot find `.dispatchInstructionBlock`
+
+Treat empty as "no block — proceed without it". The builder dispatch prompts
+in Step 3 / 3a / 3b prepend the block when non-empty, omit it otherwise.
+
+---
+
 ### Steps 2 + 3 — UX designer + Builder (parallel when both fire)
 
 `crew:uxdesigner` and `crew:builder` both consume the FEAT-scoped contracts artifact (Step 1's `CONTRACT_YAML_PATH` + `CONTRACT_MD_PATH`) but NOT each other's output. Builder works from contracts + slice ACs; uxdesigner produces UX spec for reviewer to check separately. Both fire concurrently.
@@ -174,7 +223,11 @@ Store the returned path as `UX_SPEC_PATH`.
 
 #### Step 3 prompt — `crew:builder`
 
+Prepend `${SINGLE_BLOCK}` from Step 2.5 when non-empty. Omit otherwise.
+
 ```
+<SINGLE_BLOCK from Step 2.5 — omit when empty>
+
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
 OpenAPI YAML: <CONTRACT_YAML_PATH or "none">
@@ -195,7 +248,11 @@ When both branches fire, the orchestrator collects `UX_SPEC_PATH` AND `BUILDER_H
 
 ##### Step 3a — `crew:builder-fe`
 
+Prepend `${FE_BLOCK}` from Step 2.5 when non-empty. Omit otherwise.
+
 ```
+<FE_BLOCK from Step 2.5 — omit when empty>
+
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
 OpenAPI YAML: <CONTRACT_YAML_PATH>
@@ -217,7 +274,11 @@ Store the returned path as `BUILDER_FE_HANDOFF_PATH`.
 
 ##### Step 3b — `crew:builder-be`
 
+Prepend `${BE_BLOCK}` from Step 2.5 when non-empty. Omit otherwise.
+
 ```
+<BE_BLOCK from Step 2.5 — omit when empty>
+
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
 OpenAPI YAML: <CONTRACT_YAML_PATH>
