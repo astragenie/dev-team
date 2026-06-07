@@ -1,6 +1,6 @@
 ---
 id: SLICE-22
-status: pending
+status: completed
 feature: FEAT-104
 phase: null
 priority: P3
@@ -8,6 +8,7 @@ target_release: null
 requires_validation: false
 created: 2026-06-07
 updated: 2026-06-07
+completed_at: 2026-06-07
 ---
 # SLICE-22: # FEAT-104 — Perf win 9: cache payloads readdir
 

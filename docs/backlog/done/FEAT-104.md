@@ -2,7 +2,7 @@
 id: FEAT-104
 title: Perf win 9 — cache payloads readdir per process with mtime invalidation
 priority: P3
-status: in-progress
+status: done
 category: perf
 target_release: null
 autonomous_safe: true
@@ -28,6 +28,8 @@ triage_notes: "autonomous_safe inferred: AC count=5, derived_from=null → true"
 updated: 2026-06-07
 started_at: 2026-06-07
 slices: [SLICE-22]
+slices_complete: [SLICE-22]
+completed_at: 2026-06-07
 ---
 # FEAT-104 — Perf win 9: cache payloads readdir
 
