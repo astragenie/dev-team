@@ -3,6 +3,28 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.18.0 — 2026-06-07
+
+TypeScript migration Phases 1–4 complete. All scripts, hooks, and test files now `.ts`. Full strict mode enforced end-to-end via `--experimental-strip-types` (Node 22.6+).
+
+- **FEAT-106** TS Phase 1.1 — `scope-estimate` + `ux-validation` leaf modules migrated.
+- **FEAT-107** TS Phase 1.2 — `preflight/checks` + `subagent-return/check` migrated.
+- **FEAT-108** TS Phase 1.3 — cost-hygiene leaf modules migrated.
+- **FEAT-109** TS Phase 1.4 — cost-hygiene aggregator + `session-cost-scanner` migrated.
+- **FEAT-110** TS Phase 1.5 — briefing leaf modules migrated.
+- **FEAT-111** TS Phase 1.6 — briefing collector + facade migrated.
+- **FEAT-112** TS Phase 1.7 — installer leaf modules migrated.
+- **FEAT-113** TS Phase 1.8 — installer core modules migrated. Phase 1 gate passed.
+- **FEAT-114–117** TS Phase 2 — core state modules, artifacts + linkage, cost-advisor stack, `fleet.mjs` all migrated. Phase 2 complete.
+- **FEAT-118** TS Phase 3.1 — all `scripts/*.mjs` entrypoints renamed to `.ts`.
+- **FEAT-119** TS Phase 3.2 — all `hooks/*.mjs` renamed to `.ts`; Windows libuv crash fixed.
+- **FEAT-120** TS Phase 4.1 — first 22 test files renamed `.mjs` → `.ts`.
+- **FEAT-121** TS Phase 4.2 — remaining 21 test files renamed `.mjs` → `.ts`. All 437 tests pass. ESLint config updated (`tests/` dropped from lint scope; `tsc` covers correctness). `noUncheckedIndexedAccess` fixed across all test files.
+
+437 tests. Lint clean. Typecheck clean. Node ≥ 22.6 required.
+
+---
+
 ## v0.17.0 — 2026-06-07
 
 TypeScript Phase 0 foundation, cross-agent severity signals, builder dispatch reliability, and 5 performance wins.

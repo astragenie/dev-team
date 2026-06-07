@@ -1,5 +1,13 @@
 {
   "preset": "typescript-plugin-dev",
+  "schemaVersion": 1,
+  "projectType": "claude-plugin",
+  "split": false,
+  "frontend": { "framework": "none", "language": "typescript" },
+  "backend": { "framework": "node", "language": "typescript", "storage": "none" },
+  "contract": "none",
+  "deployment": "none",
+  "skills": ["typescript-pro", "frontend-advisory"],
   "loop": {
     "aiLoopRoot": "docs/ai-loop",
     "backlogPath": "docs/backlog",
