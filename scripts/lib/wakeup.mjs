@@ -5,6 +5,7 @@ import { listApprovals } from "./approvals.mjs";
 import { listClaims } from "./claims.mjs";
 import { readDeploymentGuidanceSummary } from "./deployment-guidance.mjs";
 import { readFileIfExists } from "./fs-utils.mjs";
+import { tailReadJsonl } from "./jsonl.mjs";
 import { loadWorkflowState, summarizeWorkflowState } from "./workflow-state.mjs";
 import { collectHookHealth } from "./briefing/collect.mjs";
 
@@ -25,7 +26,6 @@ const REPO_GUIDES_DIR = [".claude", "crew"];
 
 const RECENT_EVENTS_LIMIT = 3;
 const RECENT_HISTORY_LIMIT = 3;
-const JSONL_TAIL_BYTES = 64 * 1024;
 
 /**
  * @param {string} targetPath
@@ -40,45 +40,6 @@ async function pathExists(targetPath) {
   }
 }
 
-/**
- * @param {string} filePath
- * @param {number} count
- * @param {number} [maxBytes]
- * @returns {Promise<Record<string, unknown>[]>}
- */
-async function readRecentJsonl(filePath, count, maxBytes = JSONL_TAIL_BYTES) {
-  if (!(await pathExists(filePath))) {
-    return [];
-  }
-
-  const handle = await fs.open(filePath, "r");
-  try {
-    const stat = await handle.stat();
-    if (stat.size === 0) {
-      return [];
-    }
-
-    const start = Math.max(0, stat.size - maxBytes);
-    const length = stat.size - start;
-    const buffer = Buffer.alloc(length);
-    await handle.read(buffer, 0, length, start);
-
-    let raw = buffer.toString("utf8");
-    if (start > 0) {
-      const firstNewline = raw.indexOf("\n");
-      raw = firstNewline === -1 ? "" : raw.slice(firstNewline + 1);
-    }
-
-    return raw
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .slice(-count)
-      .map((line) => JSON.parse(line));
-  } finally {
-    await handle.close();
-  }
-}
 
 /**
  * @param {string} filePath
@@ -352,8 +313,8 @@ export async function buildWakeUpBrief(repoPath, options = {}) {
     ? historyPath
     : path.join(repoPath, ...LEGACY_HISTORY_PATH);
   const [recentEventsRaw, recentClaimHistory, archiveCounts] = await Promise.all([
-    readRecentJsonl(path.join(repoPath, ...EVENTS_PATH), RECENT_EVENTS_LIMIT),
-    readRecentJsonl(resolvedHistoryPath, RECENT_HISTORY_LIMIT),
+    tailReadJsonl(path.join(repoPath, ...EVENTS_PATH), RECENT_EVENTS_LIMIT),
+    tailReadJsonl(resolvedHistoryPath, RECENT_HISTORY_LIMIT),
     countArchive(repoPath)
   ]);
   const repoMemory = await listRepoGuidance(repoPath);

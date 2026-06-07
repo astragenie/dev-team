@@ -13,6 +13,7 @@ import {
   dedupeForRollup,
   aggregateRoleDispatches
 } from "./collect-cost-parser.mjs";
+import { tailReadJsonl } from "../jsonl.mjs";
 
 const execFile = promisify(execFileCallback);
 const BRANCH_COMMITS_LIMIT = 5;
@@ -593,22 +594,7 @@ const HOOK_HEALTH_WINDOW_MS = 24 * 60 * 60 * 1000;
  */
 export async function collectHookHealth(repoPath) {
   const eventsPath = path.join(repoPath, ".claude", "logs", "events.jsonl");
-  /** @type {Array<Record<string,unknown>>} */
-  let raw = [];
-  try {
-    const text = await fs.readFile(eventsPath, "utf8");
-    const lines = text.trim().split("\n").filter(Boolean);
-    const tail = lines.slice(-HOOK_HEALTH_TAIL);
-    raw = tail.map((l) => {
-      try {
-        return /** @type {Record<string,unknown>} */ (JSON.parse(l));
-      } catch {
-        return {};
-      }
-    });
-  } catch {
-    // no events file — return all green
-  }
+  const raw = await tailReadJsonl(eventsPath, HOOK_HEALTH_TAIL);
   const cutoff = Date.now() - HOOK_HEALTH_WINDOW_MS;
   const counts = new Map();
   for (const e of raw) {
