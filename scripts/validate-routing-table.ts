@@ -46,13 +46,11 @@ const CREW_ROLE_IN_CELL_RE =
 /** Matches skills/<tier>/<name> paths in the Notes column. */
 const SKILL_PATH_IN_NOTES_RE = /skills\/(universal|workflow|domain|meta)\/([a-z0-9-]+)\/?/g;
 
-/** @param {string} plugin @param {string} skill */
-function isCarvedOut(plugin, skill) {
+function isCarvedOut(plugin: string, skill: string): boolean {
   return CARVEOUT_PLUGIN.test(plugin) || CARVEOUT_EXT.test(skill);
 }
 
-/** @param {string} dir @param {string} name */
-async function fileExists(dir, name) {
+async function fileExists(dir: string, name: string): Promise<boolean> {
   try {
     await fs.access(path.join(dir, name));
     return true;
@@ -61,11 +59,9 @@ async function fileExists(dir, name) {
   }
 }
 
-/** @param {string} root @param {string} invocableName */
-async function findLocalInvocable(root, invocableName) {
+async function findLocalInvocable(root: string, invocableName: string): Promise<boolean> {
   // skills/**/SKILL.md — check name: field
-  /** @param {string} dir */
-  async function walkSkills(dir) {
+  async function walkSkills(dir: string): Promise<boolean> {
     let entries;
     try {
       entries = await fs.readdir(dir, { withFileTypes: true });
@@ -93,20 +89,23 @@ async function findLocalInvocable(root, invocableName) {
   return false;
 }
 
-/** @param {string} pluginsJson @param {string} plugin @param {string} invocable */
-async function findExternalInvocable(pluginsJson, plugin, invocable) {
-  let data;
+async function findExternalInvocable(
+  pluginsJson: string,
+  plugin: string,
+  invocable: string
+): Promise<boolean> {
+  let data: unknown;
   try {
     data = JSON.parse(await fs.readFile(pluginsJson, "utf8"));
   } catch {
     return false;
   }
-  const entries = Object.entries(data.plugins ?? {});
+  const pluginsMap = (data as Record<string, unknown>)["plugins"] ?? {};
+  const entries = Object.entries(pluginsMap as Record<string, unknown>);
   for (const [key, installs] of entries) {
     const pluginName = key.split("@")[0];
     if (pluginName !== plugin) continue;
-    /** @type {Array<{ installPath: string }>} */
-    const installList = /** @type {Array<{ installPath: string }>} */ (installs);
+    const installList = installs as Array<{ installPath: string }>;
     for (const inst of installList) {
       const skillFile = path.join(inst.installPath, "skills", invocable, "SKILL.md");
       const commandFile = path.join(inst.installPath, "commands", `${invocable}.md`);
@@ -127,18 +126,16 @@ async function findExternalInvocable(pluginsJson, plugin, invocable) {
 /**
  * Parse the "### Skills you consult" H3 block from an agent file.
  * Returns a Set of normalized skill paths (trailing slash stripped).
- * @param {string} filePath
- * @returns {Promise<Set<string>>}
  */
-async function parseAgentSkillBlock(filePath) {
-  let text;
+async function parseAgentSkillBlock(filePath: string): Promise<Set<string>> {
+  let text: string;
   try {
     text = await fs.readFile(filePath, "utf8");
   } catch {
     return new Set();
   }
   const lines = text.split(/\r?\n/);
-  const skills = new Set();
+  const skills = new Set<string>();
   let inBlock = false;
   for (const line of lines) {
     if (/^###\s+Skills you consult/i.test(line)) {
@@ -158,12 +155,11 @@ async function parseAgentSkillBlock(filePath) {
 /**
  * Extract (role, skillPath) pairs from routing-table lines.
  * Skips lines with routing-lint:ignore. Skips header separator rows.
- * @param {string[]} lines
- * @returns {Array<{role: string, skillPath: string, row: string}>}
  */
-function parseRoutingTablePairs(lines) {
-  /** @type {Array<{role: string, skillPath: string, row: string}>} */
-  const pairs = [];
+function parseRoutingTablePairs(
+  lines: string[]
+): Array<{ role: string; skillPath: string; row: string }> {
+  const pairs: Array<{ role: string; skillPath: string; row: string }> = [];
   for (const line of lines) {
     if (!line.startsWith("|")) continue;
     if (/^[|\s:-]+$/.test(line)) continue; // separator row
@@ -172,12 +168,11 @@ function parseRoutingTablePairs(lines) {
     if (cells.length < 4) continue; // [0]=empty,[1]=Signal,[2]=Route-to,[3]=Notes
     const routeTo = cells[2] ?? "";
     const notes = cells[3] ?? "";
-    /** @type {string[]} */
-    const roles = [];
+    const roles: string[] = [];
     let rm;
     CREW_ROLE_IN_CELL_RE.lastIndex = 0;
     while ((rm = CREW_ROLE_IN_CELL_RE.exec(routeTo)) !== null) {
-      const role = rm[1].toLowerCase();
+      const role = (rm[1] ?? "").toLowerCase();
       if (KNOWN_CREW_ROLES.has(role) && !roles.includes(role)) roles.push(role);
     }
     if (roles.length === 0) continue;
@@ -195,13 +190,12 @@ function parseRoutingTablePairs(lines) {
 
 /**
  * Run Pass 1: skill-ID resolution.
- * @param {string} content routing-table.md text
- * @returns {Promise<Array<{row:string,id:string,reason:string}>>}
  */
-async function runIdResolutionPass(content) {
+async function runIdResolutionPass(
+  content: string
+): Promise<Array<{ row: string; id: string; reason: string }>> {
   const lines = content.split(/\r?\n/);
-  /** @type {Array<{row:string,id:string,reason:string}>} */
-  const errors = [];
+  const errors: Array<{ row: string; id: string; reason: string }> = [];
   let currentHeading = "(no heading)";
   for (const line of lines) {
     if (/^#+\s/.test(line)) {
@@ -212,7 +206,8 @@ async function runIdResolutionPass(content) {
     let match;
     SKILL_ID_RE.lastIndex = 0;
     while ((match = SKILL_ID_RE.exec(line)) !== null) {
-      const [, plugin, skill] = match;
+      const plugin = match[1] ?? "";
+      const skill = match[2] ?? "";
       if (isCarvedOut(plugin, skill)) continue;
       const found =
         plugin === "crew"
@@ -227,25 +222,21 @@ async function runIdResolutionPass(content) {
 
 /**
  * Run Pass 2: agent-block cross-check.
- * @param {string} routingTable path to routing-table.md
- * @param {string} repoRoot path to repo root (agents/ lives here)
- * @returns {Promise<string[]>} error messages
  */
-async function runConsistencyCheck(routingTable, repoRoot) {
+async function runConsistencyCheck(routingTable: string, repoRootPath: string): Promise<string[]> {
   const content = await fs.readFile(routingTable, "utf8");
   const pairs = parseRoutingTablePairs(content.split(/\r?\n/));
 
   // Build agent → Set<skillPath> map (lazy load)
-  /** @type {Map<string, Set<string>>} */
-  const agentSkills = new Map();
+  const agentSkills = new Map<string, Set<string>>();
   for (const { role } of pairs) {
     if (!agentSkills.has(role)) {
-      const agentFile = path.join(repoRoot, "agents", `${role}.md`);
+      const agentFile = path.join(repoRootPath, "agents", `${role}.md`);
       agentSkills.set(role, await parseAgentSkillBlock(agentFile));
     }
   }
 
-  const errors = [];
+  const errors: string[] = [];
   for (const { role, skillPath, row } of pairs) {
     const skillSet = agentSkills.get(role) ?? new Set();
     if (!skillSet.has(skillPath)) {

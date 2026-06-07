@@ -14,43 +14,43 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci
-      - run: node ./scripts/validate-manifests.mjs
-      - run: node ./scripts/validate-skills.mjs
-      - run: node ./scripts/validate-agents.mjs
-      - run: node ./scripts/validate-slices.mjs
+      - run: node ./scripts/validate-manifests.ts
+      - run: node ./scripts/validate-skills.ts
+      - run: node ./scripts/validate-agents.ts
+      - run: node ./scripts/validate-slices.ts
       - name: Validate contracts (against committed fixtures)
         run: |
           for f in tests/fixtures/openapi/*.openapi.yaml; do
             if [ "$(basename "$f")" = "broken-missing-examples.openapi.yaml" ]; then
               # Negative fixture — expect failure
-              if node ./scripts/validate-contracts.mjs "$f"; then
+              if node ./scripts/validate-contracts.ts "$f"; then
                 echo "ERROR: negative fixture passed lint"
                 exit 1
               fi
             else
-              node ./scripts/validate-contracts.mjs "$f"
+              node ./scripts/validate-contracts.ts "$f"
             fi
           done
       - name: Validate UX spec fixtures
         run: |
           for f in tests/fixtures/ux-specs/*.md; do
             if [ "$(basename "$f")" = "missing-operationid.md" ]; then
-              if node ./scripts/validate-ux-spec.mjs "$f"; then
+              if node ./scripts/validate-ux-spec.ts "$f"; then
                 echo "ERROR: negative fixture passed"
                 exit 1
               fi
             else
-              node ./scripts/validate-ux-spec.mjs "$f"
+              node ./scripts/validate-ux-spec.ts "$f"
             fi
           done
       - name: Validate synthesis artifacts (advisory)
         continue-on-error: true
-        run: node ./scripts/validate-syntheses.mjs
+        run: node ./scripts/validate-syntheses.ts
       - name: Validate routing-table skill IDs (advisory)
         env:
           CREW_VALIDATE_ROUTING_TABLE: "1"
         continue-on-error: true
-        run: node ./scripts/validate-routing-table.mjs
+        run: node ./scripts/validate-routing-table.ts
       - run: npm run lint
       - run: npm run format:check
       - run: npm run typecheck
@@ -58,6 +58,6 @@ jobs:
         continue-on-error: true
         run: npm run validate:typegraph
       - run: node --test --experimental-strip-types
-      - run: node ./scripts/e2e-smoke.mjs
+      - run: node ./scripts/e2e-smoke.ts
       - name: e2e smoke — ux validation
         run: npm run e2e:smoke:ux

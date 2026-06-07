@@ -15,7 +15,7 @@ Workflow:
 2. Sync remote state so the brief reflects reality, not stale local refs:
    - `git fetch --prune`
 3. Then run:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" wake-up --repo "$PWD"`
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" wake-up --repo "$PWD"`
 3. Explicitly compare the returned `repoPath` with the current working directory.
 4. If they do not match, stop and treat the wake-up brief as invalid for this run.
 5. Only if they match, summarize:

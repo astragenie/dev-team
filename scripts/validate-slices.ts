@@ -38,26 +38,24 @@ function resolveRepoRoot() {
   return path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 }
 
-/** @param {string} pendingDir */
-async function listSliceFiles(pendingDir) {
+async function listSliceFiles(pendingDir: string): Promise<string[] | null> {
   try {
     const entries = await fs.readdir(pendingDir, { withFileTypes: true });
     return entries.filter((e) => e.isFile() && e.name.endsWith(".md")).map((e) => e.name);
   } catch (err) {
-    if (err.code === "ENOENT") return null;
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
     throw err;
   }
 }
 
-/** @param {string} text */
-function findPlaceholders(text) {
-  const findings = [];
+function findPlaceholders(text: string) {
+  const findings: Array<{ line: number; label: string; reason: string }> = [];
   const lines = text.split(/\r?\n/);
   for (let i = 0; i < lines.length; i += 1) {
-    const m = lines[i].match(RE_AC_LINE);
+    const m = lines[i]?.match(RE_AC_LINE);
     if (!m) continue;
-    const after = m[1];
-    const acLabel = lines[i].match(/AC-\d+/i)?.[0] ?? "AC-?";
+    const after = m[1] ?? "";
+    const acLabel = lines[i]?.match(/AC-\d+/i)?.[0] ?? "AC-?";
     if (after === "") {
       findings.push({ line: i + 1, label: acLabel, reason: "empty after colon" });
     } else if (RE_DOT_PLACEHOLDER.test(after)) {
@@ -100,6 +98,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  process.stderr.write(`[validate-slices] fatal: ${err.message}\n`);
+  process.stderr.write(`[validate-slices] fatal: ${(err as Error).message}\n`);
   process.exit(2);
 });

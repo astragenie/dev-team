@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { validateAgents } from "../scripts/validate-agents.mjs";
+import { validateAgents } from "../scripts/validate-agents.ts";
 
 /** Write a synthetic agents/ directory under a tmpdir and return its path. */
 async function makeAgentsDir(files) {

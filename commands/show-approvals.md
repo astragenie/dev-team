@@ -10,7 +10,7 @@ Use this to inspect which approval decisions are waiting and which have already 
 Workflow:
 
 1. Run:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" show-approvals --repo "$PWD" --status "${ARGUMENTS:-open}"`
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" show-approvals --repo "$PWD" --status "${ARGUMENTS:-open}"`
 2. Summarize:
    - open approvals
    - who they are waiting on

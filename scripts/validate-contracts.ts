@@ -18,38 +18,32 @@ import { spawn } from "node:child_process";
 import openapiTS, { astToString } from "openapi-typescript";
 import { parse as parseYaml } from "yaml";
 
-/**
- * @param {string} yamlPath
- * @returns {Promise<{ok: boolean, output: string}>}
- */
-async function runRedoclyLint(yamlPath) {
+async function runRedoclyLint(yamlPath: string): Promise<{ ok: boolean; output: string }> {
   return new Promise((resolve) => {
     const proc = spawn("npx", ["--no-install", "redocly", "lint", yamlPath], {
       stdio: ["ignore", "pipe", "pipe"],
       shell: process.platform === "win32"
     });
     let output = "";
-    proc.stdout.on("data", (d) => (output += d.toString()));
-    proc.stderr.on("data", (d) => (output += d.toString()));
-    proc.on("close", (code) => resolve({ ok: code === 0, output }));
+    proc.stdout.on("data", (d: Buffer) => (output += d.toString()));
+    proc.stderr.on("data", (d: Buffer) => (output += d.toString()));
+    proc.on("close", (code: number | null) => resolve({ ok: code === 0, output }));
   });
 }
 
-/**
- * @param {object} opts
- * @param {string} opts.yamlPath
- * @param {string} opts.tsOutPath
- * @param {boolean} [opts.writeTs]
- * @param {boolean} [opts.runLint]
- * @param {boolean} [opts.checkDrift]
- */
-export async function validateContracts(opts) {
-  const errors = [];
+export async function validateContracts(opts: {
+  yamlPath: string;
+  tsOutPath: string;
+  writeTs?: boolean;
+  runLint?: boolean;
+  checkDrift?: boolean;
+}) {
+  const errors: string[] = [];
   let yaml = "";
   try {
     yaml = await fs.readFile(opts.yamlPath, "utf8");
   } catch (err) {
-    errors.push(`Cannot read ${opts.yamlPath}: ${err.message}`);
+    errors.push(`Cannot read ${opts.yamlPath}: ${(err as Error).message}`);
     return { ok: false, errors, regeneratedTs: "" };
   }
   if (!yaml.includes("openapi: 3.1")) {
@@ -65,7 +59,7 @@ export async function validateContracts(opts) {
   try {
     regeneratedTs = await generateTs(yaml);
   } catch (err) {
-    errors.push(`Failed to generate TS from YAML: ${err.message}`);
+    errors.push(`Failed to generate TS from YAML: ${(err as Error).message}`);
   }
   if (opts.checkDrift && regeneratedTs) {
     let committedTs = "";
@@ -90,18 +84,13 @@ export async function validateContracts(opts) {
   return { ok: errors.length === 0, errors, regeneratedTs };
 }
 
-/** @param {string} yaml */
-async function generateTs(yaml) {
+async function generateTs(yaml: string) {
   const doc = parseYaml(yaml);
-  const ast = await openapiTS(doc);
+  const ast = await openapiTS(doc as Parameters<typeof openapiTS>[0]);
   return astToString(ast);
 }
 
-/**
- * @param {string} a
- * @param {string} b
- */
-function diffSummary(a, b) {
+function diffSummary(a: string, b: string) {
   const aLines = a.split(/\r?\n/).length;
   const bLines = b.split(/\r?\n/).length;
   return `committed=${aLines} lines, regenerated=${bLines} lines`;

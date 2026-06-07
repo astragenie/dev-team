@@ -10,11 +10,11 @@ import { promisify } from "node:util";
 
 const execFile = promisify(execFileCallback);
 const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const cliPath = path.join(repoRoot, "scripts", "crew.mjs");
+const cliPath = path.join(repoRoot, "scripts", "crew.ts");
 
 async function makeTempRepo(prefix) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
-  await execFile("node", [cliPath, "init", "--repo", dir]);
+  await execFile("node", ["--experimental-strip-types", cliPath, "init", "--repo", dir]);
   return dir;
 }
 
@@ -24,7 +24,7 @@ async function cleanup(dir) {
 
 // Helper: invoke CLI synchronously and return { status, stdout, stderr }
 function runCli(args) {
-  const result = spawnSync(process.execPath, [cliPath, ...args], {
+  const result = spawnSync(process.execPath, ["--experimental-strip-types", cliPath, ...args], {
     encoding: "utf8",
     timeout: 30_000
   });

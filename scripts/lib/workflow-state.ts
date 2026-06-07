@@ -46,15 +46,15 @@ export interface LoadOptions {
 }
 
 export interface BadgeOptions {
-  badge?: string;
-  title?: string;
-  goal?: string;
-  mode?: string;
-  next?: string;
-  note?: string;
+  badge?: string | undefined;
+  title?: string | undefined;
+  goal?: string | undefined;
+  mode?: string | undefined;
+  next?: string | undefined;
+  note?: string | undefined;
   blockedBy?: string | null;
   force?: boolean;
-  summary?: string;
+  summary?: string | undefined;
 }
 
 export interface ArtifactRef {
@@ -64,7 +64,7 @@ export interface ArtifactRef {
 }
 
 type RegisterFields = RunFields &
-  BadgeOptions & { decision?: string; environment?: string; status?: string };
+  BadgeOptions & { decision?: string | undefined; environment?: string | undefined; status?: string | undefined };
 
 // ---------------------------------------------------------------------------
 // Private utilities

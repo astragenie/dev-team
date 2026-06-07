@@ -28,7 +28,7 @@ The plugin is intentionally content-heavy and runtime-light.
 - Durable behavior belongs in `agents/`, `skills/`, and `commands/`.
 - Hooks should stay small and auditable.
 - Scripts should be thin helpers, not a hidden framework runtime.
-- Agent prompts are capped at ≤300 lines per `docs/governance.md`, enforced by `scripts/validate-agents.mjs` (FEAT-035). Specifics live in skills the agent invokes on demand.
+- Agent prompts are capped at ≤300 lines per `docs/governance.md`, enforced by `scripts/validate-agents.ts` (FEAT-035). Specifics live in skills the agent invokes on demand.
 
 ## Skill taxonomy
 
@@ -51,7 +51,7 @@ Requires Node 22.6+ (strip-types runtime; see `docs/superpowers/specs/2026-06-07
 - `npm run lint` — ESLint flat config.
 - `npm run format` / `npm run format:check` — Prettier.
 - `npm run e2e:smoke` — end-to-end smoke against a temp sample repo.
-- `node ./scripts/validate-manifests.mjs` — manifest sanity check.
+- `node ./scripts/validate-manifests.ts` — manifest sanity check.
 
 ## CI gates
 
@@ -59,11 +59,11 @@ GitHub Actions (`.github/workflows/test.yml`) runs on every push to `main`
 and every PR. All steps are blocking; lint must stay zero-warning.
 
 1. `npm ci`
-2. `node ./scripts/validate-manifests.mjs`
-3. `node ./scripts/validate-skills.mjs`
-4. `node ./scripts/validate-agents.mjs`
-5. `node ./scripts/validate-slices.mjs`
-6. `CREW_VALIDATE_ROUTING_TABLE=1 node ./scripts/validate-routing-table.mjs` (advisory; `continue-on-error: true`)
+2. `node ./scripts/validate-manifests.ts`
+3. `node ./scripts/validate-skills.ts`
+4. `node ./scripts/validate-agents.ts`
+5. `node ./scripts/validate-slices.ts`
+6. `CREW_VALIDATE_ROUTING_TABLE=1 node ./scripts/validate-routing-table.ts` (advisory; `continue-on-error: true`)
 7. `npm run lint`
 8. `npm run format:check`
 9. `npm run typecheck`
@@ -120,7 +120,7 @@ under `chore(marketplace): bump loop to <ver>`.
 
 ## Repo rules
 
-1. Validate plugin manifest changes with `node ./scripts/validate-manifests.mjs`.
+1. Validate plugin manifest changes with `node ./scripts/validate-manifests.ts`.
 2. Prefer additive changes over rewrites.
 3. Keep repo-specific guidance in this file and `docs/architecture/architecture.md`.
 4. Favor explicit files and artifacts over implicit memory.
@@ -171,7 +171,7 @@ following as the assumed baseline; consult `CHANGELOG.md` for full detail
 and `docs/routing-table.md` for current routing.
 
 - **Skill taxonomy live.** Four tiers (`universal/`, `workflow/`, `domain/`,
-  `meta/`) enforced by `scripts/validate-skills.mjs` (quality bar:
+  `meta/`) enforced by `scripts/validate-skills.ts` (quality bar:
   name/tier/description required; ≤200 lines; tier in enum). Add tier to
   frontmatter on every new skill.
 - **Routing-table authoritative.** `docs/routing-table.md` is consulted by

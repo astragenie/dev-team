@@ -6,11 +6,7 @@ import path from "node:path";
 const RUNS_DIR = [".claude", "artifacts", "crew", "runs"];
 const STALE_PATTERNS = [/Grade missing/, /<timestamp>/];
 
-/**
- * @param {string} repoPath
- * @returns {Promise<{ errors: string[] }>}
- */
-export async function validateSyntheses(repoPath) {
+export async function validateSyntheses(repoPath: string): Promise<{ errors: string[] }> {
   const runsDir = path.join(repoPath, ...RUNS_DIR);
   let entries;
   try {

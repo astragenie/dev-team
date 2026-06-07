@@ -13,7 +13,7 @@ Workflow:
    ```bash
    set -euo pipefail
    read -ra _args <<< "$ARGUMENTS"
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" release --repo "$PWD" -- "${_args[@]}"
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" release --repo "$PWD" -- "${_args[@]}"
    ```
 2. If no paths are provided, release all current claims.
 3. Summarize:

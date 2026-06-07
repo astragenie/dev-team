@@ -55,7 +55,7 @@ Before substantial work:
 1. Verify the current workspace path:
    - `pwd`
 2. Read the repo wake-up brief:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" wake-up --repo "$PWD"`
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" wake-up --repo "$PWD"`
 3. Explicitly confirm the returned `repoPath` matches the current working directory.
 4. If the paths do not match, stop and call out the repo-context problem before using the brief.
 5. Then state:
@@ -78,10 +78,10 @@ When the work is substantial, create or update inspectable artifacts under:
 
 Use the Crew CLI for this instead of inventing ad hoc files:
 
-- `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-run-brief --repo "$PWD" ...`
-- `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-handoff --repo "$PWD" ...`
-- `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-review-result --repo "$PWD" ...`
-- `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-final-synthesis --repo "$PWD" ...`
+- `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-run-brief --repo "$PWD" ...`
+- `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff --repo "$PWD" ...`
+- `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result --repo "$PWD" ...`
+- `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-final-synthesis --repo "$PWD" ...`
 
 Review protects the user from regressions reaching their repo. It is the default for substantial implementation work. If review is skipped, say so explicitly and explain why.
 

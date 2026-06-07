@@ -22,7 +22,7 @@ Default routing:
 Workflow:
 
 1. Run:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" request-approval --repo "$PWD" --summary "$ARGUMENTS"`
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" request-approval --repo "$PWD" --summary "$ARGUMENTS"`
 2. Summarize:
    - approval id
    - requester

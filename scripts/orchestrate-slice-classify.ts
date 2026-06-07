@@ -13,16 +13,11 @@ const FE_STACK = new Set(["stack:react"]);
 const BE_SURFACE = new Set(["surface:api", "surface:schema"]);
 const BE_STACK = new Set(["stack:csharp", "stack:node", "stack:python", "stack:go"]);
 
-/**
- * @param {object} opts
- * @param {string} opts.slicePath
- */
-export async function classifySlice(opts) {
+export async function classifySlice(opts: { slicePath: string }) {
   const text = await fs.readFile(opts.slicePath, "utf8");
   const fm = parseFrontmatter(text);
-  /** @type {string[]} */
-  const tags = Array.isArray(fm?.tags) ? fm.tags : [];
-  const skip = Array.isArray(fm?.skip) ? fm.skip : [];
+  const tags = Array.isArray(fm?.tags) ? (fm.tags as string[]) : [];
+  const skip = Array.isArray(fm?.skip) ? (fm.skip as string[]) : [];
 
   const FE = hasFrontend(tags);
   const BE = hasBackend(tags);
@@ -34,51 +29,34 @@ export async function classifySlice(opts) {
   return { SPLIT_BUILD, NEEDS_CONTRACT, NEEDS_UX, tags, skip };
 }
 
-/**
- * @param {string[]} tags
- * @param {Set<string>} set
- */
-function tagsHaveAny(tags, set) {
+function tagsHaveAny(tags: string[], set: Set<string>) {
   return tags.some((t) => set.has(t));
 }
 
-/** @param {string[]} tags */
-function hasFrontend(tags) {
+function hasFrontend(tags: string[]) {
   return tagsHaveAny(tags, FE_SURFACE) || tagsHaveAny(tags, FE_STACK);
 }
 
-/** @param {string[]} tags */
-function hasBackend(tags) {
+function hasBackend(tags: string[]) {
   return tagsHaveAny(tags, BE_SURFACE) || tagsHaveAny(tags, BE_STACK);
 }
 
-/**
- * @param {any} fm
- * @param {string[]} tags
- * @param {boolean} FE
- * @param {boolean} BE
- */
-function computeNeedsContract(fm, tags, FE, BE) {
+function computeNeedsContract(fm: Record<string, unknown> | null, tags: string[], FE: boolean, BE: boolean) {
   if (fm?.needs_contract === true) return true;
   if (fm?.needs_contract === false) return false;
   return tagsHaveAny(tags, BE_SURFACE) || (FE && BE);
 }
 
-/**
- * @param {any} fm
- * @param {boolean} FE
- */
-function computeNeedsUx(fm, FE) {
+function computeNeedsUx(fm: Record<string, unknown> | null, FE: boolean) {
   if (fm?.needs_ux === true) return true;
   if (fm?.needs_ux === false) return false;
   return FE;
 }
 
-/** @param {string} text */
-function parseFrontmatter(text) {
+function parseFrontmatter(text: string) {
   const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!m) return null;
-  return parseYaml(m[1]);
+  if (!m || m[1] === undefined) return null;
+  return parseYaml(m[1]) as Record<string, unknown> | null;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

@@ -19,7 +19,7 @@ Create well-formatted commits with conventional commit messages + emoji.
 
 ## What this skill does
 
-1. Run pre-commit gate unless caller passes `--no-verify`. For this repo: `npm run lint && npm test && node ./scripts/validate-manifests.mjs && node ./scripts/validate-skills.mjs`.
+1. Run pre-commit gate unless caller passes `--no-verify`. For this repo: `npm run lint && npm test && node ./scripts/validate-manifests.ts && node ./scripts/validate-skills.ts`.
 2. `git status` — show what is staged.
 3. If nothing staged, stage all modified + new files (`git add -A`).
 4. `git diff --cached` — read what is about to land.
@@ -101,7 +101,7 @@ Good:
 - `🐛 fix: handle missing crew.json with default config`
 - `📝 docs: link FEAT-019 from architecture skill-tiers section`
 - `♻️ refactor: extract briefing collector into separate module`
-- `🚨 fix: resolve eslint warning in validate-skills.mjs`
+- `🚨 fix: resolve eslint warning in validate-skills.ts`
 - `🔒 fix: redact secrets in cost-report output`
 - `🔖 chore(release): v0.3.1 — marketplace polish`
 

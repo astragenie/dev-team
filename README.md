@@ -154,7 +154,7 @@ To adopt an existing repo into the workflow, use:
 The raw CLI bootstrap command still exists for debugging and scripting:
 
 ```bash
-node "<plugin-path>/scripts/crew.mjs" bootstrap --repo .
+node "<plugin-path>/scripts/crew.ts" bootstrap --repo .
 ```
 
 ## Customizing agents

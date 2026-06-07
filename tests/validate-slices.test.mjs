@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const scriptPath = path.join(repoRoot, "scripts", "validate-slices.mjs");
+const scriptPath = path.join(repoRoot, "scripts", "validate-slices.ts");
 
 async function makeFixture(prefix) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
@@ -16,7 +16,7 @@ async function makeFixture(prefix) {
 }
 
 function runValidator(repoPath) {
-  const result = spawnSync(process.execPath, [scriptPath], {
+  const result = spawnSync(process.execPath, ["--experimental-strip-types", scriptPath], {
     encoding: "utf8",
     timeout: 30_000,
     cwd: repoPath,

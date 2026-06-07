@@ -59,7 +59,7 @@ When persisting a handoff, prefer:
 
 Preferred command:
 
-- `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-handoff --repo "$PWD" --title "<short title>" ...`
+- `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff --repo "$PWD" --title "<short title>" ...`
 
 ## Done
 

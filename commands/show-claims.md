@@ -9,7 +9,7 @@ Use this to inspect current claimed ownership before assigning or editing work.
 Workflow:
 
 1. Run:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" show-claims --repo "$PWD"`
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" show-claims --repo "$PWD"`
 2. Report the current claims in a compact form:
    - file path
    - owner

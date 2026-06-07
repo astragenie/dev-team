@@ -35,6 +35,6 @@ Generated code MAY ignore these (codegen tooling doesn't always honor them); the
 ## Done when
 
 - `redocly lint --extends recommended` exits 0 against the YAML
-- `node ./scripts/validate-contracts.mjs <yaml>` exits 0
+- `node ./scripts/validate-contracts.ts <yaml>` exits 0
 - Every response code in every operation has an `examples` entry
 - The companion `<FEAT-ID>-contracts.md` carries Decision rationale + Data Contracts + Revisions sections only — no wire-type duplication

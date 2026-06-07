@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { validateSkills } from "../scripts/validate-skills.mjs";
+import { validateSkills } from "../scripts/validate-skills.ts";
 
 async function makeSkillsDir(skills) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "validate-skills-"));

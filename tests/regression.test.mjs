@@ -20,7 +20,7 @@ import { promisify } from "node:util";
 
 const execFile = promisify(execFileCallback);
 const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const cliPath = path.join(repoRoot, "scripts", "crew.mjs");
+const cliPath = path.join(repoRoot, "scripts", "crew.ts");
 
 async function makeTempDir(prefix) {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
@@ -28,7 +28,7 @@ async function makeTempDir(prefix) {
 
 async function initRepo(prefix) {
   const repoPath = await makeTempDir(prefix);
-  await execFile("node", [cliPath, "init", "--repo", repoPath]);
+  await execFile("node", ["--experimental-strip-types", cliPath, "init", "--repo", repoPath]);
   return repoPath;
 }
 
@@ -58,7 +58,7 @@ test("BUG-A: concurrent claims on disjoint files do not lose data (5-way paralle
   }
   await Promise.all(promises);
 
-  const showOutput = await execFile("node", [cliPath, "show-claims", "--repo", repoPath]);
+  const showOutput = await execFile("node", ["--experimental-strip-types", cliPath, "show-claims", "--repo", repoPath]);
   const showResult = JSON.parse(showOutput.stdout);
   assert.equal(
     showResult.claims.length,
@@ -94,12 +94,12 @@ test("BUG-A: concurrent releases do not corrupt claims state", async () => {
   const promises = [];
   for (let i = 0; i < count; i += 1) {
     promises.push(
-      execFile("node", [cliPath, "release", "--repo", repoPath, "--owner", `o_${i}`, `f_${i}.txt`])
+      execFile("node", ["--experimental-strip-types", cliPath, "release", "--repo", repoPath, "--owner", `o_${i}`, `f_${i}.txt`])
     );
   }
   await Promise.all(promises);
 
-  const showOutput = await execFile("node", [cliPath, "show-claims", "--repo", repoPath]);
+  const showOutput = await execFile("node", ["--experimental-strip-types", cliPath, "show-claims", "--repo", repoPath]);
   const showResult = JSON.parse(showOutput.stdout);
   assert.equal(
     showResult.claims.length,
@@ -143,7 +143,7 @@ test("BUG-B: write-run-brief archives the previous run instead of destroying it"
   ]);
 
   // Sanity: pending gate exists on the first run.
-  let stateOutput = await execFile("node", [cliPath, "show-workflow-state", "--repo", repoPath]);
+  let stateOutput = await execFile("node", ["--experimental-strip-types", cliPath, "show-workflow-state", "--repo", repoPath]);
   let state = JSON.parse(stateOutput.stdout);
   assert.equal(state.workflowState.currentRun.title, "First run");
   assert.equal(state.workflowState.currentRun.gates.review.status, "required");
@@ -167,7 +167,7 @@ test("BUG-B: write-run-brief archives the previous run instead of destroying it"
     "assisted single-session"
   ]);
 
-  stateOutput = await execFile("node", [cliPath, "show-workflow-state", "--repo", repoPath]);
+  stateOutput = await execFile("node", ["--experimental-strip-types", cliPath, "show-workflow-state", "--repo", repoPath]);
   state = JSON.parse(stateOutput.stdout);
 
   assert.equal(state.workflowState.currentRun.title, "Second run");
@@ -208,7 +208,7 @@ test("BUG-B: multiple sequential run briefs cap at MAX_RECENT_RUNS without dropp
     ]);
   }
 
-  const stateOutput = await execFile("node", [cliPath, "show-workflow-state", "--repo", repoPath]);
+  const stateOutput = await execFile("node", ["--experimental-strip-types", cliPath, "show-workflow-state", "--repo", repoPath]);
   const state = JSON.parse(stateOutput.stdout);
 
   assert.equal(state.workflowState.currentRun.title, "Run 7");
@@ -311,7 +311,7 @@ test("BUG-E: discover-deployment uses POSIX separators in clue paths on all plat
   await fs.mkdir(path.join(repoPath, "terraform"), { recursive: true });
   await fs.writeFile(path.join(repoPath, "terraform", "main.tf"), "// terraform\n");
 
-  const output = await execFile("node", [cliPath, "discover-deployment", "--repo", repoPath]);
+  const output = await execFile("node", ["--experimental-strip-types", cliPath, "discover-deployment", "--repo", repoPath]);
   const result = JSON.parse(output.stdout);
 
   // Each classifier branch should produce its expected clue:
@@ -355,7 +355,7 @@ test("BUG-E: file fixtures with directory paths under deployment hints are disco
     await fs.writeFile(path.join(repoPath, dir, file), "content\n");
   }
 
-  const output = await execFile("node", [cliPath, "discover-deployment", "--repo", repoPath]);
+  const output = await execFile("node", ["--experimental-strip-types", cliPath, "discover-deployment", "--repo", repoPath]);
   const result = JSON.parse(output.stdout);
 
   for (const [dir, file] of hints) {

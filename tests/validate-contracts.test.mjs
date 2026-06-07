@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { writeFile, unlink } from "node:fs/promises";
-import { validateContracts } from "../scripts/validate-contracts.mjs";
+import { validateContracts } from "../scripts/validate-contracts.ts";
 
 const FIXTURE_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),

@@ -13,7 +13,7 @@ Workflow:
    ```bash
    set -euo pipefail
    read -ra _args <<< "$ARGUMENTS"
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" claim --repo "$PWD" -- "${_args[@]}"
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" claim --repo "$PWD" -- "${_args[@]}"
    ```
 2. Treat successful claims as the current owned scope.
 3. If a conflict is reported, do not edit those files until ownership is clarified.

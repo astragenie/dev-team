@@ -66,7 +66,7 @@ And must include:
 After completing validation, write the validation-result artifact by calling:
 
 ```
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-validation-result \
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-validation-result \
   --repo "$PWD" \
   --title "<short title>" \
   --decision passed|passed_with_notes|failed \
@@ -90,13 +90,13 @@ When you hit an external blocker or need to escalate before writing your validat
 
 ```bash
 # External blocker (environment unavailable, cannot exercise scenario)
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge blocked --note "<reason>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge blocked --note "<reason>"
 
 # Escalate when a decision requires human judgment
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge escalated_to_human --note "<reason>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge escalated_to_human --note "<reason>"
 
 # Record a skipped validation gate
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge validation_skipped --note "<reason>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge validation_skipped --note "<reason>"
 ```
 
 Emit the badge BEFORE writing the validation-result artifact. The badge surfaces in `brief-me` and `wake-up`; the artifact carries the detail.
@@ -106,7 +106,7 @@ Emit the badge BEFORE writing the validation-result artifact. The badge surfaces
 Write your full completion report by calling:
 
 ```
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-handoff \
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
   --repo "$PWD" \
   --title "<short title>" \
   --from <role> --to lead \

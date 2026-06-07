@@ -13,25 +13,20 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { parse as parseYaml } from "yaml";
 
-/**
- * @param {object} opts
- * @param {string} opts.specPath
- * @param {string} opts.repoRoot
- */
-export async function validateUxSpec(opts) {
-  const errors = [];
+export async function validateUxSpec(opts: { specPath: string; repoRoot: string }) {
+  const errors: string[] = [];
   const md = await fs.readFile(opts.specPath, "utf8");
   const fm = parseFrontmatter(md);
-  if (!fm || !fm.contracts) {
+  if (!fm || !fm["contracts"]) {
     errors.push("frontmatter missing `contracts:` pointing to the FEAT YAML");
     return { ok: false, errors, touchpoints: [] };
   }
-  const yamlPath = path.resolve(opts.repoRoot, fm.contracts);
-  let yamlDoc;
+  const yamlPath = path.resolve(opts.repoRoot, fm["contracts"] as string);
+  let yamlDoc: unknown;
   try {
     yamlDoc = parseYaml(await fs.readFile(yamlPath, "utf8"));
   } catch (e) {
-    errors.push(`contracts YAML not readable at ${yamlPath}: ${e.message}`);
+    errors.push(`contracts YAML not readable at ${yamlPath}: ${(e as Error).message}`);
     return { ok: false, errors, touchpoints: [] };
   }
   const touchpoints = parseTouchpoints(md);
@@ -42,56 +37,52 @@ export async function validateUxSpec(opts) {
   for (const t of touchpoints) {
     if (!declaredOps.has(t.operationId)) {
       errors.push(
-        `operationId "${t.operationId}" referenced by UX action "${t.action}" not found in ${fm.contracts}`
+        `operationId "${t.operationId}" referenced by UX action "${t.action}" not found in ${fm["contracts"]}`
       );
     }
   }
   return { ok: errors.length === 0, errors, touchpoints };
 }
 
-/** @param {string} md */
-function parseFrontmatter(md) {
+function parseFrontmatter(md: string): Record<string, string> | null {
   const m = md.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!m) return null;
-  /** @type {Record<string,string>} */
-  const fm = {};
+  if (!m || m[1] === undefined) return null;
+  const fm: Record<string, string> = {};
   for (const line of m[1].split(/\r?\n/)) {
     const kv = line.match(/^([\w_-]+):\s*(.*)$/);
-    if (kv) fm[kv[1]] = kv[2].trim();
+    if (kv) fm[kv[1] as string] = (kv[2] ?? "").trim();
   }
   return fm;
 }
 
-/** @param {string} md */
-function parseTouchpoints(md) {
+function parseTouchpoints(md: string): Array<{ action: string; operationId: string }> {
   const section = md.split(/^##\s+API touchpoints\s*$/m)[1];
   if (!section) return [];
   const lines = section.split(/\r?\n/);
-  /** @type {{action:string, operationId:string}[]} */
-  const out = [];
+  const out: Array<{ action: string; operationId: string }> = [];
   for (const line of lines) {
     if (/^##\s/.test(line)) break;
     const m = line.match(/^-\s+"([^"]+)"\s+→\s+operationId\s+`([^`]+)`/);
-    if (m) out.push({ action: m[1], operationId: m[2] });
+    if (m) out.push({ action: m[1] ?? "", operationId: m[2] ?? "" });
   }
   return out;
 }
 
-/** @param {any} doc */
-function collectOperationIds(doc) {
-  /** @type {Set<string>} */
-  const ids = new Set();
-  if (!doc?.paths) return ids;
-  for (const pathItem of Object.values(doc.paths)) {
+function collectOperationIds(doc: unknown): Set<string> {
+  const ids = new Set<string>();
+  if (!doc || typeof doc !== "object" || !("paths" in doc)) return ids;
+  const paths = (doc as Record<string, unknown>)["paths"];
+  if (!paths || typeof paths !== "object") return ids;
+  for (const pathItem of Object.values(paths as Record<string, unknown>)) {
     if (!pathItem || typeof pathItem !== "object") continue;
-    for (const op of Object.values(pathItem)) {
+    for (const op of Object.values(pathItem as Record<string, unknown>)) {
       if (
         op &&
         typeof op === "object" &&
         "operationId" in op &&
-        typeof op.operationId === "string"
+        typeof (op as Record<string, unknown>)["operationId"] === "string"
       ) {
-        ids.add(op.operationId);
+        ids.add((op as Record<string, string>)["operationId"] as string);
       }
     }
   }

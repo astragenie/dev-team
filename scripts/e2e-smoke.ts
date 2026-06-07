@@ -9,13 +9,12 @@ import { promisify } from "node:util";
 const execFile = promisify(execFileCallback);
 const rootPath = await fs.mkdtemp(path.join(os.tmpdir(), "crew-e2e-"));
 const repoPath = path.join(rootPath, "sample-repo");
-const cliPath = path.resolve("scripts/crew.mjs");
-const classifyScriptPath = path.resolve("scripts/orchestrate-slice-classify.mjs");
+const cliPath = path.resolve("scripts/crew.ts");
+const classifyScriptPath = path.resolve("scripts/orchestrate-slice-classify.ts");
 const sliceFixturePath = path.resolve("tests/fixtures/slices/split-build-demo.md");
 const openapiFixturePath = path.resolve("tests/fixtures/openapi/valid-feat.openapi.yaml");
 
-/** @param {string} sampleRoot */
-async function scenarioSplitBuildClassification(sampleRoot) {
+async function scenarioSplitBuildClassification(sampleRoot: string) {
   const sliceDir = path.join(sampleRoot, "docs", "ai-loop", "slices", "pending");
   await fs.mkdir(sliceDir, { recursive: true });
   const sliceTarget = path.join(sliceDir, "SLICE-901-split-build-demo.md");

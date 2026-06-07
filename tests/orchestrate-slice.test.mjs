@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { classifySlice } from "../scripts/orchestrate-slice-classify.mjs";
+import { classifySlice } from "../scripts/orchestrate-slice-classify.ts";
 
 const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const COMMAND_PATH = path.join(repoRoot, "commands", "orchestrate-slice.md");
@@ -67,7 +67,7 @@ test("architect contract artifact schema mentions the validate-contracts regener
   const text = await fs.readFile(ARCHITECT_PATH, "utf8");
   assert.match(
     text,
-    /validate-contracts\.mjs/,
+    /validate-contracts\.(?:mjs|ts)/,
     "architect.md must document the validate-contracts regeneration step for derived TS"
   );
 });

@@ -89,88 +89,85 @@ const FLAG_SPEC = {
   "--verified-from": { key: "verifiedFrom" }
 };
 
-/**
- * @typedef {{
- *   repo: string,
- *   allowExisting: boolean,
- *   help: boolean,
- *   force: boolean,
- *   noSelf: boolean,
- *   nonCode: boolean,
- *   repoContext: boolean,
- *   aggregateAll: boolean,
- *   alerts: string | null,
- *   approver: string | null,
- *   badge: string | null,
- *   blockedBy: string | null,
- *   build: string | null,
- *   clues: string | null,
- *   commitPattern: string | null,
- *   completedAt: string | null,
- *   confidence: string | null,
- *   decision: string | null,
- *   deliverable: string | null,
- *   deploy: string | null,
- *   deployer: string | null,
- *   discoveryStatus: string | null,
- *   environment: string | null,
- *   environments: string | null,
- *   evidence: string | null,
- *   externalDeltas: string | null,
- *   extraRoot: string | null,
- *   feature: string | null,
- *   files: string | null,
- *   from: string | null,
- *   goal: string | null,
- *   id: string | null,
- *   kind: string | null,
- *   logs: string | null,
- *   metrics: string | null,
- *   missing: string | null,
- *   mode: string | null,
- *   next: string | null,
- *   note: string | null,
- *   outOfScope: string | null,
- *   owner: string | null,
- *   pace: string | null,
- *   phase: string | null,
- *   preset: string | null,
- *   reason: string | null,
- *   refreshWhen: string | null,
- *   requester: string | null,
- *   resolver: string | null,
- *   resource: string | null,
- *   revision: string | null,
- *   reviewer: string | null,
- *   reviewerLabel: string | null,
- *   risks: string | null,
- *   runSteps: string | null,
- *   runTitle: string | null,
- *   scope: string | null,
- *   severity: string | null,
- *   sourceProject: string | null,
- *   startedAt: string | null,
- *   status: string | null,
- *   summary: string | null,
- *   telemetry: string | null,
- *   testSummary: string | null,
- *   testSummarySkipReason: string | null,
- *   validationEvidence: string | null,
- *   title: string | null,
- *   to: string | null,
- *   triggerFilename: string | null,
- *   url: string | null,
- *   validator: string | null,
- *   verifiedFrom: string | null,
- *   [key: string]: string | boolean | null
- * }} Flags
- */
+interface Flags {
+  repo: string;
+  allowExisting: boolean;
+  help: boolean;
+  force: boolean;
+  noSelf: boolean;
+  nonCode: boolean;
+  repoContext: boolean;
+  aggregateAll: boolean;
+  alerts: string | null;
+  approver: string | null;
+  badge: string | null;
+  blockedBy: string | null;
+  build: string | null;
+  clues: string | null;
+  commitPattern: string | null;
+  completedAt: string | null;
+  confidence: string | null;
+  decision: string | null;
+  deliverable: string | null;
+  deploy: string | null;
+  deployer: string | null;
+  discoveryStatus: string | null;
+  environment: string | null;
+  environments: string | null;
+  evidence: string | null;
+  externalDeltas: string | null;
+  extraRoot: string | null;
+  feature: string | null;
+  files: string | null;
+  findings: string | null;
+  from: string | null;
+  goal: string | null;
+  id: string | null;
+  kind: string | null;
+  logs: string | null;
+  metrics: string | null;
+  missing: string | null;
+  mode: string | null;
+  next: string | null;
+  note: string | null;
+  outOfScope: string | null;
+  owner: string | null;
+  pace: string | null;
+  phase: string | null;
+  preset: string | null;
+  reason: string | null;
+  refreshWhen: string | null;
+  requester: string | null;
+  resolver: string | null;
+  resource: string | null;
+  revision: string | null;
+  reviewer: string | null;
+  reviewerLabel: string | null;
+  risks: string | null;
+  runSteps: string | null;
+  runTitle: string | null;
+  scope: string | null;
+  severity: string | null;
+  sourceProject: string | null;
+  startedAt: string | null;
+  status: string | null;
+  summary: string | null;
+  telemetry: string | null;
+  testSummary: string | null;
+  testSummarySkipReason: string | null;
+  validationEvidence: string | null;
+  title: string | null;
+  to: string | null;
+  triggerFilename: string | null;
+  url: string | null;
+  validator: string | null;
+  verifiedFrom: string | null;
+  [key: string]: string | boolean | null;
+}
 
-/** @param {string[]} argv */
-function parseArgs(argv) {
+function parseArgs(argv: string[]) {
   const [command, ...rest] = argv;
-  /** @type {Flags} */
-  const flags = {
+  const flags: Flags = {
     repo: process.cwd(),
     allowExisting: false,
     help: false,
@@ -241,24 +238,29 @@ function parseArgs(argv) {
     phase: null,
     testSummary: null,
     testSummarySkipReason: null,
+    findings: null,
     validationEvidence: null
   };
   const positionals = [];
 
   for (let index = 0; index < rest.length; index += 1) {
+    // noUncheckedIndexedAccess: guard the index even though the loop bound guarantees it
     const value = rest[index];
+    if (value === undefined) continue;
     if (value === "--") {
       for (let tail = index + 1; tail < rest.length; tail += 1) {
-        positionals.push(rest[tail]);
+        const tailVal = rest[tail];
+        if (tailVal !== undefined) positionals.push(tailVal);
       }
       break;
     }
-    const spec = /** @type {Record<string, {key: string, boolean?: boolean}>} */ (FLAG_SPEC)[value];
+    const spec = (FLAG_SPEC as Record<string, { key: string; boolean?: boolean }>)[value];
     if (spec) {
       if (spec.boolean) {
-        flags[spec.key] = true;
+        (flags as Record<string, string | boolean | null>)[spec.key] = true;
       } else {
-        flags[spec.key] = rest[index + 1];
+        const nextVal = rest[index + 1] ?? null;
+        (flags as Record<string, string | boolean | null>)[spec.key] = nextVal;
         index += 1;
       }
       continue;
@@ -277,8 +279,8 @@ function parseArgs(argv) {
   }
   return { command, helpTarget: null, flags, positionals };
 }
-/** @param {string | null} [target] */
-function usage(target = null) {
+
+function usage(target: string | null = null) {
   const subcommands = {
     "install-global": "  node scripts/crew.mjs install-global",
     audit: "  node scripts/crew.mjs audit --repo <path>",
@@ -324,12 +326,13 @@ function usage(target = null) {
     "cost-advise": "  node scripts/crew.mjs cost-advise --repo <path>"
   };
 
-  if (target && subcommands[/** @type {keyof typeof subcommands} */ (target)]) {
+  const subcommandsMap = subcommands as Record<string, string | undefined>;
+  if (target && subcommandsMap[target]) {
     return [
       "Engineering OS installer",
       "",
       "Usage:",
-      subcommands[/** @type {keyof typeof subcommands} */ (target)]
+      subcommandsMap[target]
     ].join("\n");
   }
 
@@ -340,9 +343,9 @@ function usage(target = null) {
 // target runTitle → fallback "advise". --title lets the loop side pass the
 // enriched FEAT/PHASE/SLICE tag so cost-advise filenames match the rest of
 // the artifact surface.
-/** @param {string | null} title @param {Record<string, any> | null} advisor */
-function buildCostAdviseSlug(title, advisor) {
-  const source = title || advisor?.target?.sliceId || advisor?.target?.runTitle || "advise";
+function buildCostAdviseSlug(title: string | null, advisor: Record<string, unknown> | null) {
+  const t = advisor?.["target"] as { sliceId?: string; runTitle?: string } | null | undefined;
+  const source = title || t?.sliceId || t?.runTitle || "advise";
   return source
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
@@ -352,8 +355,7 @@ function buildCostAdviseSlug(title, advisor) {
 
 // Optional YAML frontmatter block; "" when both feature + phase absent so
 // existing output stays byte-identical for legacy callers.
-/** @param {string | null} feature @param {string | null} phase */
-function buildOptionalFrontmatter(feature, phase) {
+function buildOptionalFrontmatter(feature: string | null, phase: string | null) {
   const lines = [];
   if (phase !== null && phase !== undefined && String(phase).length > 0) {
     lines.push(`phase: ${JSON.stringify(String(phase))}`);
@@ -363,8 +365,12 @@ function buildOptionalFrontmatter(feature, phase) {
   return ["---", ...lines, "---", ""].join("\n");
 }
 
-/** @param {string} repoPath @param {string} md @param {Record<string, any> | null} advisor @param {Record<string, any>} [options] */
-async function writeCostAdviseArtifact(repoPath, md, advisor, options = {}) {
+async function writeCostAdviseArtifact(
+  repoPath: string,
+  md: string,
+  advisor: Record<string, unknown> | null,
+  options: { title?: string | null; feature?: string | null; phase?: string | null } = {}
+) {
   const fs = await import("node:fs/promises");
   const pathMod = await import("node:path");
   const { title = null, feature = null, phase = null } = options;
@@ -387,13 +393,15 @@ async function writeCostAdviseArtifact(repoPath, md, advisor, options = {}) {
 // Best-effort cost-advise emit. Returns a description object on success,
 // `{ error }` on failure. Extracted from maybeEmitCostReport to keep its
 // cyclomatic complexity under the eslint cap.
-/** @param {string} repoPath @param {{ title: string | null, feature: string | null, phase: string | null }} opts */
-async function emitCostAdvise(repoPath, { title, feature, phase }) {
+async function emitCostAdvise(
+  repoPath: string,
+  { title, feature, phase }: { title: string | null; feature: string | null; phase: string | null }
+) {
   try {
     const { buildCostAdvisor, renderCostAdvisorMarkdown } = await import("./lib/cost-advisor.ts");
     const advisor = await buildCostAdvisor(repoPath, { limit: 10 });
     const md = renderCostAdvisorMarkdown(advisor);
-    const advisePath = await writeCostAdviseArtifact(repoPath, md, advisor, {
+    const advisePath = await writeCostAdviseArtifact(repoPath, md, advisor as unknown as Record<string, unknown>, {
       title,
       feature,
       phase
@@ -403,8 +411,9 @@ async function emitCostAdvise(repoPath, { title, feature, phase }) {
       recommendations: advisor.recommendations?.length || 0,
       aggregateFlags: advisor.aggregateFlags?.length || 0
     };
-  } catch (err) {
-    return { error: err.message };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { error: message };
   }
 }
 
@@ -412,8 +421,7 @@ async function emitCostAdvise(repoPath, { title, feature, phase }) {
 // path `C:/work/foo` when running on win32. Node's path.resolve treats a
 // leading "/" as drive-relative, so `/c/work` becomes `C:\c\work` (a phantom
 // nested dir). This converter restores the intended drive-letter form.
-/** @param {string} value */
-function normalizeMsysPath(value) {
+function normalizeMsysPath(value: string) {
   if (!value || process.platform !== "win32") {
     return value;
   }
@@ -421,12 +429,14 @@ function normalizeMsysPath(value) {
   if (!match) {
     return value;
   }
-  return `${match[1].toUpperCase()}:/${match[2]}`;
+  return `${(match[1] ?? "").toUpperCase()}:/${match[2] ?? ""}`;
 }
 
-/**
- * @typedef {{ repoPath: string, flags: Flags, positionals: string[] }} CommandContext
- */
+interface CommandContext {
+  repoPath: string;
+  flags: Flags;
+  positionals: string[];
+}
 
 // Command registry. Each entry is `(ctx) => Promise<result>` where
 // `ctx = { repoPath, flags, positionals }`. main() dispatches by name; the
@@ -436,11 +446,11 @@ const COMMANDS = {
     const { installGlobal } = await import("./lib/installer.ts");
     return installGlobal();
   },
-  audit: async (/** @type {CommandContext} */ { repoPath }) => {
+  audit: async ({ repoPath }: CommandContext) => {
     const { auditRepo } = await import("./lib/installer.ts");
     return auditRepo(repoPath);
   },
-  bootstrap: async (/** @type {CommandContext} */ { repoPath }) => {
+  bootstrap: async ({ repoPath }: CommandContext) => {
     const { bootstrapRepo } = await import("./lib/installer.ts");
     const result = await bootstrapRepo(repoPath);
     if (!result.ok) {
@@ -449,12 +459,12 @@ const COMMANDS = {
     }
     return result.value;
   },
-  init: async (/** @type {CommandContext} */ { repoPath, flags }) => {
+  init: async ({ repoPath, flags }: CommandContext) => {
     const { initRepo } = await import("./lib/installer.ts");
     return initRepo(repoPath, { allowExisting: flags.allowExisting });
   },
 
-  claim: async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
+  claim: async ({ repoPath, flags, positionals }: CommandContext) => {
     const { claimFiles } = await import("./lib/claims.ts");
     const result = await claimFiles(repoPath, positionals, {
       owner: flags.owner || "lead-session"
@@ -465,46 +475,46 @@ const COMMANDS = {
     }
     return result.value;
   },
-  release: async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
+  release: async ({ repoPath, flags, positionals }: CommandContext) => {
     const { releaseFiles } = await import("./lib/claims.ts");
-    const result = await releaseFiles(repoPath, positionals, { owner: flags.owner });
+    const result = await releaseFiles(repoPath, positionals, flags.owner !== null ? { owner: flags.owner } : {});
     if (!result.ok) {
       console.error(result.error.message);
       process.exit(1);
     }
     return result.value;
   },
-  "show-claims": async (/** @type {CommandContext} */ { repoPath }) => {
+  "show-claims": async ({ repoPath }: CommandContext) => {
     const { listClaims } = await import("./lib/claims.ts");
     return { claims: await listClaims(repoPath) };
   },
-  "show-conflicts": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
+  "show-conflicts": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { inspectClaims } = await import("./lib/claims.ts");
     return inspectClaims(repoPath, positionals, { owner: flags.owner || "lead-session" });
   },
 
-  "request-approval": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
+  "request-approval": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { requestApproval } = await import("./lib/approvals.ts");
     return requestApproval(repoPath, {
       requester: flags.requester || "lead-session",
-      approver: flags.approver,
+      approver: flags.approver ?? undefined,
       kind: flags.kind || "scope_change",
       severity: flags.severity || "medium",
       summary: flags.summary || positionals.join(" ") || "Approval requested",
       reason: flags.reason || ""
     });
   },
-  "show-approvals": async (/** @type {CommandContext} */ { repoPath, flags }) => {
+  "show-approvals": async ({ repoPath, flags }: CommandContext) => {
     const { listApprovals } = await import("./lib/approvals.ts");
     return {
-      approvals: await listApprovals(repoPath, { status: flags.status, approver: flags.approver })
+      approvals: await listApprovals(repoPath, { status: flags.status ?? undefined, approver: flags.approver })
     };
   },
-  "resolve-approval": async (/** @type {CommandContext} */ { repoPath, flags }) => {
+  "resolve-approval": async ({ repoPath, flags }: CommandContext) => {
     const { resolveApproval } = await import("./lib/approvals.ts");
     const result = await resolveApproval(repoPath, {
-      id: flags.id,
-      decision: flags.decision,
+      id: flags.id ?? undefined,
+      decision: flags.decision ?? undefined,
       resolver: flags.resolver || "lead-session",
       note: flags.note || ""
     });
@@ -515,79 +525,79 @@ const COMMANDS = {
     return result.value;
   },
 
-  "wake-up": async (/** @type {CommandContext} */ { repoPath }) => {
+  "wake-up": async ({ repoPath }: CommandContext) => {
     const { buildWakeUpBrief } = await import("./lib/wakeup.mjs");
     return buildWakeUpBrief(repoPath);
   },
-  "brief-me": async (/** @type {CommandContext} */ { repoPath }) => {
+  "brief-me": async ({ repoPath }: CommandContext) => {
     const { buildBriefingReport } = await import("./lib/briefing.ts");
     return buildBriefingReport(repoPath);
   },
-  "scope-estimate": async (/** @type {CommandContext} */ { flags, positionals }) => {
+  "scope-estimate": async ({ flags, positionals }: CommandContext) => {
     const { estimateScope } = await import("./lib/scope-estimate.ts");
     const rawFiles = (flags.files || positionals.join(",") || "").split(",").filter(Boolean);
     const files = rawFiles.map((entry) => {
       const [p, linesStr, eslintDisableStr] = entry.split(":");
       return {
         path: p || "",
-        lines: parseInt(linesStr, 10) || 0,
+        lines: parseInt(linesStr ?? "0", 10) || 0,
         eslintDisable: eslintDisableStr === "true"
       };
     });
     return estimateScope({ files });
   },
-  fleet: async (/** @type {CommandContext} */ { repoPath, flags }) => {
+  fleet: async ({ repoPath, flags }: CommandContext) => {
     const { buildFleetReport } = await import("./lib/fleet.ts");
     return buildFleetReport(repoPath, {
       extraRoots: flags.extraRoot ? [flags.extraRoot] : [],
       includeSelf: !flags.noSelf
     });
   },
-  "discover-deployment": async (/** @type {CommandContext} */ { repoPath }) => {
+  "discover-deployment": async ({ repoPath }: CommandContext) => {
     const { discoverDeploymentClues } = await import("./lib/deployment-guidance/read.ts");
     return discoverDeploymentClues(repoPath);
   },
   "write-deployment-guidance": async (
-    /** @type {CommandContext} */ { repoPath, flags, positionals }
+    { repoPath, flags, positionals }: CommandContext
   ) => {
     const { writeDeploymentGuidance } = await import("./lib/deployment-guidance/write.ts");
     const r = await writeDeploymentGuidance(repoPath, {
       title: flags.title || positionals.join(" ") || "Repo Deployment Model",
       owner: flags.owner || "lead-session",
-      summary: flags.summary,
-      build: flags.build,
-      deploy: flags.deploy,
-      environments: flags.environments,
-      logs: flags.logs,
-      metrics: flags.metrics,
-      alerts: flags.alerts,
-      telemetry: flags.telemetry,
-      clues: flags.clues,
-      discoveryStatus: flags.discoveryStatus,
-      verifiedFrom: flags.verifiedFrom,
-      missing: flags.missing,
-      refreshWhen: flags.refreshWhen,
-      next: flags.next
+      summary: flags.summary ?? undefined,
+      build: flags.build ?? undefined,
+      deploy: flags.deploy ?? undefined,
+      environments: flags.environments ?? undefined,
+      logs: flags.logs ?? undefined,
+      metrics: flags.metrics ?? undefined,
+      alerts: flags.alerts ?? undefined,
+      telemetry: flags.telemetry ?? undefined,
+      clues: flags.clues ?? undefined,
+      discoveryStatus: flags.discoveryStatus ?? undefined,
+      verifiedFrom: flags.verifiedFrom ?? undefined,
+      missing: flags.missing ?? undefined,
+      refreshWhen: flags.refreshWhen ?? undefined,
+      next: flags.next ?? undefined
     });
     if (!r.ok) throw r.error;
     return r.value;
   },
 
-  "show-workflow-state": async (/** @type {CommandContext} */ { repoPath }) => {
+  "show-workflow-state": async ({ repoPath }: CommandContext) => {
     const { loadWorkflowState, summarizeWorkflowState } = await import("./lib/workflow-state.ts");
     const workflowState = await loadWorkflowState(repoPath);
     return { workflowState, summary: summarizeWorkflowState(workflowState) };
   },
-  "mark-badge": async (/** @type {CommandContext} */ { repoPath, flags }) => {
+  "mark-badge": async ({ repoPath, flags }: CommandContext) => {
     const { markWorkflowBadge } = await import("./lib/workflow-state.ts");
     const result = await markWorkflowBadge(repoPath, {
-      badge: flags.badge,
+      badge: flags.badge ?? undefined,
       note: flags.note || flags.reason || "",
       blockedBy: flags.blockedBy,
-      title: flags.title,
-      goal: flags.goal,
-      mode: flags.mode,
-      next: flags.next
+      title: flags.title ?? undefined,
+      goal: flags.goal ?? undefined,
+      mode: flags.mode ?? undefined,
+      next: flags.next ?? undefined
     });
     if (!result.ok) {
       console.error(result.error.message);
@@ -596,49 +606,49 @@ const COMMANDS = {
     return { badge: flags.badge, currentRun: result.value };
   },
 
-  "write-run-brief": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
+  "write-run-brief": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
     const r = await writeArtifact(repoPath, "run-brief", {
       title: flags.title || positionals.join(" ") || "Run Brief",
-      goal: flags.goal,
-      mode: flags.mode,
-      pace: flags.pace,
+      goal: flags.goal ?? undefined,
+      mode: flags.mode ?? undefined,
+      pace: flags.pace ?? undefined,
       owner: flags.owner || "lead-session",
-      status: flags.status === "open" ? "active" : flags.status,
-      summary: flags.summary,
-      scope: flags.scope,
-      outOfScope: flags.outOfScope,
-      files: flags.files,
-      next: flags.next,
-      feature: flags.feature,
-      phase: flags.phase
+      status: flags.status === "open" ? "active" : flags.status ?? undefined,
+      summary: flags.summary ?? undefined,
+      scope: flags.scope ?? undefined,
+      outOfScope: flags.outOfScope ?? undefined,
+      files: flags.files ?? undefined,
+      next: flags.next ?? undefined,
+      feature: flags.feature ?? undefined,
+      phase: flags.phase ?? undefined
     });
     if (!r.ok) throw r.error;
     return r.value;
   },
-  "write-handoff": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
+  "write-handoff": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
     const r = await writeArtifact(repoPath, "handoff", {
       title: flags.title || positionals.join(" ") || "Task Handoff",
       from: flags.from || flags.owner || "lead-session",
-      to: flags.to,
-      goal: flags.goal,
-      summary: flags.summary,
-      scope: flags.scope,
-      outOfScope: flags.outOfScope,
-      deliverable: flags.deliverable,
-      files: flags.files,
-      confidence: flags.confidence,
-      risks: flags.risks,
-      next: flags.next,
-      feature: flags.feature,
-      phase: flags.phase,
+      to: flags.to ?? undefined,
+      goal: flags.goal ?? undefined,
+      summary: flags.summary ?? undefined,
+      scope: flags.scope ?? undefined,
+      outOfScope: flags.outOfScope ?? undefined,
+      deliverable: flags.deliverable ?? undefined,
+      files: flags.files ?? undefined,
+      confidence: flags.confidence ?? undefined,
+      risks: flags.risks ?? undefined,
+      next: flags.next ?? undefined,
+      feature: flags.feature ?? undefined,
+      phase: flags.phase ?? undefined,
       repoContext: flags.repoContext
     });
     if (!r.ok) throw r.error;
     return r.value;
   },
-  "write-review-result": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
+  "write-review-result": async ({ repoPath, flags, positionals }: CommandContext) => {
     const decision = flags.decision;
     const VALID_DECISIONS = new Set(["approved", "approved_with_notes", "rejected"]);
     if (decision && !VALID_DECISIONS.has(decision)) {
@@ -660,93 +670,93 @@ const COMMANDS = {
     const r = await writeArtifact(repoPath, "review-result", {
       title: flags.title || positionals.join(" ") || "Review Result",
       reviewer: flags.reviewer || flags.owner || "reviewer",
-      decision,
-      summary: flags.summary,
-      evidence: flags.evidence,
-      files: flags.files,
-      risks: flags.risks,
-      next: flags.next,
-      feature: flags.feature,
-      phase: flags.phase,
-      testSummary: flags.testSummary,
-      testSummarySkipReason: flags.testSummarySkipReason,
-      validationEvidence: flags.validationEvidence,
-      nonCode: flags.nonCode,
+      decision: decision ?? undefined,
+      summary: flags.summary ?? undefined,
+      evidence: flags.evidence ?? undefined,
+      files: flags.files ?? undefined,
+      risks: flags.risks ?? undefined,
+      next: flags.next ?? undefined,
+      feature: flags.feature ?? undefined,
+      phase: flags.phase ?? undefined,
+      testSummary: flags.testSummary ?? undefined,
+      testSummarySkipReason: flags.testSummarySkipReason ?? undefined,
+      validationEvidence: flags.validationEvidence ?? undefined,
+      nonCode: flags.nonCode ?? undefined,
       findings: flags.findings ?? null
     });
     if (!r.ok) throw r.error;
     return r.value;
   },
   "write-validation-plan": async (
-    /** @type {CommandContext} */ { repoPath, flags, positionals }
+    { repoPath, flags, positionals }: CommandContext
   ) => {
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
     const r = await writeArtifact(repoPath, "validation-plan", {
       title: flags.title || positionals.join(" ") || "Validation Plan",
       validator: flags.validator || flags.owner || "validator",
       owner: flags.owner || "lead-session",
-      environment: flags.environment,
-      goal: flags.goal,
-      summary: flags.summary,
-      scope: flags.scope,
-      outOfScope: flags.outOfScope,
-      evidence: flags.evidence,
-      next: flags.next,
-      feature: flags.feature,
-      phase: flags.phase
+      environment: flags.environment ?? undefined,
+      goal: flags.goal ?? undefined,
+      summary: flags.summary ?? undefined,
+      scope: flags.scope ?? undefined,
+      outOfScope: flags.outOfScope ?? undefined,
+      evidence: flags.evidence ?? undefined,
+      next: flags.next ?? undefined,
+      feature: flags.feature ?? undefined,
+      phase: flags.phase ?? undefined
     });
     if (!r.ok) throw r.error;
     return r.value;
   },
   "write-validation-result": async (
-    /** @type {CommandContext} */ { repoPath, flags, positionals }
+    { repoPath, flags, positionals }: CommandContext
   ) => {
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
     const r = await writeArtifact(repoPath, "validation-result", {
       title: flags.title || positionals.join(" ") || "Validation Result",
       validator: flags.validator || flags.owner || "validator",
-      environment: flags.environment,
-      decision: flags.decision,
-      goal: flags.goal,
-      summary: flags.summary,
-      evidence: flags.evidence,
-      files: flags.files,
-      risks: flags.risks,
-      next: flags.next,
-      feature: flags.feature,
-      phase: flags.phase,
+      environment: flags.environment ?? undefined,
+      decision: flags.decision ?? undefined,
+      goal: flags.goal ?? undefined,
+      summary: flags.summary ?? undefined,
+      evidence: flags.evidence ?? undefined,
+      files: flags.files ?? undefined,
+      risks: flags.risks ?? undefined,
+      next: flags.next ?? undefined,
+      feature: flags.feature ?? undefined,
+      phase: flags.phase ?? undefined,
       findings: flags.findings ?? null
     });
     if (!r.ok) throw r.error;
     return r.value;
   },
   "write-deployment-check": async (
-    /** @type {CommandContext} */ { repoPath, flags, positionals }
+    { repoPath, flags, positionals }: CommandContext
   ) => {
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
     const r = await writeArtifact(repoPath, "deployment-check", {
       title: flags.title || positionals.join(" ") || "Deployment Check",
       deployer: flags.deployer || flags.owner || "deployer",
-      environment: flags.environment,
-      resource: flags.resource,
-      url: flags.url,
-      revision: flags.revision,
-      decision: flags.decision,
-      goal: flags.goal,
-      summary: flags.summary,
-      evidence: flags.evidence,
-      files: flags.files,
-      risks: flags.risks,
-      next: flags.next,
-      feature: flags.feature,
-      phase: flags.phase,
+      environment: flags.environment ?? undefined,
+      resource: flags.resource ?? undefined,
+      url: flags.url ?? undefined,
+      revision: flags.revision ?? undefined,
+      decision: flags.decision ?? undefined,
+      goal: flags.goal ?? undefined,
+      summary: flags.summary ?? undefined,
+      evidence: flags.evidence ?? undefined,
+      files: flags.files ?? undefined,
+      risks: flags.risks ?? undefined,
+      next: flags.next ?? undefined,
+      feature: flags.feature ?? undefined,
+      phase: flags.phase ?? undefined,
       findings: flags.findings ?? null
     });
     if (!r.ok) throw r.error;
     return r.value;
   },
   "write-final-synthesis": async (
-    /** @type {CommandContext} */ { repoPath, flags, positionals }
+    { repoPath, flags, positionals }: CommandContext
   ) => {
     if (flags.externalDeltas === null || flags.externalDeltas === undefined) {
       throw new Error(
@@ -761,17 +771,17 @@ const COMMANDS = {
     const synthResult = await writeArtifact(repoPath, "final-synthesis", {
       title: flags.title || positionals.join(" ") || "Final Synthesis",
       owner: flags.owner || "lead-session",
-      status: flags.status === "open" ? "completed" : flags.status,
-      summary: flags.summary,
-      files: flags.files,
-      evidence: flags.evidence,
-      externalDeltas: flags.externalDeltas,
-      runSteps: flags.runSteps,
-      risks: flags.risks,
-      next: flags.next,
-      force: flags.force,
-      feature: flags.feature,
-      phase: flags.phase
+      status: flags.status === "open" ? "completed" : flags.status ?? undefined,
+      summary: flags.summary ?? undefined,
+      files: flags.files ?? undefined,
+      evidence: flags.evidence ?? undefined,
+      externalDeltas: flags.externalDeltas ?? undefined,
+      runSteps: flags.runSteps ?? undefined,
+      risks: flags.risks ?? undefined,
+      next: flags.next ?? undefined,
+      force: flags.force ?? undefined,
+      feature: flags.feature ?? undefined,
+      phase: flags.phase ?? undefined
     });
     if (!synthResult.ok) throw synthResult.error;
     const synthesis = synthResult.value;
@@ -787,11 +797,11 @@ const COMMANDS = {
     return costArtifact ? { ...synthesis, costReport: costArtifact } : synthesis;
   },
 
-  "cost-advise": async (/** @type {CommandContext} */ { repoPath, flags }) => {
+  "cost-advise": async ({ repoPath, flags }: CommandContext) => {
     const { buildCostAdvisor, renderCostAdvisorMarkdown } = await import("./lib/cost-advisor.ts");
     const advisor = await buildCostAdvisor(repoPath, { limit: 10 });
     const md = renderCostAdvisorMarkdown(advisor);
-    const writePath = await writeCostAdviseArtifact(repoPath, md, advisor, {
+    const writePath = await writeCostAdviseArtifact(repoPath, md, advisor as unknown as Record<string, unknown>, {
       title: flags.title,
       feature: flags.feature,
       phase: flags.phase
@@ -805,7 +815,7 @@ const COMMANDS = {
       artifactPath: writePath
     };
   },
-  "cost-slice": (/** @type {CommandContext} */ { repoPath, flags }) =>
+  "cost-slice": ({ repoPath, flags }: CommandContext) =>
     costSliceHandler({ repoPath, flags })
 };
 
@@ -818,7 +828,7 @@ async function main() {
     return;
   }
 
-  const handler = COMMANDS[/** @type {keyof typeof COMMANDS} */ (command)];
+  const handler = (COMMANDS as Record<string, (ctx: CommandContext) => Promise<unknown>>)[command];
   if (!handler) {
     throw new Error(`Unknown command: ${command}`);
   }

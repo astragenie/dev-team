@@ -15,7 +15,7 @@ Workflow:
 1. First verify the current workspace path:
    - `pwd`
 2. Start by reading the repo wake-up brief:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" wake-up --repo "$PWD"`
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" wake-up --repo "$PWD"`
 3. Explicitly confirm the returned `repoPath` matches the current working directory. If it does not, stop and correct the repo context before proceeding.
 4. If a recent design doc already exists under `.claude/artifacts/crew/designs/`, read it and decide whether this session is extending it or starting a fresh one.
 5. Frame the design task with the user:
@@ -44,7 +44,7 @@ When the design is agreed, persist it:
 
 1. Write the full design body to `.claude/artifacts/crew/designs/<short-slug>.md` using the structure described above. The slug should match the feature or service name and be filesystem-safe.
 2. Record a run brief so the design surfaces in the next wake-up:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-run-brief --repo "$PWD" --title "design: <short title>" --goal "<one-paragraph summary>" --mode "assisted single-session"`
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-run-brief --repo "$PWD" --title "design: <short title>" --goal "<one-paragraph summary>" --mode "assisted single-session"`
 3. Reference the design doc path in any subsequent handoff instead of duplicating the design inline.
 
 Design should be treated as a phase, not a ritual:

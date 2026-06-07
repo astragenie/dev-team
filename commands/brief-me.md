@@ -14,7 +14,7 @@ Workflow:
 2. sync remote state so the briefing reflects reality, not stale local refs:
    - `git fetch --prune`
 3. run:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" brief-me --repo "$PWD"`
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" brief-me --repo "$PWD"`
 3. explicitly compare the returned `repoPath` with the current working directory
 4. if they do not match, stop and treat the brief as invalid for this run
 5. if they match, present the briefing in this fixed order:

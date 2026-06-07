@@ -30,8 +30,7 @@ function startHttpServer() {
   });
 }
 
-/** @param {number} ms */
-async function wait(ms) {
+async function wait(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 

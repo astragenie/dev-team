@@ -112,8 +112,8 @@ When you call `write-review-result`, populate `--test-summary` with a one-senten
 
 When the diff touches the plugin shape (manifests, `agents/`, `commands/`, `hooks/`, `.mcp.json`) or skills (`skills/**/SKILL.md`), **dispatch** the upstream quality skills — do not skip or defer them.
 
-- **`plugin-dev:plugin-validator`** — **required** when the diff modifies any of: `.claude-plugin/marketplace.json`, `plugin.json`, files under `agents/`, `commands/`, `hooks/`, or adds / changes `.mcp.json`. Invoke the skill and include its findings in your review artifact. Pair with the local `node ./scripts/validate-manifests.mjs` output (the hard CI gate).
-- **`plugin-dev:skill-reviewer`** — **required** when the diff modifies any `skills/**/SKILL.md` file. Invoke the skill for triggering-effectiveness + best-practice feedback. Pair with `node ./scripts/validate-skills.mjs` for the structural quality bar (tier, ≤200 lines, required headings).
+- **`plugin-dev:plugin-validator`** — **required** when the diff modifies any of: `.claude-plugin/marketplace.json`, `plugin.json`, files under `agents/`, `commands/`, `hooks/`, or adds / changes `.mcp.json`. Invoke the skill and include its findings in your review artifact. Pair with the local `node ./scripts/validate-manifests.ts` output (the hard CI gate).
+- **`plugin-dev:skill-reviewer`** — **required** when the diff modifies any `skills/**/SKILL.md` file. Invoke the skill for triggering-effectiveness + best-practice feedback. Pair with `node ./scripts/validate-skills.ts` for the structural quality bar (tier, ≤200 lines, required headings).
 
 Route signals live in `docs/routing-table.md` ("Plugin shape change" and "Skill shape change" rows). Cite them in the review-result artifact under "configured review skills consulted".
 
@@ -140,7 +140,7 @@ The lead reads this note and skips `crew:validator` dispatch when the note is pr
 After completing your review analysis, write the review-result artifact by calling:
 
 ```
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-review-result \
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result \
   --repo "$PWD" \
   --title "<short title>" \
   --decision approved|approved_with_notes|rejected \
@@ -166,13 +166,13 @@ When you hit an external blocker or need to escalate before writing your review-
 
 ```bash
 # External blocker (missing context, cannot access diff, scope unclear)
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge blocked --note "<reason>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge blocked --note "<reason>"
 
 # Escalate when a decision requires human judgment
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge escalated_to_human --note "<reason>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge escalated_to_human --note "<reason>"
 
 # Record a skipped review gate
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge review_skipped --note "<reason>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge review_skipped --note "<reason>"
 ```
 
 Emit the badge BEFORE writing the review-result artifact. The badge surfaces in `brief-me` and `wake-up`; the artifact carries the detail.
@@ -182,7 +182,7 @@ Emit the badge BEFORE writing the review-result artifact. The badge surfaces in 
 Write your full completion report by calling:
 
 ```
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-handoff \
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
   --repo "$PWD" \
   --title "<short title>" \
   --from <role> --to lead \

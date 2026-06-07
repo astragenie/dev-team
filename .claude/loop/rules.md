@@ -119,7 +119,7 @@ No manual flag needed — detection is automatic.
 
 **Fleet view:**
 
-Run `node hero-crew/scripts/crew.mjs fleet --repo "$PWD"` from any worktree to see all sibling active loops, their current IN_PROGRESS slice, and progress counts. The command scans the parent directory for `.claude/state/crew/slice-progress.md` files; no coordination required.
+Run `node hero-crew/scripts/crew.ts fleet --repo "$PWD"` from any worktree to see all sibling active loops, their current IN_PROGRESS slice, and progress counts. The command scans the parent directory for `.claude/state/crew/slice-progress.md` files; no coordination required.
 
 **Constraints:**
 

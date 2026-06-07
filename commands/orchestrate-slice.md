@@ -110,10 +110,10 @@ If the YAML already exists: read it, then add the new operations / schemas for t
 If the YAML does not exist: create it from scratch following `skills/domain/openapi-authoring/SKILL.md`.
 
 After writing/revising the YAML, regenerate the TS:
-  node ./scripts/validate-contracts.mjs <yaml> --write
+  node ./scripts/validate-contracts.ts <yaml> --write
 
 Then run the validator without --write to confirm clean:
-  node ./scripts/validate-contracts.mjs <yaml>
+  node ./scripts/validate-contracts.ts <yaml>
   (must exit 0; redocly lint + drift check must pass)
 
 Return ONLY the YAML path on a single line.
@@ -164,7 +164,7 @@ Produce:
 - A YAML frontmatter block at the top of the file with `slice:`, `feat:`, and `contracts:` fields (where `contracts:` points to the FEAT YAML path).
 
 After writing the spec, run:
-  node ./scripts/validate-ux-spec.mjs <ux-spec-path>
+  node ./scripts/validate-ux-spec.ts <ux-spec-path>
 (must exit 0; every operationId referenced must exist in the FEAT YAML.)
 
 Return ONLY the artifact path on a single line.
@@ -365,7 +365,7 @@ Store the returned path as `DOCWRITER_PATH`.
 Run:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-final-synthesis \
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-final-synthesis \
   --repo "$PWD" \
   --title "orchestrate-slice: <SLICE-NN title>" \
   --outcome "PASS" \

@@ -77,7 +77,7 @@ Return the specialist output plus a synthesis paragraph noting accuracy caveats 
 Write your full completion report by calling:
 
 ```
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-handoff \
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
   --repo "$PWD" \
   --title "<short title>" \
   --from copywriter --to lead \

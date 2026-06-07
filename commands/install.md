@@ -20,7 +20,7 @@ Run:
 
 ```bash
 set -euo pipefail
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" install-global
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" install-global
 ```
 
 Then report:

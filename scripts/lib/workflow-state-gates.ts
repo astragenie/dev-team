@@ -65,12 +65,12 @@ export interface WorkflowState {
 }
 
 export interface RunFields {
-  title?: string;
-  goal?: string;
-  mode?: string;
-  status?: string;
-  next?: string;
-  path?: string;
+  title?: string | undefined;
+  goal?: string | undefined;
+  mode?: string | undefined;
+  status?: string | undefined;
+  next?: string | undefined;
+  path?: string | undefined;
 }
 
 // ---------------------------------------------------------------------------

@@ -15,7 +15,7 @@ async function makeRunsDir(files) {
   return dir;
 }
 
-import { validateSyntheses } from "../scripts/validate-syntheses.mjs";
+import { validateSyntheses } from "../scripts/validate-syntheses.ts";
 
 test("validateSyntheses passes when no synthesis files exist", async () => {
   const dir = await makeRunsDir({});

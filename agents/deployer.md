@@ -74,7 +74,7 @@ After a deploy attempt (success, failure, or rollback), write the
 deployment-check artifact BEFORE writing the handoff:
 
 ```
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-deployment-check \
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-deployment-check \
   --repo "$PWD" \
   --title "<short title>" \
   --decision passed|passed_with_notes|failed \
@@ -99,16 +99,16 @@ When you hit an external blocker or need to escalate before writing your deploym
 
 ```bash
 # External blocker (environment locked, credentials unavailable, CI red)
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge blocked --note "<reason>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge blocked --note "<reason>"
 
 # Escalate when production promotion decision requires human approval
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge escalated_to_human --note "<reason>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge escalated_to_human --note "<reason>"
 
 # Record a skipped dev deployment gate
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge dev_skipped --note "<reason>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge dev_skipped --note "<reason>"
 
 # Record a skipped prod deployment gate
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge prod_skipped --note "<reason>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge prod_skipped --note "<reason>"
 ```
 
 Emit the badge BEFORE writing the deployment-check artifact. The badge surfaces in `brief-me` and `wake-up`; the artifact carries the detail.
@@ -118,7 +118,7 @@ Emit the badge BEFORE writing the deployment-check artifact. The badge surfaces 
 Write your full completion report by calling:
 
 ```
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-handoff \
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
   --repo "$PWD" \
   --title "<short title>" \
   --from <role> --to lead \

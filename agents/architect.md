@@ -92,7 +92,7 @@ at task start — keep each self-contained and precise.
 Write your full completion report by calling:
 
 ```
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-handoff \
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
   --repo "$PWD" \
   --title "<short title>" \
   --from architect --to lead \
@@ -133,8 +133,8 @@ When dispatched to produce or revise a FEAT contract, emit THREE files at FEAT-s
 
 1. `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.openapi.yaml` — OpenAPI 3.1 (canonical). Follow `skills/domain/openapi-authoring/SKILL.md`.
 2. `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.md` — Decision rationale + Data Contracts + Revisions. Do NOT duplicate wire shapes from the YAML.
-3. `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.ts` — Regenerate via `node ./scripts/validate-contracts.mjs <yaml> --write`. Commit.
+3. `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.ts` — Regenerate via `node ./scripts/validate-contracts.ts <yaml> --write`. Commit.
 
-After emission, run `node ./scripts/validate-contracts.mjs <yaml>` and include its PASS/FAIL in your start acknowledgement.
+After emission, run `node ./scripts/validate-contracts.ts <yaml>` and include its PASS/FAIL in your start acknowledgement.
 
 Return ONLY the YAML path on a single line. The TS path and markdown path are derived deterministically and need no separate return.

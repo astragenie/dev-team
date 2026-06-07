@@ -110,7 +110,7 @@ If no `size` is given, treat the task as `standard`. If the work turns out to be
 Write your full completion report by calling:
 
 ```
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" write-handoff \
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
   --repo "$PWD" \
   --title "<short title>" \
   --from <role> --to lead \
@@ -135,7 +135,7 @@ Before writing the handoff, run all of these gates in order. Each must exit 0.
 - `npm run format:check` — if it fails, run `npm run format` then re-check
 - `npm run typecheck`
 - `node --test` — full test suite including any new tests you added
-- Repo-defined validators: `node ./scripts/validate-manifests.mjs`, `node ./scripts/validate-skills.mjs`, `node ./scripts/validate-slices.mjs` (skip any that do not exist in the repo)
+- Repo-defined validators: `node ./scripts/validate-manifests.ts`, `node ./scripts/validate-skills.ts`, `node ./scripts/validate-slices.ts` (skip any that do not exist in the repo)
 - For repos using the loop: check `.claude/loop.json` `stack.build` and `stack.test` arrays — those arrays are the canonical gate command source; run them in order
 
 Your handoff body MUST include a `## Self-Verify Gates` section listing one line per gate: command + exit code or PASS/FAIL + one-sentence summary of the result.
@@ -148,13 +148,13 @@ When you hit an external blocker or need to escalate before writing your handoff
 
 ```bash
 # External blocker (missing decision, API down, scope boundary crossed)
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge blocked --note "<reason>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge blocked --note "<reason>"
 
 # Escalate when a decision is beyond agent judgment
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge escalated_to_human --note "<reason>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge escalated_to_human --note "<reason>"
 
 # Record a skipped validation gate (when you own that decision)
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.mjs" mark-badge --repo "$PWD" --badge validation_skipped --note "<reason>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge validation_skipped --note "<reason>"
 ```
 
 Emit the badge BEFORE writing the handoff. The badge surfaces in `brief-me` and `wake-up`; the handoff body carries the detail.
@@ -175,7 +175,7 @@ Return `DONE_WITH_CONCERNS: context ceiling reached — see handoff for scope co
 
 Lead will split the remaining ACs into a fresh bounded task and dispatch a new builder.
 
-Use `node scripts/crew.mjs scope-estimate --files <path:lines,...>` before starting to get a tier estimate. For `heavy` tier, split the work into smaller sub-tasks before starting.
+Use `node scripts/crew.ts scope-estimate --files <path:lines,...>` before starting to get a tier estimate. For `heavy` tier, split the work into smaller sub-tasks before starting.
 
 ## Shell pre-check
 

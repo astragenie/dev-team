@@ -24,25 +24,25 @@ export interface ApprovalRecord {
 }
 
 export interface RequestApprovalOptions {
-  kind?: string;
-  severity?: string;
-  summary?: string;
-  reason?: string;
-  requester?: string;
-  approver?: string;
+  kind?: string | undefined;
+  severity?: string | undefined;
+  summary?: string | undefined;
+  reason?: string | undefined;
+  requester?: string | undefined;
+  approver?: string | undefined;
 }
 
 export interface ListApprovalsOptions {
-  status?: string;
+  status?: string | undefined;
   approver?: string | null;
   createIfMissing?: boolean;
 }
 
 export interface ResolveApprovalOptions {
-  id?: string;
-  decision?: string;
-  resolver?: string;
-  note?: string;
+  id?: string | undefined;
+  decision?: string | undefined;
+  resolver?: string | undefined;
+  note?: string | undefined;
 }
 
 // ---------------------------------------------------------------------------

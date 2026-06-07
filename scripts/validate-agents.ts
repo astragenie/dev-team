@@ -22,23 +22,19 @@ import { fileURLToPath } from "node:url";
 const AGENTS_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "agents");
 const MAX_LINES = 300;
 
-/** @param {string} text */
-function parseFrontmatter(text) {
+function parseFrontmatter(text: string): Record<string, string> | null {
   const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!match) return null;
-  /** @type {Record<string, string>} */
-  const fm = {};
+  if (!match || match[1] === undefined) return null;
+  const fm: Record<string, string> = {};
   for (const line of match[1].split(/\r?\n/)) {
     const kv = line.match(/^([\w_]+):\s*(.*)$/);
-    if (kv) fm[kv[1]] = kv[2].trim();
+    if (kv) fm[kv[1] as string] = (kv[2] ?? "").trim();
   }
   return fm;
 }
 
-/** @param {string} root */
-async function findAgentFiles(root) {
-  /** @type {string[]} */
-  const out = [];
+async function findAgentFiles(root: string): Promise<string[]> {
+  const out: string[] = [];
   try {
     const entries = await fs.readdir(root, { withFileTypes: true });
     for (const entry of entries) {
@@ -47,43 +43,39 @@ async function findAgentFiles(root) {
       }
     }
   } catch (err) {
-    if (/** @type {NodeJS.ErrnoException} */ (err).code !== "ENOENT") throw err;
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
   }
   return out;
 }
 
-/** @param {Record<string, string>} fm @param {string} label @param {string[]} errors */
-function checkRequiredFields(fm, label, errors) {
+function checkRequiredFields(fm: Record<string, string>, label: string, errors: string[]) {
   for (const field of ["name", "description", "model"]) {
     if (!fm[field]) errors.push(`${label}: missing required frontmatter "${field}"`);
   }
 }
 
-/** @param {string} filePath @param {Record<string, string>} fm @param {string} label @param {string[]} errors */
-function checkFileName(filePath, fm, label, errors) {
-  if (!fm.name) return;
+function checkFileName(filePath: string, fm: Record<string, string>, label: string, errors: string[]) {
+  if (!fm["name"]) return;
   const baseName = path.basename(filePath, ".md");
-  if (baseName !== fm.name) {
+  if (baseName !== fm["name"]) {
     errors.push(
-      `${label}: file name "${baseName}.md" does not match frontmatter name "${fm.name}"`
+      `${label}: file name "${baseName}.md" does not match frontmatter name "${fm["name"]}"`
     );
   }
 }
 
-/** @param {string} text @param {string} label @param {string[]} errors */
-function checkLineCount(text, label, errors) {
+function checkLineCount(text: string, label: string, errors: string[]) {
   const lines = text.split("\n").length;
   if (lines > MAX_LINES) {
     errors.push(`${label}: ${lines} lines exceeds the ${MAX_LINES}-line agent prompt cap`);
   }
 }
 
-/** @param {string} text @param {Record<string, string>} fm @param {string} label @param {string[]} errors */
-function checkRequiredSections(text, fm, label, errors) {
+function checkRequiredSections(text: string, fm: Record<string, string>, label: string, errors: string[]) {
   // The lead is a user-facing coordinator; it writes final-synthesis,
   // not handoffs to itself. The Report contract requirement applies to
   // teammate roles that hand off back to the lead.
-  const isLead = fm.name === "lead";
+  const isLead = fm["name"] === "lead";
   if (!isLead && !/^##\s+Report contract\b/im.test(text)) {
     errors.push(`${label}: missing required section "## Report contract"`);
   }
@@ -95,27 +87,26 @@ function checkRequiredSections(text, fm, label, errors) {
   }
 }
 
-/**
- * @param {Array<{label: string, fm: Record<string, string> | null}>} agents
- * @param {string[]} errors
- */
-function checkDuplicateNames(agents, errors) {
-  const byName = new Map();
+function checkDuplicateNames(
+  agents: Array<{ label: string; fm: Record<string, string> | null }>,
+  errors: string[]
+) {
+  const byName = new Map<string, string>();
   for (const a of agents) {
-    if (!a.fm?.name) continue;
-    if (byName.has(a.fm.name)) {
-      errors.push(`duplicate agent name "${a.fm.name}" at ${a.label} and ${byName.get(a.fm.name)}`);
+    if (!a.fm?.["name"]) continue;
+    const name = a.fm["name"];
+    if (byName.has(name)) {
+      errors.push(`duplicate agent name "${name}" at ${a.label} and ${byName.get(name)}`);
     } else {
-      byName.set(a.fm.name, a.label);
+      byName.set(name, a.label);
     }
   }
 }
 
 export async function validateAgents(agentsRoot = AGENTS_ROOT) {
   const files = await findAgentFiles(agentsRoot);
-  /** @type {string[]} */
-  const errors = [];
-  const agents = [];
+  const errors: string[] = [];
+  const agents: Array<{ label: string; filePath: string; fm: Record<string, string>; text: string }> = [];
 
   for (const filePath of files) {
     const label = path.relative(path.dirname(agentsRoot), filePath).replace(/\\/g, "/");

@@ -256,7 +256,7 @@ This rule chooses the model for SLICE work (builder / reviewer / validator dispa
 - **Design choice required** — the slice asks the agent to pick between two plausible approaches with non-obvious trade-offs. Example: choose between regex-based and AST-based detection.
 
 If the slice spec lists file paths + test signatures + AC numbers, the slice is mechanical — Sonnet. Surface the recommendation in the run-brief artifact so the user can override before the slice opens. Full rationale + 5-dimension scoring: `docs/standards/model-selection.md`.
-Run `node scripts/crew.mjs scope-estimate --files <path:lines,...>` before dispatch (`light`/`standard`→Sonnet, `heavy`→Opus); on `context_ceiling_reached`, split remaining ACs into a fresh task.
+Run `node scripts/crew.ts scope-estimate --files <path:lines,...>` before dispatch (`light`/`standard`→Sonnet, `heavy`→Opus); on `context_ceiling_reached`, split remaining ACs into a fresh task.
 
 ## Context efficiency
 

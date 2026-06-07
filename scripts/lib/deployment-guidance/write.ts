@@ -38,22 +38,22 @@ function renderListField(label: string, value: string | string[] | null | undefi
 }
 
 export interface DeploymentGuidanceFields {
-  title?: string;
-  owner?: string;
-  discoveryStatus?: string;
-  verifiedFrom?: string;
-  summary?: string;
-  build?: string;
-  deploy?: string;
-  environments?: string;
-  logs?: string;
-  metrics?: string;
-  alerts?: string;
-  telemetry?: string;
-  clues?: string;
-  missing?: string;
-  refreshWhen?: string;
-  next?: string;
+  title?: string | undefined;
+  owner?: string | undefined;
+  discoveryStatus?: string | undefined;
+  verifiedFrom?: string | undefined;
+  summary?: string | undefined;
+  build?: string | undefined;
+  deploy?: string | undefined;
+  environments?: string | undefined;
+  logs?: string | undefined;
+  metrics?: string | undefined;
+  alerts?: string | undefined;
+  telemetry?: string | undefined;
+  clues?: string | undefined;
+  missing?: string | undefined;
+  refreshWhen?: string | undefined;
+  next?: string | undefined;
 }
 
 export interface DeploymentGuidanceResult {
