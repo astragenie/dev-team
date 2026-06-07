@@ -4,7 +4,7 @@
 // threshold AND contains no .claude/artifacts/crew/* artifact path. Never blocks.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { parseThreshold, checkSubagentReturn } from "../scripts/lib/subagent-return/check.mjs";
+import { parseThreshold, checkSubagentReturn } from "../scripts/lib/subagent-return/check.ts";
 import { logHookError } from "./hook-error.mjs";
 
 /**

@@ -1,18 +1,16 @@
 // Pure check library for subagent-return cost-discipline enforcement (FEAT-032).
 // No I/O. All functions are exported named exports.
 
-/**
- * Parse the CREW_SUBAGENT_INLINE_THRESHOLD env value to a numeric byte threshold.
- *
- * - `"0"` → returns 0 (caller treats as disabled).
- * - Non-numeric / undefined → returns `defaultBytes`.
- * - Numeric string → returns parsed integer.
- *
- * @param {string | undefined} envValue
- * @param {number} [defaultBytes=512]
- * @returns {number}
- */
-export function parseThreshold(envValue, defaultBytes = 512) {
+interface SubagentReturnInput {
+  body: string;
+  threshold: number;
+}
+
+interface CheckResult {
+  warnings: string[];
+}
+
+export function parseThreshold(envValue: string | undefined, defaultBytes = 512): number {
   if (envValue === undefined || envValue === null || envValue === "") {
     return defaultBytes;
   }
@@ -35,29 +33,11 @@ export function parseThreshold(envValue, defaultBytes = 512) {
 const ARTIFACT_PATH_RE =
   /\.claude[\\/]artifacts[\\/]crew[\\/](?:handoffs|reviews|validations|deployments|runs|cost|cost-insights|agents)[\\/][^\s)"']+\.md/;
 
-/**
- * Returns true if `body` contains a `.claude/artifacts/crew/SUBDIR/FILE.md` path reference.
- * Both POSIX and Windows separators are accepted.
- *
- * @param {string} body
- * @returns {boolean}
- */
-export function hasArtifactPath(body) {
+export function hasArtifactPath(body: string): boolean {
   return ARTIFACT_PATH_RE.test(body);
 }
 
-/**
- * Check a subagent return body against the cost-discipline artifact-path rule.
- *
- * Logic:
- * - body UTF-8 byte length ≤ threshold → no warn
- * - body > threshold AND `hasArtifactPath(body)` → no warn
- * - body > threshold AND no artifact path → one warn citing byte count + rule #2
- *
- * @param {{ body: string; threshold: number }} opts
- * @returns {{ warnings: string[] }}
- */
-export function checkSubagentReturn({ body, threshold }) {
+export function checkSubagentReturn({ body, threshold }: SubagentReturnInput): CheckResult {
   const byteLen = Buffer.byteLength(body, "utf8");
   if (byteLen <= threshold) {
     return { warnings: [] };

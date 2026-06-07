@@ -1,4 +1,4 @@
-// scripts/lib/preflight/checks.mjs
+// scripts/lib/preflight/checks.ts
 // Pure-ish check functions for the preflight-shell hook.
 // All checks return string[] of warning messages.
 import fs from "node:fs/promises";
@@ -44,15 +44,31 @@ const POWERSHELL_AUTOMATIC_VARS = new Set([
   "TRUE"
 ]);
 
-/**
- * Check for wrong shell env-var syntax:
- * - PowerShell tool using bare $NAME (not $env:NAME)
- * - Bash tool using $env:NAME
- *
- * @param {{ toolName: string, command: string }} input
- * @returns {string[]}
- */
-export function checkEnvVarShape({ toolName, command }) {
+interface EnvVarCheckInput {
+  toolName: string;
+  command: string;
+}
+
+interface CdPathCheckInput {
+  command: string;
+  cwd: string;
+}
+
+interface CommandInput {
+  command: string;
+}
+
+interface RunChecksInput {
+  toolName: string;
+  command: string;
+  cwd: string;
+}
+
+interface CheckResult {
+  warnings: string[];
+}
+
+export function checkEnvVarShape({ toolName, command }: EnvVarCheckInput): string[] {
   const warnings = [];
 
   if (toolName === "PowerShell") {
@@ -71,12 +87,12 @@ export function checkEnvVarShape({ toolName, command }) {
       const before = command.slice(0, match.index);
       const afterDollar = command[match.index + 1];
       if (afterDollar === "{" || afterDollar === "(") continue;
-      if (match[1].toLowerCase().startsWith("env:")) continue;
+      if (match[1]!.toLowerCase().startsWith("env:")) continue;
       if (before.endsWith("env:")) continue;
       const charAfterMatch = command[match.index + match[0].length];
       if (charAfterMatch !== undefined && /[A-Za-z]/.test(charAfterMatch)) continue;
-      if (POWERSHELL_AUTOMATIC_VARS.has(match[1].toUpperCase())) continue;
-      warnings.push(`use \`$env:${match[1]}\` in PowerShell, not \`$${match[1]}\``);
+      if (POWERSHELL_AUTOMATIC_VARS.has(match[1]!.toUpperCase())) continue;
+      warnings.push(`use \`$env:${match[1]!}\` in PowerShell, not \`$${match[1]!}\``);
       break;
     }
   } else if (toolName === "Bash") {
@@ -89,13 +105,7 @@ export function checkEnvVarShape({ toolName, command }) {
   return warnings;
 }
 
-/**
- * Check for chained cd/Set-Location to a missing path.
- *
- * @param {{ command: string, cwd: string }} input
- * @returns {Promise<string[]>}
- */
-export async function checkChainedCdPaths({ command, cwd }) {
+export async function checkChainedCdPaths({ command, cwd }: CdPathCheckInput): Promise<string[]> {
   const warnings = [];
 
   // Patterns:
@@ -115,13 +125,13 @@ export async function checkChainedCdPaths({ command, cwd }) {
     let match;
     while ((match = re.exec(command)) !== null) {
       // One of the three capture groups will be set
-      const rawPath = match[1] ?? match[2] ?? match[3];
+      const rawPath = (match[1] ?? match[2] ?? match[3])!;
       if (!rawPath) continue;
       const resolved = path.isAbsolute(rawPath) ? rawPath : path.resolve(cwd, rawPath);
       try {
         await fs.stat(resolved);
       } catch (err) {
-        if (/** @type {NodeJS.ErrnoException} */ (err).code === "ENOENT") {
+        if ((err as NodeJS.ErrnoException).code === "ENOENT") {
           warnings.push(`chained cd target does not exist: ${resolved}`);
         }
         // Other errors (EPERM etc.) — don't warn, be conservative
@@ -132,13 +142,7 @@ export async function checkChainedCdPaths({ command, cwd }) {
   return warnings;
 }
 
-/**
- * Check for unquoted Windows paths with spaces.
- *
- * @param {{ command: string }} input
- * @returns {string[]}
- */
-export function checkUnquotedWindowsPathSpace({ command }) {
+export function checkUnquotedWindowsPathSpace({ command }: CommandInput): string[] {
   const warnings = [];
 
   // Find all Windows-style paths (C:\ or C:/) that contain a space
@@ -192,13 +196,7 @@ export function checkUnquotedWindowsPathSpace({ command }) {
   return warnings;
 }
 
-/**
- * Check for unterminated here-doc (<<'EOF' or <<EOF without closing EOF line).
- *
- * @param {{ command: string }} input
- * @returns {string[]}
- */
-export function checkUnterminatedHeredoc({ command }) {
+export function checkUnterminatedHeredoc({ command }: CommandInput): string[] {
   // Look for <<'EOF' or <<EOF
   const heredocRe = /<<'?EOF'?/g;
   let match;
@@ -218,13 +216,7 @@ export function checkUnterminatedHeredoc({ command }) {
   return [];
 }
 
-/**
- * Aggregator: run all checks and return combined warnings.
- *
- * @param {{ toolName: string, command: string, cwd: string }} input
- * @returns {Promise<{ warnings: string[] }>}
- */
-export async function runChecks({ toolName, command, cwd }) {
+export async function runChecks({ toolName, command, cwd }: RunChecksInput): Promise<CheckResult> {
   const warnings = [];
 
   warnings.push(...checkEnvVarShape({ toolName, command }));

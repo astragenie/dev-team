@@ -8,7 +8,7 @@ import {
   parseThreshold,
   hasArtifactPath,
   checkSubagentReturn
-} from "../scripts/lib/subagent-return/check.mjs";
+} from "../scripts/lib/subagent-return/check.ts";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const HOOK_PATH = path.join(__dirname, "..", "hooks", "check-subagent-return.mjs");

@@ -2,7 +2,7 @@
 // PreToolUse hook on Bash and PowerShell. Env-var gated (default ON). Always exits 0.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { runChecks } from "../scripts/lib/preflight/checks.mjs";
+import { runChecks } from "../scripts/lib/preflight/checks.ts";
 import { logHookError } from "./hook-error.mjs";
 
 /**
