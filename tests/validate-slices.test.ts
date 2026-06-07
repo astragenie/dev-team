@@ -9,13 +9,13 @@ import { fileURLToPath } from "node:url";
 const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const scriptPath = path.join(repoRoot, "scripts", "validate-slices.ts");
 
-async function makeFixture(prefix) {
+async function makeFixture(prefix: string) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
   await fs.mkdir(path.join(dir, "docs", "ai-loop", "slices", "pending"), { recursive: true });
   return dir;
 }
 
-function runValidator(repoPath) {
+function runValidator(repoPath: string) {
   const result = spawnSync(process.execPath, ["--experimental-strip-types", scriptPath], {
     encoding: "utf8",
     timeout: 30_000,
@@ -29,7 +29,7 @@ function runValidator(repoPath) {
   };
 }
 
-async function cleanup(dir) {
+async function cleanup(dir: string) {
   await fs.rm(dir, { recursive: true, force: true });
 }
 

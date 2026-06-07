@@ -13,7 +13,7 @@ test("explicit ## User Journey parsed: 3 steps", () => {
     expect: "no error / visible",
     ac_id: null
   });
-  assert.equal(result[2].expect, "form fills");
+  assert.equal(result[2]!.expect, "form fills");
 });
 
 test("override takes precedence over ACs", () => {
@@ -21,23 +21,23 @@ test("override takes precedence over ACs", () => {
   const slice = `## User Journey\n\n1. navigate to /app\n2. click submit\n`;
   const result = buildJourney(acs, slice);
   assert.equal(result.length, 2);
-  assert.equal(result[0].verb, "navigate");
-  assert.equal(result[0].ac_id, null); // from override, not from AC
+  assert.equal(result[0]!.verb, "navigate");
+  assert.equal(result[0]!.ac_id, null); // from override, not from AC
 });
 
 test("optional expect defaults to 'no error / visible'", () => {
   const slice = `## User Journey\n\n1. navigate to /app\n2. click button\n`;
   const result = buildJourney([], slice);
-  assert.equal(result[0].expect, "no error / visible");
-  assert.equal(result[1].expect, "no error / visible");
+  assert.equal(result[0]!.expect, "no error / visible");
+  assert.equal(result[1]!.expect, "no error / visible");
 });
 
 test("unparseable journey line skipped, valid lines parsed", () => {
   const slice = `## User Journey\n\n1. navigate to /app\nthis line is not a step\n2. click submit\n`;
   const result = buildJourney([], slice);
   assert.equal(result.length, 2);
-  assert.equal(result[0].verb, "navigate");
-  assert.equal(result[1].verb, "click");
+  assert.equal(result[0]!.verb, "navigate");
+  assert.equal(result[1]!.verb, "click");
 });
 
 test("journey section stops at next ## header", () => {
@@ -52,8 +52,8 @@ test("navigation AC sorts before interaction AC", () => {
     { id: "AC-2", text: "user should navigate to /dashboard" }
   ];
   const result = buildJourney(acs, "");
-  assert.equal(result[0].ac_id, "AC-2"); // navigation first
-  assert.equal(result[1].ac_id, "AC-1"); // interaction second
+  assert.equal(result[0]!.ac_id, "AC-2"); // navigation first
+  assert.equal(result[1]!.ac_id, "AC-1"); // interaction second
 });
 
 test("tie-breaking by document order within same category", () => {
@@ -62,8 +62,8 @@ test("tie-breaking by document order within same category", () => {
     { id: "AC-2", text: "user can click cancel" }
   ];
   const result = buildJourney(acs, "");
-  assert.equal(result[0].ac_id, "AC-1");
-  assert.equal(result[1].ac_id, "AC-2");
+  assert.equal(result[0]!.ac_id, "AC-1");
+  assert.equal(result[1]!.ac_id, "AC-2");
 });
 
 test("empty AC list returns []", () => {

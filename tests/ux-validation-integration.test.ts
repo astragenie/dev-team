@@ -23,8 +23,8 @@ test("integration: full pipeline passes on clean evidence", async () => {
     category: classifyScenario(ac.text),
     text: ac.text
   }));
-  assert.equal(scenarios[0].category, "interaction");
-  assert.equal(scenarios[1].category, "visibility");
+  assert.equal(scenarios[0]!.category, "interaction");
+  assert.equal(scenarios[1]!.category, "visibility");
 
   // Mock /qa output (all pass)
   const evidence = {

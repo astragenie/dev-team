@@ -7,7 +7,7 @@ import path from "node:path";
 import { validateAgents } from "../scripts/validate-agents.ts";
 
 /** Write a synthetic agents/ directory under a tmpdir and return its path. */
-async function makeAgentsDir(files) {
+async function makeAgentsDir(files: Record<string, string>) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "validate-agents-"));
   for (const [name, content] of Object.entries(files)) {
     await fs.writeFile(path.join(root, name), content, "utf8");

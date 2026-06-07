@@ -9,11 +9,15 @@ import { fileURLToPath } from "node:url";
 const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const scriptPath = path.join(repoRoot, "scripts", "validate-routing-table.ts");
 
-async function makeTempDir(prefix) {
+async function makeTempDir(prefix: string) {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
 }
 
-async function makeFixture(tmpDir, routingTableContent, installedPlugins = null) {
+async function makeFixture(
+  tmpDir: string,
+  routingTableContent: string,
+  installedPlugins: unknown = null
+) {
   const docsDir = path.join(tmpDir, "docs");
   const skillsDir = path.join(tmpDir, "skills", "domain", "foo");
   const pluginsDir = path.join(tmpDir, "plugins");
@@ -58,7 +62,11 @@ async function makeFixture(tmpDir, routingTableContent, installedPlugins = null)
   return { routingTablePath: path.join(docsDir, "routing-table.md"), pluginsJsonPath };
 }
 
-function runScript(tmpDir, pluginsJsonPath, envOverrides = {}) {
+function runScript(
+  tmpDir: string,
+  pluginsJsonPath: string,
+  envOverrides: Record<string, string> = {}
+) {
   const env = {
     ...process.env,
     CREW_VALIDATE_ROUTING_TABLE_REPO_ROOT: tmpDir,
@@ -123,7 +131,7 @@ const fixturesBase = path.join(repoRoot, "tests", "fixtures", "validate-routing-
  * The fixture provides routing-table.md under docs/ and agents/ under agents/.
  * @param {string} fixtureDir absolute path to the fixture directory
  */
-function runFixture(fixtureDir) {
+function runFixture(fixtureDir: string) {
   const env = {
     ...process.env,
     CREW_VALIDATE_ROUTING_TABLE: "1",

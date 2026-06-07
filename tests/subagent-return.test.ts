@@ -20,7 +20,10 @@ const HOOK_PATH = path.join(__dirname, "..", "hooks", "check-subagent-return.ts"
  * @param {Record<string, string>} env
  * @returns {Promise<{exitCode: number, stdout: string, stderr: string}>}
  */
-function runHook(stdin, env = {}) {
+function runHook(
+  stdin: string,
+  env: Record<string, string> = {}
+): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
     const proc = spawn("node", ["--experimental-strip-types", HOOK_PATH], {
       env: { ...process.env, ...env }
@@ -41,7 +44,7 @@ function runHook(stdin, env = {}) {
  * @param {string} [cwd]
  * @returns {string}
  */
-function makeStdin(body, cwd = process.cwd()) {
+function makeStdin(body: string, cwd = process.cwd()) {
   return JSON.stringify({
     session_id: "test-session",
     tool_name: "Agent",
@@ -51,7 +54,7 @@ function makeStdin(body, cwd = process.cwd()) {
 }
 
 /** Returns a string of exactly `n` ASCII chars. */
-function makeBody(n) {
+function makeBody(n: number) {
   return "x".repeat(n);
 }
 
@@ -119,15 +122,17 @@ test("AC-6: default-on — no env var set + body=1000 no path → warn", async (
   const cleanEnv = Object.fromEntries(
     Object.entries(process.env).filter(([k]) => k !== "CREW_SUBAGENT_INLINE_THRESHOLD")
   );
-  const result = await new Promise((resolve) => {
-    const proc = spawn("node", ["--experimental-strip-types", HOOK_PATH], { env: cleanEnv });
-    let stdout = "";
-    let stderr = "";
-    proc.stdout.on("data", (b) => (stdout += b.toString("utf8")));
-    proc.stderr.on("data", (b) => (stderr += b.toString("utf8")));
-    proc.on("close", (exitCode) => resolve({ exitCode: exitCode ?? -1, stdout, stderr }));
-    proc.stdin.end(makeStdin(makeBody(1000)));
-  });
+  const result = await new Promise<{ exitCode: number; stdout: string; stderr: string }>(
+    (resolve) => {
+      const proc = spawn("node", ["--experimental-strip-types", HOOK_PATH], { env: cleanEnv });
+      let stdout = "";
+      let stderr = "";
+      proc.stdout.on("data", (b) => (stdout += b.toString("utf8")));
+      proc.stderr.on("data", (b) => (stderr += b.toString("utf8")));
+      proc.on("close", (exitCode) => resolve({ exitCode: exitCode ?? -1, stdout, stderr }));
+      proc.stdin.end(makeStdin(makeBody(1000)));
+    }
+  );
   assert.equal(result.exitCode, 0);
   assert.notEqual(result.stdout, "");
   const parsed = JSON.parse(result.stdout);
@@ -329,8 +334,8 @@ test("checkSubagentReturn: body > threshold WITHOUT artifact path → one warnin
   const body = "x".repeat(600);
   const { warnings } = checkSubagentReturn({ body, threshold: 512 });
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /cost-discipline rule #2/);
-  assert.ok(warnings[0].includes("600"), `Expected byte count in warn: ${warnings[0]}`);
+  assert.match(warnings[0]!, /cost-discipline rule #2/);
+  assert.ok(warnings[0]!.includes("600"), `Expected byte count in warn: ${warnings[0]!}`);
 });
 
 test("checkSubagentReturn: threshold=0 means body > 0 threshold is never triggered from check level (caller exits before)", () => {
@@ -350,5 +355,5 @@ test("checkSubagentReturn: UTF-8 multi-byte characters measured by byte length",
   assert.ok(byteLen > 512, `Expected >512 bytes, got ${byteLen}`);
   const { warnings } = checkSubagentReturn({ body, threshold: 512 });
   assert.equal(warnings.length, 1);
-  assert.ok(warnings[0].includes(String(byteLen)));
+  assert.ok(warnings[0]!.includes(String(byteLen)));
 });

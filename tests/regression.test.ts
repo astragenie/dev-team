@@ -22,11 +22,11 @@ const execFile = promisify(execFileCallback);
 const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const cliPath = path.join(repoRoot, "scripts", "crew.ts");
 
-async function makeTempDir(prefix) {
+async function makeTempDir(prefix: string) {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
 }
 
-async function initRepo(prefix) {
+async function initRepo(prefix: string) {
   const repoPath = await makeTempDir(prefix);
   await execFile("node", ["--experimental-strip-types", cliPath, "init", "--repo", repoPath]);
   return repoPath;
@@ -72,7 +72,7 @@ test("BUG-A: concurrent claims on disjoint files do not lose data (5-way paralle
     `expected ${parallelCount} claims after parallel acquire, got ${showResult.claims.length} (race regression)`
   );
 
-  const owners = new Set(showResult.claims.map((c) => c.owner));
+  const owners = new Set(showResult.claims.map((c: { owner: string }) => c.owner));
   assert.equal(owners.size, parallelCount, "each parallel claim should have a distinct owner");
 });
 
@@ -388,7 +388,7 @@ test("BUG-E: file fixtures with directory paths under deployment hints are disco
   // the .yaml/.yml/.tf/.toml extensions the module recognizes.
   const repoPath = await initRepo("crew-bug-e-deployment-hints-");
 
-  const hints = [
+  const hints: [string, string][] = [
     ["k8s", "service.yaml"],
     ["helm", "values.yml"],
     ["charts", "Chart.toml"],

@@ -38,7 +38,7 @@ export default [
     }
   },
   {
-    files: ["tests/**/*.mjs"],
+    files: ["tests/**/*.{mjs,ts}"],
     rules: {
       "max-lines-per-function": "off",
       "complexity": "off"

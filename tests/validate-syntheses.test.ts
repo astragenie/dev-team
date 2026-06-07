@@ -5,7 +5,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-async function makeRunsDir(files) {
+async function makeRunsDir(files: Record<string, string>) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "synth-val-"));
   const runsDir = path.join(dir, ".claude", "artifacts", "crew", "runs");
   await fs.mkdir(runsDir, { recursive: true });
@@ -39,7 +39,7 @@ test("validateSyntheses errors on Grade missing placeholder", async () => {
   });
   const result = await validateSyntheses(dir);
   assert.equal(result.errors.length, 1);
-  assert.match(result.errors[0], /Grade missing/);
+  assert.match(result.errors[0]!, /Grade missing/);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -50,7 +50,7 @@ test("validateSyntheses errors on timestamp placeholder", async () => {
   });
   const result = await validateSyntheses(dir);
   assert.equal(result.errors.length, 1);
-  assert.match(result.errors[0], /<timestamp>/);
+  assert.match(result.errors[0]!, /<timestamp>/);
   await fs.rm(dir, { recursive: true, force: true });
 });
 

@@ -5,7 +5,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-async function parseEvents(dir) {
+async function parseEvents(dir: string) {
   const p = path.join(dir, ".claude", "logs", "events.jsonl");
   try {
     const text = await fs.readFile(p, "utf8");

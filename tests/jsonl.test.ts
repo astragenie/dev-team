@@ -6,10 +6,14 @@ import path from "node:path";
 
 import { tailReadJsonl } from "../scripts/lib/jsonl.mjs";
 
-async function writeTmpJsonl(lines) {
+async function writeTmpJsonl(lines: unknown[]) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "jsonl-test-"));
   const filePath = path.join(dir, "data.jsonl");
-  await fs.writeFile(filePath, lines.map((l) => JSON.stringify(l)).join("\n") + "\n", "utf8");
+  await fs.writeFile(
+    filePath,
+    lines.map((l: unknown) => JSON.stringify(l)).join("\n") + "\n",
+    "utf8"
+  );
   return { dir, filePath };
 }
 

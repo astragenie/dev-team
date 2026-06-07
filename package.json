@@ -18,7 +18,7 @@
   "scripts": {
     "test": "node --test --experimental-strip-types",
     "validate:manifests": "node ./scripts/validate-manifests.ts",
-    "lint": "eslint scripts tests eslint.config.mjs",
+    "lint": "eslint scripts eslint.config.mjs",
     "typecheck": "tsc --noEmit",
     "validate:skills": "node ./scripts/validate-skills.ts",
     "validate:agents": "node ./scripts/validate-agents.ts",

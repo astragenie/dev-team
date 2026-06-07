@@ -208,7 +208,7 @@ import os from "node:os";
 import path from "node:path";
 import { discoverPlaywrightConfig } from "../scripts/lib/ux-validation/index.mjs";
 
-async function tmpRepo(prefix) {
+async function tmpRepo(prefix: string) {
   return await fs.mkdtemp(path.join(os.tmpdir(), prefix));
 }
 
@@ -224,7 +224,7 @@ test("discoverPlaywrightConfig reads URL from playwright.config.ts", async () =>
     `export default { use: { baseURL: "http://localhost:4321" } };`
   );
   const result = await discoverPlaywrightConfig(repo);
-  assert.equal(result.url, "http://localhost:4321");
+  assert.equal(result!.url, "http://localhost:4321");
 });
 
 test("discoverPlaywrightConfig reads URL from playwright.config.js", async () => {
@@ -234,7 +234,7 @@ test("discoverPlaywrightConfig reads URL from playwright.config.js", async () =>
     `module.exports = { use: { baseURL: "http://localhost:5555" } };`
   );
   const result = await discoverPlaywrightConfig(repo);
-  assert.equal(result.url, "http://localhost:5555");
+  assert.equal(result!.url, "http://localhost:5555");
 });
 
 test("discoverPlaywrightConfig falls back to package.json scripts when no config file", async () => {
@@ -247,7 +247,7 @@ test("discoverPlaywrightConfig falls back to package.json scripts when no config
     })
   );
   const result = await discoverPlaywrightConfig(repo);
-  assert.equal(result.url, "http://localhost:3000");
+  assert.equal(result!.url, "http://localhost:3000");
 });
 
 test("discoverPlaywrightConfig returns null when config file lacks baseURL", async () => {

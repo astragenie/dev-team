@@ -37,7 +37,7 @@ test("readFileIfExists: re-throws non-ENOENT errors", async () => {
       () => readFileIfExists(dir),
       (err) => {
         assert.ok(err instanceof Error);
-        assert.notEqual(/** @type {NodeJS.ErrnoException} */ (err).code, "ENOENT");
+        assert.notEqual((err as NodeJS.ErrnoException).code, "ENOENT");
         return true;
       }
     );

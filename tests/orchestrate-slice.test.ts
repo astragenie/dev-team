@@ -18,7 +18,7 @@ test("orchestrate-slice command has description frontmatter", async () => {
   const text = await fs.readFile(COMMAND_PATH, "utf8");
   const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   assert.ok(match, "file must start with a YAML frontmatter block");
-  assert.match(match[1], /^description:\s*.+/m, "frontmatter must include non-empty description:");
+  assert.match(match[1]!, /^description:\s*.+/m, "frontmatter must include non-empty description:");
 });
 
 test("orchestrate-slice command body contains Steps 0 through 8", async () => {

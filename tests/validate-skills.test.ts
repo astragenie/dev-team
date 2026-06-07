@@ -7,7 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { validateSkills } from "../scripts/validate-skills.ts";
 
-async function makeSkillsDir(skills) {
+async function makeSkillsDir(skills: Record<string, string>) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "validate-skills-"));
   for (const [dirName, content] of Object.entries(skills)) {
     const dir = path.join(root, dirName);

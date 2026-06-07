@@ -15,7 +15,10 @@ const HOOK_PATH = path.join(__dirname, "..", "hooks", "preflight-shell.ts");
  * @param {Record<string, string>} env
  * @returns {Promise<{exitCode: number, stdout: string, stderr: string}>}
  */
-function runHook(stdin, env = {}) {
+function runHook(
+  stdin: string,
+  env: Record<string, string> = {}
+): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
     const proc = spawn("node", ["--experimental-strip-types", HOOK_PATH], {
       env: { ...process.env, ...env }
@@ -35,7 +38,7 @@ function runHook(stdin, env = {}) {
  * @param {string} cwd
  * @returns {string}
  */
-function makeStdin(toolName, command, cwd) {
+function makeStdin(toolName: string, command: string, cwd: string) {
   return JSON.stringify({
     session_id: "test-session",
     tool_name: toolName,
@@ -76,19 +79,21 @@ test("AC-6: default-on — hook runs when CREW_TOOL_PREFLIGHT is unset", async (
 
 test("AC-6b: hook runs with no env var set (truly unset)", async () => {
   // Spawn without CREW_TOOL_PREFLIGHT in env at all
-  const result = await new Promise((resolve) => {
-    // Build a minimal env without CREW_TOOL_PREFLIGHT
-    const cleanEnv = Object.fromEntries(
-      Object.entries(process.env).filter(([k]) => k !== "CREW_TOOL_PREFLIGHT")
-    );
-    const proc = spawn("node", ["--experimental-strip-types", HOOK_PATH], { env: cleanEnv });
-    let stdout = "";
-    let stderr = "";
-    proc.stdout.on("data", (b) => (stdout += b.toString("utf8")));
-    proc.stderr.on("data", (b) => (stderr += b.toString("utf8")));
-    proc.on("close", (exitCode) => resolve({ exitCode: exitCode ?? -1, stdout, stderr }));
-    proc.stdin.end(makeStdin("Bash", "echo $env:HOME", process.cwd()));
-  });
+  const result = await new Promise<{ exitCode: number; stdout: string; stderr: string }>(
+    (resolve) => {
+      // Build a minimal env without CREW_TOOL_PREFLIGHT
+      const cleanEnv = Object.fromEntries(
+        Object.entries(process.env).filter(([k]) => k !== "CREW_TOOL_PREFLIGHT")
+      );
+      const proc = spawn("node", ["--experimental-strip-types", HOOK_PATH], { env: cleanEnv });
+      let stdout = "";
+      let stderr = "";
+      proc.stdout.on("data", (b) => (stdout += b.toString("utf8")));
+      proc.stderr.on("data", (b) => (stderr += b.toString("utf8")));
+      proc.on("close", (exitCode) => resolve({ exitCode: exitCode ?? -1, stdout, stderr }));
+      proc.stdin.end(makeStdin("Bash", "echo $env:HOME", process.cwd()));
+    }
+  );
   assert.equal(result.exitCode, 0);
   // Hook should run and warn
   assert.notEqual(result.stdout, "");

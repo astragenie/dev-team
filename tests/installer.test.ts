@@ -10,7 +10,7 @@ import { auditRepo, bootstrapRepo, initRepo, installGlobal } from "../scripts/li
 
 const execFile = promisify(execFileCallback);
 
-async function makeTempDir(prefix) {
+async function makeTempDir(prefix: string) {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
 }
 
