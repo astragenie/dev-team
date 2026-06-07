@@ -1,6 +1,6 @@
 ---
 id: SLICE-44
-status: pending
+status: completed
 feature: FEAT-120
 phase: null
 priority: P1
@@ -8,6 +8,7 @@ target_release: null
 requires_validation: true
 created: 2026-06-07
 updated: 2026-06-07
+completed_at: 2026-06-07
 ---
 # SLICE-44: # FEAT-120 — TS Phase 4.1: tests batch 1 migration
 
