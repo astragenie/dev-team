@@ -8,12 +8,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { writeFileIfChanged } from "./util.mjs";
+import { writeFileIfChanged } from "./util.ts";
 import {
   CLAUDE_IMPORT_BLOCK,
   LEGACY_CLAUDE_MARKER_END,
   LEGACY_CLAUDE_MARKER_START
-} from "./templates.mjs";
+} from "./templates.ts";
 
 /** @param {string} existing */
 function replaceLegacyMarkerBlock(existing) {

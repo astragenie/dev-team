@@ -5,14 +5,14 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { ensureDir, pathExists } from "./installer/util.mjs";
+import { ensureDir, pathExists } from "./installer/util.ts";
 import { updateClaudeMd } from "./installer/claude-md.mjs";
-import { updateGitignore } from "./installer/gitignore.mjs";
+import { updateGitignore } from "./installer/gitignore.ts";
 import { updateSettings } from "./installer/settings.mjs";
 import { writeHarnessFiles } from "./installer/harness-files.mjs";
 import { writeRepoLocalGuides } from "./installer/repo-guides.mjs";
 import { migrateLegacyHarness } from "./installer/legacy-migration.mjs";
-import { buildWelcome } from "./installer/welcome.mjs";
+import { buildWelcome } from "./installer/welcome.ts";
 import { auditRepo } from "./installer/audit.mjs";
 import { installGlobal } from "./installer/global.mjs";
 

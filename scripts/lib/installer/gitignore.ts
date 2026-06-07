@@ -5,16 +5,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { writeFileIfChanged } from "./util.mjs";
-import { GITIGNORE_BLOCK, GITIGNORE_MARKER_END, GITIGNORE_MARKER_START } from "./templates.mjs";
+import { writeFileIfChanged } from "./util.ts";
+import { GITIGNORE_BLOCK, GITIGNORE_MARKER_END, GITIGNORE_MARKER_START } from "./templates.ts";
 
-/**
- * @param {string} repoPath
- * @param {string[]} writes
- */
-export async function updateGitignore(repoPath, writes) {
+export async function updateGitignore(repoPath: string, writes: string[]): Promise<void> {
   const ignorePath = path.join(repoPath, ".gitignore");
-  const existing = await fs.readFile(ignorePath, "utf8").catch(/** @returns {null} */ () => null);
+  const existing = await fs.readFile(ignorePath, "utf8").catch((): null => null);
 
   if (existing === null) {
     const contents = `${GITIGNORE_BLOCK}\n`;
@@ -26,7 +22,7 @@ export async function updateGitignore(repoPath, writes) {
   // Replace the marker block in place when present; else append.
   const startIdx = existing.indexOf(GITIGNORE_MARKER_START);
   const endIdx = existing.indexOf(GITIGNORE_MARKER_END);
-  let next;
+  let next: string;
   if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
     const before = existing.slice(0, startIdx);
     const after = existing.slice(endIdx + GITIGNORE_MARKER_END.length);

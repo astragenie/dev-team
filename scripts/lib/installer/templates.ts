@@ -248,11 +248,16 @@ This directory stores lightweight repo-local coordination state.
 - \`sprint.json\` is an optional sprint or focus configuration
 `;
 
-export const CLAIMS_TEMPLATE = {
+export const CLAIMS_TEMPLATE: {
+  version: string;
+  updatedAt: string;
+  claims: Record<string, never>;
+  warnings: string[];
+} = {
   version: "1.0",
   updatedAt: "2026-01-01T00:00:00.000Z",
   claims: {},
-  warnings: /** @type {string[]} */ ([])
+  warnings: []
 };
 
 export const SPRINT_TEMPLATE = {

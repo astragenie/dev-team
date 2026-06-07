@@ -5,8 +5,8 @@
 
 import path from "node:path";
 
-import { writeFileIfChanged } from "./util.mjs";
-import { CONSTITUTION_TEMPLATE, PROTOCOL_TEMPLATE, WORKFLOW_TEMPLATE } from "./templates.mjs";
+import { writeFileIfChanged } from "./util.ts";
+import { CONSTITUTION_TEMPLATE, PROTOCOL_TEMPLATE, WORKFLOW_TEMPLATE } from "./templates.ts";
 
 /**
  * @param {string} repoPath

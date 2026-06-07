@@ -3,7 +3,7 @@
 
 import path from "node:path";
 
-import { pathExists } from "./util.mjs";
+import { pathExists } from "./util.ts";
 import { inspectGlobalInstall } from "./global.mjs";
 
 /** @param {string} repoPath */

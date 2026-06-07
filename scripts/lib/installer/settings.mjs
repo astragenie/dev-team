@@ -9,8 +9,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { indentJson, writeFileIfChanged } from "./util.mjs";
-import { DEFAULT_SETTINGS } from "./templates.mjs";
+import { indentJson, writeFileIfChanged } from "./util.ts";
+import { DEFAULT_SETTINGS } from "./templates.ts";
 
 /** @param {{ hooks?: Array<{command?: string, description?: string}> } | null | undefined} entry */
 export function isCrewHook(entry) {

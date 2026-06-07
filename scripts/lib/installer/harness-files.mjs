@@ -8,7 +8,7 @@
 
 import path from "node:path";
 
-import { ensureDir, writeFileIfChanged, writeSeedIfMissing } from "./util.mjs";
+import { ensureDir, writeFileIfChanged, writeSeedIfMissing } from "./util.ts";
 import {
   ARTIFACT_README_TEMPLATE,
   CLAIMS_TEMPLATE,
@@ -16,7 +16,7 @@ import {
   HOOK_SCRIPT_TEMPLATE,
   SPRINT_TEMPLATE,
   STATE_README_TEMPLATE
-} from "./templates.mjs";
+} from "./templates.ts";
 
 /**
  * @param {string} repoPath

@@ -5,14 +5,14 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { ensureDir, writeFileIfChanged } from "./util.mjs";
+import { ensureDir, writeFileIfChanged } from "./util.ts";
 import {
   CONSTITUTION_TEMPLATE,
   GLOBAL_MEMORY_VERSION,
   GLOBAL_METADATA_TEMPLATE,
   WORKFLOW_TEMPLATE
-} from "./templates.mjs";
-import { buildWelcome } from "./welcome.mjs";
+} from "./templates.ts";
+import { buildWelcome } from "./welcome.ts";
 
 const GLOBAL_IMPORT_LINES = ["@~/.claude/crew/constitution.md", "@~/.claude/crew/workflow.md"];
 

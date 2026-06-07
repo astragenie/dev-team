@@ -10,7 +10,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { ensureDir, pathExists } from "./util.mjs";
+import { ensureDir, pathExists } from "./util.ts";
 
 /**
  * @param {string} repoPath

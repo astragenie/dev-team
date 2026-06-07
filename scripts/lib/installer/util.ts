@@ -5,13 +5,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-/** @param {unknown} value */
-export function indentJson(value) {
+export function indentJson(value: unknown): string {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
-/** @param {string} targetPath */
-export async function pathExists(targetPath) {
+export async function pathExists(targetPath: string): Promise<boolean> {
   try {
     await fs.access(targetPath);
     return true;
@@ -20,18 +18,16 @@ export async function pathExists(targetPath) {
   }
 }
 
-/** @param {string} dirPath */
-export async function ensureDir(dirPath) {
+export async function ensureDir(dirPath: string): Promise<void> {
   await fs.mkdir(dirPath, { recursive: true });
 }
 
-/**
- * @param {string} filePath
- * @param {string} contents
- * @param {object} [options]
- */
-export async function writeFileIfChanged(filePath, contents, options = {}) {
-  const existing = await fs.readFile(filePath, "utf8").catch(/** @returns {null} */ () => null);
+export async function writeFileIfChanged(
+  filePath: string,
+  contents: string,
+  options: Parameters<typeof fs.writeFile>[2] = {}
+): Promise<boolean> {
+  const existing = await fs.readFile(filePath, "utf8").catch((): null => null);
   if (existing === contents) {
     return false;
   }
@@ -40,12 +36,11 @@ export async function writeFileIfChanged(filePath, contents, options = {}) {
   return true;
 }
 
-/**
- * @param {string} filePath
- * @param {string} contents
- * @param {object} [options]
- */
-export async function writeSeedIfMissing(filePath, contents, options = {}) {
+export async function writeSeedIfMissing(
+  filePath: string,
+  contents: string,
+  options: Parameters<typeof fs.writeFile>[2] = {}
+): Promise<boolean> {
   if (await pathExists(filePath)) {
     return false;
   }
