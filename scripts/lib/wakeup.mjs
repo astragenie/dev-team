@@ -1,12 +1,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { listApprovals } from "./approvals.mjs";
-import { listClaims } from "./claims.mjs";
+import { listApprovals } from "./approvals.ts";
+import { listClaims } from "./claims.ts";
 import { readDeploymentGuidanceSummary } from "./deployment-guidance.mjs";
 import { readFileIfExists } from "./fs-utils.mjs";
 import { tailReadJsonl } from "./jsonl.mjs";
-import { loadWorkflowState, summarizeWorkflowState } from "./workflow-state.mjs";
+import { loadWorkflowState, summarizeWorkflowState } from "./workflow-state.ts";
 import { collectHookHealth } from "./briefing/collect.ts";
 
 const RUNS_DIR = [".claude", "artifacts", "crew", "runs"];

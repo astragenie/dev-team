@@ -389,3 +389,59 @@ test("CLI: -- terminates flag parsing and preserves dash-prefixed positionals", 
   assert.deepEqual(result.claimed, ["-tricky.md", "normal.md"]);
   assert.deepEqual(result.conflicts, []);
 });
+
+// ---------------------------------------------------------------------------
+// AC-6: Result<T,E> err() path tests
+// Verify that claimFiles, releaseFiles, resolveApproval, and markWorkflowBadge
+// return err() instead of throwing when an fs or validation error occurs.
+// ---------------------------------------------------------------------------
+
+test("AC-6: claimFiles returns err() when repo path escapes repo boundary", async () => {
+  const { claimFiles } = await import(
+    pathToFileURL(path.join(repoRoot, "scripts", "lib", "claims.ts")).href
+  );
+  const repoPath = await makeTempDir("crew-ac6-claimfiles-err-");
+  // "../../outside" resolves outside the repo root → toRepoRelative throws
+  const result = await claimFiles(repoPath, ["../../outside.txt"], { owner: "test" });
+  assert.equal(result.ok, false, "expected err() for out-of-repo path");
+  assert.ok(result.error instanceof Error, "error should be an Error instance");
+  assert.match(result.error.message, /repo/i, "error should mention repo boundary");
+});
+
+test("AC-6: releaseFiles returns err() when repo path escapes repo boundary", async () => {
+  const { releaseFiles } = await import(
+    pathToFileURL(path.join(repoRoot, "scripts", "lib", "claims.ts")).href
+  );
+  const repoPath = await makeTempDir("crew-ac6-releasefiles-err-");
+  // releaseFiles calls toRepoRelative on explicit paths, so same boundary guard
+  const result = await releaseFiles(repoPath, ["../../outside.txt"], { owner: "test" });
+  assert.equal(result.ok, false, "expected err() for out-of-repo path");
+  assert.ok(result.error instanceof Error, "error should be an Error instance");
+});
+
+test("AC-6: resolveApproval returns err() for unknown approval id", async () => {
+  const { resolveApproval } = await import(
+    pathToFileURL(path.join(repoRoot, "scripts", "lib", "approvals.ts")).href
+  );
+  const repoPath = await makeTempDir("crew-ac6-resolveapproval-err-");
+  const result = await resolveApproval(repoPath, {
+    id: "apr_nonexistent",
+    decision: "approved",
+    resolver: "test"
+  });
+  assert.equal(result.ok, false, "expected err() for unknown approval id");
+  assert.ok(result.error instanceof Error, "error should be an Error instance");
+  assert.match(result.error.message, /unknown approval id/i);
+});
+
+test("AC-6: markWorkflowBadge returns err() when badge option is missing", async () => {
+  const { markWorkflowBadge } = await import(
+    pathToFileURL(path.join(repoRoot, "scripts", "lib", "workflow-state.ts")).href
+  );
+  const repoPath = await makeTempDir("crew-ac6-markbadge-err-");
+  // badge is required; omitting it triggers the validation throw
+  const result = await markWorkflowBadge(repoPath, {});
+  assert.equal(result.ok, false, "expected err() when badge is missing");
+  assert.ok(result.error instanceof Error, "error should be an Error instance");
+  assert.match(result.error.message, /badge/i);
+});

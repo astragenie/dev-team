@@ -60,7 +60,7 @@ async function emitCostReportInner(
     opts: { title: string | null; feature: string | null; phase: string | null }
   ) => Promise<unknown>
 ): Promise<Record<string, unknown>> {
-  const { loadWorkflowState } = await import("../workflow-state.mjs");
+  const { loadWorkflowState } = await import("../workflow-state.ts");
   const { computeSessionCost: computeCost } = await import("../session-cost.mjs");
   const { collectOutcomeLinkage } = await import("../outcome-linkage.mjs");
   const { writeArtifact: writeArt } = await import("../artifacts.mjs");

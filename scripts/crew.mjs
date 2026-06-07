@@ -455,24 +455,36 @@ const COMMANDS = {
   },
 
   claim: async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
-    const { claimFiles } = await import("./lib/claims.mjs");
-    return claimFiles(repoPath, positionals, { owner: flags.owner || "lead-session" });
+    const { claimFiles } = await import("./lib/claims.ts");
+    const result = await claimFiles(repoPath, positionals, {
+      owner: flags.owner || "lead-session"
+    });
+    if (!result.ok) {
+      console.error(result.error.message);
+      process.exit(1);
+    }
+    return result.value;
   },
   release: async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
-    const { releaseFiles } = await import("./lib/claims.mjs");
-    return releaseFiles(repoPath, positionals, { owner: flags.owner });
+    const { releaseFiles } = await import("./lib/claims.ts");
+    const result = await releaseFiles(repoPath, positionals, { owner: flags.owner });
+    if (!result.ok) {
+      console.error(result.error.message);
+      process.exit(1);
+    }
+    return result.value;
   },
   "show-claims": async (/** @type {CommandContext} */ { repoPath }) => {
-    const { listClaims } = await import("./lib/claims.mjs");
+    const { listClaims } = await import("./lib/claims.ts");
     return { claims: await listClaims(repoPath) };
   },
   "show-conflicts": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
-    const { inspectClaims } = await import("./lib/claims.mjs");
+    const { inspectClaims } = await import("./lib/claims.ts");
     return inspectClaims(repoPath, positionals, { owner: flags.owner || "lead-session" });
   },
 
   "request-approval": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {
-    const { requestApproval } = await import("./lib/approvals.mjs");
+    const { requestApproval } = await import("./lib/approvals.ts");
     return requestApproval(repoPath, {
       requester: flags.requester || "lead-session",
       approver: flags.approver,
@@ -483,19 +495,24 @@ const COMMANDS = {
     });
   },
   "show-approvals": async (/** @type {CommandContext} */ { repoPath, flags }) => {
-    const { listApprovals } = await import("./lib/approvals.mjs");
+    const { listApprovals } = await import("./lib/approvals.ts");
     return {
       approvals: await listApprovals(repoPath, { status: flags.status, approver: flags.approver })
     };
   },
   "resolve-approval": async (/** @type {CommandContext} */ { repoPath, flags }) => {
-    const { resolveApproval } = await import("./lib/approvals.mjs");
-    return resolveApproval(repoPath, {
+    const { resolveApproval } = await import("./lib/approvals.ts");
+    const result = await resolveApproval(repoPath, {
       id: flags.id,
       decision: flags.decision,
       resolver: flags.resolver || "lead-session",
       note: flags.note || ""
     });
+    if (!result.ok) {
+      console.error(result.error.message);
+      process.exit(1);
+    }
+    return result.value;
   },
 
   "wake-up": async (/** @type {CommandContext} */ { repoPath }) => {
@@ -555,13 +572,13 @@ const COMMANDS = {
   },
 
   "show-workflow-state": async (/** @type {CommandContext} */ { repoPath }) => {
-    const { loadWorkflowState, summarizeWorkflowState } = await import("./lib/workflow-state.mjs");
+    const { loadWorkflowState, summarizeWorkflowState } = await import("./lib/workflow-state.ts");
     const workflowState = await loadWorkflowState(repoPath);
     return { workflowState, summary: summarizeWorkflowState(workflowState) };
   },
   "mark-badge": async (/** @type {CommandContext} */ { repoPath, flags }) => {
-    const { markWorkflowBadge } = await import("./lib/workflow-state.mjs");
-    const currentRun = await markWorkflowBadge(repoPath, {
+    const { markWorkflowBadge } = await import("./lib/workflow-state.ts");
+    const result = await markWorkflowBadge(repoPath, {
       badge: flags.badge,
       note: flags.note || flags.reason || "",
       blockedBy: flags.blockedBy,
@@ -570,7 +587,11 @@ const COMMANDS = {
       mode: flags.mode,
       next: flags.next
     });
-    return { badge: flags.badge, currentRun };
+    if (!result.ok) {
+      console.error(result.error.message);
+      process.exit(1);
+    }
+    return { badge: flags.badge, currentRun: result.value };
   },
 
   "write-run-brief": async (/** @type {CommandContext} */ { repoPath, flags, positionals }) => {

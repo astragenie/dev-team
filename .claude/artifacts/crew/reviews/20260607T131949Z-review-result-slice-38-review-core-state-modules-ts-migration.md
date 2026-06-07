@@ -1,0 +1,32 @@
+# Review Result: SLICE-38 review: core state modules .ts migration
+
+- Created: 2026-06-07T13:19:49.035Z
+- Reviewer: reviewer
+- Decision: rejected
+- Summary: AC-6 unimplemented: Result<T,E> not applied to claim, approval-resolve, or badge-set operations; all other ACs pass.
+- Evidence Checked:
+  - workflow-state.ts (488L)
+  - workflow-state-gates.ts (322L)
+  - claims.ts
+  - approvals.ts read in full; grep confirmed zero Result<T
+  - E> imports across all four migrated files; caller diff (crew.mjs
+  - artifacts.mjs
+  - wakeup.mjs
+  - cost-slice-handler.ts
+  - emit-cost-report.ts) shows correct .mjs->.ts import rewrites; GateStatus discriminated union present in workflow-state-gates.ts; no any types; ISP split performed (450L mjs -> 488+322 ts); as unknown as cast at workflow-state.ts:225
+  - 227 is structural subtype indexing
+  - not an any bypass
+- Files Reviewed:
+  - scripts/lib/workflow-state.ts
+  - scripts/lib/workflow-state-gates.ts
+  - scripts/lib/claims.ts
+  - scripts/lib/approvals.ts
+  - scripts/crew.mjs
+  - scripts/lib/artifacts.mjs
+  - scripts/lib/wakeup.mjs
+  - scripts/lib/cost-hygiene/cost-slice-handler.ts
+  - scripts/lib/cost-hygiene/emit-cost-report.ts
+- Test Adequacy: Existing CLI tests in tests/cli.test.mjs cover claims and approvals via integration paths; no new tests added, acceptable for mechanical rename; but AC-6 Result<T,E> return-type contract was never implemented so its error path has zero coverage
+- Risks: AC-6 omission: claimFiles, resolveApproval, markWorkflowBadge still throw on error rather than returning typed Result; runtime behavior unchanged (crew.mjs catches at top level), but typed-error-propagation contract is absent; stale comment in workflow-state-gates.ts line 1 referencing old .mjs is cosmetic only
+- Required Follow-up: Builder must: (1) import Result/ok/err from ./result.ts in claims.ts, approvals.ts, workflow-state.ts; (2) wrap claimFiles, releaseFiles, resolveApproval, markWorkflowBadge in ok()/err(); (3) update callers in crew.mjs to unwrap; (4) add at least one test per wrapped function asserting the err() path; then resubmit.
+

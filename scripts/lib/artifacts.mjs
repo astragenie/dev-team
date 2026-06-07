@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { registerWorkflowArtifact } from "./workflow-state.mjs";
+import { registerWorkflowArtifact } from "./workflow-state.ts";
 import { renderCostReportFrontmatter } from "./cost-hygiene/render-frontmatter.ts";
 
 const ARTIFACT_ROOT = [".claude", "artifacts", "crew"];
