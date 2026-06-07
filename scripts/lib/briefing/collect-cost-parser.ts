@@ -1,27 +1,52 @@
 // Internal cost-report parsing helpers extracted from collect.mjs.
 // All functions here are used by collectRecentCosts in collect.mjs.
 
-/** @param {string} text */
-export function parseFrontmatterBlock(text) {
+export interface ModelMixEntry {
+  model: string;
+  messages: number;
+  msgPct: number;
+  usd: number;
+  usdPct: number;
+}
+
+export interface DominantModel {
+  model: string;
+  pct: number;
+}
+
+export interface DeriveMetrics {
+  compactionCount: number;
+  subagentDispatches: number;
+  fileReReadCount: number;
+  toolFailures: number;
+  toolResultP90: number;
+  turnsBeforeFirstTool: number;
+  gradeAvg: number | null;
+  reviewDecision: string | null;
+  validationDecision: string | null;
+  autoDetected: boolean;
+  sourceProject: string | null;
+  aggregateAll: boolean;
+  sourceCount: number;
+}
+
+export function parseFrontmatterBlock(text: string): Record<string, string> {
   const match = text.match(/^---\n([\s\S]*?)\n---/);
-  /** @type {Record<string, string>} */
-  const fm = {};
+  const fm: Record<string, string> = {};
   if (match) {
-    for (const line of match[1].split(/\r?\n/)) {
+    for (const line of match[1]!.split(/\r?\n/)) {
       const kv = line.match(/^([\w_]+):\s*(.*)$/);
-      if (kv) fm[kv[1]] = kv[2].trim();
+      if (kv) fm[kv[1]!] = kv[2]!.trim();
     }
   }
   return fm;
 }
 
-/** @param {string} text */
-export function parseModelMix(text) {
-  /** @type {Array<{model: string, messages: number, msgPct: number, usd: number, usdPct: number}>} */
-  const out = [];
+export function parseModelMix(text: string): ModelMixEntry[] {
+  const out: ModelMixEntry[] = [];
   const section = text
     .split(/^##\s+/m)
-    .find((/** @type {string} */ s) => s.startsWith("Model Mix"));
+    .find((s: string) => s.startsWith("Model Mix"));
   if (!section) return out;
   for (const line of section.split(/\r?\n/)) {
     const m = line.match(
@@ -29,7 +54,7 @@ export function parseModelMix(text) {
     );
     if (m)
       out.push({
-        model: m[1],
+        model: m[1]!,
         messages: Number(m[2]),
         msgPct: Number(m[3]),
         usd: Number(m[4]),
@@ -39,18 +64,17 @@ export function parseModelMix(text) {
   return out;
 }
 
-/** @param {string} text */
-export function parseToolUsage(text) {
+export function parseToolUsage(text: string): { toolCalls: number; toolFailures: number } {
   let toolCalls = 0;
   let toolFailures = 0;
   const section = text
     .split(/^##\s+/m)
-    .find((/** @type {string} */ s) => s.startsWith("Tool Usage"));
+    .find((s: string) => s.startsWith("Tool Usage"));
   if (section) {
     for (const line of section.split(/\r?\n/)) {
       const m = line.match(/^-\s+\S+:\s*([\d,]+)(?:\s*\((\d+)\s+failed\))?/);
       if (m) {
-        toolCalls += Number(m[1].replace(/,/g, ""));
+        toolCalls += Number(m[1]!.replace(/,/g, ""));
         if (m[2]) toolFailures += Number(m[2]);
       }
     }
@@ -58,23 +82,17 @@ export function parseToolUsage(text) {
   return { toolCalls, toolFailures };
 }
 
-/** @param {Array<{model: string, msgPct: number}>} modelMix */
-export function computeDominantModel(modelMix) {
+export function computeDominantModel(modelMix: ModelMixEntry[]): DominantModel | null {
   const dominantEntry =
-    modelMix.find(
-      (/** @type {{model: string, msgPct: number}} */ m) => !/^<|unknown/i.test(m.model)
-    ) ||
+    modelMix.find((m: ModelMixEntry) => !/^<|unknown/i.test(m.model)) ||
     modelMix[0] ||
     null;
   if (!dominantEntry) return null;
   return { model: dominantEntry.model, pct: dominantEntry.msgPct };
 }
 
-/**
- * @param {{compactionCount: number, subagentDispatches: number, fileReReadCount: number, toolFailures: number, toolResultP90: number, turnsBeforeFirstTool: number, gradeAvg: number | null, reviewDecision: string | null, validationDecision: string | null, autoDetected: boolean, sourceProject: string | null, aggregateAll: boolean, sourceCount: number}} metrics
- */
-export function deriveFlags(metrics) {
-  const flags = [];
+export function deriveFlags(metrics: DeriveMetrics): string[] {
+  const flags: string[] = [];
   if (metrics.compactionCount > 0) flags.push(`compact:${metrics.compactionCount}`);
   if (metrics.subagentDispatches > 3) flags.push(`subagent:${metrics.subagentDispatches}`);
   if (metrics.fileReReadCount > 5) flags.push(`reread:${metrics.fileReReadCount}`);
@@ -90,54 +108,46 @@ export function deriveFlags(metrics) {
   return flags;
 }
 
-/**
- * @param {string} text
- * @param {RegExp} re
- */
-export function bodyNum(text, re) {
+export function bodyNum(text: string, re: RegExp): number {
   return Number(text.match(re)?.[1]?.replace(/,/g, "") || 0);
 }
 
 // Header/window fields. Frontmatter wins when present; falls through to
 // body markdown patterns for pre-frontmatter cost-reports.
-/**
- * @param {string} text
- * @param {Record<string, string>} fm
- */
-export function parseRunTitle(text, fm) {
-  const raw = fm.run_title || text.match(/^- Run Title:\s*(.+)$/m)?.[1] || "";
+export function parseRunTitle(text: string, fm: Record<string, string>): string | null {
+  const raw = fm["run_title"] ?? text.match(/^- Run Title:\s*(.+)$/m)?.[1] ?? "";
   const stripped = raw.replace(/^"|"$/g, "").trim();
   return stripped || null;
 }
 
-/**
- * @param {string} text
- * @param {Record<string, string>} fm
- */
-export function parseUsd(text, fm) {
-  if (fm.usd != null) return Number(fm.usd);
+export function parseUsd(text: string, fm: Record<string, string>): number | null {
+  if (fm["usd"] != null) return Number(fm["usd"]);
   const fromBody = Number(text.match(/^- Total USD:\s*\$([\d.]+)/m)?.[1] || 0);
   return fromBody || null;
 }
 
-/**
- * @param {Record<string, string>} fm
- * @param {string | null} windowStart
- * @param {string | null} windowEnd
- */
-export function parseDurationMs(fm, windowStart, windowEnd) {
-  if (fm.duration_ms) return Number(fm.duration_ms);
+export function parseDurationMs(
+  fm: Record<string, string>,
+  windowStart: string | null,
+  windowEnd: string | null
+): number {
+  if (fm["duration_ms"]) return Number(fm["duration_ms"]);
   if (windowStart && windowEnd) return Date.parse(windowEnd) - Date.parse(windowStart);
   return 0;
 }
 
-/**
- * @param {string} text
- * @param {Record<string, string>} fm
- */
-export function parseHeaderFields(text, fm) {
-  const windowStart = text.match(/^- Window Start:\s*(.+)$/m)?.[1]?.trim() || null;
-  const windowEnd = text.match(/^- Window End:\s*(.+)$/m)?.[1]?.trim() || null;
+export function parseHeaderFields(
+  text: string,
+  fm: Record<string, string>
+): {
+  runTitle: string | null;
+  usd: number | null;
+  windowStart: string | null;
+  windowEnd: string | null;
+  durationMs: number;
+} {
+  const windowStart = text.match(/^- Window Start:\s*(.+)$/m)?.[1]?.trim() ?? null;
+  const windowEnd = text.match(/^- Window End:\s*(.+)$/m)?.[1]?.trim() ?? null;
   return {
     runTitle: parseRunTitle(text, fm),
     usd: parseUsd(text, fm),
@@ -147,16 +157,22 @@ export function parseHeaderFields(text, fm) {
   };
 }
 
-/**
- * @param {string} text
- * @param {Record<string, string>} fm
- */
-export function parseTokenFields(text, fm) {
-  const totalTokens = fm.total_tokens
-    ? Number(fm.total_tokens)
+export function parseTokenFields(
+  text: string,
+  fm: Record<string, string>
+): {
+  totalTokens: number;
+  cacheHitPct: number;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+} {
+  const totalTokens = fm["total_tokens"]
+    ? Number(fm["total_tokens"])
     : bodyNum(text, /^- Total Tokens:\s*([\d,]+)/m);
-  const cacheHitPct = fm.cache_hit_pct
-    ? Number(fm.cache_hit_pct)
+  const cacheHitPct = fm["cache_hit_pct"]
+    ? Number(fm["cache_hit_pct"])
     : Number(text.match(/^- Cache Hit %:\s*([\d.]+)/m)?.[1] || 0);
   const inputTokens = bodyNum(text, /^- input:\s*([\d,]+)/m);
   const outputTokens = bodyNum(text, /^- output:\s*([\d,]+)/m);
@@ -182,17 +198,13 @@ export function parseTokenFields(text, fm) {
  * Both emit lines of the form:
  *   - subagent_dispatches_by_role:
  *     - <role>: <count>
- *
- * @param {string} text
- * @returns {Record<string, number>}
  */
-export function parseRoleDispatches(text) {
+export function parseRoleDispatches(text: string): Record<string, number> {
   // Find the start of the subagent_dispatches_by_role key anywhere in the text.
   const keyIdx = text.indexOf("- subagent_dispatches_by_role:");
   if (keyIdx === -1) return {};
 
-  /** @type {Record<string, number>} */
-  const out = {};
+  const out: Record<string, number> = {};
   // Walk lines after the key, collecting indented "  - role: count" entries.
   // Role names may contain colons (e.g. "crew:builder"), so match the LAST
   // ": <digits>" segment to split role from count.
@@ -200,7 +212,7 @@ export function parseRoleDispatches(text) {
   for (const line of afterKey.split(/\r?\n/)) {
     const m = line.match(/^\s{2,}-\s+(.+):\s*(\d+)\s*$/);
     if (m) {
-      out[m[1].trim()] = Number(m[2]);
+      out[m[1]!.trim()] = Number(m[2]);
     } else if (line.match(/^-\s+\S/) || line.match(/^##/)) {
       // Hit a sibling bullet or a new section — stop collecting.
       break;
@@ -209,8 +221,18 @@ export function parseRoleDispatches(text) {
   return out;
 }
 
-/** @param {string} text */
-export function parseDiagnosticFields(text) {
+export function parseDiagnosticFields(text: string): {
+  compactionCount: number;
+  subagentDispatches: number;
+  skillInvocations: number;
+  turnsBeforeFirstTool: number;
+  userMsgAvgLen: number;
+  fileReReadCount: number;
+  sessionsScanned: number;
+  toolResultP90: number;
+  messages: number;
+  roleDispatches: Record<string, number>;
+} {
   return {
     compactionCount: bodyNum(text, /^- compaction_count:\s*(\d+)/m),
     subagentDispatches: bodyNum(text, /^- subagent_dispatches:\s*(\d+)/m),
@@ -225,24 +247,27 @@ export function parseDiagnosticFields(text) {
   };
 }
 
-/** @param {Record<string, string>} fm */
-export function parseOutcomeFields(fm) {
+export function parseOutcomeFields(fm: Record<string, string>): {
+  gradeAvg: number | null;
+  reviewDecision: string | null;
+  validationDecision: string | null;
+  sourceProject: string | null;
+  autoDetected: boolean;
+  aggregateAll: boolean;
+  sourceCount: number;
+} {
   return {
-    gradeAvg: fm.grade_avg != null ? Number(fm.grade_avg) : null,
-    reviewDecision: fm.review_decision || null,
-    validationDecision: fm.validation_decision || null,
-    sourceProject: fm.source_project || null,
-    autoDetected: String(fm.auto_detected || "").toLowerCase() === "true",
-    aggregateAll: String(fm.aggregate_all || "").toLowerCase() === "true",
-    sourceCount: fm.source_count ? Number(fm.source_count) : 0
+    gradeAvg: fm["grade_avg"] != null ? Number(fm["grade_avg"]) : null,
+    reviewDecision: fm["review_decision"] ?? null,
+    validationDecision: fm["validation_decision"] ?? null,
+    sourceProject: fm["source_project"] ?? null,
+    autoDetected: String(fm["auto_detected"] ?? "").toLowerCase() === "true",
+    aggregateAll: String(fm["aggregate_all"] ?? "").toLowerCase() === "true",
+    sourceCount: fm["source_count"] ? Number(fm["source_count"]) : 0
   };
 }
 
-/**
- * @param {string} filePath
- * @param {string} text
- */
-export function parseCostReportText(filePath, text) {
+export function parseCostReportText(filePath: string, text: string) {
   const fm = parseFrontmatterBlock(text);
   const header = parseHeaderFields(text, fm);
   const tokens = parseTokenFields(text, fm);
@@ -253,7 +278,7 @@ export function parseCostReportText(filePath, text) {
   const { toolCalls, toolFailures } = parseToolUsage(text);
   const toolFailureRate = toolCalls > 0 ? Number(((toolFailures / toolCalls) * 100).toFixed(1)) : 0;
 
-  const toM = (/** @type {number} */ n) => Number((n / 1_000_000).toFixed(3));
+  const toM = (n: number) => Number((n / 1_000_000).toFixed(3));
   const inputM = toM(tokens.inputTokens);
   const outputM = toM(tokens.outputTokens);
   const cacheReadM = toM(tokens.cacheReadTokens);
@@ -350,18 +375,18 @@ export function parseCostReportText(filePath, text) {
   };
 }
 
+export type CostReport = ReturnType<typeof parseCostReportText>;
+
 /**
  * Deduplicate a list of parsed cost reports so that the rollup summary
  * (sumUsdRecent, avgUsdRecent, modelBurn) does not double-count overlapping
  * windows.
  *
- * @param {ReturnType<typeof parseCostReportText>[]} reports  Newest-first.
- * @returns {ReturnType<typeof parseCostReportText>[]}
+ * Reports array should be newest-first.
  */
-export function dedupeForRollup(reports) {
+export function dedupeForRollup(reports: CostReport[]): CostReport[] {
   // Step 1 — bucket by exact (windowStart, windowEnd).
-  /** @type {Map<string, ReturnType<typeof parseCostReportText>>} */
-  const bucketWinner = new Map();
+  const bucketWinner = new Map<string, CostReport>();
 
   for (const r of reports) {
     const key = `${r.windowStart ?? ""}|${r.windowEnd ?? ""}`;
@@ -383,12 +408,9 @@ export function dedupeForRollup(reports) {
   // Step 2 — collect aggregate windows so we can omit fully-contained slices.
   const aggregateWindows = winners
     .filter((r) => r.aggregateAll && r.windowStart && r.windowEnd)
-    .map((r) => ({ start: Date.parse(r.windowStart), end: Date.parse(r.windowEnd) }));
+    .map((r) => ({ start: Date.parse(r.windowStart!), end: Date.parse(r.windowEnd!) }));
 
-  /**
-   * @param {ReturnType<typeof parseCostReportText>} r
-   */
-  function isContainedInAggregate(r) {
+  function isContainedInAggregate(r: CostReport): boolean {
     if (r.aggregateAll) return false; // aggregates are never dropped for containment
     if (!r.windowStart || !r.windowEnd) return false;
     const rStart = Date.parse(r.windowStart);
@@ -401,12 +423,9 @@ export function dedupeForRollup(reports) {
 
 /**
  * Aggregate subagent role dispatch counts across a set of cost reports.
- * @param {ReturnType<typeof parseCostReportText>[]} reports
- * @returns {Record<string, number>}
  */
-export function aggregateRoleDispatches(reports) {
-  /** @type {Record<string, number>} */
-  const out = {};
+export function aggregateRoleDispatches(reports: CostReport[]): Record<string, number> {
+  const out: Record<string, number> = {};
   for (const r of reports) {
     if (!r.roleDispatches) continue;
     for (const [role, count] of Object.entries(r.roleDispatches)) {

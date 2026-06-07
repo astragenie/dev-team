@@ -12,7 +12,7 @@ import {
   parseCostReportText,
   dedupeForRollup,
   aggregateRoleDispatches
-} from "./collect-cost-parser.mjs";
+} from "./collect-cost-parser.ts";
 import { tailReadJsonl } from "../jsonl.mjs";
 import { getCachedArtifact } from "../artifact-cache.mjs";
 

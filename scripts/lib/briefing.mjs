@@ -47,7 +47,7 @@ import {
   buildRetrievalGuide,
   buildSecondaryOptions,
   recommendedNextStep
-} from "./briefing/render.mjs";
+} from "./briefing/render.ts";
 
 /**
  * @param {{ hooks: Array<{name: string, errorCount24h: number, status: string}> }} health

@@ -2,7 +2,7 @@
 id: FEAT-110
 title: TS Phase 1.5 — migrate briefing leaf modules to .ts
 priority: P1
-status: triaged
+status: done
 category: code-quality
 target_release: null
 autonomous_safe: true
@@ -26,8 +26,10 @@ pm_dependency_depth: 0.5
 migration_note: legacy PM schema preserved as pm_legacy_*; new dimensions defaulted to 0.5 on 2026-06-07
 triage_notes: "autonomous_safe inferred: AC count=6, derived_from=null → true"
 updated: 2026-06-07
-slices: []
-slices_complete: []
+slices: [SLICE-34]
+slices_complete: [SLICE-34]
+started_at: 2026-06-07
+completed_at: 2026-06-07
 ---
 # FEAT-110 — TS Phase 1.5: briefing leaf modules
 
