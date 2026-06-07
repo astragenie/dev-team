@@ -2,7 +2,7 @@
 id: FEAT-101
 title: Perf win 1 — tail-read events.jsonl instead of full file scan
 priority: P2
-status: in-progress
+status: done
 category: perf
 target_release: null
 autonomous_safe: true
@@ -28,6 +28,8 @@ triage_notes: "autonomous_safe inferred: AC count=6, derived_from=null → true"
 updated: 2026-06-07
 started_at: 2026-06-07
 slices: [SLICE-19]
+slices_complete: [SLICE-19]
+completed_at: 2026-06-07
 ---
 # FEAT-101 — Perf win 1: tail-read events.jsonl
 

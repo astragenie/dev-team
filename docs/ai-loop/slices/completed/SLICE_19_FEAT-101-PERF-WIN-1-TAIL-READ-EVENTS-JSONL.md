@@ -1,6 +1,6 @@
 ---
 id: SLICE-19
-status: pending
+status: completed
 feature: FEAT-101
 phase: null
 priority: P2
@@ -8,6 +8,7 @@ target_release: null
 requires_validation: false
 created: 2026-06-07
 updated: 2026-06-07
+completed_at: 2026-06-07
 ---
 # SLICE-19: # FEAT-101 — Perf win 1: tail-read events.jsonl
 
