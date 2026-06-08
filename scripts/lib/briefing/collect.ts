@@ -16,6 +16,7 @@ import {
 import type { CostReport } from "./collect-cost-parser.ts";
 import { tailReadJsonl } from "../jsonl.mjs";
 import { getCachedArtifact } from "../artifact-cache.mjs";
+import { pathExists } from "../fs-utils.ts";
 
 const execFile = promisify(execFileCallback);
 const BRANCH_COMMITS_LIMIT = 5;
@@ -139,15 +140,6 @@ interface RecentCostsResult {
 // ---------------------------------------------------------------------------
 // Private helpers
 // ---------------------------------------------------------------------------
-
-async function pathExists(targetPath: string): Promise<boolean> {
-  try {
-    await fs.access(targetPath);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 function parseInteger(value: string): number {
   const parsed = Number.parseInt(value, 10);
@@ -422,22 +414,29 @@ async function findAutonomousLoopCli(): Promise<string | null> {
   ];
   // Use a local alias to avoid shadowing the top-level `fs` import.
   const { promises: fsLocal } = await import("node:fs");
-  for (const cacheDir of cacheDirs) {
-    let entries: string[];
-    try {
-      entries = await fsLocal.readdir(cacheDir);
-    } catch {
-      continue;
-    }
-    const versions = entries.sort().reverse();
-    for (const v of versions) {
-      const newName = `${cacheDir}/${v}/scripts/loop.mjs`;
-      const legacyName = `${cacheDir}/${v}/scripts/autonomous-loop.mjs`;
-      if (await pathExists(newName)) return newName;
-      if (await pathExists(legacyName)) return legacyName;
-    }
-  }
-  return null;
+
+  // Scan all cache directories in parallel, then pick the highest-priority hit.
+  const perDirCandidates = await Promise.all(
+    cacheDirs.map(async (cacheDir): Promise<string | null> => {
+      let entries: string[];
+      try {
+        entries = await fsLocal.readdir(cacheDir);
+      } catch {
+        return null;
+      }
+      const versions = entries.sort().reverse();
+      for (const v of versions) {
+        const newName = `${cacheDir}/${v}/scripts/loop.mjs`;
+        const legacyName = `${cacheDir}/${v}/scripts/autonomous-loop.mjs`;
+        if (await pathExists(newName)) return newName;
+        if (await pathExists(legacyName)) return legacyName;
+      }
+      return null;
+    })
+  );
+
+  // Return the first non-null result, preserving priority order.
+  return perDirCandidates.find((c) => c !== null) ?? null;
 }
 
 // Scan .claude/artifacts/crew/runs/ for cost-report-*.md files and parse
@@ -464,21 +463,24 @@ async function listCostReportFilesByMtime(
 ): Promise<string[]> {
   // Accept either a single dir (legacy) or an array of dirs to merge.
   const dirList = Array.isArray(dirs) ? dirs : [dirs];
-  const files: string[] = [];
-  for (const dir of dirList) {
-    if (!(await pathExists(dir))) continue;
-    let entries;
-    try {
-      entries = await fs.readdir(dir, { withFileTypes: true });
-    } catch {
-      continue;
-    }
-    for (const e of entries) {
-      if (e.isFile() && /-cost-report-.+\.md$/.test(e.name)) {
-        files.push(path.join(dir, e.name));
+
+  // Scan all directories in parallel — each readdir is independent I/O.
+  const perDirFiles = await Promise.all(
+    dirList.map(async (dir): Promise<string[]> => {
+      if (!(await pathExists(dir))) return [];
+      let entries;
+      try {
+        entries = await fs.readdir(dir, { withFileTypes: true });
+      } catch {
+        return [];
       }
-    }
-  }
+      return entries
+        .filter((e) => e.isFile() && /-cost-report-.+\.md$/.test(e.name))
+        .map((e) => path.join(dir, e.name));
+    })
+  );
+
+  const files = perDirFiles.flat();
   if (files.length === 0) return [];
   const stats = await statFiles(files);
   return stats

@@ -7,6 +7,7 @@ import fs from "node:fs/promises";
 import type { Dirent } from "node:fs";
 import path from "node:path";
 import { readFileIfExists } from "./fs-utils.mjs";
+import { pathExists } from "./fs-utils.ts";
 
 export interface FleetItem {
   repoName: string;
@@ -32,15 +33,6 @@ interface SliceProgressResult {
 interface FoundEntry {
   repoName: string;
   progressPath: string;
-}
-
-async function pathExists(p: string): Promise<boolean> {
-  try {
-    await fs.access(p);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 // Extract the updated-at, progress counts, and in-progress slice from

@@ -10,6 +10,14 @@ import fs from "node:fs/promises";
  * @param {string} filePath
  * @returns {Promise<string | null>}
  */
+/**
+ * @param {string} p
+ * @returns {Promise<boolean>}
+ */
+export async function pathExists(p) {
+  return fs.access(p).then(() => true, () => false);
+}
+
 export async function readFileIfExists(filePath) {
   try {
     return await fs.readFile(filePath, "utf8");

@@ -5,7 +5,8 @@ import path from "node:path";
 import { listApprovals } from "./approvals.ts";
 import { listClaims } from "./claims.ts";
 import { readDeploymentGuidanceSummary } from "./deployment-guidance/read.ts";
-import { readFileIfExists } from "./fs-utils.mjs";
+import { readFileIfExists, pathExists } from "./fs-utils.mjs";
+
 import { tailReadJsonl } from "./jsonl.mjs";
 import { loadWorkflowState, summarizeWorkflowState } from "./workflow-state.ts";
 import { collectHookHealth } from "./briefing/collect.ts";
@@ -29,19 +30,6 @@ const RECENT_EVENTS_LIMIT = 3;
 const RECENT_HISTORY_LIMIT = 3;
 
 /**
- * @param {string} targetPath
- * @returns {Promise<boolean>}
- */
-async function pathExists(targetPath) {
-  try {
-    await fs.access(targetPath);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
  * @param {string} filePath
  * @returns {Promise<object | null>}
  */
@@ -59,16 +47,8 @@ async function countFiles(dirPath) {
     return 0;
   }
 
-  const entries = await fs.readdir(dirPath);
-  let count = 0;
-  for (const entry of entries) {
-    const fullPath = path.join(dirPath, entry);
-    const stat = await fs.stat(fullPath);
-    if (stat.isFile()) {
-      count += 1;
-    }
-  }
-  return count;
+  const entries = await fs.readdir(dirPath, { withFileTypes: true });
+  return entries.filter((e) => e.isFile()).length;
 }
 
 /**
@@ -80,16 +60,12 @@ async function listFilesNewestFirst(dirPath) {
     return [];
   }
 
-  const entries = await fs.readdir(dirPath);
-  const files = [];
-  for (const entry of entries) {
-    const fullPath = path.join(dirPath, entry);
-    const stat = await fs.stat(fullPath);
-    if (stat.isFile()) {
-      files.push({ path: fullPath, mtimeMs: stat.mtimeMs });
-    }
-  }
-  return files.sort((left, right) => right.mtimeMs - left.mtimeMs);
+  const entries = await fs.readdir(dirPath, { withFileTypes: true });
+  const files = entries.filter((e) => e.isFile());
+  const stats = await Promise.all(files.map((e) => fs.stat(path.join(dirPath, e.name))));
+  return files
+    .map((e, i) => ({ path: path.join(dirPath, e.name), mtimeMs: stats[i].mtimeMs }))
+    .sort((left, right) => right.mtimeMs - left.mtimeMs);
 }
 
 /**

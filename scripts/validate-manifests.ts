@@ -12,15 +12,11 @@
 // sets process.exitCode on failure; it does NOT call process.exit, so
 // callers that `await import` this module are not killed.
 
-import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readJson } from "./lib/fs-utils.ts";
 
 const SEMVER_RE = /^\d+\.\d+\.\d+(?:-[\w.]+)?$/;
-
-async function readJson(p: string): Promise<Record<string, unknown>> {
-  return JSON.parse(await fs.readFile(p, "utf8")) as Record<string, unknown>;
-}
 
 function isMissing(value: unknown) {
   return value === undefined || value === null || value === "";
@@ -93,9 +89,9 @@ export async function validateManifests(repoRoot: string) {
   const failures: string[] = [];
   const fail = (msg: string) => failures.push(msg);
 
-  const plugin = await readJson(path.join(repoRoot, ".claude-plugin", "plugin.json"));
-  const marketplace = await readJson(path.join(repoRoot, ".claude-plugin", "marketplace.json"));
-  const pkg = await readJson(path.join(repoRoot, "package.json"));
+  const plugin = await readJson<Record<string, unknown>>(path.join(repoRoot, ".claude-plugin", "plugin.json"));
+  const marketplace = await readJson<Record<string, unknown>>(path.join(repoRoot, ".claude-plugin", "marketplace.json"));
+  const pkg = await readJson<Record<string, unknown>>(path.join(repoRoot, "package.json"));
 
   checkRequiredFields(
     plugin,

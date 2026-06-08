@@ -5,17 +5,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+export { pathExists } from "../fs-utils.ts";
+import { pathExists } from "../fs-utils.ts"; // needed for local use in writeSeedIfMissing
+
 export function indentJson(value: unknown): string {
   return `${JSON.stringify(value, null, 2)}\n`;
-}
-
-export async function pathExists(targetPath: string): Promise<boolean> {
-  try {
-    await fs.access(targetPath);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 export async function ensureDir(dirPath: string): Promise<void> {

@@ -4,6 +4,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { getCachedArtifact } from "../artifact-cache.mjs";
+import { pathExists } from "../fs-utils.ts";
 
 const DEPLOYMENT_GUIDANCE_PATH = [".claude", "crew", "deployment.md"] as const;
 // Legacy path retained for read-side fallback so repos installed before the
@@ -51,15 +52,6 @@ const DEPLOYMENT_DIR_HINTS = new Set([
   "manifests"
 ]);
 const DEPLOYMENT_EXTENSIONS = new Set([".yaml", ".yml", ".json", ".toml", ".tf", ".tfvars", ".sh"]);
-
-async function pathExists(targetPath: string): Promise<boolean> {
-  try {
-    await fs.access(targetPath);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 function fileLooksLikeDeploymentClue(relativePath: string): boolean {
   const baseName = path.basename(relativePath);
