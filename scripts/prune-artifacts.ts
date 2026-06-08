@@ -52,11 +52,11 @@ function parseArgs(argv: string[]): {
   return { repo, olderThan, dryRun };
 }
 
-function validateDays(days: number): string | null {
+export function validateDays(days: number): string | null {
   if (!Number.isFinite(days) || Number.isNaN(days)) {
     return `--older-than must be a finite number; got ${days}`;
   }
-  if (days <= 0) {
+  if (!Number.isInteger(days) || days <= 0) {
     return `--older-than must be a positive integer; got ${days}`;
   }
   return null;

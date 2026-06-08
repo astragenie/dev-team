@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { isOlderThan } from "../scripts/prune-artifacts.ts";
+import { isOlderThan, validateDays } from "../scripts/prune-artifacts.ts";
 
 const DAY_MS = 86_400_000;
 const NOW = 1_000_000 * DAY_MS; // arbitrary fixed "now"
@@ -44,4 +44,25 @@ test("isOlderThan: works with large threshold (365 days)", () => {
 test("isOlderThan: works with large threshold when file is past it", () => {
   const mtime = NOW - 366 * DAY_MS; // 366 days old, threshold 365
   assert.equal(isOlderThan(mtime, NOW, 365), true);
+});
+
+// validateDays — float and invalid input rejection
+test("validateDays: accepts positive integer", () => {
+  assert.equal(validateDays(90), null);
+});
+
+test("validateDays: rejects float (1.5)", () => {
+  assert.notEqual(validateDays(1.5), null);
+});
+
+test("validateDays: rejects zero", () => {
+  assert.notEqual(validateDays(0), null);
+});
+
+test("validateDays: rejects negative", () => {
+  assert.notEqual(validateDays(-5), null);
+});
+
+test("validateDays: rejects NaN", () => {
+  assert.notEqual(validateDays(NaN), null);
 });
