@@ -26,6 +26,7 @@ const FLAG_SPEC = {
   "--badge": { key: "badge" },
   "--blocked-by": { key: "blockedBy" },
   "--build": { key: "build" },
+  "--builder": { key: "builder" },
   "--clues": { key: "clues" },
   "--commit-pattern": { key: "commitPattern" },
   "--completed-at": { key: "completedAt" },
@@ -40,11 +41,14 @@ const FLAG_SPEC = {
   "--evidence": { key: "evidence" },
   "--external-deltas": { key: "externalDeltas" },
   "--extra-root": { key: "extraRoot" },
+  "--feat": { key: "feat" },
   "--feature": { key: "feature" },
   "--files": { key: "files" },
+  "--files-read": { key: "filesRead" },
   "--findings": { key: "findings" },
   "--from": { key: "from" },
   "--goal": { key: "goal" },
+  "--handoff": { key: "handoff" },
   "--id": { key: "id" },
   "--kind": { key: "kind" },
   "--logs": { key: "logs" },
@@ -68,11 +72,13 @@ const FLAG_SPEC = {
   "--reviewer": { key: "reviewer" },
   "--reviewer-label": { key: "reviewerLabel" },
   "--risks": { key: "risks" },
+  "--run": { key: "run" },
   "--run-steps": { key: "runSteps" },
   "--run-title": { key: "runTitle" },
   "--source-project": { key: "sourceProject" },
   "--scope": { key: "scope" },
   "--severity": { key: "severity" },
+  "--slice": { key: "slice" },
   "--started-at": { key: "startedAt" },
   "--status": { key: "status" },
   "--summary": { key: "summary" },
@@ -171,7 +177,13 @@ function parseArgs(argv: string[]) {
     testSummary: null,
     testSummarySkipReason: null,
     findings: null,
-    validationEvidence: null
+    validationEvidence: null,
+    builder: null,
+    feat: null,
+    filesRead: null,
+    handoff: null,
+    run: null,
+    slice: null
   };
   const positionals = [];
 
@@ -241,6 +253,8 @@ function usage(target: string | null = null) {
       "  node scripts/crew.mjs mark-badge --repo <path> --badge review_required|review_passed|review_failed|review_skipped|validation_expected|validation_passed|validation_failed|validation_skipped|dev_deploy_expected|dev_checked|dev_failed|dev_skipped|prod_deploy_expected|prod_checked|prod_failed|prod_skipped|blocked|escalated_to_human [--note <text>] [--blocked-by <artifact-id>]",
     "write-run-brief":
       "  node scripts/crew.mjs write-run-brief --repo <path> --title <text> [--goal <text>] [--mode <mode>] [--pace <pace>]",
+    "write-build-bundle":
+      "  node scripts/crew.ts write-build-bundle --repo <path> --slice <SLICE-NN> --builder <builder|builder-be|builder-fe> --run <YYYYMMDDTHHMMSSZ> --handoff <path> [--feat <FEAT-NNN>] [--files <a,b>] [--files-read <c,d>]",
     "write-handoff":
       "  node scripts/crew.mjs write-handoff --repo <path> --title <text> [--from <role>] [--to <role>] [--files <a,b>]",
     "write-review-result":
@@ -563,6 +577,51 @@ const COMMANDS = {
     if (!r.ok) throw r.error;
     return r.value;
   },
+  "write-build-bundle": async ({ repoPath, flags }: CommandContext) => {
+    const { assembleBuildBundle } = await import("./lib/build-bundle/assemble.ts");
+    const fs = await import("node:fs/promises");
+
+    const slice = flags.slice ?? "unknown";
+    const builder = flags.builder;
+    const run = flags.run;
+    const handoffPath = flags.handoff;
+
+    if (!builder || !run || !handoffPath) {
+      process.stderr.write(
+        "[crew] write-build-bundle refused: --builder, --run, and --handoff are required.\n"
+      );
+      process.exit(2);
+    }
+    const validBuilders = new Set(["builder", "builder-be", "builder-fe"]);
+    if (!validBuilders.has(builder)) {
+      process.stderr.write(
+        `[crew] write-build-bundle refused: --builder must be one of ${[...validBuilders].join(", ")}.\n`
+      );
+      process.exit(2);
+    }
+
+    const handoffBody = await fs.readFile(handoffPath, "utf8");
+    const filesTouched = (flags.files ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    const filesRead = (flags.filesRead ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+
+    const result = await assembleBuildBundle({
+      repoPath,
+      sliceId: slice,
+      builderName: builder as "builder" | "builder-be" | "builder-fe",
+      runId: run,
+      ...(flags.feat !== null ? { feat: flags.feat } : {}),
+      handoffBody,
+      filesTouched,
+      filesRead
+    });
+    return result.path;
+  },
   "write-handoff": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
     const r = await writeArtifact(repoPath, "handoff", {
@@ -767,7 +826,12 @@ async function main() {
   }
 
   const result = await handler({ repoPath, flags, positionals });
-  console.log(JSON.stringify(result, null, 2));
+  // String results are printed as-is (e.g. file paths); everything else is JSON.
+  if (typeof result === "string") {
+    console.log(result);
+  } else {
+    console.log(JSON.stringify(result, null, 2));
+  }
 }
 
 main().catch((error) => {
