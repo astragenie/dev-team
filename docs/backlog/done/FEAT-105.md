@@ -30,6 +30,9 @@ started_at: 2026-06-07
 slices: [SLICE-23, SLICE-28]
 slices_complete: [SLICE-28, SLICE-23]
 completed_at: 2026-06-07
+github_issue: 74
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/74"
 ---
 # FEAT-105 — Perf win 10: skip stat-before-read
 

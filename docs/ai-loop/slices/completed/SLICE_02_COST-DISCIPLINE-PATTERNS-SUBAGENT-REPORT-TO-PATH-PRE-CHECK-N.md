@@ -7,6 +7,8 @@ target_release: v0.3.2
 created: 2026-05-23
 updated: 2026-05-23
 completed_at: 2026-05-23
+github_issue: 33
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/33"
 ---
 # SLICE-02: cost-discipline patterns — subagent report-to-path + pre-check + no-reReread
 

@@ -30,6 +30,9 @@ started_at: 2026-06-07
 slices: [SLICE-21]
 slices_complete: [SLICE-21]
 completed_at: 2026-06-07
+github_issue: 70
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/70"
 ---
 # FEAT-103 — Perf win 4: memoize hot frontmatter reads
 

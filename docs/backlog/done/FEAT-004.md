@@ -14,6 +14,7 @@ autonomous_safe: true
 phase: 1
 github_issue: 4
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/4"
 ---
 # FEAT-004: Architecture document polish
 

@@ -30,6 +30,9 @@ started_at: 2026-06-07
 slices: [SLICE-19]
 slices_complete: [SLICE-19]
 completed_at: 2026-06-07
+github_issue: 66
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/66"
 ---
 # FEAT-101 — Perf win 1: tail-read events.jsonl
 

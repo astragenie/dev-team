@@ -9,6 +9,8 @@ requires_validation: true
 created: 2026-06-07
 updated: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 98
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/98"
 ---
 # SLICE-40: # FEAT-116 — TS Phase 2.3: cost-advisor stack
 

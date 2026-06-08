@@ -7,6 +7,8 @@ target_release: v0.3.2
 created: 2026-05-24
 updated: 2026-05-24
 completed_at: 2026-05-24
+github_issue: 35
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/35"
 ---
 # SLICE-04: Multi-slice support in loop:slice-complete
 

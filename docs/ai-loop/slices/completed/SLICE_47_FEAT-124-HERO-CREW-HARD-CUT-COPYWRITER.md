@@ -12,6 +12,8 @@ depends_on: [SLICE-46]
 created: 2026-06-07
 completed_at: 2026-06-07
 updated: 2026-06-07
+github_issue: 112
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/112"
 ---
 # SLICE-47: Hero-crew side — hard cut crew:copywriter
 

@@ -13,6 +13,7 @@ autonomous_safe: true
 phase: 1
 github_issue: 17
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/17"
 ---
 # FEAT-017: wire plugin-dev:plugin-validator + skill-reviewer into reviewer phase
 

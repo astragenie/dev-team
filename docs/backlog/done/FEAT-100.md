@@ -30,6 +30,9 @@ started_at: 2026-06-07
 slices: [SLICE-16]
 slices_complete: [SLICE-16]
 completed_at: 2026-06-07
+github_issue: 64
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/64"
 ---
 # FEAT-100 — TS migration Phase 0: foundation
 

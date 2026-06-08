@@ -30,6 +30,9 @@ slices: [SLICE-29]
 slices_complete: [SLICE-29]
 started_at: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 77
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/77"
 ---
 # FEAT-106 — TS Phase 1.1: scope-estimate + ux-validation leaves
 

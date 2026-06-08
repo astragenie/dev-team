@@ -9,6 +9,8 @@ requires_validation: true
 created: 2026-06-07
 updated: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 80
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/80"
 ---
 # SLICE-30: # FEAT-107 — TS Phase 1.2: preflight + subagent-return leaves
 

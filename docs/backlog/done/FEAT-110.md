@@ -30,6 +30,9 @@ slices: [SLICE-34]
 slices_complete: [SLICE-34]
 started_at: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 85
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/85"
 ---
 # FEAT-110 — TS Phase 1.5: briefing leaf modules
 

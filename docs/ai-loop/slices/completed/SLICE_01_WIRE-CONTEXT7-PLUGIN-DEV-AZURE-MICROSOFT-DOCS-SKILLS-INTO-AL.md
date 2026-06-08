@@ -7,6 +7,8 @@ target_release: v0.4.0
 created: 2026-05-23
 updated: 2026-05-23
 completed_at: 2026-05-23
+github_issue: 34
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/34"
 ---
 # SLICE-01: routing-table + CLAUDE.md callout + architecture doc subsection (FEAT-019 SLICE-A)
 

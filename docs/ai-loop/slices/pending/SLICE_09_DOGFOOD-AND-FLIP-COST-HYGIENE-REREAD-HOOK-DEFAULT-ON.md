@@ -6,8 +6,9 @@ status: pending
 priority: P0
 autonomous_safe: true
 created: 2026-06-02
+github_issue: 38
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/38"
 ---
-
 # SLICE-09: Dogfood + flip cost-hygiene reread hook default-on
 
 - **Priority**: P0

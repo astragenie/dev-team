@@ -8,6 +8,8 @@ autonomous_safe: false
 created: 2026-06-02
 completed_at: 2026-06-02
 updated: 2026-06-02
+github_issue: 40
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/40"
 ---
 # SLICE-11: Builder self-verify + reviewer-bundled validation
 

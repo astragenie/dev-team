@@ -29,6 +29,9 @@ slices_complete: [SLICE-43]
 migration_note: legacy PM schema preserved as pm_legacy_*; new dimensions defaulted to 0.5 on 2026-06-07
 triage_notes: "autonomous_safe inferred: AC count=5, derived_from=null → true"
 started_at: 2026-06-07
+github_issue: 103
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/103"
 ---
 # FEAT-119 — TS Phase 3.2: hooks migration
 

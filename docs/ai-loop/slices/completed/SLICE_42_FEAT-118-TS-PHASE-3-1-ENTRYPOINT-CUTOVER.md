@@ -9,6 +9,8 @@ requires_validation: true
 created: 2026-06-07
 updated: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 102
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/102"
 ---
 # SLICE-42: # FEAT-118 — TS Phase 3.1: entrypoint cutover
 

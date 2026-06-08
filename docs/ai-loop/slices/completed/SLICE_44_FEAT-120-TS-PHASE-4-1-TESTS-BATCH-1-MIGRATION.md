@@ -9,6 +9,8 @@ requires_validation: true
 created: 2026-06-07
 updated: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 106
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/106"
 ---
 # SLICE-44: # FEAT-120 — TS Phase 4.1: tests batch 1 migration
 

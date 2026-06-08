@@ -14,6 +14,7 @@ autonomous_safe: true
 phase: 1
 github_issue: 6
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/6"
 ---
 # FEAT-006: workflow-state — blocked + escalated_to_human badges
 

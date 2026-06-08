@@ -1,6 +1,6 @@
 ---
 id: FEAT-122
-title: TS Phase 5 — ESLint ratchet (complexity 10, max-lines-fn 30, max-lines 300)
+title: "TS Phase 5 — ESLint ratchet (complexity 10, max-lines-fn 30, max-lines 300)"
 priority: P2
 status: triaged
 category: code-quality
@@ -28,6 +28,9 @@ slices: []
 slices_complete: []
 triage_notes: "autonomous_safe=false: lint rule changes across entire codebase, may require manual waiver decisions"
 depends_on: [FEAT-121]
+github_issue: 108
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/108"
 ---
 # FEAT-122 — TS Phase 5: ESLint ratchet
 

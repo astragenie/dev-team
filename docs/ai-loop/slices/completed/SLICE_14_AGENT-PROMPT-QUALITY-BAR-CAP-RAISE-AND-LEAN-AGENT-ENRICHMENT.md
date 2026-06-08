@@ -8,6 +8,8 @@ autonomous_safe: false
 created: 2026-06-02
 completed_at: 2026-06-02
 updated: 2026-06-02
+github_issue: 50
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/50"
 ---
 # SLICE-14: Agent prompt quality bar + cap raise + lean-agent enrichment
 

@@ -30,6 +30,9 @@ slices: [SLICE-33]
 slices_complete: [SLICE-33]
 started_at: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 83
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/83"
 ---
 # FEAT-109 — TS Phase 1.4: cost-hygiene aggregator + session-cost-scanner
 

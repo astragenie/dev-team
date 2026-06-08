@@ -30,6 +30,9 @@ slices: [SLICE-41]
 slices_complete: [SLICE-41]
 started_at: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 99
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/99"
 ---
 # FEAT-117 — TS Phase 2.4: fleet module
 

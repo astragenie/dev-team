@@ -14,6 +14,7 @@ autonomous_safe: true
 phase: 1
 github_issue: 7
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/7"
 ---
 # FEAT-007: Skill quality bar + frontmatter convention
 

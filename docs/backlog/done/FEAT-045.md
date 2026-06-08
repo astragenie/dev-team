@@ -1,6 +1,6 @@
 ---
 id: FEAT-045
-title: "Observability & artifact trail — hook health in brief-me + synthesis fixes + skill API check"
+title: Observability & artifact trail — hook health in brief-me + synthesis fixes + skill API check
 priority: P1
 status: done
 category: observability
@@ -11,13 +11,16 @@ parent_spec: docs/superpowers/specs/2026-06-05-plugin-performance-stability-desi
 plan: docs/superpowers/plans/2026-06-05-feat-b-observability-artifact-trail.md
 related: [FEAT-043, FEAT-044, FEAT-046]
 phase: null
-tags: [concern:observability, surface:cli, concern:governance]
-pm_customer_impact: 0.80
+tags: ["concern:observability", "surface:cli", "concern:governance"]
+pm_customer_impact: 0.8
 pm_demand_signal: 0.85
 pm_technical_feasibility: 0.85
 pm_scope_risk: 0.75
 pm_strategic_alignment: 0.85
 pm_composite: 0.82
+github_issue: 61
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/61"
 ---
 # FEAT-045 — Observability & artifact trail
 

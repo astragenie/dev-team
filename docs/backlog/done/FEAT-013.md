@@ -14,6 +14,7 @@ autonomous_safe: false
 phase: 1
 github_issue: 13
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/13"
 ---
 # FEAT-013: Domain skill — typescript/ts-conventions
 

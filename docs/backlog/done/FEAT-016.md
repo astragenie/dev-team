@@ -13,6 +13,7 @@ autonomous_safe: true
 phase: 1
 github_issue: 16
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/16"
 ---
 # FEAT-016: context7 MCP integration for live library docs
 

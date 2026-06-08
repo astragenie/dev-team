@@ -1,6 +1,6 @@
 ---
 id: FEAT-125
-title: Wire plugin-dev review skills into crew:reviewer/crew:validator for plugin work
+title: "Wire plugin-dev review skills into crew:reviewer/crew:validator for plugin work"
 priority: P2
 status: triaged
 category: feature
@@ -24,8 +24,10 @@ triaged_at: 2026-06-07
 triage_notes: "autonomous_safe=false: edits to crew:reviewer + crew:validator agent prompts (lead/reviewer family) — human-in-loop mandatory per backlog-discipline; Path A vs B design decision required first."
 slices: []
 depends_on: []
+github_issue: 113
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/113"
 ---
-
 # Wire plugin-dev review skills into crew:reviewer/crew:validator for plugin work
 
 External `plugin-dev` plugin ships two high-value review skills:

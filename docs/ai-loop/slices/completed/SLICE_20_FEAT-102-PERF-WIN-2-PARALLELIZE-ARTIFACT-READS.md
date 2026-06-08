@@ -9,6 +9,8 @@ requires_validation: false
 created: 2026-06-07
 updated: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 69
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/69"
 ---
 # SLICE-20: # FEAT-102 — Perf win 2: parallelize artifact reads
 

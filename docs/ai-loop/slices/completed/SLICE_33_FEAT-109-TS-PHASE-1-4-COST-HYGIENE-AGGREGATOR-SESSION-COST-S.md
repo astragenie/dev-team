@@ -9,6 +9,8 @@ requires_validation: true
 created: 2026-06-07
 updated: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 84
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/84"
 ---
 # SLICE-33: # FEAT-109 — TS Phase 1.4: cost-hygiene aggregator + session-cost-scanner
 

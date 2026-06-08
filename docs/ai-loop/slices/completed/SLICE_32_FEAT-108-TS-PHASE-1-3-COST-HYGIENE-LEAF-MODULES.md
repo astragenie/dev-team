@@ -9,6 +9,8 @@ requires_validation: true
 created: 2026-06-07
 updated: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 82
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/82"
 ---
 # SLICE-32: # FEAT-108 — TS Phase 1.3: cost-hygiene leaf modules
 

@@ -30,6 +30,9 @@ slices: [SLICE-38]
 slices_complete: [SLICE-38]
 started_at: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 93
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/93"
 ---
 # FEAT-114 — TS Phase 2.1: core state modules
 

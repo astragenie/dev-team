@@ -14,6 +14,7 @@ autonomous_safe: false
 phase: 1
 github_issue: 3
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/3"
 ---
 # FEAT-003: Lead agent prompt update
 

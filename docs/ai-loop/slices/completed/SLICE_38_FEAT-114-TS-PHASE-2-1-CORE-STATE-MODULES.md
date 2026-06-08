@@ -9,6 +9,8 @@ requires_validation: true
 created: 2026-06-07
 updated: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 94
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/94"
 ---
 # SLICE-38: # FEAT-114 — TS Phase 2.1: core state modules
 

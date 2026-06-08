@@ -9,6 +9,8 @@ requires_validation: true
 created: 2026-06-07
 updated: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 100
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/100"
 ---
 # SLICE-41: # FEAT-117 — TS Phase 2.4: fleet module
 

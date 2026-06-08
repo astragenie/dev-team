@@ -8,6 +8,8 @@ autonomous_safe: true
 created: 2026-06-02
 completed_at: 2026-06-02
 updated: 2026-06-02
+github_issue: 48
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/48"
 ---
 # SLICE-13: Disambiguate aggregate vs per-slice cost reports
 

@@ -30,6 +30,9 @@ slices: [SLICE-40]
 slices_complete: [SLICE-40]
 started_at: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 97
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/97"
 ---
 # FEAT-116 — TS Phase 2.3: cost-advisor stack
 

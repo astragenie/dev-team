@@ -15,6 +15,7 @@ started_at: 2026-05-23
 completed_at: 2026-05-23
 github_issue: 20
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/20"
 ---
 # FEAT-019: wire context7 / plugin-dev / microsoft-docs + terraform skills into crew agents
 

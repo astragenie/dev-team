@@ -14,6 +14,7 @@ autonomous_safe: true
 phase: 1
 github_issue: 10
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/10"
 ---
 # FEAT-010: Governance doc
 

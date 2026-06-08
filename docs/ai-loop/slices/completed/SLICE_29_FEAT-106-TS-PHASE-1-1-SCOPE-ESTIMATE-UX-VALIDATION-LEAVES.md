@@ -9,6 +9,8 @@ requires_validation: true
 created: 2026-06-07
 updated: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 78
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/78"
 ---
 # SLICE-29: # FEAT-106 — TS Phase 1.1: scope-estimate + ux-validation leaves
 

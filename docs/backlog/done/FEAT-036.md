@@ -11,8 +11,10 @@ depends_on: []
 slices: []
 derived_from: null
 autonomous_safe: true
+github_issue: 51
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/51"
 ---
-
 ## Description
 
 `collectRecentCosts` in `scripts/lib/briefing/collect.mjs:665` blindly

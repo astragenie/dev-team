@@ -15,6 +15,7 @@ started_at: 2026-05-23
 completed_at: 2026-05-23
 github_issue: 18
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/18"
 ---
 # FEAT-018: cost-discipline patterns — subagent report-to-path + pre-check + no-reReread
 

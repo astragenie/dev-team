@@ -4,7 +4,7 @@ title: "Loop-side enforcement — AC linter, slice template test AC, ladder + ma
 priority: P1
 status: done
 closed: 2026-06-05
-closed_note: All 4 work items shipped in loop 0.7.6 (ac-linter.mjs, start-slice AC gate, test-adequacy-gate.mjs, slice template AC). Marketplace.json already at 0.7.7.
+closed_note: "All 4 work items shipped in loop 0.7.6 (ac-linter.mjs, start-slice AC gate, test-adequacy-gate.mjs, slice template AC). Marketplace.json already at 0.7.7."
 category: quality-gate
 target_release: loop-0.3.6
 autonomous_safe: false
@@ -15,6 +15,7 @@ hero_crew_companion: validate-slices.mjs (6840023) scans pending/ for AC placeho
 phase: 2
 github_issue: 28
 github_milestone: 2
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/28"
 ---
 # FEAT-024 — Loop-side enforcement (cross-repo coordination)
 

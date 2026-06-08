@@ -11,8 +11,10 @@ depends_on: []
 slices: [SLICE-11]
 derived_from: null
 autonomous_safe: false
+github_issue: 39
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/39"
 ---
-
 ## Description
 
 Recent slices dispatch 49+ subagents per slice (SLICE-08 cost report).

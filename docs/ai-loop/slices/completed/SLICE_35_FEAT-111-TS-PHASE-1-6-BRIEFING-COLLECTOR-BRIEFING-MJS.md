@@ -9,6 +9,8 @@ requires_validation: true
 created: 2026-06-07
 updated: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 88
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/88"
 ---
 # SLICE-35: # FEAT-111 — TS Phase 1.6: briefing collector + briefing.mjs
 

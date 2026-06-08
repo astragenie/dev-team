@@ -7,6 +7,8 @@ target_release: v0.3.2
 created: 2026-05-23
 updated: 2026-05-24
 completed_at: 2026-05-24
+github_issue: 36
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/36"
 ---
 # SLICE-03: Routing-table skill-ID CI linter (validate-routing-table.mjs)
 

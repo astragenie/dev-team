@@ -9,6 +9,8 @@ requires_validation: true
 created: 2026-06-07
 updated: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 104
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/104"
 ---
 # SLICE-43: # FEAT-119 — TS Phase 3.2: hooks migration
 

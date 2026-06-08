@@ -11,8 +11,10 @@ depends_on: []
 slices: [SLICE-15]
 derived_from: null
 autonomous_safe: false
+github_issue: 41
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/41"
 ---
-
 ## Description
 
 Recent cost reports show `claude-opus-4-7` burning $1821 of $2098 USD

@@ -9,6 +9,8 @@ requires_validation: false
 created: 2026-06-07
 updated: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 75
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/75"
 ---
 # SLICE-23: # FEAT-105 — Perf win 10: skip stat-before-read
 

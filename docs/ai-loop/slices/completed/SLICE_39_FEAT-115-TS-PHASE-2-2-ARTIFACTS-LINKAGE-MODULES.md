@@ -9,6 +9,8 @@ requires_validation: true
 created: 2026-06-07
 updated: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 96
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/96"
 ---
 # SLICE-39: # FEAT-115 — TS Phase 2.2: artifacts + linkage modules
 

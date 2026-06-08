@@ -30,6 +30,9 @@ slices: [SLICE-36]
 slices_complete: [SLICE-36]
 started_at: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 89
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/89"
 ---
 # FEAT-112 — TS Phase 1.7: installer leaf modules
 

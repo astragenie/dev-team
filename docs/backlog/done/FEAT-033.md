@@ -11,8 +11,10 @@ depends_on: []
 slices: [SLICE-10]
 derived_from: null
 autonomous_safe: true
+github_issue: 45
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/45"
 ---
-
 ## Description
 
 Recent cost reports show a 3.4–4.4% tool failure rate per slice. Most

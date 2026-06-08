@@ -15,6 +15,7 @@ started_at: 2026-05-24
 completed_at: 2026-05-24
 github_issue: 22
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/22"
 ---
 # FEAT-020: Multi-slice support in loop:slice-complete
 

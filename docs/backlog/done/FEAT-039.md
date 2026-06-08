@@ -10,7 +10,10 @@ cross_repo: null
 parent_spec: null
 related: [FEAT-038]
 phase: null
-tags: [stack:llm, surface:docs, concern:governance]
+tags: ["stack:llm", "surface:docs", "concern:governance"]
+github_issue: 55
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/55"
 ---
 # FEAT-039 — Tag-aware skill loading in builder, reviewer, and validator
 

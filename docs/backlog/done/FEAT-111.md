@@ -30,6 +30,9 @@ slices: [SLICE-35]
 slices_complete: [SLICE-35]
 started_at: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 87
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/87"
 ---
 # FEAT-111 — TS Phase 1.6: briefing collector + briefing.mjs
 

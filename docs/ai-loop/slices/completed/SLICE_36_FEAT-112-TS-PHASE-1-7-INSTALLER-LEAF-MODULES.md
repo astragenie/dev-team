@@ -9,6 +9,8 @@ requires_validation: true
 created: 2026-06-07
 updated: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 90
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/90"
 ---
 # SLICE-36: # FEAT-112 — TS Phase 1.7: installer leaf modules
 

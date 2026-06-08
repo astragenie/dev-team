@@ -30,6 +30,9 @@ migration_note: legacy PM schema preserved as pm_legacy_*; new dimensions defaul
 triage_notes: "autonomous_safe inferred: AC count=8, derived_from=null → true"
 started_at: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 101
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/101"
 ---
 # FEAT-118 — TS Phase 3.1: entrypoint cutover
 

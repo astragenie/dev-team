@@ -9,6 +9,8 @@ requires_validation: false
 created: 2026-06-07
 updated: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 71
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/71"
 ---
 # SLICE-21: # FEAT-103 — Perf win 4: memoize hot frontmatter reads
 

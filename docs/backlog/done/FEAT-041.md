@@ -1,6 +1,6 @@
 ---
 id: FEAT-041
-title: "journey-builder sub-skill for ux-validation end-to-end journey mode"
+title: journey-builder sub-skill for ux-validation end-to-end journey mode
 priority: P2
 status: triaged
 category: workflow
@@ -10,7 +10,10 @@ cross_repo: null
 parent_spec: docs/superpowers/specs/2026-06-05-journey-builder-ux-validation-design.md
 related: []
 phase: null
-tags: [stack:typescript, surface:cli, concern:ux]
+tags: ["stack:typescript", "surface:cli", "concern:ux"]
+github_issue: 57
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/57"
 ---
 # FEAT-041 — journey-builder sub-skill for ux-validation
 

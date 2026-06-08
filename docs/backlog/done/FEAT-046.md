@@ -30,6 +30,9 @@ started_at: 2026-06-07
 slices: [SLICE-18]
 slices_complete: [SLICE-18]
 completed_at: 2026-06-07
+github_issue: 62
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/62"
 ---
 # FEAT-046 — Builder dispatch reliability
 

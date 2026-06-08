@@ -24,8 +24,10 @@ triaged_at: 2026-06-07
 triage_notes: "autonomous_safe=false: adds new skills + edits agent routing in architect/document-writer; 3-in-1 scope (auto-pick + templates + lint) benefits from human-reviewed skill authorship per loop-discipline."
 slices: []
 depends_on: []
+github_issue: 109
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/109"
 ---
-
 # Diagram authoring POC for architect — auto-pick + templates + lint
 
 POC enabling architect/document-writer agents to author technical diagrams

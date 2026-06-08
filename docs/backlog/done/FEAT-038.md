@@ -1,6 +1,6 @@
 ---
 id: FEAT-038
-title: "Workflow badge awareness in all subagents"
+title: Workflow badge awareness in all subagents
 priority: P2
 status: done
 category: workflow
@@ -10,7 +10,10 @@ cross_repo: null
 parent_spec: null
 related: [FEAT-037]
 phase: null
-tags: [stack:llm, surface:docs, concern:governance]
+tags: ["stack:llm", "surface:docs", "concern:governance"]
+github_issue: 54
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/54"
 ---
 # FEAT-038 — Workflow badge awareness in all subagents
 

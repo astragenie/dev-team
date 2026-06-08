@@ -13,6 +13,9 @@ derived_from: null
 autonomous_safe: false
 deferred: true
 triage_notes: "autonomous_safe inferred: AC count=0, derived_from=null → false"
+github_issue: 37
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/37"
 ---
 ## Description
 

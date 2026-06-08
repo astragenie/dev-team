@@ -10,7 +10,10 @@ cross_repo: null
 parent_spec: null
 related: [FEAT-038, FEAT-039]
 phase: null
-tags: [stack:llm, surface:cli, concern:governance]
+tags: ["stack:llm", "surface:cli", "concern:governance"]
+github_issue: 56
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/56"
 ---
 # FEAT-040 — /crew:orchestrate-slice: tag-driven specialist ladder command
 

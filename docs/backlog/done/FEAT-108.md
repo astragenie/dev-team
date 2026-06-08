@@ -29,6 +29,9 @@ updated: 2026-06-07
 slices: [SLICE-31, SLICE-32]
 slices_complete: [SLICE-32]
 started_at: 2026-06-07
+github_issue: 81
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/81"
 ---
 # FEAT-108 — TS Phase 1.3: cost-hygiene leaf modules
 

@@ -30,6 +30,9 @@ slices: [SLICE-37]
 slices_complete: [SLICE-37]
 started_at: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 91
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/91"
 ---
 # FEAT-113 — TS Phase 1.8: installer core modules
 

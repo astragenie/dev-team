@@ -30,6 +30,9 @@ started_at: 2026-06-07
 slices: [SLICE-22]
 slices_complete: [SLICE-22]
 completed_at: 2026-06-07
+github_issue: 72
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/72"
 ---
 # FEAT-104 — Perf win 9: cache payloads readdir
 

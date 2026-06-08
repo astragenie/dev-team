@@ -11,8 +11,10 @@ depends_on: []
 slices: [SLICE-14]
 derived_from: null
 autonomous_safe: false
+github_issue: 49
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/49"
 ---
-
 ## Description
 
 The agent prompt soft cap of ≤200 lines (per `docs/governance.md`) is

@@ -14,6 +14,7 @@ autonomous_safe: true
 phase: 1
 github_issue: 1
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/1"
 ---
 # FEAT-001: Skills directory reorganization
 

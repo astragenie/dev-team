@@ -15,6 +15,7 @@ phase: 1
 trigger: subagent pauses recur at maxTurns 40/35 (post-73aaf03 caps)
 github_issue: 26
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/26"
 ---
 # FEAT-022: Subagent pause root-cause investigation — 4 workflow drivers
 

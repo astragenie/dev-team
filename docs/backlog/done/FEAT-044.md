@@ -1,6 +1,6 @@
 ---
 id: FEAT-044
-title: "Complexity debt reduction — extract suppressed functions + split oversized modules"
+title: Complexity debt reduction — extract suppressed functions + split oversized modules
 priority: P1
 status: done
 category: quality
@@ -11,13 +11,16 @@ parent_spec: docs/superpowers/specs/2026-06-05-plugin-performance-stability-desi
 plan: docs/superpowers/plans/2026-06-05-feat-a-complexity-debt.md
 related: [FEAT-043, FEAT-045, FEAT-046]
 phase: null
-tags: [concern:architecture, surface:cli]
+tags: ["concern:architecture", "surface:cli"]
 pm_customer_impact: 0.65
 pm_demand_signal: 0.75
-pm_technical_feasibility: 0.90
-pm_scope_risk: 0.80
-pm_strategic_alignment: 0.80
+pm_technical_feasibility: 0.9
+pm_scope_risk: 0.8
+pm_strategic_alignment: 0.8
 pm_composite: 0.78
+github_issue: 60
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/60"
 ---
 # FEAT-044 — Complexity debt reduction
 

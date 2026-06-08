@@ -30,6 +30,9 @@ started_at: 2026-06-07
 slices: [SLICE-20]
 slices_complete: [SLICE-20]
 completed_at: 2026-06-07
+github_issue: 68
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/68"
 ---
 # FEAT-102 — Perf win 2: parallelize artifact reads
 

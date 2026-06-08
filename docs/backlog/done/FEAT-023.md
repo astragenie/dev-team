@@ -10,6 +10,7 @@ parent_spec: null
 phase: 1
 github_issue: 27
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/27"
 ---
 # FEAT-023 — Hard-gate test_adequacy in write-review-result + TDD enforcement
 

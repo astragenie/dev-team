@@ -1,12 +1,12 @@
 ---
 id: FEAT-124
-title: Consolidate crew:copywriter → loop:document-writer
+title: "Consolidate crew:copywriter → loop:document-writer"
 priority: P2
 status: done
 category: refactor
 target_release: v0.20.0
 autonomous_safe: false
-cross_repo: hero-crew,loop
+cross_repo: "hero-crew,loop"
 parent_spec: null
 plan: null
 related: [FEAT-123]
@@ -24,8 +24,10 @@ triaged_at: 2026-06-07
 triage_notes: "autonomous_safe=false: cross-repo (hero-crew + loop marketplace coordination) and agent prompt edits to loop:document-writer; coordinated release requires human approval per loop rules."
 slices: [SLICE-46, SLICE-47]
 depends_on: []
+github_issue: 110
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/110"
 ---
-
 # Consolidate crew:copywriter → loop:document-writer
 
 Two overlapping doc-writer agents exist:

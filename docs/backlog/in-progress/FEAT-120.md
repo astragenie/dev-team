@@ -28,6 +28,9 @@ slices: [SLICE-44]
 slices_complete: []
 triage_notes: "autonomous_safe inferred: AC count=5, derived_from=parent_spec → true"
 started_at: 2026-06-07
+github_issue: 105
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/105"
 ---
 # FEAT-120 — TS Phase 4.1: tests batch 1 migration
 

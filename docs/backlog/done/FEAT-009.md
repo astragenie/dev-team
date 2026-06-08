@@ -16,6 +16,7 @@ autonomous_safe: true
 phase: 1
 github_issue: 9
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/9"
 ---
 # FEAT-009: Artifact index file (deferred)
 

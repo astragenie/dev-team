@@ -11,8 +11,10 @@ depends_on: []
 slices: [SLICE-12]
 derived_from: null
 autonomous_safe: true
+github_issue: 43
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/43"
 ---
-
 ## Description
 
 Recent slices recorded 34 compactions per slice (SLICE-08), driven in

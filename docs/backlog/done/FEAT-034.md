@@ -11,8 +11,10 @@ depends_on: []
 slices: [SLICE-13]
 derived_from: null
 autonomous_safe: true
+github_issue: 47
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/47"
 ---
-
 ## Description
 
 Every recent cost report has `aggregateAll: true` and

@@ -14,6 +14,7 @@ autonomous_safe: false
 phase: 1
 github_issue: 14
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/14"
 ---
 # FEAT-014: Domain skill — dart/dart-conventions
 

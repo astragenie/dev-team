@@ -15,6 +15,7 @@ started_at: 2026-05-23
 completed_at: 2026-05-24
 github_issue: 24
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/24"
 ---
 # FEAT-021: Routing-table skill-ID CI linter (validate-routing-table.mjs)
 

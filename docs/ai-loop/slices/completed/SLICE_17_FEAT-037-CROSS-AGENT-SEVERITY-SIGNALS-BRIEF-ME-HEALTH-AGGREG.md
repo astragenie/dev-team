@@ -9,6 +9,8 @@ requires_validation: false
 created: 2026-06-07
 updated: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 53
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/53"
 ---
 # SLICE-17: # FEAT-037 — Cross-agent severity signals + brief-me health aggregation
 

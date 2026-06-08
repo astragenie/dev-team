@@ -9,6 +9,8 @@ requires_validation: true
 created: 2026-06-07
 updated: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 92
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/92"
 ---
 # SLICE-37: # FEAT-113 — TS Phase 1.8: installer core modules
 

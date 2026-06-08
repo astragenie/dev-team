@@ -9,6 +9,8 @@ requires_validation: true
 created: 2026-06-07
 updated: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 86
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/86"
 ---
 # SLICE-34: # FEAT-110 — TS Phase 1.5: briefing leaf modules
 

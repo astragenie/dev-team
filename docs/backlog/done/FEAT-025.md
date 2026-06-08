@@ -10,6 +10,7 @@ parent_spec: null
 phase: 1
 github_issue: 29
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/29"
 ---
 # FEAT-025 — Enable noImplicitAny in tsconfig
 

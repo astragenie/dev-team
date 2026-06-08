@@ -11,6 +11,8 @@ target_release: loop v0.29.0
 created: 2026-06-07
 completed_at: 2026-06-07
 updated: 2026-06-07
+github_issue: 111
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/111"
 ---
 # SLICE-46: Loop side — extend document-writer scope
 

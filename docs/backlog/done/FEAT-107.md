@@ -30,6 +30,9 @@ slices: [SLICE-30]
 slices_complete: [SLICE-30]
 started_at: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 79
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/79"
 ---
 # FEAT-107 — TS Phase 1.2: preflight + subagent-return leaves
 

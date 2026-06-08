@@ -13,6 +13,7 @@ autonomous_safe: false
 phase: 1
 github_issue: 5
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/5"
 ---
 # FEAT-005: First domain skill — dotnet/csharp-conventions
 

@@ -14,6 +14,7 @@ autonomous_safe: false
 phase: 1
 github_issue: 15
 github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/15"
 ---
 # FEAT-015: Domain skill — flutter/flutter-conventions
 

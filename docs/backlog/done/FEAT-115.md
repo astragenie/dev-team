@@ -30,6 +30,9 @@ slices: [SLICE-39]
 slices_complete: [SLICE-39]
 started_at: 2026-06-07
 completed_at: 2026-06-07
+github_issue: 95
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/95"
 ---
 # FEAT-115 — TS Phase 2.2: artifacts + linkage modules
 

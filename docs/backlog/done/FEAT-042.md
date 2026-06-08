@@ -10,13 +10,16 @@ cross_repo: null
 parent_spec: docs/superpowers/specs/2026-06-05-architect-feature-design.md
 related: [FEAT-040]
 phase: null
-tags: [stack:llm, surface:cli, concern:governance]
+tags: ["stack:llm", "surface:cli", "concern:governance"]
 pm_customer_impact: 0.85
-pm_demand_signal: 0.80
-pm_technical_feasibility: 0.90
+pm_demand_signal: 0.8
+pm_technical_feasibility: 0.9
 pm_scope_risk: 0.75
-pm_strategic_alignment: 0.90
+pm_strategic_alignment: 0.9
 pm_composite: 0.84
+github_issue: 58
+github_milestone: null
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/58"
 ---
 # FEAT-042 — /crew:architect-feature
 
