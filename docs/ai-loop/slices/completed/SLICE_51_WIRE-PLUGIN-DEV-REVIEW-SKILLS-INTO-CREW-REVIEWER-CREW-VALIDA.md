@@ -8,6 +8,7 @@ target_release: null
 requires_validation: false
 created: 2026-06-08
 updated: 2026-06-08
+completed_at: 2026-06-08
 ---
 # SLICE-51: Wire plugin-dev review skills into crew:reviewer/crew:validator for plugin work
 
