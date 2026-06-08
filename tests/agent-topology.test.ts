@@ -26,7 +26,8 @@ const EXPECTED_AGENTS = new Set([
   "researcher",
   "architect",
   "uxdesigner",
-  "refactor"
+  "refactor",
+  "parallel-runner"
 ]);
 
 /** Read `name:` from frontmatter. Returns null if absent. */
