@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { classifySlice } from "../scripts/orchestrate-slice-classify.ts";
+import { classifySlice, isShortSlice } from "../scripts/orchestrate-slice-classify.ts";
 
 const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const COMMAND_PATH = path.join(repoRoot, "commands", "orchestrate-slice.md");
@@ -101,4 +101,33 @@ test('classifySlice: SPLIT_BUILD false when slice has skip: ["split-build"]', as
   t.after(() => unlink(tmp).catch(() => {}));
   const result = await classifySlice({ slicePath: tmp });
   assert.equal(result.SPLIT_BUILD, false);
+});
+
+// isShortSlice tests
+test("isShortSlice: acCount ≤ 6, changedFilesCount > 10 → true (AC count alone qualifies)", () => {
+  assert.equal(isShortSlice({ acCount: 4, changedFilesCount: 15 }), true);
+});
+
+test("isShortSlice: acCount > 6, changedFilesCount ≤ 10 → true (file count alone qualifies)", () => {
+  assert.equal(isShortSlice({ acCount: 8, changedFilesCount: 7 }), true);
+});
+
+test("isShortSlice: acCount ≤ 6, changedFilesCount ≤ 10 → true (both qualify)", () => {
+  assert.equal(isShortSlice({ acCount: 3, changedFilesCount: 5 }), true);
+});
+
+test("isShortSlice: acCount > 6, changedFilesCount > 10 → false (neither qualifies)", () => {
+  assert.equal(isShortSlice({ acCount: 9, changedFilesCount: 12 }), false);
+});
+
+test("isShortSlice: acCount = 6, changedFilesCount = 10 → true (boundary: both at limit)", () => {
+  assert.equal(isShortSlice({ acCount: 6, changedFilesCount: 10 }), true);
+});
+
+test("isShortSlice: acCount = 7, changedFilesCount = 11 → false (boundary: both just over)", () => {
+  assert.equal(isShortSlice({ acCount: 7, changedFilesCount: 11 }), false);
+});
+
+test("isShortSlice: acCount = 4, changedFilesCount = 5, crossPlugin: true → false (cross-plugin override)", () => {
+  assert.equal(isShortSlice({ acCount: 4, changedFilesCount: 5, crossPlugin: true }), false);
 });

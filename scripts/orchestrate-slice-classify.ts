@@ -13,6 +13,15 @@ const FE_STACK = new Set(["stack:react"]);
 const BE_SURFACE = new Set(["surface:api", "surface:schema"]);
 const BE_STACK = new Set(["stack:csharp", "stack:node", "stack:python", "stack:go"]);
 
+export function isShortSlice(opts: {
+  acCount: number;
+  changedFilesCount: number;
+  crossPlugin?: boolean;
+}): boolean {
+  if (opts.crossPlugin) return false;
+  return opts.acCount <= 6 || opts.changedFilesCount <= 10;
+}
+
 export async function classifySlice(opts: { slicePath: string }) {
   const text = await fs.readFile(opts.slicePath, "utf8");
   const fm = parseFrontmatter(text);

@@ -3,6 +3,71 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.21.0 — 2026-06-07 — short-slice validator-first dispatch order (FEAT-054)
+
+### Changed
+
+**`commands/orchestrate-slice.md` — Step 4.5 + updated Steps 4 and 5 (FEAT-054 / SLICE-81)**
+
+Short slices with observable behavior now run the validator before the reviewer, so the
+reviewer receives ready-made evidence and can focus on code quality rather than
+re-running scenarios from scratch.
+
+**Step 4.5 — Short-slice size check and dispatch-order determination** is inserted between
+the builder/integrator gates and the reviewer dispatch. It computes two flags:
+
+- `SHORT_SLICE = (acCount ≤ 6 OR changedFilesCount ≤ 10) AND NOT cross_plugin`
+- `DISPATCH_ORDER = validator_first` when `SHORT_SLICE = true` AND `BEHAVIOR_CHANGED = true`; otherwise `reviewer_first` (the previous default for all slices).
+
+**Step 4 (reviewer)** — when `DISPATCH_ORDER = validator_first`, the reviewer runs
+after Step 5 and receives `VALIDATION_PATH` as additional input. The reviewer prompt
+directs it to treat validator scenario evidence as authoritative for runtime behavior and
+to scope its review to code quality, contract conformance, and test coverage.
+
+**Step 5 (validator)** — when `DISPATCH_ORDER = validator_first`, the validator runs
+before Step 4 and returns `VALIDATION_PATH` before the reviewer is dispatched.
+
+**`scripts/orchestrate-slice-classify.ts` — `isShortSlice()` export (FEAT-054 / SLICE-81)**
+
+New exported function that implements the short-slice gate deterministically:
+
+```typescript
+export function isShortSlice(opts: {
+  acCount: number;
+  changedFilesCount: number;
+  crossPlugin?: boolean;
+}): boolean {
+  if (opts.crossPlugin) return false;
+  return opts.acCount <= 6 || opts.changedFilesCount <= 10;
+}
+```
+
+Cross-plugin slices always resolve `false` regardless of counts (long-slice default is
+safer for multi-repo diffs where the reviewer dependency graph is unknown).
+
+### Tests
+
+7 new unit tests in `tests/orchestrate-slice.test.ts` covering all boundary cases for
+`isShortSlice()`:
+
+1. AC count ≤ 6 alone qualifies (changed-files above threshold)
+2. Changed-files count ≤ 10 alone qualifies (AC count above threshold)
+3. Both counts at or below threshold — true
+4. Both counts above threshold — false
+5. Boundary: `acCount = 6, changedFilesCount = 10` — true (both at limit)
+6. Boundary: `acCount = 7, changedFilesCount = 11` — false (both just over)
+7. `crossPlugin: true` overrides all counts — false
+
+Full test suite: 446/446 pass.
+
+### No breaking changes
+
+The `reviewer_first` order is unchanged for long slices (`cross_plugin`, `acCount ≥ 7`
+AND `changedFilesCount ≥ 11`). The `DISPATCH_ORDER` flag is computed at Step 4.5 and
+has no effect when `BEHAVIOR_CHANGED = false` (validator is skipped in that path regardless).
+
+---
+
 ## v0.20.0 — 2026-06-07 — hard cut crew:copywriter (FEAT-124)
 
 ### Removed
