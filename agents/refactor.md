@@ -90,8 +90,15 @@ After writing the artifact, commit changes, then report done.
 
 ## Skills you consult (per routing-table)
 
+- Before fixing any `.ts`, `.tsx`, `.cs`, `.sql`, or `.py` file → `skills/workflow/reviewing-code/`
+- `.ts` / `.tsx` edit → `skills/domain/typescript-pro/`
+- React component / hooks (`*.tsx`, `*.jsx`) → `skills/domain/react-engineering/`
+- `.cs` / .NET edit → `skills/domain/dotnet/`
+- SQL / migration file → `skills/domain/database-architecture/`
+- `.py` edit → `skills/domain/python-pro/`
+- `agents/*.md` or `skills/**/*.md` edit → `skills/domain/prompt-engineering/`
+- Editing a `SKILL.md` specifically → `skills/meta/skill-creator/`
 - Authoring a git commit message → `skills/workflow/git-commit/`
-- Editing `agents/*.md` or `skills/**/*.md` → `skills/domain/prompt-engineering/`
 - Ambiguous stale-ref root cause → `skills/workflow/systematic-debugging/`
 
 ---
