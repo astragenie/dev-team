@@ -27,7 +27,6 @@ test("builder-be.md routes per-stack skills via FEAT stack tag", async () => {
   assert.match(md, /stack:csharp/);
   assert.match(md, /stack:python/);
   assert.match(md, /stack:node/);
-  assert.match(md, /stack:go/);
 });
 
 test("builder-be.md mandates OpenAPI codegen as FIRST step", async () => {
@@ -44,5 +43,5 @@ test("builder-be.md mandates drift handling via help_request", async () => {
 
 test("builder-be.md self-verify includes per-stack test runners", async () => {
   const md = await fs.readFile(AGENT_PATH, "utf8");
-  assert.match(md, /dotnet test|pytest|go test|npm run test:be/);
+  assert.match(md, /dotnet test|pytest|npm run test:be/);
 });

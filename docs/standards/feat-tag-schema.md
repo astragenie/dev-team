@@ -50,7 +50,6 @@ The primary language or framework the FEAT touches.
 | `stack:c-sharp` | C# / .NET (`.cs`, `.csproj`, `.sln`) |
 | `stack:react` | React component / hook work (implies `stack:typescript`) |
 | `stack:vue` | Vue component work |
-| `stack:go` | Go (`.go`, `go.mod`) |
 | `stack:rust` | Rust (`.rs`, `Cargo.toml`) |
 | `stack:ai` | AI/ML model integration, embeddings, inference pipelines |
 | `stack:llm` | Prompt engineering, agent authoring, system-prompt work |

@@ -26,7 +26,7 @@ Your job is to implement the BE side of a SPLIT_BUILD slice — server code, DB 
 - Server code under `api/`, `server/`, `services/`, `backend/`, `apps/*/api/`, language-rooted dirs (`src/Server.*`, etc.)
 - DB migrations, SQL files, EF migrations, Alembic files, `prisma/schema.prisma` (when BE-only)
 - BE test files
-- BE-only config: `appsettings.json`, `Dockerfile.api`, server `.csproj`, `pyproject.toml`, `go.mod`
+- BE-only config: `appsettings.json`, `Dockerfile.api`, server `.csproj`, `pyproject.toml`
 - Generated native types/stubs from OpenAPI codegen (committed)
 
 ## Forbidden
@@ -48,7 +48,6 @@ If you discover a needed cross-cutting change, surface it to the lead and stop.
   - `stack:csharp` → `skills/domain/dotnet/csharp-conventions/` + `agents/3rdparty/c-sharp-pro.md` (agent has the C# patterns)
   - `stack:node` → `skills/domain/typescript-pro/` (backend variant — server-side TS patterns)
   - `stack:python` → `skills/domain/python-pro/`
-  - `stack:go` → no go skill in repo yet — escalate to lead if a `stack:go` slice lands; pull from `agents/3rdparty/` if a go agent is later imported
 - Bug root cause / intermittent failure → `skills/workflow/systematic-debugging/`
 - Authoring a git commit message → `skills/workflow/git-commit/`
 
@@ -86,24 +85,22 @@ Your start acknowledgement must include:
 - whether TDD applies (and if not, why)
 - OpenAPI YAML codegen target: `<path of generated native types/stubs>`
 - contracts.md sections consumed: Decision rationale, Data Contracts
-- Stack detected: `<csharp|node|python|go>`
-- Codegen tool selected: `<NSwag | Kiota | datamodel-code-generator+fastapi-code-generator | oapi-codegen | openapi-typescript-codegen>`
+- Stack detected: `<csharp|node|python>`
+- Codegen tool selected: `<NSwag | Kiota | datamodel-code-generator+fastapi-code-generator | openapi-typescript-codegen>`
 
 ## Self-verify gate
 
 Before writing the handoff, run all of these in order. Each must exit 0.
 
 - Per-stack codegen regenerates clean (no diff against committed generated output)
-- Repo lint / format / typecheck (where stack supports — e.g. `dotnet build`, `mypy`, `ruff check`, `go vet`)
+- Repo lint / format / typecheck (where stack supports — e.g. `dotnet build`, `mypy`, `ruff check`)
 - Stack-native test runner:
   - C# → `dotnet test`
   - Node → `npm run test:be`
   - Python → `pytest`
-  - Go → `go test ./...`
 - Migration dry-run when DB schema changes:
   - C# → `dotnet ef migrations script --idempotent`
   - Python (Alembic) → `alembic upgrade head --sql`
-  - Go (`golang-migrate`) → `migrate up -dry-run` (or equivalent)
 - Plugin-side validators (manifests / skills / agents / slices / contracts / ux-spec) — only those that exist in the repo
 
 Your handoff body MUST include a `## Self-Verify Gates` section listing one line per gate: command + exit code + one-sentence summary.

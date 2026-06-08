@@ -11,7 +11,7 @@ import { parse as parseYaml } from "yaml";
 const FE_SURFACE = new Set(["surface:ui"]);
 const FE_STACK = new Set(["stack:react"]);
 const BE_SURFACE = new Set(["surface:api", "surface:schema"]);
-const BE_STACK = new Set(["stack:csharp", "stack:node", "stack:python", "stack:go"]);
+const BE_STACK = new Set(["stack:csharp", "stack:node", "stack:python"]);
 
 export function isShortSlice(opts: {
   acCount: number;

@@ -2,4 +2,4 @@
 
 | Signal | Route to | Notes |
 |---|---|---|
-| **Go code change** | builder | Load `skills/domain/go-pro/` for Go patterns. |
+| **Rust code change** | builder | Load `skills/domain/rust-pro/` for Rust patterns. |

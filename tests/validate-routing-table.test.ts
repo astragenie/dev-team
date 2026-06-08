@@ -160,7 +160,7 @@ test("consistency-fail: missing skill in agent block exits 1 with actionable err
     `Expected exit 1 for mismatched fixture. stdout: ${result.stdout} stderr: ${result.stderr}`
   );
   const output = result.stdout + result.stderr;
-  assert.match(output, /go-pro/, "Error should name the missing skill path");
+  assert.match(output, /rust-pro/, "Error should name the missing skill path");
   assert.match(output, /builder/, "Error should name the agent");
 });
 

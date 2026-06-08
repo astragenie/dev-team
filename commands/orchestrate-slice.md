@@ -41,7 +41,7 @@ Run this after `/loop:slice start --id SLICE-NN`. It reads the slice file, class
    - tags include `stack:react` OR `stack:vue` → `NEEDS_UX = true`
    - tags include `surface:docs` only and no `surface:api`/`surface:ui` → `NEEDS_CONTRACT = false`, `NEEDS_UX = false`
    - tags include `stack:none` → `NEEDS_CONTRACT = false`, `NEEDS_UX = false`
-   - tags include BOTH (`surface:ui` OR `stack:react`) AND (`surface:api` OR `surface:schema` OR `stack:csharp` OR `stack:node` OR `stack:python` OR `stack:go`) → `SPLIT_BUILD = true`
+   - tags include BOTH (`surface:ui` OR `stack:react`) AND (`surface:api` OR `surface:schema` OR `stack:csharp` OR `stack:node` OR `stack:python`) → `SPLIT_BUILD = true`
    - slice frontmatter `skip:` includes `"split-build"` → force `SPLIT_BUILD = false`
    - otherwise → `SPLIT_BUILD = false`
 

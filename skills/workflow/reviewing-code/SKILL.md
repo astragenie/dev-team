@@ -98,7 +98,6 @@ Per-language review checks extracted from `agents/3rdparty/code-reviewer.md`. Ea
 | TypeScript | `references/typescript-checklist.md` | `any` usage, `strict` config, floating Promises, null safety |
 | Python | `references/python-checklist.md` | Mutable defaults, bare `except`, type hints, `eval`/`exec` |
 | Rust | `references/rust-checklist.md` | `.unwrap()` outside tests, `unsafe` SAFETY comments, lifetimes |
-| Go | `references/go-checklist.md` | Discarded errors, goroutine cancellation, `defer` in loops |
 | SQL | `references/sql-checklist.md` | Unbounded mutations, N+1 queries, missing indexes |
 
 ## Resources
