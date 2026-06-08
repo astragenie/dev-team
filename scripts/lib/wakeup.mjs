@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- module assembles all wake-up data sources; 322 lines including comments/whitespace — acceptable for a single-concern aggregator */
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -212,6 +213,7 @@ async function countArchive(repoPath) {
  *           archiveCounts: object }} _
  * @returns {Record<string, unknown>}
  */
+// eslint-disable-next-line max-lines-per-function -- linear accumulator over heterogeneous entry types — no meaningful split boundary
 function buildMemoryBuckets({
   claims,
   openApprovals,
@@ -271,6 +273,7 @@ function buildMemoryBuckets({
  * @param {string} repoPath
  * @param {{ readOnly?: boolean }} [options]
  */
+// eslint-disable-next-line max-lines-per-function -- orchestrator: sequential async pipeline composing 8 independent data sources — extracting sub-functions would invert readability
 export async function buildWakeUpBrief(repoPath, options = {}) {
   const readOnly = options.readOnly === true;
   const [

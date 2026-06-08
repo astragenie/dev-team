@@ -1,6 +1,6 @@
 ---
 id: SLICE-52
-status: pending
+status: active
 feature: FEAT-122
 phase: null
 priority: P2

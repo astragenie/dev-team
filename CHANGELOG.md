@@ -7,6 +7,8 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ### Added
 
+- **feat(FEAT-122):** ESLint Phase 5 ratchet — complexity ≤10, max-lines-per-function ≤30, max-lines ≤300 repo-wide; 4 violations waived with rationale.
+
 - **feat(FEAT-125):** plugin-dev review skills formally wired into `crew:reviewer` — `plugin-dev:plugin-validator` required on plugin shape changes, `plugin-dev:skill-reviewer` required on skill shape changes. Design doc at `docs/superpowers/specs/2026-06-08-feat125-plugin-dev-skills-wiring-design.md`. (Routing implemented under FEAT-017; FEAT-125 closes the design-doc + acceptance-criteria trail.)
 
 **`agents/3rdparty/` — 3 new agents (FEAT-126)**

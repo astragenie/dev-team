@@ -12,6 +12,7 @@ const DEFAULT_TAIL_BYTES = 64 * 1024;
  * @param {{ maxBytes?: number }} [options]
  * @returns {Promise<Record<string, unknown>[]>}
  */
+// eslint-disable-next-line max-lines-per-function -- streaming async read with interleaved buffer management — split would require shared mutable state
 export async function tailReadJsonl(filePath, count, options = {}) {
   const maxBytes = options.maxBytes ?? DEFAULT_TAIL_BYTES;
   let handle;

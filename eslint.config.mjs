@@ -5,9 +5,12 @@
 // - no-unused-vars / prefer-const / no-var: dead-code + mutation hygiene
 // - no-console: tolerated in CLI entry-points + the bundled smoke / validator
 //   scripts; everywhere else it's noise
-// - max-lines-per-function / complexity: kept generous (120 / 15) because the
-//   existing code has long but linear functions; the goal is to flag genuinely
-//   tangled growth, not force a rewrite of working code
+// - max-lines-per-function / complexity: Phase 5 ratchet (30 / 10); functions
+//   that legitimately exceed the threshold carry an eslint-disable-next-line
+//   comment with rationale
+// - max-lines: file-level cap of 300 (skipBlankLines + skipComments); files
+//   that exceed the threshold carry a top-of-file eslint-disable comment with
+//   rationale
 // - eqeqeq: strict equality only
 
 import js from "@eslint/js";
@@ -33,8 +36,9 @@ export default [
       "no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
       "no-console": "off",
       "no-implicit-globals": "error",
-      "max-lines-per-function": ["warn", { max: 120, skipBlankLines: true, skipComments: true }],
-      "complexity": ["warn", 15]
+      "max-lines-per-function": ["warn", { max: 30, skipBlankLines: true, skipComments: true }],
+      "complexity": ["warn", 10],
+      "max-lines": ["warn", { max: 300, skipBlankLines: true, skipComments: true }]
     }
   },
   {
