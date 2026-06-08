@@ -18,6 +18,7 @@ jobs:
       - run: node ./scripts/validate-skills.ts
       - run: node ./scripts/validate-agents.ts
       - run: node ./scripts/validate-slices.ts
+      - run: node ./scripts/validate-bundles.ts
       - name: Validate contracts (against committed fixtures)
         run: |
           for f in tests/fixtures/openapi/*.openapi.yaml; do

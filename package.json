@@ -26,6 +26,7 @@
     "validate:routing-table": "node ./scripts/validate-routing-table.ts",
     "validate:slices": "node ./scripts/validate-slices.ts",
     "validate:all": "node --experimental-strip-types scripts/validate-all.ts",
+    "validate:bundles": "node --experimental-strip-types ./scripts/validate-bundles.ts",
     "validate:typegraph": "node ./scripts/validate-typegraph.ts",
     "validate:ux-spec": "node ./scripts/validate-ux-spec.ts",
     "format": "prettier --write \"scripts/**/*.{mjs,ts}\" \"tests/**/*.{mjs,ts}\"",
