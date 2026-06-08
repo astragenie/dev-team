@@ -1,4 +1,4 @@
-/* eslint-disable max-lines -- module assembles all wake-up data sources; 322 lines including comments/whitespace — acceptable for a single-concern aggregator */
+/* eslint-disable max-lines -- module assembles all wake-up data sources; 423 total lines (rule counts ~301 code lines excluding blanks/comments per skipBlankLines+skipComments) — acceptable for a single-concern aggregator */
 import fs from "node:fs/promises";
 import path from "node:path";
 
