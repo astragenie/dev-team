@@ -156,3 +156,8 @@ A diagram is ready when:
 **Quick rule:** default to Mermaid unless the consumer explicitly needs PlantUML (formal UML,
 enterprise tools) or the diagram is inline text-only context (ASCII). ASCII is reserved for
 terminal output or README sections with no Mermaid renderer.
+
+**C4 prerequisite:** C4 diagrams (`c4-context.mmd`, `c4-container.mmd` templates) require the
+Mermaid C4 extension (`%%{init: {'theme': 'default'}}%%` or a renderer that bundles `mermaid-c4`).
+Verify the target renderer supports C4 before using these templates; fall back to a plain
+`flowchart LR` for environments without C4 support.
