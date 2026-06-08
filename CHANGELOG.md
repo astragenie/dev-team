@@ -3,6 +3,12 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [Unreleased]
+
+### Added
+
+- **feat(FEAT-123):** Diagram authoring POC — auto-pick decision tree added to `diagram-methodology` skill; 7 Mermaid template stubs (C4×2, sequence, ERD, state, flowchart, ADR); new `diagram-review` skill covering syntax/slop/clarity; routing-table row for diagram authoring.
+
 ## v0.22.0 — 2026-06-08 — 3rd-party skill/agent imports, Go removal, ref fixes (FEAT-126)
 
 ### Added

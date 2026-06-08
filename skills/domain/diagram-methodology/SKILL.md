@@ -139,3 +139,20 @@ A diagram is ready when:
 - The diagram source file is committed to the repository (not image-only)
 - The diagram matches the current code or architecture (not a speculative future state
   unless explicitly labeled as such)
+
+## Auto-pick decision tree
+
+| Task context | Recommended format | Diagram class |
+|---|---|---|
+| ADR or architecture decision | Mermaid | C4 context or flowchart |
+| API request/response flow | Mermaid | sequence |
+| Database schema / relations | Mermaid | ERD |
+| Auth or lifecycle states | Mermaid | state machine |
+| Decision logic or branching | Mermaid or ASCII | flowchart |
+| System components + boundaries | Mermaid | C4 container |
+| Dense cross-reference matrix | ASCII | table |
+| Formal UML with annotations | PlantUML | class or component |
+
+**Quick rule:** default to Mermaid unless the consumer explicitly needs PlantUML (formal UML,
+enterprise tools) or the diagram is inline text-only context (ASCII). ASCII is reserved for
+terminal output or README sections with no Mermaid renderer.

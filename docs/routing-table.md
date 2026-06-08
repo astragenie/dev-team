@@ -120,6 +120,7 @@ _API documentation, diagram authoring, commit messages, handoff CLI._
 |---|---|---|
 | **API documentation authoring** (OpenAPI specs, SDK reference guides, integration guides, error documentation, versioning, deprecation notices) | `loop:document-writer` | Load `skills/workflow/api-documentation/`. Co-cite `skills/domain/backend-advisory/` for API design concerns. |
 | **Diagram authoring** (architecture diagrams, flowcharts, sequence diagrams, ERDs, state machines, dependency graphs, Mermaid / PlantUML / Draw.io) | `loop:document-writer` / architect | Load `skills/domain/diagram-methodology/`. Architect uses for ADR diagrams; `loop:document-writer` uses for docs-embedded diagrams. |
+| **Diagram authoring** (new diagram requested, ADR diagram, architecture sketch, ERD, sequence flow) | `loop:document-writer` + `loop:architect` | Document-writer owns Markdown authoring; architect selects diagram type. Both consult `skills/domain/diagram-methodology/` (format selection + templates) and `skills/workflow/diagram-review/` (post-authoring lint). |
 | **Authoring a git commit message** (after a code change is complete and staged) | builder | Load `skills/workflow/git-commit/` for commit-message format, conventional-commit style, and co-author footers. |
 | **Subagent completion report** (any role finishing a delegated task) | role via `write-handoff` CLI | Agent calls `node ... crew.mjs write-handoff` via Bash; returns path + 1–3 sentence headline. Lead reads the full report from the path on demand. Inline returns re-inflate lead context. |
 

@@ -1,0 +1,13 @@
+erDiagram
+  USER {
+    uuid id PK
+    string email
+    timestamp created_at
+  }
+  ORDER {
+    uuid id PK
+    uuid user_id FK
+    decimal total
+    timestamp placed_at
+  }
+  USER ||--o{ ORDER : "places"

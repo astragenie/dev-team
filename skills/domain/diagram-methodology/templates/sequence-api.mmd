@@ -1,0 +1,8 @@
+sequenceDiagram
+  participant C as Client
+  participant A as API
+  participant D as Database
+  C->>A: POST /resource {payload}
+  A->>D: INSERT INTO table
+  D-->>A: row inserted
+  A-->>C: 201 Created {id}

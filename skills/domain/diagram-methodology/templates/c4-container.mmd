@@ -1,0 +1,9 @@
+C4Container
+  title Container: [System Name]
+  Person(user, "User")
+  Container(api, "API Server", "Node.js", "Handles requests")
+  Container(db, "Database", "PostgreSQL", "Stores data")
+  Container(fe, "Frontend", "React", "Serves UI")
+  Rel(user, fe, "Uses", "HTTPS")
+  Rel(fe, api, "Calls", "REST/JSON")
+  Rel(api, db, "Reads/Writes", "SQL")

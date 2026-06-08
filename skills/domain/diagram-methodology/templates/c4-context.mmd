@@ -1,0 +1,7 @@
+C4Context
+  title System Context: [System Name]
+  Person(user, "User", "Primary actor")
+  System(sys, "[System Name]", "Description")
+  System_Ext(ext, "External System", "Third-party dependency")
+  Rel(user, sys, "Uses")
+  Rel(sys, ext, "Calls API")

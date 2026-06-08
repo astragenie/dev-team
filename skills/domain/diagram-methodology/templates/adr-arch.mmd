@@ -1,0 +1,8 @@
+flowchart LR
+  P[Problem] --> O1[Option A]
+  P --> O2[Option B]
+  P --> O3[Option C]
+  O1 -- tradeoff --> D[Decision]
+  O2 -- rejected: reason --> X1([x])
+  O3 -- rejected: reason --> X2([x])
+  D --> I[Implementation]

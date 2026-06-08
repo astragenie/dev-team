@@ -1,6 +1,6 @@
 ---
 id: SLICE-53
-status: pending
+status: active
 feature: FEAT-123
 phase: null
 priority: P2
