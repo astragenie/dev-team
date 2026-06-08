@@ -1,8 +1,8 @@
 ---
 id: FEAT-029
 title: Promote cost-hygiene reread hook to default-on
-priority: null
-status: pending
+priority: P2
+status: triaged
 category: performance
 target_release: null
 created: 2026-06-01
@@ -24,7 +24,7 @@ pm_technical_feasibility: null
 pm_scope_risk: null
 pm_strategic_alignment: null
 pm_composite: null
-triaged_at: null
+triaged_at: 2026-06-08
 triage_notes: "Re-opened 2026-06-08: undeferred, autonomous_safe promoted to true (pure config change — flip hook default, keep opt-out env var). Originally P0 from 2026-06-01."
 github_issue: 37
 github_milestone: null

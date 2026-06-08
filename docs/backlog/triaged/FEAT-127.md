@@ -1,8 +1,8 @@
 ---
 id: FEAT-127
 title: "Perf: fix serial fs.stat() → readdir+withFileTypes in wakeup.mjs"
-priority: null
-status: pending
+priority: P2
+status: triaged
 category: performance
 target_release: null
 autonomous_safe: true
@@ -20,8 +20,8 @@ pm_strategic_alignment: null
 pm_composite: null
 updated: 2026-06-08
 created: 2026-06-08
-triaged_at: null
-triage_notes: null
+triaged_at: 2026-06-08
+triage_notes: "regex-fallback P2; autonomous_safe=true: pure script change, AC count >= 4"
 slices: []
 depends_on: []
 github_issue: null
