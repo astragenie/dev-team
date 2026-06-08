@@ -1,6 +1,6 @@
 ---
 id: SLICE-53
-status: active
+status: completed
 feature: FEAT-123
 phase: null
 priority: P2
@@ -8,6 +8,7 @@ target_release: null
 requires_validation: true
 created: 2026-06-08
 updated: 2026-06-08
+completed_at: 2026-06-08
 ---
 # SLICE-53: # Diagram authoring POC for architect — auto-pick + templates + lint
 
