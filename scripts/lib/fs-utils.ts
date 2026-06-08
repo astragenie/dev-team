@@ -1,7 +1,10 @@
 import fs from "node:fs/promises";
 
 export async function pathExists(p: string): Promise<boolean> {
-  return fs.access(p).then(() => true, () => false);
+  return fs.access(p).then(
+    () => true,
+    () => false
+  );
 }
 
 export async function readJson<T>(p: string): Promise<T> {

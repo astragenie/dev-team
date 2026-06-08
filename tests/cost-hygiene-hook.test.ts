@@ -39,7 +39,8 @@ function runHook(
   });
 }
 
-test("hook with no env-var exits 0 silently (gate off)", async () => {
+test("hook with no env-var exits 0 silently on missing file (default-on)", async () => {
+  // Default-on: hook runs without CREW_COST_HYGIENE set; missing file → silent no-op.
   const repo = await makeRepo();
   try {
     const result = await runHook(
@@ -52,6 +53,56 @@ test("hook with no env-var exits 0 silently (gate off)", async () => {
     );
     assert.equal(result.exitCode, 0);
     assert.equal(result.stdout, "");
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+test("hook with no env-var fires and writes state (default-on)", async () => {
+  // AC-1: hook fires without any env var set.
+  const repo = await makeRepo();
+  try {
+    const file = path.join(repo, "default-on.txt");
+    await fs.writeFile(file, "content", "utf8");
+    const result = await runHook(
+      JSON.stringify({
+        session_id: "s_default",
+        tool_name: "Read",
+        tool_input: { file_path: file },
+        cwd: repo
+      })
+      // no env override — default-on
+    );
+    assert.equal(result.exitCode, 0);
+    const stateFile = path.join(repo, ".claude", "state", "cost-hygiene", "s_default.json");
+    const raw = await fs.readFile(stateFile, "utf8");
+    const state = JSON.parse(raw);
+    assert.equal(state.entries[file].read_count, 1);
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+test("hook with CREW_COST_HYGIENE=0 exits 0 silently (opt-out)", async () => {
+  // AC-2: CREW_COST_HYGIENE=0 suppresses the hook.
+  const repo = await makeRepo();
+  try {
+    const file = path.join(repo, "opt-out.txt");
+    await fs.writeFile(file, "content", "utf8");
+    const result = await runHook(
+      JSON.stringify({
+        session_id: "s_optout",
+        tool_name: "Read",
+        tool_input: { file_path: file },
+        cwd: repo
+      }),
+      { CREW_COST_HYGIENE: "0" }
+    );
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.stdout, "");
+    // State file must NOT have been written.
+    const stateFile = path.join(repo, ".claude", "state", "cost-hygiene", "s_optout.json");
+    await assert.rejects(fs.readFile(stateFile, "utf8"));
   } finally {
     await cleanup(repo);
   }
@@ -173,6 +224,61 @@ test("post-hook captures Read tool result content into state", async () => {
       await fs.readFile(path.join(repo, ".claude", "state", "cost-hygiene", "s4.json"), "utf8")
     );
     assert.equal(state.entries[file].content, "wisp");
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+test("post-hook fires by default (no env var) and writes state (default-on)", async () => {
+  // AC-1: post-hook fires without any env var set.
+  const repo = await makeRepo();
+  try {
+    const file = path.join(repo, "post-default.txt");
+    await fs.writeFile(file, "bloom", "utf8");
+    // Seed state via pre-hook (also default-on).
+    const preStdin = JSON.stringify({
+      session_id: "s5",
+      tool_name: "Read",
+      tool_input: { file_path: file },
+      cwd: repo
+    });
+    await runHook(preStdin);
+
+    const postStdin = JSON.stringify({
+      session_id: "s5",
+      tool_name: "Read",
+      tool_input: { file_path: file },
+      tool_response: { content: "bloom" },
+      cwd: repo
+    });
+    const result = await runPostHook(postStdin);
+    assert.equal(result.exitCode, 0);
+    const state = JSON.parse(
+      await fs.readFile(path.join(repo, ".claude", "state", "cost-hygiene", "s5.json"), "utf8")
+    );
+    assert.equal(state.entries[file].content, "bloom");
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+test("post-hook with CREW_COST_HYGIENE=0 exits without writing state (opt-out)", async () => {
+  // AC-2: CREW_COST_HYGIENE=0 suppresses the post-hook.
+  const repo = await makeRepo();
+  try {
+    const file = path.join(repo, "post-optout.txt");
+    await fs.writeFile(file, "quiet", "utf8");
+    const postStdin = JSON.stringify({
+      session_id: "s6",
+      tool_name: "Read",
+      tool_input: { file_path: file },
+      tool_response: { content: "quiet" },
+      cwd: repo
+    });
+    const result = await runPostHook(postStdin, { CREW_COST_HYGIENE: "0" });
+    assert.equal(result.exitCode, 0);
+    const stateFile = path.join(repo, ".claude", "state", "cost-hygiene", "s6.json");
+    await assert.rejects(fs.readFile(stateFile, "utf8"));
   } finally {
     await cleanup(repo);
   }

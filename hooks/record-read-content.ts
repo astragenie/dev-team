@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// PostToolUse hook on Read. Env-var gated. Always exits 0.
+// PostToolUse hook on Read. Default-on; opt out with CREW_COST_HYGIENE=0. Always exits 0.
 import fs from "node:fs/promises";
 import path from "node:path";
 import {
@@ -75,7 +75,7 @@ async function loadState(
 }
 
 async function main(): Promise<void> {
-  if (process.env.CREW_COST_HYGIENE !== "1") {
+  if (process.env.CREW_COST_HYGIENE === "0") {
     process.exit(0);
   }
   const raw = await readStdin();

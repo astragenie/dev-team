@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// PreToolUse hook on Read. Env-var gated. Always exits 0.
+// PreToolUse hook on Read. Default-on; opt out with CREW_COST_HYGIENE=0. Always exits 0.
 import fs from "node:fs/promises";
 import path from "node:path";
 import {
@@ -94,7 +94,7 @@ async function persistState(
 }
 
 async function main() {
-  if (process.env.CREW_COST_HYGIENE !== "1") {
+  if (process.env.CREW_COST_HYGIENE === "0") {
     process.stdin.resume();
     return;
   }

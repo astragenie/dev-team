@@ -89,8 +89,12 @@ export async function validateManifests(repoRoot: string) {
   const failures: string[] = [];
   const fail = (msg: string) => failures.push(msg);
 
-  const plugin = await readJson<Record<string, unknown>>(path.join(repoRoot, ".claude-plugin", "plugin.json"));
-  const marketplace = await readJson<Record<string, unknown>>(path.join(repoRoot, ".claude-plugin", "marketplace.json"));
+  const plugin = await readJson<Record<string, unknown>>(
+    path.join(repoRoot, ".claude-plugin", "plugin.json")
+  );
+  const marketplace = await readJson<Record<string, unknown>>(
+    path.join(repoRoot, ".claude-plugin", "marketplace.json")
+  );
   const pkg = await readJson<Record<string, unknown>>(path.join(repoRoot, "package.json"));
 
   checkRequiredFields(

@@ -14,6 +14,7 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ### Changed
 
+- **feat(FEAT-029/SLICE-54):** Cost-hygiene reread hook promoted from **default-off** to **default-on**. Both `hooks/check-redundant-read.ts` and `hooks/record-read-content.ts` now fire on every Read without any env var set. Opt out by setting `CREW_COST_HYGIENE=0`. Previously required `CREW_COST_HYGIENE=1`.
 - **feat(FEAT-122):** ESLint Phase 5 ratchet — complexity ≤10, max-lines-per-function ≤30, max-lines ≤300 repo-wide; 4 violations waived with rationale comments.
 
 ## v0.22.0 — 2026-06-08 — 3rd-party skill/agent imports, Go removal, ref fixes (FEAT-126)
@@ -729,9 +730,9 @@ Three agent prompts were sitting at 74–100 lines, missing context-efficiency /
 
 ## v0.3.11 — 2026-05-28 — Cost-hygiene reread hook
 
-### Cost prevention (default-off, env-var-gated)
+### Cost prevention (shipped default-off; promoted to default-on in FEAT-029/SLICE-54)
 
-- **feat(cost-hygiene):** new `PreToolUse` + `PostToolUse` Read matchers in `hooks/hooks.json` wire a pair of env-var-gated hooks (`CREW_COST_HYGIENE=1`).
+- **feat(cost-hygiene):** new `PreToolUse` + `PostToolUse` Read matchers in `hooks/hooks.json` wire a pair of hooks (originally env-var-gated with `CREW_COST_HYGIENE=1`; see FEAT-029 for the default-on promotion).
 - **feat(cost-hygiene):** `hooks/check-redundant-read.mjs` — PreToolUse. On reread of a path with unchanged mtime, injects a `<system-reminder>` block quoting the prior file content into the assistant's context so the model uses it instead of issuing a redundant Read. Never blocks; always exits 0.
 - **feat(cost-hygiene):** `hooks/record-read-content.mjs` — PostToolUse. Captures the Read tool result content into session state for the next reread to quote.
 - **feat(cost-hygiene):** `scripts/lib/cost-hygiene/decide.mjs` — pure decision module. Q7 mtime-edit exception: warns only when file unchanged since last Read.
@@ -748,7 +749,7 @@ Three agent prompts were sitting at 74–100 lines, missing context-efficiency /
 
 ### Known limitations
 
-- Plugin ships **default-off**. Set `CREW_COST_HYGIENE=1` to enable. Promotion to default-on follows dogfood measurement.
+- ~~Plugin ships **default-off**. Set `CREW_COST_HYGIENE=1` to enable.~~ Promoted to **default-on** in FEAT-029/SLICE-54. Opt out with `CREW_COST_HYGIENE=0`.
 - `evictLRU` may leave `total_bytes > 2MB` when a single protected entry alone exceeds the cap (cosmetic accounting only; cannot affect decisions or persist incorrect data).
 
 ## v0.3.10 — 2026-05-28 — Type safety (noImplicitAny)

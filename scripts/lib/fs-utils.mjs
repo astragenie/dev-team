@@ -15,7 +15,10 @@ import fs from "node:fs/promises";
  * @returns {Promise<boolean>}
  */
 export async function pathExists(p) {
-  return fs.access(p).then(() => true, () => false);
+  return fs.access(p).then(
+    () => true,
+    () => false
+  );
 }
 
 export async function readFileIfExists(filePath) {
