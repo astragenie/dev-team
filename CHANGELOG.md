@@ -3,6 +3,66 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.22.0 — 2026-06-08 — 3rd-party skill/agent imports, Go removal, ref fixes (FEAT-126)
+
+### Added
+
+**`agents/3rdparty/` — 3 new agents (FEAT-126)**
+
+- `mobile-developer.md` — React Native / Flutter / iOS / Android implementation specialist
+- `deployment-engineer.md` — Docker, container registries, CI/CD deployment automation
+- `mcp-expert.md` — Model Context Protocol server authoring and debugging
+
+**`skills/domain/` — 4 new domain skills (FEAT-126)**
+
+- `frontend-design/` — visual design patterns, CSS layout, color systems, typography
+- `tailwind-patterns/` — utility-first Tailwind CSS, responsive variants, config authoring
+- `mobile-design/` — iOS/Android UX, React Native layouts, Flutter widgets, touch targets
+- `docker-expert/` — Dockerfile patterns, multi-stage builds, docker-compose, image optimization
+
+**`skills/workflow/` — 1 new workflow skill (FEAT-126)**
+
+- `webapp-testing/` — E2E browser tests, integration smoke, API contract validation at runtime
+
+**`commands/3rdparty/` — 4 new commands (FEAT-126)**
+
+- `create-prd.md` — PRD authoring with best-effort repo discovery (drops @product-development/ hard-coded alias)
+- `refactor-code.md` — structured refactor workflow
+- `architecture-review.md` — architecture review command
+- `create-architecture-documentation.md` — architecture documentation generation
+
+**`docs/routing-table.md` — 7 new routing rows (FEAT-126)**
+
+Tailwind CSS, frontend visual design, mobile app code, MCP server authoring, web app E2E testing, Docker containerization, mobile app design (UX). Agent skill blocks in `builder.md`, `uxdesigner.md`, `validator.md`, `deployer.md` updated to match (consistency gate).
+
+### Removed
+
+**Go stack support removed** (`c342d93`)
+
+Go was never fully wired and had broken refs. Removed from:
+
+- `docs/standards/feat-tag-schema.md` — `stack:go` enum row deleted
+- `docs/routing-table.md` — parallel-build heuristic drops `stack:go`
+- `commands/orchestrate-slice.md` — SPLIT_BUILD heuristic drops `stack:go`
+- `scripts/orchestrate-slice-classify.ts` — `BE_STACK` set no longer includes `"stack:go"`
+- `agents/builder-be.md` — Go entries removed (config glob, self-verify runners)
+- `skills/workflow/reviewing-code/SKILL.md` — Go row removed from per-language table
+- `skills/workflow/reviewing-code/references/go-checklist.md` — deleted
+
+Historic docs/backlog/done/ entries referencing Go preserved as frozen records.
+
+### Fixed
+
+- `agents/builder-be.md` — repointed 3 broken skill refs: `csharp-pro` → `dotnet/csharp-conventions/` + `c-sharp-pro` agent; `a11y-advisory` removed (not BE scope) (`1c58684`)
+- `agents/builder-fe.md` — `a11y-advisory` ref → `ux-methodology/references/accessibility.md` (`1c58684`)
+- `commands/3rdparty/create-prd.md` — replaced `@product-development/` hard-coded path aliases with best-effort repo discovery (`2eaf7b6`)
+
+### Chore
+
+- 3.8 MB artifact cleanup: removed `docs/history/` (6 files, pre-formal-backlog era), 12 stale `docs/superpowers/plans/` (executed plans), 6 feat122-collision orphan artifacts (`c2e225e`)
+
+---
+
 ## v0.21.0 — 2026-06-07 — short-slice validator-first dispatch order (FEAT-054)
 
 ### Changed
