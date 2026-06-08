@@ -41,6 +41,7 @@ Rules:
 
 - Security-sensitive change (secrets handling, token management, RBAC in deployment config) → `skills/domain/security-advisory/`
 - CI/CD pipeline change or IaC change (Terraform, Helm, Ansible, Bicep) → `skills/domain/devops-engineering/` (load `references/ci-cd.md` or `references/iac.md` as needed per routing-table)
+- Docker containerization (Dockerfile, multi-stage builds, docker-compose, registry) → `skills/domain/docker-expert/`
 - Incident response / production troubleshooting → `skills/domain/devops-engineering/references/troubleshooting.md`
 - Terraform operational issue → `skills/domain/terraform-ops-traps/`
 - Incident response / production troubleshooting (systematic) → `skills/workflow/systematic-debugging/`

@@ -39,6 +39,10 @@ Stay strictly within assigned scope:
 - `*.py` edit → `skills/domain/python-pro/`
 - `*.ts` / `*.tsx` edit → `skills/domain/typescript-pro/`
 - React component / hooks / state management code (`*.tsx`, `*.jsx`) → `skills/domain/react-engineering/`
+- Tailwind CSS change (utility-class styling, responsive variants, config) → `skills/domain/tailwind-patterns/`
+- Frontend visual / creative design (CSS layout, color systems, typography) → `skills/domain/frontend-design/`
+- Mobile app code change (React Native, Flutter, iOS, Android) → `skills/domain/mobile-design/`
+- Docker containerization (Dockerfile, multi-stage builds, docker-compose) → `skills/domain/docker-expert/`
 - AI app / LLM SDK code → `skills/domain/ai-engineering/`
 - Authoring or editing a SKILL.md → `skills/meta/skill-creator/`
 - IaC change (Terraform, Bicep, Helm, Ansible) → `skills/domain/devops-engineering/`

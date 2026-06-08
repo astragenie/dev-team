@@ -37,6 +37,7 @@ Rules:
 - Diff under review (spotting correctness gaps during validation) → `skills/workflow/reviewing-code/`
 - Production incident response / deployment troubleshooting → `skills/domain/devops-engineering/references/troubleshooting.md`
 - UX/React behavior (slice tags include `surface:ui`, `concern:ux`, or `concern:accessibility`) → `skills/workflow/ux-validation/`
+- Web app E2E / integration testing → `skills/workflow/webapp-testing/`
 - Dispatch handoff cites `tags:` from PM triage → cross-check `docs/standards/feat-tag-schema.md` to confirm the `stack:*` domain skill and any `concern:*` co-load skill to invoke for this slice
 
 Your first response must include:

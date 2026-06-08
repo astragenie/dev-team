@@ -62,6 +62,10 @@ _Language- and framework-specific build signals._
 | **TypeScript / TSX code change** (`*.ts` / `*.tsx` file edit, any framework or runtime) | builder | Load `skills/domain/typescript-pro/` for advanced type system patterns, full-stack type safety, and build tooling guidance. |
 | **AI app / LLM SDK code** (Anthropic / OpenAI SDK imports, prompt engineering infra, agent frameworks, model training or inference code) | builder | Load `skills/domain/ai-engineering/` for end-to-end AI system guidance. Co-cite `skills/domain/prompt-engineering/` for prompt-authoring concerns. |
 | **React-specific code** (hooks, state management, Server Components, Suspense, concurrent rendering, performance, React Testing Library, Next.js App Router) | builder | Load `skills/domain/react-engineering/`. Co-cite `skills/domain/frontend-advisory/` for general frontend concerns. Co-cite `skills/domain/typescript-pro/` for `*.tsx` type patterns. |
+| **Tailwind CSS change** (utility-class styling, responsive variants, `tailwind.config.*`, dark-mode tokens, plugin authoring) | builder | Load `skills/domain/tailwind-patterns/` for utility-first patterns, responsive design, and anti-patterns. Co-cite `skills/domain/frontend-design/` for visual layout context. |
+| **Frontend visual / creative design** (CSS layout, color systems, typography, visual hierarchy, design-to-code) | builder / uxdesigner | Load `skills/domain/frontend-design/` for visual design patterns and CSS best practices. Co-cite `skills/domain/tailwind-patterns/` when stack uses Tailwind. |
+| **Mobile app code change** (React Native, Flutter, iOS Swift, Android Kotlin, mobile-specific APIs) | builder via `agents/3rdparty/mobile-developer.md` | Delegate implementation to `mobile-developer`. Co-cite `skills/domain/mobile-design/` for mobile UX constraints. |
+| **MCP server authoring or debugging** (Model Context Protocol server, tool definitions, resource handlers, Claude extension) | builder via `agents/3rdparty/mcp-expert.md` | Delegate to `mcp-expert` for protocol-specific patterns and tool schema authoring. |
 
 ### Architecture
 
@@ -85,6 +89,8 @@ _CI/CD, IaC, Terraform, incident response, performance benchmarks, web UI valida
 | **Incident response / production troubleshooting** (deployment failure, CrashLoopBackOff, service 503, postmortem) | deployer + validator | Load `skills/domain/devops-engineering/references/troubleshooting.md` for structured gather-facts → diagnose → fix → verify → postmortem procedure. Pairs with `skills/workflow/systematic-debugging/` for root-cause tracing. |
 | **Performance-sensitive change shipped** (latency-critical path, throughput regression risk, bundle size impact) | deployer / validator via **gstack `/benchmark`** | Gather perf evidence alongside deployment evidence. Run before and after to produce delta metrics. |
 | **Web UI behavior changed** (frontend components, user-visible flows, browser-rendered output) | validator via **gstack `/qa`** | Validator invokes `/qa` for real Playwright browser testing instead of prompt-only validation. Produces observable evidence (screenshots, console output). |
+| **Web app E2E / integration testing** (end-to-end browser tests, integration smoke, API contract validation at runtime) | validator / integrator | Load `skills/workflow/webapp-testing/` for structured test scenario design and evidence requirements. Pairs with gstack `/qa` for real Playwright execution. |
+| **Docker containerization** (Dockerfile authoring, multi-stage builds, docker-compose, image optimization, registry management) | builder / deployer via `agents/3rdparty/deployment-engineer.md` | Load `skills/domain/docker-expert/` for container patterns, security hardening, and optimization. Co-cite `skills/domain/devops-engineering/` for pipeline integration. |
 
 ### Research
 
@@ -124,6 +130,7 @@ _UX design, interaction design, accessibility._
 |---|---|---|
 | **UX / UI design** (layout decisions, user flows, interaction design, component wireframes) | `agents/uxdesigner.md` stub | Load `skills/domain/frontend-advisory/`. UXDesigner stub delegates to `agents/3rdparty/{ui-ux-designer,expert-react-frontend-engineer,frontend-developer}.md` via Agent tool. |
 | **UX research / persona work / interaction design / accessibility audit** (user interviews, persona modeling, IA, heuristic evaluation, WCAG compliance, AI interface patterns) | uxdesigner | Load `skills/domain/ux-methodology/`. For research synthesis, co-cite `skills/workflow/research-coordination/`. For implementation, co-cite `skills/domain/react-engineering/` or `skills/domain/frontend-advisory/`. |
+| **Mobile app design** (iOS/Android UX, React Native layouts, Flutter widgets, mobile interaction patterns, touch targets, platform conventions) | uxdesigner / builder | Load `skills/domain/mobile-design/`. For implementation, delegate to `agents/3rdparty/mobile-developer.md`. |
 
 ### Crew internals
 
