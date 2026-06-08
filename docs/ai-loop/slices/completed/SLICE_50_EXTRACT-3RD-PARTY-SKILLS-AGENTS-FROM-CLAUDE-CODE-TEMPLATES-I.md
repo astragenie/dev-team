@@ -1,6 +1,6 @@
 ---
 id: SLICE-50
-status: pending
+status: completed
 feature: FEAT-126
 phase: null
 priority: P2
@@ -8,6 +8,7 @@ target_release: null
 requires_validation: false
 created: 2026-06-08
 updated: 2026-06-08
+completed_at: 2026-06-08
 ---
 # SLICE-50: Import 4 missing 3rd-party commands (create-prd, refactor-code, architecture-review, create-architecture-documentation)
 
