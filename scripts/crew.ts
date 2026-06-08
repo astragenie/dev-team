@@ -90,7 +90,7 @@ const FLAG_SPEC = {
 } as const;
 
 type FlagSpecValues = (typeof FLAG_SPEC)[keyof typeof FLAG_SPEC];
-type FlagKey = FlagSpecValues["key"];
+type FlagKey = Exclude<FlagSpecValues["key"], "repo">;
 type Flags = {
   [K in FlagKey]: Extract<FlagSpecValues, { key: K }> extends { boolean: true }
     ? boolean
