@@ -1,13 +1,14 @@
 ---
 id: FEAT-126
-status: in-progress
+status: done
 priority: P2
 category: tech-debt
 target_release: null
 created: 2026-06-08
 updated: 2026-06-08
+completed_at: 2026-06-08
 depends_on: []
-slices: [SLICE-48, SLICE-49, SLICE-50]
+slices: [SLICE-48]
 derived_from: null
 pm_customer_impact: 0.5
 pm_effort_estimate: 0.5
