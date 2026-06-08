@@ -3,6 +3,14 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [Unreleased]
+
+### Added
+
+- Build bundles: every builder variant (`builder`, `builder-be`, `builder-fe`) writes a `.claude/artifacts/crew/bundles/{slice}/{builder}-{runId}-build-bundle.md` artifact on completion containing handoff body, `git diff`, touched-file contents, and read-file contents. `/crew:review` and `/crew:validate` inline the latest bundle into reviewer/validator dispatch prompts under a `## Builder context (preloaded — do not re-Read these files)` header, preloading the builder's working set so downstream agents skip re-Reads. Schema documented at `docs/standards/build-bundle-schema.md`. Hard CI gate: `scripts/validate-bundles.ts`. `brief-me` surfaces per-slice write/malformed/size-cap counts. Tracks first stealable from the agent-crew competitor matrix (`.claude/artifacts/crew/research/20260608T220200Z-competitor-matrix-agent-crews.md`).
+
+---
+
 ## v0.23.0 — 2026-06-08 — refactor agent, ESLint ratchet, diagram POC, builder plugin-dev wiring
 
 ### Added
