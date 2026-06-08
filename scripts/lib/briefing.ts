@@ -19,9 +19,15 @@ import {
   collectCostHealth,
   collectCostAggregate,
   collectModelCompliance,
-  fetchAutonomousLoopBrief
+  fetchAutonomousLoopBrief,
+  collectBundleStats
 } from "./briefing/collect.ts";
-import type { HookHealth, ArtifactEntry, WakeUpBriefLike } from "./briefing/collect.ts";
+import type {
+  HookHealth,
+  ArtifactEntry,
+  WakeUpBriefLike,
+  BundleStats
+} from "./briefing/collect.ts";
 
 const ROUTING_TABLE_STALE_DAYS = 30;
 
@@ -108,6 +114,7 @@ function buildSummary(params: {
   routingTable: { present: boolean; stale: boolean; ageDays: number | null };
   autonomousLoopBrief: unknown;
   runHealth: string | null;
+  bundleStats: BundleStats;
 }): Record<string, unknown> {
   const {
     gitActivity,
@@ -117,7 +124,8 @@ function buildSummary(params: {
     costs,
     routingTable,
     autonomousLoopBrief,
-    runHealth
+    runHealth,
+    bundleStats
   } = params;
   const workflow = wakeUpBrief.workflow as
     | { hasActiveRun?: boolean; pendingBadges?: string[] }
@@ -138,7 +146,8 @@ function buildSummary(params: {
     routingTablePresent: routingTable.present,
     routingTableStale: routingTable.stale,
     routingTableAgeDays: routingTable.ageDays,
-    runHealth
+    runHealth,
+    bundleStats
   };
 }
 
@@ -152,7 +161,8 @@ export async function buildBriefingReport(repoPath: string): Promise<Record<stri
     routingTable,
     costHealth,
     costAggregate,
-    modelCompliance
+    modelCompliance,
+    bundleStats
   ] = await Promise.all([
     buildWakeUpBrief(repoPath, { readOnly: true }),
     collectGitActivity(repoPath),
@@ -162,7 +172,8 @@ export async function buildBriefingReport(repoPath: string): Promise<Record<stri
     checkRoutingTableStale(repoPath),
     collectCostHealth(repoPath),
     collectCostAggregate(repoPath),
-    collectModelCompliance(repoPath)
+    collectModelCompliance(repoPath),
+    collectBundleStats(repoPath)
   ]);
 
   // Cast the JS wakeUpBrief to satisfy the typed render functions.
@@ -197,6 +208,8 @@ export async function buildBriefingReport(repoPath: string): Promise<Record<stri
   const secondaryOptions = buildSecondaryOptions(wakeUpBrief, deploymentClues, gitActivity);
   const retrievalGuide = buildRetrievalGuide(wakeUpBrief, artifacts);
 
+  const bundleSummaryLine = `bundles: ${bundleStats.written} written this slice, ${bundleStats.malformed} malformed, ${bundleStats.truncated} size-capped`;
+
   return {
     repoPath: wakeUpBrief.repoPath as string,
     wakeUp: wakeUpBrief,
@@ -206,6 +219,7 @@ export async function buildBriefingReport(repoPath: string): Promise<Record<stri
     modelCompliance,
     hookHealth,
     runHealth,
+    bundleStats,
     sections: {
       hookHealth: formatHookHealthSection(hookHealth),
       currentObjective,
@@ -223,7 +237,8 @@ export async function buildBriefingReport(repoPath: string): Promise<Record<stri
       blockedOrMissing,
       importantReminders: reminders,
       recommendedNextStep: nextStep,
-      secondaryOptions
+      secondaryOptions,
+      bundleSummary: bundleSummaryLine
     },
     summary: buildSummary({
       gitActivity,
@@ -233,7 +248,8 @@ export async function buildBriefingReport(repoPath: string): Promise<Record<stri
       costs,
       routingTable,
       autonomousLoopBrief,
-      runHealth
+      runHealth,
+      bundleStats
     }),
     autonomousLoop: autonomousLoopBrief,
     costs,

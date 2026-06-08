@@ -712,3 +712,84 @@ export async function fetchAutonomousLoopBrief(repoPath: string): Promise<unknow
     return null;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Bundle stats
+// ---------------------------------------------------------------------------
+
+export interface BundleStats {
+  written: number;
+  malformed: number;
+  truncated: number;
+}
+
+const SLICE_RE_BRIEF = /SLICE[-_](\d+)/i;
+
+/**
+ * Read the current slice ID from workflow-state.json. Returns undefined when
+ * no workflow state exists or the current run has no recognisable title.
+ */
+async function readCurrentSliceId(repoPath: string): Promise<string | undefined> {
+  const statePath = path.join(repoPath, ".claude", "state", "crew", "workflow-state.json");
+  try {
+    const raw = await fs.readFile(statePath, "utf8");
+    const obj = JSON.parse(raw) as { currentRun?: { title?: unknown } };
+    const title = obj?.currentRun?.title;
+    if (typeof title !== "string") return undefined;
+    const m = title.match(SLICE_RE_BRIEF);
+    if (!m || !m[1]) return undefined;
+    return `SLICE-${String(Number(m[1])).padStart(2, "0")}`;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Count build-bundle artifacts written for the current slice.
+ *
+ * - written: total *-build-bundle.md files found under the slice directory
+ * - malformed: files missing expected YAML frontmatter (---…schema_version…---)
+ * - truncated: files with `truncated: true` in frontmatter
+ *
+ * When no sliceId is resolvable, all counts are zero (not an error).
+ */
+export async function collectBundleStats(
+  repoPath: string,
+  sliceIdOverride?: string
+): Promise<BundleStats> {
+  const zero: BundleStats = { written: 0, malformed: 0, truncated: 0 };
+  const sliceId = sliceIdOverride ?? (await readCurrentSliceId(repoPath));
+  if (!sliceId) return zero;
+
+  const dir = path.join(repoPath, ".claude", "artifacts", "crew", "bundles", sliceId);
+  let entries: string[];
+  try {
+    const all = await fs.readdir(dir);
+    entries = all.filter((n) => n.endsWith("-build-bundle.md"));
+  } catch {
+    return zero;
+  }
+
+  let malformed = 0;
+  let truncated = 0;
+  await Promise.all(
+    entries.map(async (name) => {
+      try {
+        const text = await fs.readFile(path.join(dir, name), "utf8");
+        // Malformed = missing frontmatter block OR missing schema_version field.
+        const hasFrontmatter = /^---\n[\s\S]*?\nschema_version:\s*\d+\n[\s\S]*?\n---/.test(text);
+        if (!hasFrontmatter) {
+          malformed += 1;
+          return;
+        }
+        if (/^truncated:\s*true$/m.test(text)) {
+          truncated += 1;
+        }
+      } catch {
+        malformed += 1;
+      }
+    })
+  );
+
+  return { written: entries.length, malformed, truncated };
+}
