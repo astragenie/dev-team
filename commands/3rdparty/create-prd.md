@@ -4,30 +4,39 @@ description: Create Product Requirements Document (PRD) for new features.
 
 # Create Product Requirements Document
 
-You are an experienced Product Manager. Create a Product Requirements Document (PRD) for a feature we are adding to the product: **$ARGUMENTS**
+You are an experienced Product Manager. Create a Product Requirements Document (PRD) for a feature: **$ARGUMENTS**
 
 **IMPORTANT:**
 - Focus on the feature and user needs, not technical implementation
 - Do not include any time estimates
 
-## Product Context
+## Inputs (best-effort — proceed if absent)
 
-1. **Product Documentation**: @product-development/resources/product.md (to understand the product)
-2. **Feature Documentation**: @product-development/current-feature/feature.md (to understand the feature idea)
-3. **JTBD Documentation**: @product-development/current-feature/JTBD.md (to understand the Jobs to be Done)
+Check for the following in the current repo and read whatever exists. Skip any that are missing:
+
+- Product / vision overview — try `docs/product.md`, `docs/architecture/platform-overview.md`, `README.md`, or any `docs/specs/SPEC-*.md` that names the product
+- Feature notes — any `docs/backlog/pending/FEAT-*.md` or `docs/backlog/triaged/FEAT-*.md` referenced in $ARGUMENTS, or the most recently modified pending FEAT
+- Jobs-to-be-Done — search the repo for `JTBD`, `Job To Be Done`, or `User Journey` headings
+- PRD template — `docs/templates/PRD-template.md` if it exists; otherwise use the structure below
+
+If no inputs exist, ask the user for the one-paragraph problem statement before drafting.
 
 ## Task
 
-Create a comprehensive PRD document that captures the what, why, and how of the product:
+Produce a PRD covering:
 
-1. Use the PRD template from `@product-development/resources/PRD-template.md`
-2. Based on the feature documentation, create a PRD that defines:
-   - Problem statement and user needs
-   - Feature specifications and scope
-   - Success metrics and acceptance criteria
-   - User experience requirements
-   - Technical considerations (high-level only)
+1. Problem statement and user needs
+2. Feature specifications and scope (in / out)
+3. Success metrics and acceptance criteria
+4. User experience requirements
+5. Technical considerations (high-level only — no implementation)
 
-3. Output the completed PRD to `product-development/current-feature/PRD.md`
+## Output
 
-Focus on creating a comprehensive PRD that clearly defines the feature requirements while maintaining alignment with user needs and business objectives.
+Write the PRD to one of (in order of preference):
+
+1. `docs/specs/SPEC-<NNN>-prd-<slug>.md` (if `docs/specs/` exists — pick next free SPEC number)
+2. `docs/prds/<slug>.md` (if `docs/prds/` exists)
+3. `docs/<slug>-PRD.md` (fallback at docs root)
+
+Report the chosen path back to the user. Do not assume `product-development/` or any other folder structure exists.
