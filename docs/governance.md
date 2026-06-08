@@ -124,7 +124,7 @@ The following agent prompt files are declared `autonomous_safe: false` and requi
 
 The reviewer must not be the same person (or agent session) that authored the change. A human must approve before any of these files are merged to `main`.
 
-All other agent prompts (`builder`, `reviewer`, `validator`, `deployer`, `researcher`) follow the same policy — they are also `autonomous_safe: false` because they define team trust boundaries (review independence, validation evidence, deployment gates).
+All other agent prompts (`builder`, `reviewer`, `validator`, `deployer`, `researcher`, `refactor`) follow the same policy — they are also `autonomous_safe: false` because they define team trust boundaries (review independence, validation evidence, deployment gates).
 
 ---
 

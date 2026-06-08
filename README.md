@@ -8,7 +8,7 @@ A Claude Code plugin for lead-guided engineering work with bounded subagents, qu
 
 ## What it does
 
-Crew gives Claude Code a lead-centered workflow model with **9 first-party agents** across 3 tiers:
+Crew gives Claude Code a lead-centered workflow model with **12 first-party agents** across 3 tiers:
 
 **Core workflow agents:**
 - **lead** — plans, delegates, synthesizes, paces
@@ -275,7 +275,7 @@ Do **not** commit transient coordination state:
 ## Project structure
 
 ```
-agents/          — 9 first-party agents: lead, builder, reviewer, researcher, validator, deployer, architect, uxdesigner, copywriter
+agents/          — 12 first-party agents: lead, builder, builder-fe, builder-be, reviewer, validator, deployer, integrator, researcher, architect, uxdesigner, refactor
 agents/3rdparty/ — 21 vendored specialist agents (delegated to by architect, uxdesigner, copywriter)
 commands/        — small public surface plus internal/debug commands
 skills/          — 34 skills across universal/, workflow/, domain/, meta/ tiers
