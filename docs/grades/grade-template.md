@@ -15,6 +15,7 @@ scores:
   security: 0
   test_confidence: 0
   product_completeness: 0
+review_rebound_count: 0   # number of /crew:fix → /crew:review cycles before review passed
 decisions: []
 ---
 # SLICE-NN: <title> — Grade
@@ -31,6 +32,14 @@ decisions: []
 
 (Update both the frontmatter `scores:` map and this list. The frontmatter
 is what plugin commands read; the list is for human review.)
+
+## Rebound Count
+
+- review_rebound_count: 0
+
+(Non-negative integer. Count the number of /crew:fix → /crew:review cycles
+that were needed before review passed. 0 = passed on first review.
+Update the frontmatter `review_rebound_count` field to match.)
 
 ## Lessons
 
