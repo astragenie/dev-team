@@ -46,10 +46,9 @@ jobs:
       - name: Validate synthesis artifacts (advisory)
         continue-on-error: true
         run: node ./scripts/validate-syntheses.ts
-      - name: Validate routing-table skill IDs (advisory)
+      - name: Validate routing-table skill IDs
         env:
           CREW_VALIDATE_ROUTING_TABLE: "1"
-        continue-on-error: true
         run: node ./scripts/validate-routing-table.ts
       - run: npm run lint
       - run: npm run format:check

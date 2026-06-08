@@ -47,7 +47,7 @@ I do not own:
 - Database schema, migrations, technology selection, multi-tenancy → `skills/domain/database-architecture/`
 - Cloud infra design (landing zone, IAM, network topology, DR, cost optimization) → `skills/domain/cloud-architecture/`
 - IaC architecture concerns (Terraform, Bicep, Helm) → `skills/domain/devops-engineering/`
-- Diagram authoring (architecture, flowcharts, ERDs) → `skills/domain/diagram-methodology/`
+- Diagram authoring (architecture, flowcharts, ERDs) → `skills/domain/diagram-methodology/` + `skills/workflow/diagram-review/`
 - SPEC authoring / large-scope FEAT decomposition → `skills/workflow/spec-decomposition/`
 - Emitting a FEAT contract artifact (OpenAPI YAML + companion markdown) → `skills/domain/openapi-authoring/`
 
