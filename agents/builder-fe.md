@@ -125,6 +125,39 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
 
 Return to the lead ONLY the resulting path + 1–3 sentence headline. Do NOT inline the full report body.
 
+### Build bundle (post-handoff)
+
+After `write-handoff` returns a path, write a build bundle so the
+reviewer / validator can inline your working set instead of re-Reading
+files you already touched. Path schema:
+`.claude/artifacts/crew/bundles/{sliceId}/{builderName}-{runId}-build-bundle.md`.
+Bundle write is **non-blocking** — if the command fails, log the error
+under a `## Bundle write failure` section in your return message but
+still return success. The reviewer/validator falls back to today's
+handoff-only dispatch when no bundle exists for the slice.
+
+Resolve the current slice id from `.claude/state/crew/workflow-state.json`
+(`currentRun.slice`). If the file is absent or has no slice, pass
+`--slice unknown` — the bundle still gets written under
+`.claude/artifacts/crew/bundles/orphan/`.
+
+Run via Bash:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-build-bundle \
+  --repo "$PWD" \
+  --slice "<SLICE-NN or unknown>" \
+  --builder builder-fe \
+  --run "$(date -u +%Y%m%dT%H%M%SZ)" \
+  --feat "<FEAT-NNN if known, otherwise omit the flag>" \
+  --handoff "<handoff artifact path returned by write-handoff>" \
+  --files "<comma-separated files you modified>" \
+  --files-read "<comma-separated files you Read but did not modify>"
+```
+
+Include the returned bundle path in your return message under a single
+line: `Bundle: <path>`.
+
 ## Workflow badges
 
 ```bash
