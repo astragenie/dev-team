@@ -46,7 +46,7 @@ If you discover a needed cross-cutting change, surface it to the lead and stop.
 - TS code change → `skills/domain/typescript-pro/`
 - Frontend code change → `skills/domain/frontend-advisory/`
 - Regenerating orval clients + openapi-msw handlers from the OpenAPI YAML → `skills/domain/contract-codegen/` (FE recipes)
-- FEAT `concern:accessibility` → `skills/domain/a11y-advisory/` (when present)
+- FEAT `concern:accessibility` → `skills/domain/ux-methodology/references/accessibility.md`
 - FEAT `concern:ux` → re-read the UX spec before designing
 - Authoring a git commit message → `skills/workflow/git-commit/`
 
