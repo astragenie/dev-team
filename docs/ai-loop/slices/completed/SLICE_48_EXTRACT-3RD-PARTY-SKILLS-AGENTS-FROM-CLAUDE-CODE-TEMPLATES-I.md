@@ -1,17 +1,18 @@
 ---
 id: SLICE-48
-status: pending
-feature: FEAT-122
+status: completed
+feature: FEAT-126
 phase: null
 priority: P2
 target_release: null
 requires_validation: false
 created: 2026-06-08
 updated: 2026-06-08
+completed_at: 2026-06-08
 ---
 # SLICE-48: Import 3 missing 3rd-party agents (mobile-developer, deployment-engineer, mcp-expert)
 
-Implements FEAT-122 part A. See [feature file](../../../backlog/in-progress/FEAT-122.md) for product context.
+Implements FEAT-126 part A. See [feature file](../../../backlog/in-progress/FEAT-126.md) for product context.
 
 ## Objective
 
@@ -46,7 +47,7 @@ Import 3 agents not currently in `agents/3rdparty/`, sourced from claude-code-te
 
 - all acceptance criteria PASS with evidence per `01-loop-control/EVIDENCE_RULES.md`
 - build / test commands per `.claude/loop.json` pass
-- feature FEAT-122 NOT moved (still in-progress — SLICE-49 + SLICE-50 outstanding)
+- feature FEAT-126 NOT moved (still in-progress — SLICE-49 + SLICE-50 outstanding)
 - Crew `final-synthesis` artifact written
 - `requires_validation: false` (no observable behavior change — purely additive files for future dispatch)
 

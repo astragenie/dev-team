@@ -1,7 +1,7 @@
 ---
 id: SLICE-49
 status: pending
-feature: FEAT-122
+feature: FEAT-126
 phase: null
 priority: P2
 target_release: null
@@ -11,7 +11,7 @@ updated: 2026-06-08
 ---
 # SLICE-49: Import 5 missing 3rd-party skills (frontend-design, tailwind-patterns, mobile-design, docker-expert, webapp-testing)
 
-Implements FEAT-122 part B. See [feature file](../../../backlog/in-progress/FEAT-122.md) for product context.
+Implements FEAT-126 part B. See [feature file](../../../backlog/in-progress/FEAT-126.md) for product context.
 
 ## Objective
 
@@ -49,7 +49,7 @@ Import 5 skills not currently in `skills/`, sourced from claude-code-templates +
 
 - all acceptance criteria PASS with evidence per `01-loop-control/EVIDENCE_RULES.md`
 - build / test commands per `.claude/loop.json` pass
-- feature FEAT-122 NOT moved (still in-progress — SLICE-50 outstanding)
+- feature FEAT-126 NOT moved (still in-progress — SLICE-50 outstanding)
 - Crew `final-synthesis` artifact written
 - `requires_validation: false` (additive skill files, no runtime behavior change)
 

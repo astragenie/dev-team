@@ -1,5 +1,5 @@
 ---
-id: FEAT-122
+id: FEAT-126
 status: in-progress
 priority: P2
 category: tech-debt
@@ -18,7 +18,9 @@ autonomous_safe: false
 triage_notes: "category inferred as tech-debt from body content; priority inferred as P2 from body content; autonomous_safe inferred: AC count=0, derived_from=null → false"
 started_at: 2026-06-08
 ---
-# FEAT-122: Extract 3rd-party skills + agents from claude-code-templates into skills/ and agents/3rdparty/
+# FEAT-126: Extract 3rd-party skills + agents from claude-code-templates into skills/ and agents/3rdparty/
+
+> **ID note:** initially created as FEAT-122 by loop CLI 0.28.0 which doesn't read `loop.backlogRoot` from `.claude/loop.json` and computed next id from `.claude/artifacts/loop/backlog/` only. Collided with pre-existing FEAT-122 (TS Phase 5 ESLint ratchet). Renamed to FEAT-126 (next free across both trees). Earlier commits referencing FEAT-122 in messages refer to this work.
 
 Bulk-import community skills, agents, and commands from claude-code-templates (and aitmpl.com) into this repo. After dedup against existing `agents/3rdparty/` and `skills/`, only the gap items below need import.
 
