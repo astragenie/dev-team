@@ -87,83 +87,15 @@ const FLAG_SPEC = {
   "--validator": { key: "validator" },
   "--verdict": { key: "decision" }, // alias of --decision
   "--verified-from": { key: "verifiedFrom" }
-};
+} as const;
 
-interface Flags {
-  repo: string;
-  allowExisting: boolean;
-  help: boolean;
-  force: boolean;
-  noSelf: boolean;
-  nonCode: boolean;
-  repoContext: boolean;
-  aggregateAll: boolean;
-  alerts: string | null;
-  approver: string | null;
-  badge: string | null;
-  blockedBy: string | null;
-  build: string | null;
-  clues: string | null;
-  commitPattern: string | null;
-  completedAt: string | null;
-  confidence: string | null;
-  decision: string | null;
-  deliverable: string | null;
-  deploy: string | null;
-  deployer: string | null;
-  discoveryStatus: string | null;
-  environment: string | null;
-  environments: string | null;
-  evidence: string | null;
-  externalDeltas: string | null;
-  extraRoot: string | null;
-  feature: string | null;
-  files: string | null;
-  findings: string | null;
-  from: string | null;
-  goal: string | null;
-  id: string | null;
-  kind: string | null;
-  logs: string | null;
-  metrics: string | null;
-  missing: string | null;
-  mode: string | null;
-  next: string | null;
-  note: string | null;
-  outOfScope: string | null;
-  owner: string | null;
-  pace: string | null;
-  phase: string | null;
-  preset: string | null;
-  reason: string | null;
-  refreshWhen: string | null;
-  requester: string | null;
-  resolver: string | null;
-  resource: string | null;
-  revision: string | null;
-  reviewer: string | null;
-  reviewerLabel: string | null;
-  risks: string | null;
-  runSteps: string | null;
-  runTitle: string | null;
-  scope: string | null;
-  severity: string | null;
-  sourceProject: string | null;
-  startedAt: string | null;
-  status: string | null;
-  summary: string | null;
-  telemetry: string | null;
-  testSummary: string | null;
-  testSummarySkipReason: string | null;
-  validationEvidence: string | null;
-  title: string | null;
-  to: string | null;
-  triggerFilename: string | null;
-  url: string | null;
-  validator: string | null;
-  verifiedFrom: string | null;
-  [key: string]: string | boolean | null;
-}
+type FlagSpecValues = (typeof FLAG_SPEC)[keyof typeof FLAG_SPEC];
+type FlagKey = FlagSpecValues["key"];
+type Flags = {
+  [K in FlagKey]: Extract<FlagSpecValues, { key: K }> extends { boolean: true }
+    ? boolean
+    : string | null;
+} & { repo: string } & { [key: string]: string | boolean | null };
 
 function parseArgs(argv: string[]) {
   const [command, ...rest] = argv;
