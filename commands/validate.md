@@ -15,6 +15,9 @@ Expected shape:
 1. verify the repo and read bounded wake-up context
 2. identify the scenario, flow, or environment to validate
 3. if the validation scenario is substantial, write a validation plan
+3a. preload builder context (build bundle): resolve the current slice id from `.claude/state/crew/workflow-state.json` (`currentRun.slice`) and call:
+   - `node -e 'import("./scripts/lib/build-bundle/inline.ts").then(m => m.inlineLatestBundle({ sliceId: process.argv[1] })).then(s => process.stdout.write(s))' "<SLICE-NN>"`
+   If the returned string is non-empty, include it verbatim in the validator dispatch prompt **before** the role-specific task body. If empty, dispatch the validator without preload (today's behavior) — bundle inline is non-blocking. The header inside the bundle (`## Builder context (preloaded — do not re-Read these files)`) is your signal to the validator that those files do not need to be re-Read.
 4. run the validation checks and collect evidence
 5. write the validation result and update workflow state immediately when validation materially completes
 6. return pass/fail evidence, residual risk, and the next recommended step
