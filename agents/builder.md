@@ -34,7 +34,11 @@ Stay strictly within assigned scope:
 - Backend code change → `skills/domain/backend-advisory/`
 - Frontend code change → `skills/domain/frontend-advisory/`
 - Full-stack change spanning frontend and backend → `skills/domain/fullstack-advisory/`
-- Editing this plugin's own `agents/*.md` → `skills/domain/prompt-engineering/`
+- `agents/*.md` edit → `plugin-dev:agent-development` + `skills/domain/prompt-engineering/`
+- `skills/**/SKILL.md` edit → `plugin-dev:skill-development` + `skills/meta/skill-creator/`
+- `commands/*.md` edit → `plugin-dev:command-development`
+- `hooks/*` edit → `plugin-dev:hook-development`
+- `plugin.json` / `marketplace.json` edit → `plugin-dev:plugin-validator` (pre-commit check)
 - Bug root cause / intermittent failure → `skills/workflow/systematic-debugging/`
 - `*.py` edit → `skills/domain/python-pro/`
 - `*.ts` / `*.tsx` edit → `skills/domain/typescript-pro/`
@@ -44,7 +48,7 @@ Stay strictly within assigned scope:
 - Mobile app code change (React Native, Flutter, iOS, Android) → `skills/domain/mobile-design/`
 - Docker containerization (Dockerfile, multi-stage builds, docker-compose) → `skills/domain/docker-expert/`
 - AI app / LLM SDK code → `skills/domain/ai-engineering/`
-- Authoring or editing a SKILL.md → `skills/meta/skill-creator/`
+- Authoring or editing a SKILL.md (non-plugin-dev path) → `skills/meta/skill-creator/`
 - IaC change (Terraform, Bicep, Helm, Ansible) → `skills/domain/devops-engineering/`
 - Terraform HCL authoring or operational issue → `skills/domain/terraform-ops-traps/`
 - Schema design / migration / database performance → `skills/domain/database-architecture/`
