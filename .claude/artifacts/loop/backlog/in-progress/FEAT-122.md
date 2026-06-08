@@ -1,13 +1,13 @@
 ---
 id: FEAT-122
-status: triaged
+status: in-progress
 priority: P2
 category: tech-debt
 target_release: null
 created: 2026-06-08
 updated: 2026-06-08
 depends_on: []
-slices: []
+slices: [SLICE-48, SLICE-49, SLICE-50]
 derived_from: null
 pm_customer_impact: 0.5
 pm_effort_estimate: 0.5
@@ -16,6 +16,7 @@ pm_technical_risk: 0.5
 pm_dependency_depth: 0.5
 autonomous_safe: false
 triage_notes: "category inferred as tech-debt from body content; priority inferred as P2 from body content; autonomous_safe inferred: AC count=0, derived_from=null → false"
+started_at: 2026-06-08
 ---
 # FEAT-122: Extract 3rd-party skills + agents from claude-code-templates into skills/ and agents/3rdparty/
 
