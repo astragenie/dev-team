@@ -3,19 +3,22 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
-## [Unreleased]
+## v0.23.0 — 2026-06-08 — refactor agent, ESLint ratchet, diagram POC, builder plugin-dev wiring
 
 ### Added
 
-- **feat(FEAT-123):** Diagram authoring POC — auto-pick decision tree added to `diagram-methodology` skill; 7 Mermaid template stubs (C4×2, sequence, ERD, state, flowchart, ADR); new `diagram-review` skill covering syntax/slop/clarity; routing-table row for diagram authoring.
+- **feat(crew:refactor):** New first-class quality-sweep agent — scans for stale refs, complexity cap violations, and manifest consistency drift; fixes directly; writes `.claude/artifacts/crew/quality/` artifact before committing. Hard stop at >20 files. Skills routing: 10-entry trigger-condition table covering full-stack consumer repos (TS, React, C#, SQL, Python) with `reviewing-code` safety gate.
+- **feat(FEAT-123):** Diagram authoring POC — auto-pick decision tree in `diagram-methodology` skill; 7 Mermaid template stubs (C4×2, sequence, ERD, state, flowchart, ADR); new `skills/workflow/diagram-review/` skill covering syntax/slop/clarity; routing-table row.
+- **feat(FEAT-125):** plugin-dev review skills formally wired into `crew:reviewer` — `plugin-dev:plugin-validator` required on plugin shape changes, `plugin-dev:skill-reviewer` required on skill shape changes.
+- **feat(builder):** plugin-dev skills wired by file pattern — `agents/*.md` → `plugin-dev:agent-development`, `skills/**/SKILL.md` → `plugin-dev:skill-development`, `commands/*.md` → `plugin-dev:command-development`, `hooks/*` → `plugin-dev:hook-development`, manifest edits → `plugin-dev:plugin-validator`. Works across all plugin repos, not just hero-crew.
+
+### Changed
+
+- **feat(FEAT-122):** ESLint Phase 5 ratchet — complexity ≤10, max-lines-per-function ≤30, max-lines ≤300 repo-wide; 4 violations waived with rationale comments.
 
 ## v0.22.0 — 2026-06-08 — 3rd-party skill/agent imports, Go removal, ref fixes (FEAT-126)
 
 ### Added
-
-- **feat(FEAT-122):** ESLint Phase 5 ratchet — complexity ≤10, max-lines-per-function ≤30, max-lines ≤300 repo-wide; 4 violations waived with rationale.
-
-- **feat(FEAT-125):** plugin-dev review skills formally wired into `crew:reviewer` — `plugin-dev:plugin-validator` required on plugin shape changes, `plugin-dev:skill-reviewer` required on skill shape changes. Design doc at `docs/superpowers/specs/2026-06-08-feat125-plugin-dev-skills-wiring-design.md`. (Routing implemented under FEAT-017; FEAT-125 closes the design-doc + acceptance-criteria trail.)
 
 **`agents/3rdparty/` — 3 new agents (FEAT-126)**
 
