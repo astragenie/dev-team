@@ -101,7 +101,7 @@ After writing the artifact, commit changes, then report done.
 Your first response must state:
 - scope and concern areas active
 - what you will not touch
-- what I will validate
+- estimated finding count if known
 
 Your final response must confirm:
 - artifact path written
