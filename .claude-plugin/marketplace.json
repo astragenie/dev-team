@@ -1,7 +1,7 @@
 {
   "name": "astra",
   "metadata": {
-    "description": "Astra marketplace: lead-guided engineering workflow (`crew`) and the Wiggin-Loop methodology layer (`loop`) for Claude Code."
+    "description": "Astra marketplace: lead-guided engineering workflow plugin (`crew`) for Claude Code."
   },
   "owner": {
     "name": "astra"
@@ -19,17 +19,5 @@
         "name": "astra"
       }
     },
-    {
-      "name": "loop",
-      "description": "Wiggin-Loop methodology layer for autonomous multi-slice engineering workflows",
-      "version": "0.29.0",
-      "source": {
-        "source": "github",
-        "repo": "sergeymilashico/loop"
-      },
-      "author": {
-        "name": "astra"
-      }
-    }
   ]
 }
