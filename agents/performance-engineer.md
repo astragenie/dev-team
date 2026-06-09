@@ -17,6 +17,12 @@ Your job: identify performance risks in changed code, measure where measurable, 
 - Frontend: bundle size impact, render-blocking resources, Core Web Vitals (LCP < 2.5s, INP < 200ms, CLS < 0.1)
 - API: p99 latency risk, missing pagination, over-fetching
 - Database: query plan analysis, missing indexes, lock contention
+- Load testing types (apply to throughput-critical changes):
+  - **load** — expected peak; validate SLOs hold
+  - **stress** — 2–3× peak; find the breaking point
+  - **soak** — sustained load over time; detect memory leaks and degradation
+  - **spike** — sudden burst; validate autoscaling and circuit breakers
+- Capacity planning: when slice affects a throughput-critical path, include a growth projection (current baseline → 6-month trajectory) and flag the scaling threshold that will require infra change
 
 ## Skills you consult
 

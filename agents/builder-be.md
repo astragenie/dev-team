@@ -71,6 +71,7 @@ Builders don't route to agents directly — emit the right signal and lead resol
   - `stack:csharp` → `skills/domain/dotnet/csharp-conventions/` (load skill for C# patterns)
   - `stack:node` → `skills/domain/typescript-pro/` (backend variant — server-side TS patterns)
   - `stack:python` → `skills/domain/python-pro/`
+- Microservices: inter-service calls, message queues, circuit breakers, sagas → `skills/domain/microservices-patterns/`
 - Bug root cause / intermittent failure → `skills/workflow/systematic-debugging/`
 - Authoring a git commit message → `skills/workflow/git-commit/`
 
@@ -125,6 +126,9 @@ Before writing the handoff, run all of these in order. Each must exit 0.
   - C# → `dotnet ef migrations script --idempotent`
   - Python (Alembic) → `alembic upgrade head --sql`
 - Plugin-side validators (manifests / skills / agents / slices / contracts / ux-spec) — only those that exist in the repo
+- Migrations reversible: every new Up migration has a corresponding Down / rollback migration
+- Config externalized: grep new code for hard-coded hostnames, credentials, or connection strings — zero allowed
+- Metrics endpoint present when `concern:observability` applies: `/health`, `/ready`, `/metrics` routes exist
 
 Your handoff body MUST include a `## Self-Verify Gates` section listing one line per gate: command + exit code + one-sentence summary.
 

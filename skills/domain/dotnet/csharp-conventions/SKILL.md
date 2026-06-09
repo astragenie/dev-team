@@ -75,6 +75,29 @@ Dependency direction: **Api → Application → Domain ← Infrastructure**. Dom
 
 **Banned:** `AutoMapper` (use Mapperly), `Newtonsoft.Json` (use STJ), `Moq` (use NSubstitute), `EFCore.InMemory` (use Testcontainers), generic `IRepository<T>`.
 
+## CQRS + Event Sourcing patterns
+
+Use when `stack:csharp` slice involves command/query separation or event-driven state:
+
+**CQRS basics**
+- Commands (write) and Queries (read) are separate handler classes — never mixed
+- Commands return `Result<T, E>` (no return value for fire-and-forget commands)
+- Queries return DTOs — never domain entities
+- Use `MediatR` only when ≥ 5 handlers share a pipeline (global validation, logging, auth); otherwise plain interfaces
+- Command handlers live in `Application/`; query handlers may use optimised read-store queries directly
+
+**Event Sourcing** (opt-in — use only when audit trail or temporal replay is a hard requirement)
+- Aggregate state is rebuilt from a stream of domain events, not from a snapshot column
+- Events are immutable, named in past tense: `OrderPlaced`, `ItemShipped`
+- Projections rebuild read models from the event stream — they are eventually consistent
+- `EventStoreDB` or `Marten` (PostgreSQL) are the approved event stores; no ad-hoc `EventLog` table
+
+**BDD test naming** (applies to all C# test projects, not just event-sourcing)
+- Use `[Fact]` for single-scenario tests; name as `Method_Condition_ExpectedBehavior`
+- Use `[Theory]` for data-driven variations; combine with `FluentAssertions` for readable assertions
+- `SpecFlow` is allowed for user-facing acceptance tests when product owner writes Gherkin; do NOT add it for developer unit tests
+- All tests use `xUnit` + `NSubstitute` + `FluentAssertions` — no Moq, no MSTest
+
 ## Example — typed Result
 
 ```csharp

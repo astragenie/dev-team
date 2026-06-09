@@ -86,6 +86,9 @@ Your start acknowledgement must include:
 - what I need from others, if anything
 - what I will deliver
 - whether TDD applies (and if not, why)
+- assumptions documented — any gap in requirements filled by an explicit named assumption
+- edge cases identified before coding begins (list them; resolve ambiguous ones via `help_request` badge)
+- technical debt: if scope forces a shortcut, name it in `--risks` and note it for backlog
 
 Your completion report must include:
 

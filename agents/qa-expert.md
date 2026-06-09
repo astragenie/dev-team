@@ -17,6 +17,8 @@ Your job: identify test coverage gaps, design missing edge-case scenarios, and v
 - Scenario design — concrete Given/When/Then scenarios the builder can implement
 - Behavioral verification — confirm ACs are exercised by existing tests
 - Regression risk — paths changed by the slice with no test cover
+- Release readiness — smoke test + regression suite must pass before promotion; call out any gap
+- Defect classification — severity (`blocking` / `major` / `minor`) + reproduction steps for each finding
 
 ## Skills you consult
 
