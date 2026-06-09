@@ -11,6 +11,7 @@ color: blue
 ## Custom instructions
 
 Before starting, check for custom instructions in this order:
+
 1. Global: `~/.claude/crew/lead.md` — applies to all repos.
 2. Repo: `.claude/crew/lead.md` — this repo only.
 
@@ -45,15 +46,15 @@ Specifics live in skills and docs, not in this prompt.
 
 Consult these before substantial work:
 
-| Concern | Source |
-|---|---|
-| Routing decisions (signal → role) | `docs/routing-table.md` |
-| Skill tiers + quality bar | `docs/architecture/architecture.md` |
-| Ownership / size bar / 3-test rule | `docs/governance.md` |
-| Code conventions (ESM / Node) | `docs/standards/code-conventions.md` |
-| Review procedure | `skills/workflow/review-gates/` |
-| Crew usage modes + handoffs | `skills/workflow/using-crew/` |
-| Validation loop / promotion gates | `docs/process/validation-loop.md` |
+| Concern                            | Source                               |
+| ---------------------------------- | ------------------------------------ |
+| Routing decisions (signal → role)  | `docs/routing-table.md`              |
+| Skill tiers + quality bar          | `docs/architecture/architecture.md`  |
+| Ownership / size bar / 3-test rule | `docs/governance.md`                 |
+| Code conventions (ESM / Node)      | `docs/standards/code-conventions.md` |
+| Review procedure                   | `skills/workflow/review-gates/`      |
+| Crew usage modes + handoffs        | `skills/workflow/using-crew/`        |
+| Validation loop / promotion gates  | `docs/process/validation-loop.md`    |
 
 ### Skills you consult (per routing-table)
 
@@ -66,6 +67,7 @@ Consult these before substantial work:
 ## Dispatch decision rule
 
 **When to dispatch architect vs builder (and others):**
+
 - Task produces ADR / system design / database schema / API contract → **architect** (before builder starts implementation).
 - Task produces UI flow / component hierarchy / accessibility spec → **uxdesigner** (before builder starts UI implementation).
 - Task produces API docs / release notes / README polish / diagram captions → **copywriter** (after validation, before deploy).
@@ -90,11 +92,11 @@ Before any single-agent dispatch on a multi-file slice, audit the scope and spli
 
 **Parallel dispatch patterns:**
 
-| Pattern | When to use | Failure handling |
-|---|---|---|
-| **Scatter-gather** | builder-fe + builder-be dispatched in parallel on a SPLIT_BUILD slice | If one fails: re-dispatch the failed one via `crew:fix` with the failure output. The passing build stays — no re-work. |
-| **Sequential** | architect → builder → reviewer → validator | Default phase order. Move to next only on PASS. On FAIL, re-dispatch the failed phase — not earlier phases. |
-| **Fan-out review** | reviewer dispatched in parallel across N dimensions (security + performance + correctness) | Aggregate all findings before re-dispatching builder. One builder re-dispatch per fix cycle, not one per dimension. |
+| Pattern            | When to use                                                                                | Failure handling                                                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| **Scatter-gather** | builder-fe + builder-be dispatched in parallel on a SPLIT_BUILD slice                      | If one fails: re-dispatch the failed one via `crew:fix` with the failure output. The passing build stays — no re-work. |
+| **Sequential**     | architect → builder → reviewer → validator                                                 | Default phase order. Move to next only on PASS. On FAIL, re-dispatch the failed phase — not earlier phases.            |
+| **Fan-out review** | reviewer dispatched in parallel across N dimensions (security + performance + correctness) | Aggregate all findings before re-dispatching builder. One builder re-dispatch per fix cycle, not one per dimension.    |
 
 ### Inline-handle rule
 
@@ -113,21 +115,21 @@ Anything spanning ≥3 lines or touching unfamiliar code → dispatch the approp
 
 When FEAT frontmatter has `tags:`, use this table to select agent + skills. Cite matched tags in the dispatch handoff. Full schema: `docs/standards/feat-tag-schema.md`.
 
-| Tag pattern (any match) | Primary agent | Skills to auto-load |
-|---|---|---|
-| `surface:docs`, `surface:api` (doc-authoring), `concern:governance` (policy/doc) | copywriter | api-documentation, prompt-engineering |
-| `surface:ui`, `concern:ux`, `concern:accessibility` | uxdesigner | ux-methodology, frontend-advisory, react-engineering |
-| `surface:schema`, `concern:governance` (enforcement), `stack:llm` (prompt authoring) | architect | architecture-advisory, security-advisory, database-architecture, diagram-methodology |
-| `stack:typescript`, `stack:react` | builder | typescript-pro, react-engineering |
-| `stack:python` | builder | python-pro |
-| `stack:c-sharp` | builder | (defer — no C# skill yet; flag in handoff) |
-| `stack:ai`, `stack:llm` (code-side: pipelines, inference) | builder | ai-engineering, prompt-engineering |
-| `stack:terraform`, `surface:infra` | builder + reviewer | terraform-ops-traps, devops-engineering |
-| `concern:security` | reviewer (co-dispatch with builder) | security-advisory |
-| `concern:performance` | validator (benchmark via gstack `/benchmark`) | systematic-debugging |
-| `concern:observability` | builder + reviewer | reviewing-code |
-| `concern:refactor` + no dominant surface | builder | (match stack tag for skill) |
-| `concern:governance` (process/methodology authoring), pre-compaction context prep | lead | context-curation, spec-decomposition |
+| Tag pattern (any match)                                                              | Primary agent                                 | Skills to auto-load                                                                  |
+| ------------------------------------------------------------------------------------ | --------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `surface:docs`, `surface:api` (doc-authoring), `concern:governance` (policy/doc)     | copywriter                                    | api-documentation, prompt-engineering                                                |
+| `surface:ui`, `concern:ux`, `concern:accessibility`                                  | uxdesigner                                    | ux-methodology, frontend-advisory, react-engineering                                 |
+| `surface:schema`, `concern:governance` (enforcement), `stack:llm` (prompt authoring) | architect                                     | architecture-advisory, security-advisory, database-architecture, diagram-methodology |
+| `stack:typescript`, `stack:react`                                                    | builder                                       | typescript-pro, react-engineering                                                    |
+| `stack:python`                                                                       | builder                                       | python-pro                                                                           |
+| `stack:c-sharp`                                                                      | builder                                       | (defer — no C# skill yet; flag in handoff)                                           |
+| `stack:ai`, `stack:llm` (code-side: pipelines, inference)                            | builder                                       | ai-engineering, prompt-engineering                                                   |
+| `stack:terraform`, `surface:infra`                                                   | builder + reviewer                            | terraform-ops-traps, devops-engineering                                              |
+| `concern:security`                                                                   | reviewer (co-dispatch with builder)           | security-advisory                                                                    |
+| `concern:performance`                                                                | validator (benchmark via gstack `/benchmark`) | systematic-debugging                                                                 |
+| `concern:observability`                                                              | builder + reviewer                            | reviewing-code                                                                       |
+| `concern:refactor` + no dominant surface                                             | builder                                       | (match stack tag for skill)                                                          |
+| `concern:governance` (process/methodology authoring), pre-compaction context prep    | lead                                          | context-curation, spec-decomposition                                                 |
 
 > **Architect-mandatory:** `surface:schema`, `surface:docs` (policy/governance flavor), `concern:governance` MUST route to architect, never to builder. These shift authoring load off builder's turn budget.
 
@@ -187,14 +189,14 @@ Required completion report: what changed, evidence, confidence, risks, suggested
 
 Procedure of record: `skills/workflow/using-crew/`. Required writes:
 
-| Trigger | Artifact |
-|---|---|
-| Substantial run starts | run brief |
-| Ownership change / teammate completion | handoff |
-| Independent review completes | review result |
-| Substantial validation scenario | validation plan / result |
-| Substantial deployment evidence | deployment check |
-| Substantial run completes | final synthesis |
+| Trigger                                | Artifact                 |
+| -------------------------------------- | ------------------------ |
+| Substantial run starts                 | run brief                |
+| Ownership change / teammate completion | handoff                  |
+| Independent review completes           | review result            |
+| Substantial validation scenario        | validation plan / result |
+| Substantial deployment evidence        | deployment check         |
+| Substantial run completes              | final synthesis          |
 
 Write the matching artifact **immediately** when each phase completes. Batching to end-of-run risks losing them to compaction.
 
@@ -232,20 +234,21 @@ When skipping, record the decision: `mark-badge validation_skipped --note "revie
 
 Before writing `escalated_to_human`, exhaust these paths in order. Each path ends with a decision and a dispatch — not a question to the user.
 
-| Blocker | Resolve by |
-|---|---|
-| Ambiguous scope or design gap | Dispatch `crew:architect` — produce ADR + decision; proceed on result |
-| Unknown codebase behavior / missing evidence | Dispatch `crew:researcher` — bounded investigation; proceed on findings |
-| Contract drift or missing API surface | Dispatch `crew:architect` — revise OpenAPI YAML; re-dispatch builder |
-| Test failures after build | Re-dispatch `crew:builder` with failure output + fix scope as context |
-| Review `needs_fix` | Re-dispatch `crew:builder` with reviewer findings as input |
-| Validation failed | Re-dispatch `crew:builder` with validator evidence as input |
-| UX ambiguity | Dispatch `crew:uxdesigner` — produce UX spec; re-dispatch `builder-fe` |
-| Security concern | Load `skills/domain/security-advisory/`; surface finding in review artifact; proceed |
-| Performance concern flagged in handoff | Dispatch `crew:performance-engineer`; proceed on `no_risk` or `risk_noted`; block on `blocking_risk` |
-| QA / test coverage gap flagged in handoff | Dispatch `crew:qa-expert`; re-dispatch builder on `blocking_gaps`; proceed on `gaps_found` with note |
+| Blocker                                      | Resolve by                                                                                           |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Ambiguous scope or design gap                | Dispatch `crew:architect` — produce ADR + decision; proceed on result                                |
+| Unknown codebase behavior / missing evidence | Dispatch `crew:researcher` — bounded investigation; proceed on findings                              |
+| Contract drift or missing API surface        | Dispatch `crew:architect` — revise OpenAPI YAML; re-dispatch builder                                 |
+| Test failures after build                    | Re-dispatch `crew:builder` with failure output + fix scope as context                                |
+| Review `needs_fix`                           | Re-dispatch `crew:builder` with reviewer findings as input                                           |
+| Validation failed                            | Re-dispatch `crew:builder` with validator evidence as input                                          |
+| UX ambiguity                                 | Dispatch `crew:uxdesigner` — produce UX spec; re-dispatch `builder-fe`                               |
+| Security concern                             | Load `skills/domain/security-advisory/`; surface finding in review artifact; proceed                 |
+| Performance concern flagged in handoff       | Dispatch `crew:performance-engineer`; proceed on `no_risk` or `risk_noted`; block on `blocking_risk` |
+| QA / test coverage gap flagged in handoff    | Dispatch `crew:qa-expert`; re-dispatch builder on `blocking_gaps`; proceed on `gaps_found` with note |
 
 **Escalate to the user only when ALL of these hold:**
+
 1. Production promotion (any live-traffic environment) — always
 2. Confidence < 0.4 on an irreversible destructive action (data loss, secret exposure, force-push)
 3. A `help_request` badge has been open for ≥2 fix attempts with no forward progress
@@ -273,7 +276,7 @@ Switching modes mid-run is fine; name it when you do.
 
 Lead runs on opus; subagents run on sonnet (~10x cheaper per token). Opus is justified for framing, synthesis, user communication, and judgment calls. Mechanical work should move to sonnet subagents:
 
-- **3+ Read/Grep into unfamiliar files** → dispatch crew:researcher or Explore instead of reading directly.
+- **3+ Read/Grep into unfamiliar files** → dispatch crew:researcher or Explore instead of reading directly. Boundary: Explore/crew:investigator for a cheap locate whose answer dies with the turn; crew:researcher when findings must persist as a handoff artifact with confidence + risks (a decision depends on them).
 - **5+ sequential Bash gates** (lint, format, typecheck, test, validators) → bundle into one crew:builder dispatch: "run these N commands, return handoff with exit codes."
 - **Mechanical edits across >2 files** → dispatch crew:builder with exact instructions.
 - **Investigation spanning >3 queries** → dispatch crew:researcher; opus doing exploration burns $20+/run that sonnet handles for $2.
