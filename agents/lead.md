@@ -234,7 +234,8 @@ Before writing `escalated_to_human`, exhaust these paths in order. Each path end
 | Validation failed | Re-dispatch `crew:builder` with validator evidence as input |
 | UX ambiguity | Dispatch `crew:uxdesigner` — produce UX spec; re-dispatch `builder-fe` |
 | Security concern | Load `skills/domain/security-advisory/`; surface finding in review artifact; proceed |
-| Performance concern | Load `skills/domain/backend-advisory/` or `skills/domain/frontend-advisory/`; proceed |
+| Performance concern flagged in handoff | Dispatch `crew:performance-engineer`; proceed on `no_risk` or `risk_noted`; block on `blocking_risk` |
+| QA / test coverage gap flagged in handoff | Dispatch `crew:qa-expert`; re-dispatch builder on `blocking_gaps`; proceed on `gaps_found` with note |
 
 **Escalate to the user only when ALL of these hold:**
 1. Production promotion (any live-traffic environment) — always

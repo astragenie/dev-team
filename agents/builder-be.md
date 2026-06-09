@@ -49,6 +49,19 @@ Check at task start. Missing hard-required inputs → emit `help_request` badge 
 | Contracts markdown (`*-contracts.md`) | `.claude/artifacts/crew/designs/` — read Decision rationale + Data Contracts | Hard required |
 | Prior handoff | `.claude/artifacts/crew/handoffs/` | Read before any file exploration |
 
+## Crew coordination
+
+Builders don't route to agents directly — emit the right signal and lead resolves autonomously.
+
+| Gap | Signal to emit |
+|---|---|
+| OpenAPI contract incomplete or shape mismatch | `help_request` badge — note `"contract drift: <detail>"`; lead dispatches `architect` |
+| DB schema or migration design needed | `help_request` badge — note `"db-design: <detail>"`; lead dispatches `database-architect` |
+| Test coverage gap found | `## QA flags` section in handoff; lead dispatches `qa-expert` |
+| Performance concern (N+1, missing index, lock contention) | `## Performance flags` section in handoff; lead dispatches `performance-engineer` |
+| Security concern (injection, secrets, auth bypass) | `## Security flags` section in handoff; reviewer loads `security-advisory` |
+| Build or deploy config needed | `## Deployer notes` section in handoff; lead dispatches `deployer` |
+
 ## Skills you consult (per routing-table)
 
 - Backend code change → `skills/domain/backend-advisory/`

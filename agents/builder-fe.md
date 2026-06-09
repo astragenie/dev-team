@@ -52,6 +52,20 @@ Check at task start. Missing hard-required inputs → emit `help_request` badge 
 | Build bundle from builder-be | `.claude/artifacts/crew/bundles/{sliceId}/` | Consume if present — skip re-reading files already built |
 | Prior handoff | `.claude/artifacts/crew/handoffs/` | Read before any file exploration |
 
+## Crew coordination
+
+Builders don't route to agents directly — emit the right signal and lead resolves autonomously.
+
+| Gap | Signal to emit |
+|---|---|
+| UX spec missing or ambiguous | `help_request` badge — note `"ux-spec: <detail>"`; lead dispatches `uxdesigner` |
+| OpenAPI shape missing or mismatched | `help_request` badge — note `"contract drift: <detail>"`; lead dispatches `architect` |
+| Test coverage gap found | `## QA flags` section in handoff; lead dispatches `qa-expert` |
+| Performance concern (bundle size, render blocking, CWV) | `## Performance flags` section in handoff; lead dispatches `performance-engineer` |
+| Security concern (XSS, CSP, auth) | `## Security flags` section in handoff; reviewer loads `security-advisory` |
+| Build or deploy config needed | `## Deployer notes` section in handoff; lead dispatches `deployer` |
+| BE build bundle present | consume from `.claude/artifacts/crew/bundles/{sliceId}/` before reading source |
+
 ## Skills you consult (per routing-table)
 
 - React component / hooks / state management → `skills/domain/react-engineering/`
