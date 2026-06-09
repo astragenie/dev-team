@@ -539,3 +539,604 @@ Expected: PASS
 git add src/scripts/lib/backlog-writer.mts src/tests/backlog.test.mts
 git commit -m "feat(contract): backlog writer validates FEAT frontmatter before write"
 ```
+
+### Task 5: `loop doctor --check`
+
+**Files:**
+- Create: `src/scripts/lib/doctor.mts`
+- Create: `src/tests/doctor.test.mts`
+- Modify: `src/scripts/loop.mts` (register `doctor` in `COMMANDS`)
+
+- [ ] **Step 1: Write the failing detection tests**
+
+```ts
+// src/tests/doctor.test.mts
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { runDoctor } from "../scripts/lib/doctor.mjs";
+
+const FEAT = (id: string, status: string) =>
+  `---\nid: ${id}\nstatus: ${status}\npriority: null\ncategory: bug\ntarget_release: null\ncreated: 2026-06-10\nupdated: 2026-06-10\ndepends_on: []\nslices: []\nderived_from: null\n---\n# ${id}: t\n`;
+
+async function makeRepo(): Promise<string> {
+  const repo = await fs.mkdtemp(path.join(os.tmpdir(), "loop-doctor-"));
+  await fs.mkdir(path.join(repo, ".claude/artifacts/loop/backlog/pending"), { recursive: true });
+  return repo;
+}
+
+test("clean repo: zero findings", async () => {
+  const repo = await makeRepo();
+  try {
+    await fs.writeFile(
+      path.join(repo, ".claude/artifacts/loop/backlog/pending/FEAT-001.md"),
+      FEAT("FEAT-001", "pending")
+    );
+    const { findings } = await runDoctor(repo, { fix: false });
+    assert.deepEqual(findings, []);
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
+});
+
+test("detects stray tree, id collision, and cross-tree contradiction", async () => {
+  const repo = await makeRepo();
+  try {
+    await fs.mkdir(path.join(repo, "docs/backlog/triaged"), { recursive: true });
+    // same id in both trees, different lifecycle state
+    await fs.writeFile(
+      path.join(repo, ".claude/artifacts/loop/backlog/pending/FEAT-001.md"),
+      FEAT("FEAT-001", "pending")
+    );
+    await fs.writeFile(path.join(repo, "docs/backlog/triaged/FEAT-001.md"), FEAT("FEAT-001", "triaged"));
+    const { findings } = await runDoctor(repo, { fix: false });
+    const kinds = findings.map((f) => f.kind).sort();
+    assert.ok(kinds.includes("stray-tree"), kinds.join(","));
+    assert.ok(kinds.includes("id-collision"), kinds.join(","));
+    assert.ok(kinds.includes("state-contradiction"), kinds.join(","));
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
+});
+
+test("detects schema-invalid state file in authoritative tree", async () => {
+  const repo = await makeRepo();
+  try {
+    await fs.writeFile(
+      path.join(repo, ".claude/artifacts/loop/backlog/pending/FEAT-002.md"),
+      `---\nid: FEAT-002\nstatus: shipped\ncreated: 2026-06-10\ndepends_on: []\nslices: []\n---\nbody\n`
+    );
+    const { findings } = await runDoctor(repo, { fix: false });
+    assert.ok(findings.some((f) => f.kind === "schema-invalid" && f.path.includes("FEAT-002")));
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
+});
+
+test("detects config-vs-reality mismatch (configured root empty, default populated)", async () => {
+  const repo = await makeRepo();
+  try {
+    await fs.mkdir(path.join(repo, ".claude"), { recursive: true });
+    await fs.writeFile(
+      path.join(repo, ".claude/loop.json"),
+      JSON.stringify({ schemaVersion: 1, loop: { backlogRoot: "docs/backlog" } })
+    );
+    await fs.writeFile(
+      path.join(repo, ".claude/artifacts/loop/backlog/pending/FEAT-001.md"),
+      FEAT("FEAT-001", "pending")
+    );
+    const { findings } = await runDoctor(repo, { fix: false });
+    assert.ok(findings.some((f) => f.kind === "config-mismatch"));
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
+});
+```
+
+- [ ] **Step 2: Run to verify failure**
+
+Run: `npm run build && npm run build:tests && node --test tests/doctor.test.mjs`
+Expected: FAIL — module not found
+
+- [ ] **Step 3: Implement detection**
+
+```ts
+// src/scripts/lib/doctor.mts
+// Detect (and with --fix, repair) loop-state divergence: stray trees,
+// id collisions, schema-invalid files, config/reality mismatch,
+// cross-tree state contradictions. Detection never mutates.
+import fs from "node:fs/promises";
+import path from "node:path";
+import { resolveConfig } from "./config-resolver.mjs";
+import { backlogRoot, artifactRoot, pathExists } from "./paths.mjs";
+import { parseFrontmatter } from "./frontmatter.mjs";
+import { validateFeat } from "./state-schemas.mjs";
+
+export interface Finding {
+  kind: "stray-tree" | "id-collision" | "schema-invalid" | "config-mismatch" | "state-contradiction";
+  path: string;
+  detail: string;
+}
+
+const STATES = ["pending", "triaged", "in-progress", "done"];
+// Known historical locations a backlog tree can appear in.
+const LEGACY_ROOTS = ["docs/backlog", ".claude/artifacts/loop/backlog"];
+
+interface FeatEntry {
+  id: string;
+  state: string;
+  file: string;
+  fm: Record<string, unknown>;
+}
+
+async function scanTree(root: string): Promise<FeatEntry[]> {
+  const out: FeatEntry[] = [];
+  for (const state of STATES) {
+    const dir = path.join(root, state);
+    if (!(await pathExists(dir))) continue;
+    for (const f of await fs.readdir(dir)) {
+      if (!/^FEAT-\d+\.md$/.test(f)) continue;
+      const file = path.join(dir, f);
+      const { frontmatter } = parseFrontmatter(await fs.readFile(file, "utf8"));
+      out.push({ id: String(frontmatter.id ?? f.replace(".md", "")), state, file, fm: frontmatter });
+    }
+  }
+  return out;
+}
+
+async function treePopulated(root: string): Promise<boolean> {
+  return (await scanTree(root)).length > 0;
+}
+
+export async function runDoctor(
+  repoPath: string,
+  opts: { fix: boolean }
+): Promise<{ findings: Finding[]; reportPath: string | null }> {
+  const config = await resolveConfig(repoPath).catch(() => undefined);
+  const authoritative = path.resolve(backlogRoot(repoPath, config));
+  const findings: Finding[] = [];
+
+  // 1+5. stray trees + contradictions/collisions across trees
+  const authEntries = await scanTree(authoritative);
+  const authIds = new Map(authEntries.map((e) => [e.id, e]));
+  for (const legacy of LEGACY_ROOTS) {
+    const root = path.resolve(repoPath, legacy);
+    if (root === authoritative) continue;
+    if (!(await treePopulated(root))) continue;
+    findings.push({ kind: "stray-tree", path: root, detail: `populated backlog tree outside authoritative root ${authoritative}` });
+    for (const e of await scanTree(root)) {
+      const auth = authIds.get(e.id);
+      if (!auth) continue;
+      findings.push({ kind: "id-collision", path: e.file, detail: `${e.id} exists in both trees` });
+      if (auth.state !== e.state) {
+        findings.push({ kind: "state-contradiction", path: e.file, detail: `${e.id}: ${auth.state} (authoritative) vs ${e.state} (stray)` });
+      }
+    }
+  }
+
+  // 3. schema-invalid files in the authoritative tree
+  for (const e of authEntries) {
+    const check = validateFeat(e.fm);
+    if (!check.ok) {
+      findings.push({ kind: "schema-invalid", path: e.file, detail: check.issues.join("; ") });
+    }
+  }
+
+  // 4. config-vs-reality: configured root empty while another tree is populated
+  if (!(await treePopulated(authoritative))) {
+    for (const legacy of LEGACY_ROOTS) {
+      const root = path.resolve(repoPath, legacy);
+      if (root !== authoritative && (await treePopulated(root))) {
+        findings.push({ kind: "config-mismatch", path: authoritative, detail: `configured root is empty but ${root} is populated` });
+      }
+    }
+  }
+
+  let reportPath: string | null = null;
+  if (opts.fix && findings.length > 0) {
+    reportPath = await applyFix(repoPath, config, authoritative, findings);
+  }
+  return { findings, reportPath };
+}
+```
+
+(`applyFix` is implemented in Task 6 — for this task add a stub that throws `new Error("doctor --fix not implemented yet")` so `--check` is shippable alone.)
+
+- [ ] **Step 4: Register the command in `src/scripts/loop.mts` `COMMANDS`**
+
+```ts
+doctor: async ({ repoPath, flags }) => {
+  const { runDoctor } = await import("./lib/doctor.mjs");
+  const result = await runDoctor(repoPath, { fix: Boolean(flags.fix) });
+  if (flags.check && result.findings.length > 0) {
+    console.error(JSON.stringify(result, null, 2));
+    process.exitCode = 1;
+    return { _suppressDefaultOutput: true };
+  }
+  return result;
+},
+```
+
+- [ ] **Step 5: Run to verify pass**
+
+Run: `npm run build && npm run build:tests && node --test tests/doctor.test.mjs`
+Expected: PASS (4 tests)
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/scripts/lib/doctor.mts src/tests/doctor.test.mts src/scripts/loop.mts
+git commit -m "feat(doctor): loop doctor --check — detect stray trees, collisions, schema and config drift"
+```
+
+### Task 6: `loop doctor --fix`
+
+**Files:**
+- Modify: `src/scripts/lib/doctor.mts` (replace the `applyFix` stub)
+- Modify: `src/tests/doctor.test.mts` (add fix tests)
+
+- [ ] **Step 1: Write the failing fix tests**
+
+```ts
+test("--fix merges stray tree into authoritative root and writes report first", async () => {
+  const repo = await makeRepo();
+  try {
+    await fs.mkdir(path.join(repo, "docs/backlog/pending"), { recursive: true });
+    await fs.writeFile(path.join(repo, "docs/backlog/pending/FEAT-009.md"), FEAT("FEAT-009", "pending"));
+    const { reportPath } = await runDoctor(repo, { fix: true });
+    assert.ok(reportPath, "report path expected");
+    const report = await fs.readFile(reportPath!, "utf8");
+    assert.match(report, /FEAT-009/);
+    const moved = await fs.readFile(
+      path.join(repo, ".claude/artifacts/loop/backlog/pending/FEAT-009.md"),
+      "utf8"
+    );
+    assert.match(moved, /FEAT-009/);
+    // re-check is clean
+    const second = await runDoctor(repo, { fix: false });
+    assert.deepEqual(second.findings, []);
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
+});
+
+test("--fix keeps newest-transition winner on contradiction, loser preserved in conflicts dir", async () => {
+  const repo = await makeRepo();
+  try {
+    await fs.writeFile(
+      path.join(repo, ".claude/artifacts/loop/backlog/pending/FEAT-001.md"),
+      FEAT("FEAT-001", "pending")
+    );
+    await fs.mkdir(path.join(repo, "docs/backlog/triaged"), { recursive: true });
+    const strayFile = path.join(repo, "docs/backlog/triaged/FEAT-001.md");
+    await fs.writeFile(strayFile, FEAT("FEAT-001", "triaged"));
+    // make the stray file newer
+    const future = new Date(Date.now() + 60_000);
+    await fs.utimes(strayFile, future, future);
+    await runDoctor(repo, { fix: true });
+    // newer stray wins: authoritative tree now has it under triaged/
+    const winner = path.join(repo, ".claude/artifacts/loop/backlog/triaged/FEAT-001.md");
+    assert.ok(await fs.access(winner).then(() => true, () => false), "winner in triaged/");
+    // loser content preserved under doctor/conflicts
+    const conflictsDir = path.join(repo, ".claude/artifacts/loop/doctor/conflicts");
+    const conflicts = await fs.readdir(conflictsDir);
+    assert.ok(conflicts.some((f) => f.includes("FEAT-001")), conflicts.join(","));
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
+});
+```
+
+- [ ] **Step 2: Run to verify failure**
+
+Run: `npm run build && npm run build:tests && node --test tests/doctor.test.mjs`
+Expected: FAIL — `doctor --fix not implemented yet`
+
+- [ ] **Step 3: Implement `applyFix`**
+
+```ts
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+const exec = promisify(execFile);
+
+// Newest transition wins. Prefer git commit time; fall back to fs mtime
+// (fixture repos and uncommitted files have no git history).
+async function lastTouched(repoPath: string, file: string): Promise<number> {
+  try {
+    const { stdout } = await exec("git", ["log", "-1", "--format=%cI", "--", file], { cwd: repoPath });
+    const t = Date.parse(stdout.trim());
+    if (!Number.isNaN(t)) return t;
+  } catch {
+    /* not a git repo or untracked — fall through */
+  }
+  return (await fs.stat(file)).mtimeMs;
+}
+
+async function applyFix(
+  repoPath: string,
+  config: Record<string, unknown> | undefined,
+  authoritative: string,
+  findings: Finding[]
+): Promise<string> {
+  // 1. Report BEFORE any mutation.
+  const doctorDir = path.join(artifactRoot(repoPath, config), "doctor");
+  await fs.mkdir(path.join(doctorDir, "conflicts"), { recursive: true });
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const reportPath = path.join(doctorDir, `${stamp}-report.md`);
+  const lines = ["# loop doctor report", "", `repo: ${repoPath}`, `authoritative: ${authoritative}`, "", "## Findings", ""];
+  for (const f of findings) lines.push(`- [${f.kind}] ${f.path} — ${f.detail}`);
+  await fs.writeFile(reportPath, lines.join("\n") + "\n");
+
+  // 2. Merge each stray tree.
+  for (const stray of findings.filter((f) => f.kind === "stray-tree")) {
+    for (const e of await scanTree(stray.path)) {
+      const destDir = path.join(authoritative, e.state);
+      const dest = path.join(destDir, path.basename(e.file));
+      await fs.mkdir(destDir, { recursive: true });
+      const auth = (await scanTree(authoritative)).find((a) => a.id === e.id);
+      if (!auth) {
+        await fs.rename(e.file, dest); // simple move
+        continue;
+      }
+      // conflict: newest transition wins, loser preserved
+      const [authT, strayT] = await Promise.all([
+        lastTouched(repoPath, auth.file),
+        lastTouched(repoPath, e.file)
+      ]);
+      const winner = strayT > authT ? e : auth;
+      const loser = strayT > authT ? auth : e;
+      const loserDest = path.join(doctorDir, "conflicts", `${e.id}-${path.basename(path.dirname(loser.file))}.md`);
+      await fs.rename(loser.file, loserDest);
+      if (winner === e) {
+        const winnerDest = path.join(authoritative, e.state, path.basename(e.file));
+        await fs.mkdir(path.dirname(winnerDest), { recursive: true });
+        await fs.rename(e.file, winnerDest);
+      }
+    }
+    // remove the stray tree's now-empty state dirs (content was moved, never deleted)
+    await fs.rm(stray.path, { recursive: true, force: true });
+  }
+  return reportPath;
+}
+```
+
+- [ ] **Step 4: Run to verify pass + full suite**
+
+Run: `npm run build && npm run build:tests && node --test tests/doctor.test.mjs && npm test`
+Expected: PASS
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/scripts/lib/doctor.mts src/tests/doctor.test.mts
+git commit -m "feat(doctor): --fix merges stray trees, newest-transition conflict resolution, pre-action report"
+```
+
+### Task 7: Contract doc, changelog, release v0.36.0
+
+**Files:**
+- Create: `docs/state-contract.md`
+- Modify: `CHANGELOG.md`, `package.json` (version)
+
+- [ ] **Step 1: Write `docs/state-contract.md`** — one page: schema v1 field tables for FEAT/slice/grade/decision/loop.json (copy the constraints from `state-schemas.mts` literally), the authoritative-root rule, the write-guard rule, doctor's five finding kinds, and the versioning policy (new constraint ⇒ bump `schemaVersion`, validators accept N and N−1 for one release).
+
+- [ ] **Step 2: CHANGELOG entry + version bump**
+
+`package.json` version → `0.36.0`. CHANGELOG top section `## v0.36.0 — state contract + doctor` listing Tasks 1–6 with file paths (follow the existing per-version format).
+
+- [ ] **Step 3: Verify, commit, tag (push is user-triggered)**
+
+```bash
+npm test && npm run lint
+git add -A && git commit -m "chore(release): v0.36.0 — state contract, dispatcher config, write-guard, doctor"
+git tag -a v0.36.0 -m "v0.36.0"
+# USER ACTION: git push origin main --follow-tags
+```
+
+---
+
+## Part B — hero-crew repo. All paths relative to `C:\work\mega\hero-crew`. Requires loop v0.36.0 released (Task 7).
+
+### Task 8: Bump the loop pin
+
+**Files:**
+- Modify: `.claude-plugin/marketplace.json` → `plugins[name=loop].version` → `0.36.0`
+
+- [ ] **Step 1: Edit, validate, commit**
+
+```bash
+node ./scripts/validate-manifests.ts
+git add .claude-plugin/marketplace.json
+git commit -m "chore(marketplace): bump loop to 0.36.0 — state contract + doctor"
+```
+
+- [ ] **Step 2: Refresh the local plugin cache** (USER ACTION if the marketplace install is user-managed: re-install/update the loop plugin so `~/.claude/plugins/cache/loop/loop/0.36.0/` exists). Verify: `node "$HOME/.claude/plugins/cache/loop/loop/0.36.0/scripts/loop.mjs" status --repo "$PWD"` returns without error.
+
+### Task 9: Single-tree migration
+
+**Files:**
+- Modify: `.claude/loop.json` (delete `loop.backlogRoot`, `loop.backlogPath`, `loop.slicesRoot`, `loop.aiLoopRoot` keys — defaults now apply; keep `phaseGateArtifactDir`, which intentionally points at crew validations)
+- Delete (via doctor merge): `docs/backlog/` tree
+- Modify: `CLAUDE.md` ("Backlog discipline" section)
+
+- [ ] **Step 1: Edit `.claude/loop.json`** — remove the four path keys. Run `node "$HOME/.claude/plugins/cache/loop/loop/0.36.0/scripts/loop.mjs" doctor --repo "$PWD"` (no flags = report only). Expected findings: `stray-tree` for `docs/backlog` (+ collisions/contradictions for FEAT-121, FEAT-129 etc.), possibly `stray-tree` for `docs/ai-loop`.
+
+- [ ] **Step 2: Run the repair**
+
+```bash
+node "$HOME/.claude/plugins/cache/loop/loop/0.36.0/scripts/loop.mjs" doctor --fix --repo "$PWD"
+```
+
+Expected: report artifact under `.claude/artifacts/loop/doctor/`; `docs/backlog/` gone; all FEATs (001–144) under `.claude/artifacts/loop/backlog/`; conflicts (if any) preserved under `.claude/artifacts/loop/doctor/conflicts/` — review each conflict file manually and confirm the surviving state matches git history before proceeding.
+
+- [ ] **Step 3: Verify clean**
+
+```bash
+node "$HOME/.claude/plugins/cache/loop/loop/0.36.0/scripts/loop.mjs" doctor --check --repo "$PWD"
+```
+
+Expected: exit 0, zero findings.
+
+- [ ] **Step 4: Update CLAUDE.md** — in "Backlog discipline", replace `docs/backlog/{pending,triaged,in-progress,done}/` with `.claude/artifacts/loop/backlog/{pending,triaged,in-progress,done}/`. Also update the "Read first" item 4 pointer (`docs/backlog/product-backlog.md`) if it moved; check with `ls docs/backlog 2>/dev/null` (should not exist).
+
+- [ ] **Step 5: Regenerate the snapshot** — invoke the `/loop:snapshot-memory` skill (session action) so `.claude/artifacts/loop/loop-snapshot.md` reflects the merged tree. Sanity-check the counts: done ≥ 75, FEAT-139..144 present.
+
+- [ ] **Step 6: Commit the migration as ONE commit**
+
+```bash
+git add -A
+git commit -m "chore(state): migrate to single backlog tree under .claude/artifacts/loop (doctor --fix)
+
+Per docs/superpowers/specs/2026-06-10-loop-crew-state-contract-design.md.
+Doctor report: .claude/artifacts/loop/doctor/<stamp>-report.md
+Closes the dual-tree divergence behind FEAT-144."
+```
+
+### Task 10: CI guard + close FEAT-144
+
+**Files:**
+- Create: `scripts/validate-loop-state.ts`
+- Create: `tests/validate-loop-state.test.ts`
+- Modify: `.github/workflows/test.yml` (add step after `validate-slices`)
+
+CI runners have no plugin cache, so hero-crew gets a thin local check (single tree + unique ids) rather than invoking `loop doctor`.
+
+- [ ] **Step 1: Write the failing test**
+
+```ts
+// tests/validate-loop-state.test.ts
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { checkLoopState } from "../scripts/validate-loop-state.ts";
+
+test("clean single tree passes", async () => {
+  const repo = await fs.mkdtemp(path.join(os.tmpdir(), "vls-"));
+  try {
+    const dir = path.join(repo, ".claude/artifacts/loop/backlog/pending");
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, "FEAT-001.md"), "---\nid: FEAT-001\n---\n");
+    assert.deepEqual(await checkLoopState(repo), []);
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
+});
+
+test("flags a second populated tree and duplicate ids", async () => {
+  const repo = await fs.mkdtemp(path.join(os.tmpdir(), "vls-"));
+  try {
+    for (const root of [".claude/artifacts/loop/backlog", "docs/backlog"]) {
+      const dir = path.join(repo, root, "pending");
+      await fs.mkdir(dir, { recursive: true });
+      await fs.writeFile(path.join(dir, "FEAT-001.md"), "---\nid: FEAT-001\n---\n");
+    }
+    const errors = await checkLoopState(repo);
+    assert.ok(errors.some((e) => e.includes("docs/backlog")), errors.join("; "));
+    assert.ok(errors.some((e) => e.includes("FEAT-001")), errors.join("; "));
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
+});
+```
+
+- [ ] **Step 2: Run to verify failure**
+
+Run: `node --test --experimental-strip-types tests/validate-loop-state.test.ts`
+Expected: FAIL — module not found
+
+- [ ] **Step 3: Implement**
+
+```ts
+// scripts/validate-loop-state.ts
+// Hard CI gate: exactly one populated backlog tree, unique FEAT ids.
+// Thin local sibling of `loop doctor --check` (CI has no plugin cache).
+import fs from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { pathExists } from "./lib/fs-utils.ts";
+
+const STATES = ["pending", "triaged", "in-progress", "done"];
+const AUTHORITATIVE = ".claude/artifacts/loop/backlog";
+const LEGACY = ["docs/backlog"];
+
+async function listFeats(root: string): Promise<string[]> {
+  const ids: string[] = [];
+  for (const state of STATES) {
+    const dir = path.join(root, state);
+    if (!(await pathExists(dir))) continue;
+    for (const f of await fs.readdir(dir)) {
+      if (/^FEAT-\d+\.md$/.test(f)) ids.push(f.replace(".md", ""));
+    }
+  }
+  return ids;
+}
+
+export async function checkLoopState(repoPath: string): Promise<string[]> {
+  const errors: string[] = [];
+  for (const legacy of LEGACY) {
+    const ids = await listFeats(path.join(repoPath, legacy));
+    if (ids.length > 0) {
+      errors.push(`${legacy}: populated backlog tree outside ${AUTHORITATIVE} (${ids.length} FEATs)`);
+    }
+  }
+  const authIds = await listFeats(path.join(repoPath, AUTHORITATIVE));
+  const seen = new Set<string>();
+  for (const id of authIds) {
+    if (seen.has(id)) errors.push(`${id}: duplicate id in ${AUTHORITATIVE}`);
+    seen.add(id);
+  }
+  return errors;
+}
+
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) {
+  const errors = await checkLoopState(process.cwd());
+  if (errors.length > 0) {
+    console.error("validate-loop-state FAILED:");
+    for (const e of errors) console.error(`  - ${e}`);
+    process.exitCode = 1;
+  } else {
+    console.log("Loop state OK: single tree, unique ids.");
+  }
+}
+```
+
+- [ ] **Step 4: Run to verify pass**
+
+Run: `node --test --experimental-strip-types tests/validate-loop-state.test.ts && node ./scripts/validate-loop-state.ts`
+Expected: PASS + "Loop state OK"
+
+- [ ] **Step 5: Add the CI step** — in `.github/workflows/test.yml`, after the `validate-slices` step:
+
+```yaml
+      - name: Validate loop state (single tree, unique ids)
+        run: node ./scripts/validate-loop-state.ts
+```
+
+- [ ] **Step 6: Close FEAT-144**
+
+```bash
+node "$HOME/.claude/plugins/cache/loop/loop/0.36.0/scripts/loop.mjs" backlog promote --repo "$PWD" --id FEAT-144
+# then move through the normal slice ceremony, or — since the work shipped via this plan —
+# set status: done in its frontmatter, move the file to done/, citing the spec + doctor report.
+```
+
+- [ ] **Step 7: Lint, format, full validation, commit**
+
+```bash
+npm run lint && npm run format:check && node --test --experimental-strip-types tests/validate-loop-state.test.ts
+git add scripts/validate-loop-state.ts tests/validate-loop-state.test.ts .github/workflows/test.yml
+git commit -m "feat(ci): validate-loop-state hard gate — single backlog tree, unique FEAT ids"
+```
+
+---
+
+## Self-review notes
+
+- Spec coverage: C1→Task 1, C2→Tasks 2–4, C3→Tasks 5–6, C4→Task 9, C5→Tasks 7–8; AC-1..7 all have an owning task; hero-crew CI guard (AC-6) → Task 10.
+- Loop's `npm test` runs the FULL build + suite — keep targeted `node --test tests/<file>.mjs` during inner loops, full `npm test` before each commit of Tasks 2, 6, 7.
+- Conflict files for FEAT-121/129 in Task 9 Step 2 require a human eyeball before the migration commit — the newest-transition heuristic is good but those two are known-diverged.
