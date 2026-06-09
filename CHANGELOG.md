@@ -3,6 +3,14 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.24.1 — 2026-06-08 — wire review_rebound_count consumer
+
+### Fixed
+
+- `review_rebound_count` (added to the grade template in v0.24.0) now flows through `collectOutcomeLinkage` into every `cost-report-slice` and `cost-report-aggregate` artifact under `outcome.reviewReboundCount`. Previously the field was dead telemetry — written to the grade but never read. Rolling-window analysis of the build-bundle quality-win hypothesis (median rebound count over the last 10 slices) can now run against the existing cost-report artifact stream without further schema changes. New parser rejects negative or non-numeric values.
+
+---
+
 ## v0.24.0 — 2026-06-08 — build-bundle context preloading for reviewer/validator
 
 ### Added
