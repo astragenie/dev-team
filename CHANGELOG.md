@@ -3,7 +3,47 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
-## Unreleased
+## v0.25.0 — 2026-06-09 — autonomous crew enrichment wave
+
+### Added
+
+**New first-class crew agents**
+
+- `agents/qa-expert.md` — QA and test-quality specialist: coverage analysis,
+  Given/When/Then scenario design, behavioral verification, regression risk,
+  release readiness, defect classification, test-pyramid health (70/20/10
+  target), and anti-flakiness review.
+- `agents/performance-engineer.md` — Performance analysis specialist: profiling,
+  bottleneck identification, load-testing types (load/stress/soak/spike),
+  capacity planning, and SLO-aligned recommendations.
+
+**New `agents/3rdparty/` agents (hero-crew)**
+
+- `flutter-ui-developer.md` — Flutter/Dart UI specialist (widget architecture,
+  Riverpod/BLoC, go_router, Material 3, a11y, 60fps).
+- `critical-thinking.md` — Read-only devil's advocate: surfaces hidden
+  assumptions one question at a time; no solutions offered.
+- `architect-reviewer.md` — Independent architecture review (service boundaries,
+  scalability, coupling, security architecture); distinct from `crew:reviewer`.
+- `test-automator.md` — Test-suite implementation specialist (test pyramid,
+  anti-flakiness rules, CI integration, coverage thresholds).
+- `playwright-tester.md` — MCP-first E2E test writer: explores live app via
+  browser MCP, maps user flows, writes Page Object Model Playwright tests.
+
+**New `agents/3rdparty/` agents (loop)**
+
+- `sdd-spec-writer.md` — SDD spec authoring for agent/human dispatch decisions
+  (implementation contract, agent-vs-human decision table, quality checklist).
+- `specification.md` — Formal 10-section technical spec writer (Purpose,
+  Requirements REQ/SEC/CON/GUD, Data Contracts, AC Given-When-Then, Test
+  Strategy, Rationale, Dependencies, Examples, Validation).
+
+**New skill**
+
+- `skills/domain/microservices-patterns/SKILL.md` — Circuit breaker, saga
+  (choreography/orchestration), DLQ/idempotency, distributed tracing
+  (OpenTelemetry/W3C Trace Context), service discovery, API gateway; 11-point
+  Done criteria.
 
 ### Changed
 
@@ -21,6 +61,25 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
   per-child result markers, summary.md) now flow through loop's
   `.claude/artifacts/loop/dispatch/<runId>/` namespace, unblocking FEAT-165
   (per-skill cost attribution) and FEAT-133 (budget enforcement).
+
+- `agents/architect.md` — Pre-design analysis section (grep existing patterns
+  first, summarize in `## Patterns Found`); Build Sequence rule for phased
+  designs.
+- `agents/lead.md` — Parallel dispatch patterns table (scatter-gather,
+  sequential, fan-out review) with failure-handling rules.
+- `agents/builder.md` — Start-acknowledgement enrichments: assumption
+  documentation, edge-case identification, and named technical-debt tracking.
+- `agents/builder-be.md` — Microservices routing row
+  (`skills/domain/microservices-patterns/`) + 3 production readiness
+  self-verify checks (reversible migrations, no hard-coded config, metrics
+  endpoint presence).
+- `agents/refactor.md` — Dead-code added as 4th concern area (reference-graph
+  detection, dynamic-usage safety, framework-preservation rules, rollback on CI
+  fail); simplification-balance guardrail (no nested ternaries or dense
+  one-liners).
+- `skills/domain/dotnet/csharp-conventions/SKILL.md` — CQRS + Event Sourcing +
+  BDD section (MediatR pipeline, EF Core projections, aggregate-root pattern,
+  domain event publication, SpecFlow/xUnit BDD style).
 
 ## v0.24.1 — 2026-06-08 — wire review_rebound_count consumer
 
