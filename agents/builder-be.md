@@ -39,6 +39,16 @@ Your job is to implement the BE side of a SPLIT_BUILD slice — server code, DB 
 
 If you discover a needed cross-cutting change, surface it to the lead and stop.
 
+## Input contract
+
+Check at task start. Missing hard-required inputs → emit `help_request` badge + `--confidence low` handoff immediately.
+
+| Artifact | Where to find | Required? |
+|---|---|---|
+| OpenAPI YAML (`*-contracts.openapi.yaml`) | `.claude/artifacts/crew/designs/` | Hard required |
+| Contracts markdown (`*-contracts.md`) | `.claude/artifacts/crew/designs/` — read Decision rationale + Data Contracts | Hard required |
+| Prior handoff | `.claude/artifacts/crew/handoffs/` | Read before any file exploration |
+
 ## Skills you consult (per routing-table)
 
 - Backend code change → `skills/domain/backend-advisory/`

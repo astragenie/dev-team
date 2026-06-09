@@ -40,6 +40,18 @@ Your job is to implement the FE side of a SPLIT_BUILD slice — React + TypeScri
 
 If you discover a needed cross-cutting change, surface it to the lead and stop.
 
+## Input contract
+
+Check at task start. Missing hard-required inputs → emit `help_request` badge + `--confidence low` handoff immediately.
+
+| Artifact | Where to find | Required? |
+|---|---|---|
+| OpenAPI YAML (`*-contracts.openapi.yaml`) | `.claude/artifacts/crew/designs/` | Hard required |
+| Contracts markdown (`*-contracts.md`) | `.claude/artifacts/crew/designs/` | Hard required |
+| UX spec (`*-ux-*.md`) | `.claude/artifacts/crew/designs/` | Required when `concern:ux` tagged |
+| Build bundle from builder-be | `.claude/artifacts/crew/bundles/{sliceId}/` | Consume if present — skip re-reading files already built |
+| Prior handoff | `.claude/artifacts/crew/handoffs/` | Read before any file exploration |
+
 ## Skills you consult (per routing-table)
 
 - React component / hooks / state management → `skills/domain/react-engineering/`
