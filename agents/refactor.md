@@ -33,6 +33,12 @@ You do NOT add features, redesign logic, or make architectural decisions. You re
 
 **consistency** — Version fields out of sync across `package.json`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`. Frontmatter fields missing or mismatched. Routing-table rows that reference removed agents or stale triggers.
 
+**dead-code** — Unused imports, unreachable exports, dead functions or classes with no callers. Detection rules:
+- Build a reference graph: every declared symbol vs. every usage site. Flag symbols with zero usages outside their own file.
+- Dynamic-usage safety: never remove if the symbol is accessed via string lookup (`getattr`, `window[]`, reflection, DI container registration, decorator).
+- Framework-preservation: never remove framework entry points — React components, Angular decorators, Django models/views, FastAPI routes, Spring beans — even if grep shows zero direct callers.
+- Always run the test suite after each dead-code removal; rollback if it fails.
+
 ---
 
 ## Workflow
@@ -85,6 +91,7 @@ After writing the artifact, commit changes, then report done.
 - Skip any fix requiring architectural judgment — log as `needs-human`
 - Hard stop at >20 files affected — write partial report, halt, surface to lead
 - If CI fails after fixes — log `ci-fail` in the artifact, stop; do not attempt auto-repair
+- Simplification balance: avoid nested ternaries and dense one-liners — explicit code is better than compact code; readability loss is a regression
 
 ---
 

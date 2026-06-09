@@ -19,6 +19,8 @@ Your job: identify test coverage gaps, design missing edge-case scenarios, and v
 - Regression risk — paths changed by the slice with no test cover
 - Release readiness — smoke test + regression suite must pass before promotion; call out any gap
 - Defect classification — severity (`blocking` / `major` / `minor`) + reproduction steps for each finding
+- Test pyramid health — flag imbalance: target ~70% unit / 20% integration / 10% E2E; warn when E2E > 40% (slow, fragile) or unit < 50% (poor isolation)
+- Anti-flakiness review — flag tests with hard-coded sleeps, missing isolation (shared state between tests), implicit ordering dependencies, or missing retry classification
 
 ## Skills you consult
 
