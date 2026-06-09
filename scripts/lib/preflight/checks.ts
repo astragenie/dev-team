@@ -3,6 +3,7 @@
 // All checks return string[] of warning messages.
 import fs from "node:fs/promises";
 import path from "node:path";
+import { normalizeMsysPath } from "../fs-utils.ts";
 
 // PowerShell automatic variables — must NOT trigger the env-var shape warn.
 // Stored uppercase since the env-var regex captures uppercase identifiers.
@@ -125,7 +126,7 @@ export async function checkChainedCdPaths({ command, cwd }: CdPathCheckInput): P
     let match;
     while ((match = re.exec(command)) !== null) {
       // One of the three capture groups will be set
-      const rawPath = (match[1] ?? match[2] ?? match[3])!;
+      const rawPath = normalizeMsysPath((match[1] ?? match[2] ?? match[3])!);
       if (!rawPath) continue;
       const resolved = path.isAbsolute(rawPath) ? rawPath : path.resolve(cwd, rawPath);
       try {

@@ -134,7 +134,7 @@ x
   assert.ok(result.errors.some((e) => /missing identity intro/.test(e)));
 });
 
-test("fails when file exceeds 300-line cap", async () => {
+test("fails when file exceeds the default 500-line cap", async () => {
   const padded =
     `---
 name: builder
@@ -146,13 +146,36 @@ You are the builder.
 
 ## Report contract
 
-` + "x\n".repeat(301);
+` + "x\n".repeat(501);
   const root = await makeAgentsDir({ "builder.md": padded });
   const result = await validateAgents(root);
   assert.equal(result.ok, false);
   assert.ok(
-    result.errors.some((e) => /exceeds the 300-line agent prompt cap/.test(e)),
+    result.errors.some((e) => /exceeds the 500-line agent prompt cap/.test(e)),
     `expected line-cap error, got: ${result.errors.join("; ")}`
+  );
+});
+
+test("maxLines frontmatter overrides the default cap", async () => {
+  const padded =
+    `---
+name: builder
+description: foo
+model: sonnet
+maxLines: 120
+---
+
+You are the builder.
+
+## Report contract
+
+` + "x\n".repeat(121);
+  const root = await makeAgentsDir({ "builder.md": padded });
+  const result = await validateAgents(root);
+  assert.equal(result.ok, false);
+  assert.ok(
+    result.errors.some((e) => /exceeds the 120-line agent prompt cap/.test(e)),
+    `expected override line-cap error, got: ${result.errors.join("; ")}`
   );
 });
 

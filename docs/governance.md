@@ -10,12 +10,12 @@ discipline.
 
 ## Skill ownership
 
-| Field | Convention |
-|---|---|
-| `owner` | GitHub handle or team name responsible for keeping the skill correct |
-| `last_reviewed` | ISO date; `scripts/validate-skills.mjs` warns when older than 180 days |
-| `triggers` | Globs, signals, or keywords used by the lead to decide whether to suggest the skill |
-| `stack` | Domain skills only; e.g. `dotnet`, `flutter`, `terraform` |
+| Field           | Convention                                                                          |
+| --------------- | ----------------------------------------------------------------------------------- |
+| `owner`         | GitHub handle or team name responsible for keeping the skill correct                |
+| `last_reviewed` | ISO date; `scripts/validate-skills.mjs` warns when older than 180 days              |
+| `triggers`      | Globs, signals, or keywords used by the lead to decide whether to suggest the skill |
+| `stack`         | Domain skills only; e.g. `dotnet`, `flutter`, `terraform`                           |
 
 **Why:** an unowned skill rots silently. A stale `last_reviewed` is a
 visible nag that prompts a quick re-read.
@@ -26,26 +26,30 @@ are populated. The validator catches missing `name` / `tier` /
 
 ---
 
-## Agent prompt size bar — **≤ 300 lines**
+## Agent prompt size bar — **≤ 500 lines (default)**
 
 **Why:** every line of an agent prompt is always-on context cost. Big
 prompts amortise badly across the long tail of small tasks. The
-300-line cap admits modest cross-cutting sections (context
+500-line cap admits modest cross-cutting sections (context
 efficiency, shell pre-check, depth control) while still forcing
 specifics into skills.
 
-**How to apply:** `scripts/validate-agents.mjs` is the hard CI gate
-(FEAT-035). If `agents/<role>.md` exceeds 300 lines, push specifics
-into a skill the agent can invoke on demand. The role prompt should
-carry identity, boundaries, escalation policy, and cross-cutting
-rules (context efficiency, shell pre-check, report contract, handoff
-discipline); skills carry the procedural knowledge.
+**How to apply:** `scripts/validate-agents.ts` is the hard CI gate
+(FEAT-035). If `agents/<role>.md` exceeds the cap, push specifics
+into a skill the agent can invoke on demand. A per-agent `maxLines:`
+frontmatter field overrides the default (e.g. lead pins itself
+tighter at 360). The role prompt should carry identity, boundaries,
+escalation policy, and cross-cutting rules (context efficiency,
+shell pre-check, report contract, handoff discipline); skills carry
+the procedural knowledge.
 
 **Cap history:**
 
 - ≤200 was the original soft bar (governance-only, no validator).
 - FEAT-035 raised to ≤300 and added `validate-agents.mjs` as a
   hard CI gate so the cap is enforced rather than aspirational.
+- Raised to ≤500 default + `maxLines:` per-agent override when
+  reviewer absorbed code-reviewer duties (commit `e43462d`).
 
 Lead is the canonical example: routing decisions live in
 `docs/routing-table.md`, skill-tier conventions live in
@@ -60,6 +64,7 @@ points at them rather than restating them.
 rows accumulate.
 
 **How to apply:**
+
 - `brief-me` surfaces a reminder when `docs/routing-table.md` mtime
   is older than 30 days.
 - The review is a human task: cross-check the table against the last
@@ -72,14 +77,14 @@ rows accumulate.
 
 ## Artifact retention
 
-| Artifact kind | Lifetime | Why |
-|---|---|---|
-| Run briefs | Indefinite | Continuity signal for compaction recovery |
-| Handoffs | Indefinite | Audit trail of ownership transitions |
-| Review / validation / deployment results | Indefinite | Compliance + post-mortem |
-| Final synthesis | Indefinite | The "what happened" anchor |
-| Cost reports | Indefinite | Trend signal for cost-advisor |
-| `workflow-state.json` | Live + rolling 5 recent runs | Active state; older runs archived inline |
+| Artifact kind                            | Lifetime                     | Why                                       |
+| ---------------------------------------- | ---------------------------- | ----------------------------------------- |
+| Run briefs                               | Indefinite                   | Continuity signal for compaction recovery |
+| Handoffs                                 | Indefinite                   | Audit trail of ownership transitions      |
+| Review / validation / deployment results | Indefinite                   | Compliance + post-mortem                  |
+| Final synthesis                          | Indefinite                   | The "what happened" anchor                |
+| Cost reports                             | Indefinite                   | Trend signal for cost-advisor             |
+| `workflow-state.json`                    | Live + rolling 5 recent runs | Active state; older runs archived inline  |
 
 **Archive policy:** when `.claude/artifacts/crew/runs/` exceeds the
 project's comfort line, move older items into a versioned subdir
@@ -94,13 +99,13 @@ When the **same lesson** appears in 3+ grade artifacts or
 retrospectives, promote it from "noticed pattern" to canonical
 standard:
 
-| Where the lesson lives now | Where it should land |
-|---|---|
-| Skill-specific tactic | `skills/<tier>/<skill-name>/SKILL.md` (extend or add) |
-| Cross-cutting code convention | `docs/standards/code-conventions.md` |
-| Routing pattern | `docs/routing-table.md` |
-| Agent boundary clarification | `agents/<role>.md` |
-| Workflow gate or badge | `scripts/lib/workflow-state.mjs` + this doc |
+| Where the lesson lives now    | Where it should land                                  |
+| ----------------------------- | ----------------------------------------------------- |
+| Skill-specific tactic         | `skills/<tier>/<skill-name>/SKILL.md` (extend or add) |
+| Cross-cutting code convention | `docs/standards/code-conventions.md`                  |
+| Routing pattern               | `docs/routing-table.md`                               |
+| Agent boundary clarification  | `agents/<role>.md`                                    |
+| Workflow gate or badge        | `scripts/lib/workflow-state.mjs` + this doc           |
 
 **Why:** without the promotion step, lessons live in artifacts no one
 re-reads. Promotion makes them load-bearing for future runs.

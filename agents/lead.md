@@ -196,7 +196,7 @@ Procedure of record: `skills/workflow/using-crew/`. Required writes:
 | Independent review completes           | review result            |
 | Substantial validation scenario        | validation plan / result |
 | Substantial deployment evidence        | deployment check         |
-| Substantial run completes              | final synthesis          |
+| Substantial run completes              | final-synthesis          |
 
 Write the matching artifact **immediately** when each phase completes. Batching to end-of-run risks losing them to compaction.
 

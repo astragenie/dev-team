@@ -5,15 +5,15 @@
 //
 // Errors (fail CI):
 //   - missing required frontmatter: name, description, model
-//   - <role>.md exceeds 300 lines
+//   - <role>.md exceeds 500 lines (default; per-agent `maxLines:` frontmatter overrides)
 //   - missing required body section: identity intro + "## Report contract"
 //   - duplicate agent name across the directory
 //   - file name does not match frontmatter `name`
 //
-// The 300-line cap is generous compared to the previous ≤200 soft rule:
+// The 500-line default cap is generous compared to the previous ≤300 bar:
 // it admits modest cross-cutting sections (context efficiency, shell
 // pre-check, depth control) without forcing premature skill extraction.
-// Lines beyond 300 should push to a skill the agent invokes on demand.
+// Lines beyond the cap should push to a skill the agent invokes on demand.
 
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -69,12 +69,7 @@ function checkFileName(
   }
 }
 
-function checkLineCount(
-  text: string,
-  fm: Record<string, string>,
-  label: string,
-  errors: string[]
-) {
+function checkLineCount(text: string, fm: Record<string, string>, label: string, errors: string[]) {
   const lines = text.split("\n").length;
   const cap = fm["maxLines"] ? parseInt(fm["maxLines"], 10) : MAX_LINES;
   if (lines > cap) {

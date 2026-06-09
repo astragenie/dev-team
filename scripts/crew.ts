@@ -3,6 +3,7 @@
 import path from "node:path";
 import { maybeEmitCostReport } from "./lib/cost-hygiene/emit-cost-report.ts";
 import { costSliceHandler } from "./lib/cost-hygiene/cost-slice-handler.ts";
+import { normalizeMsysPath } from "./lib/fs-utils.ts";
 
 // Flag schema. Each entry maps a CLI flag to the flags-object key and the
 // arity (whether it consumes a value). Aliases (e.g. `--verdict` → `decision`)
@@ -361,21 +362,6 @@ async function emitCostAdvise(
     const message = err instanceof Error ? err.message : String(err);
     return { error: message };
   }
-}
-
-// Normalize an MSYS / Git Bash POSIX path like `/c/work/foo` to a Windows
-// path `C:/work/foo` when running on win32. Node's path.resolve treats a
-// leading "/" as drive-relative, so `/c/work` becomes `C:\c\work` (a phantom
-// nested dir). This converter restores the intended drive-letter form.
-function normalizeMsysPath(value: string) {
-  if (!value || process.platform !== "win32") {
-    return value;
-  }
-  const match = value.match(/^\/([a-zA-Z])\/(.*)$/);
-  if (!match) {
-    return value;
-  }
-  return `${(match[1] ?? "").toUpperCase()}:/${match[2] ?? ""}`;
 }
 
 interface CommandContext {

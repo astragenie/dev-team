@@ -154,6 +154,26 @@ test("AC-8b: chained cd to existing path is silent", async () => {
   }
 });
 
+test(
+  "AC-8c: chained cd to existing dir via MSYS-style path (/c/...) is silent",
+  { skip: process.platform !== "win32" },
+  async () => {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "preflight-msys-"));
+    try {
+      // C:\Users\... -> /c/Users/... (the form Git-Bash reports and accepts)
+      const msysPath = tmpDir
+        .replace(/^([A-Za-z]):\\/, (_m, d) => `/${d.toLowerCase()}/`)
+        .replace(/\\/g, "/");
+      const command = `cd ${msysPath} && ls`;
+      const result = await runHook(makeStdin("Bash", command, process.cwd()));
+      assert.equal(result.exitCode, 0);
+      assert.equal(result.stdout, "", `MSYS drive path should not warn, got: ${result.stdout}`);
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
+  }
+);
+
 // ── AC-9: Failure mode 3 — unquoted Windows path with space ─────────────────
 
 test("AC-9a: unquoted Windows path with space triggers warn", async () => {

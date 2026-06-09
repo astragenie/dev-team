@@ -1,0 +1,4 @@
+# Generated code — generator output is the source of truth; the CI drift gate
+# (scripts/validate-contracts.ts) compares byte-for-byte against regeneration,
+# so prettier must not reformat these.
+tests/fixtures/openapi/*-contracts.ts
