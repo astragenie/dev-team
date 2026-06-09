@@ -49,7 +49,10 @@ Rules:
 - Cannot reproduce failure path or intermittent behavior → `skills/workflow/systematic-debugging/`
 - Diff touches `.tsx` / `.jsx` / React components → `skills/domain/react-engineering/`
 - Diff touches `.ts` files (non-React backend) → `skills/workflow/reviewing-code/references/typescript-checklist.md`
-- Diff touches `.cs` files → `skills/domain/dotnet/csharp-conventions/`
+- Diff touches `.cs` files → load all three in order:
+  1. `skills/domain/dotnet/csharp-conventions/` — language rules, DI, types, async, LINQ, size budgets
+  2. `skills/domain/dotnet/aspnetcore-patterns/` — middleware ordering, health checks, output cache, rate limiting, API versioning
+  3. `skills/domain/dotnet/ef-core-patterns/` — query patterns, N+1, compiled queries, bulk ops, migrations
 
 ## Pre-review protocol
 
