@@ -91,6 +91,26 @@ async function smokeBuildBundle(repoRoot: string): Promise<void> {
   assert.ok(text.includes("## Diff"), "smoke: bundle missing Diff section");
   assert.ok(text.includes("## Files touched"), "smoke: bundle missing Files touched section");
 
+  // Spec assertions 2 + 3: simulate what /crew:review and /crew:validate do
+  // when they dispatch reviewer/validator subagents — call inlineLatestBundle
+  // and verify the string that gets inlined into the dispatch prompt has the
+  // preload header AND references at least one file from `files_touched`.
+  const { inlineLatestBundle } = await import("./lib/build-bundle/inline.ts");
+  const { INLINE_HEADER } = await import("./lib/build-bundle/types.ts");
+  const bundlesRoot = path.join(tmp, ".claude", "artifacts", "crew", "bundles");
+  const inlined = await inlineLatestBundle({
+    sliceId: "SLICE-smoke",
+    bundlesRoot
+  });
+  assert.ok(
+    inlined.startsWith(INLINE_HEADER),
+    `smoke: dispatch prompt would not start with preload header (got: ${JSON.stringify(inlined.slice(0, 80))})`
+  );
+  assert.ok(
+    inlined.includes("a.ts"),
+    "smoke: dispatch prompt does not reference any file from files_touched"
+  );
+
   console.log(`[smoke] build-bundle phase OK (${printedPath})`);
 }
 

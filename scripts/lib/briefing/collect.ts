@@ -770,26 +770,23 @@ export async function collectBundleStats(
     return zero;
   }
 
-  let malformed = 0;
-  let truncated = 0;
-  await Promise.all(
-    entries.map(async (name) => {
+  type EntryStatus = "ok" | "malformed" | "truncated";
+  const statuses = await Promise.all(
+    entries.map(async (name): Promise<EntryStatus> => {
       try {
         const text = await fs.readFile(path.join(dir, name), "utf8");
         // Malformed = missing frontmatter block OR missing schema_version field.
         const hasFrontmatter = /^---\n[\s\S]*?\nschema_version:\s*\d+\n[\s\S]*?\n---/.test(text);
-        if (!hasFrontmatter) {
-          malformed += 1;
-          return;
-        }
-        if (/^truncated:\s*true$/m.test(text)) {
-          truncated += 1;
-        }
+        if (!hasFrontmatter) return "malformed";
+        if (/^truncated:\s*true$/m.test(text)) return "truncated";
+        return "ok";
       } catch {
-        malformed += 1;
+        return "malformed";
       }
     })
   );
 
+  const malformed = statuses.filter((s) => s === "malformed").length;
+  const truncated = statuses.filter((s) => s === "truncated").length;
   return { written: entries.length, malformed, truncated };
 }
