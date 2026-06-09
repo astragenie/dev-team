@@ -11,6 +11,7 @@ A Claude Code plugin for lead-guided engineering work with bounded subagents, qu
 Crew gives Claude Code a lead-centered workflow model with **12 first-party agents** across 3 tiers:
 
 **Core workflow agents:**
+
 - **lead** — plans, delegates, synthesizes, paces
 - **builder** — implements bounded changes within assigned scope
 - **reviewer** — validates correctness, regressions, and scope drift
@@ -19,6 +20,7 @@ Crew gives Claude Code a lead-centered workflow model with **12 first-party agen
 - **deployer** — manages environment transition evidence without deciding risky promotion alone
 
 **Specialist agents (new in v0.8.0):**
+
 - **architect** — ADR authoring, system design, database schema, API contracts; delegates to 3rdparty specialists
 - **uxdesigner** — UI flows, component hierarchies, accessibility specs; delegates to 3rdparty specialists
 - **copywriter** — API docs, release notes, README polish, diagram captions; delegates to 3rdparty specialists
@@ -59,7 +61,7 @@ The companion `loop` plugin lives in the same marketplace:
 /plugin install loop@astra
 ```
 
-Verify locally with `npm test`. Pinned release: `v0.25.0`.
+Verify locally with `npm test`. Pinned release: `v0.26.0`.
 
 > **Upgrading from `crew-dev` / `autonomous-loop`?** See [docs/process/rebrand-migration.md](docs/process/rebrand-migration.md) for the one-time uninstall + reinstall sequence. The `loop` plugin auto-migrates consumer-repo state (`.claude/autonomous-loop.json` → `.claude/loop.json`, CLAUDE.md markers) on first `/loop:install`.
 
@@ -135,11 +137,11 @@ If a plugin update changes constitution or workflow behavior, rerun `/crew:insta
 
 ### How configuration layers work
 
-| Layer | Location | Scope | Who edits |
-|-------|----------|-------|-----------|
-| Constitution + workflow | `~/.claude/crew/` | All repos | Plugin-managed global copy |
-| Global user rules | `~/.claude/CLAUDE.md` | All repos | User |
-| Repo rules | `CLAUDE.md` | This repo | Team |
+| Layer                   | Location              | Scope     | Who edits                  |
+| ----------------------- | --------------------- | --------- | -------------------------- |
+| Constitution + workflow | `~/.claude/crew/`     | All repos | Plugin-managed global copy |
+| Global user rules       | `~/.claude/CLAUDE.md` | All repos | User                       |
+| Repo rules              | `CLAUDE.md`           | This repo | Team                       |
 
 **Repo CLAUDE.md overrides constitution defaults.** The constitution provides baseline team rules (ownership, review gates, handoffs). Teams customize per-repo via CLAUDE.md without touching the constitution.
 
@@ -161,10 +163,10 @@ node "<plugin-path>/scripts/crew.ts" bootstrap --repo .
 
 Agents support two-tier custom instructions, same model as Claude Code settings:
 
-| Level | Path | Scope |
-|-------|------|-------|
-| Global | `~/.claude/crew/<role>.md` | All repos |
-| Repo | `.claude/crew/<role>.md` | This repo only |
+| Level  | Path                       | Scope          |
+| ------ | -------------------------- | -------------- |
+| Global | `~/.claude/crew/<role>.md` | All repos      |
+| Repo   | `.claude/crew/<role>.md`   | This repo only |
 
 Both files are read if they exist. Repo instructions take precedence over global on conflict.
 
@@ -201,6 +203,7 @@ The reviewer will read those files before review, and the lead should dispatch r
 ### Examples
 
 `~/.claude/crew/reviewer.md` (global):
+
 ```markdown
 - For Go repos, use our Go review skill and check dependency-injection, context handling, and error wrapping.
 - For Python repos, use our Python review skill and check typing, async boundaries, and test quality.
@@ -208,12 +211,14 @@ The reviewer will read those files before review, and the lead should dispatch r
 ```
 
 `.claude/crew/builder.md` (repo-level):
+
 ```markdown
 - Follow strict typing — no `Any` unless unavoidable
 - All new functions must have tests
 ```
 
 `.claude/crew/reviewer.md` (repo-level):
+
 ```markdown
 - For this repo, always review against our internal API compatibility rules.
 - For Go code, apply the team's configured Go review skill.
@@ -231,13 +236,13 @@ Update our reviewer instructions so Go reviews always apply our internal Go stan
 
 Default model assignments:
 
-| Agent | Model |
-|-------|-------|
-| lead | opus |
-| builder | opus |
-| reviewer | opus |
-| validator | opus |
-| deployer | opus |
+| Agent      | Model  |
+| ---------- | ------ |
+| lead       | opus   |
+| builder    | opus   |
+| reviewer   | opus   |
+| validator  | opus   |
+| deployer   | opus   |
 | researcher | sonnet |
 
 ## Optional integrations

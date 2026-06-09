@@ -3,6 +3,82 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.26.0 — 2026-06-10 — researcher quality wave + green CI baseline
+
+### Added
+
+**Researcher quality stack**
+
+- `skills/workflow/code-investigation/` — 4-phase investigation methodology
+  (clarity gate → investigation brief → evidence ladder → mode-shaped output)
+  with stack first-check references: `csharp.md` (TFMs, sync-over-async, DI
+  lifetimes, nullability), `typescript-react.md` (tsconfig strictness,
+  type-escape hatches, ref-identity re-renders), `plugin-dev.md` (manifest
+  drift, trigger quality, routing consistency), `spec-driven.md`
+  (spec-readiness rubric for `/crew:architect-feature` pre-flight).
+- `agents/investigator.md` — read-only code locator promoted from
+  `agents/caveman/cavecrew-investigator.md` to first-class crew agent.
+  Cheapest dispatch on the team (haiku, compressed output, no handoff
+  artifact); adds zero-hit naming-variant discipline and an escalation
+  refusal pointing at `crew:researcher` for graded, persisted findings.
+
+**Language quality stacks**
+
+- C#/.NET: deep quality skills, `c-sharp-pro` expert agent, and
+  `c-sharp-reviewer` specialist with reviewer routing.
+- TypeScript: TS quality skills, `ts-reviewer` specialist with reviewer
+  routing.
+- `performance-engineer`: profiling methodology, TTFB/FCP/RUM web vitals,
+  load ladder, React-specific routing.
+- `uxdesigner`: design-quality gate + frontend-design craft references.
+
+**Specs**
+
+- `docs/specs/` — loop-crew state contract design (phase 1 state unification).
+
+### Changed
+
+- `agents/researcher.md` — moved to sonnet (per lead delegation economics);
+  added clarity gate, 4-grade evidence ladder with file:line citation
+  mandate (`UNVERIFIED` is a first-class low-confidence answer), per-mode
+  output formats (hypothesis grid / trade-off matrix / spec pre-flight
+  blocks), and read-only Bash scope.
+- `agents/lead.md` — Explore-vs-researcher dispatch boundary: cheap locate
+  whose answer dies with the turn vs findings that must persist as a handoff
+  artifact.
+- `docs/routing-table.md` — new Research rows (codebase investigation, spec
+  pre-flight); reviewer-phase rows for the C#/TS specialists.
+- `docs/governance.md` — agent prompt size bar reconciled with the validator:
+  500-line default + per-agent `maxLines:` frontmatter override.
+
+### Fixed
+
+- **CI pipeline unbroken** (red since the v0.25.0 release push; four
+  failures stacked behind the first red step):
+  - contracts drift gate — prettier had reformatted the generated
+    `valid-feat-contracts.ts` fixture so it could never byte-match the
+    `openapi-typescript` output; added `.prettierignore` for generated
+    contracts fixtures and recommitted generator output.
+  - `scripts/validate-agents.ts` committed unformatted.
+  - stale tests — agent roster missing `qa-expert` / `performance-engineer` /
+    `investigator`; line-cap test still asserting the old 300 default; new
+    test covers the `maxLines` override.
+  - routing-table skill-ID gate now `continue-on-error` per its documented
+    advisory intent (external-plugin IDs cannot resolve on a bare runner);
+    fixed the two real agent-block drift errors (builder ←
+    `skills/domain/mcp-integration/`, architect ←
+    `skills/domain/api-architecture/`).
+- `agents/lead.md` artifact table restored the hyphenated `final-synthesis`
+  artifact name asserted by the prompt-content test.
+
+### Removed
+
+- `agents/caveman/` trio (`cavecrew-builder`, `cavecrew-reviewer`,
+  `cavecrew-investigator`) — investigator promoted to first-class (above);
+  reviewer-collision mitigation in repo docs rewritten as resolved history,
+  with the exact-name `crew:reviewer` dispatch rule retained as durable
+  defense.
+
 ## v0.25.0 — 2026-06-09 — autonomous crew enrichment wave
 
 ### Added
@@ -436,11 +512,13 @@ fixed in the same release.
 
 Removed all 3 `eslint-disable-next-line complexity` suppressions from `crew.mjs` and
 `artifacts.mjs` by extracting into `scripts/lib/cost-hygiene/`:
+
 - `emit-cost-report.mjs` — `maybeEmitCostReport` (formerly suppressed at crew.mjs:407)
 - `cost-slice-handler.mjs` — cost-slice command handler (formerly suppressed at crew.mjs:804)
 - `render-frontmatter.mjs` — `renderCostReportFrontmatter` (formerly suppressed at artifacts.mjs:294)
 
 Four oversized modules split below AC-3 thresholds:
+
 - `collect.mjs` 955 → 530 L (extracted to `collect-cost-parser.mjs`)
 - `cost-advisor.mjs` 874 → 485 L (extracted to `cost-advisor-grades.mjs` + `cost-advisor-rules.mjs`)
 - `session-cost.mjs` 844 → 461 L (extracted to `session-cost-scanner.mjs`)
@@ -1032,7 +1110,7 @@ A downstream `loop` customer reported four compounding quality failures: TDD pro
   zero-to-deployment reliability. Vendored from
   `daymade/claude-code-skills` (MIT, © 2025 daymade); trimmed from 234
   lines to 135 and split into `references/{provisioner-traps,
-  multi-env-isolation, zero-to-deploy}.md` so the on-load body fits
+multi-env-isolation, zero-to-deploy}.md` so the on-load body fits
   this repo's ≤200-line skill quality bar.
 - **New** `skills/workflow/commit/` — conventional commit + emoji
   format with split-commit guidance. Vendored from
@@ -1229,7 +1307,7 @@ are correctly deferred behind explicit "when X observed" triggers.
 ### Tooling (cross-cutting)
 
 - `tsconfig.json` added with `checkJs: true` / `noEmit`; `npm run
-  typecheck` wired into CI between format:check and tests. JSDoc
+typecheck` wired into CI between format:check and tests. JSDoc
   annotations added on session-cost, cost-advisor, crew.mjs entry
   points to satisfy tsc.
 - `superpowers` plugin verified enabled in `~/.claude/settings.json`
@@ -1238,11 +1316,11 @@ are correctly deferred behind explicit "when X observed" triggers.
 
 ### Companion plugin sync
 
-| Capability                                   | crew   | autonomous-loop |
-|----------------------------------------------|--------|-----------------|
-| blocked + escalated_to_human (writer)        | ≥0.2.0 | —               |
-| Honors crew gates in slice flow (reader)     | —      | ≥0.1.21         |
-| Iteration cap + cost-alert + snapshot loop   | —      | ≥0.1.20         |
+| Capability                                 | crew   | autonomous-loop |
+| ------------------------------------------ | ------ | --------------- |
+| blocked + escalated_to_human (writer)      | ≥0.2.0 | —               |
+| Honors crew gates in slice flow (reader)   | —      | ≥0.1.21         |
+| Iteration cap + cost-alert + snapshot loop | —      | ≥0.1.20         |
 
 Pin both together; older AL against newer crew silently misses the
 new gate signals.
@@ -1251,7 +1329,7 @@ new gate signals.
 
 - 41/41 tests pass (35 → 41, six added across FEAT-006 + FEAT-008).
 - typecheck + lint + format + validate-skills + validate-manifests
-  + e2e-smoke all clean on every push.
+  - e2e-smoke all clean on every push.
 
 ### Backlog after Phase 1
 
@@ -1268,6 +1346,7 @@ Intentionally deferred:
 ## v0.1.26 — 2026-05-22
 
 ### Removed
+
 - **Commit bridge feature removed in its entirety.** The bridge was an
   opt-in `PostToolUse` hook that minted Crew artifacts from commits
   matching a preset pattern; in practice it was never adopted beyond
@@ -1289,6 +1368,7 @@ Intentionally deferred:
   one-line reference to the bridge as well.
 
 ### Migration
+
 Repos with a bridge already installed will keep the generated
 `.claude/hooks/commit_bridge.sh` + `PostToolUse` settings entry — no
 runtime breakage. The CLI commands for re-installing or reconfiguring
@@ -1297,12 +1377,14 @@ the bridge are simply gone. Manual cleanup: delete
 in `.claude/settings.json` if you want to remove the hook entirely.
 
 ### Notes
+
 - Tests: 35/35 pass (down from 49 — the 14 missing tests are the
   bridge suite that no longer exists).
 
 ## v0.1.25 — 2026-05-22
 
 ### Changed
+
 Final lint-cleanup pass. **Lint warning count: 8 → 0.**
 
 - `validate-manifests.mjs::validateManifests` 16 → off list. Extracted
@@ -1326,11 +1408,13 @@ Final lint-cleanup pass. **Lint warning count: 8 → 0.**
   `computeSizeStats`, `collectFileReReadEntries`, `buildToolUsage`.
 
 ### Notes
+
 - Lint output is now clean. All 49 tests pass.
 
 ## v0.1.24 — 2026-05-22
 
 ### Changed
+
 - **`briefing/collect.mjs::parseCostReportText`** complexity 34 → split
   into `parseHeaderFields`, `parseTokenFields`, `parseDiagnosticFields`,
   `parseOutcomeFields`, `bodyNum`. Composer reads top-down.
@@ -1357,6 +1441,7 @@ Final lint-cleanup pass. **Lint warning count: 8 → 0.**
   `code` fields.
 
 ### Notes
+
 - Lint warning count: 15 → 8. All remaining within 5 of threshold;
   further cuts have diminishing returns.
 - All 49 tests pass.
@@ -1364,6 +1449,7 @@ Final lint-cleanup pass. **Lint warning count: 8 → 0.**
 ## v0.1.23 — 2026-05-22
 
 ### Changed
+
 - **`session-cost.mjs::computeSessionCost`** — 235 lines / complexity 85
   cut to 133 lines / complexity 22.
   - `scanSessions` extracted: drives the per-session JSONL loop and
@@ -1382,12 +1468,14 @@ Final lint-cleanup pass. **Lint warning count: 8 → 0.**
   `toolCount` helpers. summarizeReport now reads as a flat data shape.
 
 ### Notes
+
 - Lint warning count: 18 → 15.
 - All 49 tests pass.
 
 ## v0.1.22 — 2026-05-22
 
 ### Changed
+
 - **artifacts.mjs `render` complexity 79 → split.** `resolveArtifactConfig`
   now dispatches off a `SIMPLE_RENDERERS` table (7 entries) and the heavy
   cost-report renderer is split into 9 named helpers
@@ -1412,12 +1500,14 @@ Final lint-cleanup pass. **Lint warning count: 8 → 0.**
   helper.
 
 ### Notes
+
 - Lint warning count: 18 → 15.
 - All 49 tests pass.
 
 ## v0.1.21 — 2026-05-22
 
 ### Changed
+
 - **installer.mjs full split (Tier #10)**: extracted 5 more cohesive
   submodules from the residual installer.mjs. Now 11 files total under
   `scripts/lib/installer/`, each ≤ 110 lines and single-concern:
@@ -1442,6 +1532,7 @@ Final lint-cleanup pass. **Lint warning count: 8 → 0.**
 ## v0.1.20 — 2026-05-22
 
 ### Changed
+
 - **`scripts/lib/workflow-state.mjs`** — reduced complexity in five
   hot functions:
   - `hasCompletedPhaseEvidence`: 37 → 19. Extracted
@@ -1470,17 +1561,20 @@ Final lint-cleanup pass. **Lint warning count: 8 → 0.**
   in `cache-busted` rule trigger.
 
 ### Added
+
 - **`docs/standards/code-conventions.md`**: per-repo coding conventions adapted
   from `Astragenie.Standards/typescript/coding-conventions.md` for
   plain ESM. Anchors the lint rules to their reasoning.
 
 ### Notes
+
 - Lint warning count: 20 → 17.
 - All 49 tests pass.
 
 ## v0.1.19 — 2026-05-22
 
 ### Changed
+
 - **briefing.mjs split (Tier B-7)**: 821-line module split along the
   natural data / render boundary.
   - `scripts/lib/briefing/collect.mjs` (515 lines): pure I/O —
@@ -1491,7 +1585,7 @@ Final lint-cleanup pass. **Lint warning count: 8 → 0.**
     `buildBlockedOrMissing`, `buildImportantReminders`,
     `recommendedNextStep`, `buildSecondaryOptions`.
   - `scripts/lib/briefing.mjs` (88 lines, was 821): thin orchestrator.
-  Public API `buildBriefingReport` unchanged.
+    Public API `buildBriefingReport` unchanged.
 - **marketplace**: autonomous-loop entry bumped to v0.1.15 to pick up
   the slice-linker + phase-gate splits shipped there.
 
@@ -1500,6 +1594,7 @@ Tests: 49/49 pass.
 ## v0.1.18 — 2026-05-22
 
 ### Changed
+
 - **installer.mjs split (Tier B-5)**: the 1040-line mega-module is now
   399 lines. Extracted four cohesive submodules under
   `scripts/lib/installer/`:
@@ -1516,6 +1611,7 @@ Tests: 49/49 pass.
 ## v0.1.17 — 2026-05-22
 
 ### Changed
+
 - **Tooling**: ESLint 9 (flat config) + Prettier 3 added. CI now runs
   `npm ci`, `validate-manifests`, `lint`, `format:check`, `node --test`,
   `e2e-smoke` as separate gates. devDependencies pinned via
@@ -1531,12 +1627,14 @@ Tests: 49/49 pass.
     same error messages. Adding a new command/flag is now one entry.
 
 ### Fixed
+
 - `scripts/lib/cost-advisor.mjs`: empty `catch {}` blocks now carry
   intent comments (ESLint `no-empty`).
 
 ## v0.1.16 — 2026-05-22
 
 ### Added
+
 - `scripts/validate-manifests.mjs`: lightweight CI gate verifying
   `plugin.json` / `marketplace.json` / `package.json` required fields,
   semver parseability, and version-drift between the three files.
@@ -1549,6 +1647,7 @@ Tests: 49/49 pass.
   a matching preset applies. Stays opt-in; never auto-installs.
 
 ### Notes (not changed)
+
 - `.gitignore` install block intentionally does NOT ignore
   `.claude/artifacts/` — artifacts are the durable record per the
   constitution and should be committed in target repos.
@@ -1563,6 +1662,7 @@ Tests: 49/49 pass.
 ## v0.1.15 — 2026-05-22
 
 ### Changed
+
 - README: removed stale "legacy compatibility aliases" section that
   listed five `/crew:*` commands which no longer exist (`build-feature`,
   `investigate-bug`, `bootstrap-repo`, `init-repo`, `install-global`).
@@ -1576,10 +1676,12 @@ Tests: 49/49 pass.
 ## v0.1.14 — 2026-05-21
 
 ### Changed
+
 - Plugin and marketplace `author`/`owner` updated to `shishkosv` to match
   repo owner and the companion `autonomous-loop` plugin.
 
 ### Fixed
+
 - README local-development clone URL pointed to the legacy
   `alex-radaev/engineering-os` repo; corrected to
   `sergeymilashico/hero-crew`.
@@ -1590,12 +1692,14 @@ Tests: 49/49 pass.
 ## v0.1.13 — 2026-05-21
 
 ### Fixed
+
 - `bootstrapRepo` / `init` now seed `.gitignore` with a marker-bracketed
   `# crew:start`/`# crew:end` block. User lines outside the block are
   preserved; the block is replaced in place on re-install. Closes the
   e2e-smoke regression and lets the CI step run as a blocking gate.
 
 ### Infrastructure
+
 - `e2e-smoke` promoted from `continue-on-error` to blocking in CI.
 
 ## v0.1.12 — 2026-05-21
@@ -1603,6 +1707,7 @@ Tests: 49/49 pass.
 First tagged release after accumulated 0.1.0 → 0.1.12 work.
 
 ### Fixed
+
 - `write-final-synthesis` no longer hides top-level `path` under a `synthesis`
   key when a cost-report is also emitted. Restores the documented JSON shape
   for downstream callers and tests.
@@ -1610,6 +1715,7 @@ First tagged release after accumulated 0.1.0 → 0.1.12 work.
   match its `plugin.json`.
 
 ### Added — accumulated since 0.1.0
+
 - Per-slice Claude session cost tracking and `cost-advise` recommender.
 - `brief-me` cost diagnostics: combined cache R/W + I/O in millions, dominant
   model, preformatted I/O and Cache R/W strings, richer `autonomousLoop`
@@ -1617,6 +1723,7 @@ First tagged release after accumulated 0.1.0 → 0.1.12 work.
 - Tool-failure flag threshold raised to `> 3`.
 
 ### Infrastructure
+
 - CI: `node --test` + `e2e-smoke` on push/PR (GitHub Actions).
 - `.gitignore` covers `node_modules/`, `.claude/logs|state|artifacts/`,
   `.claude.backup.*`, `*.tmp`.
