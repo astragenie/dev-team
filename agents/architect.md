@@ -60,8 +60,8 @@ For substantive design work, dispatch to the appropriate 3rd-party specialist vi
 | Backend service architecture, API paradigm selection | `agents/3rdparty/backend-architect.md` |
 | Database schema, indexing strategy, data model | `agents/3rdparty/database-architect.md` |
 | Cloud infrastructure topology, region/AZ design | `agents/3rdparty/cloud-architect.md` |
-| API contract definition, OpenAPI / AsyncAPI spec | `agents/3rdparty/api-architect.md` |
-| System diagram, component map, sequence diagram | `agents/3rdparty/diagram-architect.md` |
+| API contract definition, OpenAPI / AsyncAPI spec | load `skills/domain/api-architecture/` inline |
+| System diagram, component map, sequence diagram | load `skills/domain/diagram-methodology/` inline |
 
 Dispatch pattern:
 

@@ -76,7 +76,7 @@ _ADR authoring, system design, database, cloud infra, API contract decisions._
 
 | Signal | Route to | Notes |
 |---|---|---|
-| **Architecture sketch / system design** (ADR drafting, system design, capacity or topology decisions) | `agents/architect.md` stub | Load `skills/domain/architecture-advisory/`. Architect stub delegates to `agents/3rdparty/{backend-architect,database-architect,cloud-architect,api-architect,diagram-architect}.md` via Agent tool. |
+| **Architecture sketch / system design** (ADR drafting, system design, capacity or topology decisions) | `agents/architect.md` stub | Load `skills/domain/architecture-advisory/`. Architect stub delegates to `agents/3rdparty/{backend-architect,database-architect,cloud-architect}.md` via Agent tool. For API contract work load `skills/domain/api-architecture/` inline; for diagrams load `skills/domain/diagram-methodology/` inline. |
 | **Schema design / migration planning / database performance tuning** (ER modeling, schema evolution, index strategy, technology selection, multi-tenancy, sharding, CQRS, event sourcing) | architect / builder | Load `skills/domain/database-architecture/`. For PostgreSQL-specific query tuning, hand off to `agents/3rdparty/database-architect.md`. |
 | **Cloud infra design** (multi-region, landing zone, IAM, network topology, multi-cloud, disaster recovery, cost optimization, FinOps) | architect / deployer | Load `skills/domain/cloud-architecture/`. For IaC specifics, co-cite `skills/domain/devops-engineering/references/iac.md`. |
 
