@@ -3,6 +3,25 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## Unreleased
+
+### Changed
+
+- `crew:parallel-runner` now delegates worktree creation, prompt augmentation,
+  Agent batch construction, marker-based result aggregation, and priority-ordered
+  merge to the loop plugin's hierarchical-dispatch primitive
+  (`node <loop-cli> dispatch prepare|finalize`). The agent prompt becomes a thin
+  orchestrator: build a dispatch plan, call `prepare`, invoke the Agent batch,
+  call `finalize`. **Requires loop plugin >= v0.32.0** (which introduced the
+  dispatch CLI in FEAT-020 SLICE-1). Earlier loop releases will fail at the
+  pre-flight `dispatch --help` check with a clear upgrade instruction.
+
+  This eliminates ~60% of the duplicated worktree+merge logic that previously
+  lived in the agent prompt. Telemetry surfaces (worktrees.jsonl, trace.jsonl,
+  per-child result markers, summary.md) now flow through loop's
+  `.claude/artifacts/loop/dispatch/<runId>/` namespace, unblocking FEAT-165
+  (per-skill cost attribution) and FEAT-133 (budget enforcement).
+
 ## v0.24.1 — 2026-06-08 — wire review_rebound_count consumer
 
 ### Fixed
