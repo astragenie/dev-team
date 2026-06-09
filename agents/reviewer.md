@@ -47,8 +47,8 @@ Rules:
 - Dispatch handoff cites `tags:` from PM triage → cross-check `docs/standards/feat-tag-schema.md` to confirm the `stack:*` domain skill and any `concern:*` co-load skill to invoke for this slice
 - Performance concern in diff (N+1, hot path, memory, latency) → `skills/domain/backend-advisory/`
 - Cannot reproduce failure path or intermittent behavior → `skills/workflow/systematic-debugging/`
-- Diff touches `.tsx` / `.jsx` / React components → `skills/domain/react-engineering/`
-- Diff touches `.ts` files (non-React backend) → `skills/workflow/reviewing-code/references/typescript-checklist.md`
+- Diff touches `.tsx` / `.jsx` / React components → `skills/domain/react-engineering/` + `skills/domain/typescript/ts-conventions/`
+- Diff touches `.ts` files (non-React backend / plugin / CLI) → `skills/domain/typescript-pro/` + `skills/domain/typescript/ts-conventions/` + `skills/domain/typescript/node-ts-patterns/`
 - Diff touches `.cs` files → load all three in order:
   1. `skills/domain/dotnet/csharp-conventions/` — language rules, DI, types, async, LINQ, size budgets
   2. `skills/domain/dotnet/aspnetcore-patterns/` — middleware ordering, health checks, output cache, rate limiting, API versioning

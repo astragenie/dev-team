@@ -111,6 +111,22 @@ Inside the app, work with the typed value — do not re-validate.
 - `async/await`. No `.then` chains beyond one link.
 - No floating Promises — every Promise is awaited, returned, or fire-and-forgot with a logged catch.
 - `AbortController` for cancellable fetches.
+- `using` / `await using` (explicit resource management, ES2025) for disposable resources: file handles, DB connections, streams, timers. Prefer over `try/finally` cleanup.
+
+## Supply chain security
+
+- `ignore-scripts=true` in `.npmrc` — blocks install-time scripts from untrusted packages.
+- Verify lockfile in CI (`npm ci` / `pnpm install --frozen-lockfile`) — rejects unapproved changes.
+- Audit new packages before adding: check for recent activity, suspicious version jumps, known CVEs (`npm audit`), and typosquatting risk.
+- Do not introduce packages not in `package.json` without review.
+
+## Node.js runtime targets
+
+| Runtime | When to use |
+|---|---|
+| Node.js 22 LTS | Default: stable ESM, native fetch, `node:test`, improved CJS interop |
+| Node.js 24 LTS | When native TS type-stripping (`--experimental-strip-types`) is needed without a build step |
+| Bun | Performance-critical scripts; not for production services without explicit team decision |
 
 ## Done criteria
 
