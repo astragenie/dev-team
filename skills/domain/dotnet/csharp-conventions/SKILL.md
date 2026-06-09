@@ -98,6 +98,31 @@ Use when `stack:csharp` slice involves command/query separation or event-driven 
 - `SpecFlow` is allowed for user-facing acceptance tests when product owner writes Gherkin; do NOT add it for developer unit tests
 - All tests use `xUnit` + `NSubstitute` + `FluentAssertions` — no Moq, no MSTest
 
+## Async depth
+
+- `ConfigureAwait(false)` on every `await` in library/helper code; omit in application entry points and UI.
+- `ValueTask` only when measured to reduce allocations on hot, frequently-completing paths; default to `Task`.
+- Async streams: `IAsyncEnumerable<T>` + `await foreach` for streaming endpoints; never buffer then return list.
+- Channels: `Channel<T>.CreateBounded(N)` for producer/consumer pipelines; prefer over `BlockingCollection`.
+- Bounded parallelism: `Parallel.ForEachAsync(source, new ParallelOptions { MaxDegreeOfParallelism = N }, ...)` — never `Task.WhenAll` over an unbounded list.
+- Stream large JSON: `GetAsync(..., ResponseHeadersRead)` → `ReadAsStreamAsync` → `JsonDocument.ParseAsync`; never `ReadAsStringAsync` for large payloads.
+
+## Performance hot paths
+
+- Measure first: `BenchmarkDotNet` for CPU/allocation, `dotMemory` or `dotnet-counters` for GC pressure; no optimization without a baseline.
+- `Span<T>` / `ReadOnlySpan<T>` for stack-allocated slicing; `Memory<T>` when async or stored.
+- `ArrayPool<T>.Shared.Rent` / `.Return` for temporary buffers — never `new byte[N]` in a loop.
+- Avoid boxing on hot paths: prefer `struct` for small value types, avoid `object` parameters, use generic constraints.
+- String: `StringBuilder` or `string.Create(...)` in loops; `string.Concat` / interpolation only for one-offs.
+
+## Structured logging + resilience
+
+- `ArgumentNullException.ThrowIfNull(x)` for null guards; `string.IsNullOrWhiteSpace` for strings; guard early, no `!` operator.
+- Structured logging with `ILogger`: named scopes (`using var _ = logger.BeginScope(...)`), correlation/trace IDs, no free-text interpolation in message templates — use named properties.
+- Never log sensitive data (PII, credentials, connection strings, tokens).
+- Resilient I/O: wrap all external calls (HTTP, DB, queue) with Polly `ResiliencePipeline` — retry with exponential backoff + jitter, timeout, optional circuit breaker. Wire via `AddResilienceHandler` in DI.
+- Precise exceptions: `ArgumentException`, `InvalidOperationException`, `NotFoundException` — never `throw new Exception(...)`.
+
 ## Example — typed Result
 
 ```csharp

@@ -68,7 +68,10 @@ Builders don't route to agents directly — emit the right signal and lead resol
 - Schema design / migration / database performance → `skills/domain/database-architecture/`
 - Regenerating native types/stubs from the OpenAPI YAML → `skills/domain/contract-codegen/` (BE recipes). **Run this as your FIRST step before any feature work.**
 - Per-stack routing (FEAT `stack:*` tag):
-  - `stack:csharp` → `skills/domain/dotnet/csharp-conventions/` (load skill for C# patterns)
+  - `stack:csharp` → load all three in order:
+    1. `skills/domain/dotnet/csharp-conventions/` — language rules, DI, types, async, LINQ, size budgets
+    2. `skills/domain/dotnet/aspnetcore-patterns/` — middleware ordering, health checks, output cache, rate limiting, API versioning
+    3. `skills/domain/dotnet/ef-core-patterns/` — query patterns, compiled queries, bulk ops, global filters, migration rules
   - `stack:node` → `skills/domain/typescript-pro/` (backend variant — server-side TS patterns)
   - `stack:python` → `skills/domain/python-pro/`
 - Microservices: inter-service calls, message queues, circuit breakers, sagas → `skills/domain/microservices-patterns/`
