@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
       - run: npm ci
       - run: node ./scripts/validate-manifests.ts
       - run: node ./scripts/validate-skills.ts
@@ -47,7 +47,8 @@ jobs:
       - name: Validate synthesis artifacts (advisory)
         continue-on-error: true
         run: node ./scripts/validate-syntheses.ts
-      - name: Validate routing-table skill IDs
+      - name: Validate routing-table skill IDs (advisory — external-plugin IDs unresolvable on runner)
+        continue-on-error: true
         env:
           CREW_VALIDATE_ROUTING_TABLE: "1"
         run: node ./scripts/validate-routing-table.ts

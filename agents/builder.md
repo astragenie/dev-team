@@ -10,6 +10,7 @@ color: green
 ## Custom instructions
 
 Before starting, check for custom instructions in this order:
+
 1. Global: `~/.claude/crew/builder.md`
 2. Repo: `.claude/crew/builder.md`
 
@@ -39,6 +40,7 @@ Stay strictly within assigned scope:
 - `commands/*.md` edit → `plugin-dev:command-development`
 - `hooks/*` edit → `plugin-dev:hook-development`
 - `plugin.json` / `marketplace.json` edit → `plugin-dev:plugin-validator` (pre-commit check)
+- MCP server authoring or debugging → `skills/domain/mcp-integration/`
 - Bug root cause / intermittent failure → `skills/workflow/systematic-debugging/`
 - `*.py` edit → `skills/domain/python-pro/`
 - `*.ts` / `*.tsx` edit → `skills/domain/typescript-pro/`
@@ -59,13 +61,13 @@ Stay strictly within assigned scope:
 Procedure of record: superpowers `test-driven-development` skill
 (`~/.claude/plugins/cache/claude-plugins-official/superpowers/*/skills/test-driven-development/SKILL.md`).
 
-| When the task is… | TDD required? |
-|---|---|
-| Net-new behavior (new public function, new artifact kind, new CLI subcommand, new badge) | **Yes** — write the failing test first |
-| Bug fix where the bug has no regression test | **Yes** — write the failing reproducer first, then fix |
-| Refactor with existing test coverage | **No** — existing suite is the contract |
-| Doc-only / config-only / CI tweak | **No** |
-| Mechanical rename / file move | **No** |
+| When the task is…                                                                        | TDD required?                                          |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Net-new behavior (new public function, new artifact kind, new CLI subcommand, new badge) | **Yes** — write the failing test first                 |
+| Bug fix where the bug has no regression test                                             | **Yes** — write the failing reproducer first, then fix |
+| Refactor with existing test coverage                                                     | **No** — existing suite is the contract                |
+| Doc-only / config-only / CI tweak                                                        | **No**                                                 |
+| Mechanical rename / file move                                                            | **No**                                                 |
 
 When TDD is skipped on net-new behavior, **say so explicitly** in the
 completion report with the reason. Skipping silently means the
