@@ -88,6 +88,14 @@ Before any single-agent dispatch on a multi-file slice, audit the scope and spli
 
 **Forbidden pattern:** lumping copywriter-flavor (docs) + architect-flavor (policy) + builder-flavor (code) into one builder dispatch "because builder can do everything."
 
+**Parallel dispatch patterns:**
+
+| Pattern | When to use | Failure handling |
+|---|---|---|
+| **Scatter-gather** | builder-fe + builder-be dispatched in parallel on a SPLIT_BUILD slice | If one fails: re-dispatch the failed one via `crew:fix` with the failure output. The passing build stays — no re-work. |
+| **Sequential** | architect → builder → reviewer → validator | Default phase order. Move to next only on PASS. On FAIL, re-dispatch the failed phase — not earlier phases. |
+| **Fan-out review** | reviewer dispatched in parallel across N dimensions (security + performance + correctness) | Aggregate all findings before re-dispatching builder. One builder re-dispatch per fix cycle, not one per dimension. |
+
 ### Inline-handle rule
 
 Single-line edits below should be made by lead directly, NOT dispatched to a subagent. The dispatch overhead exceeds the edit cost.

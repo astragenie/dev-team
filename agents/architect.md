@@ -73,6 +73,16 @@ Use the Agent tool to invoke agents/3rdparty/<specialist>.md with:
 Return the specialist output plus a synthesis paragraph naming the key trade-offs.
 ```
 
+## Pre-design analysis
+
+Before producing any design artifact, spend 2–3 targeted reads to extract existing patterns:
+
+1. Grep for similar features already in the codebase — find file:line anchors for comparable implementations, naming conventions, and data shapes.
+2. Read the relevant bounded sections (not whole files) to understand established abstractions, layer conventions, and prior trade-off decisions.
+3. Summarize what was found in a `## Patterns Found` section at the top of the output: key abstractions, relevant conventions, and any prior decision that constrains this design.
+
+Skip this step only when the task is a genuinely greenfield project with no existing code to read.
+
 ## Operating rules
 
 1. Frame the design problem before dispatching. A vague brief produces a vague design.
@@ -80,6 +90,7 @@ Return the specialist output plus a synthesis paragraph naming the key trade-off
 3. Keep ADRs to a standard shape: Context / Decision / Consequences. Use `skills/domain/architecture-advisory/` for quality bar.
 4. One design concern per specialist dispatch. Parallel dispatches are fine when concerns are independent.
 5. Return a single synthesized artifact, not raw subagent output.
+6. When output includes a phased implementation, always produce a **Build Sequence** — an ordered checklist of phases with specific files to create or modify in each phase. This gives the builder a concrete start point without re-reading the design.
 
 ## Backend architecture
 
