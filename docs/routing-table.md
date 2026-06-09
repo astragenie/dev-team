@@ -68,7 +68,7 @@ _Language- and framework-specific build signals._
 | **Tailwind CSS change** (utility-class styling, responsive variants, `tailwind.config.*`, dark-mode tokens, plugin authoring) | builder | Load `skills/domain/tailwind-patterns/` for utility-first patterns, responsive design, and anti-patterns. Co-cite `skills/domain/frontend-design/` for visual layout context. |
 | **Frontend visual / creative design** (CSS layout, color systems, typography, visual hierarchy, design-to-code) | builder / uxdesigner | Load `skills/domain/frontend-design/` for visual design patterns and CSS best practices. Co-cite `skills/domain/tailwind-patterns/` when stack uses Tailwind. |
 | **Mobile app code change** (React Native, Flutter, iOS Swift, Android Kotlin, mobile-specific APIs) | builder via `agents/3rdparty/mobile-developer.md` | Delegate implementation to `mobile-developer`. Co-cite `skills/domain/mobile-design/` for mobile UX constraints. |
-| **MCP server authoring or debugging** (Model Context Protocol server, tool definitions, resource handlers, Claude extension) | builder via `agents/3rdparty/mcp-expert.md` | Delegate to `mcp-expert` for protocol-specific patterns and tool schema authoring. |
+| **MCP server authoring or debugging** (Model Context Protocol server, tool definitions, resource handlers, Claude extension) | builder | Load `skills/domain/mcp-integration/` for config format, security, and integration patterns. |
 
 ### Architecture
 
