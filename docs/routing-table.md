@@ -93,7 +93,7 @@ _CI/CD, IaC, Terraform, incident response, performance benchmarks, web UI valida
 | **Performance-sensitive change shipped** (latency-critical path, throughput regression risk, bundle size impact) | deployer / validator via **gstack `/benchmark`** | Gather perf evidence alongside deployment evidence. Run before and after to produce delta metrics. |
 | **Web UI behavior changed** (frontend components, user-visible flows, browser-rendered output) | validator via **gstack `/qa`** | Validator invokes `/qa` for real Playwright browser testing instead of prompt-only validation. Produces observable evidence (screenshots, console output). |
 | **Web app E2E / integration testing** (end-to-end browser tests, integration smoke, API contract validation at runtime) | validator / integrator | Load `skills/workflow/webapp-testing/` for structured test scenario design and evidence requirements. Pairs with gstack `/qa` for real Playwright execution. |
-| **Docker containerization** (Dockerfile authoring, multi-stage builds, docker-compose, image optimization, registry management) | builder / deployer via `agents/3rdparty/deployment-engineer.md` | Load `skills/domain/docker-expert/` for container patterns, security hardening, and optimization. Co-cite `skills/domain/devops-engineering/` for pipeline integration. |
+| **Docker containerization** (Dockerfile authoring, multi-stage builds, docker-compose, image optimization, registry management) | builder / deployer | Load `skills/domain/docker-expert/` for container patterns, security hardening, and optimization. Co-cite `skills/domain/devops-engineering/` for pipeline integration. |
 
 ### Research
 

@@ -248,7 +248,7 @@ When generating code with AI assistance, apply these validation steps before mar
 - Provide test IDs to qa-expert
 - Share metrics with performance-engineer
 - Coordinate with websocket-engineer for real-time features
-- Work with deployment-engineer on build configs
+- Work with crew:deployer on build configs
 - Collaborate with security-auditor on CSP policies
 - Sync with database-optimizer on data fetching
 

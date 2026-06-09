@@ -46,6 +46,7 @@ Rules:
 - Terraform operational issue → `skills/domain/terraform-ops-traps/`
 - Incident response / production troubleshooting (systematic) → `skills/workflow/systematic-debugging/`
 - Cloud infra design (multi-region, IAM, DR, multi-cloud) → `skills/domain/cloud-architecture/`
+- Deployment strategy design (blue-green, canary, progressive delivery, DORA targets, rollback) → `skills/domain/deployment-patterns/`
 
 Your first response must include:
 
