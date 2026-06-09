@@ -73,11 +73,24 @@ function parseDecision(text: string | null): string | null {
   return m && m[1] !== undefined ? m[1] : null;
 }
 
+// Parse `review_rebound_count: <N>` from grade frontmatter. Emitted by the
+// loop slice grade template; counts /crew:fix → /crew:review cycles before
+// review passed. Used to track the build-bundle quality-win hypothesis over
+// a rolling window.
+function parseReviewReboundCount(text: string | null): number | null {
+  if (!text) return null;
+  const m = text.match(/^review_rebound_count:\s*(\d+)\s*$/m);
+  if (!m || m[1] === undefined) return null;
+  const n = Number(m[1]);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
 export interface OutcomeLinkageResult {
   sliceId: string | null;
   gradePath?: string | null;
   scores?: Record<string, number> | null;
   gradeAvg?: number | null;
+  reviewReboundCount?: number | null;
   reviewPath?: string | null;
   reviewDecision?: string | null;
   validationPath?: string | null;
@@ -110,6 +123,7 @@ export async function collectOutcomeLinkage(
   const gradeText = await readIfExists(gradePath);
   const scores = parseScoresFromBody(gradeText);
   const gradeAvg = avgScores(scores);
+  const reviewReboundCount = parseReviewReboundCount(gradeText);
 
   const reviewsDir = path.join(repoPath, ".claude/artifacts/crew/reviews");
   const validationsDir = path.join(repoPath, ".claude/artifacts/crew/validations");
@@ -121,6 +135,7 @@ export async function collectOutcomeLinkage(
     gradePath: gradeText ? gradePath : null,
     scores,
     gradeAvg,
+    reviewReboundCount,
     reviewPath: review.filePath,
     reviewDecision: review.decision,
     validationPath: validation.filePath,
