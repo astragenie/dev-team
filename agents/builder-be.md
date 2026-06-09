@@ -45,7 +45,7 @@ If you discover a needed cross-cutting change, surface it to the lead and stop.
 - Schema design / migration / database performance → `skills/domain/database-architecture/`
 - Regenerating native types/stubs from the OpenAPI YAML → `skills/domain/contract-codegen/` (BE recipes). **Run this as your FIRST step before any feature work.**
 - Per-stack routing (FEAT `stack:*` tag):
-  - `stack:csharp` → `skills/domain/dotnet/csharp-conventions/` + `agents/3rdparty/c-sharp-pro.md` (agent has the C# patterns)
+  - `stack:csharp` → `skills/domain/dotnet/csharp-conventions/` (load skill for C# patterns)
   - `stack:node` → `skills/domain/typescript-pro/` (backend variant — server-side TS patterns)
   - `stack:python` → `skills/domain/python-pro/`
 - Bug root cause / intermittent failure → `skills/workflow/systematic-debugging/`
