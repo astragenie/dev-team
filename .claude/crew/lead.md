@@ -39,6 +39,16 @@ The original collision source (`caveman:cavecrew-reviewer`, shipped from this re
 
 Before any chained Bash with `cd` / path-touching commands, verify with `pwd` (POSIX) or `Get-Location` + `Test-Path` (PowerShell). On Windows, prefer the PowerShell tool for cmdlet operations and reserve Bash for POSIX-style scripts. Use `$env:NAME` in PS, `$NAME` in bash. Quote paths with spaces.
 
+## Waiting on external state (CI runs, deploys, remote queues)
+
+The harness blocks foreground sleeps (`Start-Sleep`, `sleep N`) chained before a check — they freeze the session lane. Do not chain shorter sleeps to work around the block. Instead:
+
+- **One notification when done** (CI run finishes, deploy completes) → run the blocking command via `run_in_background: true`, e.g. `gh run watch <id> --exit-status`. The harness notifies on exit.
+- **Repeated events / polling** → the `Monitor` tool with an until-loop (`until <check>; do sleep 2; done` — Monitor runs bash and owns its sleeps).
+- **Instant check, no wait** → just run the status query directly (`gh run view <id> --json status,conclusion`) without a leading sleep.
+
+Caveat on `gh run watch | Select-Object -Last N`: the pipeline's exit code is Select-Object's, not gh's — don't infer pass/fail from it; confirm with `gh run view --json conclusion`. Advisory `continue-on-error` steps print ✗ annotations while the run still concludes `success`.
+
 ## Shell cheatsheet (PS vs bash)
 
 | Operation       | PowerShell               | Bash                     |
