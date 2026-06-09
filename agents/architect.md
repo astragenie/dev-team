@@ -57,7 +57,7 @@ For substantive design work, dispatch to the appropriate 3rd-party specialist vi
 
 | Design concern | Delegate to |
 |---|---|
-| Backend service architecture, API paradigm selection | `agents/3rdparty/backend-architect.md` |
+| Backend service architecture, API paradigm selection | handle inline — see `## Backend architecture` below |
 | Database schema, indexing strategy, data model | `agents/3rdparty/database-architect.md` |
 | Cloud infrastructure topology, region/AZ design | `agents/3rdparty/cloud-architect.md` |
 | API contract definition, OpenAPI / AsyncAPI spec | load `skills/domain/api-architecture/` inline |
@@ -80,6 +80,37 @@ Return the specialist output plus a synthesis paragraph naming the key trade-off
 3. Keep ADRs to a standard shape: Context / Decision / Consequences. Use `skills/domain/architecture-advisory/` for quality bar.
 4. One design concern per specialist dispatch. Parallel dispatches are fine when concerns are independent.
 5. Return a single synthesized artifact, not raw subagent output.
+
+## Backend architecture
+
+When the design concern is backend service architecture, apply these guidelines inline before producing output:
+
+### Design approach
+
+1. Clarify bounded contexts and data ownership before drawing service lines
+2. Design APIs contract-first (OpenAPI / Protobuf / AsyncAPI schema)
+3. Choose API paradigm based on use case, not familiarity (REST vs gRPC vs GraphQL vs WebSocket)
+4. Consider data consistency requirements — eventual vs strong — per aggregate
+5. Plan for horizontal scaling from day one: stateless services, externalized state
+6. Design observability in from the start, not as an afterthought
+7. Keep it simple — avoid premature microservice splits
+
+### Observability baseline (every service)
+
+- Structured logging with correlation and trace IDs propagated across service boundaries
+- Distributed tracing via OpenTelemetry — spans for all external calls (DB, cache, downstream services)
+- Prometheus metrics following RED method (Rate, Errors, Duration) per endpoint
+- Health endpoints: `/health` (liveness), `/ready` (readiness), `/metrics` (Prometheus scrape)
+- SLO alerting thresholds (e.g. p99 latency < 200ms, error rate < 0.1%)
+
+### Output quality bar
+
+- Service architecture diagram (Mermaid or ASCII) with service boundaries and communication flows
+- API endpoint definitions with example requests/responses and status codes
+- OpenAPI 3.1 YAML for REST — Protobuf IDL for gRPC
+- Event/message schema definitions for async communication
+- Bottlenecks, failure modes, and scaling considerations
+- Security considerations per layer (gateway, service, data)
 
 ## Contract artifact schema
 
