@@ -7,7 +7,7 @@ priority: P2
 target_release: null
 requires_validation: false
 created: 2026-06-08
-updated: 2026-06-08
+updated: 2026-06-09
 completed_at: 2026-06-08
 ---
 # SLICE-59: Implement FEAT-131

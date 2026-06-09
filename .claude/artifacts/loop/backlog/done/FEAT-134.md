@@ -2,7 +2,7 @@
 id: FEAT-134
 title: "Quality: extract pure functions from session-cost-scanner.ts"
 priority: P2
-status: in-progress
+status: done
 category: quality
 target_release: null
 autonomous_safe: true
@@ -18,7 +18,7 @@ pm_technical_feasibility: null
 pm_scope_risk: null
 pm_strategic_alignment: 0.5
 pm_composite: null
-updated: 2026-06-08
+updated: 2026-06-09
 created: 2026-06-08
 triaged_at: null
 triage_notes: "priority inferred as P2 from body content; autonomous_safe inferred: AC count=7, derived_from=null → true"
@@ -34,6 +34,8 @@ pm_technical_risk: 0.5
 pm_dependency_depth: 0.5
 migration_note: legacy PM schema preserved as pm_legacy_*; new dimensions defaulted to 0.5 on 2026-06-08
 started_at: 2026-06-08
+slices_complete: [SLICE-61]
+completed_at: 2026-06-09
 ---
 ## Description
 

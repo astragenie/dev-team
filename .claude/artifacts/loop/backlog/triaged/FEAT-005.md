@@ -15,8 +15,8 @@ pm_effort_estimate: 0.5
 pm_strategic_alignment: 0.5
 pm_technical_risk: 0.5
 pm_dependency_depth: 0.5
-autonomous_safe: false
-triage_notes: "autonomous_safe inferred: AC count=0, derived_from=null → false"
+autonomous_safe: true
+triage_notes: "autonomous_safe: true — AC fully specified in body (5 clear criteria), implementation scope is additive skill routing in crew:orchestrate-slice, no governance call required"
 ---
 # FEAT-005: /crew:orchestrate-slice routes builder variant from FEAT `surface` + `stack` frontmatter
 

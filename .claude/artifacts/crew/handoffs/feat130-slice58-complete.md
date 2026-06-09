@@ -5,7 +5,7 @@ owner: lead
 slice: SLICE-58
 feature: FEAT-130
 phase: null
-created_at: 2026-06-08
+created_at: 2026-06-09
 confidence: high
 next_handoff: grade-and-continue
 ---

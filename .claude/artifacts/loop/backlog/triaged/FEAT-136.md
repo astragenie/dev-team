@@ -2,7 +2,7 @@
 id: FEAT-136
 title: "Bug: /crew:parallel skill conflicts with guard-feat-dispatch hook allowlist"
 priority: P2
-status: pending
+status: triaged
 category: bug
 target_release: null
 autonomous_safe: true
@@ -20,8 +20,8 @@ pm_strategic_alignment: 0.5
 pm_composite: null
 updated: 2026-06-09
 created: 2026-06-09
-triaged_at: null
-triage_notes: null
+triaged_at: 2026-06-09
+triage_notes: "autonomous_safe: true — clear bug with 4 concrete AC, two well-defined paths (Path A preferred: rewrite parallel.md to dispatch crew:lead per worktree directly), no governance blocker"
 slices: []
 depends_on: []
 github_issue: null
