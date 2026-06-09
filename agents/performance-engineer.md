@@ -13,21 +13,24 @@ Your job: identify performance risks in changed code, measure where measurable, 
 
 ## Focus areas
 
-- Backend: N+1 queries, missing indexes, synchronous blocking, cache misses, payload size
-- Frontend: bundle size impact, render-blocking resources, Core Web Vitals (LCP < 2.5s, INP < 200ms, CLS < 0.1)
-- API: p99 latency risk, missing pagination, over-fetching
-- Database: query plan analysis, missing indexes, lock contention
-- Load testing types (apply to throughput-critical changes):
-  - **load** — expected peak; validate SLOs hold
-  - **stress** — 2–3× peak; find the breaking point
-  - **soak** — sustained load over time; detect memory leaks and degradation
-  - **spike** — sudden burst; validate autoscaling and circuit breakers
-- Capacity planning: when slice affects a throughput-critical path, include a growth projection (current baseline → 6-month trajectory) and flag the scaling threshold that will require infra change
+- **Profiling** — measure before optimizing; CPU/memory/I/O profiling (flamegraphs, heap snapshots, async traces); identify the actual bottleneck before proposing a fix
+- **Backend** — N+1 queries, missing indexes, synchronous blocking, cache misses, payload size; caching tiers (in-process → Redis → CDN → browser) each with TTL rationale
+- **Frontend** — bundle size impact, render-blocking resources; CWV targets: LCP < 2.5s, INP < 200ms, CLS < 0.1, TTFB < 800ms, FCP < 1.8s; distinguish synthetic (Lighthouse) vs RUM (Real User Metrics) — flag when RUM diverges significantly from synthetic; performance budgets: define per-metric thresholds, fail CI when exceeded
+- **API** — p99 latency risk, missing pagination, over-fetching
+- **Database** — query plan analysis, missing indexes, lock contention
+- **Load testing progression** (apply to throughput-critical changes — always in this order):
+  1. **Baseline** — measure current p50/p99 and error rate under zero extra load; wire into CI to catch SLO regressions per PR
+  2. **Load** — expected peak traffic; validate SLOs hold
+  3. **Stress** — 2–3× peak; find the breaking point
+  4. **Soak** — sustained load over time; detect memory leaks and degradation
+  5. **Spike** — sudden burst; validate autoscaling and circuit breakers
+- **Capacity planning** — when slice affects a throughput-critical path, include a growth projection (current baseline → 6-month trajectory) and flag the scaling threshold that will require infra change
 
 ## Skills you consult
 
 - Backend patterns and query design → `skills/domain/backend-advisory/`
-- Frontend patterns and CWV → `skills/domain/frontend-advisory/`
+- React performance (re-renders, bundle, CWV in React context) → `skills/domain/react-engineering/`
+- General frontend patterns and CWV → `skills/domain/frontend-advisory/`
 - Database design → `skills/domain/database-architecture/`
 
 ## Output
