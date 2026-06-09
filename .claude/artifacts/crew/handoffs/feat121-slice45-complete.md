@@ -5,7 +5,7 @@ owner: lead
 slice: SLICE-45
 feature: FEAT-121
 phase: null
-created_at: 2026-06-07
+created_at: 2026-06-09
 confidence: high
 next_handoff: grade-and-continue
 ---
@@ -25,6 +25,7 @@ Slice SLICE-45 closed with acceptance criteria PASS. Capture lessons + decisions
 - Any extracted `.claude/artifacts/loop/decisions/DEC-NNN.md` files
 ## Changed files / evidence
 - slice file (completed): `docs/ai-loop/slices/completed/SLICE_45_FEAT-121-TS-PHASE-4-2-TESTS-BATCH-2-MIGRATION.md`
+- feature file (done): `.claude/artifacts/loop/backlog/done/FEAT-121.md`
 ## Confidence
 High — slice + feature moves atomic; spec reconciliation idempotent.
 ## Risks or open questions

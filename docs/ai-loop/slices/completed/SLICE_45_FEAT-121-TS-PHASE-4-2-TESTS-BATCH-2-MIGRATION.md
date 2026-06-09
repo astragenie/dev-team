@@ -7,7 +7,7 @@ priority: P1
 target_release: null
 requires_validation: true
 created: 2026-06-07
-updated: 2026-06-07
+updated: 2026-06-09
 completed_at: 2026-06-07
 ---
 # SLICE-45: # FEAT-121 — TS Phase 4.2: tests batch 2 migration

@@ -2,7 +2,7 @@
 id: FEAT-121
 title: TS Phase 4.2 — tests batch 2 migration (21 test files .mjs → .ts)
 priority: P1
-status: in-progress
+status: done
 category: code-quality
 target_release: null
 autonomous_safe: true
@@ -23,12 +23,13 @@ pm_legacy_customer_impact: 0.3
 pm_effort_estimate: 0.5
 pm_technical_risk: 0.3
 pm_dependency_depth: 0.3
-updated: 2026-06-07
+updated: 2026-06-09
 slices: [SLICE-45]
-slices_complete: []
+slices_complete: [SLICE-45]
 triage_notes: "autonomous_safe inferred: AC count=5, derived_from=parent_spec → true"
 depends_on: [FEAT-120]
 started_at: 2026-06-07
+completed_at: 2026-06-09
 ---
 # FEAT-121 — TS Phase 4.2: tests batch 2 migration
 
