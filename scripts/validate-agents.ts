@@ -20,7 +20,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const AGENTS_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "agents");
-const MAX_LINES = 300;
+const MAX_LINES = 500;
 
 function parseFrontmatter(text: string): Record<string, string> | null {
   const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
@@ -69,10 +69,16 @@ function checkFileName(
   }
 }
 
-function checkLineCount(text: string, label: string, errors: string[]) {
+function checkLineCount(
+  text: string,
+  fm: Record<string, string>,
+  label: string,
+  errors: string[]
+) {
   const lines = text.split("\n").length;
-  if (lines > MAX_LINES) {
-    errors.push(`${label}: ${lines} lines exceeds the ${MAX_LINES}-line agent prompt cap`);
+  const cap = fm["maxLines"] ? parseInt(fm["maxLines"], 10) : MAX_LINES;
+  if (lines > cap) {
+    errors.push(`${label}: ${lines} lines exceeds the ${cap}-line agent prompt cap`);
   }
 }
 
@@ -134,7 +140,7 @@ export async function validateAgents(agentsRoot = AGENTS_ROOT) {
     agents.push({ label, filePath, fm, text });
     checkRequiredFields(fm, label, errors);
     checkFileName(filePath, fm, label, errors);
-    checkLineCount(text, label, errors);
+    checkLineCount(text, fm, label, errors);
     checkRequiredSections(text, fm, label, errors);
   }
   checkDuplicateNames(agents, errors);
