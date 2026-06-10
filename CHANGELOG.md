@@ -3,6 +3,36 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.28.1 — 2026-06-10 — slice-pipeline speedup WS1: test suite 115.9s → 21.1s
+
+### Changed
+
+- **In-process `runCrew()` entry point exported.** `scripts/crew.ts` now exports
+  an async `runCrew(argv, opts): Promise<{code, stdout}>` function for in-process
+  test invocation, guarded by `isDirectRun` check to preserve CLI subprocess
+  behavior unchanged. Eliminates per-test subprocess spawn of 85-file script graph
+  (the 17–23s bottleneck in `tests/cli.test.ts` on test isolation).
+- **Test suite split by command family.** `tests/cli.test.ts` split into
+  per-family files (`cli-claims.test.ts`, `cli-approvals.test.ts`,
+  `cli-artifacts.test.ts`, `cli-synthesis-cost.test.ts`, `cli-workflow.test.ts`)
+  + `cli-smoke.test.ts` for 5 process-level spawn smokes per command family.
+  Shared assertions extracted to `tests/helpers/cli-fixtures.ts`. Enables
+  `node --test` parallelization across cores.
+- **Test suite performance baseline reset.** Full test suite: 115.9s → 21.1s
+  (-82%), 589 tests. (WS1 goal: 116s → <30s; landed at 21.1s via in-process
+  architecture. Interim node-only target before WS3 Bun swap.)
+- **`CREW_PROJECTS_ROOT` env override for session-cost scanner.** `tests/`
+  fixtures no longer scan the user's real `~/.claude/projects/` during test
+  runs. Tests now set `CREW_PROJECTS_ROOT=<tmpdir>` or use a sandboxed path.
+  Prevents cost-scanner integration tests from measuring real hook costs.
+
+### Fixed
+
+- **FEAT id pattern aligned to `^FEAT-\d{3,}[a-z]?$` in unique-id check.**
+  `scripts/validate-loop-state.ts` now includes suffixed ids (e.g., `FEAT-133a`)
+  in the uniqueness check. Previous logic only captured `FEAT-NNN` (no suffix);
+  suffixed ids escaped duplicate detection.
+
 ## v0.28.0 — 2026-06-10 — gate rebalance: scoped builders, validator owns full gate
 
 ### Changed
