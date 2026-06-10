@@ -1,5 +1,5 @@
 ---
-id: DEC-016
+id: ADR-001
 title: parallel-runner stays off the guard-feat-dispatch allowlist
 status: accepted
 introduced_by_slice: SLICE-65
@@ -7,7 +7,7 @@ introduced_at: 2026-06-10
 related_specs: [FEAT-136, FEAT-137]
 superseded_by: null
 ---
-# DEC-016: parallel-runner stays off the guard-feat-dispatch allowlist
+# ADR-001: parallel-runner stays off the guard-feat-dispatch allowlist
 
 ## Context
 
