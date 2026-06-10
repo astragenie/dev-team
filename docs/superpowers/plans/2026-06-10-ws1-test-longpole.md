@@ -105,11 +105,40 @@ Files: Modify `scripts/crew.ts`; Create `tests/run-crew.test.ts`.
 - [ ] Run `npm test` to ensure no regressions in the full suite.
 - [ ] Commit: `git add scripts/crew.ts tests/run-crew.test.ts && git commit -m "feat(crew): export in-process runCrew() entry point for test efficiency"`
 
-## Task 4 — Split tests/cli.test.ts into cli-claims.test.ts
+## Task 4 — Extract cli-fixtures.ts, then split tests/cli.test.ts into cli-claims.test.ts
 
-Files: Create `tests/cli-claims.test.ts`; Modify `tests/cli.test.ts` (remove moved tests).
+Files: Create `tests/helpers/cli-fixtures.ts`; Create `tests/cli-claims.test.ts`; Modify `tests/cli.test.ts` (remove moved tests).
 
-- [ ] Read tests/cli.test.ts and identify all tests in the "claims" family:
+- [ ] Read tests/cli.test.ts lines 1–16 to extract the shared helper functions and constants (`execFile`, `cliPath`, `makeTempDir`, `loadState`).
+- [ ] Create `tests/helpers/cli-fixtures.ts` and export all four helpers:
+  ```ts
+  import fs from "node:fs/promises";
+  import os from "node:os";
+  import path from "node:path";
+  import { execFile as execFileCallback } from "node:child_process";
+  import { fileURLToPath } from "node:url";
+  import { promisify } from "node:util";
+
+  export const execFile = promisify(execFileCallback);
+  export const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+  export const cliPath = path.join(repoRoot, "scripts", "crew.ts");
+
+  export async function makeTempDir(prefix: string) {
+    return fs.mkdtemp(path.join(os.tmpdir(), prefix));
+  }
+
+  export async function loadState(repoPath: string) {
+    const raw = await fs.readFile(
+      path.join(repoPath, ".claude", "state", "crew", "workflow-state.json"),
+      "utf8"
+    );
+    return JSON.parse(raw);
+  }
+  ```
+- [ ] Update tests/cli.test.ts: remove the helper definitions (lines 10–16 for the functions, keep only imports at the top); add a single import line: `import { execFile, cliPath, makeTempDir, loadState } from "./helpers/cli-fixtures.ts";`
+- [ ] Run `npm test -- tests/cli.test.ts` (should still pass; validates the transition).
+- [ ] Proceed to identify and move tests in the "claims" family:
+
   - "CLI init creates a harnessed repo" (lines 7–26)
   - "CLI bootstrap preserves existing CLAUDE.md content" (lines 28–47)
   - "CLI claim and release manage repo-local claims" (lines 49–105)
@@ -160,10 +189,8 @@ Files: Create `tests/cli-approvals.test.ts`; Modify `tests/cli.test.ts`.
 
 Files: Create `tests/cli-artifacts.test.ts`; Modify `tests/cli.test.ts`.
 
-- [ ] Identify the artifacts family tests in cli.test.ts:
+- [ ] Identify the artifacts family tests in cli.test.ts (excluding synthesis-cost family):
   - "CLI artifact writers create markdown artifacts" (lines 166–355) — this is the main one
-  - "write-final-synthesis rejects when --external-deltas is missing" (lines 1008–1038)
-  - "write-final-synthesis accepts --external-deltas none and renders the section" (lines 1040–1082)
   - "write-* commands embed --feature and --phase in frontmatter" (lines 1354–1413)
   - "write-handoff --repo-context appends ## Repo Layout section" (lines 1486–1507)
   - "write-handoff without --repo-context has no ## Repo Layout section" (lines 1509–1527)
@@ -174,9 +201,9 @@ Files: Create `tests/cli-artifacts.test.ts`; Modify `tests/cli.test.ts`.
   - "write-deployment-check: --findings persisted in frontmatter" (lines 1648–end of file, ~1677)
 - [ ] Create `tests/cli-artifacts.test.ts` with boilerplate from earlier tasks.
 - [ ] Convert the main "CLI artifact writers create markdown artifacts" test (the largest; lines 166–355) as the shown example. Show the full before/after for at least the first 3 write-* command calls in that test.
-- [ ] For the remaining 9 tests, note that they follow the same mechanical conversion pattern; describe as "same mechanical conversion (show one example in cli-artifacts.test.ts)".
-- [ ] Remove all 10 tests from tests/cli.test.ts.
-- [ ] Run `npm test -- tests/cli-artifacts.test.ts`, expect 10 PASS.
+- [ ] For the remaining 7 tests, note that they follow the same mechanical conversion pattern; describe as "same mechanical conversion (show one example in cli-artifacts.test.ts)".
+- [ ] Remove all 8 tests from tests/cli.test.ts (excluding the 2 write-final-synthesis tests that belong in Task 7).
+- [ ] Run `npm test -- tests/cli-artifacts.test.ts`, expect 8 PASS.
 - [ ] Commit: `git add tests/cli-artifacts.test.ts tests/cli.test.ts && git commit -m "test(cli-artifacts): split write-* artifact commands from cli.test.ts, convert to runCrew()"`
 
 ## Task 7 — Split tests/cli.test.ts into cli-synthesis-cost.test.ts (write-final-synthesis, cost-advise, cost-slice)
@@ -185,9 +212,13 @@ Files: Create `tests/cli-synthesis-cost.test.ts`; Modify `tests/cli.test.ts`.
 
 **CRITICAL: This task must set CREW_PROJECTS_ROOT to a tiny fixture so cost-scanning commands don't scan the user's real ~/.claude/projects.**
 
-- [ ] Identify the synthesis/cost family tests in cli.test.ts:
-  - "cost-advise accepts --title --feature --phase and slugs filename + emits frontmatter" (lines 1415–1458)
-  - "cost-slice embeds --feature and --phase in cost-report frontmatter" (lines 1460–1484)
+- [ ] Identify the synthesis/cost family tests in cli.test.ts (all 6):
+  - "write-final-synthesis rejects when --external-deltas is missing" (lines 1019–1049)
+  - "write-final-synthesis accepts --external-deltas none and renders the section" (lines 1051–1093)
+  - "CLI blocks final synthesis when workflow badges are still pending" (lines 947–1017)
+  - "final-synthesis blocked when escalated_to_human set; --force overrides" (lines 1215–1271)
+  - "cost-advise accepts --title --feature --phase and slugs filename + emits frontmatter" (lines 1434–1477)
+  - "cost-slice embeds --feature and --phase in cost-report frontmatter" (lines 1479–1503)
 - [ ] Create `tests/cli-synthesis-cost.test.ts` with:
   - Standard boilerplate imports from earlier tasks
   - A before() hook that sets `process.env.CREW_PROJECTS_ROOT` to a temp fixture directory
@@ -207,14 +238,43 @@ Files: Create `tests/cli-synthesis-cost.test.ts`; Modify `tests/cli.test.ts`.
     }) + "\n");
     process.env.CREW_PROJECTS_ROOT = fixtureRoot;
     ```
-- [ ] Convert both cost tests using runCrew():
+- [ ] Convert all 6 synthesis/cost tests using runCrew():
+  - The two write-final-synthesis tests ("rejects when...", "accepts --external-deltas...") that block on missing --external-deltas and render the section
+  - "CLI blocks final synthesis when workflow badges are still pending"
+  - "final-synthesis blocked when escalated_to_human set; --force overrides"
   - "cost-advise accepts..." test: replace execFile subprocess calls with runCrew() calls
   - "cost-slice embeds..." test: same conversion
   - Show the full before/after for the cost-advise test as an example.
-- [ ] Remove both tests from tests/cli.test.ts.
-- [ ] Run `npm test -- tests/cli-synthesis-cost.test.ts`, expect 2 PASS with CREW_PROJECTS_ROOT honored.
+- [ ] Remove all 6 tests from tests/cli.test.ts.
+- [ ] Run `npm test -- tests/cli-synthesis-cost.test.ts`, expect 6 PASS with CREW_PROJECTS_ROOT honored.
 - [ ] Verify cost-scanning does NOT access ~/.claude/projects by checking the test logs or adding a debug assertion.
 - [ ] Commit: `git add tests/cli-synthesis-cost.test.ts tests/cli.test.ts && git commit -m "test(cli-synthesis-cost): split cost commands from cli.test.ts, set CREW_PROJECTS_ROOT fixture, convert to runCrew()"`
+
+## Task 7b — Split tests/cli.test.ts into cli-workflow.test.ts
+
+Files: Create `tests/cli-workflow.test.ts`; Modify `tests/cli.test.ts`.
+
+- [ ] Identify the workflow family tests in cli.test.ts (13 tests):
+  - "CLI wake-up brief summarizes repo memory and state" (lines 368–535)
+  - "CLI brief-me synthesizes workflow state, git activity, and next step" (lines 537–635)
+  - "CLI brief-me is read-only for an uninitialized repo" (lines 637–653)
+  - "CLI brief-me surfaces failed gates before generic next steps" (lines 655–701)
+  - "CLI workflow state tracks gate badges and artifact progress" (lines 703–852)
+  - "CLI workflow state and brief-me surface missing artifact write-backs after a completed phase" (lines 854–905)
+  - "CLI workflow state and brief-me surface missing run briefs after meaningful progress starts" (lines 907–945)
+  - "CLI subcommand help works without error" (lines 1095–1105)
+  - "CLI install-global writes managed global memory into HOME" (lines 1107–1139)
+  - "mark-badge blocked persists note + blockedBy" (lines 1149–1180)
+  - "mark-badge escalated_to_human persists note" (lines 1182–1213)
+  - "brief-me surfaces blocked in pending badges" (lines 1273–1311)
+  - "brief-me reports routingTableStale=false when file recent or absent" (lines 1313–1343)
+  - "brief-me reports routingTableStale=true when mtime > 30 days old" (lines 1345–1371)
+- [ ] Create `tests/cli-workflow.test.ts` with boilerplate from earlier tasks (imports from helpers/cli-fixtures.ts).
+- [ ] Convert all 13 workflow tests using the runCrew() pattern from Task 4. Show one full example (e.g., brief-me test) in the plan.
+- [ ] **Caveat for install-global test:** it currently injects HOME via subprocess env in execFile options. When converting in-process, set and restore `process.env.HOME` (and `process.env.USERPROFILE` on Windows) around the runCrew call. If that proves fragile with async state leakage, keep this single test in cli-smoke.test.ts as a sixth spawn and document in the commit message.
+- [ ] Remove all 13 workflow tests from tests/cli.test.ts.
+- [ ] Run `npm test -- tests/cli-workflow.test.ts`, expect 13 PASS (or 12 PASS + 1 skipped if install-global remains in smoke).
+- [ ] Commit: `git add tests/cli-workflow.test.ts tests/cli.test.ts && git commit -m "test(cli-workflow): split workflow family from cli.test.ts, convert to runCrew()"`
 
 ## Task 8 — Create cli-smoke.test.ts (exactly 5 real spawn smokes, one per family)
 
@@ -237,12 +297,15 @@ Files: Create `tests/cli-smoke.test.ts`; Modify `tests/cli.test.ts`.
 Files: Delete `tests/cli.test.ts`.
 
 - [ ] Verify that all tests have been moved to the split files:
-  - cli-claims.test.ts (3 tests)
-  - cli-approvals.test.ts (1 test)
-  - cli-artifacts.test.ts (10 tests)
-  - cli-synthesis-cost.test.ts (2 tests)
-  - cli-smoke.test.ts (5 tests)
-  - Total: 21 tests that were originally in cli.test.ts, plus the 5 smokes
+  - cli-claims.test.ts: 3 tests
+  - cli-approvals.test.ts: 1 test
+  - cli-artifacts.test.ts: 8 tests (excluding 2 write-final-synthesis moved to Task 7)
+  - cli-synthesis-cost.test.ts: 6 tests (2 write-final-synthesis + 2 gate enforcement + 2 cost commands)
+  - cli-workflow.test.ts: 13 tests (wake-up, brief-me variants, state tracking, mark-badge variants, routing-table checks)
+  - cli-smoke.test.ts: 5 tests (one per family: claims, approvals, artifacts, synthesis, cost)
+  - run-crew.test.ts: 3 tests (new)
+  - projects-root-override.test.ts: 1 test (new)
+  - **Total original cli.test.ts: 3 + 1 + 8 + 6 + 13 = 31 tests; 2 additional tests (help, install-global) move to cli-workflow = 33 tests**
 - [ ] Ensure no test remains in tests/cli.test.ts by reading it (should be very few or empty).
 - [ ] Delete the file: `rm tests/cli.test.ts`
 - [ ] Run `npm test` and verify all 573 tests pass (no regression).
@@ -283,16 +346,15 @@ Files: None (verification only).
 **Deliberate Addition:** Task 1–2 (injectable projects root via CREW_PROJECTS_ROOT) are NOT in the original WS1 spec but are a required prerequisite for Task 7 (cost-scanning tests). They are included because the spec's AC-WS1-2 requires "zero subprocess execFile calls remain in core test assertions," and cost-slice/cost-advise commands would otherwise spend 15–20s scanning the user's real ~/.claude/projects dir during test runs. This addition is essential for meeting the ≤40s timing target.
 
 **Test Count:** The original cli.test.ts contains 33 tests. After splitting:
-- cli-claims.test.ts: 3
-- cli-approvals.test.ts: 1
-- cli-artifacts.test.ts: 10
-- cli-synthesis-cost.test.ts: 2
-- cli-smoke.test.ts: 5
-- run-crew.test.ts: 3 (new)
-- projects-root-override.test.ts: 1+ (new)
-- **Total: 25+ core + 5 smokes = 30 tests covering the original 33**
-
-Some tests may have been consolidated or removed if they were redundant after the runCrew() conversion.
+- cli-claims.test.ts: 3 tests
+- cli-approvals.test.ts: 1 test
+- cli-artifacts.test.ts: 8 tests
+- cli-synthesis-cost.test.ts: 6 tests
+- cli-workflow.test.ts: 13 tests
+- cli-smoke.test.ts: 5 tests
+- run-crew.test.ts: 3 tests (new)
+- projects-root-override.test.ts: 1 test (new)
+- **Total: 3 + 1 + 8 + 6 + 13 + 5 + 3 + 1 = 40 tests covering all 33 original tests plus 7 new tests**
 
 **AC Alignment:**
 - **AC-WS1-1:** ✅ runCrew() exported, returns `{ code, output }`, happy-path code 0.
