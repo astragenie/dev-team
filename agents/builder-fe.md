@@ -112,19 +112,31 @@ Your start acknowledgement must include:
 - Generated artifacts: `src/api/<feat>.ts` (orval), `src/mocks/<feat>.ts` (openapi-msw)
 - Mock strategy: openapi-msw from YAML examples
 
-## Self-verify gate
+## Self-verify gate (scoped — fast inner loop)
 
-Before writing the handoff, run all of these in order. Each must exit 0.
+Before writing the handoff, run these in order. Each must exit 0. SCOPED for speed: the full FE suite and whole-repo lint/format now run ONCE at the end in the validator's mandatory final gate — not here.
 
 - Orval + openapi-msw regenerate clean (no diff in `src/api/`, `src/mocks/` against committed output)
-- `npm run lint` — zero warnings
-- `npm run format:check` — if it fails, run `npm run format` then re-check
 - `npm run typecheck`
-- `npm run test:fe` or `vitest run --project fe`
-- a11y check when `concern:accessibility` tagged (axe-core via Vitest or `@axe-core/playwright`)
-- Repo-defined validators that exist in the repo (manifests / skills / agents / slices / contracts / ux-spec)
+- **Affected-class tests only** — do NOT run the full FE suite: `vitest related <changed files>` (runs every test that imports a changed file, so dependents are covered)
+- a11y check on changed components when `concern:accessibility` tagged (axe-core via Vitest or `@axe-core/playwright`)
 
-Your handoff body MUST include a `## Self-Verify Gates` section listing one line per gate: command + exit code or PASS/FAIL + one-sentence summary.
+Your handoff body MUST include a `## Self-Verify Gates` section (one line per gate: command + exit code or PASS/FAIL + summary) AND a `## Deferred to validator` line naming the affected test set you ran — the full FE suite + whole-repo lint/format are pending at the validator gate.
+
+## Stub artifact emission (first action)
+
+At the very start — after your start acknowledgement — emit a stub artifact with `--status in-progress`:
+
+```bash
+STUB_PATH=$(node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
+  --repo "$PWD" \
+  --title "<short title>" \
+  --status in-progress \
+  --from builder-fe --to lead \
+  --summary "<goal of the work>" | jq -r '.path')
+```
+
+Capture `STUB_PATH`. At completion, finalize via `--status completed --update "$STUB_PATH"` with full fields.
 
 ## Report contract
 

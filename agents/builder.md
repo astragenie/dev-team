@@ -106,7 +106,7 @@ Your completion report must include:
 When the lead's dispatch instruction requests review and validation:
 
 1. **Review**: dispatch a `crew:reviewer` subagent. Wait for its review-result artifact.
-2. **Validation**: dispatch a `crew:validator` subagent ONLY when behavior is user-visible (UI, CLI surface, runtime side-effects) OR the reviewer's review-result lacks a `Validation Evidence` section. For tests-already-green + code-only diffs with no user-visible surface, the reviewer's bundled note IS the validation evidence — do not dispatch a separate validator.
+2. **Validation**: always dispatch a `crew:validator` subagent on a code-bearing slice. The validator owns the mandatory full gate (whole-repo lint, `format:check`, the complete test suite, `validate:all`) that your scoped self-verify no longer runs — there is no skip path, even for code-only diffs.
 3. **Report**: include review and validation artifact paths in your completion handoff.
 
 If review returns `rejected` or validation returns `failed`, pivot through `/crew:fix` before reporting completion.
@@ -119,6 +119,21 @@ The lead may dispatch a task with a `size` hint:
 - `size: standard` (default) — anything substantive. REQUIRES the `write-handoff` artifact below.
 
 If no `size` is given, treat the task as `standard`. If the work turns out to be larger than a `light` hint suggests, escalate to `standard` and write the handoff.
+
+## Stub artifact emission (first action)
+
+At the very start — after your start acknowledgement — emit a stub artifact with `--status in-progress` and minimal fields:
+
+```bash
+STUB_PATH=$(node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
+  --repo "$PWD" \
+  --title "<short title>" \
+  --status in-progress \
+  --from builder --to lead \
+  --summary "<goal of the work>" | jq -r '.path')
+```
+
+Capture the returned `STUB_PATH`. At completion, finalize the same artifact by calling write-handoff again with `--status completed --update "$STUB_PATH"` plus full fields — this overwrites the stub in place, leaving one inspectable artifact (no orphan stubs).
 
 Write your full completion report by calling:
 
@@ -173,20 +188,21 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-build-bundle \
 Include the returned bundle path in your return message under a single
 line: `Bundle: <path>`.
 
-## Self-verify gate
+## Self-verify gate (scoped — fast inner loop)
 
-Before writing the handoff, run all of these gates in order. Each must exit 0.
+Before writing the handoff, run these gates in order. Each must exit 0. This gate is intentionally SCOPED for speed: the whole-repo lint, format check, and complete test suite now run ONCE at the end in the validator's mandatory final gate — not here, and not in every builder.
 
-- `npm run lint` — zero warnings
-- `npm run format:check` — if it fails, run `npm run format` then re-check
-- `npm run typecheck`
-- `node --test` — full test suite including any new tests you added
-- Repo-defined validators: `node ./scripts/validate-manifests.ts`, `node ./scripts/validate-skills.ts`, `node ./scripts/validate-slices.ts` (skip any that do not exist in the repo)
-- For repos using the loop: check `.claude/loop.json` `stack.build` and `stack.test` arrays — those arrays are the canonical gate command source; run them in order
+- `npm run typecheck` — cross-file type safety; not cheaply scopable, keep it
+- **Affected-class tests only** — do NOT run the full suite. Derive changed source files from `git diff --name-only` (vs the slice base), then run only their colocated sibling tests:
+  - node:test (this repo) → `node --test <colocated *.test.ts for each changed source file>`
+  - Vitest → `vitest related <changed files>` (also covers tests that import a changed file)
+  - Jest → `jest --findRelatedTests <changed files>`
+  - Net-new behavior with no colocated test → write the failing test first per TDD policy; that new test IS its affected set.
+- Repo validators for the paths you touched only (e.g. `validate-agents.ts` when you edited `agents/`, `validate-skills.ts` for `skills/`) — skip validators whose targets you did not touch; the validator runs `validate:all` at the end.
 
-Your handoff body MUST include a `## Self-Verify Gates` section listing one line per gate: command + exit code or PASS/FAIL + one-sentence summary of the result.
+Your handoff body MUST include a `## Self-Verify Gates` section (one line per gate: command + exit code or PASS/FAIL + one-sentence summary) AND a `## Deferred to validator` line naming the affected test set you ran — so the validator and reviewer know the full suite + whole-repo lint/format are still pending.
 
-Self-verify complements but does NOT replace the reviewer's independent gate. The reviewer re-runs anything fragile. A green self-verify is a prerequisite for handoff, not a substitute for review.
+Self-verify is the fast inner loop. It does NOT replace the validator's final full gate or the reviewer's independent check.
 
 ## Workflow badges
 

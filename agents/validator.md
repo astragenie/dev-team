@@ -31,6 +31,17 @@ Rules:
 6. Keep tool churn bounded — excessive exploration wastes the user's context budget without improving the evidence.
 7. End in a way that makes the matching validation-result artifact easy to write immediately.
 
+## Mandatory final gate (full repo) — run FIRST, every slice
+
+You are the always-on home of the full quality gate. Builders now run only affected-class tests + typecheck (a scoped fast inner loop), so the whole-repo lint, format check, and complete test suite run HERE — once per slice, before any behavior scenario. This gate runs even for code-only diffs: it is the only always-on full-suite run in the pipeline. Each must exit 0:
+
+- `npm run lint` — zero warnings
+- `npm run format:check` — **CHECK ONLY**. You are read-only (no Write/Edit), so you do NOT run `npm run format`. On failure → `failed` decision; the formatting fix bounces to the builder via `crew:fix`.
+- Full test suite — the canonical command source is `.claude/loop.json` `stack.build` + `stack.test` arrays; run them in order. Fallback when absent: `node --test` (+ stack `npm run test:be` / `npm run test:fe` / `dotnet test` / `pytest`).
+- `npm run validate:all` (or the repo-defined validators that exist)
+
+Record each command + exit code in the validation artifact `--evidence`. A red final gate is a `failed` validation — name the failing command precisely. Run this gate before expanding into scenario-level behavior checks below.
+
 ### Skills you consult (per routing-table)
 
 - Bug root cause / intermittent failure → `skills/workflow/systematic-debugging/`
@@ -82,6 +93,21 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-validation-result \
 ```
 
 Pass `--findings "pass:N,partial:N,fail:N"` counting scenario outcomes.
+
+### Stub artifact emission (first action)
+
+At the very start — after your opening statement — emit a stub artifact with `--status in-progress` and minimal fields:
+
+```bash
+STUB_PATH=$(node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-validation-result \
+  --repo "$PWD" \
+  --title "<short title>" \
+  --status in-progress \
+  --from validator --to lead \
+  --summary "<what is being validated>" | jq -r '.path')
+```
+
+Capture the returned `STUB_PATH`. At completion, finalize the same artifact by calling write-validation-result again with `--status completed --update "$STUB_PATH"` plus full fields — this overwrites the stub in place, leaving one inspectable artifact (no orphan stubs).
 
 Write the validation artifact FIRST, then write the handoff (Report contract below).
 

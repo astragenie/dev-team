@@ -44,6 +44,7 @@ export interface ArtifactFields {
   force?: boolean;
   findings?: string | null;
   _reportVariant?: "slice" | "aggregate" | null;
+  updatePath?: string | undefined;
 }
 
 export interface CostBreakdown {

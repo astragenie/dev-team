@@ -89,6 +89,7 @@ const FLAG_SPEC = {
   "--title": { key: "title" },
   "--to": { key: "to" },
   "--trigger-filename": { key: "triggerFilename" },
+  "--update": { key: "updatePath" },
   "--url": { key: "url" },
   "--validation-evidence": { key: "validationEvidence" },
   "--validator": { key: "validator" },
@@ -184,7 +185,8 @@ function parseArgs(argv: string[]) {
     filesRead: null,
     handoff: null,
     run: null,
-    slice: null
+    slice: null,
+    updatePath: null
   };
   const positionals = [];
 
@@ -610,12 +612,16 @@ const COMMANDS = {
   },
   "write-handoff": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
+    // Only pass status if it's not the default "open" value from parseArgs
+    // (the default "open" is for issue creation, not for artifacts)
+    const statusValue = flags.status !== "open" ? (flags.status ?? undefined) : undefined;
     const r = await writeArtifact(repoPath, "handoff", {
       title: flags.title || positionals.join(" ") || "Task Handoff",
       from: flags.from || flags.owner || "lead-session",
       to: flags.to ?? undefined,
       goal: flags.goal ?? undefined,
       summary: flags.summary ?? undefined,
+      status: statusValue,
       scope: flags.scope ?? undefined,
       outOfScope: flags.outOfScope ?? undefined,
       deliverable: flags.deliverable ?? undefined,
@@ -625,7 +631,8 @@ const COMMANDS = {
       next: flags.next ?? undefined,
       feature: flags.feature ?? undefined,
       phase: flags.phase ?? undefined,
-      repoContext: flags.repoContext
+      repoContext: flags.repoContext,
+      updatePath: flags.updatePath ?? undefined
     });
     if (!r.ok) throw r.error;
     return r.value;
@@ -649,10 +656,13 @@ const COMMANDS = {
       process.exit(2);
     }
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
+    // Only pass status if it's not the default "open" value from parseArgs
+    const statusValue = flags.status !== "open" ? (flags.status ?? undefined) : undefined;
     const r = await writeArtifact(repoPath, "review-result", {
       title: flags.title || positionals.join(" ") || "Review Result",
       reviewer: flags.reviewer || flags.owner || "reviewer",
       decision: decision ?? undefined,
+      status: statusValue,
       summary: flags.summary ?? undefined,
       evidence: flags.evidence ?? undefined,
       files: flags.files ?? undefined,
@@ -664,7 +674,8 @@ const COMMANDS = {
       testSummarySkipReason: flags.testSummarySkipReason ?? undefined,
       validationEvidence: flags.validationEvidence ?? undefined,
       nonCode: flags.nonCode ?? undefined,
-      findings: flags.findings ?? null
+      findings: flags.findings ?? null,
+      updatePath: flags.updatePath ?? undefined
     });
     if (!r.ok) throw r.error;
     return r.value;
@@ -690,11 +701,14 @@ const COMMANDS = {
   },
   "write-validation-result": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
+    // Only pass status if it's not the default "open" value from parseArgs
+    const statusValue = flags.status !== "open" ? (flags.status ?? undefined) : undefined;
     const r = await writeArtifact(repoPath, "validation-result", {
       title: flags.title || positionals.join(" ") || "Validation Result",
       validator: flags.validator || flags.owner || "validator",
       environment: flags.environment ?? undefined,
       decision: flags.decision ?? undefined,
+      status: statusValue,
       goal: flags.goal ?? undefined,
       summary: flags.summary ?? undefined,
       evidence: flags.evidence ?? undefined,
@@ -703,7 +717,8 @@ const COMMANDS = {
       next: flags.next ?? undefined,
       feature: flags.feature ?? undefined,
       phase: flags.phase ?? undefined,
-      findings: flags.findings ?? null
+      findings: flags.findings ?? null,
+      updatePath: flags.updatePath ?? undefined
     });
     if (!r.ok) throw r.error;
     return r.value;

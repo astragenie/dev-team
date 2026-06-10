@@ -142,14 +142,19 @@ const SIMPLE_RENDERERS: Record<string, ArtifactConfig> = {
   handoff: {
     directory: "handoffs",
     prefix: "handoff",
-    render: (f) =>
-      [
+    render: (f) => {
+      const lines = [
         `# Task Handoff: ${f.title || "Untitled"}`,
         "",
         renderField("Created", nowIso()),
         renderField("From", f.from),
         renderField("To", f.to),
-        renderField("Objective", f.goal || f.summary),
+        renderField("Objective", f.goal || f.summary)
+      ];
+      if (f.status) {
+        lines.push(renderField("Status", f.status));
+      }
+      lines.push(
         renderListField("Allowed Scope", f.scope),
         renderListField("Forbidden Scope", f.outOfScope),
         renderField("Deliverable", f.deliverable),
@@ -158,7 +163,9 @@ const SIMPLE_RENDERERS: Record<string, ArtifactConfig> = {
         renderField("Risks", f.risks),
         renderField("Suggested Next Handoff", f.next),
         ""
-      ].join("\n")
+      );
+      return lines.join("\n");
+    }
   },
   "review-result": {
     directory: "reviews",
@@ -169,12 +176,17 @@ const SIMPLE_RENDERERS: Record<string, ArtifactConfig> = {
         "",
         renderField("Created", nowIso()),
         renderField("Reviewer", f.reviewer || f.owner),
-        renderField("Decision", f.decision || "approved_with_notes"),
+        renderField("Decision", f.decision || "approved_with_notes")
+      ];
+      if (f.status) {
+        lines.push(renderField("Status", f.status));
+      }
+      lines.push(
         renderField("Summary", f.summary),
         renderListField("Evidence Checked", f.evidence),
         renderListField("Files Reviewed", f.files),
         renderField("Test Adequacy", f.testSummary)
-      ];
+      );
       if (f.testSummarySkipReason) {
         lines.push(renderField("Test Adequacy Skip Reason", f.testSummarySkipReason));
       }
@@ -214,21 +226,28 @@ const SIMPLE_RENDERERS: Record<string, ArtifactConfig> = {
   "validation-result": {
     directory: "validations",
     prefix: "validation-result",
-    render: (f) =>
-      [
+    render: (f) => {
+      const lines = [
         `# Validation Result: ${f.title || "Untitled"}`,
         "",
         renderField("Created", nowIso()),
         renderField("Validator", f.validator || f.owner || "validator"),
         renderField("Environment", f.environment),
-        renderField("Decision", f.decision || "passed_with_notes"),
+        renderField("Decision", f.decision || "passed_with_notes")
+      ];
+      if (f.status) {
+        lines.push(renderField("Status", f.status));
+      }
+      lines.push(
         renderField("Scenario", f.goal || f.summary),
         renderListField("Evidence Collected", f.evidence),
         renderListField("Files / Surfaces Checked", f.files),
         renderField("Risks", f.risks),
         renderField("Required Follow-up", f.next),
         ""
-      ].join("\n")
+      );
+      return lines.join("\n");
+    }
   },
   "deployment-check": {
     directory: "deployments",
@@ -563,6 +582,9 @@ const ARTIFACT_ROOT = [".claude", "artifacts", "crew"];
 /**
  * Write a crew artifact file.
  * Returns Result<ArtifactRecord, Error> — callers must check .ok before using .value.
+ *
+ * When fields.updatePath is provided, writes to that exact path (idempotent update).
+ * Otherwise, generates a new timestamped filename (backward-compatible behavior).
  */
 export async function writeArtifact(
   repoPath: string,
@@ -574,9 +596,16 @@ export async function writeArtifact(
     const artifactDir = path.join(repoPath, ...ARTIFACT_ROOT, config.directory);
     await fs.mkdir(artifactDir, { recursive: true });
 
-    const title = fields.title ?? fields.summary ?? kind;
-    const fileName = `${timestampSlug()}-${config.prefix}-${slugify(title)}.md`;
-    const artifactPath = path.join(artifactDir, fileName);
+    let artifactPath: string;
+    if (fields.updatePath) {
+      // Idempotent update: write to the exact path provided
+      artifactPath = fields.updatePath;
+    } else {
+      // Generate a new timestamped filename (backward-compatible)
+      const title = fields.title ?? fields.summary ?? kind;
+      const fileName = `${timestampSlug()}-${config.prefix}-${slugify(title)}.md`;
+      artifactPath = path.join(artifactDir, fileName);
+    }
 
     const isCostReport =
       kind === "cost-report" || kind === "cost-report-slice" || kind === "cost-report-aggregate";

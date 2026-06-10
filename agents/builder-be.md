@@ -115,25 +115,39 @@ Your start acknowledgement must include:
 - Stack detected: `<csharp|node|python>`
 - Codegen tool selected: `<NSwag | Kiota | datamodel-code-generator+fastapi-code-generator | openapi-typescript-codegen>`
 
-## Self-verify gate
+## Self-verify gate (scoped — fast inner loop)
 
-Before writing the handoff, run all of these in order. Each must exit 0.
+Before writing the handoff, run these in order. Each must exit 0. SCOPED for speed: the full test suite and whole-repo lint/format now run ONCE at the end in the validator's mandatory final gate — not here.
 
 - Per-stack codegen regenerates clean (no diff against committed generated output)
-- Repo lint / format / typecheck (where stack supports — e.g. `dotnet build`, `mypy`, `ruff check`)
-- Stack-native test runner:
-  - C# → `dotnet test`
-  - Node → `npm run test:be`
-  - Python → `pytest`
+- Typecheck only (where stack supports — `dotnet build`, `mypy`) — skip whole-repo lint/format here
+- **Affected-class tests only** — do NOT run the full suite:
+  - C# → `dotnet test --filter "FullyQualifiedName~<changed namespace or class>"` on the affected test project(s)
+  - Node → `vitest related <changed files>`
+  - Python → `pytest <affected test files>` (or `pytest --picked` if pytest-picked is installed)
 - Migration dry-run when DB schema changes:
   - C# → `dotnet ef migrations script --idempotent`
   - Python (Alembic) → `alembic upgrade head --sql`
-- Plugin-side validators (manifests / skills / agents / slices / contracts / ux-spec) — only those that exist in the repo
 - Migrations reversible: every new Up migration has a corresponding Down / rollback migration
 - Config externalized: grep new code for hard-coded hostnames, credentials, or connection strings — zero allowed
 - Metrics endpoint present when `concern:observability` applies: `/health`, `/ready`, `/metrics` routes exist
 
-Your handoff body MUST include a `## Self-Verify Gates` section listing one line per gate: command + exit code + one-sentence summary.
+Your handoff body MUST include a `## Self-Verify Gates` section (one line per gate: command + exit code + summary) AND a `## Deferred to validator` line naming the affected test set you ran — the full suite + whole-repo lint/format are pending at the validator gate.
+
+## Stub artifact emission (first action)
+
+At the very start — after your start acknowledgement — emit a stub artifact with `--status in-progress`:
+
+```bash
+STUB_PATH=$(node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
+  --repo "$PWD" \
+  --title "<short title>" \
+  --status in-progress \
+  --from builder-be --to lead \
+  --summary "<goal of the work>" | jq -r '.path')
+```
+
+Capture `STUB_PATH`. At completion, finalize via `--status completed --update "$STUB_PATH"` with full fields.
 
 ## Report contract
 

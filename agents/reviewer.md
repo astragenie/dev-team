@@ -54,6 +54,10 @@ Rules:
   2. `skills/domain/dotnet/aspnetcore-patterns/` — middleware ordering, health checks, output cache, rate limiting, API versioning
   3. `skills/domain/dotnet/ef-core-patterns/` — query patterns, N+1, compiled queries, bulk ops, migrations
 
+## Review lens (parallel fan-out)
+
+The lead may dispatch you as one of N parallel reviewers, each with a `Review lens:` line in the prompt — one of `correctness/regression`, `security`, `performance`, `tests-adequacy`, or `stack-idiom`. When a lens is given, weight your findings toward it (still flag anything CRITICAL outside it). When no lens is given, run the full review against all core gates below as a single reviewer.
+
 ## Pre-review protocol
 
 ### Pre-flight checks (run before reading code)
@@ -61,6 +65,7 @@ Rules:
 - Dependency CVEs: `npm audit`, `pip-audit`, or `cargo audit` — skip if tool absent
 - Hardcoded secrets: `grep -rE "(api_key|secret|password|token)\s*=\s*['\"][^'\"]{8,}" --include="*.ts" --include="*.py" --include="*.js"` on changed files
 - Recent context: `git log --oneline -5`
+- **Affected-test re-run (builder scoped its tests).** Builders now run only affected-class tests, not the full suite. Re-run the builder's affected set (named in the handoff's `## Deferred to validator` line) to confirm it is green AND that it actually covers the changed classes. If a changed class has no test in that set, raise a `tests-adequacy` finding — the builder scoped too narrowly. The full suite itself runs at the validator's mandatory final gate, not here.
 
 ### Diff-size scaling
 
@@ -183,19 +188,20 @@ The user relies on the review result to know what was actually checked. Leaving 
 
 ## Review artifact
 
-### Validation-evidence bundling (FEAT-030)
+### Stub artifact emission (first action)
 
-When ALL three conditions hold, populate the `--validation-evidence` flag when calling `write-review-result`:
+At the very start — after your opening statement — emit a stub artifact with `--status in-progress` and minimal fields:
 
-1. **tests-already-green** — the builder's self-verify gate confirmed the full test suite passes
-2. **code-only diff** — the change touches only source/config/doc files; no deployed runtime, no UI component, no CLI surface accessible to end users
-3. **no runtime/UI/CLI surface affected** — the changed code is not a user-facing behavior path (e.g. internal script helper, artifact writer, agent prompt text)
+```bash
+STUB_PATH=$(node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result \
+  --repo "$PWD" \
+  --title "<short title>" \
+  --status in-progress \
+  --from reviewer --to lead \
+  --summary "<initial assessment>" | jq -r '.path')
+```
 
-When ALL three hold, set `--validation-evidence` to: test suite total + pass count, gate commands re-run by the reviewer, and a one-sentence verdict. Example: `"node --test: 127 pass / 0 fail; npm run lint exit 0; npm run typecheck exit 0 — code-only prompt edits + CLI flag, no user-visible surface"`.
-
-When ANY condition fails, you MUST NOT emit the note — behavior-visible changes need an independent validator pass. When in doubt, omit the flag; the default is conservative.
-
-The lead reads this note and skips `crew:validator` dispatch when the note is present. The lead never skips validator when the note is absent.
+Capture the returned `STUB_PATH`. At completion, finalize the same artifact by calling write-review-result again with `--status completed --update "$STUB_PATH"` plus full fields — this overwrites the stub in place, leaving one inspectable artifact (no orphan stubs).
 
 After completing your review analysis, write the review-result artifact by calling:
 
@@ -208,7 +214,6 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result \
   --evidence "<key evidence points checked>" \
   --files "<comma-separated files reviewed>" \
   --test-summary "<test coverage assessment or 'N/A — doc-only'>" \
-  --validation-evidence "<test totals + gates re-run + verdict, or omit if conditions not met>" \
   --findings "🔴:N,🟡:N,❓:N" \
   --risks "<residual risks or 'none'>" \
   --next "<required follow-up or 'none'>"
