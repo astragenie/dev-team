@@ -30,6 +30,7 @@ export type {
 
 const STATE_DIR = [".claude", "state", "crew"] as const;
 const WORKFLOW_STATE_PATH = [...STATE_DIR, "workflow-state.json"] as const;
+const WORKFLOW_STATE_LOCK_PATH = [...STATE_DIR, "workflow-state.lock"] as const;
 // Legacy path retained for read-side fallback so repos installed before the
 // engineering-os -> crew rename still pick up their existing workflow state.
 // Saves always go to the new path; the installer migration (Step 3) cleans
@@ -136,11 +137,72 @@ export async function loadWorkflowState(
   return JSON.parse(await fs.readFile(workflowPath, "utf8")) as WorkflowState;
 }
 
-async function saveWorkflowState(repoPath: string, state: WorkflowState): Promise<void> {
-  const workflowPath = path.join(repoPath, ...WORKFLOW_STATE_PATH);
-  state.updatedAt = nowIso();
-  await ensureDir(path.dirname(workflowPath));
-  await fs.writeFile(workflowPath, `${JSON.stringify(state, null, 2)}\n`);
+// ---------------------------------------------------------------------------
+// Advisory lock for merge-safe concurrent writes
+// ---------------------------------------------------------------------------
+
+async function acquireLock(lockPath: string, timeout = 5000): Promise<void> {
+  const start = Date.now();
+  const staleThreshold = 10000; // 10 seconds
+  while (Date.now() - start < timeout) {
+    try {
+      // Ensure lock directory exists first
+      await ensureDir(path.dirname(lockPath));
+      // Try to create lock file exclusively (fails if exists)
+      const fd = await fs.open(lockPath, "wx");
+      await fd.close();
+      return;
+    } catch (e) {
+      const err = e as NodeJS.ErrnoException;
+      if (err.code !== "EEXIST") throw e;
+
+      // Lock exists; check if it's stale
+      try {
+        const stat = await fs.stat(lockPath);
+        const age = Date.now() - stat.mtimeMs;
+        if (age > staleThreshold) {
+          // Lock is stale, remove it and retry
+          await fs.unlink(lockPath).catch(() => {});
+          continue;
+        }
+      } catch {
+        // Stat failed, continue to backoff
+      }
+
+      // Lock exists and is fresh, backoff
+      await new Promise((r) => setTimeout(r, 10));
+    }
+  }
+  throw new Error("Workflow state lock timeout");
+}
+
+async function releaseLock(lockPath: string): Promise<void> {
+  try {
+    await fs.unlink(lockPath);
+  } catch {
+    // ENOENT or other errors are fine; lock is released
+  }
+}
+
+async function saveWorkflowState(
+  repoPath: string,
+  state: WorkflowState,
+  lockHeld = false
+): Promise<void> {
+  const lockPath = path.join(repoPath, ...WORKFLOW_STATE_LOCK_PATH);
+  if (!lockHeld) {
+    await acquireLock(lockPath);
+  }
+  try {
+    const workflowPath = path.join(repoPath, ...WORKFLOW_STATE_PATH);
+    state.updatedAt = nowIso();
+    await ensureDir(path.dirname(workflowPath));
+    await fs.writeFile(workflowPath, `${JSON.stringify(state, null, 2)}\n`);
+  } finally {
+    if (!lockHeld) {
+      await releaseLock(lockPath);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -151,13 +213,19 @@ export async function startWorkflowRun(
   repoPath: string,
   fields: RunFields = {}
 ): Promise<WorkflowRun> {
-  const state = await loadWorkflowState(repoPath);
-  if (state.currentRun) {
-    archiveRun(state, state.currentRun);
+  const lockPath = path.join(repoPath, ...WORKFLOW_STATE_LOCK_PATH);
+  await acquireLock(lockPath);
+  try {
+    const state = await loadWorkflowState(repoPath);
+    if (state.currentRun) {
+      archiveRun(state, state.currentRun);
+    }
+    state.currentRun = createRun(fields);
+    await saveWorkflowState(repoPath, state, true);
+    return state.currentRun;
+  } finally {
+    await releaseLock(lockPath);
   }
-  state.currentRun = createRun(fields);
-  await saveWorkflowState(repoPath, state);
-  return state.currentRun;
 }
 
 function ensureCurrentRun(state: WorkflowState, fields: RunFields = {}): WorkflowRun {
@@ -188,6 +256,7 @@ const BADGE_TABLE: Record<string, BadgeSpec> = {
   validation_passed: { selector: (run) => [run.gates, "validation"], status: "passed" },
   validation_failed: { selector: (run) => [run.gates, "validation"], status: "failed" },
   validation_skipped: { selector: (run) => [run.gates, "validation"], status: "skipped" },
+  validation_stale: { selector: (run) => [run.gates, "validation"], status: "stale", custom: true },
   dev_deploy_expected: {
     selector: (run) => [run.gates.deployment, "dev"],
     status: "expected"
@@ -245,26 +314,32 @@ export async function markWorkflowBadge(
   repoPath: string,
   options: BadgeOptions = {}
 ): Promise<Result<WorkflowRun | null, Error>> {
+  const lockPath = path.join(repoPath, ...WORKFLOW_STATE_LOCK_PATH);
   try {
     const badge = options.badge;
     if (!badge) {
       throw new Error("Workflow badge is required.");
     }
 
-    const state = await loadWorkflowState(repoPath);
-    const run = ensureCurrentRun(state, {
-      title: options.title || "Workflow Run",
-      goal: options.goal || "",
-      mode: options.mode || "",
-      next: options.next || ""
-    });
-    applyBadge(run, badge, options.note || "", options.blockedBy ?? null);
-    run.updatedAt = nowIso();
-    if (options.next) {
-      run.next = options.next;
+    await acquireLock(lockPath);
+    try {
+      const state = await loadWorkflowState(repoPath);
+      const run = ensureCurrentRun(state, {
+        title: options.title || "Workflow Run",
+        goal: options.goal || "",
+        mode: options.mode || "",
+        next: options.next || ""
+      });
+      applyBadge(run, badge, options.note || "", options.blockedBy ?? null);
+      run.updatedAt = nowIso();
+      if (options.next) {
+        run.next = options.next;
+      }
+      await saveWorkflowState(repoPath, state, true);
+      return ok(state.currentRun);
+    } finally {
+      await releaseLock(lockPath);
     }
-    await saveWorkflowState(repoPath, state);
-    return ok(state.currentRun);
   } catch (e) {
     return err(e instanceof Error ? e : new Error(String(e)));
   }
@@ -382,39 +457,45 @@ export async function registerWorkflowArtifact(
   artifact: ArtifactRef,
   fields: RegisterFields = {}
 ): Promise<WorkflowRun | null> {
-  const state = await loadWorkflowState(repoPath);
+  const lockPath = path.join(repoPath, ...WORKFLOW_STATE_LOCK_PATH);
+  await acquireLock(lockPath);
+  try {
+    const state = await loadWorkflowState(repoPath);
 
-  if (artifact.kind === "run-brief") {
-    // BUG-B fix: archive the existing run instead of silently overwriting.
-    // Pre-fix behavior destroyed pending gates (e.g. review_required) and
-    // never populated recentRuns. archiveRun safely no-ops on null.
-    archiveRun(state, state.currentRun);
-    state.currentRun = createRun({
-      ...(fields.title !== undefined ? { title: fields.title } : {}),
-      ...(fields.goal !== undefined ? { goal: fields.goal } : {}),
-      ...(fields.mode !== undefined ? { mode: fields.mode } : {}),
-      ...(fields.next !== undefined ? { next: fields.next } : {}),
-      path: artifact.path
+    if (artifact.kind === "run-brief") {
+      // BUG-B fix: archive the existing run instead of silently overwriting.
+      // Pre-fix behavior destroyed pending gates (e.g. review_required) and
+      // never populated recentRuns. archiveRun safely no-ops on null.
+      archiveRun(state, state.currentRun);
+      state.currentRun = createRun({
+        ...(fields.title !== undefined ? { title: fields.title } : {}),
+        ...(fields.goal !== undefined ? { goal: fields.goal } : {}),
+        ...(fields.mode !== undefined ? { mode: fields.mode } : {}),
+        ...(fields.next !== undefined ? { next: fields.next } : {}),
+        path: artifact.path
+      });
+      await saveWorkflowState(repoPath, state, true);
+      return state.currentRun;
+    }
+
+    const run = ensureCurrentRun(state, {
+      title: fields.title || artifact.title,
+      goal: fields.goal || "",
+      mode: fields.mode || "",
+      next: fields.next || ""
     });
-    await saveWorkflowState(repoPath, state);
+
+    applyArtifactToRun(run, artifact, fields);
+
+    run.updatedAt = nowIso();
+    if (fields.next) {
+      run.next = fields.next;
+    }
+    await saveWorkflowState(repoPath, state, true);
     return state.currentRun;
+  } finally {
+    await releaseLock(lockPath);
   }
-
-  const run = ensureCurrentRun(state, {
-    title: fields.title || artifact.title,
-    goal: fields.goal || "",
-    mode: fields.mode || "",
-    next: fields.next || ""
-  });
-
-  applyArtifactToRun(run, artifact, fields);
-
-  run.updatedAt = nowIso();
-  if (fields.next) {
-    run.next = fields.next;
-  }
-  await saveWorkflowState(repoPath, state);
-  return state.currentRun;
 }
 
 // ---------------------------------------------------------------------------
