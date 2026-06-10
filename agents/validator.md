@@ -120,7 +120,7 @@ When you hit an external blocker or need to escalate before writing your validat
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge blocked --note "<reason>"
 
 # Escalate when a decision requires human judgment
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge escalated_to_human --note "<reason>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge escalated_to_lead --note "<reason>"
 
 # Record a skipped validation gate
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge validation_skipped --note "<reason>"

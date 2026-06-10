@@ -135,7 +135,7 @@ These are **review aids**, not CI gates. The hard gates remain `scripts/validate
 | 2 | Author `docs/routing-table.md` | ✓ FEAT-002 |
 | 3 | Update `agents/lead.md` (≤300 lines per FEAT-035 cap raise) to reference routing-table + skill tier conventions | FEAT-003 (creative; human review gate) |
 | 4 | Skill quality bar + validator (`scripts/validate-skills.mjs`) | ✓ FEAT-007 |
-| 5 | `blocked` + `escalated_to_human` workflow badges | ✓ FEAT-006 |
+| 5 | `blocked` + `escalated_to_lead` workflow badges | ✓ FEAT-006 |
 | 6 | This document | ✓ FEAT-004 |
 
 ## Phase 2+ (when, not whether)
@@ -153,7 +153,7 @@ These are **review aids**, not CI gates. The hard gates remain `scripts/validate
 
 | Capability | crew | loop |
 |---|---|---|
-| `blocked` + `escalated_to_human` badges (writer) | ≥ 0.1.27 | — |
+| `blocked` + `escalated_to_lead` badges (writer) | ≥ 0.1.27 | — |
 | Honors crew blocked/escalated in slice flow (reader) | — | ≥ 0.1.21 |
 
 Consumers should keep both pinned together; an older `loop`

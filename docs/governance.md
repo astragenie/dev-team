@@ -26,22 +26,22 @@ are populated. The validator catches missing `name` / `tier` /
 
 ---
 
-## Agent prompt size bar — **≤ 500 lines (default)**
+## Agent prompt size bar — **≤ 350 lines (default)**
 
 **Why:** every line of an agent prompt is always-on context cost. Big
 prompts amortise badly across the long tail of small tasks. The
-500-line cap admits modest cross-cutting sections (context
-efficiency, shell pre-check, depth control) while still forcing
-specifics into skills.
+350-line cap balances room for cross-cutting sections (context
+efficiency, shell pre-check, depth control) against bloat — pushes
+domain specifics into skills the agent invokes on demand.
 
 **How to apply:** `scripts/validate-agents.ts` is the hard CI gate
 (FEAT-035). If `agents/<role>.md` exceeds the cap, push specifics
 into a skill the agent can invoke on demand. A per-agent `maxLines:`
-frontmatter field overrides the default (e.g. lead pins itself
-tighter at 360). The role prompt should carry identity, boundaries,
-escalation policy, and cross-cutting rules (context efficiency,
-shell pre-check, report contract, handoff discipline); skills carry
-the procedural knowledge.
+frontmatter field overrides the default when justified (lead carries
+extra routing + autonomous-resolution policy). The role prompt should
+carry identity, boundaries, escalation policy, and cross-cutting
+rules (context efficiency, shell pre-check, report contract, handoff
+discipline); skills carry the procedural knowledge.
 
 **Cap history:**
 
@@ -50,6 +50,8 @@ the procedural knowledge.
   hard CI gate so the cap is enforced rather than aspirational.
 - Raised to ≤500 default + `maxLines:` per-agent override when
   reviewer absorbed code-reviewer duties (commit `e43462d`).
+- Lowered to ≤350 default after specialist split shrank scope back
+  (builder-fe / builder-be / reviewer-validator) — 500 was over-generous.
 
 Lead is the canonical example: routing decisions live in
 `docs/routing-table.md`, skill-tier conventions live in

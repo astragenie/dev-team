@@ -213,7 +213,7 @@ line: `Bundle: <path>`.
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge help_request --note "contract drift: <detail>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge blocked --note "<reason>"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge escalated_to_human --note "<reason>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge escalated_to_lead --note "<reason>"
 ```
 
 Emit badge BEFORE writing the handoff.

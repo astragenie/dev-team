@@ -571,7 +571,7 @@ test("mark-badge blocked persists note + blockedBy", async () => {
   assert.equal(state.currentRun.gates.blocked.blockedBy, "ART-2025-12-12-spec-q");
 });
 
-test("mark-badge escalated_to_human persists note", async () => {
+test("mark-badge escalated_to_lead persists note", async () => {
   const repoPath = await makeTempDir("crew-cli-badge-escalated-");
   await runCrew(["init", "--repo", repoPath]);
   await runCrew([
@@ -590,7 +590,7 @@ test("mark-badge escalated_to_human persists note", async () => {
     "--repo",
     repoPath,
     "--badge",
-    "escalated_to_human",
+    "escalated_to_lead",
     "--note",
     "Scope ambiguous; need stakeholder sign-off"
   ]);

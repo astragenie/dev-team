@@ -173,7 +173,7 @@ test("write-final-synthesis accepts --external-deltas none and renders the secti
   assert.match(body, /none/);
 });
 
-test("final-synthesis blocked when escalated_to_human set; --force overrides", async () => {
+test("final-synthesis blocked when escalated_to_lead set; --force overrides", async () => {
   const repoPath = await makeTempDir("crew-cli-escalated-blocks-final-");
   await runCrew(["init", "--repo", repoPath]);
   await runCrew([
@@ -192,7 +192,7 @@ test("final-synthesis blocked when escalated_to_human set; --force overrides", a
     "--repo",
     repoPath,
     "--badge",
-    "escalated_to_human",
+    "escalated_to_lead",
     "--note",
     "Need human"
   ]);
@@ -207,8 +207,8 @@ test("final-synthesis blocked when escalated_to_human set; --force overrides", a
     "--external-deltas",
     "none"
   ]);
-  assert.notEqual(blockResult.code, 0, "should reject when escalated_to_human");
-  assert.match(blockResult.output, /escalated_to_human|pending|escalated to human/i);
+  assert.notEqual(blockResult.code, 0, "should reject when escalated_to_lead");
+  assert.match(blockResult.output, /escalated_to_lead|pending|escalated to lead/i);
 
   const forceResult = await runCrew([
     "write-final-synthesis",

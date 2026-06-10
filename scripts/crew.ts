@@ -258,11 +258,13 @@ function usage(target: string | null = null) {
       "  node scripts/crew.mjs write-deployment-guidance --repo <path> --title <text> [--discovery-status repo-derived|partial|live-verified] [--verified-from <a,b>] [--missing <a,b>] [--summary <text>] [--build <text>] [--deploy <text>]",
     "show-workflow-state": "  node scripts/crew.mjs show-workflow-state --repo <path>",
     "mark-badge":
-      "  node scripts/crew.mjs mark-badge --repo <path> --badge review_required|review_passed|review_failed|review_skipped|validation_expected|validation_passed|validation_failed|validation_skipped|validation_stale|dev_deploy_expected|dev_checked|dev_failed|dev_skipped|prod_deploy_expected|prod_checked|prod_failed|prod_skipped|blocked|escalated_to_human [--note <text>] [--blocked-by <artifact-id>]",
+      "  node scripts/crew.mjs mark-badge --repo <path> --badge review_required|review_passed|review_failed|review_skipped|validation_expected|validation_passed|validation_failed|validation_skipped|validation_stale|dev_deploy_expected|dev_checked|dev_failed|dev_skipped|prod_deploy_expected|prod_checked|prod_failed|prod_skipped|blocked|escalated_to_lead [--note <text>] [--blocked-by <artifact-id>]",
     "write-run-brief":
       "  node scripts/crew.mjs write-run-brief --repo <path> --title <text> [--goal <text>] [--mode <mode>] [--pace <pace>]",
     "write-build-bundle":
       "  node scripts/crew.ts write-build-bundle --repo <path> --slice <SLICE-NN> --builder <builder|builder-be|builder-fe> --run <YYYYMMDDTHHMMSSZ> --handoff <path> [--feat <FEAT-NNN>] [--files <a,b>] [--files-read <c,d>]",
+    "write-handoff-and-bundle":
+      "  node scripts/crew.ts write-handoff-and-bundle --repo <path> --title <text> --summary <text> --files <a,b> --confidence <high|medium|low> [--builder builder|builder-be|builder-fe] [--slice <SLICE-NN>] [--run <YYYYMMDDTHHMMSSZ>] [--feat <FEAT-NNN>] [--files-read <c,d>] [--risks <text>] [--next <text>]",
     "write-handoff":
       "  node scripts/crew.mjs write-handoff --repo <path> --title <text> [--from <role>] [--to <role>] [--files <a,b>]",
     "write-review-result":
@@ -646,6 +648,92 @@ const COMMANDS = {
     });
     if (!r.ok) throw r.error;
     return r.value;
+  },
+  "write-handoff-and-bundle": async ({ repoPath, flags, positionals }: CommandContext) => {
+    // Combined one-shot for builders: write the completion handoff,
+    // then write the build bundle that references it — single CLI call
+    // so builder agents do not need to chain two bash invocations,
+    // parse JSON between them, or resolve slice id / timestamp manually.
+    const { writeArtifact } = await import("./lib/artifacts/write.ts");
+    const { assembleBuildBundle } = await import("./lib/build-bundle/assemble.ts");
+    const fs = await import("node:fs/promises");
+    const path = await import("node:path");
+
+    const statusValue = flags.status !== "open" ? (flags.status ?? undefined) : undefined;
+    const r = await writeArtifact(repoPath, "handoff", {
+      title: flags.title || positionals.join(" ") || "Task Handoff",
+      from: flags.from || flags.owner || "builder",
+      to: flags.to ?? "lead",
+      goal: flags.goal ?? undefined,
+      summary: flags.summary ?? undefined,
+      status: statusValue,
+      scope: flags.scope ?? undefined,
+      outOfScope: flags.outOfScope ?? undefined,
+      deliverable: flags.deliverable ?? undefined,
+      files: flags.files ?? undefined,
+      confidence: flags.confidence ?? undefined,
+      risks: flags.risks ?? undefined,
+      next: flags.next ?? undefined,
+      feature: flags.feature ?? undefined,
+      phase: flags.phase ?? undefined,
+      repoContext: flags.repoContext,
+      updatePath: flags.updatePath ?? undefined
+    });
+    if (!r.ok) throw r.error;
+    const handoff = r.value as { path: string };
+
+    // Auto-resolve slice id from workflow-state.json if --slice not given.
+    let slice = flags.slice ?? "";
+    if (!slice) {
+      try {
+        const statePath = path.join(repoPath, ".claude", "state", "crew", "workflow-state.json");
+        const state = JSON.parse(await fs.readFile(statePath, "utf8"));
+        slice = state?.currentRun?.slice ?? "unknown";
+      } catch {
+        slice = "unknown";
+      }
+    }
+    // Auto-generate ISO-like run id if --run not given.
+    const runId = flags.run ?? new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15) + "Z";
+    const builder = (flags.builder ?? "builder") as "builder" | "builder-be" | "builder-fe";
+    const validBuilders = new Set(["builder", "builder-be", "builder-fe"]);
+    if (!validBuilders.has(builder)) {
+      process.stderr.write(
+        `[crew] write-handoff-and-bundle refused: --builder must be one of ${[...validBuilders].join(", ")}.\n`
+      );
+      process.exit(2);
+    }
+
+    const filesTouched = (flags.files ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    const filesRead = (flags.filesRead ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+
+    // Bundle write is non-blocking — return handoff path even if bundle errors.
+    let bundlePath: string | null = null;
+    let bundleError: string | null = null;
+    try {
+      const handoffBody = await fs.readFile(handoff.path, "utf8");
+      const bundle = await assembleBuildBundle({
+        repoPath,
+        sliceId: slice,
+        builderName: builder,
+        runId,
+        ...(flags.feat !== null && flags.feat !== undefined ? { feat: flags.feat } : {}),
+        handoffBody,
+        filesTouched,
+        filesRead
+      });
+      bundlePath = bundle.path;
+    } catch (e) {
+      bundleError = e instanceof Error ? e.message : String(e);
+    }
+
+    return { kind: "handoff-and-bundle", handoff: handoff.path, bundle: bundlePath, bundleError };
   },
   "write-review-result": async ({ repoPath, flags, positionals }: CommandContext) => {
     const decision = flags.decision;

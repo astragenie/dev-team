@@ -28,7 +28,7 @@ The plugin is intentionally content-heavy and runtime-light.
 - Durable behavior belongs in `agents/`, `skills/`, and `commands/`.
 - Hooks should stay small and auditable.
 - Scripts should be thin helpers, not a hidden framework runtime.
-- Agent prompts are capped at ≤300 lines per `docs/governance.md`, enforced by `scripts/validate-agents.ts` (FEAT-035). Specifics live in skills the agent invokes on demand.
+- Agent prompts are capped at ≤350 lines per `docs/governance.md`, enforced by `scripts/validate-agents.ts` (FEAT-035). Specifics live in skills the agent invokes on demand.
 
 ## Skill taxonomy
 
@@ -188,7 +188,7 @@ and `docs/routing-table.md` for current routing.
 - **Routing-table authoritative.** `docs/routing-table.md` is consulted by
   the lead at session start. `brief-me` surfaces a stale-check reminder if
   mtime exceeds 30 days.
-- **Workflow badges.** `blocked` and `escalated_to_human` are first-class
+- **Workflow badges.** `blocked` and `escalated_to_lead` are first-class
   workflow states with `--note` / `--blocked-by` flags. `write-final-synthesis`
   refuses to run while escalated unless `--force`.
 - **Crew Fleet.** `crew fleet` command surfaces parallel-worktree visibility

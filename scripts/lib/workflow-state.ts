@@ -272,7 +272,7 @@ const BADGE_TABLE: Record<string, BadgeSpec> = {
   prod_failed: { selector: (run) => [run.gates.deployment, "prod"], status: "failed" },
   prod_skipped: { selector: (run) => [run.gates.deployment, "prod"], status: "skipped" },
   blocked: { selector: (run) => [run.gates, "blocked"], status: "blocked", custom: true },
-  escalated_to_human: {
+  escalated_to_lead: {
     selector: (run) => [run.gates, "escalation"],
     status: "escalated",
     custom: true
@@ -421,7 +421,7 @@ function handleFinalSynthesis(
     );
   }
   if (hasEscalation && !force) {
-    throw new Error("Cannot finalize run while escalated to human. Use --force to override.");
+    throw new Error("Cannot finalize run while escalated to lead. Use --force to override.");
   }
   run.artifacts.finalSynthesis = artifact.path;
   run.status = fields.status || "completed";
@@ -520,7 +520,7 @@ const PENDING_BADGE_SPECS: Array<{
     check: (run) => run?.gates?.deployment?.prod?.status === "expected"
   },
   { badge: "blocked", check: (run) => run?.gates?.blocked?.status === "blocked" },
-  { badge: "escalated_to_human", check: (run) => run?.gates?.escalation?.status === "escalated" }
+  { badge: "escalated_to_lead", check: (run) => run?.gates?.escalation?.status === "escalated" }
 ];
 
 function collectPendingBadges(currentRun: WorkflowRun | null | undefined): string[] {

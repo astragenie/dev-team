@@ -5,14 +5,13 @@
 //
 // Errors (fail CI):
 //   - missing required frontmatter: name, description, model
-//   - <role>.md exceeds 500 lines (default; per-agent `maxLines:` frontmatter overrides)
+//   - <role>.md exceeds 350 lines (default; per-agent `maxLines:` frontmatter overrides)
 //   - missing required body section: identity intro + "## Report contract"
 //   - duplicate agent name across the directory
 //   - file name does not match frontmatter `name`
 //
-// The 500-line default cap is generous compared to the previous ≤300 bar:
-// it admits modest cross-cutting sections (context efficiency, shell
-// pre-check, depth control) without forcing premature skill extraction.
+// The 350-line default cap balances room for cross-cutting sections
+// (context efficiency, shell pre-check, depth control) against bloat.
 // Lines beyond the cap should push to a skill the agent invokes on demand.
 
 import fs from "node:fs/promises";
@@ -20,7 +19,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const AGENTS_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "agents");
-const MAX_LINES = 500;
+const MAX_LINES = 350;
 
 function parseFrontmatter(text: string): Record<string, string> | null {
   const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
