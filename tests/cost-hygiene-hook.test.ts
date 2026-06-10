@@ -6,6 +6,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import url from "node:url";
+import { runCheckRedundantReadHook } from "../hooks/lib/check-redundant-read.ts";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const HOOK_PATH = path.join(__dirname, "..", "hooks", "check-redundant-read.ts");
@@ -18,13 +19,22 @@ async function cleanup(dir: string) {
 }
 
 /**
- * @param {string} stdin
- * @param {Record<string, string>} env
- * @returns {Promise<{exitCode: number, stdout: string, stderr: string}>}
+ * In-process hook runner: import core, call directly, return { exitCode: 0, stdout, stderr: "" }
  */
-function runHook(
+async function runHook(
   stdin: string,
-  env: Record<string, string> = {}
+  env: NodeJS.ProcessEnv = {}
+): Promise<{ exitCode: number; stdout: string; stderr: string }> {
+  const out = await runCheckRedundantReadHook(stdin, { ...process.env, ...env });
+  return { exitCode: 0, stdout: out ?? "", stderr: "" };
+}
+
+/**
+ * Spawn-based smoke runner: validates truly-unset env and stdin/stdout wiring.
+ */
+function runHookSpawn(
+  stdin: string,
+  env: NodeJS.ProcessEnv = {}
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
     const proc = spawn("node", ["--experimental-strip-types", HOOK_PATH], {
@@ -83,13 +93,14 @@ test("hook with no env-var fires and writes state (default-on)", async () => {
   }
 });
 
-test("hook with CREW_COST_HYGIENE=0 exits 0 silently (opt-out)", async () => {
+// SMOKE: Hook runtime contract with gated-off env (not mockable in-process)
+test("smoke: hook with CREW_COST_HYGIENE=0 exits 0 silently (opt-out)", async () => {
   // AC-2: CREW_COST_HYGIENE=0 suppresses the hook.
   const repo = await makeRepo();
   try {
     const file = path.join(repo, "opt-out.txt");
     await fs.writeFile(file, "content", "utf8");
-    const result = await runHook(
+    const result = await runHookSpawn(
       JSON.stringify({
         session_id: "s_optout",
         tool_name: "Read",
@@ -133,7 +144,8 @@ test("hook with env-var on + first-read stdin emits empty stdout, writes state",
   }
 });
 
-test("hook with env-var on + reread stdin emits decision + systemMessage with content", async () => {
+// SMOKE: Hook runtime contract with warning path (verifies stdin→stdout payload wiring)
+test("smoke: hook with env-var on + reread stdin emits decision + systemMessage with content", async () => {
   const repo = await makeRepo();
   try {
     const file = path.join(repo, "ack.txt");
@@ -144,7 +156,7 @@ test("hook with env-var on + reread stdin emits decision + systemMessage with co
       tool_input: { file_path: file },
       cwd: repo
     });
-    await runHook(stdin, { CREW_COST_HYGIENE: "1" });
+    await runHookSpawn(stdin, { CREW_COST_HYGIENE: "1" });
 
     // Simulate PostToolUse capturing the content — write it directly to the state file.
     const stateFile = path.join(repo, ".claude", "state", "cost-hygiene", "s3.json");
@@ -155,7 +167,7 @@ test("hook with env-var on + reread stdin emits decision + systemMessage with co
     await fs.writeFile(stateFile, JSON.stringify(state, null, 2), "utf8");
 
     // Second read attempt → should warn
-    const result = await runHook(stdin, { CREW_COST_HYGIENE: "1" });
+    const result = await runHookSpawn(stdin, { CREW_COST_HYGIENE: "1" });
     assert.equal(result.exitCode, 0);
     const parsed = JSON.parse(result.stdout);
     assert.equal(parsed.decision, "approve");

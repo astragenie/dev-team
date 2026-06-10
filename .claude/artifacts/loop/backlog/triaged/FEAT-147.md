@@ -1,7 +1,7 @@
 ---
 id: FEAT-147
-status: pending
-priority: null
+status: triaged
+priority: P1
 category: quality
 target_release: null
 created: 2026-06-10
@@ -9,6 +9,14 @@ updated: 2026-06-10
 depends_on: []
 slices: []
 derived_from: null
+pm_customer_impact: 0.6
+pm_effort_estimate: 0.3
+pm_strategic_alignment: 0.9
+pm_technical_risk: 0.25
+pm_dependency_depth: 0.15
+composite_score: 0.7375
+autonomous_safe: false
+triage_notes: "CI hard-gate compliance; mechanical relocation into skills (no behavior deleted). autonomous_safe=false: governance declares agent-prompt edits human-in-loop even for relocation. P1 = active gate breach."
 ---
 # FEAT-147: Agent prompt cap compliance: trim lead.md (347) and reviewer.md (314) under 300 via skills
 

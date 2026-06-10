@@ -9,6 +9,7 @@ import {
   hasArtifactPath,
   checkSubagentReturn
 } from "../scripts/lib/subagent-return/check.ts";
+import { runCheckSubagentReturnHook } from "../hooks/lib/check-subagent-return.ts";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const HOOK_PATH = path.join(__dirname, "..", "hooks", "check-subagent-return.ts");
@@ -16,13 +17,22 @@ const HOOK_PATH = path.join(__dirname, "..", "hooks", "check-subagent-return.ts"
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
- * @param {string} stdin
- * @param {Record<string, string>} env
- * @returns {Promise<{exitCode: number, stdout: string, stderr: string}>}
+ * In-process hook runner: import core, call directly, return { exitCode: 0, stdout, stderr: "" }
  */
-function runHook(
+async function runHook(
   stdin: string,
-  env: Record<string, string> = {}
+  env: NodeJS.ProcessEnv = {}
+): Promise<{ exitCode: number; stdout: string; stderr: string }> {
+  const out = await runCheckSubagentReturnHook(stdin, { ...process.env, ...env });
+  return { exitCode: 0, stdout: out ?? "", stderr: "" };
+}
+
+/**
+ * Spawn-based smoke runner: validates truly-unset env and stdin/stdout wiring.
+ */
+function runHookSpawn(
+  stdin: string,
+  env: NodeJS.ProcessEnv = {}
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
     const proc = spawn("node", ["--experimental-strip-types", HOOK_PATH], {
@@ -37,13 +47,7 @@ function runHook(
   });
 }
 
-/**
- * Build a PostToolUse Agent stdin payload with the given body.
- *
- * @param {string} body  — the subagent return body
- * @param {string} [cwd]
- * @returns {string}
- */
+// Build a PostToolUse Agent stdin payload with the given body.
 function makeStdin(body: string, cwd = process.cwd()) {
   return JSON.stringify({
     session_id: "test-session",
@@ -75,10 +79,11 @@ test("AC-8: body > threshold WITH .claude/artifacts/crew/handoffs/foo.md → sil
   assert.equal(result.stdout, "");
 });
 
+// SMOKE: Hook runtime contract with warning path (verifies stdin→stdout payload wiring)
 // AC-9: body > threshold WITHOUT artifact path → warn with byte count + cost-discipline rule #2
-test("AC-9: body > threshold (1000 bytes) WITHOUT artifact path → warn", async () => {
+test("smoke: AC-9 — body > threshold (1000 bytes) WITHOUT artifact path → warn", async () => {
   const body = makeBody(1000);
-  const result = await runHook(makeStdin(body));
+  const result = await runHookSpawn(makeStdin(body));
   assert.equal(result.exitCode, 0);
   assert.notEqual(result.stdout, "");
   const parsed = JSON.parse(result.stdout);
@@ -87,9 +92,10 @@ test("AC-9: body > threshold (1000 bytes) WITHOUT artifact path → warn", async
   assert.match(parsed.systemMessage, /1000/);
 });
 
+// SMOKE: Hook runtime contract with gated-off env (not mockable in-process)
 // AC-5: CREW_SUBAGENT_INLINE_THRESHOLD=0 → short-circuit (silent even on large body without path)
-test("AC-5: CREW_SUBAGENT_INLINE_THRESHOLD=0 → silent even on large body", async () => {
-  const result = await runHook(makeStdin(makeBody(5000)), {
+test("smoke: AC-5 — CREW_SUBAGENT_INLINE_THRESHOLD=0 → silent even on large body", async () => {
+  const result = await runHookSpawn(makeStdin(makeBody(5000)), {
     CREW_SUBAGENT_INLINE_THRESHOLD: "0"
   });
   assert.equal(result.exitCode, 0);

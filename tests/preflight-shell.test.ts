@@ -6,18 +6,28 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import url from "node:url";
+import { runPreflightShellHook } from "../hooks/lib/preflight-shell.ts";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const HOOK_PATH = path.join(__dirname, "..", "hooks", "preflight-shell.ts");
 
 /**
- * @param {string} stdin
- * @param {Record<string, string>} env
- * @returns {Promise<{exitCode: number, stdout: string, stderr: string}>}
+ * In-process hook runner: import core, call directly, return { exitCode: 0, stdout, stderr: "" }
  */
-function runHook(
+async function runHook(
   stdin: string,
-  env: Record<string, string> = {}
+  env: NodeJS.ProcessEnv = {}
+): Promise<{ exitCode: number; stdout: string; stderr: string }> {
+  const out = await runPreflightShellHook(stdin, { ...process.env, ...env });
+  return { exitCode: 0, stdout: out ?? "", stderr: "" };
+}
+
+/**
+ * Spawn-based smoke runner: validates truly-unset env and stdin/stdout wiring.
+ */
+function runHookSpawn(
+  stdin: string,
+  env: NodeJS.ProcessEnv = {}
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
     const proc = spawn("node", ["--experimental-strip-types", HOOK_PATH], {
@@ -32,12 +42,6 @@ function runHook(
   });
 }
 
-/**
- * @param {string} toolName
- * @param {string} command
- * @param {string} cwd
- * @returns {string}
- */
 function makeStdin(toolName: string, command: string, cwd: string) {
   return JSON.stringify({
     session_id: "test-session",
@@ -77,22 +81,15 @@ test("AC-6: default-on — hook runs when CREW_TOOL_PREFLIGHT is unset", async (
   assert.match(parsed.systemMessage, /\$env:/);
 });
 
-test("AC-6b: hook runs with no env var set (truly unset)", async () => {
+// SMOKE: Hook runtime contract with truly-unset env (not mockable in-process)
+test("smoke: AC-6b — hook runs with no env var set (truly unset)", async () => {
   // Spawn without CREW_TOOL_PREFLIGHT in env at all
-  const result = await new Promise<{ exitCode: number; stdout: string; stderr: string }>(
-    (resolve) => {
-      // Build a minimal env without CREW_TOOL_PREFLIGHT
-      const cleanEnv = Object.fromEntries(
-        Object.entries(process.env).filter(([k]) => k !== "CREW_TOOL_PREFLIGHT")
-      );
-      const proc = spawn("node", ["--experimental-strip-types", HOOK_PATH], { env: cleanEnv });
-      let stdout = "";
-      let stderr = "";
-      proc.stdout.on("data", (b) => (stdout += b.toString("utf8")));
-      proc.stderr.on("data", (b) => (stderr += b.toString("utf8")));
-      proc.on("close", (exitCode) => resolve({ exitCode: exitCode ?? -1, stdout, stderr }));
-      proc.stdin.end(makeStdin("Bash", "echo $env:HOME", process.cwd()));
-    }
+  const cleanEnv = Object.fromEntries(
+    Object.entries(process.env).filter(([k]) => k !== "CREW_TOOL_PREFLIGHT")
+  );
+  const result = await runHookSpawn(
+    makeStdin("Bash", "echo $env:HOME", process.cwd()),
+    cleanEnv
   );
   assert.equal(result.exitCode, 0);
   // Hook should run and warn
@@ -101,8 +98,9 @@ test("AC-6b: hook runs with no env var set (truly unset)", async () => {
 
 // ── AC-7: Failure mode 1 — env-var shape mismatch ───────────────────────────
 
-test("AC-7a: Bash tool with $env:HOME warns about $env: syntax", async () => {
-  const result = await runHook(makeStdin("Bash", "echo $env:HOME", process.cwd()));
+// SMOKE: Hook runtime contract with warning path (verifies stdin→stdout payload wiring)
+test("smoke: AC-7a — Bash tool with $env:HOME warns about $env: syntax", async () => {
+  const result = await runHookSpawn(makeStdin("Bash", "echo $env:HOME", process.cwd()));
   assert.equal(result.exitCode, 0);
   assert.notEqual(result.stdout, "");
   const parsed = JSON.parse(result.stdout);
