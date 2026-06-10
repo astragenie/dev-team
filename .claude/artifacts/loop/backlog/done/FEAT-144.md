@@ -37,14 +37,27 @@ Consequences in this repo:
 
 ## Deliverables
 
+> **Note (as-shipped):** items 2 and 3 below state the *original plan*. Two
+> things changed during implementation — see annotations. The canonical tree
+> direction **inverted**, and the marketplace step became moot.
+
 1. **Loop repo fix**: every `runBacklog*` / snapshot / triage entry point must
    load `.claude/loop.json` and pass `config` through (audit all callers of
    `backlogRoot()` for the same omission). Release as a loop patch.
-2. **This repo**: bump `marketplace.json` loop version once fixed.
-3. **One-time reconciliation**: merge the two trees into `docs/backlog/`
-   (resolve per-FEAT state conflicts by git history), delete
-   `.claude/artifacts/loop/backlog/`, regenerate `loop-snapshot.md`.
+   _Shipped in loop v0.36.0 — `config` threads `resolveConfig` → `runBacklogSubcommand`
+   → `runBacklogAdd` → `addFeature({config})` → `ensureBacklogScaffold`/`nextFeatureId`._
+2. ~~**This repo**: bump `marketplace.json` loop version once fixed.~~
+   _Moot: loop now ships from its own standalone marketplace; this repo's
+   `marketplace.json` no longer carries a loop entry._
+3. **One-time reconciliation**: collapse the two trees into a single
+   authoritative tree, resolving per-FEAT state conflicts by git history, then
+   regenerate `loop-snapshot.md`.
+   _Direction inverted from the original draft: the single tree lives at
+   **`.claude/artifacts/loop/backlog/`** (the loop-CLI default); `docs/backlog/`
+   was stripped to non-state files only (`product-backlog.md`, templates).
+   Done via `loop doctor --fix` (commit `d0c49ca`)._
 4. Add a validator/CI check that fails when both trees exist.
+   _Shipped: `scripts/validate-loop-state.ts`, wired in `.github/workflows/test.yml`._
 
 ## Resolution (2026-06-10)
 
