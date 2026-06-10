@@ -192,9 +192,9 @@ line: `Bundle: <path>`.
 
 Before writing the handoff, run these gates in order. Each must exit 0. This gate is intentionally SCOPED for speed: the whole-repo lint, format check, and complete test suite now run ONCE at the end in the validator's mandatory final gate — not here, and not in every builder.
 
-- `npm run typecheck` — cross-file type safety; not cheaply scopable, keep it
+- `bun run typecheck` — cross-file type safety; not cheaply scopable, keep it
 - **Affected-class tests only** — do NOT run the full suite. Derive changed source files from `git diff --name-only` (vs the slice base), then run only their colocated sibling tests:
-  - node:test (this repo) → `node --test <colocated *.test.ts for each changed source file>`
+  - bun test (this repo) → `bun test <colocated *.test.ts for each changed source file>`
   - Vitest → `vitest related <changed files>` (also covers tests that import a changed file)
   - Jest → `jest --findRelatedTests <changed files>`
   - Net-new behavior with no colocated test → write the failing test first per TDD policy; that new test IS its affected set.

@@ -25,10 +25,10 @@ This role is used only when a slice is classified as `tier: light` (docs-only, �
 ## Workflow
 
 1. **Run mandatory full gate first** (exactly as `validator` does):
-   - `npm run lint` — must exit 0
-   - `npm run format:check` — must exit 0
+   - `bun run lint` — must exit 0
+   - `bun run format:check` — must exit 0
    - Full test suite (per `.claude/loop.json` `stack.test`)
-   - `npm run validate:all` (if it exists)
+   - `bun run validate:all` (if it exists)
    - Record each command + exit code in your validation evidence.
 
 2. **If any gate fails:** stop. Return `validation_decision: failed` with evidence. The slice bounces to the builder via `crew:fix`.
