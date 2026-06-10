@@ -3,6 +3,32 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.30.1 — 2026-06-10 — Agent prompts aligned to bun tooling
+
+### Changed
+
+- **Agent quality-gate instructions now invoke bun directly**, matching the
+  v0.30.0 bun-test decision:
+  - `builder.md`, `builder-fe.md`: `npm run typecheck` → `bun run typecheck`;
+    affected-class inner loop `node --test` → `bun test`.
+  - `validator.md`, `reviewer-validator.md`: full-gate `npm run lint` /
+    `format:check` / `validate:all` → `bun run …`; fallback test `node --test`
+    → `bun test`; `npm run test:be` / `test:fe` → `bun run …`.
+  - `reviewer.md`: dependency CVE check `npm audit` → `bun audit`
+    (Bun 1.3.14 ships it).
+  - `3rdparty/playwright-tester.md`: `npx playwright test` →
+    `bunx playwright test` (launcher swap; Playwright runner still executes on
+    Node underneath).
+- **Harness CLI invocations left on Node.** ~120 `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" …`
+  / `loop.mjs` / `node -e` calls across `agents/` + `commands/` deliberately
+  stay on Node — consumer-runtime surface unchanged per the ADR-002 hybrid.
+
+### Added
+
+- `.claude/artifacts/crew/runs/2026-06-10-bun-node-tooling-audit.md` — full
+  npm/node/npx inventory across agents + commands, with migration scope and a
+  point-in-time Bun-vs-Node performance analysis.
+
 ## v0.30.0 — 2026-06-10 — Bun test runner for dev/CI (WS3 amended)
 
 ### Changed
