@@ -56,13 +56,13 @@ jobs:
         env:
           CREW_VALIDATE_ROUTING_TABLE: "1"
         run: node ./scripts/validate-routing-table.ts
-      - run: npm run lint
-      - run: npm run format:check
-      - run: npm run typecheck
+      - run: bun run lint
+      - run: bun run format:check
+      - run: bun run typecheck
       - name: Validate type-graph (advisory, becomes blocking in Phase 5)
         continue-on-error: true
-        run: npm run validate:typegraph
-      - run: npm test
+        run: bun run validate:typegraph
+      - run: bun run test
       - run: node ./scripts/e2e-smoke.ts
       - name: e2e smoke — ux validation
-        run: npm run e2e:smoke:ux
+        run: bun run e2e:smoke:ux

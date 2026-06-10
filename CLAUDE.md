@@ -47,28 +47,32 @@ External-plugin skills (`context7`, `microsoft-docs:*`, `plugin-dev:*`, `terrafo
 
 Requires Node 22.6+ (strip-types runtime; see `docs/superpowers/specs/2026-06-07-ts-migration-and-perf-design.md`).
 
-- `npm test` — full test suite via Bun (`bun test --parallel --timeout 30000 tests/`; requires Bun 1.3+); `npm run test:node` is the Node.js fallback.
-- `npm run lint` — ESLint flat config.
-- `npm run format` / `npm run format:check` — Prettier.
-- `npm run e2e:smoke` — end-to-end smoke against a temp sample repo.
-- `node ./scripts/validate-manifests.ts` — manifest sanity check.
+- `bun run test` — full test suite via Bun (`bun test --parallel --timeout 30000 tests/`; requires Bun 1.3+); `bun run test:node` is the Node.js fallback.
+- `bun run lint` — ESLint flat config.
+- `bun run format` / `bun run format:check` — Prettier.
+- `bun run e2e:smoke` — end-to-end smoke against a temp sample repo.
+- `node ./scripts/validate-manifests.ts` — manifest sanity check (CLI scripts run on Node per ADR-002).
 
 ## CI gates
 
 GitHub Actions (`.github/workflows/test.yml`) runs on every push to `main`
 and every PR. All steps are blocking; lint must stay zero-warning.
 
-1. `npm ci`
+1. `npm ci` (dependency install from `package-lock.json`)
 2. `node ./scripts/validate-manifests.ts`
 3. `node ./scripts/validate-skills.ts`
 4. `node ./scripts/validate-agents.ts`
 5. `node ./scripts/validate-slices.ts`
 6. `CREW_VALIDATE_ROUTING_TABLE=1 node ./scripts/validate-routing-table.ts` (advisory; `continue-on-error: true`)
-7. `npm run lint`
-8. `npm run format:check`
-9. `npm run typecheck`
-10. `npm test` (via Bun)
+7. `bun run lint`
+8. `bun run format:check`
+9. `bun run typecheck`
+10. `bun run test` (Bun test runner — `bun test --parallel`)
 11. `node ./scripts/e2e-smoke.ts`
+
+Node runs dependency install (`npm ci`) and all `./scripts/*.ts` CLI/validators
+(the consumer runtime, per ADR-002); Bun runs the test/lint/format/typecheck
+package scripts.
 
 The local validators are **hard** CI gates. During reviewer-phase work, the
 `plugin-dev:plugin-validator` and `plugin-dev:skill-reviewer` skills are

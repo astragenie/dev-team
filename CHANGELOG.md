@@ -3,6 +3,36 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.30.3 — 2026-06-10 — bun swap completed in skills + stack config
+
+### Fixed
+
+- **Skills + `loop.json` stack now use bun.** The v0.30.1/0.30.2 swap only
+  touched agent prompts, but builders/validators read gate commands from
+  `.claude/loop.json` `stack.build` / `stack.test` **first** (canonical source);
+  those were still `npm`, so consumers kept running npm despite the prompt
+  changes. Swapped test/lint/build gate commands to bun across 12 skills
+  (advisory Common-Commands blocks, `workflow/commit`, `fix-pr`,
+  `reviewing-code`, `systematic-debugging`, `js-conventions`,
+  `node-ts-patterns`) and this repo's `loop.json` stack
+  (`build` → `bun test --parallel`, `test[0]` → `bun run lint`). Test runs use
+  `bun test --parallel` per the ADR-002 amendment.
+- **`loop.json` validator path bug.** `stack.test` referenced
+  `./scripts/validate-{manifests,skills}.mjs`, but the files are `.ts` — the
+  gate failed with `MODULE_NOT_FOUND`. Pointed at `.ts`.
+- **`.claude/loop.json` preset wired.** Added `preset: typescript-plugin-dev`
+  so `resolve-skills` resolves PM/role skills instead of falling back to the
+  regex baseline.
+
+### Changed
+
+- **CI workflow + CLAUDE.md aligned to bun.** `.github/workflows/test.yml` and
+  the CLAUDE.md "Local commands" / "CI gates" sections now invoke
+  `bun run lint` / `format:check` / `typecheck` / `test` (and `e2e:smoke:ux`).
+  `npm ci` (dependency install) and all `node ./scripts/*.ts` validators/CLI
+  stay on Node — the consumer runtime per ADR-002. Bun runs only the
+  package-script test/lint/format/typecheck surface.
+
 ## v0.30.2 — 2026-06-10 — --parallel on direct bun test calls
 
 ### Fixed
