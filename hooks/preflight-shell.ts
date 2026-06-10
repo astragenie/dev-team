@@ -3,6 +3,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { runChecks } from "../scripts/lib/preflight/checks.ts";
+import { isEnabled, readCrewConfig } from "../scripts/lib/features-service.ts";
 import { logHookError } from "./hook-error.ts";
 
 async function logEvent(repoPath: string, code: string, sessionId: string, detail: string): Promise<void> {
@@ -55,14 +56,21 @@ async function readStdin(): Promise<string> {
 
 async function main() {
   if (process.env.CREW_TOOL_PREFLIGHT === "0") {
-    process.exit(0);
+    process.stdin.resume();
+    return;
   }
   const raw = await readStdin();
   const input = parseInput(raw);
   if (input === null) {
-    process.exit(0);
+    return;
   }
   const { session_id, tool_name, command, cwd } = input;
+
+  // Gate on feature flag: if "shell-preflight" is disabled, skip preflight checks
+  const config = await readCrewConfig(cwd);
+  if (!isEnabled("shell-preflight", config)) {
+    return;
+  }
 
   let warnings: string[];
   try {

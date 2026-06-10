@@ -5,6 +5,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { parseThreshold, checkSubagentReturn } from "../scripts/lib/subagent-return/check.ts";
+import { isEnabled, readCrewConfig } from "../scripts/lib/features-service.ts";
 import { logHookError } from "./hook-error.ts";
 
 async function logEvent(repoPath: string, code: string, sessionId: string, detail: string): Promise<void> {
@@ -77,16 +78,24 @@ async function readStdin(): Promise<string> {
 
 async function main(): Promise<void> {
   if (process.env.CREW_SUBAGENT_INLINE_THRESHOLD === "0") {
-    process.exit(0);
+    process.stdin.resume();
+    return;
   }
 
   const raw = await readStdin();
   const input = parseInput(raw);
   if (input === null) {
-    process.exit(0);
+    return;
   }
 
   const { session_id, cwd, body } = input;
+
+  // Gate on feature flag: if "subagent-inline-warn" is disabled, skip emitting warning
+  const config = await readCrewConfig(cwd);
+  if (!isEnabled("subagent-inline-warn", config)) {
+    return;
+  }
+
   const threshold = parseThreshold(process.env.CREW_SUBAGENT_INLINE_THRESHOLD);
 
   const { warnings } = checkSubagentReturn({ body, threshold });

@@ -10,6 +10,7 @@ import {
   evictLRU
 } from "../scripts/lib/cost-hygiene/state.ts";
 import { decide } from "../scripts/lib/cost-hygiene/decide.ts";
+import { isEnabled, readCrewConfig } from "../scripts/lib/features-service.ts";
 import { logHookError } from "./hook-error.ts";
 
 async function logEvent(repoPath: string, code: string, sessionId: string, detail: string): Promise<void> {
@@ -104,6 +105,14 @@ async function main() {
     return;
   }
   const { session_id, file_path, cwd } = input;
+
+  // Gate on feature flag: if "redundant-read-stop" is disabled, short-circuit
+  const config = await readCrewConfig(cwd);
+  if (!isEnabled("redundant-read-stop", config)) {
+    process.stdin.resume();
+    return;
+  }
+
   const absPath = path.resolve(cwd, file_path);
 
   const fileStat = await readFileStat(absPath);
