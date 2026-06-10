@@ -1,7 +1,7 @@
 ---
 id: FEAT-143
-status: pending
-priority: null
+status: triaged
+priority: P3
 category: ci/maintenance
 target_release: null
 created: 2026-06-10
@@ -9,6 +9,14 @@ updated: 2026-06-10
 depends_on: []
 slices: []
 derived_from: null
+pm_customer_impact: 0.55
+pm_effort_estimate: 0.35
+pm_strategic_alignment: 0.65
+pm_technical_risk: 0.35
+pm_dependency_depth: 0.15
+composite_score: 0.625
+autonomous_safe: false
+triage_notes: via=pm | Lower impact/effort; multiple skill+command edits => human review; good filler when P2s blocked
 ---
 # FEAT-143: Workflow smalls — git-bisect procedure, squash-merge detection, --dry-run convention
 

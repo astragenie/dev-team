@@ -1,7 +1,7 @@
 ---
 id: FEAT-142
-status: pending
-priority: null
+status: triaged
+priority: P2
 category: design
 target_release: null
 created: 2026-06-10
@@ -9,6 +9,14 @@ updated: 2026-06-10
 depends_on: []
 slices: []
 derived_from: null
+pm_customer_impact: 0.72
+pm_effort_estimate: 0.5
+pm_strategic_alignment: 0.78
+pm_technical_risk: 0.52
+pm_dependency_depth: 0.2
+composite_score: 0.674
+autonomous_safe: false
+triage_notes: "via=pm | \"Moderate impact (design quality); low effort (agent prompt edits, no new skill); agent-prompt edits => human review\""
 ---
 # FEAT-142: Adversarial design lenses for architect + architect-reviewer
 

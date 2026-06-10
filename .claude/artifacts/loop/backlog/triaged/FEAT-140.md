@@ -1,7 +1,7 @@
 ---
 id: FEAT-140
-status: pending
-priority: null
+status: triaged
+priority: P2
 category: security
 target_release: null
 created: 2026-06-10
@@ -9,6 +9,14 @@ updated: 2026-06-10
 depends_on: []
 slices: []
 derived_from: null
+pm_customer_impact: 0.8
+pm_effort_estimate: 0.45
+pm_strategic_alignment: 0.82
+pm_technical_risk: 0.55
+pm_dependency_depth: 0.25
+composite_score: 0.7185
+autonomous_safe: false
+triage_notes: via=pm | Strong impact (automated security gate); moderate effort (1 domain skill + routing rows); skill authorship => human review
 ---
 # FEAT-140: Pre-merge security sweep — secrets scan + supply-chain audit routing
 

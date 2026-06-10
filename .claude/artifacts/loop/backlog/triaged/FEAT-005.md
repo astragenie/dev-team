@@ -5,18 +5,20 @@ priority: P2
 category: routing
 target_release: null
 created: 2026-06-07
-updated: 2026-06-08
+updated: 2026-06-10
 depends_on: []
 slices: []
 derived_from: null
 upstream_request: "https://github.com/sergeymilashico/loop/blob/main/docs/upstream-requests/2026-06-07-hero-crew-orchestrate-slice-surface-stack-routing.md"
-pm_customer_impact: 0.5
-pm_effort_estimate: 0.5
-pm_strategic_alignment: 0.5
-pm_technical_risk: 0.5
-pm_dependency_depth: 0.5
-autonomous_safe: true
-triage_notes: "autonomous_safe: true — AC fully specified in body (5 clear criteria), implementation scope is additive skill routing in crew:orchestrate-slice, no governance call required"
+pm_customer_impact: 0.65
+pm_effort_estimate: 0.4
+pm_strategic_alignment: 0.7
+pm_technical_risk: 0.3
+pm_dependency_depth: 0.2
+autonomous_safe: false
+triage_notes: "via=pm retriage w/ spec. Flipped autonomous_safe true->false: edits commands/orchestrate-slice.md dispatch routing = command authorship, human-in-loop per backlog discipline. High-quality spec lowers delivery risk."
+composite_score: 0.6675
+plan: .claude/artifacts/loop/slice-specs/FEAT-005-slice-spec.md
 ---
 # FEAT-005: /crew:orchestrate-slice routes builder variant from FEAT `surface` + `stack` frontmatter
 

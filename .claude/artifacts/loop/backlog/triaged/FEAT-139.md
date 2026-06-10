@@ -1,14 +1,22 @@
 ---
 id: FEAT-139
-status: pending
-priority: null
+status: triaged
+priority: P2
 category: quality
 target_release: null
 created: 2026-06-09
-updated: 2026-06-09
+updated: 2026-06-10
 depends_on: []
 slices: []
 derived_from: null
+pm_customer_impact: 0.75
+pm_effort_estimate: 0.55
+pm_strategic_alignment: 0.85
+pm_technical_risk: 0.5
+pm_dependency_depth: 0.2
+composite_score: 0.6975
+autonomous_safe: false
+triage_notes: via=pm | Targets weakest grade dim; moderate-low effort (1 skill + agent rows); skill authorship => human-in-loop review
 ---
 # FEAT-139: qa-expert test-quality lens: flaky-test detection + mutation-testing quality bar
 

@@ -1,7 +1,7 @@
 ---
 id: FEAT-141
-status: pending
-priority: null
+status: triaged
+priority: P2
 category: quality
 target_release: null
 created: 2026-06-10
@@ -9,6 +9,14 @@ updated: 2026-06-10
 depends_on: []
 slices: []
 derived_from: null
+pm_customer_impact: 0.78
+pm_effort_estimate: 0.6
+pm_strategic_alignment: 0.8
+pm_technical_risk: 0.58
+pm_dependency_depth: 0.3
+composite_score: 0.67
+autonomous_safe: false
+triage_notes: "via=pm | \"Dual weak-dim target; moderate-high effort (3 bundled parts, 1 new skill); skill authorship => human review\""
 ---
 # FEAT-141: Reliability + observability review lenses — rollback matrix, silent-failure hunt, observability guidance
 
