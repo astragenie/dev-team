@@ -19,7 +19,7 @@ Create well-formatted commits with conventional commit messages + emoji.
 
 ## What this skill does
 
-1. Run pre-commit gate unless caller passes `--no-verify`. For this repo: `npm run lint && npm test && node ./scripts/validate-manifests.ts && node ./scripts/validate-skills.ts`.
+1. Run pre-commit gate unless caller passes `--no-verify`. For this repo: `bun run lint && bun test --parallel && node ./scripts/validate-manifests.ts && node ./scripts/validate-skills.ts`.
 2. `git status` — show what is staged.
 3. If nothing staged, stage all modified + new files (`git add -A`).
 4. `git diff --cached` — read what is about to land.

@@ -65,7 +65,7 @@ Advanced tooling for dependency analysis. Features: expert-level automation, cus
 
 ## Development Workflow
 
-1. **Setup:** `npm install` or `pip install -r requirements.txt`; copy `.env.example .env`
+1. **Setup:** `bun install` or `pip install -r requirements.txt`; copy `.env.example .env`
 2. **Run analysis:** `python scripts/project_architect.py .`
 3. **Apply practices** from `references/architecture_patterns.md`, `references/system_design_workflows.md`, `references/tech_decision_guide.md`
 
