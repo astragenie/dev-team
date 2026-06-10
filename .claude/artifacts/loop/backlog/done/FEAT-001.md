@@ -1,18 +1,42 @@
 ---
 id: FEAT-001
 status: done
-priority: P2
-category: feature
-target_release: null
-created: 2026-05-27
-updated: 2026-05-27
+priority: P0
+category: foundation
+target_release: v0.2.0
+created: 2026-05-22
+updated: 2026-05-22
+completed: 2026-05-22
 depends_on: []
-slices: [SLICE-05]
+slices: []
 derived_from: null
-triage_notes: no fields needed inference
-started_at: 2026-05-27
-completed_at: 2026-05-27
+autonomous_safe: true
+phase: 1
+github_issue: 1
+github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/1"
 ---
-# FEAT-001: Performance letter grades (A-F) in cost-advisor
+# FEAT-001: Skills directory reorganization
 
-Compute composite A-F grade from: compaction count, subagent count, re-read count, tool failure rate, cache hit %. Surface in cost-advise artifacts. File: scripts/lib/cost-advisor.mjs. AC: buildCostAdvisor returns grade field, grade in markdown output, thresholds documented, test covers grade computation.
+## Description
+
+Split `skills/` into the four-tier taxonomy defined in `docs/architecture/architecture.md`:
+
+```
+skills/
+├── universal/
+├── workflow/
+├── domain/
+└── meta/
+```
+
+Move existing skills into the correct tier without rewriting content.
+
+## Acceptance hints
+
+- All current skills relocated.
+- No skill content rewritten in this slice.
+- Each skill's frontmatter gains a `tier` field (`universal | workflow | domain | meta`).
+- `.claude-plugin/plugin.json` paths still resolve (or adjusted).
+- Existing tests pass unchanged.
+- One follow-up note added to `docs/architecture/architecture.md` if the move uncovered a misclassification.

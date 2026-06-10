@@ -30,6 +30,7 @@ triage_notes: "autonomous_safe inferred: AC count=5, derived_from=parent_spec â†
 depends_on: [FEAT-120]
 started_at: 2026-06-07
 completed_at: 2026-06-09
+created: 2026-06-07
 ---
 # FEAT-121 â€” TS Phase 4.2: tests batch 2 migration
 

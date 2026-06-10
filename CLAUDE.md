@@ -106,10 +106,12 @@ Pre-1.0 semver-ish (see `CHANGELOG.md` header):
 ### Companion plugin (`loop`)
 
 Lives in a separate repo
-(`https://github.com/sergeymilashico/loop`) and is
-referenced from this repo's `marketplace.json` by version only. To pick up
-a `loop` release, bump `plugins[name=loop].version` here and commit
-under `chore(marketplace): bump loop to <ver>`.
+(`https://github.com/sergeymilashico/loop`) and ships from its **own
+standalone marketplace** (`loop/.claude-plugin/marketplace.json` in that
+repo) — this repo's `marketplace.json` no longer carries a loop entry.
+To pick up a `loop` release: bump version in the loop repo's
+`package.json` AND its `marketplace.json`, tag, push, then refresh the
+local plugin install.
 
 ### Hard rules
 
@@ -153,11 +155,16 @@ of `brief-me` and `crew fleet` output across machines.
 
 ## Backlog discipline
 
-Active backlog under `docs/backlog/{pending,triaged,in-progress,done}/`.
+Active backlog under `.claude/artifacts/loop/backlog/{pending,triaged,in-progress,done}/`
+(single authoritative tree since 2026-06-10; the old `docs/backlog/` tree was
+merged via `loop doctor --fix` — see
+`docs/superpowers/specs/2026-06-10-loop-crew-state-contract-design.md`).
+`docs/backlog/` retains only non-state files (`product-backlog.md`, templates).
 Each FEAT has frontmatter declaring priority, status, and an
 `autonomous_safe` flag. Items tagged `autonomous_safe: false` (lead
 prompt edits, skill authorship) require a human-in-loop on review even
-when picked by the loop.
+when picked by the loop. State-file schema: loop repo `docs/state-contract.md`;
+`node ./scripts/validate-loop-state.ts` guards single-tree + unique ids in CI.
 
 ## Safety
 
@@ -214,7 +221,7 @@ This repo runs the Wiggin Loop autonomously. Full rules: `.claude/loop/rules.md`
 - **Dispatch discipline.** The loop is an orchestrator, not an implementer. Hand the `slice start` return's `dispatchInstruction` to a `/crew:build` subagent; pivot to `/crew:fix` on any review:needs_fix or validation:fail. Inline implementation is reserved for trivial single-line fixups.
 - **Slice close ceremony.** Every slice MUST close via `/loop:slice complete --id SLICE-NN` (writes handoff + final-synthesis + cost-report + cost-advise) followed by `/loop:slice grade*`. Manual file moves + a `docs(slice): mark ... complete` commit are NOT a substitute.
 - **Build entry points.** `/crew:build` is the interactive single-slice path (lighter — no run-brief required). Autonomous loop is the unattended multi-slice path (full ceremony). Never run both against the same branch — they race on workflow-state.
-- **Auto-continue.** After the ceremony, scan `docs/specs/` → `docs/backlog/pending/` → `docs/backlog/triaged/` and promote the next item without asking.
+- **Auto-continue.** After the ceremony, scan `docs/specs/` → `.claude/artifacts/loop/backlog/pending/` → `.claude/artifacts/loop/backlog/triaged/` and promote the next item without asking.
 - **Phase gate.** When the last slice in a phase completes, run `/loop:phase-gate` before starting the next phase.
 - **Worktree parallelism.** Run parallel features in sibling git worktrees — each has its own `.claude/state/`. Cost attribution is auto-scoped per worktree. Use `crew fleet --repo "$PWD"` for a one-glance view. Never check out the same branch twice; never push from inside the loop.
 

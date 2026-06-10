@@ -1,18 +1,37 @@
 ---
 id: FEAT-002
 status: done
-priority: P2
-category: feature
-target_release: null
-created: 2026-05-27
-updated: 2026-05-27
-depends_on: []
-slices: [SLICE-06]
+priority: P0
+category: foundation
+target_release: v0.2.0
+created: 2026-05-22
+updated: 2026-05-22
+completed: 2026-05-22
+depends_on: [FEAT-001]
+slices: []
 derived_from: null
-triage_notes: no fields needed inference
-started_at: 2026-05-27
-completed_at: 2026-05-27
+autonomous_safe: true
+phase: 1
+github_issue: 2
+github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/2"
 ---
-# FEAT-002: Regression trend detectors in cost-advisor
+# FEAT-002: Authoritative routing table
 
-Three new trend signals comparing last 3 slices: (1) compaction drift trending upward, (2) subagent creep dispatch count growing, (3) cost regression USD/slice increasing >20%. File: scripts/lib/cost-advisor.mjs. AC: each trend fires on synthetic 3-report history, trends surface as recommendations in cost-advise output.
+## Description
+
+Produce `docs/routing-table.md` — the prescriptive heuristic map the lead
+consults when classifying incoming work. See `docs/architecture/architecture.md` §5
+for the column shape.
+
+Derive entries from observed task patterns in
+`.claude/artifacts/crew/runs/`, `git log --oneline -100`, and any
+deployer/reviewer/validator artifacts on disk.
+
+## Acceptance hints
+
+- 8–15 rows covering the most common signal → route mappings.
+- Each row: signal, destination role, notes (skills to suggest, claims to open).
+- Anything ambiguous explicitly routes to **lead**.
+- Includes a row for "production promotion → always require explicit human approval".
+- `agents/lead.md` references this file at session start (handled in FEAT-003).

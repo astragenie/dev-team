@@ -9,8 +9,6 @@
   "skills": ["typescript-pro", "frontend-advisory"],
   "loop": {
     "aiLoopRoot": "docs/ai-loop",
-    "backlogPath": "docs/backlog",
-    "backlogRoot": "docs/backlog",
     "slicesRoot": "docs/ai-loop/slices",
     "phaseGateArtifactDir": ".claude/artifacts/crew/validations",
     "maxIterations": 25,

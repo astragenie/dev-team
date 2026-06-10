@@ -32,6 +32,7 @@ github_issue: 108
 github_milestone: null
 github_url: "https://github.com/sergeymilashico/hero-crew/issues/108"
 started_at: 2026-06-08
+created: 2026-06-07
 ---
 # FEAT-122 — TS Phase 5: ESLint ratchet
 

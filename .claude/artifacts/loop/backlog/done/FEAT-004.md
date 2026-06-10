@@ -1,17 +1,32 @@
 ---
 id: FEAT-004
 status: done
-priority: P3
-category: types
-target_release: null
-created: 2026-05-28
-updated: 2026-05-28
+priority: P0
+category: docs
+target_release: v0.2.0
+created: 2026-05-22
+updated: 2026-05-22
+completed: 2026-05-22
 depends_on: []
-slices: [SLICE-08]
+slices: []
 derived_from: null
-started_at: 2026-05-28
-completed_at: 2026-05-28
+autonomous_safe: true
+phase: 1
+github_issue: 4
+github_milestone: 1
+github_url: "https://github.com/sergeymilashico/hero-crew/issues/4"
 ---
-# FEAT-004: Enable noImplicitAny and annotate scripts/**/*.mjs
+# FEAT-004: Architecture document polish
 
-LSP flags implicit-any as errors; tsc silently accepts (noImplicitAny: false). Enabling aligns LSP and tsc. Scope: tsconfig.json flag + JSDoc @param/@returns on functions with implicit any in scripts/**/*.mjs. AC: tsc --noEmit passes with noImplicitAny:true, lint clean, zero LSP implicit-any warnings.
+## Description
+
+`docs/architecture/architecture.md` exists as a Phase 1 draft. Polish it once
+FEAT-001/002/003 land so the lived layout matches the doc.
+
+## Acceptance hints
+
+- Skill tier section reflects the final on-disk layout (not the draft).
+- Routing section links to `docs/routing-table.md` (FEAT-002).
+- "What we do NOT build" list survives intact.
+- Phase 1 / Phase 2+ sections updated based on observed friction.
+- Linked from `README.md`.
