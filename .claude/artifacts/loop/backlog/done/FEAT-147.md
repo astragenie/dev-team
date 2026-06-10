@@ -1,11 +1,13 @@
 ---
 id: FEAT-147
-status: triaged
+status: cancelled
 priority: P1
 category: quality
 target_release: null
 created: 2026-06-10
 updated: 2026-06-10
+cancelled: 2026-06-10
+cancellation_reason: "User cancelled via /loop:auto walker review."
 depends_on: []
 slices: []
 derived_from: null
