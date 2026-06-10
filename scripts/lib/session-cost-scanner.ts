@@ -46,7 +46,10 @@ export {
   SYNTHETIC_MODEL_PREFIXES
 } from "./session-cost-scanner/compute.ts";
 
-const PROJECTS_ROOT = path.join(os.homedir(), ".claude", "projects");
+function getProjectsRoot(): string {
+  const override = process.env.CREW_PROJECTS_ROOT;
+  return override ? path.resolve(override) : path.join(os.homedir(), ".claude", "projects");
+}
 
 export async function* readJsonlLines(file: string): AsyncGenerator<JsonlLine> {
   const stream = createReadStream(file, { encoding: "utf8" });
@@ -64,7 +67,7 @@ export async function* readJsonlLines(file: string): AsyncGenerator<JsonlLine> {
 // Iterates project dir subdirectories. Filters non-dir entries up-front.
 async function listProjectDirEntries(): Promise<string[]> {
   try {
-    const entries = await fs.readdir(PROJECTS_ROOT, { withFileTypes: true });
+    const entries = await fs.readdir(getProjectsRoot(), { withFileTypes: true });
     return entries.filter((e) => e.isDirectory()).map((e) => e.name);
   } catch {
     return [];
@@ -115,7 +118,7 @@ export async function listActiveProjectDirs({
   const slugs = await listProjectDirEntries();
   const active: Array<{ slug: string; dir: string }> = [];
   for (const slug of slugs) {
-    const dir = path.join(PROJECTS_ROOT, slug);
+    const dir = path.join(getProjectsRoot(), slug);
     const count = await countInWindowAssistantTurns(dir, startMs, endMs);
     if (count > 0) active.push({ slug, dir });
   }

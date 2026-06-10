@@ -4,7 +4,10 @@ import os from "node:os";
 import { scanSessions, percentile, readJsonlLines } from "./session-cost-scanner.ts";
 import { getCachedDirFiles } from "./dir-cache.mjs";
 
-const PROJECTS_ROOT = path.join(os.homedir(), ".claude", "projects");
+function getProjectsRoot(): string {
+  const override = process.env.CREW_PROJECTS_ROOT;
+  return override ? path.resolve(override) : path.join(os.homedir(), ".claude", "projects");
+}
 
 export function slugifyRepoPath(repoPath: string): string {
   return repoPath.replace(/[^A-Za-z0-9]/g, "-");
@@ -46,7 +49,7 @@ async function listProjectSessions(
   sourceProjectSlug: string | null = null
 ): Promise<string[]> {
   const slug = sourceProjectSlug ?? slugifyRepoPath(repoPath);
-  const dir = path.join(PROJECTS_ROOT, slug);
+  const dir = path.join(getProjectsRoot(), slug);
   return getCachedDirFiles(dir, (name: string) => name.endsWith(".jsonl")) as Promise<string[]>;
 }
 
@@ -60,7 +63,7 @@ async function listJsonlInDir(dir: string): Promise<string[]> {
 
 async function listProjectDirEntries(): Promise<string[]> {
   try {
-    const entries = await fs.readdir(PROJECTS_ROOT, { withFileTypes: true });
+    const entries = await fs.readdir(getProjectsRoot(), { withFileTypes: true });
     return entries.filter((e) => e.isDirectory()).map((e) => e.name);
   } catch {
     return [];
@@ -100,7 +103,7 @@ export async function autoDetectSourceProject({
   const slugs = await listProjectDirEntries();
   let best: { slug: string; count: number } | null = null;
   for (const slug of slugs) {
-    const count = await countInWindowAssistantTurns(path.join(PROJECTS_ROOT, slug), startMs, endMs);
+    const count = await countInWindowAssistantTurns(path.join(getProjectsRoot(), slug), startMs, endMs);
     if (count > 0 && (best == null || count > best.count)) {
       best = { slug, count };
     }
@@ -118,7 +121,7 @@ async function listActiveProjectDirs({
   const slugs = await listProjectDirEntries();
   const active: Array<{ slug: string; dir: string }> = [];
   for (const slug of slugs) {
-    const dir = path.join(PROJECTS_ROOT, slug);
+    const dir = path.join(getProjectsRoot(), slug);
     const count = await countInWindowAssistantTurns(dir, startMs, endMs);
     if (count > 0) active.push({ slug, dir });
   }
