@@ -2,7 +2,7 @@
 id: FEAT-133
 title: "Quality: split briefing/collect.ts (712 lines, 3 concerns) into focused modules"
 priority: P2
-status: triaged
+status: done
 category: quality
 target_release: null
 autonomous_safe: true
@@ -50,3 +50,7 @@ composite_score: 0.635
 - All existing briefing tests pass; no output change
 - `npm run lint` clean (no new max-lines violations)
 - Sequence after FEAT-129 (parallel collection changes) to avoid merge conflict
+
+## Completion
+
+Already implemented — commit `a50b7d0 refactor(FEAT-133): split briefing/collect.ts into SRP modules`. `collect.ts` is now a 32-line re-export barrel; `git.ts` (188), `cost.ts` (245), `workflow.ts` (221) all ≤250; orchestrator ≤80. All AC met; backlog reconciled triaged→done 2026-06-10 (item was never moved after the refactor landed).
