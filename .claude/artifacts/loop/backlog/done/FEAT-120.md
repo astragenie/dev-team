@@ -2,7 +2,7 @@
 id: FEAT-120
 title: TS Phase 4.1 — tests batch 1 migration (22 test files .mjs → .ts)
 priority: P1
-status: in-progress
+status: done
 category: code-quality
 target_release: null
 autonomous_safe: true
@@ -23,9 +23,9 @@ pm_legacy_customer_impact: 0.3
 pm_effort_estimate: 0.5
 pm_technical_risk: 0.3
 pm_dependency_depth: 0.3
-updated: 2026-06-07
+updated: 2026-06-10
 slices: [SLICE-44]
-slices_complete: []
+slices_complete: [SLICE-44]
 triage_notes: "autonomous_safe inferred: AC count=5, derived_from=parent_spec → true"
 started_at: 2026-06-07
 github_issue: 105
@@ -33,6 +33,7 @@ github_milestone: null
 github_url: "https://github.com/sergeymilashico/hero-crew/issues/105"
 created: 2026-06-10
 depends_on: []
+completed_at: 2026-06-10
 ---
 # FEAT-120 — TS Phase 4.1: tests batch 1 migration
 

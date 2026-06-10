@@ -2,11 +2,11 @@
 id: FEAT-029
 title: Promote cost-hygiene reread hook to default-on
 priority: P2
-status: in-progress
+status: done
 category: performance
 target_release: null
 created: 2026-06-01
-updated: 2026-06-08
+updated: 2026-06-10
 depends_on: []
 slices: [SLICE-54]
 derived_from: null
@@ -36,6 +36,8 @@ pm_technical_risk: 0.5
 pm_dependency_depth: 0.5
 migration_note: legacy PM schema preserved as pm_legacy_*; new dimensions defaulted to 0.5 on 2026-06-08
 started_at: 2026-06-08
+slices_complete: [SLICE-54]
+completed_at: 2026-06-10
 ---
 ## Description
 

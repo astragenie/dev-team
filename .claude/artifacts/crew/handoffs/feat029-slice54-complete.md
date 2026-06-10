@@ -5,7 +5,7 @@ owner: lead
 slice: SLICE-54
 feature: FEAT-029
 phase: null
-created_at: 2026-06-08
+created_at: 2026-06-10
 confidence: high
 next_handoff: grade-and-continue
 ---
@@ -25,6 +25,7 @@ Slice SLICE-54 closed with acceptance criteria PASS. Capture lessons + decisions
 - Any extracted `.claude/artifacts/loop/decisions/DEC-NNN.md` files
 ## Changed files / evidence
 - slice file (completed): `docs/ai-loop/slices/completed/SLICE_54_IMPLEMENT-FEAT-029.md`
+- feature file (done): `.claude/artifacts/loop/backlog/done/FEAT-029.md`
 ## Confidence
 High — slice + feature moves atomic; spec reconciliation idempotent.
 ## Risks or open questions
