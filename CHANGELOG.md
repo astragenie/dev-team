@@ -3,7 +3,7 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
-## Unreleased — gate rebalance: scoped builders, validator owns full gate
+## v0.28.0 — 2026-06-10 — gate rebalance: scoped builders, validator owns full gate
 
 ### Changed
 
