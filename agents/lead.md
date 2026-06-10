@@ -84,7 +84,7 @@ At slice start, classify into tier to determine gate dispatch pattern:
 
 **Concurrent dispatch (tier: full):** Both consume same builder handoff in parallel. If reviewer needs_fix: re-dispatch builder, then re-run validator (full ladder).
 
-**Combined dispatch (tier: light):** Single agent runs full gate (lint, format, tests, validate:all) + code review. Returns both review_decision + validation_decision. If needs_fix: fix bounce escalates to full ladder.
+**Combined dispatch (tier: light):** Single agent runs full gate (lint, format, tests, validate:all) + code review. Returns both review_decision + validation_decision. If needs_fix: fix bounce escalates to full ladder. If `crew:reviewer-validator` is not in the session's agent registry ("Agent type not found" — stale registry after plugin upgrade): fall back to the full ladder (concurrent reviewer + validator), never skip gates, note the fallback in the run brief.
 
 Record tier in run-brief as `tier: full | light`. See `commands/orchestrate-slice.md` Step 4–5 for prompts.
 

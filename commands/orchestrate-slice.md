@@ -388,6 +388,8 @@ After builder PASS, dispatch both review and validation in parallel according to
 
 **When `tier: light`:** Dispatch single `crew:reviewer-validator` (combined agent) instead.
 
+**Registry fallback:** If the dispatch fails with "Agent type 'crew:reviewer-validator' not found" (session started before the plugin version that ships the agent, or registry not yet refreshed), do NOT retry the same dispatch and do NOT skip gates — fall back to the full ladder: dispatch `crew:reviewer` and `crew:validator` concurrently exactly as for `tier: full`, and note `tier: light (fallback: full ladder — reviewer-validator unregistered)` in the run brief.
+
 #### Step 4 prompt — `crew:reviewer` (full-tier only; parallel)
 
 Dispatch with this prompt:
