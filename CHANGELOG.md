@@ -3,6 +3,22 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.29.1 — 2026-06-10 — light-tier hardening: registry fallback + namespace map
+
+### Changed
+
+- **Registry fallback for light-tier dispatch.** `orchestrate-slice.md` + `lead.md`:
+  when `crew:reviewer-validator` is not in the session agent registry ("Agent type
+  not found" — session predates the plugin refresh, or consumer mid-upgrade), the
+  dispatch falls back to the concurrent full ladder (separate reviewer + validator)
+  instead of erroring; gates are never skipped; fallback noted in the run brief.
+- **Decision-record namespace map in reviewer-validator.** Gate prompts now
+  distinguish loop-owned `.claude/artifacts/loop/decisions/DEC-NNN` (minted by
+  grade-write; reject hand-authored DEC ids) from authored
+  `docs/architecture/decisions/ADR-NNN-<slug>` (where ADR deliverables belong)
+  and legacy `docs/decisions/` (template/README only). Prevents the SLICE-65
+  collision class.
+
 ## v0.29.0 — 2026-06-10 — WS2 ceremony restructure: concurrent gates + templated artifacts
 
 ### Changed

@@ -61,7 +61,7 @@ The companion `loop` plugin lives in the same marketplace:
 /plugin install loop@astra
 ```
 
-Verify locally with `npm test`. Pinned release: `v0.29.0`.
+Verify locally with `npm test`. Pinned release: `v0.29.1`.
 
 > **Upgrading from `crew-dev` / `autonomous-loop`?** See [docs/process/rebrand-migration.md](docs/process/rebrand-migration.md) for the one-time uninstall + reinstall sequence. The `loop` plugin auto-migrates consumer-repo state (`.claude/autonomous-loop.json` → `.claude/loop.json`, CLAUDE.md markers) on first `/loop:install`.
 
