@@ -188,26 +188,12 @@ The user relies on the review result to know what was actually checked. Leaving 
 
 The `review-result` IS your completion artifact — you do NOT write a separate handoff. Review-result already carries summary, evidence, files, test-summary, findings, risks, next, decision. A second handoff would be duplicate audit trail.
 
-### Stub at start (truncation resilience)
-
-Right after your opening statement, emit a stub:
-
-```bash
-: "${CLAUDE_PLUGIN_ROOT:?must be set}"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result \
-  --repo "$PWD" --title "<short>" --status in-progress \
-  --summary "<initial assessment>"
-```
-
-The CLI prints JSON to stdout. Read the `path` field from that JSON and remember it as your stub path; pass `--update <stub-path>` at completion. Do NOT depend on `jq` — parse the JSON yourself from the tool result.
-
-### Finalize at completion
+### Write at completion
 
 ```bash
 : "${CLAUDE_PLUGIN_ROOT:?must be set}"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result \
   --repo "$PWD" \
-  --update "<stub path>" \
   --title "<short title>" \
   --decision approved|approved_with_notes|rejected \
   --summary "<one-sentence verdict>" \
