@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
+  "preset": "typescript-plugin-dev",
   "projectType": "claude-plugin",
   "split": false,
   "frontend": {

@@ -1,6 +1,6 @@
 ---
 id: FEAT-145
-status: pending
+status: triaged
 priority: P2
 category: quality
 target_release: null
@@ -9,6 +9,14 @@ updated: 2026-06-10
 depends_on: []
 slices: []
 derived_from: null
+pm_customer_impact: 0.7
+pm_effort_estimate: 0.3
+pm_strategic_alignment: 0.8
+pm_technical_risk: 0.2
+pm_dependency_depth: 0
+composite_score: 0.755
+autonomous_safe: true
+triage_notes: "Strong explicit demand (retro signal corruption) + high strategic alignment (loop observability) + low effort (single-module linter, known slice-start AC pattern) + low risk (clean revert). Concrete testable AC. P2: loop stays functional, fix is measurement hygiene not critical path."
 ---
 # FEAT-145: Grade hygiene linter: grade-write rejects placeholder bullets and zero-score dimensions
 
