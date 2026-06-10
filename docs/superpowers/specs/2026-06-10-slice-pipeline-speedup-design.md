@@ -29,6 +29,28 @@ The full crew/loop workflow per slice is too slow, especially for plugin repos. 
 - Expected: 116s → ~25–35s. Pays off on every validator gate and fix bounce immediately, before Bun.
 - Risk: in-process tests can mask process-level bugs. Mitigation: the per-family spawn smokes.
 
+### Acceptance Criteria — WS1
+
+**AC-WS1-1:** In-process entry point is exported.
+- Given: crew CLI lib (`scripts/crew.ts` or related export)
+- When: a test imports and calls `runCrew(argv, opts)` with valid argv array and options object
+- Then: the function returns a Promise resolving to `{code: number, stdout: string}`; exit code is 0 for successful commands
+
+**AC-WS1-2:** Subprocess spawns removed from main assertions.
+- Given: `tests/cli.test.ts` and any split per-command files
+- When: `npm test` runs
+- Then: zero subprocess `execFile` calls remain in core test assertions (only spawn smoke tests retain them; grep for `execFile.*crew.ts` should find ≤5 per command family)
+
+**AC-WS1-3:** Test parallelization confirmed.
+- Given: test suite split into per-command-family files (e.g., `tests/cli-claims.test.ts`, `tests/cli-artifacts.test.ts`)
+- When: `npm test` runs on a multi-core machine
+- Then: test suite wall-clock time drops to ≤40s (interim node-only target; end-state <30s arrives with WS3); cost report `durationMin` field confirms <1 min
+
+**AC-WS1-4:** Process-level regressions caught by smoke tests.
+- Given: at least one real spawn smoke test per command family
+- When: a smoke test runs (e.g., `claim` command, `write-run-brief`)
+- Then: assertions check exit code is 0, stdout is valid JSON or plain text (no garbled output), process does not hang or corrupt state
+
 ## WS2 — Ceremony (the big lever)
 
 ### 2a. Parallel gates
@@ -43,6 +65,38 @@ New `--scaffold` mode on the `crew.ts write-*` commands: emits the complete arti
 
 Lead classifies each slice at start: `tier: full | light` via deterministic rules (docs-only diff, or ≤50 changed lines (initial value, tunable via loop.json), and no hook/runtime/manifest files touched → light). Light ladder = builder → **one combined review+validate dispatch** (single agent performs lens review and runs the full gate). The full-suite gate itself is never skipped — it runs inside the combined dispatch. Misclassification guard: any `needs_fix` on a light slice promotes the fix bounce to the full ladder. Tier recorded in the run brief.
 
+### Acceptance Criteria — WS2
+
+**AC-WS2-1:** Parallel gate dispatch invokes reviewer and validator concurrently.
+- Given: a slice reaches builder PASS state (review_decision not yet set)
+- When: `lead.md` or `orchestrate-slice.md` triggers the review + validation phase
+- Then: both reviewer and validator agents are dispatched simultaneously (same lead turn or via Promise.all equivalent); cost report shows 2 concurrent subagentDispatches in the same timeframe (not sequential)
+
+**AC-WS2-2:** Validator re-runs if reviewer returns `needs_fix`.
+- Given: reviewer marks slice NEEDS_FIX while validator is in-flight
+- When: reviewer result is committed and validation result is read
+- Then: validation result is marked stale in workflow-state; fix bounce reruns validator after builder re-passes (full ladder, not combined)
+
+**AC-WS2-3:** Scaffold mode emits deterministic artifact templates.
+- Given: `crew.ts write-review-result --scaffold --repo <path>` is invoked for a slice
+- When: the command completes
+- Then: artifact file created at the expected path contains frontmatter (slice, feature, decision fields empty/null), section headers (verdict, test summary, notes), and file lists from git (no agent-written prose)
+
+**AC-WS2-4:** Light-tier slice combined review+validate dispatch completes.
+- Given: a slice is classified as `tier: light` (docs-only or ≤50 lines, no hooks/manifests touched)
+- When: builder PASS is reached
+- Then: a single combined review+validate agent is dispatched (not two separate); the agent runs the full gate suite internally and returns both review_decision and validation_decision in one result
+
+**AC-WS2-5:** Misclassification escalates light slice to full ladder on `needs_fix`.
+- Given: a slice initially classified as `tier: light` returns `needs_fix` in the combined gate
+- When: the builder's fix bounce is triggered
+- Then: the fix bounce uses the full ladder (separate reviewer and validator), not the combined dispatch
+
+**AC-WS2-6:** Workflow-state badge writes are merge-safe under concurrency.
+- Given: reviewer and validator write to `.claude/state/crew/` concurrently (both updating gate-badge fields)
+- When: both writes complete without explicit locking
+- Then: the final state reflects both results correctly (no lost updates; last-write-wins per field is acceptable if documented, or a per-gate field lock is used)
+
 ## WS3 — Bun runtime swap (gated by spike)
 
 Compat spike timeboxed to one slice; ALL exit criteria must be green **on Windows**:
@@ -54,11 +108,130 @@ Compat spike timeboxed to one slice; ALL exit criteria must be green **on Window
 
 If green: swap in order **dev scripts → CI → consumer hooks/CLI**, with a `runtime: node|bun` fallback flag in crew config for one release; README + marketplace gain Bun install instructions; ships as a minor release. If any criterion is red: stay hybrid (Bun for dev/CI, node for consumers), record a DEC, revisit on the next Bun release.
 
+### Acceptance Criteria — WS3
+
+**AC-WS3-1:** Test suite runs under Bun on Windows.
+- Given: 573 tests in the crew suite
+- When: `bun test` (or `bun run test` equivalent) is invoked on Windows
+- Then: all 573 tests pass with the same exit code 0 as node's `npm test`; pass count and assertion count match or exceed node baseline
+
+**AC-WS3-2:** Bun CLI respects process contracts (child_process, fs, stdout, exit codes).
+- Given: key CLI commands (`init`, `bootstrap`, `claim`, `write-run-brief`)
+- When: each is invoked via Bun (e.g., `bun scripts/crew.ts init --repo <path>`)
+- Then: child_process spawns succeed (subprocesses exit cleanly); fs operations (read, write, mkdir) complete correctly; stdout contains expected JSON or plaintext; exit codes are 0 for success, nonzero for errors; no hangs or corrupted artifacts
+
+**AC-WS3-3:** End-to-end Bun hook invocation succeeds.
+- Given: `e2e-smoke.ts` scenario that chains `crew.ts` commands (e.g., init → claim → write-run-brief)
+- When: the entire scenario is run via Bun (e.g., `bun scripts/e2e-smoke.ts`)
+- Then: all commands in the chain complete successfully (exit 0); artifacts are created at expected paths; console output is clean (no TS parse errors, no deprecation warnings)
+
+**AC-WS3-4:** TS execution is native under Bun (no `--experimental-strip-types` needed).
+- Given: crew scripts using modern TS syntax (imports, generics, decorators if any)
+- When: invoked via Bun without the `--experimental-strip-types` flag
+- Then: scripts execute and complete with exit 0; all type annotations are stripped at runtime (no type errors at runtime)
+
+**AC-WS3-5:** Performance improvement measured on Windows.
+- Given: post-WS1 test suite baseline on node (≤40s)
+- When: same test suite runs under Bun on the same Windows machine
+- Then: test suite under Bun completes in <30s; if not achieved, compat spike records a DEC to stay hybrid
+
+**AC-WS3-6:** Fallback flag is documented and functional (if green).
+- Given: crew config and package.json have a `runtime: node|bun` field
+- When: a consumer installs crew and has Bun available
+- Then: the config respects the fallback flag; README and marketplace docs explain when to use each runtime
+
 ## Verification & rollout
 
 - Re-baseline cost telemetry after each workstream; per-lever impact recorded in cost reports.
 - Release sequencing: WS1 = patch; WS2 = minor (behavior change); WS3 = minor with migration notes. Each workstream runs as its own slice(s) through the loop.
 - Rollback: parallel gates and skip-tier are prompt/command changes — revertible per release; Bun has the runtime fallback flag.
+
+## Verification Commands
+
+### WS1 — Test suite speed
+
+```bash
+# Baseline (before WS1)
+time npm test 2>&1 | tail -20
+# Expected: ~115.9s wall-clock, 573 tests pass
+
+# After WS1 implementation
+time npm test 2>&1 | tail -20
+# Expected: ≤40s wall-clock, 573 tests pass
+
+# Confirm no subprocess spawns in main assertions
+grep -rn "execFile.*crew.ts" tests/ | grep -v "smoke\|spawn" | wc -l
+# Expected: 0 (only per-family smoke tests retain execFile)
+
+# Check per-command test files exist and parallelize
+ls tests/cli-*.test.ts 2>&1
+# Expected: at least 5 files (claims, approvals, artifacts, synthesis, cost)
+```
+
+### WS2 — Parallel gates and templated artifacts
+
+```bash
+# Verify --scaffold mode works on a write command
+node scripts/crew.ts write-review-result --repo /tmp/test-repo --scaffold \
+  --title "Test Review" --decision approved 2>&1
+# Expected: artifact file created with empty decision fields; frontmatter present; no prose output
+
+# Verify concurrent gate dispatch by checking cost report after a full light-tier slice
+# (after WS2 is deployed and a slice is run)
+cat .claude/artifacts/crew/cost/TIMESTAMP-cost-report*.md | grep "subagent_dispatches"
+# Expected: subagent_dispatches count is lower than sequential baseline (~15–18 vs ~20+)
+# AND reviewer + validator appear in same time window in the artifact body
+
+# Verify workflow-state badge merge safety (requires concurrent writer test in e2e-smoke)
+npm run e2e:smoke 2>&1 | grep -A5 "parallel-gate-scenario"
+# Expected: scenario passes; no "merge conflict" or "lost update" in output
+```
+
+### WS3 — Bun runtime
+
+```bash
+# Test suite under Bun (if Bun is installed; Windows-only for this spike)
+bun run test 2>&1 | tail -20
+# Expected: 573 tests pass, wall-clock <30s (post-WS1 baseline ≤40s)
+
+# CLI under Bun (sample commands)
+bun scripts/crew.ts init --repo /tmp/bun-test-repo --json 2>&1 | head -5
+# Expected: JSON output, exit 0, no TS parse errors
+
+# E2E smoke under Bun
+bun scripts/e2e-smoke.ts 2>&1 | tail -10
+# Expected: all scenarios pass; "PASS" count ≥4; no deprecation warnings
+
+# Verify native TS execution (no --experimental-strip-types needed)
+cat > /tmp/test-ts.ts << 'EOF'
+const x: string = "test";
+export const y = x;
+EOF
+bun run /tmp/test-ts.ts 2>&1
+# Expected: exit 0; no type errors at runtime
+```
+
+### Integration target (end of all three workstreams)
+
+```bash
+# Slice wall-clock metric (requires 3 consecutive slices after full rollout)
+# Check cost reports from 3 slices:
+for file in $(ls -t .claude/artifacts/crew/cost/*cost-report*.md | head -3); do
+  echo "=== $(basename $file) ==="
+  grep "^- Duration:" "$file"
+done
+# Expected: all three show ≤25 min (baseline ~43 min)
+
+# Grade floor (no dimension drops >0.05 from baseline)
+cat .claude/artifacts/loop/grades/LATEST-grade.md | grep -A8 "## Scores"
+# Expected: each dimension ≥ (baseline - 0.05):
+#   architecture_quality: ≥0.71  (baseline 0.76)
+#   reliability: ≥0.73           (baseline 0.78)
+#   observability: ≥0.706        (baseline 0.756)
+#   production_readiness: ≥0.734 (baseline 0.784)
+#   security: ≥0.72              (baseline 0.77)
+#   test_confidence: ≥0.71       (baseline 0.76)
+```
 
 ## Testing strategy
 

@@ -57,7 +57,7 @@ surfaces crew reads.
 
 ### C1. Schema contract (loop repo)
 
-- New `schemas/` directory + `scripts/lib/state-schemas.mjs` exposing
+- New `schemas/` directory + `scripts/lib/state-schemas.mts` exposing
   `validateFeat`, `validateSlice`, `validateGrade`, `validateDecision`,
   `validateLoopJson` — plain-JS validators (no new deps), each returning
   `{ ok, issues: string[] }`.
@@ -66,6 +66,10 @@ surfaces crew reads.
   (absent ⇒ version 1; validators never hard-fail solely on a missing version).
 - Contract documented once in loop `docs/state-contract.md`. hero-crew's
   `docs/standards/loop-json-schema.md` becomes a pointer to it (no parallel copy).
+- **Schema authority:** the loop repo (`src/scripts/lib/state-schemas.mts` per
+  `docs/state-contract.md`) owns full frontmatter schema validation. The
+  hero-crew validator (`scripts/validate-loop-state.ts`) enforces only
+  single-tree + unique-id constraints; it does not validate frontmatter.
 
 ### C2. CLI hardening (loop repo)
 
@@ -135,8 +139,19 @@ Loop repo:
 hero-crew:
 
 - Post-migration `loop doctor --check` green in CI.
+- State validator (hard CI gate): `node ./scripts/validate-loop-state.ts` exits
+  0 with output "Loop state OK: single tree, unique ids." when all constraints
+  are met (single authoritative backlog tree, no duplicate FEAT ids).
 - FEAT-138's state-shaped test failures (live workflow-state schema) resolved
   by migration; prompt-content drift failures remain in FEAT-138's scope.
+
+### CI Verification Checklist
+
+- Gate: `.github/workflows/test.yml` runs `node ./scripts/validate-loop-state.ts`
+  as a hard step.
+- Success: exit code 0, stdout contains "Loop state OK: single tree, unique ids."
+- Failure: exit code 1, stderr lists constraint violations (stray backlog trees,
+  duplicate FEAT ids).
 
 ## Out of scope (later phases)
 
@@ -153,8 +168,10 @@ hero-crew:
 
 1. Every loop CLI subcommand resolves config through the dispatcher; the
    dispatcher test proves it.
-2. State writes outside the resolved root are impossible (write-guard test).
-3. Schema-invalid state files cannot be written; validators report issues.
+2. Loop CLI write-guard (src/scripts/lib/state-paths.mts) makes state writes
+   outside the resolved root impossible; the write-guard test proves it.
+3. Schema-invalid state files cannot be written by the loop CLI; validators
+   report issues.
 4. `loop doctor --check` detects all five divergence classes on fixtures;
    `--fix` repairs them with a pre-action report.
 5. hero-crew has exactly one backlog tree (`.claude/artifacts/loop/backlog/`),
