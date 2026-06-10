@@ -1,0 +1,2 @@
+{"type":"slice_start","sliceId":"SLICE-64","timestamp":"2026-06-10T15:40:02.449Z","featureId":"FEAT-136","title":"SLICE-64: /crew:parallel skill conflicts with guard-feat-dispatch hook","planPath":"C:\\work\\mega\\hero-crew\\.claude\\artifacts\\loop\\plans\\20260610T154002Z-plan-SLICE-64.md","requiresApprovalGate":false}
+{"type":"slice_complete","sliceId":"SLICE-64","timestamp":"2026-06-10T15:51:40.307Z","featureId":"FEAT-136","featureMovedTo":"C:\\work\\mega\\hero-crew\\.claude\\artifacts\\loop\\backlog\\done\\FEAT-136.md","validationSatisfied":true}

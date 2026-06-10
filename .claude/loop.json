@@ -2,11 +2,21 @@
   "schemaVersion": 1,
   "projectType": "claude-plugin",
   "split": false,
-  "frontend": { "framework": "none", "language": "typescript" },
-  "backend": { "framework": "node", "language": "typescript", "storage": "none" },
+  "frontend": {
+    "framework": "none",
+    "language": "typescript"
+  },
+  "backend": {
+    "framework": "node",
+    "language": "typescript",
+    "storage": "none"
+  },
   "contract": "none",
   "deployment": "none",
-  "skills": ["typescript-pro", "frontend-advisory"],
+  "skills": [
+    "typescript-pro",
+    "frontend-advisory"
+  ],
   "loop": {
     "phaseGateArtifactDir": ".claude/artifacts/crew/validations",
     "maxIterations": 25,
@@ -16,21 +26,30 @@
     "build": [
       {
         "cmd": "npm",
-        "args": ["test"]
+        "args": [
+          "test"
+        ]
       }
     ],
     "test": [
       {
         "cmd": "npm",
-        "args": ["run", "lint"]
+        "args": [
+          "run",
+          "lint"
+        ]
       },
       {
         "cmd": "node",
-        "args": ["./scripts/validate-manifests.mjs"]
+        "args": [
+          "./scripts/validate-manifests.mjs"
+        ]
       },
       {
         "cmd": "node",
-        "args": ["./scripts/validate-skills.mjs"]
+        "args": [
+          "./scripts/validate-skills.mjs"
+        ]
       }
     ],
     "frontendBuild": null,
