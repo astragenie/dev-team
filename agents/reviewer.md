@@ -62,7 +62,7 @@ The lead may dispatch you as one of N parallel reviewers, each with a `Review le
 
 ### Pre-flight checks (run before reading code)
 
-- Dependency CVEs: `npm audit`, `pip-audit`, or `cargo audit` — skip if tool absent
+- Dependency CVEs: `bun audit`, `pip-audit`, or `cargo audit` — skip if tool absent
 - Hardcoded secrets: `grep -rE "(api_key|secret|password|token)\s*=\s*['\"][^'\"]{8,}" --include="*.ts" --include="*.py" --include="*.js"` on changed files
 - Recent context: `git log --oneline -5`
 - **Affected-test re-run (builder scoped its tests).** Builders now run only affected-class tests, not the full suite. Re-run the builder's affected set (named in the handoff's `## Deferred to validator` line) to confirm it is green AND that it actually covers the changed classes. If a changed class has no test in that set, raise a `tests-adequacy` finding — the builder scoped too narrowly. The full suite itself runs at the validator's mandatory final gate, not here.

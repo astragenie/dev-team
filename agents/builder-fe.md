@@ -117,7 +117,7 @@ Your start acknowledgement must include:
 Before writing the handoff, run these in order. Each must exit 0. SCOPED for speed: the full FE suite and whole-repo lint/format now run ONCE at the end in the validator's mandatory final gate — not here.
 
 - Orval + openapi-msw regenerate clean (no diff in `src/api/`, `src/mocks/` against committed output)
-- `npm run typecheck`
+- `bun run typecheck`
 - **Affected-class tests only** — do NOT run the full FE suite: `vitest related <changed files>` (runs every test that imports a changed file, so dependents are covered)
 - a11y check on changed components when `concern:accessibility` tagged (axe-core via Vitest or `@axe-core/playwright`)
 
