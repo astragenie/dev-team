@@ -3,6 +3,18 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.30.2 — 2026-06-10 — --parallel on direct bun test calls
+
+### Fixed
+
+- **Direct `bun test` calls now pass `--parallel`.** `builder.md` (affected-class
+  inner loop) and `validator.md` (fallback test command) invoke `bun test`
+  directly, bypassing the `npm test` script — so they did not inherit its
+  `--parallel` flag. Per the ADR-002 amendment, Bun's parallel-worker mode is
+  required for full `node:test` subtest compatibility; the single-process path
+  raises subtest `NotImplementedError`. Both call sites now use
+  `bun test --parallel`.
+
 ## v0.30.1 — 2026-06-10 — Agent prompts aligned to bun tooling
 
 ### Changed
