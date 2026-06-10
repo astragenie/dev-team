@@ -99,7 +99,7 @@ Lead classifies each slice at start: `tier: full | light` via deterministic rule
 
 ## WS3 — Bun runtime swap (gated by spike)
 
-**Resolved 2026-06-10 — NO-GO (ADR-002).** Spike on Bun 1.3.14/Windows: criterion 1 red (402/611 tests discovered, 23 fail, 33.9s vs 21.1s on node — slower); criteria 2–4 green. WS1 had already eliminated the overhead WS3 targeted, so both the swap and the hybrid fallback are rejected; Node stays the only runtime. Revisit per ADR-002 conditions (full node:test compat on Windows AND a measured ≥30% suite win). See docs/architecture/decisions/ADR-002-bun-runtime-no-go.md.
+**Resolved 2026-06-10 — HYBRID (ADR-002 as amended).** Spike on Bun 1.3.14/Windows: initial run criterion 1 red (402/611 tests, 33.9s). Parallel-mode re-run (`bun test --parallel --timeout 30000`) green: 611/611 discovered and passing, 16.5s vs 21.1s on node (~22% faster). Criteria 2–4 green throughout. Amended decision: ADOPT hybrid — `npm test` runs `bun test --parallel --timeout 30000` for dev/CI (Bun 1.3+ required for contributors/CI; `test:node` escape hatch retained); consumer surfaces (hooks, crew.ts CLI on user machines) stay on Node — no measured win there and real blast radius. Greenfield status (few consumers) noted but not load-bearing. See docs/architecture/decisions/ADR-002-bun-runtime-no-go.md.
 
 Compat spike timeboxed to one slice; ALL exit criteria must be green **on Windows**:
 

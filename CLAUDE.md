@@ -47,7 +47,7 @@ External-plugin skills (`context7`, `microsoft-docs:*`, `plugin-dev:*`, `terrafo
 
 Requires Node 22.6+ (strip-types runtime; see `docs/superpowers/specs/2026-06-07-ts-migration-and-perf-design.md`).
 
-- `npm test` — full test suite (`node --test --experimental-strip-types`).
+- `npm test` — full test suite via Bun (`bun test --parallel --timeout 30000 tests/`; requires Bun 1.3+); `npm run test:node` is the Node.js fallback.
 - `npm run lint` — ESLint flat config.
 - `npm run format` / `npm run format:check` — Prettier.
 - `npm run e2e:smoke` — end-to-end smoke against a temp sample repo.
@@ -67,8 +67,8 @@ and every PR. All steps are blocking; lint must stay zero-warning.
 7. `npm run lint`
 8. `npm run format:check`
 9. `npm run typecheck`
-10. `node --test`
-11. `node ./scripts/e2e-smoke.mjs`
+10. `npm test` (via Bun)
+11. `node ./scripts/e2e-smoke.ts`
 
 The local validators are **hard** CI gates. During reviewer-phase work, the
 `plugin-dev:plugin-validator` and `plugin-dev:skill-reviewer` skills are

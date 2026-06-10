@@ -13,6 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
       - run: npm ci
       - run: node ./scripts/validate-manifests.ts
       - run: node ./scripts/validate-skills.ts
@@ -59,7 +62,7 @@ jobs:
       - name: Validate type-graph (advisory, becomes blocking in Phase 5)
         continue-on-error: true
         run: npm run validate:typegraph
-      - run: node --test --experimental-strip-types
+      - run: npm test
       - run: node ./scripts/e2e-smoke.ts
       - name: e2e smoke — ux validation
         run: npm run e2e:smoke:ux

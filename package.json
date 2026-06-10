@@ -1,6 +1,6 @@
 {
   "name": "crew-plugin",
-  "version": "0.29.1",
+  "version": "0.30.0",
   "private": true,
   "type": "module",
   "devDependencies": {
@@ -16,7 +16,8 @@
     "zod": "^3.25.76"
   },
   "scripts": {
-    "test": "node --test --experimental-strip-types",
+    "test": "bun test --parallel --timeout 30000 tests/",
+    "test:node": "node --test --experimental-strip-types",
     "validate:manifests": "node ./scripts/validate-manifests.ts",
     "lint": "eslint scripts eslint.config.mjs",
     "typecheck": "tsc --noEmit",

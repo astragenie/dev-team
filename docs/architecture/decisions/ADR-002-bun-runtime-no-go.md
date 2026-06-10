@@ -1,13 +1,14 @@
 ---
 id: ADR-002
-title: Stay on Node — Bun runtime swap is a no-go
+title: Bun for dev/CI test runner; Node remains the consumer runtime
 status: accepted
 introduced_by_slice: null
 introduced_at: 2026-06-10
+amended_at: 2026-06-10
 related_specs: [FEAT-136]
 superseded_by: null
 ---
-# ADR-002: Stay on Node — Bun runtime swap is a no-go
+# ADR-002: Bun for dev/CI test runner; Node remains the consumer runtime
 
 ## Context
 
@@ -20,8 +21,9 @@ Workstream 1 (WS1) had already achieved significant wins: reducing the test suit
 from 115.9s to 21.1s on Node 24 by removing per-spawn parse overhead.
 
 The spike was executed 2026-06-10 on Bun 1.3.14 (Windows x64 build).
+Amended 2026-06-10 (same day): spike re-run with `bun test --parallel` overturned criterion 1 — 611/611 discovered and passing with `--timeout 30000`, wall 16.5s vs 21.1s node (~22% faster).
 
-### Spike results
+### Spike results — initial run
 
 | Criterion | Status | Evidence |
 |-----------|--------|----------|
@@ -30,86 +32,110 @@ The spike was executed 2026-06-10 on Bun 1.3.14 (Windows x64 build).
 | (3) e2e-smoke under bun | GREEN | All scenarios passed; wall 1.9s |
 | (4) Native TS execution | GREEN | No `--experimental-strip-types` flag needed; bare `bun` execution works |
 
-**Gate outcome:** Three of four criteria passed, but criterion (1) is the gate-holding signal.
-Because WS3 was designed to test whether Bun could replace Node in the **dev/CI surface**,
-and that surface **is the test suite**, the spike result is **do NOT proceed**.
+### Amendment — parallel-mode re-run
+
+User-suggested re-run with `--parallel` (implies `--isolate`, per-file worker processes):
+
+| Criterion | Status | Evidence |
+|-----------|--------|----------|
+| (1) Test suite under `bun test --parallel --timeout 30000` | GREEN | 611/611 discovered and passing; wall 16.5s vs 21.1s node (~22% faster) |
+| (2–4) | GREEN (unchanged) | CLI, e2e, native TS all confirmed |
+
+**Root cause of initial red:** Bun's single-process runner path contains a node:test subtest NotImplementedError that does not exist in parallel mode. The 2 residual failures in the first run were 5s default-timeout artifacts on known-slow tests (12s homedir-fallback scan, 8s redocly lint) that resolved with `--timeout 30000`.
 
 ## Decision
 
-We will NOT swap to Bun for any surface:
-- Development scripts remain on Node 22.6+ (`--experimental-strip-types`).
-- CI (`npm test`, `npm run typecheck`) remains on Node.
-- Consumer hooks (end-user machines, Node require/import) remain on Node.
-- The spec's hybrid fallback (Bun for dev/CI only) is also **rejected**.
+We will ADOPT hybrid: use Bun for dev/CI test runner only; Node remains the consumer runtime.
+
+- Development/CI test runner: `npm test` runs `bun test --parallel --timeout 30000` (Bun 1.3+ required for contributors/CI).
+- Escape hatch retained: `npm run test:node` (Node-only fallback, not documented for end-users).
+- Consumer hooks, CLI on end-user machines (Node require/import): remain on Node 22.6+. No measured win observed in consumer surface; keeping the dual-runtime complexity scoped to dev/CI only minimizes blast radius.
+- `--experimental-strip-types` flags: remain in consumer-facing scripts until Node stabilizes type stripping (expected Node 24 or 25 LTS).
 
 ## Rationale
 
-**Why the hybrid fallback is also rejected:**
+**Why the parallel-mode re-run succeeded:**
 
-The failing criterion IS the dev/CI surface—the test suite. Bun's node:test compatibility
-remains incomplete on Windows as of 1.3.14 (subtest gaps, discovery failures, error handling).
-A "hybrid" approach (Bun for some scripts, Node for others) would require end-user documentation
-and cross-platform testing burden for no measured wall-clock benefit.
+Bun's single-process runner path contains a node:test subtest NotImplementedError that does not
+surface in parallel mode (worker-process isolation). The test discovery gap and error counts in
+the initial run were artifacts of this single-process shim gap, not a fundamental incompatibility.
+With `--parallel --timeout 30000`, all 611 tests discovered and pass; the 22% wall-time win
+(16.5s vs 21.1s on Node) justifies the dev/CI surface swap.
 
-**Why the swap buys nothing:**
+**Why consumer surface stays on Node:**
 
 WS1 removed the primary source of wall-clock loss: per-spawn parse overhead of TypeScript files.
 The remaining 21.1s of suite time is real work—subprocess smokes, file-system fixture
-provisioning, network timeouts—which a runtime swap cannot compress. Bun shows no measured
-advantage on this repo's suite (33.9s vs 21.1s is a regression, not a win).
+provisioning, network timeouts. Crew CLI startup (crew.ts subprocess smokes in validator/deployer)
+is ≤0.17s even on Node; no measured win observed there. Adding Bun as an end-user requirement
+(consumer hooks, CLI) introduces installation/version management complexity on end-user machines
+without a measured ≥30% win. Greenfield status (few consumers at v0.28) noted but not load-bearing
+when the user's actual surface (contributor/CI machine) is narrow.
 
-**Consumer-facing risk without measured benefit:**
+**Why this scope is sustainable:**
 
-Adding Bun as an end-user requirement (consumer hooks, CLI) introduces installation/version
-management complexity on end-user machines. Without a measured ≥30% win, that risk outweighs
-the benefit.
+Bun 1.3+ for contributors and CI is a low-friction ask (npm install -g bun for local dev; CI
+add one bun setup action). The escape hatch (test:node) guards against per-platform Bun regressions.
+Full runtime swap can be reconsidered if a consumer-surface win emerges or Bun's maturity stabilizes
+further.
 
 ## Consequences
 
 ### Positive
 
-- **Zero consumer migration risk.** Hooks on end-user machines remain Node-based.
-- **Single runtime story.** Node 22.6+ with `--experimental-strip-types` remains the only
-  production-grade requirement.
-- **No breaking changes.** Existing consumers do not need to install or manage Bun versions.
-- **Simpler CI.** GitHub Actions workflows stay Node-focused; no cross-platform Bun triage.
+- **22% test-suite speed gain.** Wall time 16.5s (Bun `--parallel`) vs 21.1s (Node); immediate
+  validator gate and fix-bounce turnaround improvement.
+- **Zero consumer migration risk.** Hooks on end-user machines remain Node-based; no user-facing
+  disruption.
+- **Scoped Bun scope.** Dual-runtime complexity limited to dev/CI test runner; consumer surfaces
+  unaffected.
+- **Escape hatch in place.** `npm run test:node` allows bypass if per-platform Bun regressions
+  surface.
 
 ### Negative
 
-- `--experimental-strip-types` flags remain in scripts until Node stabilizes type stripping
-  (expected Node 24 or 25 LTS).
-- Test suite cannot leverage Bun's TS native execution or potential future optimizations.
+- Contributor/CI machines must have Bun 1.3+ (or run test:node). Setup cost ~2 min; documented
+  in README and contributor guide.
+- `--experimental-strip-types` flags remain in consumer scripts until Node stabilizes type
+  stripping (expected Node 24 or 25 LTS).
 
 ### Neutral
 
-- Bun 1.3.14 proved viable for non-test CLI use (criterion 2 and 3 green). If future maintenance
-  burden arises in this area, the spike evidence provides a fallback story.
+- Bun 1.3.14 proved viable for non-test CLI use (criteria 2–4 green). If future maintenance
+  burden arises in consumer surface, the spike evidence provides a rollback story.
 
 ## Revisit conditions
 
-Both conditions must be met to reconsider:
+**Full runtime swap (consumer surface included) is reconsidered only if:**
 
-1. **Bun's node:test implementation discovers and passes the full suite on Windows** — the partial
-   shim and subtest gaps must be closed.
-2. **Measured wall-clock win ≥30% over the then-current Node baseline** on this repo's suite.
-   (Relative benchmark, not absolute; the bar updates with Node LTS releases.)
+Both conditions must be met:
 
-If Bun node:test graduates to full compatibility and a clear speedup appears, this decision may
-be revisited. Until both conditions hold, stay on Node.
+1. **Measured wall-clock win ≥30% on consumer-facing use case** — crew.ts CLI subprocess spawns,
+   hook invocation on user machines, or another bottleneck not addressed by test-suite gains.
+2. **Bun's node:test implementation passes the full suite in single-process mode on Windows** —
+   the subtest NotImplementedError in single-process mode must be closed.
+
+**Escape hatch removal:**
+
+If Bun's single-process node:test shim graduates to full compatibility (criterion 2 above),
+the `test:node` escape hatch can be removed; `bun test` can run in either mode based on
+parallel vs serial preference.
 
 ## Alternatives considered
 
 - **Option A (Full swap):** Use Bun for all dev, CI, and consumer surfaces.
-  Rejected: criterion (1) failed; no measured win.
+  Rejected in initial spike (criterion 1 red; 33.9s vs 21.1s — slower). Parallel-mode re-run
+  showed full suite green, but no measured win on consumer surface observed; blast radius too
+  large without consumer-facing benefit.
 
 - **Option B (Hybrid, Bun for dev/CI only):** Keep Node for consumer hooks; use Bun for
-  local scripts and CI.
-  Rejected: the failing criterion IS the dev/CI surface; hybrid adds complexity (docs,
-  per-platform triage) without benefit.
+  dev/CI test suite.
+  Accepted (amended decision). Parallel-mode re-run (16.5s vs 21.1s, ~22% gain) justifies the
+  dev/CI swap. Consumer-surface scope remains narrow (Bun 1.3+, escape hatch in place).
 
-- **Option C (Stay on Node, revisit on signal):** Current decision. Revisit when both
-  conditions in "Revisit conditions" hold.
-  Accepted.
+- **Option C (Stay on Node):** Revisit only if both full-swap conditions hold.
+  Rejected; parallel-mode results showed criterion 1 achievable and measurable (though not full
+  30% gate for consumer swap).
 
 ## References
 

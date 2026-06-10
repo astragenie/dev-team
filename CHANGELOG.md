@@ -3,6 +3,15 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.30.0 — 2026-06-10 — Bun test runner for dev/CI (WS3 amended)
+
+### Changed
+
+- **Bun test runner (dev/CI).** `npm test` now runs `bun test --parallel --timeout 30000` on both local dev and CI; 611 tests in ~16.5s vs 21.1s under node (~22% faster); full `node:test` compat maintained in parallel-worker mode; node remains the ONLY consumer runtime (hooks/CLI unchanged).
+- **Node fallback.** `npm run test:node` runs the original `node --test --experimental-strip-types` for environments where Bun is not available.
+- **CI workflow.** `.github/workflows/test.yml` now installs Bun via `oven-sh/setup-bun@v2` before the test step; all other steps unchanged.
+- **ADR-002 amendment.** Spike re-run with `--parallel` overturned criterion 1 (subtest NotImplementedError affects only Bun's single-process runner path; two prior "failures" were 5s default-timeout artifacts). Amendment reflects the production-ready parallel stability.
+
 ## v0.29.1 — 2026-06-10 — light-tier hardening: registry fallback + namespace map
 
 ### Changed
