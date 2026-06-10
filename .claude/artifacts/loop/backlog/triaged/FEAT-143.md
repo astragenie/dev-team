@@ -9,14 +9,14 @@ updated: 2026-06-10
 depends_on: []
 slices: []
 derived_from: null
-pm_customer_impact: 0.55
+pm_customer_impact: 0.50
 pm_effort_estimate: 0.35
-pm_strategic_alignment: 0.65
+pm_strategic_alignment: 0.55
 pm_technical_risk: 0.35
 pm_dependency_depth: 0.15
-composite_score: 0.625
+composite_score: 0.600
 autonomous_safe: false
-triage_notes: via=pm | Lower impact/effort; multiple skill+command edits => human review; good filler when P2s blocked
+triage_notes: "via=pm retriage 2026-06-10 | Lower-impact filler; no weak-dim trigger; FEAT body itself frames as 'good filler when P2s blocked'. Risk band 0.35: 3 small independent items (skill section + script flag + cleanup logic); rollback per-component. autonomous_safe=false retained: --dry-run on prune-artifacts touches destructive command (safety check needs human verification), bisect skill is workflow authorship, squash-merge detection touches parallel-runner/fleet code paths (cross-tree implications). Could be split into 3 separate slices — squash-merge detection has the clearest standalone value (prevents orphan worktree branches observed in fleet). Cost analog: small bundled scripty work analog SLICE-65 $3.22 — but 3 items inflates to ~$10-15 estimated."
 ---
 # FEAT-143: Workflow smalls — git-bisect procedure, squash-merge detection, --dry-run convention
 

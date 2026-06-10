@@ -9,14 +9,14 @@ updated: 2026-06-10
 depends_on: []
 slices: []
 derived_from: null
-pm_customer_impact: 0.78
-pm_effort_estimate: 0.6
-pm_strategic_alignment: 0.8
-pm_technical_risk: 0.58
-pm_dependency_depth: 0.3
-composite_score: 0.67
+pm_customer_impact: 0.60
+pm_effort_estimate: 0.60
+pm_strategic_alignment: 0.75
+pm_technical_risk: 0.55
+pm_dependency_depth: 0.30
+composite_score: 0.585
 autonomous_safe: false
-triage_notes: "via=pm | \"Dual weak-dim target; moderate-high effort (3 bundled parts, 1 new skill); skill authorship => human review\""
+triage_notes: "via=pm retriage 2026-06-10 | FEAT body cites reliability+observability avg 0.74 each, but snapshot 5-grade avg = reliability 0.83 / observability 0.80 — neither hits weak-dim trigger (security 0.79 is the only weak dim). Customer_impact lowered to 0.60. observability is borderline (right at 0.80) — if it dips next grade, this becomes weak-dim work. Largest of the 6 pending FEATs: 3 bundled parts (deployment-patterns addition + review-gates addition + new observability domain skill) + reviewer/validator prompt rows. Risk band 0.55: new skill + 2 skill edits, new skill-tier classification rules apply; rollback per-component possible. autonomous_safe=false: skill+agent prompt authorship per CLAUDE.md governance. Scope challenge: consider splitting — observability skill alone could ship as its own slice if observability slips below 0.80 next grade window. Cost analog: FEAT-138 aggregate $102/12min is overstated (cross-repo); isolated 3-skill-edit slice expected $30-50."
 ---
 # FEAT-141: Reliability + observability review lenses — rollback matrix, silent-failure hunt, observability guidance
 

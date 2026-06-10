@@ -9,14 +9,14 @@ updated: 2026-06-10
 depends_on: []
 slices: []
 derived_from: null
-pm_customer_impact: 0.75
+pm_customer_impact: 0.55
 pm_effort_estimate: 0.55
-pm_strategic_alignment: 0.85
-pm_technical_risk: 0.5
-pm_dependency_depth: 0.2
-composite_score: 0.6975
+pm_strategic_alignment: 0.70
+pm_technical_risk: 0.50
+pm_dependency_depth: 0.20
+composite_score: 0.585
 autonomous_safe: false
-triage_notes: via=pm | Targets weakest grade dim; moderate-low effort (1 skill + agent rows); skill authorship => human-in-loop review
+triage_notes: "via=pm retriage 2026-06-10 | FEAT body cites test_confidence avg 0.72, but current 5-grade snapshot avg = 0.806 (above weak-dim 0.80 bar) — demand softened, customer_impact lowered to 0.55. Coverage gap still real but no longer the most-bleeding edge (security at 0.79 now is). Risk band 0.5: new workflow skill ≤200 lines + qa-expert agent rows; prompt-design risk, not code risk; rollback trivial. autonomous_safe=false: skill+agent prompt authorship per CLAUDE.md governance. Cost analog: SLICE-64 prompt-only $1.88/11.6min — effort 0.55 confirmed (3 bundled lenses: flaky-test + anti-pattern + mutation). Pre-mortem: silent-failure risk = lens fires false positives, reviewer learns to ignore — AC must include calibration evidence (e.g. signal-noise spot-check on N past slices)."
 ---
 # FEAT-139: qa-expert test-quality lens: flaky-test detection + mutation-testing quality bar
 
