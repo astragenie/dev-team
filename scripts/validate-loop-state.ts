@@ -23,7 +23,7 @@ async function listFeats(root: string): Promise<string[]> {
     const dir = path.join(root, state);
     if (!(await pathExists(dir))) continue;
     for (const f of await fs.readdir(dir)) {
-      if (/^FEAT-\d+\.md$/.test(f)) ids.push(f.replace(".md", ""));
+      if (/^FEAT-\d{3,}[a-z]?\.md$/.test(f)) ids.push(f.replace(".md", ""));
     }
   }
   return ids;

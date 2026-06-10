@@ -70,6 +70,8 @@ surfaces crew reads.
   `docs/state-contract.md`) owns full frontmatter schema validation. The
   hero-crew validator (`scripts/validate-loop-state.ts`) enforces only
   single-tree + unique-id constraints; it does not validate frontmatter.
+  
+  **Resolved 2026-06-10:** the canonical FEAT id pattern is `^FEAT-\d{3,}[a-z]?$` (optional trailing lowercase suffix, per loop repo state-schemas.mts). hero-crew's validate-loop-state.ts filename match is aligned to `^FEAT-\d{3,}[a-z]?\.md$` so suffixed ids participate in the unique-id check.
 
 ### C2. CLI hardening (loop repo)
 

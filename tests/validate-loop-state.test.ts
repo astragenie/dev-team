@@ -42,3 +42,43 @@ test("flags a second populated tree and duplicate ids", async () => {
     await fs.rm(repo, { recursive: true, force: true });
   }
 });
+
+test("picks up suffixed FEAT ids (e.g. FEAT-123a) for uniqueness checking", async () => {
+  const repo = await fs.mkdtemp(path.join(os.tmpdir(), "vls-"));
+  try {
+    const dir = path.join(repo, ".claude/artifacts/loop/backlog/pending");
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, "FEAT-123a.md"), "---\nid: FEAT-123a\n---\n");
+    // suffixed id should be picked up and pass uniqueness check
+    assert.deepEqual(await checkLoopState(repo), []);
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
+});
+
+test("detects collision between suffixed ids in two trees", async () => {
+  const repo = await fs.mkdtemp(path.join(os.tmpdir(), "vls-"));
+  try {
+    // FEAT-123a in pending
+    const pendingDir = path.join(repo, ".claude/artifacts/loop/backlog/pending");
+    await fs.mkdir(pendingDir, { recursive: true });
+    await fs.writeFile(
+      path.join(pendingDir, "FEAT-123a.md"),
+      "---\nid: FEAT-123a\n---\n"
+    );
+    // FEAT-123a again in done (collision)
+    const doneDir = path.join(repo, ".claude/artifacts/loop/backlog/done");
+    await fs.mkdir(doneDir, { recursive: true });
+    await fs.writeFile(
+      path.join(doneDir, "FEAT-123a.md"),
+      "---\nid: FEAT-123a\n---\n"
+    );
+    const errors = await checkLoopState(repo);
+    assert.ok(
+      errors.some((e) => e.includes("FEAT-123a")),
+      errors.join("; ")
+    );
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
+});
