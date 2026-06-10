@@ -74,6 +74,20 @@ Consult these before substantial work:
 - Task produces code that implements the above → **builder** (after architect or uxdesigner has set the design).
 - Pure investigation / option analysis / library lookup → **researcher**.
 
+## Slice tier classification (WS2)
+
+At slice start, classify into tier to determine gate dispatch pattern:
+
+**Tier rules:** Docs-only → `light`. Code ≤50 lines + no manifest/hook files → `light`. Cross-plugin (3+ modules) → always `full`. Other code → `full`.
+
+**Dispatch by tier:** `full` → builder PASS → [reviewer + validator concurrent] → decide. `light` → builder PASS → [crew:reviewer-validator combined] → decide.
+
+**Concurrent dispatch (tier: full):** Both consume same builder handoff in parallel. If reviewer needs_fix: re-dispatch builder, then re-run validator (full ladder).
+
+**Combined dispatch (tier: light):** Single agent runs full gate (lint, format, tests, validate:all) + code review. Returns both review_decision + validation_decision. If needs_fix: fix bounce escalates to full ladder.
+
+Record tier in run-brief as `tier: full | light`. See `commands/orchestrate-slice.md` Step 4–5 for prompts.
+
 ## Pre-dispatch decomposition rule
 
 Before any single-agent dispatch on a multi-file slice, audit the scope and split by role concern when ≥2 groups have substantive work. For turn-budget sizing before dispatch, load `skills/workflow/slice-sizing/`.
@@ -238,7 +252,7 @@ Before writing `escalated_to_human`, exhaust these paths in order. Each path end
 | Unknown codebase behavior / missing evidence | Dispatch `crew:researcher` — bounded investigation; proceed on findings                              |
 | Contract drift or missing API surface        | Dispatch `crew:architect` — revise OpenAPI YAML; re-dispatch builder                                 |
 | Test failures after build                    | Re-dispatch `crew:builder` with failure output + fix scope as context                                |
-| Review `needs_fix`                           | Re-dispatch `crew:builder` with reviewer findings as input                                           |
+| Review `needs_fix`                           | Mark validation_stale (if concurrent dispatch); re-dispatch builder with reviewer findings; after PASS, if slice is light-tier, use full ladder (separate reviewer + validator) on re-validation |
 | Validation failed                            | Re-dispatch `crew:builder` with validator evidence as input                                          |
 | UX ambiguity                                 | Dispatch `crew:uxdesigner` — produce UX spec; re-dispatch `builder-fe`                               |
 | Security concern                             | Load `skills/domain/security-advisory/`; surface finding in review artifact; proceed                 |

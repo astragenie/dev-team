@@ -335,10 +335,9 @@ If `Outcome: PASS`: continue to Step 4.
 
 ---
 
-### Step 4.5 — Short-slice size check and dispatch-order determination
+### Step 4.5 — Concurrent gate dispatch and tier classification
 
-Before dispatching reviewer and validator, determine the `SHORT_SLICE` flag from the
-builder handoff so that short slices with observable behavior run validator first.
+After builder PASS, determine slice tier and dispatch reviewer and validator.
 
 **Compute `SHORT_SLICE`:**
 
@@ -364,39 +363,39 @@ node -e "
 "
 ```
 
-**Derive `DISPATCH_ORDER`:**
+**Classify tier:**
 
-| Condition | `DISPATCH_ORDER` | Effect |
-|---|---|---|
-| `SHORT_SLICE = true` AND `BEHAVIOR_CHANGED = true` | `validator_first` | Run Step 5 (validator) before Step 4 (reviewer); reviewer receives `VALIDATION_PATH` as additional input. |
-| Any other combination (long slice, cross-plugin, `BEHAVIOR_CHANGED = false`) | `reviewer_first` | Run Step 4 (reviewer) before Step 5 (validator) — current default order. |
+- `tier: full` — long slices, cross-plugin, >10 changed files AND ≥7 ACs. Dispatch separate `crew:reviewer` and `crew:validator` in parallel.
+- `tier: light` — short slices with `SHORT_SLICE = true` AND `BEHAVIOR_CHANGED = true`. Dispatch single `crew:reviewer-validator` (combined concurrent agent).
+
+Tier is recorded in the slice-progress tracking via `write-run-brief --tier <light|full>` (invoked by loop's internal machinery; may be logged for reference).
 
 Print the outcome before proceeding:
 
 ```
-SHORT_SLICE=<true|false>  DISPATCH_ORDER=<validator_first|reviewer_first>
+SHORT_SLICE=<true|false>  TIER=<light|full>
 ```
 
 ---
 
-### Step 4 — Reviewer
+### Step 4 & 5 — Reviewer and Validator (concurrent gates)
 
-**When `DISPATCH_ORDER = validator_first`**: run Step 5 (validator) FIRST, store
-`VALIDATION_PATH`, then return here. The reviewer prompt receives `VALIDATION_PATH` as
-additional input so the reviewer can confirm validator findings rather than independently
-re-verify.
+After builder PASS, dispatch both review and validation in parallel according to tier.
 
-**When `DISPATCH_ORDER = reviewer_first`** (default for long slices, cross-plugin slices,
->10 changed files AND ≥7 ACs): run this step first before Step 5.
+#### Dispatch selection
 
-**Lens fan-out (optional, recommended for security/perf-sensitive or large diffs).** Dispatch 2–4 `crew:reviewer` subagents IN PARALLEL (single message, multiple `Agent` calls), each with a distinct `Review lens:` line — `correctness/regression`, `security`, `performance`, `tests-adequacy`. For `stack:typescript` / `stack:csharp` slices, add the matching `crew:3rdparty:typescript-reviewer` / `c-sharp-reviewer` as an extra lens. Aggregate all lens findings into one fix cycle. Default to a single reviewer (no lens) for small, low-risk slices.
+**When `tier: full`:** Dispatch both `crew:reviewer` and `crew:validator` simultaneously (single message, two `Agent` calls, or parallel tool invocations).
 
-Dispatch `crew:reviewer` with this prompt:
+**When `tier: light`:** Dispatch single `crew:reviewer-validator` (combined agent) instead.
+
+#### Step 4 prompt — `crew:reviewer` (full-tier only; parallel)
+
+Dispatch with this prompt:
 
 ```
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
-Review lens: <correctness/regression | security | performance | tests-adequacy — omit for single-reviewer mode>
+Review lens: <correctness/regression | security | performance | tests-adequacy — omit for single-lens mode>
 OpenAPI YAML: <CONTRACT_YAML_PATH or "none">
 UX spec: <UX_SPEC_PATH or "none">
 Integration artifact: <INTEGRATION_PATH or "none">
@@ -407,49 +406,79 @@ When SPLIT_BUILD=true:
 When SPLIT_BUILD=false:
   Builder handoff: <BUILDER_HANDOFF_PATH>
 
-[When DISPATCH_ORDER=validator_first — include the following line:]
-Validation result: <VALIDATION_PATH>
-
 Review the implementation diff(s) for correctness, test coverage, regressions, and contract/UX/integration conformance per the rules in your agent prompt. Re-run the builder's affected-class test set (named in the handoff's `## Deferred to validator` line) to confirm it is green and covers the changed classes; the full suite runs at the validator gate.
 
-When a Validation result is provided: you may treat the validator's scenario evidence as
-authoritative for runtime behavior and scope your review to code quality, contract
-conformance, and test coverage rather than re-running scenarios independently.
+Concurrently, the validator is running the mandatory full gate and may provide evidence you can reference.
 
 Return the review-result artifact path.
 ```
 
-Store the returned path(s) as `REVIEW_RESULT_PATH` (or the aggregated set when fanning out).
+Store the returned path(s) as `REVIEW_RESULT_PATH` (or the aggregated set when fanning out multi-lens).
 
-**If review returns `needs_fix`**: stop here. Surface the review-result path and tell the user to run `/crew:fix` before re-running orchestrate-slice.
-
----
-
-### Step 5 — Validator
+#### Step 5 prompt — `crew:validator` (always; parallel)
 
 **Always run on a code-bearing slice — no skip.** The validator owns the mandatory full gate (whole-repo lint, `format:check`, the complete test suite, `validate:all`) that the scoped builders no longer run. Run it even when `BEHAVIOR_CHANGED = false`: a code-only diff still needs the full suite to run somewhere, and this is the only always-on home for it.
 
-**When `DISPATCH_ORDER = validator_first`**: this step runs BEFORE Step 4. After
-`VALIDATION_PATH` is stored, return to Step 4 to dispatch the reviewer.
-
-**When `DISPATCH_ORDER = reviewer_first`** (default — long slices, cross-plugin, >10
-changed files AND ≥7 ACs): this step runs after Step 4 as usual.
-
-Dispatch `crew:validator` with this prompt:
+Dispatch with this prompt:
 
 ```
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
-Builder handoff(s): <BUILDER_HANDOFF_PATH or BUILDER_FE_HANDOFF_PATH + BUILDER_BE_HANDOFF_PATH>
-Review result: <REVIEW_RESULT_PATH or "none — validator running before reviewer (validator_first order)">
+
+When SPLIT_BUILD=true:
+  Builder-fe handoff: <BUILDER_FE_HANDOFF_PATH>
+  Builder-be handoff: <BUILDER_BE_HANDOFF_PATH>
+When SPLIT_BUILD=false:
+  Builder handoff: <BUILDER_HANDOFF_PATH>
+
 Integration artifact: <INTEGRATION_PATH or "none">
 
-First run your mandatory final gate (full-repo lint, format:check, full test suite, validate:all) per your agent prompt — this is where the complete suite runs, since builders only ran affected-class tests. Then validate that the implementation satisfies all acceptance criteria in the slice file. If an Integration artifact is provided with Outcome: PASS, you may short-circuit the scenario set per your agent prompt's SPLIT_BUILD short-circuit rule (the full gate still runs regardless).
+Run the mandatory full gate FIRST (lint, format:check, full test suite, validate:all) per your agent prompt — this is where the complete suite runs, since builders only ran affected-class tests. Then validate that the implementation satisfies all acceptance criteria in the slice file. If an Integration artifact is provided with Outcome: PASS, you may short-circuit the scenario set per your agent prompt's SPLIT_BUILD short-circuit rule (the full gate still runs regardless).
+
+Concurrently, the reviewer is running code-quality checks; you focus on behavior and gates.
 
 Return the validation artifact path.
 ```
 
 Store the returned path as `VALIDATION_PATH`.
+
+#### Step 4–5 prompt — `crew:reviewer-validator` (light-tier only; combined)
+
+When `tier: light`, dispatch single combined agent:
+
+```
+Slice: <SLICE-NN title>
+Slice file: <absolute path>
+OpenAPI YAML: <CONTRACT_YAML_PATH or "none">
+UX spec: <UX_SPEC_PATH or "none">
+Integration artifact: <INTEGRATION_PATH or "none">
+
+When SPLIT_BUILD=true:
+  Builder-fe handoff: <BUILDER_FE_HANDOFF_PATH>
+  Builder-be handoff: <BUILDER_BE_HANDOFF_PATH>
+When SPLIT_BUILD=false:
+  Builder handoff: <BUILDER_HANDOFF_PATH>
+
+Run the mandatory full gate FIRST (lint, format:check, full test suite, validate:all).
+Then review the implementation for correctness and test coverage, and validate acceptance criteria.
+
+Return BOTH the review-result artifact path AND the validation-result artifact path (one per line).
+```
+
+Store returned paths as `REVIEW_RESULT_PATH` and `VALIDATION_PATH`.
+
+#### Conflict rule: reviewer needs_fix invalidates validation
+
+If reviewer returns `needs_fix` (on either full-tier `crew:reviewer` or light-tier combined agent):
+
+1. Mark validation result stale: `node scripts/crew.ts mark-badge --repo "$PWD" --badge validation_stale --note "invalidated by review needs_fix"`.
+2. Re-dispatch builder with review findings (run `/crew:fix` flow).
+3. After builder PASS on the fix bounce:
+   - If original tier was `light`: escalate to full ladder — dispatch separate `crew:reviewer` and `crew:validator` in parallel (per full-tier dispatch sections above), regardless of the SHORT_SLICE computation.
+   - If original tier was `full`: use standard concurrent dispatch (both in parallel).
+4. Proceed to Step 6 after both gates PASS.
+
+If both return PASS (or approved_with_notes / passed_with_notes): proceed to Step 6.
 
 ---
 
