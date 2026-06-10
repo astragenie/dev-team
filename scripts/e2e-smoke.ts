@@ -114,6 +114,215 @@ async function smokeBuildBundle(repoRoot: string): Promise<void> {
   console.log(`[smoke] build-bundle phase OK (${printedPath})`);
 }
 
+async function scenarioScaffoldThenUpdate(sampleRoot: string) {
+  const crewScript = path.resolve("scripts/crew.ts");
+
+  // Test 1: Review result scaffold
+  const reviewScaffoldResult = await execFile(process.execPath, [
+    crewScript,
+    "write-review-result",
+    "--repo",
+    sampleRoot,
+    "--title",
+    "E2E scaffold review",
+    "--scaffold"
+  ]);
+  const reviewScaffoldOutput = JSON.parse(reviewScaffoldResult.stdout);
+  const reviewPath = reviewScaffoldOutput.path;
+  let reviewContent = await fs.readFile(reviewPath, "utf8");
+
+  // Verify scaffold structure for review
+  assert.match(reviewContent, /## Verdict/, "scaffold review must have Verdict section");
+  assert.match(reviewContent, /decision:/, "scaffold review must have empty decision field");
+  assert.match(reviewContent, /## Test Summary/, "scaffold review must have Test Summary");
+  assert.match(reviewContent, /## Risks/, "scaffold review must have Risks section");
+  assert.match(reviewContent, /in-progress/, "scaffold review must have in-progress status");
+
+  // Now update the review result (fill in judgment fields)
+  const reviewUpdateResult = await execFile(process.execPath, [
+    crewScript,
+    "write-review-result",
+    "--repo",
+    sampleRoot,
+    "--update",
+    reviewPath,
+    "--title",
+    "E2E scaffold review",
+    "--decision",
+    "approved",
+    "--test-summary",
+    "All tests passed"
+  ]);
+  const reviewUpdateOutput = JSON.parse(reviewUpdateResult.stdout);
+  reviewContent = await fs.readFile(reviewUpdateOutput.path, "utf8");
+
+  // Verify update: decision should be filled in (normal renderer uses "Decision:" capital)
+  assert.match(reviewContent, /Decision: approved/, "updated review must have decision approved");
+
+  // Test 2: Validation result scaffold
+  const validScaffoldResult = await execFile(process.execPath, [
+    crewScript,
+    "write-validation-result",
+    "--repo",
+    sampleRoot,
+    "--title",
+    "E2E scaffold validation",
+    "--scaffold"
+  ]);
+  const validScaffoldOutput = JSON.parse(validScaffoldResult.stdout);
+  const validPath = validScaffoldOutput.path;
+  let validContent = await fs.readFile(validPath, "utf8");
+
+  // Verify scaffold structure for validation
+  assert.match(validContent, /## Environment/, "scaffold validation must have Environment section");
+  assert.match(validContent, /## Scenario/, "scaffold validation must have Scenario section");
+  assert.match(validContent, /## Gates/, "scaffold validation must have Gates section");
+  assert.match(validContent, /## Decision/, "scaffold validation must have Decision section");
+  assert.match(validContent, /in-progress/, "scaffold validation must have in-progress status");
+
+  // Now update the validation result
+  const validUpdateResult = await execFile(process.execPath, [
+    crewScript,
+    "write-validation-result",
+    "--repo",
+    sampleRoot,
+    "--update",
+    validPath,
+    "--title",
+    "E2E scaffold validation",
+    "--decision",
+    "passed",
+    "--environment",
+    "local"
+  ]);
+  const validUpdateOutput = JSON.parse(validUpdateResult.stdout);
+  validContent = await fs.readFile(validUpdateOutput.path, "utf8");
+
+  // Verify update: decision should be filled in (normal renderer uses "Decision:" capital)
+  assert.match(validContent, /Decision: passed/, "updated validation must have decision passed");
+
+  console.log("[scenario] scaffold-then-update: PASS");
+}
+
+async function scenarioLightTierClassification(sampleRoot: string) {
+  // Test 1: docs-only should be light tier
+  const docsOnlyFiles = ["docs/README.md", "CHANGELOG.md"];
+  const { isLightTier } = await import("./orchestrate-slice-classify.ts");
+
+  let tierResult = isLightTier({
+    changedLines: 0,
+    filesChanged: docsOnlyFiles
+  });
+  assert.equal(tierResult, true, "docs-only files should classify as light tier");
+
+  // Test 2: 30-line code change should be light tier (if no hooks/manifests)
+  tierResult = isLightTier({
+    changedLines: 30,
+    filesChanged: ["src/lib/helpers.ts"]
+  });
+  assert.equal(tierResult, true, "≤50-line change should classify as light tier");
+
+  // Test 3: code change >50 lines should NOT be light tier (default maxLines is 50)
+  tierResult = isLightTier({
+    changedLines: 100,
+    filesChanged: ["src/lib/bigchange.ts"]
+  });
+  assert.equal(tierResult, false, ">50-line change should NOT be light tier");
+
+  // Test 4: hook files should NOT be light tier even if small
+  tierResult = isLightTier({
+    changedLines: 10,
+    filesChanged: [".claude/hooks/post-deploy.ts"]
+  });
+  assert.equal(tierResult, false, "hook files should NOT be light tier");
+
+  // Test 5: write-run-brief with tier field
+  const crewScript = path.resolve("scripts/crew.ts");
+  const briefResult = await execFile(process.execPath, [
+    crewScript,
+    "write-run-brief",
+    "--repo",
+    sampleRoot,
+    "--title",
+    "Light-tier test run",
+    "--goal",
+    "Update docs",
+    "--tier",
+    "light"
+  ]);
+  const briefOutput = JSON.parse(briefResult.stdout);
+  const briefPath = briefOutput.path;
+  const briefContent = await fs.readFile(briefPath, "utf8");
+
+  assert.match(briefContent, /Tier: light/, "run-brief must include tier: light");
+
+  console.log("[scenario] light-tier-classification: PASS");
+}
+
+async function scenarioValidationStaleFlow(sampleRoot: string) {
+  // This scenario tests marking validation stale when review needs_fix
+  const crewScript = path.resolve("scripts/crew.ts");
+  const stateDir = path.join(sampleRoot, ".claude", "state", "crew");
+
+  // Initialize workflow state by starting a run (via write-run-brief)
+  await execFile(process.execPath, [
+    crewScript,
+    "write-run-brief",
+    "--repo",
+    sampleRoot,
+    "--title",
+    "Validation stale test",
+    "--goal",
+    "Test stale marking"
+  ]);
+
+  // Mark validation as passed
+  const markPassedResult = await execFile(process.execPath, [
+    crewScript,
+    "mark-badge",
+    "--repo",
+    sampleRoot,
+    "--badge",
+    "validation_passed",
+    "--summary",
+    "All gates passed"
+  ]);
+  assert.equal(markPassedResult.stderr, "", "mark-badge validation_passed should not error");
+
+  // Now mark validation as stale (simulating review finding needs_fix)
+  const markStaleResult = await execFile(process.execPath, [
+    crewScript,
+    "mark-badge",
+    "--repo",
+    sampleRoot,
+    "--badge",
+    "validation_stale",
+    "--note",
+    "invalidated by review needs_fix"
+  ]);
+  assert.equal(markStaleResult.stderr, "", "mark-badge validation_stale should not error");
+
+  // Load workflow state and verify stale status is recorded
+  const workflowStatePath = path.join(stateDir, "workflow-state.json");
+  const workflowStateText = await fs.readFile(workflowStatePath, "utf8");
+  const workflowState = JSON.parse(workflowStateText);
+
+  // Verify that the validation gate shows stale status
+  assert.ok(
+    workflowState.currentRun?.gates?.validation?.status === "stale" ||
+      workflowState.currentRun?.badges?.includes?.("validation_stale"),
+    "workflow state should record validation_stale badge"
+  );
+
+  // Verify brief-me still works (exit 0) after stale mark
+  // We can't actually run brief-me here since it requires the full harness,
+  // but we can verify the state file is well-formed
+  assert.ok(workflowState.currentRun, "workflow state must have currentRun");
+  assert.ok(workflowState.currentRun.startedAt, "workflow state must have startedAt");
+
+  console.log("[scenario] validation-stale-flow: PASS");
+}
+
 async function main() {
   console.log(`Creating sample repo at ${repoPath}`);
 
@@ -165,6 +374,15 @@ async function main() {
   const heroCrewRoot = path.resolve(import.meta.dirname, "..");
   console.log("\nScenario: write-build-bundle");
   await smokeBuildBundle(heroCrewRoot);
+
+  console.log("\nScenario: scaffold-then-update");
+  await scenarioScaffoldThenUpdate(repoPath);
+
+  console.log("\nScenario: light-tier-classification");
+  await scenarioLightTierClassification(repoPath);
+
+  console.log("\nScenario: validation-stale-flow");
+  await scenarioValidationStaleFlow(repoPath);
 }
 
 main().catch((error) => {

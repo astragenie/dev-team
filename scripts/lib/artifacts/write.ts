@@ -99,6 +99,9 @@ function renderOptionalFrontmatter(fields: ArtifactFields): string {
   if (fields.findings) {
     lines.push(`findings: ${JSON.stringify(fields.findings)}`);
   }
+  if (fields.status) {
+    lines.push(`status: ${fields.status}`);
+  }
   if (lines.length === 0) {
     return "";
   }

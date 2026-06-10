@@ -217,7 +217,7 @@ test("write-* commands embed --feature and --phase in frontmatter", async () => 
   assert.equal(runBriefResult.code, 0, "write-run-brief should exit with code 0");
   const briefPath = JSON.parse(runBriefResult.output).path;
   const briefBody = await fs.readFile(briefPath, "utf8");
-  assert.match(briefBody, /^---\nphase: "3"\nfeature: FEAT-021\n---\n/);
+  assert.match(briefBody, /^---\nphase: "3"\nfeature: FEAT-021\nstatus: \w+\n---\n/);
   assert.match(briefBody, /# Run Brief: Tagged brief/);
 
   // review-result without feature/phase emits no frontmatter (backward-compat)

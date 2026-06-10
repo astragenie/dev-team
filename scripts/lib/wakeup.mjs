@@ -83,7 +83,15 @@ async function latestArtifactByPrefix(repoPath, subdir, prefix) {
   }
 
   const body = await fs.readFile(match.path, "utf8");
-  const [heading = ""] = body.split("\n");
+  // Skip frontmatter if present (starts and ends with ---)
+  let content = body;
+  if (body.startsWith("---")) {
+    const endIndex = body.indexOf("---", 3); // Find closing --- after opening ---
+    if (endIndex > 0) {
+      content = body.substring(endIndex + 3).trimStart();
+    }
+  }
+  const [heading = ""] = content.split("\n");
   return {
     path: match.path,
     title: heading.replace(/^#\s+/, "").trim(),
