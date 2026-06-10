@@ -1,119 +1,8 @@
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { execFile as execFileCallback } from "node:child_process";
-import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
-
-const execFile = promisify(execFileCallback);
-const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const cliPath = path.join(repoRoot, "scripts", "crew.ts");
-
-async function makeTempDir(prefix: string) {
-  return fs.mkdtemp(path.join(os.tmpdir(), prefix));
-}
-
-test("CLI init creates a harnessed repo", async () => {
-  const rootPath = await makeTempDir("crew-cli-init-");
-  const repoPath = path.join(rootPath, "app");
-  const { stdout } = await execFile("node", [
-    "--experimental-strip-types",
-    cliPath,
-    "init",
-    "--repo",
-    repoPath
-  ]);
-  const result = JSON.parse(stdout);
-
-  assert.equal(result.mode, "init");
-  assert.equal(result.audit.hasHarnessLayer, true);
-  assert.match(result.welcome.headline, /Crew/);
-  assert.ok(result.welcome.commands.includes("/crew:brief-me"));
-
-  const claudeMd = await fs.readFile(path.join(repoPath, "CLAUDE.md"), "utf8");
-  assert.match(claudeMd, /crew:start/);
-});
-
-test("CLI bootstrap preserves existing CLAUDE.md content", async () => {
-  const repoPath = await makeTempDir("crew-cli-bootstrap-");
-  await fs.writeFile(path.join(repoPath, "CLAUDE.md"), "# Existing\n");
-
-  const { stdout } = await execFile("node", [
-    "--experimental-strip-types",
-    cliPath,
-    "bootstrap",
-    "--repo",
-    repoPath
-  ]);
-  const result = JSON.parse(stdout);
-  const claudeMd = await fs.readFile(path.join(repoPath, "CLAUDE.md"), "utf8");
-
-  assert.equal(result.mode, "bootstrap");
-  assert.match(result.welcome.headline, /Crew/);
-  assert.ok(result.welcome.commands.includes("/crew:build"));
-  assert.match(claudeMd, /# Existing/);
-  assert.match(claudeMd, /crew:start/);
-});
-
-test("CLI claim and release manage repo-local claims", async () => {
-  const repoPath = await makeTempDir("crew-cli-claims-");
-  await execFile("node", ["--experimental-strip-types", cliPath, "init", "--repo", repoPath]);
-
-  const claimOutput = await execFile("node", [
-    cliPath,
-    "claim",
-    "--repo",
-    repoPath,
-    "--owner",
-    "builder",
-    "src/example.ts"
-  ]);
-  const claimResult = JSON.parse(claimOutput.stdout);
-  assert.deepEqual(claimResult.claimed, ["src/example.ts"]);
-
-  const conflictsOutput = await execFile("node", [
-    cliPath,
-    "show-conflicts",
-    "--repo",
-    repoPath,
-    "--owner",
-    "lead-session",
-    "src/example.ts"
-  ]);
-  const conflictsResult = JSON.parse(conflictsOutput.stdout);
-  assert.equal(conflictsResult.conflicts.length, 1);
-  assert.equal(conflictsResult.conflicts[0].owner, "builder");
-  assert.equal(conflictsResult.owned.length, 0);
-  assert.equal(conflictsResult.available.length, 0);
-
-  const ownedOutput = await execFile("node", [
-    cliPath,
-    "show-conflicts",
-    "--repo",
-    repoPath,
-    "--owner",
-    "builder",
-    "src/example.ts",
-    "src/free.ts"
-  ]);
-  const ownedResult = JSON.parse(ownedOutput.stdout);
-  assert.equal(ownedResult.owned.length, 1);
-  assert.equal(ownedResult.owned[0].path, "src/example.ts");
-  assert.equal(ownedResult.conflicts.length, 0);
-  assert.deepEqual(ownedResult.available, [{ path: "src/free.ts" }]);
-
-  const releaseOutput = await execFile("node", [
-    cliPath,
-    "release",
-    "--repo",
-    repoPath,
-    "src/example.ts"
-  ]);
-  const releaseResult = JSON.parse(releaseOutput.stdout);
-  assert.deepEqual(releaseResult.released, ["src/example.ts"]);
-});
+import { execFile, cliPath, makeTempDir, loadState } from "./helpers/cli-fixtures.ts";
 
 test("CLI approval requests can be listed and resolved", async () => {
   const repoPath = await makeTempDir("crew-cli-approvals-");
@@ -1137,14 +1026,6 @@ test("CLI install-global writes managed global memory into HOME", async () => {
   const repeatResult = JSON.parse(repeatOutput.stdout);
   assert.deepEqual(repeatResult.writes, []);
 });
-
-async function loadState(repoPath: string) {
-  const raw = await fs.readFile(
-    path.join(repoPath, ".claude", "state", "crew", "workflow-state.json"),
-    "utf8"
-  );
-  return JSON.parse(raw);
-}
 
 test("mark-badge blocked persists note + blockedBy", async () => {
   const repoPath = await makeTempDir("crew-cli-badge-blocked-");
