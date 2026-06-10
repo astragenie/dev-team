@@ -3,6 +3,42 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.29.0 — 2026-06-10 — WS2 ceremony restructure: concurrent gates + templated artifacts
+
+### Changed
+
+- **Concurrent gates (reviewer + validator).** After builder PASS, `lead` dispatches
+  `crew:reviewer` and `crew:validator` subagents simultaneously rather than
+  sequentially (commands/orchestrate-slice.md rewrite). Conflict rule: reviewer
+  `needs_fix` badge marks validation stale; fix bounce runs full ladder. Pilot
+  evidence: concurrent gate wall 5.2 min vs ~9.7 sequential; slice ceremony
+  11.6 min vs ~43 min baseline.
+- **Merge-safe workflow-state mutations.** New exclusive-create advisory lock
+  (`.claude/state/crew/workflow-state.lock`) guards all workflow-state
+  mutations: 5s acquire timeout with 10ms backoff, stale locks older than 10s
+  reclaimed (crashed-writer recovery). New `validation_stale` badge added when
+  reviewer needs_fix invalidates prior validation.
+- **Templated artifact scaffolds.** `write-review-result` and
+  `write-validation-result` commands now support `--scaffold` flag for
+  deterministic empty skeletons, finalized via `--update` (enables delegated
+  review/validation handoff where lead pre-creates structure, reviewer/validator
+  fills content). Scaffold template: headers + empty sections per lens.
+- **Light-tier fast path (misclassified escapes).** New `isLightTier()`
+  classification: docs-only or ≤50 changed lines (per `loop.json`
+  `lightTier.maxChangedLines`) with no hook/manifest changes. Light slices
+  dispatch `crew:reviewer-validator` (combined read-only agent) instead of
+  separate reviewer/validator. Misclassification guard: `needs_fix` on a light
+  slice escalates the fix bounce to the full ladder. `--tier` flag on
+  `write-run-brief` records the classification.
+- **Parallel-runner safety (FEAT-136 / SLICE-64).** `/crew:parallel` dispatches
+  `crew:lead` per worktree with shared-state conflict resolution (guard-feat-dispatch
+  resolved). Parallel-runner scoped to non-FEAT work by default; FEAT work
+  requires explicit coordination (DEC-015).
+- **e2e-smoke test coverage.** 3 new scriptable scenarios: `scaffold-update`
+  (write-review-result lifecycle), `tier-classification` (light vs full ladder),
+  `validation-stale-flow` (reviewer needs_fix invalidates validation). Fixed
+  `wakeup.mjs` frontmatter-title extraction to handle spec paths.
+
 ## v0.28.1 — 2026-06-10 — slice-pipeline speedup WS1: test suite 115.9s → 21.1s
 
 ### Changed
