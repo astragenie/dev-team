@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { maybeEmitCostReport } from "./lib/cost-hygiene/emit-cost-report.ts";
 import { costSliceHandler } from "./lib/cost-hygiene/cost-slice-handler.ts";
 import { normalizeMsysPath } from "./lib/fs-utils.ts";
@@ -812,30 +813,43 @@ const COMMANDS = {
   "cost-slice": ({ repoPath, flags }: CommandContext) => costSliceHandler({ repoPath, flags })
 };
 
-async function main() {
-  const { command, helpTarget, flags, positionals } = parseArgs(process.argv.slice(2));
-  const repoPath = path.resolve(normalizeMsysPath(flags.repo));
+export async function runCrew(argv: string[]): Promise<{ code: number; output: string }> {
+  try {
+    const { command, helpTarget, flags, positionals } = parseArgs(argv);
+    const repoPath = path.resolve(normalizeMsysPath(flags.repo));
 
-  if (command === "help") {
-    console.log(usage(helpTarget));
-    return;
-  }
+    if (command === "help") {
+      return { code: 0, output: usage(helpTarget) };
+    }
 
-  const handler = (COMMANDS as Record<string, (ctx: CommandContext) => Promise<unknown>>)[command];
-  if (!handler) {
-    throw new Error(`Unknown command: ${command}`);
-  }
+    const handler = (COMMANDS as Record<string, (ctx: CommandContext) => Promise<unknown>>)[
+      command
+    ];
+    if (!handler) {
+      return { code: 1, output: `Unknown command: ${command}` };
+    }
 
-  const result = await handler({ repoPath, flags, positionals });
-  // String results are printed as-is (e.g. file paths); everything else is JSON.
-  if (typeof result === "string") {
-    console.log(result);
-  } else {
-    console.log(JSON.stringify(result, null, 2));
+    const result = await handler({ repoPath, flags, positionals });
+    // String results are printed as-is (e.g. file paths); everything else is JSON.
+    const output = typeof result === "string" ? result : JSON.stringify(result, null, 2);
+    return { code: 0, output };
+  } catch (error) {
+    return { code: 1, output: (error as Error).message };
   }
 }
 
-main().catch((error) => {
-  console.error(error.message);
-  process.exitCode = 1;
-});
+async function main() {
+  const { code, output } = await runCrew(process.argv.slice(2));
+  if (code === 0) {
+    console.log(output);
+  } else {
+    console.error(output);
+    process.exitCode = 1;
+  }
+}
+
+const isDirectRun =
+  process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
+if (isDirectRun) {
+  void main();
+}
