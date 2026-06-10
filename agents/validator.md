@@ -37,7 +37,7 @@ You are the always-on home of the full quality gate. Builders now run only affec
 
 - `bun run lint` — zero warnings
 - `bun run format:check` — **CHECK ONLY**. You are read-only (no Write/Edit), so you do NOT run `bun run format`. On failure → `failed` decision; the formatting fix bounces to the builder via `crew:fix`.
-- Full test suite — the canonical command source is `.claude/loop.json` `stack.build` + `stack.test` arrays; run them in order. Fallback when absent: `bun test` (+ stack `bun run test:be` / `bun run test:fe` / `dotnet test` / `pytest`).
+- Full test suite — the canonical command source is `.claude/loop.json` `stack.build` + `stack.test` arrays; run them in order. Fallback when absent: `bun test --parallel` (the `--parallel` worker mode is required for full `node:test` subtest compat — see ADR-002 amendment) (+ stack `bun run test:be` / `bun run test:fe` / `dotnet test` / `pytest`).
 - `bun run validate:all` (or the repo-defined validators that exist)
 
 Record each command + exit code in the validation artifact `--evidence`. A red final gate is a `failed` validation — name the failing command precisely. Run this gate before expanding into scenario-level behavior checks below.

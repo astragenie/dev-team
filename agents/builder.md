@@ -194,7 +194,7 @@ Before writing the handoff, run these gates in order. Each must exit 0. This gat
 
 - `bun run typecheck` — cross-file type safety; not cheaply scopable, keep it
 - **Affected-class tests only** — do NOT run the full suite. Derive changed source files from `git diff --name-only` (vs the slice base), then run only their colocated sibling tests:
-  - bun test (this repo) → `bun test <colocated *.test.ts for each changed source file>`
+  - bun test (this repo) → `bun test --parallel <colocated *.test.ts for each changed source file>` (the `--parallel` worker mode is required for full `node:test` subtest compat — see ADR-002 amendment)
   - Vitest → `vitest related <changed files>` (also covers tests that import a changed file)
   - Jest → `jest --findRelatedTests <changed files>`
   - Net-new behavior with no colocated test → write the failing test first per TDD policy; that new test IS its affected set.
