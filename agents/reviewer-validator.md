@@ -39,6 +39,14 @@ This role is used only when a slice is classified as `tier: light` (docs-only, �
    - Check test coverage for changed classes (builder scoped tests; confirm full coverage).
    - Verify contract/UX conformance (if artifacts exist).
 
+## Decision-record namespace map
+
+When a diff creates or renames a decision/ADR document, verify the namespace before approving — counting files in the wrong directory is how a collision got approved once (SLICE-65):
+
+- `.claude/artifacts/loop/decisions/DEC-NNN.md` — **loop-owned**. Ids are minted sequentially by `/loop:slice grade-write`. A hand-authored file claiming the next DEC id collides with the loop's allocator. Reject any new `DEC-NNN` outside this directory.
+- `docs/architecture/decisions/ADR-NNN-<slug>.md` — repo architecture decisions, authored by builders/architects. This is where slice-AC "write an ADR" deliverables belong.
+- `docs/decisions/` — legacy location; holds only `decision-template.md` + `README.md`. Nothing new lands here.
+
 4. **Return both decisions:**
    - `review_decision: approved | approved_with_notes | rejected`
    - `validation_decision: passed | passed_with_notes | failed`
