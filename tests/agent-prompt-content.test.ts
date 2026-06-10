@@ -38,6 +38,20 @@ test("builder.md references mark-badge", () => {
   assert.ok(builder.includes("mark-badge"), "builder.md missing mark-badge");
 });
 
+test("builder.md self-verify is scoped to affected-class tests", () => {
+  assert.ok(
+    builder.includes("Affected-class tests only"),
+    "builder.md missing scoped affected-class test gate"
+  );
+});
+
+test("builder.md defers the full suite to the validator", () => {
+  assert.ok(
+    builder.includes("Deferred to validator"),
+    "builder.md missing Deferred to validator handoff line"
+  );
+});
+
 // ── reviewer ─────────────────────────────────────────────────────────────────
 
 const reviewer = readAgent("reviewer");
@@ -50,10 +64,17 @@ test("reviewer.md contains Test Adequacy section", () => {
   assert.ok(reviewer.includes("Test Adequacy"), "reviewer.md missing Test Adequacy");
 });
 
-test("reviewer.md contains --validation-evidence flag", () => {
+test("reviewer.md dropped --validation-evidence bundling (validator now mandatory)", () => {
   assert.ok(
-    reviewer.includes("--validation-evidence"),
-    "reviewer.md missing --validation-evidence"
+    !reviewer.includes("--validation-evidence"),
+    "reviewer.md should no longer emit --validation-evidence — the validator owns the mandatory full gate"
+  );
+});
+
+test("reviewer.md re-runs the builder's affected-class test set", () => {
+  assert.ok(
+    reviewer.includes("Affected-test re-run"),
+    "reviewer.md missing affected-test re-run gate"
   );
 });
 
@@ -87,6 +108,13 @@ test("validator.md addresses scenario execution", () => {
 
 test("validator.md contains mark-badge reference", () => {
   assert.ok(validator.includes("mark-badge"), "validator.md missing mark-badge");
+});
+
+test("validator.md owns the mandatory full gate (lint + format:check)", () => {
+  assert.ok(
+    validator.includes("Mandatory final gate") && validator.includes("format:check"),
+    "validator.md missing mandatory full gate with format:check"
+  );
 });
 
 // ── deployer ─────────────────────────────────────────────────────────────────

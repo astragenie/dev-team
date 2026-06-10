@@ -389,11 +389,14 @@ re-verify.
 **When `DISPATCH_ORDER = reviewer_first`** (default for long slices, cross-plugin slices,
 >10 changed files AND ≥7 ACs): run this step first before Step 5.
 
+**Lens fan-out (optional, recommended for security/perf-sensitive or large diffs).** Dispatch 2–4 `crew:reviewer` subagents IN PARALLEL (single message, multiple `Agent` calls), each with a distinct `Review lens:` line — `correctness/regression`, `security`, `performance`, `tests-adequacy`. For `stack:typescript` / `stack:csharp` slices, add the matching `crew:3rdparty:typescript-reviewer` / `c-sharp-reviewer` as an extra lens. Aggregate all lens findings into one fix cycle. Default to a single reviewer (no lens) for small, low-risk slices.
+
 Dispatch `crew:reviewer` with this prompt:
 
 ```
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
+Review lens: <correctness/regression | security | performance | tests-adequacy — omit for single-reviewer mode>
 OpenAPI YAML: <CONTRACT_YAML_PATH or "none">
 UX spec: <UX_SPEC_PATH or "none">
 Integration artifact: <INTEGRATION_PATH or "none">
@@ -407,7 +410,7 @@ When SPLIT_BUILD=false:
 [When DISPATCH_ORDER=validator_first — include the following line:]
 Validation result: <VALIDATION_PATH>
 
-Review the implementation diff(s) for correctness, test coverage, regressions, and contract/UX/integration conformance per the rules in your agent prompt.
+Review the implementation diff(s) for correctness, test coverage, regressions, and contract/UX/integration conformance per the rules in your agent prompt. Re-run the builder's affected-class test set (named in the handoff's `## Deferred to validator` line) to confirm it is green and covers the changed classes; the full suite runs at the validator gate.
 
 When a Validation result is provided: you may treat the validator's scenario evidence as
 authoritative for runtime behavior and scope your review to code quality, contract
@@ -416,7 +419,7 @@ conformance, and test coverage rather than re-running scenarios independently.
 Return the review-result artifact path.
 ```
 
-Store the returned path as `REVIEW_RESULT_PATH`.
+Store the returned path(s) as `REVIEW_RESULT_PATH` (or the aggregated set when fanning out).
 
 **If review returns `needs_fix`**: stop here. Surface the review-result path and tell the user to run `/crew:fix` before re-running orchestrate-slice.
 
@@ -424,7 +427,7 @@ Store the returned path as `REVIEW_RESULT_PATH`.
 
 ### Step 5 — Validator
 
-**Skip when `BEHAVIOR_CHANGED = false`.**
+**Always run on a code-bearing slice — no skip.** The validator owns the mandatory full gate (whole-repo lint, `format:check`, the complete test suite, `validate:all`) that the scoped builders no longer run. Run it even when `BEHAVIOR_CHANGED = false`: a code-only diff still needs the full suite to run somewhere, and this is the only always-on home for it.
 
 **When `DISPATCH_ORDER = validator_first`**: this step runs BEFORE Step 4. After
 `VALIDATION_PATH` is stored, return to Step 4 to dispatch the reviewer.
@@ -441,7 +444,7 @@ Builder handoff(s): <BUILDER_HANDOFF_PATH or BUILDER_FE_HANDOFF_PATH + BUILDER_B
 Review result: <REVIEW_RESULT_PATH or "none — validator running before reviewer (validator_first order)">
 Integration artifact: <INTEGRATION_PATH or "none">
 
-Validate that the implementation satisfies all acceptance criteria in the slice file. If an Integration artifact is provided with Outcome: PASS, you may short-circuit per your agent prompt's SPLIT_BUILD short-circuit rule. Otherwise, run the full scenario set.
+First run your mandatory final gate (full-repo lint, format:check, full test suite, validate:all) per your agent prompt — this is where the complete suite runs, since builders only ran affected-class tests. Then validate that the implementation satisfies all acceptance criteria in the slice file. If an Integration artifact is provided with Outcome: PASS, you may short-circuit the scenario set per your agent prompt's SPLIT_BUILD short-circuit rule (the full gate still runs regardless).
 
 Return the validation artifact path.
 ```

@@ -3,6 +3,32 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## Unreleased — gate rebalance: scoped builders, validator owns full gate
+
+### Changed
+
+- **Builders go scoped (fast inner loop).** `builder`, `builder-be`, and
+  `builder-fe` self-verify gates no longer run whole-repo lint, `format:check`,
+  or the full test suite. They run `typecheck` + **affected-class tests only**
+  (per-stack native: `node --test` on colocated siblings, `vitest related`,
+  `dotnet test --filter`, `pytest <files>`). Each handoff now emits a
+  `## Deferred to validator` line naming the affected set. Cuts the full suite
+  from running up to 3× per slice (be + fe + builder) to **once**.
+- **Validator owns the mandatory full gate.** `validator` now runs the
+  whole-repo lint, `format:check` (check-only — read-only agent bounces
+  formatting fixes to the builder), the complete test suite (`loop.json`
+  `stack.build` + `stack.test`), and `validate-all` first, every slice. The
+  validator is **no longer skippable** — even code-only diffs run it, since it
+  is the only always-on home for the full suite. Supersedes the FEAT-030
+  reviewer-bundled-validation skip (`--validation-evidence` note removed from
+  `reviewer.md`; the CLI flag remains, unused, for back-compat).
+- **Reviewer fan-out by lens + affected-test backstop.** `lead` may dispatch
+  N parallel `crew:reviewer` subagents, one per `Review lens:`
+  (correctness/regression, security, performance, tests-adequacy) plus
+  stack-idiom via `crew:3rdparty:typescript-reviewer` / `c-sharp-reviewer`.
+  Each reviewer re-runs the builder's affected-class set to confirm it covers
+  the changed classes (the full suite still runs at the validator gate).
+
 ## v0.27.0 — 2026-06-10 — loop↔crew state contract: single-tree migration
 
 ### Changed
