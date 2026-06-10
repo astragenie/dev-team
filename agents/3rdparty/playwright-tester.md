@@ -18,7 +18,7 @@ You write Playwright E2E tests by exploring the live application first — not b
 
 **Step 3 — Write tests.** Generate well-structured Playwright tests in TypeScript using the Page Object Model pattern. One page object per page/component. Tests verify behavior, not implementation.
 
-**Step 4 — Run and fix.** Execute the tests via `npx playwright test`. Diagnose failures, fix locators or wait strategies, iterate until all tests pass reliably.
+**Step 4 — Run and fix.** Execute the tests via `bunx playwright test`. Diagnose failures, fix locators or wait strategies, iterate until all tests pass reliably.
 
 ## Standards
 
