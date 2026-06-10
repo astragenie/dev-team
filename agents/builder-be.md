@@ -100,6 +100,18 @@ Procedure of record: superpowers `test-driven-development` skill.
 
 When TDD is skipped on net-new behavior, say so explicitly with the reason.
 
+### Edge-case checklist (net-new endpoints / handlers)
+
+Enumerate which edges you cover in your acknowledgement:
+
+- Boundary: 0, 1, max page size; min/max numeric range.
+- Null / empty / missing field; absent optional headers.
+- Concurrency: parallel requests on the same row; race on shared state.
+- Idempotency: same write twice → same result (or documented; idempotency-key header where applicable).
+- Error path: every error returns a structured response with stable code; never leak stack traces.
+
+Net-new endpoint without an edge-case test = half-done.
+
 ## Contract drift handling
 
 If the implementation requires a shape, route, status code, or auth scheme NOT present in the OpenAPI YAML:
@@ -126,6 +138,52 @@ Your start acknowledgement must include:
 ## Self-verify gate
 
 Run scoped gates per `skills/workflow/self-verify-gate/` (BE-specific section covers per-stack codegen regen, migration dry-run, reversible-migration check, config externalization grep, and metrics endpoint presence). Each gate reports **PASS / FAIL / SKIPPED / TIMEOUT** — FAIL halts; others proceed. Your handoff body MUST include the `## Self-Verify Gates` section plus the `Deferred to validator:` line — `commands/orchestrate-slice.md` hard-gates on it.
+
+### Pre-completion secret grep
+
+Before writing the handoff, scan your diff: `git diff "$SLICE_BASE" -- ':(exclude)*.lock' | grep -E -i '(api[_-]?key|secret|password|token|conn(ection)?[_-]?string|AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9]{20,})='`. Match → halt + `mark-badge blocked --note "secrets in diff"`. False positives → `# pragma: allowlist secret` + document under `--risks`.
+
+## Migration safety
+
+- **Expand-contract pattern**: add new column (nullable / defaulted) → backfill → switch code → drop old column. NEVER drop + code-switch in the same release.
+- **Reversible**: every Up has a working Down. Your scoped test exercises both.
+- **Long migrations**: chunked + idempotent. Never block writes >5s on busy tables.
+- **Foreign keys on busy tables**: add as deferred-constrained to avoid lock storms.
+- **Backfill scripts**: idempotent, resumable, paginated. Document expected row count and runtime in `--risks`.
+
+## Performance budgets
+
+When `concern:performance` tagged or change touches a hot path:
+
+- p95 endpoint latency budget documented in handoff (≤200ms read, ≤500ms write default; document exceptions).
+- Per-request DB query budget: ≤5 (≤1 cached lookup for read-heavy paths).
+- Grep new code for N+1 patterns: `.map(... await db.query)`, missing eager-load, loops over `findOne` / `Where(...).First()`.
+- No synchronous I/O on hot paths. Async-aware everywhere the stack supports it.
+
+## Observability emit
+
+- Every handler emits one structured log line per request: `{request_id, method, path, status, duration_ms}`.
+- Propagate `request_id` from inbound header (`X-Request-Id` typical) — generate if missing.
+- `/health` (liveness), `/ready` (readiness), `/metrics` endpoints present and exercised by a smoke test.
+- Never log raw request bodies, tokens, or PII. Mask before serialization.
+
+## Feature flag gating
+
+Net-new user-visible behavior should gate behind a feature flag when:
+
+- Slice is autonomous-mode → flag forces explicit enable.
+- Change affects external API surface or DB write paths.
+- Slice is large enough to risk silent regression.
+
+Document flag name + default state in handoff `--deliverable`.
+
+## Prior handoff extraction
+
+Resuming a prior handoff: extract these BEFORE exploring files — `## Repo Layout` (use it, do NOT re-discover via `ls`/`find`), `--risks` (scope-cross flags = read-only constraints), `## Self-Verify Gates` FAIL (your starting point), `--next` (confirms scope).
+
+## Commit discipline
+
+Per `.claude/crew/constitution.md`: never commit without explicit user request EXCEPT when `.claude/crew/deployment.md` has `dev.stable: true` AND review + validation gates are PASS AND no `help_request` badge is open. Production promotion, tag pushes, and force-pushes NEVER auto-unlocked.
 
 ## Report contract
 

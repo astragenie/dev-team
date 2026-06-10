@@ -1,3 +1,17 @@
+---
+slice: SLICE-77
+builder: builder-be
+run_id: 20260608T230000Z
+files_touched: ["package.json"]
+files_read: []
+diff_stat: { files: 1, additions: 60, deletions: 1 }
+truncated: false
+truncation_reason: null
+schema_version: 1
+---
+
+## Handoff
+
 # Crew
 
 [![test](https://github.com/sergeymilashico/hero-crew/actions/workflows/test.yml/badge.svg)](https://github.com/sergeymilashico/hero-crew/actions/workflows/test.yml)
@@ -11,7 +25,6 @@ A Claude Code plugin for lead-guided engineering work with bounded subagents, qu
 Crew gives Claude Code a lead-centered workflow model with **12 first-party agents** across 3 tiers:
 
 **Core workflow agents:**
-
 - **lead** — plans, delegates, synthesizes, paces
 - **builder** — implements bounded changes within assigned scope
 - **reviewer** — validates correctness, regressions, and scope drift
@@ -20,7 +33,6 @@ Crew gives Claude Code a lead-centered workflow model with **12 first-party agen
 - **deployer** — manages environment transition evidence without deciding risky promotion alone
 
 **Specialist agents (new in v0.8.0):**
-
 - **architect** — ADR authoring, system design, database schema, API contracts; delegates to 3rdparty specialists
 - **uxdesigner** — UI flows, component hierarchies, accessibility specs; delegates to 3rdparty specialists
 - **copywriter** — API docs, release notes, README polish, diagram captions; delegates to 3rdparty specialists
@@ -61,7 +73,7 @@ The companion `loop` plugin lives in the same marketplace:
 /plugin install loop@astra
 ```
 
-Verify locally with `bun run test`. Pinned release: `v0.31.0`.
+Verify locally with `npm test`. Pinned release: `v0.14.1`.
 
 > **Upgrading from `crew-dev` / `autonomous-loop`?** See [docs/process/rebrand-migration.md](docs/process/rebrand-migration.md) for the one-time uninstall + reinstall sequence. The `loop` plugin auto-migrates consumer-repo state (`.claude/autonomous-loop.json` → `.claude/loop.json`, CLAUDE.md markers) on first `/loop:install`.
 
@@ -137,11 +149,11 @@ If a plugin update changes constitution or workflow behavior, rerun `/crew:insta
 
 ### How configuration layers work
 
-| Layer                   | Location              | Scope     | Who edits                  |
-| ----------------------- | --------------------- | --------- | -------------------------- |
-| Constitution + workflow | `~/.claude/crew/`     | All repos | Plugin-managed global copy |
-| Global user rules       | `~/.claude/CLAUDE.md` | All repos | User                       |
-| Repo rules              | `CLAUDE.md`           | This repo | Team                       |
+| Layer | Location | Scope | Who edits |
+|-------|----------|-------|-----------|
+| Constitution + workflow | `~/.claude/crew/` | All repos | Plugin-managed global copy |
+| Global user rules | `~/.claude/CLAUDE.md` | All repos | User |
+| Repo rules | `CLAUDE.md` | This repo | Team |
 
 **Repo CLAUDE.md overrides constitution defaults.** The constitution provides baseline team rules (ownership, review gates, handoffs). Teams customize per-repo via CLAUDE.md without touching the constitution.
 
@@ -163,10 +175,10 @@ node "<plugin-path>/scripts/crew.ts" bootstrap --repo .
 
 Agents support two-tier custom instructions, same model as Claude Code settings:
 
-| Level  | Path                       | Scope          |
-| ------ | -------------------------- | -------------- |
-| Global | `~/.claude/crew/<role>.md` | All repos      |
-| Repo   | `.claude/crew/<role>.md`   | This repo only |
+| Level | Path | Scope |
+|-------|------|-------|
+| Global | `~/.claude/crew/<role>.md` | All repos |
+| Repo | `.claude/crew/<role>.md` | This repo only |
 
 Both files are read if they exist. Repo instructions take precedence over global on conflict.
 
@@ -203,7 +215,6 @@ The reviewer will read those files before review, and the lead should dispatch r
 ### Examples
 
 `~/.claude/crew/reviewer.md` (global):
-
 ```markdown
 - For Go repos, use our Go review skill and check dependency-injection, context handling, and error wrapping.
 - For Python repos, use our Python review skill and check typing, async boundaries, and test quality.
@@ -211,14 +222,12 @@ The reviewer will read those files before review, and the lead should dispatch r
 ```
 
 `.claude/crew/builder.md` (repo-level):
-
 ```markdown
 - Follow strict typing — no `Any` unless unavoidable
 - All new functions must have tests
 ```
 
 `.claude/crew/reviewer.md` (repo-level):
-
 ```markdown
 - For this repo, always review against our internal API compatibility rules.
 - For Go code, apply the team's configured Go review skill.
@@ -236,13 +245,13 @@ Update our reviewer instructions so Go reviews always apply our internal Go stan
 
 Default model assignments:
 
-| Agent      | Model  |
-| ---------- | ------ |
-| lead       | opus   |
-| builder    | opus   |
-| reviewer   | opus   |
-| validator  | opus   |
-| deployer   | opus   |
+| Agent | Model |
+|-------|-------|
+| lead | opus |
+| builder | opus |
+| reviewer | opus |
+| validator | opus |
+| deployer | opus |
 | researcher | sonnet |
 
 ## Optional integrations
@@ -292,3 +301,177 @@ docs/            — design docs and specs
 ## License
 
 MIT
+
+## Diff
+
+```diff
+diff --git a/scripts/crew.ts b/scripts/crew.ts
+index 31af8c9..af9bf86 100644
+--- a/scripts/crew.ts
++++ b/scripts/crew.ts
+@@ -26,6 +26,7 @@ const FLAG_SPEC = {
+   "--badge": { key: "badge" },
+   "--blocked-by": { key: "blockedBy" },
+   "--build": { key: "build" },
++  "--builder": { key: "builder" },
+   "--clues": { key: "clues" },
+   "--commit-pattern": { key: "commitPattern" },
+   "--completed-at": { key: "completedAt" },
+@@ -40,11 +41,14 @@ const FLAG_SPEC = {
+   "--evidence": { key: "evidence" },
+   "--external-deltas": { key: "externalDeltas" },
+   "--extra-root": { key: "extraRoot" },
++  "--feat": { key: "feat" },
+   "--feature": { key: "feature" },
+   "--files": { key: "files" },
++  "--files-read": { key: "filesRead" },
+   "--findings": { key: "findings" },
+   "--from": { key: "from" },
+   "--goal": { key: "goal" },
++  "--handoff": { key: "handoff" },
+   "--id": { key: "id" },
+   "--kind": { key: "kind" },
+   "--logs": { key: "logs" },
+@@ -68,11 +72,13 @@ const FLAG_SPEC = {
+   "--reviewer": { key: "reviewer" },
+   "--reviewer-label": { key: "reviewerLabel" },
+   "--risks": { key: "risks" },
++  "--run": { key: "run" },
+   "--run-steps": { key: "runSteps" },
+   "--run-title": { key: "runTitle" },
+   "--source-project": { key: "sourceProject" },
+   "--scope": { key: "scope" },
+   "--severity": { key: "severity" },
++  "--slice": { key: "slice" },
+   "--started-at": { key: "startedAt" },
+   "--status": { key: "status" },
+   "--summary": { key: "summary" },
+@@ -171,7 +177,13 @@ function parseArgs(argv: string[]) {
+     testSummary: null,
+     testSummarySkipReason: null,
+     findings: null,
+-    validationEvidence: null
++    validationEvidence: null,
++    builder: null,
++    feat: null,
++    filesRead: null,
++    handoff: null,
++    run: null,
++    slice: null
+   };
+   const positionals = [];
+ 
+@@ -241,6 +253,8 @@ function usage(target: string | null = null) {
+       "  node scripts/crew.mjs mark-badge --repo <path> --badge review_required|review_passed|review_failed|review_skipped|validation_expected|validation_passed|validation_failed|validation_skipped|dev_deploy_expected|dev_checked|dev_failed|dev_skipped|prod_deploy_expected|prod_checked|prod_failed|prod_skipped|blocked|escalated_to_human [--note <text>] [--blocked-by <artifact-id>]",
+     "write-run-brief":
+       "  node scripts/crew.mjs write-run-brief --repo <path> --title <text> [--goal <text>] [--mode <mode>] [--pace <pace>]",
++    "write-build-bundle":
++      "  node scripts/crew.ts write-build-bundle --repo <path> --slice <SLICE-NN> --builder <builder|builder-be|builder-fe> --run <YYYYMMDDTHHMMSSZ> --handoff <path> [--feat <FEAT-NNN>] [--files <a,b>] [--files-read <c,d>]",
+     "write-handoff":
+       "  node scripts/crew.mjs write-handoff --repo <path> --title <text> [--from <role>] [--to <role>] [--files <a,b>]",
+     "write-review-result":
+@@ -563,6 +577,51 @@ const COMMANDS = {
+     if (!r.ok) throw r.error;
+     return r.value;
+   },
++  "write-build-bundle": async ({ repoPath, flags }: CommandContext) => {
++    const { assembleBuildBundle } = await import("./lib/build-bundle/assemble.ts");
++    const fs = await import("node:fs/promises");
++
++    const slice = flags.slice ?? "unknown";
++    const builder = flags.builder;
++    const run = flags.run;
++    const handoffPath = flags.handoff;
++
++    if (!builder || !run || !handoffPath) {
++      process.stderr.write(
++        "[crew] write-build-bundle refused: --builder, --run, and --handoff are required.\n"
++      );
++      process.exit(2);
++    }
++    const validBuilders = new Set(["builder", "builder-be", "builder-fe"]);
++    if (!validBuilders.has(builder)) {
++      process.stderr.write(
++        `[crew] write-build-bundle refused: --builder must be one of ${[...validBuilders].join(", ")}.\n`
++      );
++      process.exit(2);
++    }
++
++    const handoffBody = await fs.readFile(handoffPath, "utf8");
++    const filesTouched = (flags.files ?? "")
++      .split(",")
++      .map((s) => s.trim())
++      .filter((s) => s.length > 0);
++    const filesRead = (flags.filesRead ?? "")
++      .split(",")
++      .map((s) => s.trim())
++      .filter((s) => s.length > 0);
++
++    const result = await assembleBuildBundle({
++      repoPath,
++      sliceId: slice,
++      builderName: builder as "builder" | "builder-be" | "builder-fe",
++      runId: run,
++      ...(flags.feat !== null ? { feat: flags.feat } : {}),
++      handoffBody,
++      filesTouched,
++      filesRead
++    });
++    return result.path;
++  },
+   "write-handoff": async ({ repoPath, flags, positionals }: CommandContext) => {
+     const { writeArtifact } = await import("./lib/artifacts/write.ts");
+     const r = await writeArtifact(repoPath, "handoff", {
+
+```
+
+## Files touched
+
+### package.json
+
+```
+{
+  "name": "crew-plugin",
+  "version": "0.23.0",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@eslint/js": "^9.16.0",
+    "@redocly/cli": "^1.34.15",
+    "@types/node": "^25.9.1",
+    "eslint": "^9.16.0",
+    "globals": "^15.13.0",
+    "openapi-typescript": "^7.13.0",
+    "prettier": "^3.4.2",
+    "typescript": "^6.0.3",
+    "yaml": "^2.9.0",
+    "zod": "^3.25.76"
+  },
+  "scripts": {
+    "test": "node --test --experimental-strip-types",
+    "validate:manifests": "node ./scripts/validate-manifests.ts",
+    "lint": "eslint scripts eslint.config.mjs",
+    "typecheck": "tsc --noEmit",
+    "validate:skills": "node ./scripts/validate-skills.ts",
+    "validate:agents": "node ./scripts/validate-agents.ts",
+    "validate:contracts": "node ./scripts/validate-contracts.ts",
+    "validate:routing-table": "node ./scripts/validate-routing-table.ts",
+    "validate:slices": "node ./scripts/validate-slices.ts",
+    "validate:all": "node --experimental-strip-types scripts/validate-all.ts",
+    "validate:typegraph": "node ./scripts/validate-typegraph.ts",
+    "validate:ux-spec": "node ./scripts/validate-ux-spec.ts",
+    "format": "prettier --write \"scripts/**/*.{mjs,ts}\" \"tests/**/*.{mjs,ts}\"",
+    "format:check": "prettier --check \"scripts/**/*.{mjs,ts}\" \"tests/**/*.{mjs,ts}\"",
+    "installer:install-global": "node ./scripts/crew.ts install-global",
+    "installer:bootstrap": "node ./scripts/crew.ts bootstrap",
+    "installer:init": "node ./scripts/crew.ts init",
+    "installer:audit": "node ./scripts/crew.ts audit",
+    "e2e:smoke": "node ./scripts/e2e-smoke.ts",
+    "e2e:smoke:ux": "node ./scripts/e2e-smoke-ux.ts"
+  }
+}
+
+```
+
+## Files read
+

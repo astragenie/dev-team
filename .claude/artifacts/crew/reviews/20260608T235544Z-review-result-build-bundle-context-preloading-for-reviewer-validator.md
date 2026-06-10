@@ -1,0 +1,57 @@
+---
+findings: "🔴:0,🟡:2,❓:0"
+---
+# Review Result: build-bundle: context preloading for reviewer/validator
+
+- Created: 2026-06-08T23:55:44.839Z
+- Reviewer: reviewer
+- Decision: approved_with_notes
+- Summary: Implementation is structurally correct and spec-conformant; two yellow findings (smoke coverage gap for spec assertions 2-3, non-idiomatic shared-mutable counter in collectBundleStats) do not block use but should be tracked.
+- Evidence Checked:
+  - scripts/lib/build-bundle/assemble.ts
+  - scripts/lib/build-bundle/inline.ts
+  - scripts/lib/build-bundle/types.ts
+  - scripts/validate-bundles.ts
+  - scripts/crew.ts
+  - scripts/e2e-smoke.ts
+  - scripts/lib/briefing/collect.ts
+  - agents/builder.md
+  - agents/builder-be.md
+  - agents/builder-fe.md
+  - commands/review.md
+  - commands/validate.md
+  - docs/routing-table.md
+  - docs/standards/build-bundle-schema.md
+  - docs/grades/grade-template.md
+  - tests/build-bundle-assemble.test.ts
+  - tests/build-bundle-inline.test.ts
+  - tests/build-bundle-cli.test.ts
+  - .github/workflows/test.yml
+  - package.json
+  - CHANGELOG.md
+- Files Reviewed:
+  - scripts/lib/build-bundle/assemble.ts
+  - scripts/lib/build-bundle/inline.ts
+  - scripts/lib/build-bundle/types.ts
+  - scripts/validate-bundles.ts
+  - scripts/crew.ts
+  - scripts/e2e-smoke.ts
+  - scripts/lib/briefing/collect.ts
+  - agents/builder.md
+  - agents/builder-be.md
+  - agents/builder-fe.md
+  - commands/review.md
+  - commands/validate.md
+  - docs/routing-table.md
+  - docs/standards/build-bundle-schema.md
+  - docs/grades/grade-template.md
+  - tests/build-bundle-assemble.test.ts
+  - tests/build-bundle-inline.test.ts
+  - tests/build-bundle-cli.test.ts
+  - .github/workflows/test.yml
+  - package.json
+  - CHANGELOG.md
+- Test Adequacy: 7 assembler tests + 6 inliner tests + 1 CLI integration test; all 522/522 pass; TDD red-commits (71601c4, ed263c6, c7da329) precede green commits confirming test-first discipline; smoke test covers CLI write path but omits spec integration assertions 2-3 (reviewer prompt header + artifact file reference)
+- Risks: collectBundleStats increments shared let-counters inside Promise.all callbacks (non-idiomatic, benign under Node.js single-threaded event loop but fragile pattern); e2e smoke missing assertions for reviewer-prompt inline header and reviewer artifact file reference (spec section Integration items 2 and 3 unexercised)
+- Required Follow-up: ship (approved_with_notes); follow-up ticket to add smoke assertions 2-3 for reviewer-prompt preload verification; refactor collectBundleStats counters to use atomic reduce or local-scoped accumulators
+

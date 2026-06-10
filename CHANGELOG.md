@@ -3,6 +3,136 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.31.0 — 2026-06-10 — orchestrator hardening + production-ready builders + shared self-verify skill
+
+### Added
+
+- **NEW skill `self-verify-gate`** (`skills/workflow/self-verify-gate/SKILL.md`).
+  Authoritative procedure for builder agents' scoped pre-handoff
+  verification — slice-base resolution, touched-set derivation, per-stack
+  typecheck / lint / affected-tests / repo-validator recipes, and the
+  PASS / FAIL / SKIPPED / TIMEOUT state model. Three builder prompts
+  (`builder`, `builder-fe`, `builder-be`) reference it instead of
+  duplicating ~30 lines of self-verify procedure each.
+- **`write-handoff-and-bundle` CLI command** (`scripts/crew.ts`). Merges
+  `write-handoff` + `write-build-bundle` into one call. Auto-resolves
+  slice id from `workflow-state.json`, auto-generates the ISO timestamp,
+  defaults `from` / `to` / `status`. Bundle write is non-blocking —
+  returns `{ handoff, bundle, bundleError }`. Removes the `jq` dependency
+  and the POSIX-only `$(date -u +...)` portability trap.
+- **Production-ready content on all three builder prompts.**
+  `## Safety` (credential / token rules, never `--no-verify`, secrets-
+  in-scope blocker), `## FEAT frontmatter` (read `autonomous_safe` /
+  `surface:*` / `stack:*` / `concern:*` before starting), `## Pre-
+  completion secret grep` (diff scan for AKIA / sk- / api_key /
+  password / connection-string patterns), `## Prior handoff extraction`
+  (read `## Repo Layout` + `--risks` + Self-Verify FAIL state before
+  exploring), `## Commit discipline` (echo constitution `dev.stable`
+  rules), edge-case checklists for net-new behavior, feature-flag
+  gating, FE `## Performance budgets` (LCP / INP / CLS targets + 30 KB
+  chunk delta) + `## Observability emit` (ErrorBoundary + performance
+  marks), BE `## Migration safety` (expand-contract pattern + reversible
+  migrations + chunked backfill + deferred FKs), BE `## Performance
+  budgets` (p95 + per-request DB query budget + N+1 grep), BE
+  `## Observability emit` (request id propagation + `/health` `/ready`
+  `/metrics`).
+
+### Changed
+
+- **Stub artifact ceremony removed** from all builders + reviewer.
+  Builder agents previously wrote a `--status in-progress` handoff at
+  start and overwrote it via `--update <stub>` at completion. No
+  downstream consumer reads in-progress stubs; the `--update` flag is
+  optional in `scripts/crew.ts`. Builders now write a single handoff
+  at completion. Reviewer's `### Stub at start` block also removed —
+  `review-result` IS the completion artifact (no duplicate handoff
+  trail). `agents/builder.md` 304 → 258 lines; `builder-fe.md`
+  221 → 242 (net +21 after production-ready adds); `builder-be.md`
+  219 → 243 (net +24); `reviewer.md` ~314 → 284.
+- **FE + BE builder prompts unified on production seams.**
+  `agents/builder-fe.md` + `agents/builder-be.md` now have
+  `disallowedTools: Agent` frontmatter (was missing — could spawn
+  sub-agents and hang), `## Tool restrictions` section mirroring
+  `builder.md`, env guard (`: "${CLAUDE_PLUGIN_ROOT:?must be set}"`)
+  on workflow-badges block, and unified `write-handoff-and-bundle`
+  completion (was two separate `write-handoff` + `write-build-bundle`
+  calls).
+- **Context-ceiling thresholds unified.** All three builders now at
+  50 tool uses / 100k context tokens (was 60 / 100k builder, 40 / 80k
+  FE + BE).
+- **Self-verify gate state model** extended from `PASS / FAIL` to
+  `PASS / FAIL / SKIPPED / TIMEOUT`. FAIL halts the builder;
+  SKIPPED and TIMEOUT proceed with the validator picking up the
+  deferred check on the final gate.
+- **Orchestrator boundaries hardened.**
+  - `lead.md` (commits f3aadb5, 6017cb2): `disallowedTools: Edit +
+    NotebookEdit` (Write was already blocked); Golden Path 7-step
+    framing; risk-based tier table (LOW / MEDIUM / HIGH) replaces
+    line-count tier; SLA caps on builder / reviewer / validator
+    dispatch loops to prevent infinite-fix cycles; routing-table drift
+    fixes (`stack:csharp` + `stack:react` correctly routed; dead
+    copywriter agent → `loop:document-writer`); operating rules
+    12 → 6. 332 → 290 lines.
+  - `architect.md` (commits f81637e, bc96c8f): Golden Path 6-step +
+    Write boundary (allowed: `designs/`, ADRs, design-surface prompts;
+    forbidden: product code, other agent prompts, tests,
+    `package.json`); SLA caps (max 2 design revisions before
+    escalation); Agent dispatch restricted to design specialists
+    (`database-architect`, `cloud-architect`, `architect-reviewer`,
+    `critical-thinking`, `crew:researcher`); 5-column Build Sequence
+    table (Phase / Files / Change type / AC / Validation command);
+    per-artifact validator matrix; PASS/FAIL timing fix; skill cap
+    5 → 4; design size tiers (Small / Medium / Large) for
+    right-sized output.
+  - `reviewer.md` (commit 0a8acb4): `disallowedTools: NotebookEdit`
+    added (Jupyter cell gap closed); `jq` dependency dropped; env
+    guard on every bash block; `review-result` is the sole completion
+    artifact (separate `write-handoff` call removed); scoped pre-flight
+    (audit + secret grep on changed files only, not repo-wide);
+    lens-mode explicit SKIP rule for out-of-lens gates unless CRITICAL
+    severity; 298 lines.
+- **Badge rename** `escalated_to_human` → `escalated_to_lead` across
+  `scripts/crew.ts`, `scripts/lib/workflow-state.ts`, 8 agent prompts,
+  `CLAUDE.md`, `docs/architecture/architecture.md`, and 2 test files.
+  Historical artifacts left untouched.
+- **Agent prompt cap reduced** 500 → 350 lines (default; per-agent
+  `maxLines` overrides preserved for `lead`, `reviewer`). Enforced by
+  `scripts/validate-agents.ts`.
+- **Skill consultation defaults** for all 3 builders: 1–2 skills
+  default, soft cap 3, hard cap 5. Slice that genuinely needs a 6th =
+  too wide; split or escalate.
+
+### Fixed
+
+- **Broken anchors / stale step references in `builder.md`.**
+  `[scope fallback chain](#scope-discipline)` resolved by adding the
+  matching heading; `step 4` reference (only 2 steps exist) corrected;
+  stale "moved to Start sequence steps 2–3" breadcrumb deleted.
+- **Self-verify "must exit 0" contradiction** with documented TIMEOUT
+  escape on typecheck — replaced with explicit PASS / FAIL / SKIPPED /
+  TIMEOUT state model.
+- **Light-vs-mandatory-handoff contradiction.** `## Handoff before
+  stop` previously claimed "all require write-handoff", contradicting
+  the `size: light → no handoff` rule. Now scoped: standard tasks
+  require handoff; light tasks return inline only.
+
+### Removed
+
+- **Stub artifact emission** sections from all four agents
+  (`builder.md`, `builder-fe.md`, `builder-be.md`, `reviewer.md`).
+  Single completion-only artifact write per dispatch.
+
+### Notes
+
+- `--update` flag stays in `scripts/crew.ts` for backwards
+  compatibility — consumer repos that still pass it continue to work.
+- `commands/orchestrate-slice.md` still hard-gates on
+  `## Self-Verify Gates` showing PASS for every gate; format
+  unchanged.
+- Bundle artifact (`write-build-bundle` output) retained — consumed by
+  reviewer's "Read build bundle first" optimization (saves file Reads
+  in the review phase).
+
 ## v0.30.4 — 2026-06-10 — hook-core extraction + builder scoped self-verify
 
 ### Changed
