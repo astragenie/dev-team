@@ -22,6 +22,48 @@ export function isShortSlice(opts: {
   return opts.acCount <= 6 || opts.changedFilesCount <= 10;
 }
 
+export function isLightTier(opts: {
+  changedLines?: number;
+  filesChanged?: string[];
+  loopJson?: Record<string, unknown>;
+}): boolean {
+  const { changedLines = 0, filesChanged = [] } = opts;
+
+  // Read maxChangedLines from loop.json if provided, default to 50
+  let maxLines = 50;
+  if (opts.loopJson && typeof opts.loopJson === "object") {
+    const lightTierConfig = (opts.loopJson as Record<string, unknown>).lightTier;
+    if (lightTierConfig && typeof lightTierConfig === "object") {
+      const mcl = (lightTierConfig as Record<string, unknown>).maxChangedLines;
+      if (typeof mcl === "number") {
+        maxLines = mcl;
+      }
+    }
+  }
+
+  // Docs-only check: all files are .md or .txt
+  const nonDocFiles = filesChanged.filter((f) => !f.match(/\.(md|txt)$/i));
+  if (nonDocFiles.length === 0 && filesChanged.length > 0) {
+    return true;
+  }
+
+  // Code-bearing check: ≤maxLines AND no hook/manifest/runtime files
+  const hasHookOrManifest = filesChanged.some((f) => {
+    // Check for hooks/
+    if (f.includes("hooks/")) return true;
+    // Check for .claude-plugin/
+    if (f.includes(".claude-plugin/")) return true;
+    // Check for package.json, tsconfig, eslint.config
+    if (f.match(/package\.json|tsconfig|eslint\.config/)) return true;
+    // Check for scripts/ (all scripts are excluded from light tier)
+    if (f.includes("scripts/")) return true;
+    return false;
+  });
+
+  if (hasHookOrManifest) return false;
+  return changedLines <= maxLines;
+}
+
 export async function classifySlice(opts: { slicePath: string }) {
   const text = await fs.readFile(opts.slicePath, "utf8");
   const fm = parseFrontmatter(text);

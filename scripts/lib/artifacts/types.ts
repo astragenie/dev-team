@@ -45,6 +45,8 @@ export interface ArtifactFields {
   findings?: string | null;
   _reportVariant?: "slice" | "aggregate" | null;
   updatePath?: string | undefined;
+  scaffold?: boolean;
+  tier?: "full" | "light";
 }
 
 export interface CostBreakdown {

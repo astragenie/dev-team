@@ -14,14 +14,15 @@ import { normalizeMsysPath } from "./lib/fs-utils.ts";
 // Keep entries alphabetized within each arity group for diffability.
 const FLAG_SPEC = {
   // Boolean flags (no value).
+  "--aggregate-all": { key: "aggregateAll", boolean: true },
   "--allow-existing": { key: "allowExisting", boolean: true },
+  "--force": { key: "force", boolean: true },
   "--help": { key: "help", boolean: true },
   "-h": { key: "help", boolean: true },
-  "--force": { key: "force", boolean: true },
-  "--aggregate-all": { key: "aggregateAll", boolean: true },
   "--no-self": { key: "noSelf", boolean: true },
   "--non-code": { key: "nonCode", boolean: true },
   "--repo-context": { key: "repoContext", boolean: true },
+  "--scaffold": { key: "scaffold", boolean: true },
   // Value-consuming flags.
   "--alerts": { key: "alerts" },
   "--approver": { key: "approver" },
@@ -87,6 +88,7 @@ const FLAG_SPEC = {
   "--telemetry": { key: "telemetry" },
   "--test-summary": { key: "testSummary" },
   "--test-summary-skip-reason": { key: "testSummarySkipReason" },
+  "--tier": { key: "tier" },
   "--title": { key: "title" },
   "--to": { key: "to" },
   "--trigger-filename": { key: "triggerFilename" },
@@ -175,6 +177,7 @@ function parseArgs(argv: string[]) {
     noSelf: false,
     aggregateAll: false,
     repoContext: false,
+    scaffold: false,
     extraRoot: null,
     phase: null,
     testSummary: null,
@@ -187,6 +190,7 @@ function parseArgs(argv: string[]) {
     handoff: null,
     run: null,
     slice: null,
+    tier: null,
     updatePath: null
   };
   const positionals = [];
@@ -548,7 +552,8 @@ const COMMANDS = {
 
   "write-run-brief": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
-    const r = await writeArtifact(repoPath, "run-brief", {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fields: any = {
       title: flags.title || positionals.join(" ") || "Run Brief",
       goal: flags.goal ?? undefined,
       mode: flags.mode ?? undefined,
@@ -562,7 +567,11 @@ const COMMANDS = {
       next: flags.next ?? undefined,
       feature: flags.feature ?? undefined,
       phase: flags.phase ?? undefined
-    });
+    };
+    if (flags.tier && (flags.tier === "full" || flags.tier === "light")) {
+      fields.tier = flags.tier;
+    }
+    const r = await writeArtifact(repoPath, "run-brief", fields);
     if (!r.ok) throw r.error;
     return r.value;
   },
@@ -676,7 +685,8 @@ const COMMANDS = {
       validationEvidence: flags.validationEvidence ?? undefined,
       nonCode: flags.nonCode ?? undefined,
       findings: flags.findings ?? null,
-      updatePath: flags.updatePath ?? undefined
+      updatePath: flags.updatePath ?? undefined,
+      scaffold: flags.scaffold ?? undefined
     });
     if (!r.ok) throw r.error;
     return r.value;
@@ -719,7 +729,8 @@ const COMMANDS = {
       feature: flags.feature ?? undefined,
       phase: flags.phase ?? undefined,
       findings: flags.findings ?? null,
-      updatePath: flags.updatePath ?? undefined
+      updatePath: flags.updatePath ?? undefined,
+      scaffold: flags.scaffold ?? undefined
     });
     if (!r.ok) throw r.error;
     return r.value;

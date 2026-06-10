@@ -294,3 +294,111 @@ test("artifact write without --update creates new timestamped file (backward com
     await cleanup(repoPath);
   }
 });
+
+// Scenario 7: write-review-result --scaffold emits skeleton with empty judgment fields
+test("write-review-result --scaffold emits skeleton with empty judgment fields", async () => {
+  const repoPath = await makeTempRepo("artifact-scaffold-review-");
+  try {
+    const { status, stdout } = runCli([
+      "write-review-result",
+      "--repo",
+      repoPath,
+      "--title",
+      "Scaffold test",
+      "--scaffold"
+    ]);
+    assert.equal(status, 0, "expected exit 0");
+    const result = JSON.parse(stdout);
+    const body = await fs.readFile(result.path, "utf8");
+    assert.match(body, /## Verdict/, "must have Verdict section");
+    assert.match(body, /decision:/, "must have decision field");
+    assert.match(body, /## Test Summary/, "must have Test Summary section");
+    assert.match(body, /## Changed Files/, "must have Changed Files section");
+    assert.match(body, /## Findings/, "must have Findings section");
+    assert.match(body, /## Risks/, "must have Risks section");
+    assert.match(body, /## Notes/, "must have Notes section");
+  } finally {
+    await cleanup(repoPath);
+  }
+});
+
+// Scenario 8: write-validation-result --scaffold emits skeleton with empty judgment fields
+test("write-validation-result --scaffold emits skeleton with empty judgment fields", async () => {
+  const repoPath = await makeTempRepo("artifact-scaffold-validation-");
+  try {
+    const { status, stdout } = runCli([
+      "write-validation-result",
+      "--repo",
+      repoPath,
+      "--title",
+      "Scaffold validation",
+      "--scaffold"
+    ]);
+    assert.equal(status, 0, "expected exit 0");
+    const result = JSON.parse(stdout);
+    const body = await fs.readFile(result.path, "utf8");
+    assert.match(body, /## Environment/, "must have Environment section");
+    assert.match(body, /## Scenario/, "must have Scenario section");
+    assert.match(body, /## Gates/, "must have Gates section");
+    assert.match(body, /## Evidence/, "must have Evidence section");
+    assert.match(body, /## Findings/, "must have Findings section");
+    assert.match(body, /## Risks/, "must have Risks section");
+    assert.match(body, /## Decision/, "must have Decision section");
+  } finally {
+    await cleanup(repoPath);
+  }
+});
+
+// Scenario 9: scaffold-then-update finalizes correctly
+test("scaffold-then-update: scaffold review, then update with decision, finalizes correctly", async () => {
+  const repoPath = await makeTempRepo("artifact-scaffold-update-");
+  try {
+    // First: create scaffold
+    const scaffoldResult = runCli([
+      "write-review-result",
+      "--repo",
+      repoPath,
+      "--title",
+      "Review scaffold-update",
+      "--scaffold"
+    ]);
+    assert.equal(scaffoldResult.status, 0);
+    const scaffoldArtifact = JSON.parse(scaffoldResult.stdout);
+    const scaffoldPath = scaffoldArtifact.path;
+
+    // Verify scaffold has skeleton
+    let body = await fs.readFile(scaffoldPath, "utf8");
+    assert.match(body, /decision:/, "scaffold must have empty decision field");
+
+    // Second: finalize with --update
+    const finalResult = runCli([
+      "write-review-result",
+      "--repo",
+      repoPath,
+      "--update",
+      scaffoldPath,
+      "--title",
+      "Review scaffold-update",
+      "--status",
+      "completed",
+      "--decision",
+      "approved",
+      "--summary",
+      "All checks pass",
+      "--test-summary",
+      "100% coverage",
+      "--files",
+      "src/foo.ts,src/bar.ts"
+    ]);
+    assert.equal(finalResult.status, 0);
+
+    // Verify finalized artifact has the update
+    body = await fs.readFile(scaffoldPath, "utf8");
+    assert.match(body, /Status: completed/, "finalized must have completed status");
+    assert.match(body, /Decision: approved/, "finalized must have decision");
+    assert.match(body, /All checks pass/, "finalized must have summary");
+    assert.match(body, /100% coverage/, "finalized must have test summary");
+  } finally {
+    await cleanup(repoPath);
+  }
+});

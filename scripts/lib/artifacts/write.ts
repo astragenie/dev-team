@@ -106,6 +106,72 @@ function renderOptionalFrontmatter(fields: ArtifactFields): string {
 }
 
 // ---------------------------------------------------------------------------
+// Scaffold renderers (deterministic templates with empty judgment fields)
+// ---------------------------------------------------------------------------
+
+function renderReviewResultScaffold(fields: ArtifactFields): string {
+  const lines = [
+    `# Review Result: ${fields.title || "Untitled"}`,
+    "",
+    "## Verdict",
+    "- decision: ",
+    "- confidence: ",
+    "",
+    "## Test Summary",
+    "- test-command: ",
+    "- coverage: ",
+    "",
+    "## Changed Files",
+    "- (auto-populated by git during review)",
+    "",
+    "## Findings",
+    "- pass: 0",
+    "- partial: 0",
+    "- fail: 0",
+    "",
+    "## Risks",
+    "- (describe residual risks or 'none')",
+    "",
+    "## Notes",
+    "- (reviewer judgment here)"
+  ];
+  return lines.join("\n");
+}
+
+function renderValidationResultScaffold(fields: ArtifactFields): string {
+  const lines = [
+    `# Validation Result: ${fields.title || "Untitled"}`,
+    "",
+    "## Environment",
+    "- tested: local",
+    "",
+    "## Scenario",
+    "- goal: ",
+    "",
+    "## Gates",
+    "- lint: ",
+    "- format: ",
+    "- tests: ",
+    "- validate:all: ",
+    "",
+    "## Evidence",
+    "- (command output and observed behavior)",
+    "",
+    "## Findings",
+    "- pass: 0",
+    "- partial: 0",
+    "- fail: 0",
+    "",
+    "## Risks",
+    "- (residual risks or 'none')",
+    "",
+    "## Decision",
+    "- outcome: "
+  ];
+  return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
 // Simple (list-of-fields) artifact renderers
 // ---------------------------------------------------------------------------
 
@@ -126,6 +192,7 @@ const SIMPLE_RENDERERS: Record<string, ArtifactConfig> = {
         `# Run Brief: ${f.title || "Untitled"}`,
         "",
         renderField("Created", nowIso()),
+        renderField("Tier", f.tier || "full"),
         renderField("Goal", f.goal),
         renderField("Mode", f.mode),
         renderField("Pace", f.pace),
@@ -609,9 +676,34 @@ export async function writeArtifact(
 
     const isCostReport =
       kind === "cost-report" || kind === "cost-report-slice" || kind === "cost-report-aggregate";
-    const fm = isCostReport ? "" : renderOptionalFrontmatter(fields);
 
-    let body = config.render(fields);
+    // In scaffold mode, emit frontmatter with in-progress status
+    let fm = "";
+    if (!isCostReport) {
+      if (fields.scaffold) {
+        // Scaffold: emit minimal frontmatter with in-progress status
+        const scaffoldFields = { ...fields, status: "in-progress" };
+        fm = renderOptionalFrontmatter(scaffoldFields);
+      } else {
+        fm = renderOptionalFrontmatter(fields);
+      }
+    }
+
+    let body: string;
+    if (fields.scaffold) {
+      // Dispatch to scaffold renderers
+      if (kind === "review-result") {
+        body = renderReviewResultScaffold(fields);
+      } else if (kind === "validation-result") {
+        body = renderValidationResultScaffold(fields);
+      } else {
+        // For other kinds, use the normal renderer (scaffold not supported)
+        body = config.render(fields);
+      }
+    } else {
+      body = config.render(fields);
+    }
+
     if (kind === "handoff" && fields.repoContext) {
       body += await buildRepoLayoutBlock(repoPath);
     }
