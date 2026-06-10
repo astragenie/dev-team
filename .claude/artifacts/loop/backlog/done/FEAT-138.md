@@ -1,15 +1,15 @@
 ---
 id: FEAT-138
-title: "Fix CI red on main — contracts TS regen drift"
-status: triaged
+title: Fix CI red on main — contracts TS regen drift
+status: done
 priority: P1
 category: ci/maintenance
 target_release: null
 created: 2026-06-09
-updated: 2026-06-09
+updated: 2026-06-10
 triaged_at: 2026-06-09
 depends_on: []
-slices: []
+slices: [SLICE-63]
 derived_from: null
 autonomous_safe: true
 pm_customer_impact: 0.9
@@ -18,6 +18,9 @@ pm_strategic_alignment: 0.8
 pm_technical_risk: 0.2
 pm_dependency_depth: 0.1
 triage_notes: "P1 CI fix — autonomous_safe: true. Concrete repair: regen valid-feat-contracts.ts, fix negative-fixture drift handling in validate-contracts.ts, add one locking test, CI green. No design decisions required."
+started_at: 2026-06-10
+slices_complete: [SLICE-63]
+completed_at: 2026-06-10
 ---
 # FEAT-138: Fix CI red on main — contracts TS regen drift
 

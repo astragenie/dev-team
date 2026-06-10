@@ -68,3 +68,26 @@ test("validateContracts fails redocly lint on broken YAML", async () => {
     "expected a redocly error: " + JSON.stringify(result.errors)
   );
 });
+
+// Locks FEAT-138: the CI loop runs the negative fixture with checkDrift:true
+// (checkDrift: !writeTs). A spec that fails redocly lint must NOT also produce
+// a "drift: committed TS missing" error — that conflates "intentionally broken"
+// with "needs regen". The fixture fails for lint reasons only.
+test("validateContracts skips the drift check when redocly lint fails", async () => {
+  const result = await validateContracts({
+    yamlPath: path.join(FIXTURE_DIR, "broken-missing-examples.openapi.yaml"),
+    tsOutPath: path.join(FIXTURE_DIR, "broken-missing-examples-contracts.ts"),
+    writeTs: false,
+    runLint: true,
+    checkDrift: true
+  });
+  assert.equal(result.ok, false, "broken fixture must still fail");
+  assert.ok(
+    result.errors.some((e) => /redocly|operationId/i.test(e)),
+    "expected the lint failure: " + JSON.stringify(result.errors)
+  );
+  assert.ok(
+    !result.errors.some((e) => /drift/i.test(e)),
+    "drift check must be skipped when lint already failed: " + JSON.stringify(result.errors)
+  );
+});

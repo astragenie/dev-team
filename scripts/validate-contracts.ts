@@ -61,7 +61,11 @@ export async function validateContracts(opts: {
   } catch (err) {
     errors.push(`Failed to generate TS from YAML: ${(err as Error).message}`);
   }
-  if (opts.checkDrift && regeneratedTs) {
+  // Drift only matters for an otherwise-valid spec. If lint failed (or the
+  // spec is not 3.1, or TS generation failed) the committed-TS comparison is
+  // meaningless noise — a negative fixture would fail for "drift" reasons on
+  // top of its intended lint failure. Skip drift unless the spec is clean.
+  if (opts.checkDrift && regeneratedTs && errors.length === 0) {
     let committedTs = "";
     let readOk = false;
     try {
