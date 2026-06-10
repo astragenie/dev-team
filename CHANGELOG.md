@@ -3,6 +3,28 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.30.4 — 2026-06-10 — hook-core extraction + builder scoped self-verify
+
+### Changed
+
+- **FEAT-146 — Hook-core extraction (in-process testable hooks).** The 4
+  per-tool hooks (`check-redundant-read`, `check-subagent-return`,
+  `record-read-content`, `preflight-shell`) now expose their flow as a core
+  `run<Name>Hook(raw, env) -> Promise<string|null>` in `hooks/lib/<name>.ts`;
+  entry files are thin shims with byte-identical stdout/exit. Spawn-based
+  tests (~120) converted to in-process core imports, leaving a few retained
+  spawn smokes per hook; `tests/hook-feature-gating.test.ts` stays fully
+  spawn-based as the runtime-contract proof. Removed a mid-flow
+  `process.exit(0)` from the record-read core (repo rule 6). Suite stays
+  611 pass / 0 fail.
+- **FEAT-148 — Builder self-verify scoped to touched files.** `builder.md`,
+  `builder-fe.md`, `builder-be.md` self-verify gates now run a **scoped lint**
+  on changed/added paths only (Node `bun run lint`, C# `dotnet format`,
+  Python `ruff`) and make the touched set explicit and shared:
+  `git diff --name-only <slice-base>` (staged+unstaged). `typecheck` stays
+  whole-project (tsc not cheaply scopable). Whole-repo lint/format + full
+  suite remain the validator's final gate (DEC-014 unchanged).
+
 ## v0.30.3 — 2026-06-10 — bun swap completed in skills + stack config
 
 ### Fixed
