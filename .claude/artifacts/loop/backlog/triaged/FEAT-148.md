@@ -1,6 +1,6 @@
 ---
 id: FEAT-148
-status: pending
+status: triaged
 priority: P1
 category: workflow
 target_release: null
@@ -9,6 +9,14 @@ updated: 2026-06-10
 depends_on: []
 slices: []
 derived_from: null
+pm_customer_impact: 0.65
+pm_effort_estimate: 0.35
+pm_strategic_alignment: 0.75
+pm_technical_risk: 0.35
+pm_dependency_depth: 0
+composite_score: 0.6975
+autonomous_safe: false
+triage_notes: "High strategic alignment (loop efficiency, direct ask); low risk (agent-prompt scope, validator gate unchanged); low effort (single gate section). autonomous_safe=false per governance (agent-prompt edit = human review)."
 ---
 # FEAT-148: Builder self-verify scoped to touched files via bun (not whole suite)
 
