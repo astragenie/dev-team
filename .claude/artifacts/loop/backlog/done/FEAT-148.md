@@ -1,6 +1,6 @@
 ---
 id: FEAT-148
-status: triaged
+status: done
 priority: P1
 category: workflow
 target_release: null
