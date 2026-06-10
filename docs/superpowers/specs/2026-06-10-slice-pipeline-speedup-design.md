@@ -12,7 +12,7 @@ The full crew/loop workflow per slice is too slow, especially for plugin repos. 
 ## Goals & success criteria
 
 1. Slice wall-clock ~43 min → **≤25 min (-40%)**, verified via cost-report telemetry (`durationMin`, `messages`, `subagentDispatches`) over 3 consecutive slices after full rollout.
-2. Full quality-gate tooling: 116s → **<30s**.
+2. Full quality-gate tooling: 116s → **<30s** (achieved at 21.1s by WS1 alone; WS3 resolved no-go per ADR-002).
 3. Quality floor: review + validation gates remain mandatory; no grade dimension drops more than 0.05 from the recent baseline (architecture_quality 0.76, reliability 0.78, observability 0.756, production_readiness 0.784, security 0.77, test_confidence 0.76, product_completeness 0.81).
 
 ## Non-goals
@@ -98,6 +98,8 @@ Lead classifies each slice at start: `tier: full | light` via deterministic rule
 - Then: the final state reflects both results correctly (no lost updates; last-write-wins per field is acceptable if documented, or a per-gate field lock is used)
 
 ## WS3 — Bun runtime swap (gated by spike)
+
+**Resolved 2026-06-10 — NO-GO (ADR-002).** Spike on Bun 1.3.14/Windows: criterion 1 red (402/611 tests discovered, 23 fail, 33.9s vs 21.1s on node — slower); criteria 2–4 green. WS1 had already eliminated the overhead WS3 targeted, so both the swap and the hybrid fallback are rejected; Node stays the only runtime. Revisit per ADR-002 conditions (full node:test compat on Windows AND a measured ≥30% suite win). See docs/architecture/decisions/ADR-002-bun-runtime-no-go.md.
 
 Compat spike timeboxed to one slice; ALL exit criteria must be green **on Windows**:
 
