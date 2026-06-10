@@ -42,16 +42,10 @@ test("orchestrate-slice command references all required specialist agents", asyn
   }
 });
 
-test("agents/architect.md contains ## Contract artifact schema section", async () => {
-  const text = await fs.readFile(ARCHITECT_PATH, "utf8");
-  assert.match(
-    text,
-    /^## Contract artifact schema/m,
-    "architect.md must have ## Contract artifact schema section"
-  );
-});
-
-test("architect contract artifact schema lists the three-file OpenAPI shape", async () => {
+test("architect.md documents the three-file OpenAPI contract shape", async () => {
+  // The dedicated `## Contract artifact schema` section was folded into the
+  // Output contract section in commit bc96c8f; the three filenames stay
+  // load-bearing for downstream consumers (builder-fe / builder-be).
   const text = await fs.readFile(ARCHITECT_PATH, "utf8");
   const required = [
     "<FEAT-ID>-contracts.openapi.yaml",
@@ -59,11 +53,11 @@ test("architect contract artifact schema lists the three-file OpenAPI shape", as
     "<FEAT-ID>-contracts.ts"
   ];
   for (const section of required) {
-    assert.ok(text.includes(section), `architect.md contract schema must mention "${section}"`);
+    assert.ok(text.includes(section), `architect.md must mention "${section}"`);
   }
 });
 
-test("architect contract artifact schema mentions the validate-contracts regeneration step", async () => {
+test("architect.md mentions the validate-contracts regeneration step", async () => {
   const text = await fs.readFile(ARCHITECT_PATH, "utf8");
   assert.match(
     text,

@@ -3,6 +3,50 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.31.1 — 2026-06-10 — repair stale content-snapshot tests + validator hardening
+
+### Added
+
+- **Validator orchestrator hardening** (commit cfe26e7 + validation
+  modes extension): `disallowedTools: NotebookEdit` added to frontmatter;
+  Golden Path 5-step framing (Frame → mandatory final gate → scenarios →
+  evidence → decide); SLA cap (max 2 re-runs of the same scenario before
+  escalating); env guard on every bash block; `jq` dependency dropped
+  from stub artifact emission; `validation-result` is now the sole
+  completion artifact (separate `write-handoff` call removed). New
+  `## Validation modes` table (Final readiness vs Scenario verification)
+  — both modes end at the same bar (full gate green + ACs covered before
+  PASS) but differ in ordering for cost. Environment-blocked path made
+  explicit: `passed` is never permitted when a gate or AC was skipped.
+
+### Fixed
+
+- **6 content-snapshot tests went stale across the unreleased agent
+  refactors** (commits `c34523a`, `f81637e`, `f3aadb5`, `0a8acb4`,
+  `cfe26e7`, plus this session's self-verify-gate skill extraction). CI
+  was red on `v0.31.0` despite local validators + the typecheck / lint
+  / format suite passing. Tests updated to track content's new
+  canonical home:
+  - `agent-prompt-content.test.ts`: builder self-verify assertions
+    (`Affected-class tests only`, `Deferred to validator`) moved from
+    `agents/builder.md` → `skills/workflow/self-verify-gate/SKILL.md`.
+  - `agent-prompt-content.test.ts`: `lead.md contains write-handoff
+    instruction` replaced with `references the handoff artifact in the
+    workflow` — lead is orchestrator-only per the Golden Path refactor
+    (commit f3aadb5) and no longer calls `write-handoff` directly.
+  - `builder-be-prompt.test.ts`: per-stack BE test runner assertion
+    moved to `skills/workflow/self-verify-gate/SKILL.md` along with
+    the procedure itself.
+  - `orchestrate-slice.test.ts`: `## Contract artifact schema section`
+    section assertion dropped — the section was folded into the
+    architect's `Output contract` per commit `bc96c8f`. Three-file
+    OpenAPI shape assertion retained as a standalone test.
+  - `validate-agents.test.ts`: line-cap test updated 500 → 350 to
+    match the new `MAX_LINES = 350` default in
+    `scripts/validate-agents.ts`.
+
+No agent prompt or skill content change — tests only.
+
 ## v0.31.0 — 2026-06-10 — orchestrator hardening + production-ready builders + shared self-verify skill
 
 ### Added

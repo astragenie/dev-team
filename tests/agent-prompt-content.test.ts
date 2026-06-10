@@ -38,17 +38,29 @@ test("builder.md references mark-badge", () => {
   assert.ok(builder.includes("mark-badge"), "builder.md missing mark-badge");
 });
 
-test("builder.md self-verify is scoped to affected-class tests", () => {
+test("builder.md references the shared self-verify-gate skill", () => {
   assert.ok(
-    builder.includes("Affected-class tests only"),
-    "builder.md missing scoped affected-class test gate"
+    builder.includes("skills/workflow/self-verify-gate"),
+    "builder.md must reference the shared self-verify procedure skill"
   );
 });
 
-test("builder.md defers the full suite to the validator", () => {
+const selfVerifySkill = readFileSync(
+  resolve(ROOT, "skills", "workflow", "self-verify-gate", "SKILL.md"),
+  "utf8"
+);
+
+test("self-verify-gate skill is scoped to affected-class tests", () => {
   assert.ok(
-    builder.includes("Deferred to validator"),
-    "builder.md missing Deferred to validator handoff line"
+    selfVerifySkill.includes("Affected-class tests only"),
+    "self-verify-gate skill missing scoped affected-class test gate"
+  );
+});
+
+test("self-verify-gate skill defers the full suite to the validator", () => {
+  assert.ok(
+    selfVerifySkill.includes("Deferred to validator"),
+    "self-verify-gate skill missing Deferred to validator handoff line"
   );
 });
 
@@ -152,8 +164,11 @@ test("lead.md contains mark-badge instruction", () => {
   assert.ok(lead.includes("mark-badge"), "lead.md missing mark-badge");
 });
 
-test("lead.md contains write-handoff instruction", () => {
-  assert.ok(lead.includes("write-handoff"), "lead.md missing write-handoff");
+test("lead.md references the handoff artifact in the workflow", () => {
+  // Lead is orchestrator-only and does not call write-handoff directly anymore
+  // (see commit f3aadb5 — Golden Path makes lead a dispatcher). The handoff
+  // remains a first-class artifact lead reads and routes from.
+  assert.ok(lead.includes("handoff"), "lead.md missing handoff reference");
 });
 
 test("lead.md contains final-synthesis instruction", () => {

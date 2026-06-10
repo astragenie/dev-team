@@ -134,7 +134,7 @@ x
   assert.ok(result.errors.some((e) => /missing identity intro/.test(e)));
 });
 
-test("fails when file exceeds the default 500-line cap", async () => {
+test("fails when file exceeds the default 350-line cap", async () => {
   const padded =
     `---
 name: builder
@@ -146,12 +146,12 @@ You are the builder.
 
 ## Report contract
 
-` + "x\n".repeat(501);
+` + "x\n".repeat(351);
   const root = await makeAgentsDir({ "builder.md": padded });
   const result = await validateAgents(root);
   assert.equal(result.ok, false);
   assert.ok(
-    result.errors.some((e) => /exceeds the 500-line agent prompt cap/.test(e)),
+    result.errors.some((e) => /exceeds the 350-line agent prompt cap/.test(e)),
     `expected line-cap error, got: ${result.errors.join("; ")}`
   );
 });
