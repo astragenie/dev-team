@@ -117,10 +117,11 @@ Your start acknowledgement must include:
 
 ## Self-verify gate (scoped — fast inner loop)
 
-Before writing the handoff, run these in order. Each must exit 0. SCOPED for speed: the full test suite and whole-repo lint/format now run ONCE at the end in the validator's mandatory final gate — not here.
+Before writing the handoff, run these in order. Each must exit 0. SCOPED for speed: the full test suite and whole-repo lint/format run ONCE at the end in the validator's mandatory final gate — here you run only the SCOPED equivalents on the paths in your diff. Derive the touched set ONCE: `git diff --name-only <slice-base>` (staged + unstaged), and scope lint + tests to it.
 
 - Per-stack codegen regenerates clean (no diff against committed generated output)
-- Typecheck only (where stack supports — `dotnet build`, `mypy`) — skip whole-repo lint/format here
+- Typecheck only (where stack supports — `dotnet build`, `mypy`)
+- **Lint — changed paths only** (not whole-repo; that stays at the validator gate). Scope to the touched set per stack: Node → `bun run lint -- <changed files>`; C# → `dotnet format --include <changed files> --verify-no-changes`; Python → `ruff check <changed files>`.
 - **Affected-class tests only** — do NOT run the full suite:
   - C# → `dotnet test --filter "FullyQualifiedName~<changed namespace or class>"` on the affected test project(s)
   - Node → `vitest related <changed files>`

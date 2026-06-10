@@ -114,10 +114,11 @@ Your start acknowledgement must include:
 
 ## Self-verify gate (scoped — fast inner loop)
 
-Before writing the handoff, run these in order. Each must exit 0. SCOPED for speed: the full FE suite and whole-repo lint/format now run ONCE at the end in the validator's mandatory final gate — not here.
+Before writing the handoff, run these in order. Each must exit 0. SCOPED for speed: the full FE suite and whole-repo lint/format run ONCE at the end in the validator's mandatory final gate — here you run only the SCOPED equivalents on the paths in your diff. Derive the touched set ONCE: `git diff --name-only <slice-base>` (staged + unstaged), and scope lint + tests to it.
 
 - Orval + openapi-msw regenerate clean (no diff in `src/api/`, `src/mocks/` against committed output)
-- `bun run typecheck`
+- `bun run typecheck` — whole-project (tsc not cheaply scopable), keep it
+- **Lint — changed paths only** — `bun run lint -- <touched/added files>` (ESLint on just your diff, not the whole FE tree). Whole-repo `lint` + `format:check` stay at the validator's final gate.
 - **Affected-class tests only** — do NOT run the full FE suite: `vitest related <changed files>` (runs every test that imports a changed file, so dependents are covered)
 - a11y check on changed components when `concern:accessibility` tagged (axe-core via Vitest or `@axe-core/playwright`)
 

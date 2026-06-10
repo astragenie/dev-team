@@ -190,10 +190,13 @@ line: `Bundle: <path>`.
 
 ## Self-verify gate (scoped — fast inner loop)
 
-Before writing the handoff, run these gates in order. Each must exit 0. This gate is intentionally SCOPED for speed: the whole-repo lint, format check, and complete test suite now run ONCE at the end in the validator's mandatory final gate — not here, and not in every builder.
+Before writing the handoff, run these gates in order. Each must exit 0. This gate is intentionally SCOPED for speed: the validator's mandatory final gate runs the whole-repo lint, format check, and complete test suite ONCE at the end — here you run only the SCOPED equivalents on the paths in your diff, never the whole tree.
 
-- `bun run typecheck` — cross-file type safety; not cheaply scopable, keep it
-- **Affected-class tests only** — do NOT run the full suite. Derive changed source files from `git diff --name-only` (vs the slice base), then run only their colocated sibling tests:
+**Touched set** — derive ONCE and reuse for every scoped gate below: `git diff --name-only <slice-base>` (staged + unstaged). Scope tests and lint to this set; do not widen it.
+
+- `bun run typecheck` — cross-file type safety; this is the ONE gate not cheaply scopable (tsc is whole-project), so run it in full and keep it.
+- **Lint — changed paths only** — `bun run lint -- <touched/added files from the touched set>` (ESLint on just your diff, not the whole tree). Whole-repo `lint` + `format:check` stay at the validator's final gate.
+- **Affected-class tests only** — do NOT run the full suite. Using the touched set above, run only the colocated sibling tests of changed source files:
   - bun test (this repo) → `bun test --parallel <colocated *.test.ts for each changed source file>` (the `--parallel` worker mode is required for full `node:test` subtest compat — see ADR-002 amendment)
   - Vitest → `vitest related <changed files>` (also covers tests that import a changed file)
   - Jest → `jest --findRelatedTests <changed files>`

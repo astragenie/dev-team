@@ -87,10 +87,7 @@ test("smoke: AC-6b — hook runs with no env var set (truly unset)", async () =>
   const cleanEnv = Object.fromEntries(
     Object.entries(process.env).filter(([k]) => k !== "CREW_TOOL_PREFLIGHT")
   );
-  const result = await runHookSpawn(
-    makeStdin("Bash", "echo $env:HOME", process.cwd()),
-    cleanEnv
-  );
+  const result = await runHookSpawn(makeStdin("Bash", "echo $env:HOME", process.cwd()), cleanEnv);
   assert.equal(result.exitCode, 0);
   // Hook should run and warn
   assert.notEqual(result.stdout, "");
