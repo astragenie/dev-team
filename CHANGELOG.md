@@ -3,6 +3,36 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## v0.27.0 — 2026-06-10 — loop↔crew state contract: single-tree migration
+
+### Changed
+
+- **Single authoritative loop-state tree.** Consumes loop v0.36.0's state
+  contract. The backlog tree migrated from `docs/backlog/` into
+  `.claude/artifacts/loop/backlog/` via `loop doctor --fix` (no FEATs left in
+  the legacy tree), and the `docs/ai-loop/` tree (slices, `00-entry`,
+  `01-loop-control`, backlog control docs) collapsed into the default
+  `.claude/artifacts/loop/ai-loop/`. The `backlogRoot`, `backlogPath`,
+  `slicesRoot`, and `aiLoopRoot` path overrides were removed from
+  `.claude/loop.json` — loop defaults now apply. `CLAUDE.md` loop-start refs
+  repointed to the new locations.
+
+### Added
+
+- **`scripts/validate-loop-state.ts`** — CI hard gate enforcing a single
+  populated backlog tree with unique FEAT ids (a thin local sibling of
+  `loop doctor --check`, since CI runners have no plugin cache). Wired into
+  `.github/workflows/test.yml`.
+
+### Fixed
+
+- **`validate-contracts`** no longer runs the drift-check when lint fails,
+  unbreaking negative-fixture CI (FEAT-138).
+
+### Closed
+
+- FEAT-144 (reconcile dual backlog trees), plus FEAT-120/029/127/128/138.
+
 ## v0.26.0 — 2026-06-10 — researcher quality wave + green CI baseline
 
 ### Added
