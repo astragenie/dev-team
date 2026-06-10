@@ -46,7 +46,7 @@ export {
   SYNTHETIC_MODEL_PREFIXES
 } from "./session-cost-scanner/compute.ts";
 
-function getProjectsRoot(): string {
+export function getProjectsRoot(): string {
   const override = process.env.CREW_PROJECTS_ROOT;
   return override ? path.resolve(override) : path.join(os.homedir(), ".claude", "projects");
 }

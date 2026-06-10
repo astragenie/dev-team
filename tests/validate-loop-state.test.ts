@@ -62,17 +62,11 @@ test("detects collision between suffixed ids in two trees", async () => {
     // FEAT-123a in pending
     const pendingDir = path.join(repo, ".claude/artifacts/loop/backlog/pending");
     await fs.mkdir(pendingDir, { recursive: true });
-    await fs.writeFile(
-      path.join(pendingDir, "FEAT-123a.md"),
-      "---\nid: FEAT-123a\n---\n"
-    );
+    await fs.writeFile(path.join(pendingDir, "FEAT-123a.md"), "---\nid: FEAT-123a\n---\n");
     // FEAT-123a again in done (collision)
     const doneDir = path.join(repo, ".claude/artifacts/loop/backlog/done");
     await fs.mkdir(doneDir, { recursive: true });
-    await fs.writeFile(
-      path.join(doneDir, "FEAT-123a.md"),
-      "---\nid: FEAT-123a\n---\n"
-    );
+    await fs.writeFile(path.join(doneDir, "FEAT-123a.md"), "---\nid: FEAT-123a\n---\n");
     const errors = await checkLoopState(repo);
     assert.ok(
       errors.some((e) => e.includes("FEAT-123a")),

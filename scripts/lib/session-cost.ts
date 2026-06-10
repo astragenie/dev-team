@@ -1,13 +1,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import os from "node:os";
-import { scanSessions, percentile, readJsonlLines } from "./session-cost-scanner.ts";
+import {
+  scanSessions,
+  percentile,
+  readJsonlLines,
+  getProjectsRoot
+} from "./session-cost-scanner.ts";
 import { getCachedDirFiles } from "./dir-cache.mjs";
-
-function getProjectsRoot(): string {
-  const override = process.env.CREW_PROJECTS_ROOT;
-  return override ? path.resolve(override) : path.join(os.homedir(), ".claude", "projects");
-}
 
 export function slugifyRepoPath(repoPath: string): string {
   return repoPath.replace(/[^A-Za-z0-9]/g, "-");
@@ -103,7 +102,11 @@ export async function autoDetectSourceProject({
   const slugs = await listProjectDirEntries();
   let best: { slug: string; count: number } | null = null;
   for (const slug of slugs) {
-    const count = await countInWindowAssistantTurns(path.join(getProjectsRoot(), slug), startMs, endMs);
+    const count = await countInWindowAssistantTurns(
+      path.join(getProjectsRoot(), slug),
+      startMs,
+      endMs
+    );
     if (count > 0 && (best == null || count > best.count)) {
       best = { slug, count };
     }

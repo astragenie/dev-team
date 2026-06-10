@@ -64,12 +64,7 @@ test("listActiveProjectDirs respects CREW_PROJECTS_ROOT environment variable", a
     const startWindow = new Date(now.getTime() - 60_000); // 1 min ago
     const endWindow = new Date(now.getTime() + 60_000); // 1 min future
 
-    await createFixtureProject(
-      fixtureRoot,
-      "test-project-1",
-      "session-1",
-      now.toISOString()
-    );
+    await createFixtureProject(fixtureRoot, "test-project-1", "session-1", now.toISOString());
 
     // Query for projects with in-window activity
     const active = await listActiveProjectDirs({
