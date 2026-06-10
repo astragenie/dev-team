@@ -1,0 +1,2 @@
+{"type":"slice_start","sliceId":"SLICE-65","timestamp":"2026-06-10T16:04:38.228Z","featureId":"FEAT-137","title":"SLICE-65: Should crew:parallel-runner be a FEAT-ceremony specialist?","planPath":"C:\\work\\mega\\hero-crew\\.claude\\artifacts\\loop\\plans\\20260610T160438Z-plan-SLICE-65.md","requiresApprovalGate":false}
+{"type":"slice_complete","sliceId":"SLICE-65","timestamp":"2026-06-10T16:20:01.626Z","featureId":"FEAT-137","featureMovedTo":"C:\\work\\mega\\hero-crew\\.claude\\artifacts\\loop\\backlog\\done\\FEAT-137.md","validationSatisfied":true}

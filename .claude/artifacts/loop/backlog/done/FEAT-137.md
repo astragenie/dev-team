@@ -2,7 +2,7 @@
 id: FEAT-137
 title: "Design: decide whether crew:parallel-runner belongs in the guard-feat-dispatch allowlist"
 priority: P3
-status: triaged
+status: done
 category: design
 target_release: null
 autonomous_safe: true
@@ -18,18 +18,20 @@ pm_technical_feasibility: null
 pm_scope_risk: null
 pm_strategic_alignment: 0.5
 pm_composite: null
-updated: 2026-06-09
+updated: 2026-06-10
 created: 2026-06-09
 triaged_at: 2026-06-09
 triage_notes: "autonomous_safe: true — AC fully specified (ADR + decision criteria + implementation), loop can write the ADR and implement the chosen path without human governance input; the trust model question is answerable from code evidence alone"
-slices: []
+slices: [SLICE-65]
 depends_on: []
 github_issue: null
 github_milestone: null
 github_url: null
 pm_legacy_demand_signal: null
+started_at: 2026-06-10
+slices_complete: [SLICE-65]
+completed_at: 2026-06-10
 ---
-
 # FEAT-137: Should crew:parallel-runner be a FEAT-ceremony specialist?
 
 ## Problem
