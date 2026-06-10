@@ -1,6 +1,8 @@
 ---
-description: Run multiple autonomous-safe triaged features in parallel git worktrees.
-  One agent per feature; auto-merges clean branches to main.
+description: Run multiple autonomous-safe triaged features in parallel git worktrees
+  using `crew:lead` per-worktree dispatch (Path A, FEAT-136). Resolves loop CLI,
+  spawns worktrees, dispatches N `crew:lead` agents in one parallel block (each runs
+  the slice ceremony), then merges DONE branches to main.
 ---
 
 # Parallel Feature Execution
@@ -29,8 +31,15 @@ Workflow:
 4. Display the plan list (featureId, priority, builderPrompt preview).
 5. Calculate projected cost: N × ~$40 at current opus rates. Show before proceeding.
 6. If `--dry-run` is set, stop here and report the plan.
-7. Delegate all remaining orchestration to `agents/parallel-runner.md`:
-   pass the plan array, the resolved loop CLI path, and `--max-features N`.
+7. **Dispatch `crew:lead` agents in parallel, one per worktree:**
+   - Call `node <loop-cli> dispatch prepare --plan <plan-json> --parent-branch main --repo "$PWD" --json`
+     to spawn worktrees and emit the Agent batch.
+   - In one message, invoke **N parallel Agent calls** with `subagent_type: crew:lead`, each with the
+     per-worktree slice ceremony prompt embedded (see below).
+   - Each `crew:lead` executes: `slice start` → dispatch `crew:builder` → wait for PASS → dispatch `crew:reviewer`
+     → wait for PASS → `slice complete` → `slice grade` → return result marker.
+   - After all agents return, call `node <loop-cli> dispatch finalize --run-id <runId> --plan <plan-json> --repo "$PWD"`
+     to merge DONE children to main and aggregate results.
 
 Deliverable:
 

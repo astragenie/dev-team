@@ -4,7 +4,12 @@ description: Orchestrates parallel feature execution across isolated git worktre
   Reads triaged plans via the loop CLI, calls `loop dispatch prepare` to spawn
   worktrees + build the Agent batch, invokes Agent calls in parallel, then calls
   `loop dispatch finalize` to merge DONE children to main in priority order.
-  Requires loop plugin >= v0.32.0 (FEAT-020 SLICE-1).
+  Requires loop plugin >= v0.32.0 (FEAT-020 SLICE-1). **Scope note (FEAT-136/FEAT-137):**
+  This agent is reserved for non-FEAT parallel orchestration (e.g. parallel-running
+  non-autonomous-safe tasks, running non-loop code orchestration jobs). For FEAT-ceremony
+  parallel work, use `/crew:parallel` skill (Path A: dispatches `crew:lead` per worktree
+  directly, not via this agent). The `guard-feat-dispatch` hook blocks this agent on
+  FEAT work by design.
 model: opus
 effort: high
 maxTurns: 50
