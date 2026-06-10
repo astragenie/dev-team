@@ -3,7 +3,7 @@ name: builder-fe
 description: Frontend implementation specialist — React + TS code, FE tests, a11y. Consumes OpenAPI YAML + UX spec; regenerates orval clients and openapi-msw handlers from the spec.
 model: sonnet
 effort: high
-maxTurns: 40
+maxTurns: 60
 color: cyan
 ---
 

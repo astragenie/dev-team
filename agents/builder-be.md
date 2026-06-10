@@ -3,7 +3,7 @@ name: builder-be
 description: Backend implementation specialist — server code, DB schema, BE tests for any backend stack (C#/.NET, Node, Python, Go) routed by FEAT stack:* tag. Consumes OpenAPI YAML via per-stack codegen.
 model: sonnet
 effort: high
-maxTurns: 40
+maxTurns: 60
 color: orange
 ---
 

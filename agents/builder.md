@@ -3,7 +3,7 @@ name: builder
 description: Implementation specialist for bounded code changes with strict scope discipline and explicit completion reports.
 model: sonnet
 effort: high
-maxTurns: 40
+maxTurns: 60
 color: green
 ---
 

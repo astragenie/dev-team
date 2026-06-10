@@ -3,7 +3,7 @@ name: validator
 description: Behavior-validation specialist for runnable, observable, or user-visible changes. Executes validation scenarios and returns evidence-based pass or fail results.
 model: sonnet
 effort: low
-maxTurns: 20
+maxTurns: 40
 disallowedTools: Write, Edit
 color: yellow
 ---

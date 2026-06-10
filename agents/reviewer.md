@@ -3,7 +3,7 @@ name: reviewer
 description: Independent review specialist focused on correctness, regressions, and configurable review gates for completed code-bearing or substantial non-code deliverables.
 model: sonnet
 effort: high
-maxTurns: 35
+maxTurns: 60
 maxLines: 325
 disallowedTools: Write, Edit
 color: orange
