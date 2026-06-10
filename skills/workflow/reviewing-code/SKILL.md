@@ -70,7 +70,7 @@ Advanced tooling for review reporting.
 
 ## Development Workflow
 
-1. **Setup:** `npm install` or `pip install -r requirements.txt`; copy `.env.example .env`
+1. **Setup:** `bun install` or `pip install -r requirements.txt`; copy `.env.example .env`
 2. **Run checks:** `python scripts/code_quality_checker.py .`
 3. **Apply practices** from `references/code_review_checklist.md`, `references/coding_standards.md`, `references/common_antipatterns.md`
 
@@ -82,7 +82,7 @@ python scripts/code_quality_checker.py .
 python scripts/review_report_generator.py --analyze
 
 # Development
-npm run dev && npm run build && npm run test && npm run lint
+bun run dev && bun run build && bun test --parallel && bun run lint
 ```
 
 ## Troubleshooting

@@ -105,7 +105,7 @@ async function bestEffort(fn) {
 
 Prettier: `"semi": true`, `"singleQuote": false`, `"trailingComma": "none"`, `"printWidth": 100`, `"tabWidth": 2`, `"arrowParens": "always"`.
 
-CI gate: `npm run lint && npm run format:check && npm test` on every push.
+CI gate: `bun run lint && bun run format:check && bun test --parallel` on every push.
 
 ## Tests
 
@@ -128,7 +128,7 @@ CI gate: `npm run lint && npm run format:check && npm test` on every push.
 
 - No CommonJS in new modules.
 - No `if/else if` chains > 3 string cases — replaced by table.
-- `npm run lint` clean.
-- `npm run format:check` clean.
+- `bun run lint` clean.
+- `bun run format:check` clean.
 - Every new public function has a test.
 - No magic numbers — named constants used.

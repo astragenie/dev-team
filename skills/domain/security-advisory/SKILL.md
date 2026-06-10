@@ -65,7 +65,7 @@ Advanced tooling for penetration testing. Features: expert-level automation, cus
 
 ## Development Workflow
 
-1. **Setup:** `npm install` or `pip install -r requirements.txt`; copy `.env.example .env`
+1. **Setup:** `bun install` or `pip install -r requirements.txt`; copy `.env.example .env`
 2. **Run analysis:** `python scripts/security_auditor.py .`
 3. **Apply practices** from `references/security_architecture_patterns.md`, `references/penetration_testing_guide.md`, `references/cryptography_implementation.md`
 
@@ -99,10 +99,10 @@ Advanced tooling for penetration testing. Features: expert-level automation, cus
 
 ```bash
 # Development
-npm run dev
-npm run build
-npm run test
-npm run lint
+bun run dev
+bun run build
+bun test --parallel
+bun run lint
 
 # Analysis
 python scripts/security_auditor.py .

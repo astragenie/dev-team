@@ -65,7 +65,7 @@ Advanced tooling for code quality. Features: expert-level automation, custom con
 
 ## Development Workflow
 
-1. **Setup:** `npm install` or `pip install -r requirements.txt`; copy `.env.example .env`
+1. **Setup:** `bun install` or `pip install -r requirements.txt`; copy `.env.example .env`
 2. **Run analysis:** `python scripts/project_scaffolder.py .`
 3. **Apply practices** from `references/tech_stack_guide.md`, `references/architecture_patterns.md`, `references/development_workflows.md`
 
@@ -99,10 +99,10 @@ Advanced tooling for code quality. Features: expert-level automation, custom con
 
 ```bash
 # Development
-npm run dev
-npm run build
-npm run test
-npm run lint
+bun run dev
+bun run build
+bun test --parallel
+bun run lint
 
 # Analysis
 python scripts/project_scaffolder.py .

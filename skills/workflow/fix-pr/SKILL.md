@@ -64,7 +64,7 @@ Group fixes by file + concern. Make focused commits per group — see [commit sk
 For each fix:
 
 1. Make the change.
-2. Re-run the relevant test (`npm test` for full; targeted file for fast feedback).
+2. Re-run the relevant test (`bun test --parallel` for full; targeted file for fast feedback).
 3. Commit with a message referencing the comment if non-obvious (`fix: address reviewer note on ...`).
 
 ### 5. Reply on every thread
@@ -99,7 +99,7 @@ gh pr edit --add-reviewer <username>  # re-request review
 
 ## Repo specifics
 
-- CI gate (`.github/workflows/test.yml`) must be green before re-request. Eight gates: `validate-manifests`, `validate-skills`, `lint`, `format:check`, `typecheck`, `node --test`, `e2e-smoke`, `npm ci`.
+- CI gate (`.github/workflows/test.yml`) must be green before re-request. Eight gates: `validate-manifests`, `validate-skills`, `lint`, `format:check`, `typecheck`, `bun test --parallel`, `e2e-smoke`, `npm ci`.
 - Pair with the [commit skill](../commit/SKILL.md) for per-fix commit messages.
 - For substantial scope changes flagged by the reviewer, escalate via `/crew:request-approval` rather than absorbing silently.
 

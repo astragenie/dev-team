@@ -65,7 +65,7 @@ Advanced tooling for load and performance testing. Features: expert-level automa
 
 ## Development Workflow
 
-1. **Setup:** `npm install` or `pip install -r requirements.txt`; copy `.env.example .env`
+1. **Setup:** `bun install` or `pip install -r requirements.txt`; copy `.env.example .env`
 2. **Run analysis:** `python scripts/database_migration_tool.py .`
 3. **Apply practices** from `references/api_design_patterns.md`, `references/database_optimization_guide.md`, `references/backend_security_practices.md`
 
@@ -99,10 +99,10 @@ Advanced tooling for load and performance testing. Features: expert-level automa
 
 ```bash
 # Development
-npm run dev
-npm run build
-npm run test
-npm run lint
+bun run dev
+bun run build
+bun test --parallel
+bun run lint
 
 # Analysis
 python scripts/database_migration_tool.py .

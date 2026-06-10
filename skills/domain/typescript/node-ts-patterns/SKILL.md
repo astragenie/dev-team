@@ -132,7 +132,7 @@ describe('MyFeature', () => {
 });
 ```
 
-Run with `node --test`. Use Vitest for application code that needs mocking, snapshots, and coverage.
+Run with `bun test --parallel` (runs `node:test`-style tests; `--parallel` worker mode preserves full subtest compat — see ADR-002). `node --test` remains a fallback when Bun is unavailable. Use Vitest for application code that needs mocking, snapshots, and coverage.
 
 ## Context propagation with `AsyncLocalStorage`
 
