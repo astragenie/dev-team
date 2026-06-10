@@ -8,8 +8,6 @@
   "deployment": "none",
   "skills": ["typescript-pro", "frontend-advisory"],
   "loop": {
-    "aiLoopRoot": "docs/ai-loop",
-    "slicesRoot": "docs/ai-loop/slices",
     "phaseGateArtifactDir": ".claude/artifacts/crew/validations",
     "maxIterations": 25,
     "costStopThreshold": 10

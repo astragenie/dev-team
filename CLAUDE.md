@@ -225,7 +225,7 @@ This repo runs the Wiggin Loop autonomously. Full rules: `.claude/loop/rules.md`
 - **Phase gate.** When the last slice in a phase completes, run `/loop:phase-gate` before starting the next phase.
 - **Worktree parallelism.** Run parallel features in sibling git worktrees — each has its own `.claude/state/`. Cost attribution is auto-scoped per worktree. Use `crew fleet --repo "$PWD"` for a one-glance view. Never check out the same branch twice; never push from inside the loop.
 
-First action when starting the loop: read `.claude/loop/rules.md` → `docs/ai-loop/00-entry/MASTER_PROMPT.md` → `docs/ai-loop/backlog/approved-slices.md`.
+First action when starting the loop: read `.claude/loop/rules.md` → `.claude/artifacts/loop/ai-loop/00-entry/MASTER_PROMPT.md` → `.claude/artifacts/loop/ai-loop/backlog/approved-slices.md`.
 
 <!-- loop:end -->
 

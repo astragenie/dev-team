@@ -941,6 +941,12 @@ git tag -a v0.36.0 -m "v0.36.0"
 
 ### Task 8: Bump the loop pin
 
+> **OBSOLETE (2026-06-10).** This task assumed hero-crew's `marketplace.json`
+> carried a `loop` plugin entry to pin. It does not — loop now self-publishes
+> from its own marketplace, and hero-crew's `marketplace.json` only lists
+> `crew`. There is no loop pin in hero-crew to bump. Skip this task; the loop
+> version consumed is governed by the user's plugin install, not by hero-crew.
+
 **Files:**
 - Modify: `.claude-plugin/marketplace.json` → `plugins[name=loop].version` → `0.36.0`
 
@@ -955,6 +961,16 @@ git commit -m "chore(marketplace): bump loop to 0.36.0 — state contract + doct
 - [ ] **Step 2: Refresh the local plugin cache** (USER ACTION if the marketplace install is user-managed: re-install/update the loop plugin so `~/.claude/plugins/cache/loop/loop/0.36.0/` exists). Verify: `node "$HOME/.claude/plugins/cache/loop/loop/0.36.0/scripts/loop.mjs" status --repo "$PWD"` returns without error.
 
 ### Task 9: Single-tree migration
+
+> **Status (2026-06-10).** Backlog half DONE (commit `d0c49ca`): all FEATs live
+> under `.claude/artifacts/loop/backlog`, `backlogRoot`/`backlogPath` overrides
+> removed. The **slices / `docs/ai-loop` half was deferred** at first pass —
+> `aiLoopRoot` + `slicesRoot` overrides remained and the `docs/ai-loop` tree
+> (slices + `00-entry`/`01-loop-control`/`backlog` control docs) stayed in place.
+> **Decision (user, 2026-06-10): collapse it too.** The whole `docs/ai-loop`
+> tree migrates to the default `.claude/artifacts/loop/ai-loop`, both overrides
+> are removed, and `CLAUDE.md` loop-start refs are repointed. `loop doctor` only
+> repairs backlog trees, so the slices move is done by hand (`git mv`).
 
 **Files:**
 - Modify: `.claude/loop.json` (delete `loop.backlogRoot`, `loop.backlogPath`, `loop.slicesRoot`, `loop.aiLoopRoot` keys — defaults now apply; keep `phaseGateArtifactDir`, which intentionally points at crew validations)
