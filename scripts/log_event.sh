@@ -12,14 +12,20 @@ events_path="${log_dir}/events.jsonl"
 
 mkdir -p "$payload_dir"
 
+# Capture stdin synchronously so the caller's pipe is drained.
 if [ -t 0 ]; then
-  printf '{}\n' > "$payload_path"
+  stdin_payload='{}'
 else
-  cat > "$payload_path"
+  stdin_payload="$(cat)"
 fi
 
-printf '{"schemaVersion":"1.0","source":"crew","timestamp":"%s","event":"%s","repoPath":"%s","payloadPath":"%s"}\n' \
-  "$timestamp" \
-  "$event_name" \
-  "$project_dir" \
-  "$payload_path" >> "$events_path"
+# Async-fire the disk writes — foreground returns in <20ms.
+(
+  printf '%s\n' "$stdin_payload" > "$payload_path"
+  printf '{"schemaVersion":"1.0","source":"crew","timestamp":"%s","event":"%s","repoPath":"%s","payloadPath":"%s"}\n' \
+    "$timestamp" \
+    "$event_name" \
+    "$project_dir" \
+    "$payload_path" >> "$events_path"
+) &
+disown 2>/dev/null || true
