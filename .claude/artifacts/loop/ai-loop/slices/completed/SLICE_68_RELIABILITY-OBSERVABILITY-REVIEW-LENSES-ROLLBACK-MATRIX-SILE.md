@@ -1,7 +1,7 @@
 ---
 id: SLICE-68
-title: "FEAT-141 SLICE-A — rollback decision matrix + silent-failure review lens"
-status: pending
+title: FEAT-141 SLICE-A — rollback decision matrix + silent-failure review lens
+status: completed
 feature: FEAT-141
 phase: null
 priority: P2
@@ -9,6 +9,7 @@ target_release: null
 requires_validation: false
 created: 2026-06-11
 updated: 2026-06-11
+completed_at: 2026-06-11
 ---
 # SLICE-68: FEAT-141 SLICE-A — rollback decision matrix + silent-failure review lens
 
