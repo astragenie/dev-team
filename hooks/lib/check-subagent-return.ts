@@ -40,6 +40,30 @@ async function logEvent(repoPath: string, code: string, sessionId: string, detai
   }
 }
 
+/**
+ * Parse coarse usage metrics from a subagent return body.
+ * Looks for: <usage>total_tokens: N tool_uses: M duration_ms: D</usage>
+ * Returns zeros for any field not found. MVP approximation — true token splits
+ * (tokenIn vs tokenOut) are deferred to upstream API integration.
+ */
+export function parseUsageMetrics(body: string): {
+  totalTokens: number;
+  toolUses: number;
+  durationMs: number;
+} {
+  const result = { totalTokens: 0, toolUses: 0, durationMs: 0 };
+  const usageMatch = body.match(/<usage>([\s\S]*?)<\/usage>/);
+  if (usageMatch === null) return result;
+  const block = usageMatch[1] ?? "";
+  const tokensMatch = block.match(/total_tokens:\s*(\d+)/);
+  if (tokensMatch) result.totalTokens = parseInt(tokensMatch[1]!, 10);
+  const toolUsesMatch = block.match(/tool_uses:\s*(\d+)/);
+  if (toolUsesMatch) result.toolUses = parseInt(toolUsesMatch[1]!, 10);
+  const durationMatch = block.match(/duration_ms:\s*(\d+)/);
+  if (durationMatch) result.durationMs = parseInt(durationMatch[1]!, 10);
+  return result;
+}
+
 function extractBody(toolResponse: unknown): string | null {
   if (toolResponse === null || toolResponse === undefined) {
     return null;
@@ -101,11 +125,15 @@ export async function runCheckSubagentReturnHook(raw: string, env: NodeJS.Proces
   const handle = _dispatchHandles.get(session_id);
   if (handle !== undefined) {
     _dispatchHandles.delete(session_id);
+    // Parse coarse usage metrics from subagent return body.
+    // Looks for: <usage>total_tokens: N tool_uses: M duration_ms: D</usage>
+    // MVP: tokenIn = total_tokens, tokenOut = 0 (true split deferred to upstream API integration).
+    const usageMetrics = parseUsageMetrics(body);
     recordDispatchEnd(handle, {
-      toolCalls: {},
+      toolCalls: usageMetrics.toolUses > 0 ? { Total: usageMetrics.toolUses } : {},
       bashDurationMs: 0,
       skillLoadCount: 0,
-      tokenIn: 0,
+      tokenIn: usageMetrics.totalTokens,
       tokenOut: 0,
     });
   }

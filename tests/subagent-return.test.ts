@@ -9,7 +9,10 @@ import {
   hasArtifactPath,
   checkSubagentReturn
 } from "../scripts/lib/subagent-return/check.ts";
-import { runCheckSubagentReturnHook } from "../hooks/lib/check-subagent-return.ts";
+import {
+  runCheckSubagentReturnHook,
+  parseUsageMetrics
+} from "../hooks/lib/check-subagent-return.ts";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const HOOK_PATH = path.join(__dirname, "..", "hooks", "check-subagent-return.ts");
@@ -362,4 +365,29 @@ test("checkSubagentReturn: UTF-8 multi-byte characters measured by byte length",
   const { warnings } = checkSubagentReturn({ body, threshold: 512 });
   assert.equal(warnings.length, 1);
   assert.ok(warnings[0]!.includes(String(byteLen)));
+});
+
+// ── parseUsageMetrics ─────────────────────────────────────────────────────────
+
+test("parseUsageMetrics: full <usage> block → all three fields parsed", () => {
+  const body =
+    "Handoff: path/to/file.md\n<usage>total_tokens: 8500 tool_uses: 32 duration_ms: 120000</usage>";
+  const m = parseUsageMetrics(body);
+  assert.equal(m.totalTokens, 8500);
+  assert.equal(m.toolUses, 32);
+  assert.equal(m.durationMs, 120000);
+});
+
+test("parseUsageMetrics: no <usage> block → all zeros", () => {
+  const m = parseUsageMetrics("No usage info here at all.");
+  assert.equal(m.totalTokens, 0);
+  assert.equal(m.toolUses, 0);
+  assert.equal(m.durationMs, 0);
+});
+
+test("parseUsageMetrics: only total_tokens present → others zero", () => {
+  const m = parseUsageMetrics("<usage>total_tokens: 300</usage>");
+  assert.equal(m.totalTokens, 300);
+  assert.equal(m.toolUses, 0);
+  assert.equal(m.durationMs, 0);
 });
