@@ -1,11 +1,11 @@
 ---
 id: FEAT-146
-status: in-progress
+status: done
 priority: P2
 category: quality
 target_release: null
 created: 2026-06-10
-updated: 2026-06-10
+updated: 2026-06-11
 depends_on: []
 slices: [SLICE-67]
 derived_from: null
@@ -18,6 +18,8 @@ composite_score: 0.675
 autonomous_safe: true
 triage_notes: "Live quantified bottleneck; bounded hooks-subsystem refactor; byte-identical contract guarded by smoke + feature-gating spawn suite; behavior-preserving -> autonomous_safe. Bonus: removes mid-flow process.exit(0) (rule 6)."
 started_at: 2026-06-10
+slices_complete: [SLICE-67]
+completed_at: 2026-06-11
 ---
 # FEAT-146: Hook-core extraction: in-process testable hooks (kill per-test node spawns)
 

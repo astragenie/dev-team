@@ -1,14 +1,15 @@
 ---
 id: SLICE-67
 title: "Hook-core extraction: in-process testable hooks (kill per-test node spawns)"
-status: pending
+status: completed
 feature: FEAT-146
 phase: null
 priority: P2
 target_release: null
 requires_validation: true
 created: 2026-06-10
-updated: 2026-06-10
+updated: 2026-06-11
+completed_at: 2026-06-11
 ---
 # SLICE-67: Hook-core extraction: in-process testable hooks (kill per-test node spawns)
 

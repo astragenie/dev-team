@@ -1,1 +1,16 @@
 {"type":"workflow_state_changed","sliceId":"SLICE-67","featureId":"FEAT-146","timestamp":"2026-06-10T19:06:30.419Z","from":null,"to":"building"}
+{"type":"gate_transition","sliceId":"SLICE-67","featureId":"FEAT-146","timestamp":"2026-06-11T06:19:32.407Z","gate":"blocked","from":null,"to":"passed"}
+{"type":"gate_transition","sliceId":"SLICE-67","featureId":"FEAT-146","timestamp":"2026-06-11T06:19:32.407Z","gate":"validation","from":null,"to":"failed"}
+{"type":"gate_transition","sliceId":"SLICE-67","featureId":"FEAT-146","timestamp":"2026-06-11T06:19:32.407Z","gate":"test-adequacy","from":null,"to":"passed"}
+{"type":"gate_transition","sliceId":"SLICE-67","featureId":"FEAT-146","timestamp":"2026-06-11T06:19:32.407Z","gate":"simplify","from":null,"to":"passed"}
+{"type":"workflow_state_changed","sliceId":"SLICE-67","featureId":"FEAT-146","timestamp":"2026-06-11T06:19:33.567Z","from":"building","to":"done"}
+{"type":"gate_transition","sliceId":"SLICE-67","featureId":"FEAT-146","timestamp":"2026-06-11T06:22:40.146Z","gate":"blocked","from":null,"to":"passed"}
+{"type":"gate_transition","sliceId":"SLICE-67","featureId":"FEAT-146","timestamp":"2026-06-11T06:22:40.146Z","gate":"validation","from":null,"to":"passed"}
+{"type":"gate_transition","sliceId":"SLICE-67","featureId":"FEAT-146","timestamp":"2026-06-11T06:22:40.146Z","gate":"test-adequacy","from":null,"to":"passed"}
+{"type":"gate_transition","sliceId":"SLICE-67","featureId":"FEAT-146","timestamp":"2026-06-11T06:22:40.146Z","gate":"simplify","from":null,"to":"passed"}
+{"type":"workflow_state_changed","sliceId":"SLICE-67","featureId":"FEAT-146","timestamp":"2026-06-11T06:22:41.202Z","from":"building","to":"done"}
+{"type":"gate_transition","sliceId":"SLICE-67","featureId":"FEAT-146","timestamp":"2026-06-11T06:22:45.126Z","gate":"blocked","from":null,"to":"passed"}
+{"type":"gate_transition","sliceId":"SLICE-67","featureId":"FEAT-146","timestamp":"2026-06-11T06:22:45.126Z","gate":"validation","from":null,"to":"passed"}
+{"type":"gate_transition","sliceId":"SLICE-67","featureId":"FEAT-146","timestamp":"2026-06-11T06:22:45.126Z","gate":"test-adequacy","from":null,"to":"passed"}
+{"type":"gate_transition","sliceId":"SLICE-67","featureId":"FEAT-146","timestamp":"2026-06-11T06:22:45.126Z","gate":"simplify","from":null,"to":"passed"}
+{"type":"workflow_state_changed","sliceId":"SLICE-67","featureId":"FEAT-146","timestamp":"2026-06-11T06:22:46.162Z","from":"building","to":"done"}

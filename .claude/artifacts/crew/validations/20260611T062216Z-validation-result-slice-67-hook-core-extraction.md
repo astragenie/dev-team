@@ -1,0 +1,27 @@
+# Validation Result: SLICE-67 hook-core extraction
+
+- Created: 2026-06-11T06:22:16Z
+- Validator: validator
+- Environment: local (Windows)
+- Decision: passed
+- Scenario: Hook-core extraction byte-identical-contract validation — converted in-process tests + retained spawn smokes + feature-gating contract test all green.
+- Evidence Collected:
+  - `bun test tests/cost-hygiene-hook.test.ts tests/preflight-shell.test.ts tests/subagent-return.test.ts tests/hook-feature-gating.test.ts` → 92 pass / 0 fail / 2.58s.
+  - `tests/hook-feature-gating.test.ts` unchanged from main (runtime contract proof — fully spawn-based).
+  - 6 retained spawn smokes across 3 hook suites guard core↔shim contract drift.
+  - `bun run lint` → exit 0 (per build bundle ac1ceae).
+  - `bun run typecheck` → exit 0 (per build bundle ac1ceae).
+  - No `process.exit()` calls remain in `hooks/lib/*.ts` (repo rule 6 compliance).
+- Files / Surfaces Checked:
+  - `hooks/lib/check-redundant-read.ts`
+  - `hooks/lib/check-subagent-return.ts`
+  - `hooks/lib/preflight-shell.ts`
+  - `hooks/lib/record-read-content.ts`
+  - `tests/cost-hygiene-hook.test.ts`
+  - `tests/preflight-shell.test.ts`
+  - `tests/subagent-return.test.ts`
+  - `tests/hook-feature-gating.test.ts`
+- Risks: Contract drift between core + shim if a future hook edit modifies stdin/stdout/exit semantics in the shim without updating the core (or vice versa). Mitigated by retained spawn smokes + feature-gating contract test.
+- Required Follow-up:
+  - Re-baseline `bun test --parallel` wall-clock vs WS1 baseline (115.9s → 21.1s) and record the post-SLICE-67 number as the new floor.
+  - Belated artifact: this validation was written 2026-06-11 for work that merged 2026-06-10 (commit `ac1ceae`) without a slice-complete ceremony. Loop snapshot stayed stale ~24h; close-ceremony hygiene gap captured in DEC-017 followups.
