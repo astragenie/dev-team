@@ -3,6 +3,43 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [Unreleased]
+
+### Performance
+
+- **Hook runtime swap:** PreToolUse / PostToolUse hook entries now spawn under Bun
+  (≥ 1.3) instead of `node --experimental-strip-types`. Measured cold start dropped
+  from ~178 ms to ~40 ms on Linux (~80 ms on Windows). Hook cores at
+  `hooks/lib/*.ts` are byte-identical (SLICE-67 contract); `tests/hook-feature-gating.test.ts`
+  green unchanged.
+- **log_event.sh async-fire:** payload + `events.jsonl` writes now run in a backgrounded
+  subshell. Foreground latency dropped from ~113 ms to ≤ 20 ms p95 on Linux. On Windows
+  the Cygwin bash floor (~57 ms) limits the absolute floor; the bench still verifies
+  p95 stays well under the synchronous baseline.
+
+### Tooling
+
+- **Bun preflight:** `scripts/lib/installer/bun-preflight.ts` (`assertBunPresent`) is
+  wired into the `install-global`, `bootstrap`, and `init` entries in `scripts/crew.ts`.
+  Missing or sub-1.3 Bun → loud failure with the bun.sh install URL.
+- **CI matrix:** `.github/workflows/test.yml` runs on `ubuntu-latest` + `windows-latest`.
+  New `bun-hook smoke` step pipes empty JSON into `hooks/check-redundant-read.ts` on
+  each runner.
+
+### Tests
+
+- `tests/hook-cold-start-bench.test.ts` asserts p50 ≤ 60 ms (Linux) / ≤ 100 ms (Windows)
+  and p95 ≤ 120 ms over 100 cold spawns. Selectable runtime via `HOOK_BENCH_RUNTIME` env.
+- `tests/log-event-async-bench.test.ts` asserts foreground p95 ≤ 20 ms (Linux) or
+  < 300 ms (Windows) over 100 invocations.
+- `tests/bun-preflight.test.ts` covers the installer preflight (happy path + missing bun
+  with PATH strip).
+
+### Docs
+
+- `README.md` adds a Runtime dependency callout under the install steps, noting Bun
+  ≥ 1.3 is required at install time.
+
 ## v0.31.1 — 2026-06-10 — repair stale content-snapshot tests + validator hardening
 
 ### Added
