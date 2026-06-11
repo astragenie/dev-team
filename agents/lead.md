@@ -82,38 +82,36 @@ When risk is HIGH or diff spans security/perf concerns: dispatch 2 reviewers def
 
 **Forbidden pattern:** lumping doc + policy + code into one builder dispatch. Split per Step 3 variants.
 
-## Tag-to-agent mapping
+## Agent quick reference
 
-When FEAT frontmatter has `tags:`, use this table to select agent + skills. Cite matched tags in the dispatch handoff. Full schema: `docs/standards/feat-tag-schema.md`.
+For most slices, pick from the main crew:
 
-| Tag pattern (any match)                                                              | Primary agent                                 | Skills to auto-load                                                                  |
-| ------------------------------------------------------------------------------------ | --------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `surface:docs`, `surface:api` (doc-authoring), `concern:governance` (policy/doc)     | loop:document-writer                          | api-documentation, prompt-engineering                                                |
-| `surface:ui`, `concern:ux`, `concern:accessibility`                                  | uxdesigner                                    | ux-methodology, frontend-advisory, react-engineering                                 |
-| `surface:schema`, `concern:governance` (enforcement), `stack:llm` (prompt authoring) | architect                                     | architecture-advisory, security-advisory, database-architecture, diagram-methodology |
-| `stack:typescript` (BE/scripts/CLI)                                                  | builder (or builder-be if backend node)       | typescript-pro                                                                       |
-| `stack:react`, `stack:typescript` + `surface:ui`                                     | crew:builder-fe                               | typescript-pro, react-engineering                                                    |
-| `stack:python`                                                                       | builder                                       | python-pro                                                                           |
-| `stack:csharp` (any C# / .NET — backend default)                                     | crew:builder-be                               | dotnet/csharp-conventions, dotnet/aspnetcore-patterns, dotnet/ef-core-patterns (EF only) |
-| `stack:ai`, `stack:llm` (code-side: pipelines, inference)                            | builder                                       | ai-engineering, prompt-engineering                                                   |
-| `stack:terraform`, `surface:infra`                                                   | builder + reviewer                            | terraform-ops-traps, devops-engineering                                              |
-| `concern:security`                                                                   | reviewer (co-dispatch with builder)           | security-advisory                                                                    |
-| `concern:performance`                                                                | validator (benchmark via gstack `/benchmark`) | systematic-debugging                                                                 |
-| `concern:observability`                                                              | builder + reviewer                            | reviewing-code                                                                       |
-| `concern:refactor` + ≤2 files OR no dominant surface                                  | builder                                       | (match stack tag for skill)                                                          |
-| `concern:refactor` + ≥3 files + behavior-preserving                                   | crew:refactoring-specialist                   | (match stack tag for skill)                                                          |
-| `concern:test-infra` (CI / test framework / flaky-suite repair)                       | crew:test-automator                           | (match stack tag for skill)                                                          |
-| `concern:e2e` / FE+BE wire-up smoke after parallel builders                            | crew:integrator                               | webapp-testing                                                                       |
-| `scope:trivial` (1-file edit OR ≤5 lines)                                              | caveman:cavecrew-builder                      | (match stack tag for skill)                                                          |
-| `scope:locate` (read-only "where is X / what calls Y")                                 | caveman:cavecrew-investigator                 | -                                                                                    |
-| Ambiguous architecture before HIGH-risk dispatch                                       | crew:critical-thinking                        | (read-only assumption challenger)                                                    |
-| `concern:governance` (process/methodology authoring), pre-compaction context prep    | lead                                          | context-curation, spec-decomposition                                                 |
+| Need | Agent | Stack |
+|------|-------|-------|
+| Backend code (API, DB, server) | `crew:builder-be` | C#/.NET, Node, Python, Go |
+| Frontend code (UI, React, CSS) | `crew:builder-fe` | React, TypeScript |
+| Mixed code (scripts, CI, agents, skills, infra) | `crew:builder` | TypeScript, Python, Terraform |
+| Architecture / ADR / schema design | `crew:architect` | agnostic |
+| UX flow / a11y / wireframe | `crew:uxdesigner` | React |
+| Customer docs (README, CHANGELOG, release notes) | `loop:document-writer` | Markdown |
+| Independent code review | `crew:reviewer` | agnostic |
+| Behavior validation / full-suite gate | `crew:validator` | agnostic |
+| FE+BE wire-up smoke after parallel builders | `crew:integrator` | TypeScript, React |
+| Deployment + environment evidence | `crew:deployer` | agnostic |
+| Read-only investigation (persistent findings) | `crew:researcher` | agnostic |
+| Cheap file:line lookup (no findings persist) | `crew:investigator` | agnostic |
+| Combined review+validate (LOW-tier only) | `crew:reviewer-validator` | agnostic |
+| Code quality sweep (stale refs, drift) | `crew:refactor` | TypeScript |
+| Performance audit (latency, N+1, benchmarks) | `crew:performance-engineer` | agnostic |
+| QA / test coverage gap analysis | `crew:qa-expert` | agnostic |
 
-> **Architect-mandatory:** `surface:schema`, `concern:governance` (enforcement / process / methodology) MUST route to architect, never to builder. `concern:governance` (customer-facing docs) routes to `loop:document-writer`; (in-prompt policy edits) routes to architect. When ambiguous → dispatch `crew:critical-thinking` first to surface assumptions before picking.
+For specialist work (3rdparty agents, fan-out lenses, arbitration, scope-specific picks) consult each agent's `capabilities:` frontmatter directly. Schema: `docs/standards/agent-capabilities-schema.md`. Examples of specialists routed by capabilities: `crew:3rdparty:c-sharp-reviewer` (stack:csharp lens), `crew:3rdparty:refactoring-specialist` (concern:refactor + scope:wide), `crew:3rdparty:test-automator` (concern:test-infra), `crew:3rdparty:critical-thinking` (ambiguity disambiguator), `crew:3rdparty:architect-reviewer` (reviewer disagreement tiebreaker), `caveman:cavecrew-builder` (scope:trivial).
 
-Multi-tag FEATs spanning ≥2 distinct primary agents → split into parallel bundles per Step 3; one agent per tag-cluster. No `tags:` AND no clear file pattern → dispatch `crew:critical-thinking` (read-only) to disambiguate intent, then re-enter Step 3.
+**Architect-mandatory:** `surface:schema`, `concern:governance` (enforcement / process / methodology) MUST route to architect, never to builder. `concern:governance` (customer-facing docs) routes to `loop:document-writer`; (in-prompt policy edits) routes to architect.
 
-The Skills column is metadata for the dispatched subagent (it loads what's listed in its own context) — not for you. Cite matched skills in the dispatch handoff so the subagent knows what to load.
+Multi-need slices → split into parallel bundles per Step 3; one agent per concern. No clear pick AND no obvious file pattern → dispatch `crew:3rdparty:critical-thinking` (read-only) to disambiguate intent before committing to a route.
+
+When citing skills in your dispatch handoff, pull them from the dispatched agent's own skill table (the subagent loads its own skills — you cite which ones apply).
 
 ## Operating rules
 
