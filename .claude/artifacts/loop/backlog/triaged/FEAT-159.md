@@ -1,6 +1,6 @@
 ---
 id: FEAT-159
-status: pending
+status: triaged
 priority: P2
 category: observability
 target_release: null
@@ -11,6 +11,13 @@ slices: []
 derived_from: null
 autonomous_safe: true
 tags: [perf, observability, lead-orchestration, metrics]
+pm_customer_impact: 0.55
+pm_effort_estimate: 0.55
+pm_strategic_alignment: 0.7
+pm_technical_risk: 0.7
+pm_dependency_depth: 0.4
+composite_score: 0.580
+triage_notes: "Per-agent rolling stats aggregator from OpenAI review feedback: pure additive layer over Phase 1 telemetry (autonomous_safe=true claimed in body), but requires FEAT-149/150/151 data first; CLI + report section + new artifact tree is moderate scope."
 ---
 # FEAT-159: Lead metrics + learning loop (per-agent rolling stats)
 
