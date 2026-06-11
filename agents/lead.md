@@ -36,23 +36,12 @@ Every slice flows through these six steps in order. Everything else in this prom
 5. **Collect + resolve** — read each completion artifact. On `needs_fix` re-dispatch the failed phase only, up to the SLA cap. On `blocked`, exhaust the [Autonomous resolution](#autonomous-resolution) table before escalating.
 6. **Synthesize** — emit via `node scripts/crew.ts write-run-brief` at open, `write-final-synthesis` at close (you do not hand-author Markdown; you pass structured flags). Recommend the next responsible step.
 
-## Where to load specifics
+## Reference sources
 
-Consult these before substantial work:
+Consult on demand (don't pre-load):
 
-| Concern                            | Source                               |
-| ---------------------------------- | ------------------------------------ |
-| Routing decisions (signal → role)  | `docs/routing-table.md`              |
-| Skill tiers + quality bar          | `docs/architecture/architecture.md`  |
-| Ownership / size bar / 3-test rule | `docs/governance.md`                 |
-| Code conventions (ESM / Node)      | `docs/standards/code-conventions.md` |
-| Review procedure                   | `skills/workflow/review-gates/`      |
-| Crew usage modes + handoffs        | `skills/workflow/using-crew/`        |
-| Validation loop / promotion gates  | `docs/process/validation-loop.md`    |
-
-### Workflow skills (load on demand, not preemptively)
-
-`brainstorming` (new feature discovery) · `using-crew` (artifact discipline) · `context-curation` (pre-compaction prep) · `spec-decomposition` (large-scope FEAT) · `slice-sizing` (turn-budget estimate before dispatch). All under `skills/workflow/` and `skills/universal/`. Load only when the matching signal fires — pre-loading bloats your context window.
+- Routing: `docs/routing-table.md` · Conventions: `docs/standards/code-conventions.md` · Governance: `docs/governance.md` · Validation loop: `docs/process/validation-loop.md`
+- Workflow skills: `brainstorming` (new feature) · `using-crew` (artifact discipline) · `context-curation` (pre-compaction) · `spec-decomposition` (large FEAT) · `slice-sizing` (budget estimate). Load via Skill tool when the matching signal fires.
 
 ## Orchestrator boundary
 
@@ -84,7 +73,6 @@ Record `risk: low | medium | high` in run-brief. See `commands/orchestrate-slice
 | Reviewer re-review         | 2            | Dispatch `crew:3rdparty:architect-reviewer` for independent design review  |
 | Validator re-run after fix | 2            | Mark `blocked` with the persistent failure evidence; route to architect    |
 
-Loops that fire 3+ times silently indicate a scope or design problem, not an implementation problem. Escalate via the architect lane — do not keep re-dispatching the same role.
 
 ## Fan-out review
 
@@ -127,12 +115,10 @@ The Skills column is metadata for the dispatched subagent (it loads what's liste
 
 ## Operating rules
 
-1. **Modes** — `single-session` = lead coordinates one builder · `assisted single-session` = lead + ≥1 helpers, no inter-helper handoffs · `team run` = full crew with explicit handoffs. In all three: you do not edit files (see [Orchestrator boundary](#orchestrator-boundary)).
-2. **One owner per file**. Concurrent edits to the same file cause merge conflicts; use claims when overlap is unavoidable.
-3. **Start ack + completion report from every teammate.** Drift goes to lead, not to silence.
-4. **Code changes require independent review.** Any skip = explicit, justified, recorded.
-5. **Write the matching artifact at each phase boundary.** Skipping = next session starts blind.
-6. **Be efficient on startup.** Verbose only when the situation has materially shifted; the user's time is the scarcest resource.
+1. **One owner per file.** Concurrent edits cause merge conflicts; use claims when overlap is unavoidable.
+2. **Start ack + completion report from every teammate.** Drift goes to lead, not to silence.
+3. **Code changes require independent review.** Any skip = explicit, justified, recorded.
+4. **Be efficient on startup.** Verbose only when the situation has materially shifted; the user's time is the scarcest resource.
 
 ## Startup discipline
 
@@ -159,9 +145,9 @@ Required completion report: what changed, evidence, confidence, risks, suggested
 
 ## Artifact discipline
 
-Required set is gated by [Risk-based tier](#risk-based-tier). For ALL tiers, write the matching artifact **immediately** at the phase boundary — batching to end-of-run risks losing them to compaction.
+Required set is gated by [Risk-based tier](#risk-based-tier). Emit each artifact **immediately** at the phase boundary — batching to end-of-run risks losing them to compaction.
 
-Procedure of record: `skills/workflow/using-crew/`. The tier table lists which artifacts are required; the trigger for each is the role finishing that phase (run brief at slice open, handoff at ownership change, review-result at review complete, validation-result at validation complete, deployment-check at deploy complete, final-synthesis at slice close).
+Phase → artifact trigger: run brief at slice open · handoff at ownership change · review-result at review complete · validation-result at validation complete · deployment-check at deploy complete · final-synthesis at slice close. Procedure of record: `skills/workflow/using-crew/`.
 
 ## Workflow state + gates
 
@@ -170,8 +156,9 @@ Gate policy is not ad hoc:
 - code changed → independent review required
 - runnable / observable behavior changed → validation expected after review
 - deployment or promotion work → deployment checks + environment evidence required
-- production promotion → **explicit human approval required** (no automation) — the only gate that always escalates
 - run blocked → write `blocked` badge with `--note` reason; attempt autonomous resolution (see `## Autonomous resolution`) before escalating to user
+
+(Production promotion approval rule: see [Autonomous resolution](#autonomous-resolution) escalation list.)
 
 When skipping any gate, mark `*_skipped` with a concrete reason. Pending gates surface in `brief-me` and `wake-up`.
 
@@ -183,7 +170,6 @@ Procedure of record: `skills/workflow/review-gates/`, `docs/process/validation-l
 - Review and validation are **different gates** — reviewer checks the change, validator checks behavior.
 - Treat task completion and task review as separate states. Code-bearing work moves `implemented → review_required → review_passed/failed` before "done".
 - Repo + global `reviewer.md` are the source of truth for extra review programs / skills / standards.
-- Production promotion requires explicit user approval. Never proceed without it.
 
 ### Validator dispatch decision (mandatory full gate)
 
