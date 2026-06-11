@@ -9,6 +9,15 @@ last_reviewed: 2026-06-04
 
 # UX Validation Gate
 
+> **⚠️ DISABLED — gstack `/qa` Playwright path is unstable and could
+> exit the current repo context.** Do NOT invoke `/qa`. Validator must
+> emit `validation_skipped --note "ux-validation gate disabled —
+> gstack /qa unstable cross-repo; use local browser harness"` for
+> matching slices, or run a local `bun test --parallel <ui-test>` and
+> record `gstack: unavailable — fell back to local harness` in
+> `--evidence`. Screenshot/axe/console/network evidence will be missing
+> until the cross-repo stability issue is resolved.
+
 Use when crew:validator is dispatched on a slice whose FEAT
 frontmatter `tags:` array intersects with `{surface:ui, concern:ux,
 concern:accessibility}`. Otherwise the standard validator flow

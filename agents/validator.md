@@ -106,7 +106,7 @@ Load the smallest set needed. `skills/workflow/webapp-testing/` for E2E scenario
 | Stack tag from PM triage                                            | Match `stack:*` per `docs/standards/feat-tag-schema.md` — ONE domain skill |
 | `concern:security` (validate auth / crypto / secret flow)           | `skills/domain/security-advisory/`                                     |
 | `concern:performance` (latency, throughput)                         | use gstack `/benchmark` (see [Performance scenarios](#performance-scenarios--use-gstack-benchmark)) |
-| `surface:ui` / `concern:ux` / `concern:accessibility`               | `skills/workflow/ux-validation/` (+ gstack `/qa` for real browser)     |
+| `surface:ui` / `concern:ux` / `concern:accessibility`               | `skills/workflow/ux-validation/` only (**gstack `/qa` DISABLED** — unstable cross-repo Playwright path; use local browser harness instead) |
 | Web app E2E / integration testing                                   | `skills/workflow/webapp-testing/`                                      |
 | Diff under review (spot correctness gaps during validation)         | `skills/workflow/reviewing-code/`                                      |
 | Bug root cause / intermittent failure / flaky scenario              | `skills/workflow/systematic-debugging/`                                |
@@ -214,14 +214,14 @@ Default `local` for validator-spawned runs unless dispatch specifies otherwise. 
 
 ## External tooling (gstack)
 
-For UI / perf scenarios, prefer gstack skills over speculation:
+For perf scenarios, prefer gstack skills over speculation:
 
-- **`surface:ui` dispatch tag** → gstack `/qa` (real Playwright; produces screenshots, console output, network requests). Reference the `/qa` run path in the validation artifact.
 - **`concern:performance`** → gstack `/benchmark` (repeatable measurements, latency percentiles, comparison baselines).
+
+> **`surface:ui` → gstack `/qa` is DISABLED.** The Playwright path was unstable and could exit the current repo context. Do NOT invoke `/qa` for UI validation. For UI scenarios, use a local browser harness via `bun test --parallel <ui-test.test.ts>` and explicitly note in `--evidence` that screenshot evidence is unavailable. Re-enable only after the cross-repo stability issue is resolved.
 
 **Fallback when gstack unavailable** (skill not installed, command errors out, or `Command not found`): record `gstack: unavailable — fell back to <substitute>` in `--evidence`. Substitutes:
 
-- For UI: best-effort local check via test suite browser harness (e.g. `bun test --parallel <ui-test.test.ts>`); explicitly note that screenshot evidence is missing.
 - For perf: hand-run timing via `time` / `Measure-Command`; flag the missing percentile data and request the lead re-dispatch with gstack available before a high-risk merge.
 
 `gstack: unavailable` is NOT a free PASS — apply the same Decision rules to the substituted evidence.

@@ -10,6 +10,12 @@ source_version: "0.10.0"
 
 # Journey Builder
 
+> **⚠️ DISABLED downstream** — the gstack `/qa` execution path this
+> skill feeds is currently disabled (unstable cross-repo Playwright).
+> See `skills/workflow/ux-validation/SKILL.md`. Building a
+> `scenario_chain` is harmless, but it will not be executed until the
+> upstream gate is re-enabled.
+
 Sub-skill invoked by `ux-validation` at Step 2.5. Produces an ordered
 `scenario_chain` for a single-slice end-to-end journey run via gstack `/qa`.
 
