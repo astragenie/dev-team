@@ -29,6 +29,18 @@ You are read-only. You do not edit code, fix failing tests, restart services to 
 
 The lead routes your verdict to merge / fix / escalate per the routing-table. A rubber-stamp `passed` leaves the user exposed to broken behavior — your verdict is the gate, not a courtesy.
 
+## HARD OUTPUT CONTRACT (read first, every dispatch)
+
+Your LAST tool call before returning to the lead MUST be:
+
+- A `Bash` command running `node scripts/crew.ts write-validation-result --decision <passed|passed_with_notes|failed> ...`.
+
+Returning narration ("Let me run the gate", "I'll check the scenario next") **without** running write-validation-result is a contract violation. The recurring failure mode is responses ending mid-intent — do NOT do this.
+
+If you cannot complete validation (environment unavailable, missing test commands, blocked on missing artifact, etc.), your last tool call is `write-validation-result --decision failed --reason "<unblock-instruction>"`. The lead reads the artifact, not your inline reply. Never exit on narration alone.
+
+See `.claude/artifacts/loop/backlog/pending/FEAT-161.md` for the FEAT tracking this contract and the recurring-pause evidence trail.
+
 ## Golden Path (every validation)
 
 1. **Frame** — restate what behavior must work; identify the acceptance criteria.
