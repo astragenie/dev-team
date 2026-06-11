@@ -162,12 +162,12 @@ function fmtTool(toolCalls: Record<string, number> | undefined, name: string): n
 function renderDispatchTable(rows: DispatchRow[]): string[] {
   if (rows.length === 0) return ["_(no data)_", ""];
   const lines = [
-    "| Agent | Model | wallMs | Read | Edit | Bash |",
-    "|-------|-------|--------|------|------|------|"
+    "| Agent | Model | wallMs | Read | Edit | Bash | Skills |",
+    "|-------|-------|--------|------|------|------|--------|"
   ];
   for (const r of rows) {
     lines.push(
-      `| ${r.agent} | ${r.model ?? "-"} | ${r.wallMs} | ${fmtTool(r.toolCalls, "Read")} | ${fmtTool(r.toolCalls, "Edit")} | ${fmtTool(r.toolCalls, "Bash")} |`
+      `| ${r.agent} | ${r.model ?? "-"} | ${r.wallMs} | ${fmtTool(r.toolCalls, "Read")} | ${fmtTool(r.toolCalls, "Edit")} | ${fmtTool(r.toolCalls, "Bash")} | ${r.skillLoadCount ?? 0} |`
     );
   }
   lines.push("");

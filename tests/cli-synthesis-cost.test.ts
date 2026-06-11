@@ -372,6 +372,12 @@ test("cost-slice renders ## Per-dispatch breakdown when dispatch log has matchin
     assert.match(body, /crew:reviewer/, "should include the slower dispatch (crew:reviewer)");
     assert.match(body, /13000ms/, "should show total wall-clock (5000 + 8000)");
     assert.match(body, /typecheck/, "should include bash gate breakdown");
+    assert.match(body, /\| Skills \|/, "dispatch table should include Skills column header");
+    assert.match(
+      body,
+      /\| 2 \|/,
+      "dispatch table should include non-zero skill-count value (skillLoadCount=2)"
+    );
   } finally {
     if (savedDispatchLog === undefined) delete process.env["CREW_DISPATCH_TIMING_LOG"];
     else process.env["CREW_DISPATCH_TIMING_LOG"] = savedDispatchLog;
