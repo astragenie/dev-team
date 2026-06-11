@@ -28,8 +28,9 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ### Tests
 
-- `tests/hook-cold-start-bench.test.ts` asserts p50 ≤ 60 ms (Linux) / ≤ 100 ms (Windows)
-  and p95 ≤ 120 ms over 100 cold spawns. Selectable runtime via `HOOK_BENCH_RUNTIME` env.
+- `tests/hook-cold-start-bench.test.ts` asserts p50 ≤ 60 ms / p95 ≤ 120 ms (Linux) and
+  p50 ≤ 120 ms / p95 ≤ 250 ms (Windows, load-aware) over 100 cold spawns. Selectable
+  runtime via `HOOK_BENCH_RUNTIME` env.
 - `tests/log-event-async-bench.test.ts` asserts foreground p95 ≤ 20 ms (Linux) or
   < 300 ms (Windows) over 100 invocations.
 - `tests/bun-preflight.test.ts` covers the installer preflight (happy path + missing bun
