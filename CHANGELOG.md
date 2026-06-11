@@ -5,6 +5,8 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.32.0 — 2026-06-11 — hook runtime swap (node → bun) + agent scope discipline
+
 ### Performance
 
 - **Hook runtime swap:** PreToolUse / PostToolUse hook entries now spawn under Bun
@@ -40,6 +42,28 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 - `README.md` adds a Runtime dependency callout under the install steps, noting Bun
   ≥ 1.3 is required at install time.
+
+### Agent prompts
+
+- **Validator + reviewer scope discipline:** UI/UX/a11y validation routed to
+  `crew:qa-expert` via `escalated_to_lead` instead of validator/reviewer driving
+  Playwright / `gstack /qa` directly. Validator owns non-UX gates only;
+  reviewer keeps the static `.tsx`/`.jsx` a11y code-review gate. Openings
+  rewritten to name the lead/orchestrator dispatch + verdict-consumer
+  relationship, the read-only constraint, the decision enum
+  (`approved|approved_with_notes|rejected`, `passed|passed_with_notes|failed`),
+  and gate-not-courtesy stakes. Three `mark-badge` examples per agent
+  collapsed into one template + bullet list of valid badges. Stale
+  `surface:ui → /qa DISABLED` blurb dropped from validator's gstack section;
+  redundant `webapp-testing` always-on preamble + UI rows dropped from the
+  skill-consultation table.
+
+### Fixed
+
+- `init` / `bootstrap` / `install-global` no longer print a `[<cmd>] bun X
+  detected.` notice to stdout. The notice polluted JSON stdout and broke
+  downstream `JSON.parse` consumers (including `tests/cli-smoke.test.ts`).
+  Preflight remains loud-fail on missing or sub-1.3 Bun; success is silent.
 
 ## v0.31.1 — 2026-06-10 — repair stale content-snapshot tests + validator hardening
 
