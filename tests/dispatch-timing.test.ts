@@ -1,11 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { promises as fs } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { recordDispatchStart, recordDispatchEnd } from "../scripts/lib/dispatch-timing.ts";
 
 test("records start + end as single JSONL row with wallMs", async () => {
-  const tmp = await fs.mkdtemp("/tmp/dispatch-timing-");
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "dispatch-timing-"));
   const logPath = path.join(tmp, "dispatch-timing.jsonl");
   process.env.CREW_DISPATCH_TIMING_LOG = logPath;
   try {

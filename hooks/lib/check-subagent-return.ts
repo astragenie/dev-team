@@ -13,13 +13,15 @@ import {
 /** Module-level map for start↔end correlation once upstream start sites are wired. */
 const _dispatchHandles = new Map<string, DispatchHandle>();
 
+const MAX_HANDLES = 1000;
+
 /** Register a dispatch start handle for later end correlation (called by upstream start sites). */
 export function registerDispatchHandle(taskId: string, handle: DispatchHandle): void {
+  if (_dispatchHandles.size >= MAX_HANDLES) {
+    const oldestKey = _dispatchHandles.keys().next().value;
+    if (oldestKey !== undefined) _dispatchHandles.delete(oldestKey);
+  }
   _dispatchHandles.set(taskId, handle);
-}
-
-function hasHandle(taskId: string): boolean {
-  return _dispatchHandles.has(taskId);
 }
 
 async function logEvent(repoPath: string, code: string, sessionId: string, detail: string): Promise<void> {
@@ -96,19 +98,16 @@ export async function runCheckSubagentReturnHook(raw: string, env: NodeJS.Proces
 
   // TELEMETRY: dispatch-timing tap (FEAT-149)
   // Fire-and-forget end recording when a correlated start handle exists.
-  // No start sites are wired yet — this guard ensures no-op until they are.
-  if (env.CREW_DISPATCH_TIMING_LOG !== undefined || hasHandle(session_id)) {
-    const handle = _dispatchHandles.get(session_id);
-    if (handle !== undefined) {
-      _dispatchHandles.delete(session_id);
-      recordDispatchEnd(handle, {
-        toolCalls: {},
-        bashDurationMs: 0,
-        skillLoadCount: 0,
-        tokenIn: 0,
-        tokenOut: 0,
-      });
-    }
+  const handle = _dispatchHandles.get(session_id);
+  if (handle !== undefined) {
+    _dispatchHandles.delete(session_id);
+    recordDispatchEnd(handle, {
+      toolCalls: {},
+      bashDurationMs: 0,
+      skillLoadCount: 0,
+      tokenIn: 0,
+      tokenOut: 0,
+    });
   }
 
   if (warnings.length > 0) {
