@@ -5,6 +5,36 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.33.1 — 2026-06-11 — dispatch-timing handle cross-process fix
+
+### Bug fix
+
+- **Dispatch-timing JSONL never populated (telemetry dead in v0.33.0).** The
+  PreToolUse Agent hook stored the dispatch handle in a module-level Map
+  (`_dispatchHandles`) inside `hooks/lib/check-subagent-return.ts`. Each Claude
+  Code hook runs in a fresh Bun process — PreToolUse Agent and SubagentStop are
+  separate processes, so the Map died on PreToolUse exit and SubagentStop never
+  found a handle to consume. Result: `.claude/logs/dispatch-timing.jsonl` was
+  never written despite all the wiring being in place.
+- **Fix:** new `hooks/lib/dispatch-handle-store.ts` persists each handle to a
+  small JSON file under `.claude/state/crew/dispatch-timing/<session_id>.json`
+  on PreToolUse Agent. SubagentStop reads + deletes that file via
+  `loadAndDeleteDispatchHandle(session_id)` and writes the completed row to the
+  JSONL log. Cross-process correlation via the filesystem.
+- Session ids with unsafe path characters (`/`, `\`, `:`) are sanitized to
+  `_` before becoming filenames; tested.
+- Old `_dispatchHandles` Map + `registerDispatchHandle` export removed (dead
+  code after the refactor).
+- New unit tests in `tests/dispatch-handle-store.test.ts` cover persist + load
+  round-trip, missing-handle returns null, empty session_id is a no-op, and
+  unsafe-character sanitization.
+- End-to-end verified: piping a PreToolUse Agent payload then a SubagentStop
+  payload through the actual hook entry shims produces one JSONL row with
+  correct `wallMs`, `tokenIn` from `<usage>` markers, and `toolCalls.Total`
+  from `tool_uses` count.
+
+This unblocks Phase 1 baseline collection (FEAT-149/150/151 success criterion).
+
 ## v0.33.0 — 2026-06-11 — agent capability metadata + Phase 1 slice-perf telemetry + lead.md OpenAI 8.7/10 review
 
 ### Features

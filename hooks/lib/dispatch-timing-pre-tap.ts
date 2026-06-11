@@ -6,7 +6,7 @@ import {
   type DispatchHandle,
   recordDispatchStart,
 } from "../../scripts/lib/dispatch-timing.ts";
-import { registerDispatchHandle } from "./check-subagent-return.ts";
+import { persistDispatchHandle } from "./dispatch-handle-store.ts";
 
 /**
  * Parse a PreToolUse Agent payload into { session_id, subagent_type, description }.
@@ -129,6 +129,6 @@ export async function runDispatchTimingPreTap(
     model,
   });
 
-  registerDispatchHandle(session_id, handle);
+  await persistDispatchHandle(session_id, handle, pluginRoot);
   return null;
 }

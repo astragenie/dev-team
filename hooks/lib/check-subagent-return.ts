@@ -5,24 +5,8 @@ import path from "node:path";
 import { parseThreshold, checkSubagentReturn } from "../../scripts/lib/subagent-return/check.ts";
 import { isEnabled, readCrewConfig } from "../../scripts/lib/features-service.ts";
 // TELEMETRY: dispatch-timing tap (FEAT-149)
-import {
-  type DispatchHandle,
-  recordDispatchEnd,
-} from "../../scripts/lib/dispatch-timing.ts";
-
-/** Module-level map for start↔end correlation once upstream start sites are wired. */
-const _dispatchHandles = new Map<string, DispatchHandle>();
-
-const MAX_HANDLES = 1000;
-
-/** Register a dispatch start handle for later end correlation (called by upstream start sites). */
-export function registerDispatchHandle(taskId: string, handle: DispatchHandle): void {
-  if (_dispatchHandles.size >= MAX_HANDLES) {
-    const oldestKey = _dispatchHandles.keys().next().value;
-    if (oldestKey !== undefined) _dispatchHandles.delete(oldestKey);
-  }
-  _dispatchHandles.set(taskId, handle);
-}
+import { recordDispatchEnd } from "../../scripts/lib/dispatch-timing.ts";
+import { loadAndDeleteDispatchHandle } from "./dispatch-handle-store.ts";
 
 async function logEvent(repoPath: string, code: string, sessionId: string, detail: string): Promise<void> {
   try {
@@ -121,10 +105,11 @@ export async function runCheckSubagentReturnHook(raw: string, env: NodeJS.Proces
   const { warnings } = checkSubagentReturn({ body, threshold });
 
   // TELEMETRY: dispatch-timing tap (FEAT-149)
-  // Fire-and-forget end recording when a correlated start handle exists.
-  const handle = _dispatchHandles.get(session_id);
-  if (handle !== undefined) {
-    _dispatchHandles.delete(session_id);
+  // Hooks run in separate Bun processes, so the start↔end handle must cross
+  // process boundaries via the filesystem store rather than the in-memory Map
+  // (which is per-process and dies with the PreToolUse process).
+  const handle = await loadAndDeleteDispatchHandle(session_id);
+  if (handle !== null) {
     // Parse coarse usage metrics from subagent return body.
     // Looks for: <usage>total_tokens: N tool_uses: M duration_ms: D</usage>
     // MVP: tokenIn = total_tokens, tokenOut = 0 (true split deferred to upstream API integration).
