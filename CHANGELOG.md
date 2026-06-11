@@ -5,6 +5,80 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.34.0 — 2026-06-11 — lead structural dispatch discipline + marketplace migration + document-writer ceremony close
+
+### Behavior change — `crew:lead` cannot read, shell, or grep
+
+Two prior interventions (FEAT-161 SLICE-A/B HARD OUTPUT CONTRACT + v0.33.2
+source-read prohibition) added prompt text telling lead not to do gate work
+itself. Both still left the failure surface: lead had `Bash` + `Read` +
+`Grep` + `Glob` in its tool list, so the model could rationalize
+"just verify quickly" whenever the contract said "dispatch".
+
+Structural fix replacing the prompt-text approach:
+
+- `agents/lead.md` frontmatter `tools:` now `[Agent, Skill, ToolSearch,
+  TaskCreate, TaskUpdate, TaskList, TaskGet]`. `disallowedTools:` denies
+  `Bash, Read, Edit, Write, Grep, Glob, NotebookEdit`. Lead literally
+  cannot Read, Bash, Grep, or Glob — the rationalization surface is
+  physically removed, not just textually forbidden.
+- HARD OUTPUT CONTRACT: lead's LAST tool call MUST be an `Agent`
+  dispatch. The two Bash escape valves (`slice complete`,
+  `write-final-synthesis`) are gone — lead dispatches
+  `crew:document-writer` with structured `SliceId:` / `Title:` /
+  `Summary:` / `ExternalDeltas:` instead.
+- Golden Path Step 1 (Frame) reads `risk:` from slice frontmatter
+  (per loop FEAT-184) — no manual classification. The
+  Risk-based tier table's Signals column was dropped (lead couldn't
+  verify "touches auth" without Read).
+- Step 5 (Synthesize) is now "dispatch `crew:document-writer`" — lead
+  does not run the CLI sequence.
+- 23 leftover read/write/act nudges removed in a 5-pass audit:
+  `mark-badge` calls routed through document-writer, "consult capabilities
+  frontmatter directly" replaced by Agent quick reference table lookup,
+  "verify workspace" + "retrieve wake-up context" replaced by "trust
+  the dispatcher's prompt", artifact emission re-attributed to subagent
+  ownership, and stale "Opus-tier reads" historical context tightened.
+- `agents/lead.md`: 290 → 305 lines (net -22 lines vs pre-audit 327).
+
+Tracking: learnings ID 3 `lead-refuses-dispatch` (loop SLICE-92) +
+ID 4 `lead-post-builder-bash-validation` (loop SLICE-97) captured the
+recurring failures that motivated this. Diagnostic plan:
+`docs/superpowers/plans/2026-06-11-lead-dispatch-discipline-diagnostic.md`.
+
+### Behavior change — `crew:document-writer` owns slice-close ceremony
+
+- `agents/document-writer.md` gained `Bash` in its tools array and
+  `model: haiku` in frontmatter (was missing — required by
+  `validate-agents`).
+- New "Slice close ceremony" section documents the exact CLI sequence
+  document-writer runs on lead's dispatch: `node scripts/crew.ts
+  write-final-synthesis ...` → `bun src/scripts/loop.mts slice
+  complete ...` → `bun src/scripts/loop.mts slice grade ...`.
+- Bash allowlist explicit: ceremony CLIs + `git log` / `git diff
+  --stat` / `git show --stat` + read-only `cat` / `head` / `tail` /
+  `ls` / `find` on `.claude/artifacts/`. Forbidden Bash includes
+  `bun test` / `bun run lint` / `bun run typecheck` /
+  `bun run validate:all` (validator territory) and any `sed -i` /
+  `>` / `rm` (use Edit / Write tools).
+- Report contract section added (was missing).
+- `agents/document-writer.md`: 93 → 134 lines.
+
+### Lint
+
+- `scripts/validate-agents.ts`: `lead` removed from
+  `BASH_COALESCING_REQUIRED` (FEAT-157). Lead has no Bash; the
+  coalescing rule is irrelevant.
+
+### Tests
+
+- `tests/agent-topology.test.ts`: `EXPECTED_AGENTS` adds
+  `document-writer` (now an 18-agent first-party topology).
+- `tests/dispatch-timing-pre-tap.test.ts`:
+  `lookupAgentModel("crew:lead")` expectation flipped from `opus` to
+  `sonnet`. Lead frontmatter has been Sonnet for a while; this test
+  was stale.
+
 ### Marketplace migration
 
 The marketplace registry has moved to its own repository:
@@ -13,7 +87,7 @@ The marketplace registry has moved to its own repository:
 - `hero-crew` no longer carries `.claude-plugin/marketplace.json` (commit
   `bfc4d2d`). This repo is plain plugin code now.
 - `crew` is registered in `astra-marketplace` alongside `loop` and `cortex`.
-- Install path is unchanged for end users:
+- Install path:
   ```
   /plugin marketplace add sergeymilashico/astra-marketplace
   /plugin install crew@astra
@@ -28,15 +102,19 @@ The marketplace registry has moved to its own repository:
 
 - Update install docs (READMEs, runbooks, CI bootstrap) to point at
   `sergeymilashico/astra-marketplace`.
-- Re-run `/plugin marketplace update` on existing installs.
+- Run `/plugin marketplace remove hero-crew` + `/plugin marketplace add
+  sergeymilashico/astra-marketplace` on existing installs.
+- Re-install crew via `/plugin install crew@astra` and run
+  `/reload-plugins`.
 
-### Why
+### Why structural-not-textual
 
-`hero-crew` was acting as both plugin code and the marketplace registry
-for the astra family. As more plugins joined (`loop`, now `cortex`) the
-registry needed its own release cadence — adding a plugin shouldn't
-require a paired commit here. The central registry decouples plugin
-versions from each other and gives `cortex` a clean entry point.
+Prompt-text interventions (FEAT-161 SLICE-A/B + v0.33.2) repeatedly
+failed because the model could rationalize past any prose: "the
+contract says dispatch but I'll just run lint while I'm here." Cutting
+the tools at the frontmatter level removes the physical capability —
+no amount of rationalization adds `Bash` back to the tool set. The
+prompt is now smaller (-22 lines net), not bigger.
 
 
 ## v0.33.2 — 2026-06-11 — lead source-read prohibition
