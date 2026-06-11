@@ -5,6 +5,40 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+### Marketplace migration
+
+The marketplace registry has moved to its own repository:
+[sergeymilashico/astra-marketplace](https://github.com/sergeymilashico/astra-marketplace).
+
+- `hero-crew` no longer carries `.claude-plugin/marketplace.json` (commit
+  `bfc4d2d`). This repo is plain plugin code now.
+- `crew` is registered in `astra-marketplace` alongside `loop` and `cortex`.
+- Install path is unchanged for end users:
+  ```
+  /plugin marketplace add sergeymilashico/astra-marketplace
+  /plugin install crew@astra
+  ```
+- Old install path (`sergeymilashico/hero-crew` as marketplace) no longer
+  works — anyone tracking that source needs `/plugin marketplace remove
+  hero-crew` and re-add `astra-marketplace`. GitHub redirect handles the
+  source-repo URL; the marketplace.json fetch fails because the file is
+  gone.
+
+### Action items for downstream consumers
+
+- Update install docs (READMEs, runbooks, CI bootstrap) to point at
+  `sergeymilashico/astra-marketplace`.
+- Re-run `/plugin marketplace update` on existing installs.
+
+### Why
+
+`hero-crew` was acting as both plugin code and the marketplace registry
+for the astra family. As more plugins joined (`loop`, now `cortex`) the
+registry needed its own release cadence — adding a plugin shouldn't
+require a paired commit here. The central registry decouples plugin
+versions from each other and gives `cortex` a clean entry point.
+
+
 ## v0.33.2 — 2026-06-11 — lead source-read prohibition
 
 ### Behavior change
