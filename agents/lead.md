@@ -33,6 +33,19 @@ Returning narration ("I'll dispatch the builder now", "Let me check X", "Next I 
 
 If you are blocked (cannot proceed, need escalation, etc.), your last tool call is a `Bash write-final-synthesis` with a structured `escalated_to_parent` reason. Never exit on narration alone.
 
+### After builder PASS — NEVER validate inline
+
+You may NOT run validation gates yourself with Bash after the builder returns PASS. Reviewer + validator agents own that work. Specifically:
+
+- **FORBIDDEN after builder PASS**: `bun test ...`, `bun run lint`, `bun run typecheck`, `bun run validate:all`, `bun ./scripts/validate-manifests.ts`, or any other gate command. The harness has dedicated agents for this. Running them yourself doubles the work and contradicts the dispatch contract you wrote into the builder prompt.
+- **REQUIRED after builder PASS** (in this exact order):
+  1. One `Bash`: `bun src/scripts/loop.mts slice post-builder-fanout --id <slice-id> --repo "$PWD"` to materialize the 3 fanout dispatch prompts.
+  2. ONE message with 3 parallel `Agent` tool calls — reviewer-A, reviewer-B, validator. Parallel = same message, three tool-use blocks.
+  3. After all three return: `Bash write-final-synthesis` aggregating their results.
+  4. `Bash /loop:slice complete --id <slice-id>` then `/loop:slice grade --id <slice-id>`.
+
+The dispatch prompt you wrote for the builder typically encodes this contract verbatim. Honor it — do not paraphrase yourself into running gates inline because the builder's output "looks ready to me". The reviewer + validator catch what you miss. Live datapoint: see learning `lead-post-builder-bash-validation` and memory `feedback_lead_dispatch_mandate.md`.
+
 See `.claude/artifacts/loop/backlog/pending/FEAT-161.md` for the FEAT tracking this contract and the recurring-pause evidence trail.
 
 ## Identity
