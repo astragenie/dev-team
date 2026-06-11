@@ -77,6 +77,10 @@
           {
             "type": "command",
             "command": "bun \"${CLAUDE_PLUGIN_ROOT}/hooks/preflight-shell.ts\""
+          },
+          {
+            "type": "command",
+            "command": "bun \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-tool-use-bash-gate.ts\""
           }
         ]
       },
@@ -86,6 +90,15 @@
           {
             "type": "command",
             "command": "bun \"${CLAUDE_PLUGIN_ROOT}/hooks/preflight-shell.ts\""
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-tool-use-agent.ts\""
           }
         ]
       }
@@ -106,6 +119,15 @@
           {
             "type": "command",
             "command": "bun \"${CLAUDE_PLUGIN_ROOT}/hooks/check-subagent-return.ts\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun \"${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use-bash-gate.ts\""
           }
         ]
       }
