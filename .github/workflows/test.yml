@@ -7,7 +7,11 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,6 +21,10 @@ jobs:
         with:
           bun-version: latest
       - run: npm ci
+      - name: bun-hook smoke (cross-platform)
+        shell: bash
+        run: |
+          echo '{}' | bun "$GITHUB_WORKSPACE/hooks/check-redundant-read.ts"
       - run: node ./scripts/validate-manifests.ts
       - run: node ./scripts/validate-skills.ts
       - run: node ./scripts/validate-agents.ts
@@ -24,6 +32,7 @@ jobs:
       - run: node ./scripts/validate-loop-state.ts
       - run: node ./scripts/validate-bundles.ts
       - name: Validate contracts (against committed fixtures)
+        shell: bash
         run: |
           for f in tests/fixtures/openapi/*.openapi.yaml; do
             if [ "$(basename "$f")" = "broken-missing-examples.openapi.yaml" ]; then
@@ -37,6 +46,7 @@ jobs:
             fi
           done
       - name: Validate UX spec fixtures
+        shell: bash
         run: |
           for f in tests/fixtures/ux-specs/*.md; do
             if [ "$(basename "$f")" = "missing-operationid.md" ]; then
@@ -65,4 +75,5 @@ jobs:
       - run: bun run test
       - run: node ./scripts/e2e-smoke.ts
       - name: e2e smoke — ux validation
+        if: matrix.os == 'ubuntu-latest'
         run: bun run e2e:smoke:ux
