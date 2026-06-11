@@ -101,15 +101,6 @@
             "command": "bun \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-tool-use-agent.ts\""
           }
         ]
-      },
-      {
-        "matcher": "Agent",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-tool-use-agent.ts\""
-          }
-        ]
       }
     ],
     "PostToolUse": [
