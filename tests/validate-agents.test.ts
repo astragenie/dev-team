@@ -24,6 +24,7 @@ model: sonnet
 You are the builder on a Claude Code engineering team.
 
 TaskUpdate batching: never run >=3 back-to-back without intervening work.
+Coalesce Bash calls: chain related data-collection commands.
 
 ## Report contract
 
@@ -109,6 +110,7 @@ model: opus
 You are the lead for a small software team.
 
 TaskUpdate batching: never run >=3 back-to-back without intervening work.
+Coalesce Bash calls: chain related data-collection commands.
 
 ## Core responsibilities
 

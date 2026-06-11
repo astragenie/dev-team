@@ -123,6 +123,38 @@ function checkTaskUpdateBatching(
   }
 }
 
+// FEAT-157: primary agents that issue Bash regularly must carry the
+// coalescing rule. SLICE-67 measured 305 Bash calls/slice at ~4.86x
+// cache-prime ratio = 1.15M cache_create tokens. Rule cuts call count
+// ~40% by chaining pure data-collection commands.
+const BASH_COALESCING_REQUIRED = new Set([
+  "lead",
+  "builder",
+  "builder-be",
+  "builder-fe",
+  "reviewer",
+  "validator",
+  "architect",
+  "deployer",
+  "integrator",
+  "researcher"
+]);
+
+function checkBashCoalescing(
+  text: string,
+  fm: Record<string, string>,
+  label: string,
+  errors: string[]
+) {
+  const name = fm["name"];
+  if (name === undefined || !BASH_COALESCING_REQUIRED.has(name)) return;
+  if (!/Coalesce Bash calls/i.test(text)) {
+    errors.push(
+      `${label}: missing "Coalesce Bash calls" rule (FEAT-157). Primary agents issuing Bash regularly must carry the rule.`
+    );
+  }
+}
+
 function checkDuplicateNames(
   agents: Array<{ label: string; fm: Record<string, string> | null }>,
   errors: string[]
@@ -163,6 +195,7 @@ export async function validateAgents(agentsRoot = AGENTS_ROOT) {
     checkLineCount(text, fm, label, errors);
     checkRequiredSections(text, fm, label, errors);
     checkTaskUpdateBatching(text, fm, label, errors);
+    checkBashCoalescing(text, fm, label, errors);
   }
   checkDuplicateNames(agents, errors);
   return { ok: errors.length === 0, errors, agentCount: agents.length };

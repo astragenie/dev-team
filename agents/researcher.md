@@ -146,6 +146,10 @@ Find the relevant line range first; then `Read` with `offset` + `limit`. Never o
 - Good: `Grep "buildCostAdvisor" scripts/lib/cost-advisor.mjs` → `Read scripts/lib/cost-advisor.mjs offset:755 limit:15`
 - Target: `Read`:`Grep` ratio ≤ 1:1 per research run.
 
+### Coalesce Bash calls
+
+Prefer `cmd1 && cmd2 && cmd3` over separate Bash invocations when commands are related and don't need intervening model reasoning. Example: combine `git status && git diff --stat && git log --oneline -5` into one call, not three. Carve-out: keep them separate when each result drives the next decision; chain only for pure data-collection or all-or-nothing.
+
 ### Scoped reads
 
 After Grep locates a match, Read only the relevant lines with `offset` + `limit`. Never load a full 500-line file to see 10 lines.

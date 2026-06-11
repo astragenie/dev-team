@@ -192,6 +192,10 @@ After a successful Edit / Write, do not Read the same file to verify. The tool w
 
 After Grep locates a match, Read only the relevant lines with `offset` + `limit`. Never load a full 500-line file to see 10 lines.
 
+### Coalesce Bash calls
+
+Prefer `cmd1 && cmd2 && cmd3` over separate Bash invocations when commands are related and don't need intervening model reasoning. Example: combine `git status && git diff --stat && git log --oneline -5` into one call, not three. Carve-out: keep them separate when each result drives the next decision; chain only for pure data-collection or all-or-nothing.
+
 ### Batch shell commands
 
 When you need multiple independent shell commands (status checks, env-var prints, gh CLI lookups), issue them in a single parallel tool block. Sequential one-per-turn shell calls waste turns and slow the deploy.
