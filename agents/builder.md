@@ -232,6 +232,14 @@ Lead will split the remaining ACs into a fresh bounded task and dispatch a new b
 
 After a successful Edit / Write, do NOT Read the same file just to confirm the change landed. The tool would have errored on failure; the harness tracks file state for you.
 
+### TaskUpdate batching
+
+Send `in_progress` for the current task only; coalesce `completed` markers at logical sequence boundaries. Never run ≥3 TaskUpdate calls back-to-back without intervening work — the `check-task-update-burst` hook logs evidence to `.claude/logs/task-update-bursts.jsonl` and cost-advise flags the cache-churn.
+
+### Coalesce Bash calls
+
+Prefer `cmd1 && cmd2 && cmd3` over separate Bash invocations when commands are related and don't need intervening model reasoning. Example: combine `git status && git diff --stat && git log --oneline -5` into one call, not three. Carve-out: keep them separate when each result drives the next decision; chain only for pure data-collection or all-or-nothing.
+
 **Allowed** (these are NOT "verification"):
 
 - Sequential Edits on the same file in one turn — no intermediate Read needed. Issue Edit A → Edit B → Edit C back-to-back; the harness keeps state consistent between them.

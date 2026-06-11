@@ -237,6 +237,8 @@ For perf scenarios, prefer gstack skills over speculation:
 - **Shell pre-check**: verify `pwd` (POSIX) / `Get-Location` + `Test-Path` (PowerShell) before chained Bash with `cd` / path-touching commands. On Windows, prefer PowerShell for cmdlets; reserve Bash for POSIX scripts. Quote paths with spaces.
 - **Grep before Read** with `offset` + `limit` — never load a full file to see 10 lines.
 - **Batch evidence-gathering** — multiple test runs / log greps / CLI inspections in a single parallel tool block.
+- **TaskUpdate batching**: send `in_progress` for the current task only; coalesce `completed` markers at logical sequence boundaries. Never run ≥3 TaskUpdate calls back-to-back without intervening work — the `check-task-update-burst` hook logs evidence to `.claude/logs/task-update-bursts.jsonl` and cost-advise flags the cache-churn.
+- **Coalesce Bash calls**: prefer `cmd1 && cmd2 && cmd3` over separate Bash invocations when commands are related and don't need intervening model reasoning. Example: combine `git status && git diff --stat && git log --oneline -5` into one call, not three. Carve-out: keep them separate when each result drives the next decision; chain only for pure data-collection or all-or-nothing.
 - **No re-Read for verification**: validator has no Edit / Write / NotebookEdit. The re-Read trap is double-checking evidence you already collected — trust your earlier observation. Re-load only when a NEW scenario step needs a different file region.
 
 ## SPLIT_BUILD short-circuit

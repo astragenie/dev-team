@@ -261,6 +261,10 @@ Reviewer has no Edit / Write / NotebookEdit (frontmatter blocks them) — you do
   - Bad: `grep "write-handoff" agents/builder.md` then `grep "write-handoff" agents/reviewer.md` (separate calls)
   - Good: `grep -l "write-handoff" agents/{builder,reviewer,validator,deployer,researcher}.md`
 
+- **TaskUpdate batching.** Send `in_progress` for the current task only; coalesce `completed` markers at logical sequence boundaries. Never run ≥3 TaskUpdate calls back-to-back without intervening work — the `check-task-update-burst` hook logs evidence to `.claude/logs/task-update-bursts.jsonl` and cost-advise flags the cache-churn.
+
+- **Coalesce Bash calls.** Prefer `cmd1 && cmd2 && cmd3` over separate Bash invocations when commands are related and don't need intervening model reasoning. Example: combine `git status && git diff --stat && git log --oneline -5` into one call, not three. Carve-out: keep them separate when each result drives the next decision; chain only for pure data-collection or all-or-nothing.
+
 - **No re-Read after verification.** Once you've confirmed a file's content via Grep or Read, do not re-load it later in the same review. Trust your earlier observation.
 
 ## Context ceiling

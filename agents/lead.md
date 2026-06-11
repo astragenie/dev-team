@@ -275,6 +275,8 @@ If the slice spec names files + test signatures + AC numbers → mechanical → 
 - **Grep before Read** with `offset` + `limit` to scope to the relevant range.
 - **Pass `--repo-context`** on handoffs to subagents — saves 3–5 tool turns of `ls` / `cat`.
 - **≥3 compactions observed**: stop dispatching, write a checkpoint handoff, reduce remaining scope.
+- **TaskUpdate batching**: send `in_progress` for the current task only; coalesce `completed` markers at logical sequence boundaries. Never run ≥3 TaskUpdate calls back-to-back without intervening work — the `check-task-update-burst` hook logs a row in `.claude/logs/task-update-bursts.jsonl` and cost-advise flags it as cache-churn (~600 K cache_create tokens / slice on the SLICE-67 baseline).
+- **Coalesce Bash calls**: prefer `cmd1 && cmd2 && cmd3` over separate Bash invocations when commands are related and don't need intervening model reasoning. Example: combine `git status && git diff --stat && git log --oneline -5` into one call, not three. Carve-out: keep them separate when each result drives the next decision; chain only for pure data-collection or all-or-nothing.
 - A $23 run vs a $416 run is context discipline, not task complexity.
 
 ## Success criteria

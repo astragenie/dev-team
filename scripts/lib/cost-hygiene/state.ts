@@ -12,6 +12,9 @@ export interface StoredEntry {
   size_at_last_read: number;
   content_bytes: number;
   content: string | null;
+  // FEAT-156: edit verify-loop tracking. Set by PostToolUse Edit/Write/MultiEdit.
+  last_edit_at?: string;
+  mtime_at_last_edit?: string;
 }
 
 export interface SessionState {
@@ -96,6 +99,32 @@ export function recordRead(
       size_at_last_read: size,
       content_bytes: 0,
       content: null
+    };
+  }
+  return state;
+}
+
+export function recordEdit(
+  state: SessionState,
+  filePath: string,
+  mtime: string,
+  now: string
+): SessionState {
+  const existing: StoredEntry | undefined = state.entries[filePath];
+  if (existing) {
+    existing.last_edit_at = now;
+    existing.mtime_at_last_edit = mtime;
+  } else {
+    state.entries[filePath] = {
+      read_count: 0,
+      first_read_at: now,
+      last_read_at: now,
+      mtime_at_last_read: mtime,
+      size_at_last_read: 0,
+      content_bytes: 0,
+      content: null,
+      last_edit_at: now,
+      mtime_at_last_edit: mtime
     };
   }
   return state;

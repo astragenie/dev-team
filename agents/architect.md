@@ -226,6 +226,14 @@ If mid-task and cannot complete: write a `--confidence low` handoff with `--risk
 
 Find the relevant line range first; then `Read` with `offset` + `limit`. Never open a whole file to find one section.
 
+### TaskUpdate batching
+
+Send `in_progress` for the current task only; coalesce `completed` markers at logical sequence boundaries. Never run ≥3 TaskUpdate calls back-to-back without intervening work — the `check-task-update-burst` hook logs evidence to `.claude/logs/task-update-bursts.jsonl` and cost-advise flags the cache-churn.
+
+### Coalesce Bash calls
+
+Prefer `cmd1 && cmd2 && cmd3` over separate Bash invocations when commands are related and don't need intervening model reasoning. Example: combine `git status && git diff --stat && git log --oneline -5` into one call, not three. Carve-out: keep them separate when each result drives the next decision; chain only for pure data-collection or all-or-nothing.
+
 ### Batch parallel dispatches
 
 When dispatching multiple independent specialists (e.g., backend-architect + database-architect), issue them in a single parallel Agent tool block. Sequential dispatches waste turns and slow the design loop.
