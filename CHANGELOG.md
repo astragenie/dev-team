@@ -5,6 +5,41 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.33.2 — 2026-06-11 — lead source-read prohibition
+
+### Behavior change
+
+- **Lead is now hard-prohibited from reading source files.** SLICE-142
+  recon-leak post-mortem: lead spent ~5 min and ~30k opus tokens reading 4
+  `.cs` source files, 4 globs, and 3 symbol-discovery greps before the first
+  builder dispatch — even though the parent orchestration prompt explicitly
+  said scope was well-defined and to skip the architect. Existing "5+ Reads
+  without dispatch" rule counted quantity, not kind: orchestrator-context
+  reads (slice / plan / run-brief / FEAT) ate the budget while source reads
+  slipped through.
+
+### Changes to `agents/lead.md`
+
+- New "What lead reads (whitelist)" section: ALLOWED ≤4 orchestrator
+  artifacts (slice, plan, run-brief, FEAT, ≤1 DEC-*); FORBIDDEN source
+  files (`*.cs` / `*.ts` / `*.py` / `*.go` / `*.cshtml`), tests, entities,
+  controllers, services, project config (`.csproj`, `package.json`,
+  `Dockerfile`). Any signature / call-site / implementation question →
+  dispatch `crew:investigator` (haiku, ~$0.20) or `crew:researcher`.
+- Hard limit "zero source-file reads" at the top of the Identity block —
+  source-file Read = "you're acting as an implementer; stop and dispatch."
+- Delegation thresholds tightened: ANY source Read → dispatch (threshold
+  is now 1, not 3); ANY Glob / Grep for symbol discovery (class names,
+  method signatures, interface definitions) → dispatch. Lead's Grep is
+  reserved for routing signals (e.g. detecting `stack:csharp` tag).
+- Pre-done checklist self-audit: "Did lead read any source file directly?
+  → record in synthesis as `lead_recon_leak: <count>` for cost-advise
+  trend tracking."
+- Cost rationale: lead source reads burn opus tokens and the builder will
+  re-read the same files in its own context. Pay twice for nothing.
+
+Net diff: +23 / -2 in `agents/lead.md`; ≤350 line cap preserved.
+
 ## v0.33.1 — 2026-06-11 — dispatch-timing handle cross-process fix
 
 ### Bug fix
