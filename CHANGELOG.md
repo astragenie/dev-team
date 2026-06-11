@@ -5,6 +5,109 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.33.0 — 2026-06-11 — agent capability metadata + Phase 1 slice-perf telemetry + lead.md OpenAI 8.7/10 review
+
+### Features
+
+- **Agent capabilities frontmatter:** every main and 3rdparty agent under `agents/**/*.md`
+  now declares a structured `capabilities:` block (`role` / `surfaces` / `stacks` /
+  `concerns` / `scopes` / `lens` / `priority`). 30 agents populated. Lead routing
+  remains backward-compatible — missing capabilities → wildcard match. Sets up the
+  capability-registry consumer (FEAT-160).
+- **Phase 1 slice-perf telemetry (FEAT-149/150/151):**
+  - `scripts/lib/dispatch-timing.ts` — per-subagent-dispatch JSONL writer (runId,
+    sliceId, agent, model, wallMs, toolCalls map, bashDurationMs, skillLoadCount,
+    tokenIn, tokenOut) appending to `.claude/logs/dispatch-timing.jsonl`. Per-worktree
+    path via `CLAUDE_PLUGIN_ROOT`; `CREW_DISPATCH_TIMING_LOG` env override for tests.
+  - `scripts/lib/bash-gate-timer.ts` + new PreToolUse / PostToolUse Bash hooks tap —
+    per-gate duration + exit code to `.claude/logs/bash-gates.jsonl`. Classifies
+    `lint` / `format:check` / `typecheck` / `test` / `audit` / `validate:all` / `npm-ci`.
+  - `scripts/lib/dispatch-timing-reader.ts` — aggregator returning top-3 slowest,
+    top-3 token-heaviest, total wall, by-gate breakdown, timeout count.
+  - `scripts/crew.ts write-cost-report` extended with a "Per-dispatch breakdown"
+    section appended below the existing "By Model" block. Toggle off via env
+    `CREW_COST_REPORT_DISPATCH_DETAIL=0`. Includes a Skills column per FEAT-151
+    spec gap fix.
+  - Dispatch-timing start sites wired via a new PreToolUse Agent hook + extended
+    `check-subagent-return` SubagentStop tap. Usage parsed from `<usage>total_tokens:
+    N tool_uses: M</usage>` markers in subagent return bodies for coarse token + tool
+    counts.
+
+### Lead.md refactor (OpenAI 8.7/10 review applied)
+
+- **Routing improvements:**
+  - Architect bottleneck removed: architect now precedes builder **only** for
+    HIGH risk OR `surface:schema` / `surface:api` (contract) / `concern:governance`
+    slices — bug fix / test fix / small refactor go straight to builder.
+  - Confidence aggregation formula added: `slice_confidence = 0.2 * builder_confidence
+    + 0.4 * reviewer_confidence + 0.4 * validator_confidence` with tier floors
+    (LOW ≥ 0.6, MEDIUM ≥ 0.7, HIGH ≥ 0.8). Below tier floor but ≥ 0.4 → mark
+    `blocked` on lowest lens; below 0.4 → escalate to user.
+  - Reviewer disagreement arbitration: lens conflict (PASS vs NEEDS_FIX) →
+    dispatch `crew:3rdparty:architect-reviewer` for binding tiebreaker, single
+    round, decision final.
+  - Tag-to-agent table replaced by concrete "Need / Agent / Stack" 16-row quick
+    reference covering the main crew. Specialist routing delegates to the new
+    agent capabilities frontmatter.
+- **Smell fixes (six self-reference + contradiction bugs):**
+  - `escalated_to_lead` references corrected — lead cannot escalate to itself.
+  - "Update instruction files" rule on no-edit role rewritten to dispatch.
+  - "Write artifact" verb in Golden Path Step 6 made explicit: `node scripts/crew.ts
+    write-run-brief` / `write-final-synthesis` CLI invocation — closes the
+    Bash-bypass loophole.
+  - Golden Path 7 steps → 6 (Step 3 + 4 merged; concurrency contradiction with
+    Risk-tier gate ladder fixed).
+  - `concern:governance` triple-routing disambiguated (enforcement → architect,
+    customer-facing → document-writer, in-prompt policy → architect).
+- **Slim-down:**
+  - Composition formula section deleted (scaffolding noise lead misread as a
+    load instruction).
+  - Pre-dispatch decomposition table merged into Step 3 quick-pick.
+  - Triple-repeated rules (artifact write, production-promotion approval)
+    consolidated to single source of truth.
+- **Agent primacy + Task tracking:**
+  - Frontmatter `tools: [Agent, Bash, Read, Grep, Glob, Skill, ToolSearch,
+    TaskCreate, TaskUpdate, TaskList, TaskGet]` — `Agent` at position 0
+    telegraphs dispatch primacy.
+  - Identity emphasis: "Your primary tool is Agent. 5+ Reads without an
+    Agent dispatch in between → you're acting as an implementer; stop and
+    dispatch."
+  - New `## Task tracking` section — Task* tools as dispatch ledger. One Task
+    per planned dispatch with `blockedBy` for dependencies (reviewer blockedBy
+    builder; integrator blockedBy builder-be + builder-fe; deployer blockedBy
+    validator). `TaskList` enforces dispatch budget visibility, SLA cap counts,
+    and cross-slice followup persistence.
+  - Pre-done checklist gained `TaskList` zero-`in_progress` as first mechanical
+    check.
+
+### Backlog (filed for follow-up)
+
+- **FEAT-158** (P1, autonomous_safe=false): move embedded policy out of lead.md
+  into `skills/workflow/`. OpenAI weak point #1 ("too much embedded policy",
+  -0.5 score impact). Target: lead.md ≤ 200 lines.
+- **FEAT-159** (P2, autonomous_safe=true, depends_on FEAT-151): rolling
+  per-agent stats aggregator (learning loop) over Phase 1 telemetry. OpenAI
+  weak point #4.
+- **FEAT-160** (P3, autonomous_safe=false): capability registry built from
+  agent frontmatter (consumer for this release's capability metadata). OpenAI
+  weak point #2.
+
+### Docs
+
+- New `docs/standards/agent-capabilities-schema.md` — capabilities block schema,
+  roles, surfaces, stacks, concerns, scopes, lens, priority, selection algorithm.
+- New `docs/superpowers/specs/2026-06-11-slice-perf-2x-3x-design.md` — 2-3×
+  slice speedup spec covering Phase 1 telemetry + Phase 2 cuts.
+- New `docs/superpowers/plans/2026-06-11-slice-perf-2x-3x.md` — task-by-task
+  TDD plan for FEAT-149/150/151 (delivered in this release) and FEAT-152/154/156
+  (Phase 2, gated on baseline).
+
+### Notes
+
+- Memory: `feedback_lead_dispatch_mandate.md` and `feedback_model_assignments_done.md`
+  saved during this release cycle; full list in user memory index.
+- 1 pre-existing flake `projects-root-override` remains; out of scope.
+
 ## v0.32.0 — 2026-06-11 — hook runtime swap (node → bun) + agent scope discipline
 
 ### Performance
