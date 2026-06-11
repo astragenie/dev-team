@@ -127,8 +127,11 @@ function checkTaskUpdateBatching(
 // coalescing rule. SLICE-67 measured 305 Bash calls/slice at ~4.86x
 // cache-prime ratio = 1.15M cache_create tokens. Rule cuts call count
 // ~40% by chaining pure data-collection commands.
+//
+// 'lead' is NOT in this set — lead.md frontmatter excludes Bash (lead is
+// pure dispatcher; the slice-close CLI sequence runs from crew:document-writer
+// per the lead-dispatch-discipline diagnostic plan).
 const BASH_COALESCING_REQUIRED = new Set([
-  "lead",
   "builder",
   "builder-be",
   "builder-fe",

@@ -79,9 +79,9 @@ test("parseAgentPreInput: minimal payload with only tool_name Agent and tool_inp
 
 // ── lookupAgentModel ──────────────────────────────────────────────────────────
 
-test("lookupAgentModel: crew:lead → opus", async () => {
+test("lookupAgentModel: crew:lead → sonnet", async () => {
   const model = await lookupAgentModel("crew:lead");
-  assert.equal(model, "opus");
+  assert.equal(model, "sonnet");
 });
 
 test("lookupAgentModel: crew:builder → sonnet", async () => {
