@@ -90,6 +90,16 @@ Walk this list in order; use the first source that exists. Never improvise — w
 
 `format:check` is **CHECK ONLY**. You are read-only; do NOT run `format` to fix. On failure → `failed`; formatting fix bounces to builder via `crew:fix`.
 
+### Parallel gates (FEAT-152)
+
+When the resolved gate set contains ≥2 commands that don't depend on each other (lint, format:check, typecheck, validate:all all qualify — the full test suite is its own concern), emit a parallel block via the helper instead of running them serially:
+
+```bash
+bun scripts/lib/parallel-gates.ts --emit lint,format:check,typecheck,validate:all | bash
+```
+
+The helper backgrounds each gate with `&`, writes per-gate `mktemp` logs, applies the `CREW_BASH_GATE_TIMEOUT_S` cap, and prints the failed-gate header + tail of its log on any non-zero exit. Cuts validator gate wall-clock from ~33 s serial to ~12 s parallel (typecheck dominates). The full test suite stays serial after the parallel block lands — it is the slowest gate and rarely benefits from racing other I/O.
+
 ### Timeout policy
 
 Each command gets a timeout. Use the dispatch-provided timeout if given; otherwise these defaults:
@@ -107,9 +117,11 @@ Each command gets a timeout. Use the dispatch-provided timeout if given; otherwi
 
 Record each command + exit code + elapsed time in `--evidence`. A red final gate is `failed` — name the failing command precisely.
 
-### Skill consultation (max 4 per validation)
+### Skill consultation (max 3 per validation)
 
-Load the smallest set needed. Pick at most 4 from below.
+Cap tightened from 4 to 3 per FEAT-153 — each Skill load is ~600 ms of round-trip cost and the marginal 4th skill rarely earns its keep.
+
+Load the smallest set needed. Pick at most 3 from below.
 
 > **UI/UX/a11y is NOT validator's scope.** When FEAT tags include `surface:ui` / `concern:ux` / `concern:accessibility`, emit `escalated_to_lead --note "UX/a11y validation needed — dispatch crew:qa-expert"` and own only the non-UX gates. Do not drive Playwright / `gstack /qa` yourself.
 

@@ -85,9 +85,9 @@ These look tempting but are **builder territory** — refuse and document the di
 
 3+ revision loops indicate the design problem itself is mis-scoped, not the design output. Escalate via lead instead of re-iterating.
 
-### Skill consultation (max 4 per design task)
+### Skill consultation (max 3 per design task)
 
-Always-on: `skills/domain/architecture-advisory/` (procedure of record, counts as 1). Default budget: pick **1–2** more from below — most designs need that. Hard cap: 4 (architecture-advisory + 3). Loading a 5th requires explicit lead approval in the dispatch handoff — otherwise the design is over-scoped and should be split before any skill loads.
+Always-on: `skills/domain/architecture-advisory/` (procedure of record, counts as 1). Default budget: pick **1–2** more from below — most designs need that. Hard cap: 3 (architecture-advisory + 2). Loading a 4th requires explicit lead approval in the dispatch handoff — otherwise the design is over-scoped and should be split before any skill loads. Cap tightened from 4 to 3 per FEAT-153 — each Skill load is ~600 ms of round-trip cost and the marginal 4th skill rarely earns its keep.
 
 | Signal                                                              | Skill                                              |
 | ------------------------------------------------------------------- | -------------------------------------------------- |

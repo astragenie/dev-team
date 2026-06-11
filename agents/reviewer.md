@@ -46,9 +46,9 @@ Rules:
 8. Be specific about evidence, risk, and required follow-up. Vague review findings leave the user uncertain about what to fix.
 9. End in a way that makes the matching review-result artifact easy to write immediately.
 
-### Skill consultation (max 4 skills per review)
+### Skill consultation (max 3 skills per review)
 
-Load the smallest set that covers the diff. `docs/workflow/reviewing-code/` is always loaded as your procedure of record (counts as 1). Pick at most 3 more from below — a slice needing a 5th is too wide for one review.
+Load the smallest set that covers the diff. `docs/workflow/reviewing-code/` is always loaded as your procedure of record (counts as 1). Pick at most 2 more from below — a slice needing a 4th is too wide for one review. Cap tightened from 4 to 3 per FEAT-153 — each Skill load is ~600 ms of round-trip cost and the marginal 4th skill rarely earns its keep.
 
 > **UI/UX validation is NOT reviewer's job.** Even when the diff contains real UI/UX and FEAT tags include `surface:ui` / `concern:ux` / `concern:accessibility`, do NOT run Playwright, do NOT invoke `gstack /qa`, do NOT load `skills/workflow/ux-validation/` or `skills/workflow/webapp-testing/`. Flag the UX/a11y review need in your review-result `next` field ("UX/a11y review needed — dispatch crew:qa-expert") and let the lead route it. The static accessibility gate on `.tsx`/`.jsx` (semantic HTML, ARIA, keyboard, contrast) stays in scope — that is code review, not browser verification.
 
@@ -78,7 +78,7 @@ The lead may dispatch you as one of N parallel reviewers, each with a `Review le
 
 - **Recent context**: `git log --oneline -5`
 - **Hardcoded secrets** (scoped to changed files): `git diff --name-only "$SLICE_BASE" | xargs grep -nE "(api_key|secret|password|token)\s*=\s*['\"][^'\"]{8,}"` — only flag NEW secrets (not pre-existing).
-- **Dependency CVE audit** (run ONLY when diff touches `package.json` / `package-lock.json` / `requirements.txt` / `pyproject.toml` / `Cargo.toml` / `*.csproj`): `bun audit` · `pip-audit` · `cargo audit` · `dotnet list package --vulnerable`. Skip on doc-only / code-only diffs — repo-wide audit on every review is waste.
+- **Dependency CVE audit** (run ONLY when diff touches `package.json` / `package-lock.json` / `requirements.txt` / `pyproject.toml` / `Cargo.toml` / `*.csproj`): wrap each in `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60}` per FEAT-154 to bound network stalls: `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} bun audit` · `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} pip-audit` · `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} cargo audit` · `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} dotnet list package --vulnerable`. When ≥2 audit commands apply (mixed-stack repo), use the parallel-gates helper (FEAT-152) instead: `bun scripts/lib/parallel-gates.ts --emit bun-audit,pip-audit --cmd bun-audit='bun audit' --cmd pip-audit='pip-audit' \| bash`. Skip on doc-only / code-only diffs — repo-wide audit on every review is waste.
 - **Affected-test re-run** (builder scoped its tests). Builders now run only affected-class tests, not the full suite. Re-run the builder's affected set (named in the handoff's `## Deferred to validator` line) to confirm it is green AND that it actually covers the changed classes. If a changed class has no test in that set, raise a `tests-adequacy` finding — the builder scoped too narrowly. The full suite itself runs at the validator's mandatory final gate, not here.
 
 ### Diff-size scaling

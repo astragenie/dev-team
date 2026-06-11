@@ -46,7 +46,9 @@ Scope tests + lint to this set. Do not widen it.
 
 #### Typecheck / compile (hard-cap 60s; report TIMEOUT and continue if exceeded)
 
-- Bun / Node / TS → `timeout 60 bun run typecheck` (tsc whole-project; not cheaply scopable)
+The cap is configurable via `CREW_BASH_GATE_TIMEOUT_S` (default 60). Lift it for slow CI runners — never below 30 (covers tsc cold start).
+
+- Bun / Node / TS → `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} bun run typecheck` (tsc whole-project; not cheaply scopable)
 - C# / .NET → `dotnet build --nologo --no-restore <touched .csproj>` (scope to project owning touched `*.cs`; not whole solution)
 - Python → `mypy <touched paths>` or `pyright <touched paths>`
 
