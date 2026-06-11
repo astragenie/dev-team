@@ -48,17 +48,18 @@ For ownership, prompt size bar, lessons-to-standards pipeline, and the three-tes
 
 **Requirements:** Node.js 22.6+ (the plugin uses `--experimental-strip-types` to run TypeScript sources without a build step).
 
-Add the marketplace and install the plugin in Claude Code:
+Add the central astra marketplace and install the plugin in Claude Code:
 
 ```
-/plugin marketplace add sergeymilashico/hero-crew
+/plugin marketplace add sergeymilashico/astra-marketplace
 /plugin install crew@astra
 ```
 
-The companion `loop` plugin lives in the same marketplace:
+The companion plugins live in the same marketplace:
 
 ```
 /plugin install loop@astra
+/plugin install cortex@astra
 ```
 
 Verify locally with `bun run test`. Pinned release: `v0.33.2`.
