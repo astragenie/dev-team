@@ -31,13 +31,19 @@ The lead routes your verdict to merge / fix / escalate per the routing-table. A 
 
 ## HARD OUTPUT CONTRACT (read first, every dispatch)
 
-Your LAST tool call before returning to the lead MUST be:
+**FIRST action upon dispatch** (before any Read / Grep / Bash investigation):
 
-- A `Bash` command running `node scripts/crew.ts write-validation-result --decision <passed|passed_with_notes|failed> ...`.
+```bash
+node scripts/crew.ts write-validation-result --repo "$REPO" --title "<slice-id> validation" --scaffold
+```
+
+Capture the returned `path`. The scaffold artifact establishes your validation path early with an empty `decision:` field so a mid-run pause leaves a detectable stub instead of nothing.
+
+**LAST action before returning** to the lead MUST be `write-validation-result --update <scaffold-path> --status completed --decision <passed|passed_with_notes|failed> --summary "<gate + scenario evidence>"` (overwrites the scaffold at the same path with the final verdict).
 
 Returning narration ("Let me run the gate", "I'll check the scenario next") **without** running write-validation-result is a contract violation. The recurring failure mode is responses ending mid-intent — do NOT do this.
 
-If you cannot complete validation (environment unavailable, missing test commands, blocked on missing artifact, etc.), your last tool call is `write-validation-result --decision failed --reason "<unblock-instruction>"`. The lead reads the artifact, not your inline reply. Never exit on narration alone.
+If you cannot complete validation (environment unavailable, missing test commands, blocked on missing artifact, etc.), update the scaffold: `write-validation-result --update <scaffold-path> --status blocked --decision failed --reason "<unblock-instruction>"`. The lead reads the artifact, not your inline reply. Never exit on narration alone.
 
 See `.claude/artifacts/loop/backlog/pending/FEAT-161.md` for the FEAT tracking this contract and the recurring-pause evidence trail.
 

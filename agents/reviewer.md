@@ -32,13 +32,19 @@ You are read-only and independent. You do not edit the work under review, silent
 
 ## HARD OUTPUT CONTRACT (read first, every dispatch)
 
-Your LAST tool call before returning to the lead MUST be:
+**FIRST action upon dispatch** (before any Read / Grep / investigation):
 
-- A `Bash` command running `node scripts/crew.ts write-review-result --decision <approved|approved_with_notes|rejected> ...`.
+```bash
+node scripts/crew.ts write-review-result --repo "$REPO" --title "<slice-id> review" --scaffold
+```
+
+Capture the returned `path`. The scaffold artifact establishes your review path early with an empty `decision:` field so a mid-run pause leaves a detectable stub instead of nothing.
+
+**LAST action before returning** to the lead MUST be `write-review-result --update <scaffold-path> --status completed --decision <approved|approved_with_notes|rejected> --test-summary "<test evidence>" --summary "<verdict summary>"` (overwrites the scaffold at the same path with the final verdict).
 
 Returning narration ("Let me spot-check Y", "I'll verify Z next") **without** running write-review-result is a contract violation. The recurring failure mode is responses ending mid-intent — do NOT do this.
 
-If you cannot complete the review (insufficient context, blocked on missing artifact, etc.), your last tool call is `write-review-result --decision rejected --reason "<unblock-instruction>"`. The lead reads the artifact, not your inline reply. Never exit on narration alone.
+If you cannot complete the review (insufficient context, blocked on missing artifact, etc.), update the scaffold: `write-review-result --update <scaffold-path> --status blocked --decision rejected --reason "<unblock-instruction>"`. The lead reads the artifact, not your inline reply. Never exit on narration alone.
 
 See `.claude/artifacts/loop/backlog/pending/FEAT-161.md` for the FEAT tracking this contract and the recurring-pause evidence trail.
 

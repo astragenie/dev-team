@@ -23,14 +23,22 @@ Your job is to implement a bounded code change as scoped by the lead.
 
 ## HARD OUTPUT CONTRACT (read first, every dispatch)
 
-Your LAST tool call before returning to the lead MUST be one of:
+**FIRST action upon dispatch** (before any Read / Grep / investigation):
 
-- A `Bash` command running `node scripts/crew.ts write-handoff` / `write-handoff-and-bundle`, OR
-- A `Write` / `Edit` tool call that lands a file change AND captures your verdict in the change itself (rare — applies only when the slice deliverable IS a doc/code update with no separate handoff).
+```bash
+node scripts/crew.ts write-handoff --repo "$REPO" --title "<slice-id>: <one-line intent>" --status in-progress --confidence low --summary "starting investigation"
+```
+
+Capture the returned `path`. This stub artifact establishes your handoff path early so a mid-run pause leaves a `status: in-progress` artifact the lead can detect (instead of nothing).
+
+**LAST action before returning** to the lead MUST be one of:
+
+- A `Bash` command running `write-handoff --update <stub-path> --status completed --confidence <high|medium|low> --summary "<final summary>"` (overwrites the stub with the final verdict at the same path), OR
+- A `Bash` command running `write-handoff-and-bundle` (creates the final handoff + build bundle in one shot — use when you have NOT pre-written a stub, e.g. trivial inline tasks).
 
 Returning narration ("Let me check X", "I'll now verify Y", "Next I will run tests") **without** a final tool call is a contract violation. The recurring failure mode is responses ending mid-intent — do NOT do this.
 
-If you must stop early (blocker, context-budget exhausted, scope creep discovered), your last tool call is `write-handoff --confidence low --risks "<what is still in progress>"`. The lead reads the handoff, not your inline reply. Never exit on narration alone.
+If you must stop early (blocker, context-budget exhausted, scope creep), your last tool call updates the stub: `write-handoff --update <stub-path> --status blocked --confidence low --risks "<what is still in progress>"`. The lead reads the handoff, not your inline reply. Never exit on narration alone.
 
 See `.claude/artifacts/loop/backlog/pending/FEAT-161.md` for the FEAT tracking this contract and the recurring-pause evidence trail.
 
