@@ -16,6 +16,7 @@ pm_effort_estimate: 0.85
 pm_strategic_alignment: 0.85
 pm_technical_risk: 0.85
 pm_dependency_depth: 0.95
+composite_score: 0.805
 triage_notes: "Tiny PreToolUse/PostToolUse hook tap, paired with FEAT-149 telemetry; classifier + map keyed by event-id is well-understood pattern; feeds Phase 2 'hang frequency' metric."
 ---
 # FEAT-150: Bash gate timer helper

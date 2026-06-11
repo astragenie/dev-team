@@ -16,6 +16,7 @@ pm_effort_estimate: 0.85
 pm_strategic_alignment: 0.55
 pm_technical_risk: 0.85
 pm_dependency_depth: 0.4
+composite_score: 0.603
 triage_notes: "Mirrors shipped 60s timeout pattern (765c53c, cfe26e7) to reviewer + reviewer-validator only; tail-latency mitigation not median; 2 file edits, lowest-risk Phase 2 lever but smallest impact."
 ---
 # FEAT-154: Bash hard caps everywhere

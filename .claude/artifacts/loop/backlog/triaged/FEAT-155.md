@@ -16,6 +16,7 @@ pm_effort_estimate: 0.55
 pm_strategic_alignment: 0.95
 pm_technical_risk: 0.55
 pm_dependency_depth: 0.4
+composite_score: 0.713
 triage_notes: "Highest expected cache_create savings (~600K tokens/slice) directly maps to SLICE-67 HIGH severity TaskUpdate burst flag (1750× cache-prime ratio); touches 6 primary agent prompts + new hook + validator lint rule, blocked by Phase 1 baseline."
 ---
 # FEAT-155: TaskUpdate batching rule + burst-detector hook

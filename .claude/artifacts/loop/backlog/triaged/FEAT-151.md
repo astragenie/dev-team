@@ -16,6 +16,7 @@ pm_effort_estimate: 0.75
 pm_strategic_alignment: 0.85
 pm_technical_risk: 0.8
 pm_dependency_depth: 0.85
+composite_score: 0.763
 triage_notes: "Cost-report extension that closes Phase 1 telemetry loop; backward-compatible append with env kill-switch; deps on 149+150 land first but no agent edits, low risk."
 ---
 # FEAT-151: Cost-report per-dispatch breakdown section

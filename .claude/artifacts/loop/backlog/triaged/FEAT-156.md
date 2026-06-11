@@ -16,6 +16,7 @@ pm_effort_estimate: 0.85
 pm_strategic_alignment: 0.85
 pm_technical_risk: 0.8
 pm_dependency_depth: 0.4
+composite_score: 0.775
 triage_notes: "Extends existing check-redundant-read hook to block Edit verify-loop re-Reads: SLICE-67 measured 73 redundant Reads + 9.9% Edit failure rate; pure hook addition, autonomous_safe=true; mirrors documented user-feedback pattern."
 ---
 # FEAT-156: Edit verify-loop dedup hook extension

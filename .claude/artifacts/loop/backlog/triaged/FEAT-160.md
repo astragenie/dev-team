@@ -16,6 +16,7 @@ pm_effort_estimate: 0.3
 pm_strategic_alignment: 0.5
 pm_technical_risk: 0.35
 pm_dependency_depth: 0.9
+composite_score: 0.468
 triage_notes: "Capability registry from OpenAI review is speculative (scales to 30+ agents — we have 17); touches every agent frontmatter + schema-debate risk (overlap with feat-tag-schema.md); declined-adjacent: pay refactor cost now for problem we don't have."
 ---
 # FEAT-160: Dynamic capability discovery (agent capability registry)

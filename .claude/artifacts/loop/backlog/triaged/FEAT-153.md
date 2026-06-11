@@ -16,6 +16,7 @@ pm_effort_estimate: 0.45
 pm_strategic_alignment: 0.75
 pm_technical_risk: 0.45
 pm_dependency_depth: 0.4
+composite_score: 0.578
 triage_notes: "Skill cap=3 + pre-rendered universals saves ~600ms/skill load but renders content into every agent prompt with hash-drift CI gate; semantic-preservation risk on compression; touches all 17 agents."
 ---
 # FEAT-153: Skill cap=3 + pre-rendered universals

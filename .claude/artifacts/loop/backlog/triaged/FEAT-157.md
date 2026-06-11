@@ -16,6 +16,7 @@ pm_effort_estimate: 0.55
 pm_strategic_alignment: 0.75
 pm_technical_risk: 0.6
 pm_dependency_depth: 0.4
+composite_score: 0.605
 triage_notes: "Bash coalescing rule targets SLICE-67's 305 Bash calls/slice (1.15M cache_create tokens); rule edit + validate-agents lint across 10 primary agent prompts; carve-out language must be carefully written to avoid losing per-step reasoning."
 ---
 # FEAT-157: Bash call coalescing rule + lint
