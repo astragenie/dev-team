@@ -4,13 +4,13 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 const PATTERNS: Array<[RegExp, string]> = [
-  [/\bbun (?:run )?lint\b/, "lint"],
-  [/\bbun (?:run )?format:check\b/, "format:check"],
-  [/\bbun (?:run )?typecheck\b/, "typecheck"],
-  [/\bbun (?:run )?test\b/, "test"],
-  [/\bbun audit\b/, "audit"],
-  [/\bbun (?:run )?validate:all\b/, "validate:all"],
-  [/\bnpm ci\b/, "npm-ci"]
+  [/\bbun(?:\s+run)?\s+lint(?:\s|$)/, "lint"],
+  [/\bbun(?:\s+run)?\s+format:check(?:\s|$)/, "format:check"],
+  [/\bbun(?:\s+run)?\s+typecheck(?:\s|$)/, "typecheck"],
+  [/\bbun(?:\s+run)?\s+test(?:\s|$)/, "test"],
+  [/\bbun\s+audit(?:\s|$)/, "audit"],
+  [/\bbun(?:\s+run)?\s+validate:all(?:\s|$)/, "validate:all"],
+  [/\bnpm\s+ci(?:\s|$)/, "npm-ci"]
 ];
 
 export function classifyBashGate(cmd: string): string | null {

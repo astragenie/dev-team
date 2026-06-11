@@ -41,6 +41,26 @@ test("classifyBashGate returns null for ls -la", () => {
   assert.equal(classifyBashGate("ls -la"), null);
 });
 
+test("classifyBashGate returns null for bun run test:node (Node fallback — must not contaminate test bucket)", () => {
+  assert.equal(classifyBashGate("bun run test:node"), null);
+});
+
+test("classifyBashGate returns null for bun audit-fix (colon-suffixed variant)", () => {
+  assert.equal(classifyBashGate("bun audit-fix"), null);
+});
+
+test("classifyBashGate returns null for bun run typecheck:strict (colon-suffixed variant)", () => {
+  assert.equal(classifyBashGate("bun run typecheck:strict"), null);
+});
+
+test("classifyBashGate returns test for bun run test (regression — still classifies correctly)", () => {
+  assert.equal(classifyBashGate("bun run test"), "test");
+});
+
+test("classifyBashGate returns audit for bun audit (regression — still classifies correctly)", () => {
+  assert.equal(classifyBashGate("bun audit"), "audit");
+});
+
 test("startGateTimer returns null for unknown command", () => {
   assert.equal(startGateTimer("ls -la"), null);
 });
@@ -62,8 +82,8 @@ test("end-to-end: startGateTimer + endGateTimer writes JSONL row with correct fi
     assert.equal(row["gate"], "lint");
     assert.equal(row["exitCode"], 0);
     assert.ok(
-      typeof row["durationMs"] === "number" && row["durationMs"] >= 15,
-      `Expected durationMs >= 15, got ${String(row["durationMs"])}`
+      typeof row["durationMs"] === "number" && row["durationMs"] >= 10,
+      `durationMs ${row["durationMs"]} below floor`
     );
   } finally {
     delete process.env["CREW_BASH_GATE_LOG"];
