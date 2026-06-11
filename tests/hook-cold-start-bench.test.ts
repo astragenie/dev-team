@@ -1,9 +1,12 @@
 // tests/hook-cold-start-bench.test.ts
-import { describe, expect, test } from "bun:test";
+import { test } from "node:test";
+import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { join } from "node:path";
+import path from "node:path";
+import url from "node:url";
 
-const HOOK = join(import.meta.dir, "..", "hooks", "check-redundant-read.ts").replace(/\\/g, "/");
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const HOOK = path.join(__dirname, "..", "hooks", "check-redundant-read.ts").replace(/\\/g, "/");
 const RUNTIME = process.env["HOOK_BENCH_RUNTIME"] ?? "bun";
 const RUNS = 100;
 
@@ -18,37 +21,35 @@ function percentile(sorted: number[], p: number): number {
   return sorted[idx]!;
 }
 
-describe(`hook cold start (${RUNTIME})`, () => {
-  test(
-    `median + p95 over ${RUNS} cold spawns`,
-    () => {
-      const samples: number[] = [];
-      const args = RUNTIME === "node" ? ["--experimental-strip-types", HOOK] : [HOOK];
-      for (let i = 0; i < RUNS; i++) {
-        const start = process.hrtime.bigint();
-        const res = spawnSync(RUNTIME, args, {
-          env: { ...process.env, CREW_COST_HYGIENE: "1" },
-          input: "{}\n",
-        });
-        const elapsedMs = Number(process.hrtime.bigint() - start) / 1_000_000;
-        expect(res.status).toBe(0);
-        samples.push(elapsedMs);
+test(
+  `hook cold start (${RUNTIME}): median + p95 over ${RUNS} cold spawns`,
+  { timeout: 30000 },
+  () => {
+    const samples: number[] = [];
+    const args = RUNTIME === "node" ? ["--experimental-strip-types", HOOK] : [HOOK];
+    for (let i = 0; i < RUNS; i++) {
+      const start = process.hrtime.bigint();
+      const res = spawnSync(RUNTIME, args, {
+        env: { ...process.env, CREW_COST_HYGIENE: "1" },
+        input: "{}\n",
+      });
+      const elapsedMs = Number(process.hrtime.bigint() - start) / 1_000_000;
+      assert.equal(res.status, 0);
+      samples.push(elapsedMs);
+    }
+    samples.sort((a, b) => a - b);
+    const p50 = percentile(samples, 0.5);
+    const p95 = percentile(samples, 0.95);
+    console.log(`hook cold start (${RUNTIME}) p50=${p50.toFixed(1)}ms p95=${p95.toFixed(1)}ms`);
+    if (RUNTIME === "bun") {
+      if (IS_WINDOWS) {
+        // Windows: Bun cold start floor ~88ms. Assert p50 <=100ms and p95 <=120ms.
+        console.log("(Windows: p50 target relaxed to <=100ms; Linux/CI asserts <=60ms)");
+        assert.ok(p50 <= 100, `Windows p50 ${p50.toFixed(1)}ms should be <= 100ms`);
+      } else {
+        assert.ok(p50 <= 60, `Linux p50 ${p50.toFixed(1)}ms should be <= 60ms`);
       }
-      samples.sort((a, b) => a - b);
-      const p50 = percentile(samples, 0.5);
-      const p95 = percentile(samples, 0.95);
-      console.log(`hook cold start (${RUNTIME}) p50=${p50.toFixed(1)}ms p95=${p95.toFixed(1)}ms`);
-      if (RUNTIME === "bun") {
-        if (IS_WINDOWS) {
-          // Windows: Bun cold start floor ~88ms. Assert p50 <=100ms and p95 <=120ms.
-          console.log("(Windows: p50 target relaxed to <=100ms; Linux/CI asserts <=60ms)");
-          expect(p50).toBeLessThanOrEqual(100);
-        } else {
-          expect(p50).toBeLessThanOrEqual(60);
-        }
-        expect(p95).toBeLessThanOrEqual(120);
-      }
-    },
-    30000
-  );
-});
+      assert.ok(p95 <= 120, `p95 ${p95.toFixed(1)}ms should be <= 120ms`);
+    }
+  }
+);
