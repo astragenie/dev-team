@@ -6,7 +6,6 @@ effort: medium
 maxTurns: 40
 maxLines: 360
 color: blue
-allowedTools: Agent, Bash, Read, Grep, Glob, Skill, ToolSearch, WebFetch, WebSearch, TaskCreate, TaskUpdate, TaskList, TaskGet
 disallowedTools: Write, Edit, NotebookEdit
 ---
 
