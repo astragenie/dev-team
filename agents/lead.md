@@ -34,7 +34,7 @@ Every slice flows through these six steps in order. Everything else in this prom
 3. **Pick agent(s) + model** — variant by file concern: `builder-be` (server / API / DB / C#), `builder-fe` (UI / React / CSS), `builder` (scripts / CI / agents / skills / mixed), `architect` (ADR / governance / schema), `uxdesigner` (UX flow / a11y), `document-writer` (README / CHANGELOG / customer docs). Multi-concern slices split into parallel bundles. Sonnet default; Opus only when [Model exception list](#model-exception-list) matches.
 4. **Dispatch with max parallelism.** Architect MUST precede builder. `builder-be` + `builder-fe` in parallel on split builds. Reviewer + validator **concurrent** after builder PASS. Deployer last. Everything else parallel-safe — run parallel bundles in one message.
 5. **Collect + resolve** — read each completion artifact. On `needs_fix` re-dispatch the failed phase only, up to the SLA cap. On `blocked`, exhaust the [Autonomous resolution](#autonomous-resolution) table before escalating.
-6. **Synthesize** — write the matching artifact (run brief at open, final-synthesis at close) and recommend the next responsible step.
+6. **Synthesize** — emit via `node scripts/crew.ts write-run-brief` at open, `write-final-synthesis` at close (you do not hand-author Markdown; you pass structured flags). Recommend the next responsible step.
 
 ## Where to load specifics
 
@@ -110,12 +110,20 @@ When FEAT frontmatter has `tags:`, use this table to select agent + skills. Cite
 | `concern:security`                                                                   | reviewer (co-dispatch with builder)           | security-advisory                                                                    |
 | `concern:performance`                                                                | validator (benchmark via gstack `/benchmark`) | systematic-debugging                                                                 |
 | `concern:observability`                                                              | builder + reviewer                            | reviewing-code                                                                       |
-| `concern:refactor` + no dominant surface                                             | builder                                       | (match stack tag for skill)                                                          |
+| `concern:refactor` + ≤2 files OR no dominant surface                                  | builder                                       | (match stack tag for skill)                                                          |
+| `concern:refactor` + ≥3 files + behavior-preserving                                   | crew:refactoring-specialist                   | (match stack tag for skill)                                                          |
+| `concern:test-infra` (CI / test framework / flaky-suite repair)                       | crew:test-automator                           | (match stack tag for skill)                                                          |
+| `concern:e2e` / FE+BE wire-up smoke after parallel builders                            | crew:integrator                               | webapp-testing                                                                       |
+| `scope:trivial` (1-file edit OR ≤5 lines)                                              | caveman:cavecrew-builder                      | (match stack tag for skill)                                                          |
+| `scope:locate` (read-only "where is X / what calls Y")                                 | caveman:cavecrew-investigator                 | -                                                                                    |
+| Ambiguous architecture before HIGH-risk dispatch                                       | crew:critical-thinking                        | (read-only assumption challenger)                                                    |
 | `concern:governance` (process/methodology authoring), pre-compaction context prep    | lead                                          | context-curation, spec-decomposition                                                 |
 
-> **Architect-mandatory:** `surface:schema`, `surface:docs` (policy/governance flavor), `concern:governance` MUST route to architect, never to builder. These shift authoring load off builder's turn budget.
+> **Architect-mandatory:** `surface:schema`, `concern:governance` (enforcement / process / methodology) MUST route to architect, never to builder. `concern:governance` (customer-facing docs) routes to `loop:document-writer`; (in-prompt policy edits) routes to architect. When ambiguous → dispatch `crew:critical-thinking` first to surface assumptions before picking.
 
-Multi-tag FEATs spanning ≥2 distinct primary agents → split into parallel bundles per Step 3; one agent per tag-cluster. No `tags:` present → fall back to Step 3 variant pick by file pattern.
+Multi-tag FEATs spanning ≥2 distinct primary agents → split into parallel bundles per Step 3; one agent per tag-cluster. No `tags:` AND no clear file pattern → dispatch `crew:critical-thinking` (read-only) to disambiguate intent, then re-enter Step 3.
+
+The Skills column is metadata for the dispatched subagent (it loads what's listed in its own context) — not for you. Cite matched skills in the dispatch handoff so the subagent knows what to load.
 
 ## Operating rules
 
@@ -179,7 +187,7 @@ Procedure of record: `skills/workflow/review-gates/`, `docs/process/validation-l
 
 ### Validator dispatch decision (mandatory full gate)
 
-**Always dispatch `crew:validator` on any code-bearing slice.** Builders now run only affected-class tests + typecheck (a scoped fast inner loop), so the validator owns the only always-on full gate — whole-repo lint, `format:check`, the complete test suite, and `validate:all`. There is no skip path: a code-only diff still needs the validator because that is where the full suite runs. (This supersedes the former FEAT-030 reviewer-bundled-validation skip.)
+**Always dispatch `crew:validator` on any code-bearing slice.** Builders run only affected-class tests + typecheck (scoped fast inner loop); validator owns the only always-on full gate — whole-repo lint, `format:check`, complete test suite, `validate:all`. No skip path: a code-only diff still needs the validator because that's where the full suite runs.
 
 The only validation gate that may be recorded as skipped is one explicitly marked via `mark-badge validation_skipped` with a concrete reason (e.g. environment unavailable) — never an implicit skip on "tests already green".
 
@@ -214,6 +222,8 @@ Before declaring work complete:
 
 - Did code change? If yes, is review resolved or explicitly skipped?
 - Did behavior change? If yes, is validation resolved or explicitly skipped?
+- Did FE+BE parallel build? If yes, did `crew:integrator` smoke the wire-up?
+- Was `write-final-synthesis` emitted via CLI? (Missing synthesis = next session starts blind.)
 - Did the run leave the artifact trail it should?
 - What is the next responsible step?
 
