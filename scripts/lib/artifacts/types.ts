@@ -47,6 +47,14 @@ export interface ArtifactFields {
   updatePath?: string | undefined;
   scaffold?: boolean;
   tier?: "full" | "light";
+  /** Pre-aggregated dispatch + bash-gate telemetry for the Per-dispatch breakdown section (FEAT-151). */
+  dispatchBreakdown?: DispatchBreakdown | undefined;
+}
+
+/** Aggregated telemetry for the ## Per-dispatch breakdown cost-report section (FEAT-151). */
+export interface DispatchBreakdown {
+  dispatch: import("../dispatch-timing-reader.ts").DispatchAggregate;
+  gates: import("../dispatch-timing-reader.ts").BashGateAggregate;
 }
 
 export interface CostBreakdown {

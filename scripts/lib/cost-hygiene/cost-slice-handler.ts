@@ -1,5 +1,12 @@
 // Extracted from scripts/crew.mjs — "cost-slice" command handler body.
 // Kept in cost-hygiene/ because it emits per-slice and aggregate cost artifacts.
+import path from "node:path";
+import {
+  aggregateDispatchTiming,
+  aggregateBashGates,
+  getLatestRunId
+} from "../dispatch-timing-reader.ts";
+import type { DispatchBreakdown } from "../artifacts/types.ts";
 
 interface MaybeEmitAggregateSliceOpts {
   repoPath: string;
@@ -95,6 +102,40 @@ function resolveCostSliceParams(
 }
 
 /**
+ * Collect dispatch + bash-gate telemetry for the cost-report breakdown section (FEAT-151).
+ * Non-fatal: returns undefined on any error so the rest of the report still renders.
+ * Gated by CREW_COST_REPORT_DISPATCH_DETAIL env (set to "0" to suppress).
+ */
+async function collectDispatchBreakdown(
+  repoPath: string,
+  runId: string | undefined
+): Promise<DispatchBreakdown | undefined> {
+  if (process.env["CREW_COST_REPORT_DISPATCH_DETAIL"] === "0") return undefined;
+  try {
+    const pluginRoot = process.env["CLAUDE_PLUGIN_ROOT"] ?? repoPath;
+    const dispatchLog =
+      process.env["CREW_DISPATCH_TIMING_LOG"] ??
+      path.join(pluginRoot, ".claude", "logs", "dispatch-timing.jsonl");
+    const bashLog =
+      process.env["CREW_BASH_GATE_LOG"] ??
+      path.join(pluginRoot, ".claude", "logs", "bash-gates.jsonl");
+    // Fall back to scanning the log for the most recent runId when not provided
+    const resolvedRunId = runId ?? (await getLatestRunId(dispatchLog));
+    const [dispatch, gates] = await Promise.all([
+      resolvedRunId
+        ? aggregateDispatchTiming(dispatchLog, resolvedRunId)
+        : Promise.resolve({ rowCount: 0, totalWallMs: 0, topSlow: [], topTokens: [] }),
+      aggregateBashGates(bashLog)
+    ]);
+    // Suppress if both sources are empty (nothing interesting to show)
+    if (dispatch.rowCount === 0 && gates.rowCount === 0) return undefined;
+    return { dispatch, gates };
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Handler for the "cost-slice" CLI command.
  */
 export async function costSliceHandler({
@@ -117,12 +158,18 @@ export async function costSliceHandler({
   if (!startedAt) {
     throw new Error("cost-slice requires --started-at or an active/last run with startedAt");
   }
-  const sliceCost = await computeSessionCost(repoPath, {
-    startedAt,
-    completedAt,
-    sourceProject,
-    aggregateAll: false
-  });
+  const [sliceCost, dispatchBreakdown] = await Promise.all([
+    computeSessionCost(repoPath, {
+      startedAt,
+      completedAt,
+      sourceProject,
+      aggregateAll: false
+    }),
+    collectDispatchBreakdown(
+      repoPath,
+      (run as Record<string, unknown> | null)?.["runId"] as string | undefined
+    )
+  ]);
   const outcome = (await collectOutcomeLinkage(repoPath, runTitle)) as unknown as Record<
     string,
     unknown
@@ -134,7 +181,8 @@ export async function costSliceHandler({
     outcome,
     ...(notes != null ? { notes } : {}),
     ...(feature != null ? { feature } : {}),
-    ...(phase != null ? { phase } : {})
+    ...(phase != null ? { phase } : {}),
+    ...(dispatchBreakdown != null ? { dispatchBreakdown } : {})
   });
   if (!writeResult.ok) throw writeResult.error;
   const sliceArtifact: Record<string, unknown> = { ...writeResult.value };

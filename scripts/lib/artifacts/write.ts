@@ -8,7 +8,8 @@ import { renderCostReportFrontmatter } from "../cost-hygiene/render-frontmatter.
 import { buildRepoLayoutBlock } from "./read.ts";
 import { ok, err } from "../result.ts";
 import type { Result } from "../result.ts";
-import type { ArtifactFields, CostBreakdown, CostOutcome } from "./types.ts";
+import type { ArtifactFields, CostBreakdown, CostOutcome, DispatchBreakdown } from "./types.ts";
+import { renderDispatchBreakdownSection } from "../dispatch-timing-reader.ts";
 
 export type { ArtifactFields, CostBreakdown, CostOutcome } from "./types.ts";
 
@@ -568,6 +569,24 @@ function renderCostReportByModel(breakdown: CostBreakdown | undefined): string[]
 }
 
 /**
+ * Render the ## Per-dispatch breakdown section from pre-aggregated telemetry.
+ * Gated by CREW_COST_REPORT_DISPATCH_DETAIL env: set to "0" to suppress.
+ * Returns an empty array when the feature is disabled or data is absent.
+ */
+function renderCostReportDispatchBreakdown(
+  dispatchBreakdown: DispatchBreakdown | undefined
+): string[] {
+  if (process.env["CREW_COST_REPORT_DISPATCH_DETAIL"] === "0") return [];
+  if (!dispatchBreakdown) return [];
+  const section = renderDispatchBreakdownSection(
+    dispatchBreakdown.dispatch,
+    dispatchBreakdown.gates
+  );
+  if (!section) return [];
+  return [section];
+}
+
+/**
  * Shared body renderer for all three cost-report kinds.
  * variant controls frontmatter field overrides.
  */
@@ -606,7 +625,8 @@ function renderCostReportBody(
     ...renderCostReportFileReReads(breakdown),
     ...renderCostReportCachePriming(breakdown),
     ...renderCostReportByModel(breakdown),
-    ...(fields.notes ? ["## Notes", "", fields.notes, ""] : [])
+    ...(fields.notes ? ["## Notes", "", fields.notes, ""] : []),
+    ...renderCostReportDispatchBreakdown(fields.dispatchBreakdown)
   ].join("\n");
 }
 

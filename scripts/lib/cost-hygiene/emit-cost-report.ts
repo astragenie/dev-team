@@ -1,6 +1,41 @@
 // Extracted from scripts/crew.mjs — maybeEmitCostReport.
 // Auto-emits cost-report artifacts after write-final-synthesis.
 // Non-fatal: returns null / { error } on failure so the synthesis result still surfaces.
+import path from "node:path";
+import {
+  aggregateDispatchTiming,
+  aggregateBashGates,
+  getLatestRunId
+} from "../dispatch-timing-reader.ts";
+import type { DispatchBreakdown } from "../artifacts/types.ts";
+
+async function collectDispatchBreakdownForRun(
+  repoPath: string,
+  runId: string | undefined
+): Promise<DispatchBreakdown | undefined> {
+  if (process.env["CREW_COST_REPORT_DISPATCH_DETAIL"] === "0") return undefined;
+  try {
+    const pluginRoot = process.env["CLAUDE_PLUGIN_ROOT"] ?? repoPath;
+    const dispatchLog =
+      process.env["CREW_DISPATCH_TIMING_LOG"] ??
+      path.join(pluginRoot, ".claude", "logs", "dispatch-timing.jsonl");
+    const bashLog =
+      process.env["CREW_BASH_GATE_LOG"] ??
+      path.join(pluginRoot, ".claude", "logs", "bash-gates.jsonl");
+    // Fall back to scanning the log for the most recent runId when not provided
+    const resolvedRunId = runId ?? (await getLatestRunId(dispatchLog));
+    const [dispatch, gates] = await Promise.all([
+      resolvedRunId
+        ? aggregateDispatchTiming(dispatchLog, resolvedRunId)
+        : Promise.resolve({ rowCount: 0, totalWallMs: 0, topSlow: [], topTokens: [] }),
+      aggregateBashGates(bashLog)
+    ]);
+    if (dispatch.rowCount === 0 && gates.rowCount === 0) return undefined;
+    return { dispatch, gates };
+  } catch {
+    return undefined;
+  }
+}
 
 interface MaybeEmitAggregateCostOpts {
   repoPath: string;
@@ -86,18 +121,25 @@ async function emitCostReportInner(
     string,
     unknown
   >;
-  const sliceCost = await computeSessionCost(repoPath, {
-    startedAt: run.startedAt,
-    completedAt,
-    aggregateAll: false
-  });
+  const [sliceCost, dispatchBreakdown] = await Promise.all([
+    computeSessionCost(repoPath, {
+      startedAt: run.startedAt,
+      completedAt,
+      aggregateAll: false
+    }),
+    collectDispatchBreakdownForRun(
+      repoPath,
+      (run as unknown as Record<string, unknown>)["runId"] as string | undefined
+    )
+  ]);
   const sliceArtifact = await writeArtifact(repoPath, "cost-report-slice", {
     title,
     runTitle: title,
     cost: sliceCost,
     outcome,
     ...(feature != null ? { feature } : {}),
-    ...(phase != null ? { phase } : {})
+    ...(phase != null ? { phase } : {}),
+    ...(dispatchBreakdown != null ? { dispatchBreakdown } : {})
   });
   const aggregateArtifact = await maybeEmitAggregateCost({
     repoPath,
