@@ -97,6 +97,32 @@ function checkRequiredSections(
   }
 }
 
+// FEAT-155: primary agents most exposed to TaskUpdate burst churn must carry
+// the batching rule. Light role-list — the cost-advisor SLICE-67 baseline
+// flagged these as the highest TaskUpdate cache-prime contributors.
+const TASK_UPDATE_BATCHING_REQUIRED = new Set([
+  "lead",
+  "builder",
+  "reviewer",
+  "validator",
+  "architect"
+]);
+
+function checkTaskUpdateBatching(
+  text: string,
+  fm: Record<string, string>,
+  label: string,
+  errors: string[]
+) {
+  const name = fm["name"];
+  if (name === undefined || !TASK_UPDATE_BATCHING_REQUIRED.has(name)) return;
+  if (!/TaskUpdate batching/i.test(text)) {
+    errors.push(
+      `${label}: missing "TaskUpdate batching" rule (FEAT-155). Primary agents most exposed to burst churn must carry the rule.`
+    );
+  }
+}
+
 function checkDuplicateNames(
   agents: Array<{ label: string; fm: Record<string, string> | null }>,
   errors: string[]
@@ -136,6 +162,7 @@ export async function validateAgents(agentsRoot = AGENTS_ROOT) {
     checkFileName(filePath, fm, label, errors);
     checkLineCount(text, fm, label, errors);
     checkRequiredSections(text, fm, label, errors);
+    checkTaskUpdateBatching(text, fm, label, errors);
   }
   checkDuplicateNames(agents, errors);
   return { ok: errors.length === 0, errors, agentCount: agents.length };

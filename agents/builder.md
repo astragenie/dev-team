@@ -232,6 +232,10 @@ Lead will split the remaining ACs into a fresh bounded task and dispatch a new b
 
 After a successful Edit / Write, do NOT Read the same file just to confirm the change landed. The tool would have errored on failure; the harness tracks file state for you.
 
+### TaskUpdate batching
+
+Send `in_progress` for the current task only; coalesce `completed` markers at logical sequence boundaries. Never run ≥3 TaskUpdate calls back-to-back without intervening work — the `check-task-update-burst` hook logs evidence to `.claude/logs/task-update-bursts.jsonl` and cost-advise flags the cache-churn.
+
 **Allowed** (these are NOT "verification"):
 
 - Sequential Edits on the same file in one turn — no intermediate Read needed. Issue Edit A → Edit B → Edit C back-to-back; the harness keeps state consistent between them.
