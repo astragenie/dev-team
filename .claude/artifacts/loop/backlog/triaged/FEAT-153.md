@@ -21,6 +21,8 @@ triage_notes: "Skill cap=3 + pre-rendered universals saves ~600ms/skill load but
 ---
 # FEAT-153: Skill cap=3 + pre-rendered universals
 
+> **Status (2026-06-11): Part 1 shipped, Part 2 deferred.** Only architect, reviewer, and validator carry a skill-consultation cap row today; all three were updated to `max 3 per <phase>` with FEAT-153 attribution. Part 2 (pre-rendered universals + hash-drift CI gate) is a substantial build — new render script + 17 agent prompt injections + hash gate. Carry forward as a separate FEAT or scope into its own slice.
+
 ## Description
 
 Phase 2 of the 2-3x slice speedup spec — **blocked by Phase 1 baseline
@@ -28,7 +30,7 @@ gate**. Two-part fix targeting context bloat + Skill round-trip cost
 (measured: ~600ms per Skill load × multiple skills per dispatch =
 silent-freeze pressure on Opus, slow on Sonnet).
 
-Part 1: drop skill auto-load cap from 4 → 3 per agent dispatch in all
+Part 1 (SHIPPED): drop skill auto-load cap from 4 → 3 per agent dispatch in all
 agent prompts with skill tables. Always-on skill counts as 1.
 4th-skill = slice too wide → escalate.
 

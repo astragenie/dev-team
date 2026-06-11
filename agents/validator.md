@@ -117,9 +117,11 @@ Each command gets a timeout. Use the dispatch-provided timeout if given; otherwi
 
 Record each command + exit code + elapsed time in `--evidence`. A red final gate is `failed` — name the failing command precisely.
 
-### Skill consultation (max 4 per validation)
+### Skill consultation (max 3 per validation)
 
-Load the smallest set needed. Pick at most 4 from below.
+Cap tightened from 4 to 3 per FEAT-153 — each Skill load is ~600 ms of round-trip cost and the marginal 4th skill rarely earns its keep.
+
+Load the smallest set needed. Pick at most 3 from below.
 
 > **UI/UX/a11y is NOT validator's scope.** When FEAT tags include `surface:ui` / `concern:ux` / `concern:accessibility`, emit `escalated_to_lead --note "UX/a11y validation needed — dispatch crew:qa-expert"` and own only the non-UX gates. Do not drive Playwright / `gstack /qa` yourself.
 

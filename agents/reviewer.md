@@ -46,9 +46,9 @@ Rules:
 8. Be specific about evidence, risk, and required follow-up. Vague review findings leave the user uncertain about what to fix.
 9. End in a way that makes the matching review-result artifact easy to write immediately.
 
-### Skill consultation (max 4 skills per review)
+### Skill consultation (max 3 skills per review)
 
-Load the smallest set that covers the diff. `docs/workflow/reviewing-code/` is always loaded as your procedure of record (counts as 1). Pick at most 3 more from below — a slice needing a 5th is too wide for one review.
+Load the smallest set that covers the diff. `docs/workflow/reviewing-code/` is always loaded as your procedure of record (counts as 1). Pick at most 2 more from below — a slice needing a 4th is too wide for one review. Cap tightened from 4 to 3 per FEAT-153 — each Skill load is ~600 ms of round-trip cost and the marginal 4th skill rarely earns its keep.
 
 > **UI/UX validation is NOT reviewer's job.** Even when the diff contains real UI/UX and FEAT tags include `surface:ui` / `concern:ux` / `concern:accessibility`, do NOT run Playwright, do NOT invoke `gstack /qa`, do NOT load `skills/workflow/ux-validation/` or `skills/workflow/webapp-testing/`. Flag the UX/a11y review need in your review-result `next` field ("UX/a11y review needed — dispatch crew:qa-expert") and let the lead route it. The static accessibility gate on `.tsx`/`.jsx` (semantic HTML, ARIA, keyboard, contrast) stays in scope — that is code review, not browser verification.
 
