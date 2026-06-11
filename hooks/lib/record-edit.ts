@@ -1,18 +1,26 @@
-// Core flow for the check-redundant-read hook. No stdin/stdout/process.exit — the
-// hooks/check-redundant-read.ts shim owns process I/O.
+// FEAT-156: PostToolUse hook on Edit / Write / MultiEdit. Records the
+// successful edit so a subsequent Read of the same file inside the
+// verify-loop window is flagged as wasted token cost.
+//
+// Core flow extracted per SLICE-67 contract: no stdin/stdout/process.exit
+// — the hooks/record-edit.ts shim owns process I/O.
 import fs from "node:fs/promises";
 import path from "node:path";
 import {
   type SessionState,
   loadSession,
   saveSession,
-  recordRead,
+  recordEdit,
   evictLRU
 } from "../../scripts/lib/cost-hygiene/state.ts";
-import { decide } from "../../scripts/lib/cost-hygiene/decide.ts";
 import { isEnabled, readCrewConfig } from "../../scripts/lib/features-service.ts";
 
-async function logEvent(repoPath: string, code: string, sessionId: string, detail: string): Promise<void> {
+async function logEvent(
+  repoPath: string,
+  code: string,
+  sessionId: string,
+  detail: string
+): Promise<void> {
   try {
     const dir = path.join(repoPath, ".claude", "logs");
     await fs.mkdir(dir, { recursive: true });
@@ -30,7 +38,7 @@ async function logEvent(repoPath: string, code: string, sessionId: string, detai
 
 function parseInput(
   raw: string
-): { session_id: string; file_path: string; cwd: string; force: boolean } | null {
+): { session_id: string; file_path: string; cwd: string } | null {
   try {
     const obj = JSON.parse(raw);
     if (
@@ -45,8 +53,7 @@ function parseInput(
       return {
         session_id: obj.session_id,
         file_path: obj.tool_input.file_path,
-        cwd: obj.cwd,
-        force: obj.tool_input.force === true
+        cwd: obj.cwd
       };
     }
     return null;
@@ -55,10 +62,10 @@ function parseInput(
   }
 }
 
-async function readFileStat(absPath: string): Promise<{ mtimeIso: string; size: number } | null> {
+async function readFileMtime(absPath: string): Promise<string | null> {
   try {
     const stat = await fs.stat(absPath);
-    return { mtimeIso: stat.mtime.toISOString(), size: stat.size };
+    return stat.mtime.toISOString();
   } catch {
     return null;
   }
@@ -90,32 +97,26 @@ async function persistState(
   }
 }
 
-export async function runCheckRedundantReadHook(raw: string, env: NodeJS.ProcessEnv): Promise<string | null> {
+export async function runRecordEditHook(
+  raw: string,
+  env: NodeJS.ProcessEnv
+): Promise<string | null> {
   if (env.CREW_COST_HYGIENE === "0") return null;
   const input = parseInput(raw);
   if (input === null) return null;
-  const { session_id, file_path, cwd, force } = input;
+  const { session_id, file_path, cwd } = input;
   const config = await readCrewConfig(cwd);
   if (!isEnabled("redundant-read-stop", config)) return null;
   const absPath = path.resolve(cwd, file_path);
-  const fileStat = await readFileStat(absPath);
-  if (fileStat === null) return null;
-  const { mtimeIso, size } = fileStat;
-  const state = await loadState(cwd, session_id, (msg) => logEvent(cwd, "state-load-fail", session_id, msg));
+  const mtimeIso = await readFileMtime(absPath);
+  if (mtimeIso === null) return null;
+  const state = await loadState(cwd, session_id, (msg) =>
+    logEvent(cwd, "state-load-fail", session_id, msg)
+  );
   if (state === null) return null;
-  const stored = state.entries[absPath] ?? null;
-  const result = decide({
-    path: absPath,
-    storedEntry: stored,
-    currentMtime: mtimeIso,
-    currentSize: size,
-    now: new Date().toISOString(),
-    force
-  });
-  const out = result.action === "warn" && result.message !== null
-    ? JSON.stringify({ decision: "approve", systemMessage: result.message })
-    : null;
-  const updated = evictLRU(recordRead(state, absPath, mtimeIso, size, new Date().toISOString()), absPath);
-  await persistState(updated, cwd, session_id, (msg) => logEvent(cwd, "state-write-fail", session_id, msg));
-  return out;
+  const updated = evictLRU(recordEdit(state, absPath, mtimeIso, new Date().toISOString()), absPath);
+  await persistState(updated, cwd, session_id, (msg) =>
+    logEvent(cwd, "state-write-fail", session_id, msg)
+  );
+  return null;
 }

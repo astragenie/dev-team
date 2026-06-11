@@ -122,3 +122,118 @@ test("reread, mtime unchanged + size changed → warn (mtime is the gate)", () =
   });
   assert.equal(result.action, "warn");
 });
+
+// ─── FEAT-156: Edit verify-loop checks ──────────────────────────────────────
+
+const EDIT_AT = "2026-05-28T18:00:00.000Z";
+const READ_WITHIN_WINDOW = "2026-05-28T18:00:20.000Z"; // 20s after edit
+const READ_OUTSIDE_WINDOW = "2026-05-28T18:00:40.000Z"; // 40s after edit (>30s window)
+
+test("FEAT-156: Read within 30s of successful Edit (unchanged mtime) → warn (verify-loop)", () => {
+  const result = decide({
+    path: "/abs/path",
+    storedEntry: {
+      read_count: 0,
+      first_read_at: EDIT_AT,
+      last_read_at: EDIT_AT,
+      mtime_at_last_read: EDIT_AT,
+      size_at_last_read: 0,
+      content_bytes: 0,
+      content: null,
+      last_edit_at: EDIT_AT,
+      mtime_at_last_edit: EDIT_AT
+    },
+    currentMtime: EDIT_AT,
+    currentSize: 100,
+    now: READ_WITHIN_WINDOW
+  });
+  assert.equal(result.action, "warn");
+  assert.match(result.message!, /Edit\/Write'd/);
+  assert.match(result.message!, /force.*true/);
+});
+
+test("FEAT-156: Read with mtime newer than last edit → pass (file modified externally)", () => {
+  const result = decide({
+    path: "/abs/path",
+    storedEntry: {
+      read_count: 0,
+      first_read_at: EDIT_AT,
+      last_read_at: EDIT_AT,
+      mtime_at_last_read: EDIT_AT,
+      size_at_last_read: 0,
+      content_bytes: 0,
+      content: null,
+      last_edit_at: EDIT_AT,
+      mtime_at_last_edit: EDIT_AT
+    },
+    currentMtime: "2026-05-28T18:00:15.000Z",
+    currentSize: 100,
+    now: READ_WITHIN_WINDOW
+  });
+  assert.equal(result.action, "pass");
+});
+
+test("FEAT-156: Read with force: true → pass (override)", () => {
+  const result = decide({
+    path: "/abs/path",
+    storedEntry: {
+      read_count: 0,
+      first_read_at: EDIT_AT,
+      last_read_at: EDIT_AT,
+      mtime_at_last_read: EDIT_AT,
+      size_at_last_read: 0,
+      content_bytes: 0,
+      content: null,
+      last_edit_at: EDIT_AT,
+      mtime_at_last_edit: EDIT_AT
+    },
+    currentMtime: EDIT_AT,
+    currentSize: 100,
+    now: READ_WITHIN_WINDOW,
+    force: true
+  });
+  assert.equal(result.action, "pass");
+});
+
+test("FEAT-156: Read after window elapsed → pass (no verify-loop warn)", () => {
+  const result = decide({
+    path: "/abs/path",
+    storedEntry: {
+      read_count: 0,
+      first_read_at: EDIT_AT,
+      last_read_at: EDIT_AT,
+      mtime_at_last_read: EDIT_AT,
+      size_at_last_read: 0,
+      content_bytes: 0,
+      content: null,
+      last_edit_at: EDIT_AT,
+      mtime_at_last_edit: EDIT_AT
+    },
+    currentMtime: EDIT_AT,
+    currentSize: 100,
+    now: READ_OUTSIDE_WINDOW
+  });
+  assert.equal(result.action, "pass");
+});
+
+test("FEAT-156: Read of file with prior read + recent edit → verify-loop wins (more specific)", () => {
+  const result = decide({
+    path: "/abs/path",
+    storedEntry: {
+      read_count: 3,
+      first_read_at: T0,
+      last_read_at: T0,
+      mtime_at_last_read: T0,
+      size_at_last_read: 100,
+      content_bytes: 100,
+      content: "old content",
+      last_edit_at: EDIT_AT,
+      mtime_at_last_edit: EDIT_AT
+    },
+    currentMtime: EDIT_AT,
+    currentSize: 100,
+    now: READ_WITHIN_WINDOW
+  });
+  assert.equal(result.action, "warn");
+  assert.match(result.message!, /Edit\/Write'd/);
+});

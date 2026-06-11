@@ -130,6 +130,15 @@
             "command": "bun \"${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use-bash-gate.ts\""
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun \"${CLAUDE_PLUGIN_ROOT}/hooks/record-edit.ts\""
+          }
+        ]
       }
     ]
   }
