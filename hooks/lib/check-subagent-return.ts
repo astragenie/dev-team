@@ -4,6 +4,23 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { parseThreshold, checkSubagentReturn } from "../../scripts/lib/subagent-return/check.ts";
 import { isEnabled, readCrewConfig } from "../../scripts/lib/features-service.ts";
+// TELEMETRY: dispatch-timing tap (FEAT-149)
+import {
+  type DispatchHandle,
+  recordDispatchEnd,
+} from "../../scripts/lib/dispatch-timing.ts";
+
+/** Module-level map for start↔end correlation once upstream start sites are wired. */
+const _dispatchHandles = new Map<string, DispatchHandle>();
+
+/** Register a dispatch start handle for later end correlation (called by upstream start sites). */
+export function registerDispatchHandle(taskId: string, handle: DispatchHandle): void {
+  _dispatchHandles.set(taskId, handle);
+}
+
+function hasHandle(taskId: string): boolean {
+  return _dispatchHandles.has(taskId);
+}
 
 async function logEvent(repoPath: string, code: string, sessionId: string, detail: string): Promise<void> {
   try {
@@ -76,6 +93,24 @@ export async function runCheckSubagentReturnHook(raw: string, env: NodeJS.Proces
   if (!isEnabled("subagent-inline-warn", config)) return null;
   const threshold = parseThreshold(env.CREW_SUBAGENT_INLINE_THRESHOLD);
   const { warnings } = checkSubagentReturn({ body, threshold });
+
+  // TELEMETRY: dispatch-timing tap (FEAT-149)
+  // Fire-and-forget end recording when a correlated start handle exists.
+  // No start sites are wired yet — this guard ensures no-op until they are.
+  if (env.CREW_DISPATCH_TIMING_LOG !== undefined || hasHandle(session_id)) {
+    const handle = _dispatchHandles.get(session_id);
+    if (handle !== undefined) {
+      _dispatchHandles.delete(session_id);
+      recordDispatchEnd(handle, {
+        toolCalls: {},
+        bashDurationMs: 0,
+        skillLoadCount: 0,
+        tokenIn: 0,
+        tokenOut: 0,
+      });
+    }
+  }
+
   if (warnings.length > 0) {
     await logEvent(cwd, "inline-return-warn", session_id, warnings[0] ?? "");
     return JSON.stringify({ decision: "approve", systemMessage: warnings.join("\n") });
