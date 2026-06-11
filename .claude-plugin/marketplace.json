@@ -1,7 +1,7 @@
 {
   "name": "astra",
   "metadata": {
-    "description": "Astra marketplace: lead-guided engineering workflow plugin (`crew`) for Claude Code."
+    "description": "Astra marketplace: lead-guided engineering workflow plugin (`crew`) and the cortex memory-service bridge (`cortex`) for Claude Code."
   },
   "owner": {
     "name": "astra"
@@ -14,6 +14,18 @@
       "source": {
         "source": "github",
         "repo": "sergeymilashico/hero-crew"
+      },
+      "author": {
+        "name": "astra"
+      }
+    },
+    {
+      "name": "cortex",
+      "description": "Slash commands (/recall, /remember) + PreCompact and SessionEnd hooks bridging Claude Code to the local cortex memory service. Thin UX layer on top of the cortex MCP server.",
+      "version": "0.1.0",
+      "source": {
+        "source": "github",
+        "repo": "sergeymilashico/hero-cortex"
       },
       "author": {
         "name": "astra"
