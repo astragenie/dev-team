@@ -44,6 +44,19 @@ Check:
 - test coverage or verification quality
 - obvious maintainability problems introduced by the change
 
+### Silent-failure hunt (runnable changes)
+
+A silent failure is code that swallows or hides an error path the operator needed to see. On any runnable change (server, worker, hook, CLI entry, scheduled job), scan for:
+
+- **Swallowed errors**: empty `catch {}`, `catch (_) {}`, or `catch` blocks that don't log, re-throw, or convert to a typed result. Every catch must do one of: log + re-throw, log + return typed failure, or document the explicit reason for swallowing.
+- **Catch-then-continue without telemetry**: a `try` around a side-effecting call where the `catch` continues control flow with no log line, no metric increment, and no `traceId` written. Operators cannot diagnose what they cannot see.
+- **Promise rejection drops**: unawaited `async` calls in non-fire-and-forget paths (handlers, hooks, init code). `await` or attach a `.catch(logHookError)` — never assume the runtime will surface a rejected promise.
+- **Inadequate fallbacks**: stale cache served without TTL on the fallback, default return values that hide an upstream 5xx, retry-then-success without recording the underlying failure. A fallback that masks the cause is worse than the original error.
+- **Missing health-check tiers**: a runnable surface that exposes one `/healthz` covering everything. Split: **liveness** (am I alive?), **readiness** (can I serve traffic?), **startup** (have my one-time init steps finished?). Operators need all three to distinguish "deploy stuck" from "downstream broken" from "process dead."
+- **Error-handling boundary mismatches**: a library function that calls `process.exit()` (repo rule 6), or a request handler that throws unhandled out of an `await` chain. Errors should be returned as typed results at function boundaries, surfaced as structured logs at process boundaries.
+
+Flag any of the above as **needs_fix** with the exact file:line. Cite this section in the review artifact under `## Gate 2: Code Quality And Regression Risk` so the builder can target the fix without re-discovering the checklist.
+
 ## Gate 3: Repo And Language Standards
 
 Check:

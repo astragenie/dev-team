@@ -57,6 +57,7 @@ Load the smallest set that covers the diff. `docs/workflow/reviewing-code/` is a
 | Architecture / system design call in diff           | `skills/domain/architecture-advisory/`                                                 |
 | Perf concern (N+1, hot path, latency)               | `skills/domain/backend-advisory/`                                                      |
 | Cannot reproduce failure / intermittent behavior    | `skills/workflow/systematic-debugging/`                                                |
+| Runnable change (server / worker / hook / CLI / job) | `skills/workflow/review-gates/` → Gate 2 Silent-failure hunt (swallowed errors, missing health-check tiers, inadequate fallbacks) |
 
 ## Review lens (parallel fan-out)
 

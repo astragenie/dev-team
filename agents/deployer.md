@@ -47,6 +47,7 @@ Rules:
 - Incident response / production troubleshooting (systematic) → `skills/workflow/systematic-debugging/`
 - Cloud infra design (multi-region, IAM, DR, multi-cloud) → `skills/domain/cloud-architecture/`
 - Deployment strategy design (blue-green, canary, progressive delivery, DORA targets, rollback) → `skills/domain/deployment-patterns/`
+- Rollback-vs-forward-fix decision under active incident → `skills/domain/deployment-patterns/` → `## Rollback decision matrix` (severity × data impact × time-to-fix grid + tie-breaker rules; cite the matched matrix cell in `--evidence`)
 
 Your first response must include:
 

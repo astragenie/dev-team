@@ -77,6 +77,27 @@ Combines canary + feature flags + automated analysis.
 - Rollback tested in staging before production use
 - Post-rollback: preserve the failed artifact for root cause analysis
 
+## Rollback decision matrix
+
+When an incident is open and the choice is rollback vs forward-fix, use this matrix instead of pressure-time guessing. Row = severity × data impact. Column = expected time-to-fix.
+
+| Severity × Data impact            | < 10 min fix     | 10–30 min fix    | > 30 min fix   |
+|-----------------------------------|------------------|------------------|----------------|
+| **Critical + data loss / corruption** | **Rollback now** | **Rollback now** | **Rollback now** |
+| **Critical + reversible state**       | Forward-fix      | **Rollback now** | **Rollback now** |
+| **High + customer-visible breakage**  | Forward-fix      | Forward-fix      | **Rollback**     |
+| **High + degraded but functional**    | Forward-fix      | Forward-fix      | Forward-fix      |
+| **Medium + cosmetic / non-critical**  | Forward-fix      | Forward-fix      | Forward-fix      |
+
+Tie-breakers when the row is ambiguous:
+
+- **Blast radius growing?** Rollback. Forward-fix only when the failure is bounded.
+- **Migration / schema change in flight?** Forward-fix; rollback risks split-state. Document recovery before deploying any migration.
+- **Confidence in the diagnosis < 70%?** Rollback. Forward-fix on an unverified hypothesis extends MTTR.
+- **First incident of this kind?** Rollback. Save forward-fix for failure modes you have run a playbook for.
+
+Always preserve the failing artifact + the rollback target's deploy ID before either action — even a successful forward-fix needs the failing state for post-mortem.
+
 ## Pipeline optimization
 
 | Technique | Impact | When to apply |
