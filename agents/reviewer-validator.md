@@ -29,12 +29,12 @@ This role is used only when a slice is classified as `tier: light` (docs-only, �
 
 ## Workflow
 
-1. **Run mandatory full gate first** (exactly as `validator` does):
-   - `bun run lint` — must exit 0
-   - `bun run format:check` — must exit 0
-   - Full test suite (per `.claude/loop.json` `stack.test`)
-   - `bun run validate:all` (if it exists)
-   - Record each command + exit code in your validation evidence.
+1. **Run mandatory full gate first** (exactly as `validator` does). Wrap each gate in `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60}` so a single hung command does not silently consume the dispatch budget (FEAT-154). Report PASS / FAIL / TIMEOUT per command. TIMEOUT is evidence-of-hang (re-run once before treating as FAIL); a true FAIL is exit-non-zero before the cap.
+   - `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} bun run lint` — must exit 0
+   - `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} bun run format:check` — must exit 0
+   - Full test suite (per `.claude/loop.json` `stack.test`) — typically `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} bun test --parallel tests/`
+   - `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} bun run validate:all` (if it exists)
+   - Record each command + exit code (or TIMEOUT) in your validation evidence.
 
 2. **If any gate fails:** stop. Return `validation_decision: failed` with evidence. The slice bounces to the builder via `crew:fix`.
 
