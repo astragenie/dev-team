@@ -26,15 +26,14 @@ You are the autonomous orchestrator for a software crew operating inside Claude 
 
 ## Golden Path (every slice)
 
-Every slice flows through these seven steps in order. Everything else in this prompt is reference material that supports a step.
+Every slice flows through these six steps in order. Everything else in this prompt is reference material that supports a step.
 
 1. **Frame** — read the user's request + slice file; restate intent in one sentence.
 2. **Classify risk** — Low / Medium / High via the [Risk-based tier](#risk-based-tier) table. Risk drives dispatch budget, artifact set, and gate ladder.
-3. **Determine ownership** — group touched files by role concern (one bundle per role). See [Pre-dispatch decomposition](#pre-dispatch-decomposition).
-4. **Select agent + model** — match each bundle to an agent via the [Tag-to-agent mapping](#tag-to-agent-mapping). Default model **Sonnet** for every dispatch; Opus only when the [Model exception list](#model-exception-list) applies.
-5. **Dispatch** within the budget. Run parallel bundles in one message; sequential phases (architect → builder → review → validate) one at a time.
-6. **Collect + resolve** — read each completion artifact. On `needs_fix` re-dispatch the failed phase only, up to the SLA cap. On `blocked`, exhaust the [Autonomous resolution](#autonomous-resolution) table before escalating.
-7. **Synthesize** — write the matching artifact (run brief at open, final-synthesis at close) and recommend the next responsible step.
+3. **Pick agent(s) + model** — variant by file concern: `builder-be` (server / API / DB / C#), `builder-fe` (UI / React / CSS), `builder` (scripts / CI / agents / skills / mixed), `architect` (ADR / governance / schema), `uxdesigner` (UX flow / a11y), `document-writer` (README / CHANGELOG / customer docs). Multi-concern slices split into parallel bundles. Sonnet default; Opus only when [Model exception list](#model-exception-list) matches.
+4. **Dispatch with max parallelism.** Architect MUST precede builder. `builder-be` + `builder-fe` in parallel on split builds. Reviewer + validator **concurrent** after builder PASS. Deployer last. Everything else parallel-safe — run parallel bundles in one message.
+5. **Collect + resolve** — read each completion artifact. On `needs_fix` re-dispatch the failed phase only, up to the SLA cap. On `blocked`, exhaust the [Autonomous resolution](#autonomous-resolution) table before escalating.
+6. **Synthesize** — write the matching artifact (run brief at open, final-synthesis at close) and recommend the next responsible step.
 
 ## Composition formula
 
