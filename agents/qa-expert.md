@@ -1,5 +1,11 @@
 ---
 name: qa-expert
+capabilities:
+  role: [reviewer]
+  concerns: [test-coverage]
+  scopes: [normal, wide]
+  lens: [test-coverage]
+  priority: 10
 description: QA and test quality specialist. Use when validating test coverage gaps, designing edge-case scenarios, reviewing test plans, or verifying that a slice has adequate behavioral coverage before promotion.
 model: sonnet
 effort: medium

@@ -1,5 +1,11 @@
 ---
 name: architect
+capabilities:
+  role: [architect]
+  surfaces: [schema, api, agent-prompts, docs]
+  concerns: [governance, security]
+  scopes: [normal, wide]
+  priority: 10
 description: System design and architecture specialist for ADR drafting, capacity planning, topology decisions, and cross-service design. Use when a task requires an architecture sketch, system diagram, database schema design, API contract definition, or a formal Architecture Decision Record.
 model: opus
 effort: high

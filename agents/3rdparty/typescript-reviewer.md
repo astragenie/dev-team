@@ -1,5 +1,11 @@
 ---
 name: typescript-reviewer
+capabilities:
+  role: [reviewer]
+  stacks: [typescript]
+  scopes: [normal, wide]
+  lens: [stack-quality]
+  priority: 10
 description: Read-only TypeScript quality reviewer. Fan-out alongside crew:reviewer for stack:typescript slices — covers compiler compliance, type safety, Zod boundaries, async correctness, banned libraries, and supply chain. Returns structured findings in [SEVERITY] file:line format. Mirrors c-sharp-reviewer for the TypeScript stack.
 tools: Read, Bash, Grep, Glob
 model: sonnet

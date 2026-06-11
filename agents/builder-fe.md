@@ -1,5 +1,12 @@
 ---
 name: builder-fe
+capabilities:
+  role: [implementer]
+  surfaces: [ui]
+  stacks: [react, typescript]
+  concerns: [accessibility, refactor]
+  scopes: [normal, wide]
+  priority: 10
 description: Frontend implementation specialist — React + TS code, FE tests, a11y. Consumes OpenAPI YAML + UX spec; regenerates orval clients and openapi-msw handlers from the spec.
 model: sonnet
 effort: high

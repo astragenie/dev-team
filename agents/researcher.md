@@ -1,5 +1,9 @@
 ---
 name: researcher
+capabilities:
+  role: [researcher]
+  scopes: [normal, wide]
+  priority: 10
 description: Read-only investigator for code reading, architecture tracing, dependency questions, and option analysis.
 model: sonnet
 effort: medium

@@ -1,5 +1,12 @@
 ---
 name: builder
+capabilities:
+  role: [implementer]
+  surfaces: [agent-prompts, infra, docs, schema, scripts]
+  stacks: [typescript, python, terraform]
+  concerns: [refactor]
+  scopes: [normal, wide]
+  priority: 5
 description: Implementation specialist for bounded code changes with strict scope discipline and explicit completion reports.
 model: sonnet
 effort: high

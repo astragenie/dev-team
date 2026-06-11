@@ -1,5 +1,12 @@
 ---
 name: uxdesigner
+capabilities:
+  role: [architect]
+  surfaces: [ui, docs]
+  stacks: [react]
+  concerns: [accessibility, ux]
+  scopes: [normal, wide]
+  priority: 10
 description: UX and UI design specialist for user flows, component layout, interaction design, and frontend wireframes. Use when a task requires layout decisions, design critique, component hierarchy, accessibility review, or UX research synthesis.
 model: sonnet
 effort: high

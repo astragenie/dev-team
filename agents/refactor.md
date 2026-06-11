@@ -1,5 +1,12 @@
 ---
 name: refactor
+capabilities:
+  role: [implementer]
+  surfaces: [agent-prompts, scripts]
+  stacks: [typescript]
+  concerns: [refactor, quality]
+  scopes: [normal]
+  priority: 5
 description: Code quality specialist — scans for stale refs, complexity cap violations, and consistency drift; fixes directly; writes a quality-sweep artifact for the reviewer gate.
 model: sonnet
 effort: high

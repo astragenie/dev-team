@@ -1,5 +1,12 @@
 ---
 name: performance-engineer
+capabilities:
+  role: [reviewer]
+  surfaces: [api, ui, infra]
+  concerns: [performance]
+  scopes: [normal, wide]
+  lens: [performance]
+  priority: 10
 description: Performance analysis specialist for latency, throughput, Core Web Vitals, and query optimization. Use when a slice touches latency-critical paths, introduces N+1 risks, or needs benchmark evidence before merge.
 model: sonnet
 effort: medium

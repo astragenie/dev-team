@@ -1,5 +1,13 @@
 ---
 name: playwright-tester
+capabilities:
+  role: [implementer]
+  surfaces: [ui]
+  stacks: [typescript]
+  concerns: [e2e, test-coverage]
+  scopes: [normal, wide]
+  lens: [e2e]
+  priority: 10
 description: MCP-driven Playwright E2E test writer. Navigates the live application first via browser MCP to discover real locators and user flows, then writes reliable Playwright tests. Use when E2E test coverage is missing and the app is running locally or in a staging environment.
 tools: Read, Write, Edit, Bash
 model: sonnet

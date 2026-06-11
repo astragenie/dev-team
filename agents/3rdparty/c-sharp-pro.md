@@ -1,5 +1,11 @@
 ---
 name: c-sharp-pro
+capabilities:
+  role: [implementer]
+  stacks: [csharp]
+  concerns: [quality, refactor]
+  scopes: [normal, wide]
+  priority: 8
 description: Idiomatic C#/.NET expert for code quality, design review, and .NET best practices. Use when a C# implementation needs a quality bar lift — architecture adherence, async correctness, null safety, test structure, or production-readiness checks beyond what the regular reviewer covers.
 tools: Read, Bash, Grep, Glob, Edit, Write
 model: sonnet

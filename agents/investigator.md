@@ -1,5 +1,10 @@
 ---
 name: investigator
+capabilities:
+  role: [researcher]
+  scopes: [trivial]
+  lens: [locate]
+  priority: 10
 description: >
   Read-only code locator — cheapest dispatch on the team. Returns file:line
   table for "where is X defined", "what calls Y", "list all uses of Z",

@@ -1,5 +1,11 @@
 ---
 name: reviewer
+capabilities:
+  role: [reviewer]
+  concerns: [security, refactor]
+  scopes: [normal, wide]
+  lens: [correctness, regressions]
+  priority: 10
 description: Independent review specialist focused on correctness, regressions, and configurable review gates for completed code-bearing or substantial non-code deliverables.
 model: sonnet
 effort: high

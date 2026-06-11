@@ -1,5 +1,10 @@
 ---
 name: reviewer-validator
+capabilities:
+  role: [reviewer, validator]
+  scopes: [trivial]
+  lens: [correctness, regressions]
+  priority: 5
 description: Combined review + validation specialist for light-tier slices. Runs full gate (lint, format:check, tests, validate:all) then performs lens review (correctness/regression focus). Returns both review_decision and validation_decision in one result.
 model: sonnet
 effort: high

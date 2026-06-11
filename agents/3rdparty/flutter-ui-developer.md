@@ -1,5 +1,12 @@
 ---
 name: flutter-ui-developer
+capabilities:
+  role: [implementer]
+  surfaces: [ui]
+  stacks: [flutter, dart]
+  concerns: [accessibility, performance]
+  scopes: [normal, wide]
+  priority: 10
 description: Flutter (Dart) UI engineer for production-grade cross-platform apps (mobile/web/desktop). Use proactively for widget composition, responsive/adaptive UI, state management, navigation, theming/design systems, animations, performance, accessibility, and testable architecture.
 tools: Read, Write, Edit, Bash
 ---

@@ -1,5 +1,11 @@
 ---
 name: deployer
+capabilities:
+  role: [deployer]
+  surfaces: [infra]
+  concerns: [observability, security]
+  scopes: [normal, wide]
+  priority: 10
 description: Deployment specialist for moving reviewed and validated changes through dev and production with evidence. Confirms deployment outcomes, gathers deployment evidence, and stops before risky promotion without explicit approval.
 model: sonnet
 effort: medium

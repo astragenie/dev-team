@@ -1,5 +1,12 @@
 ---
 name: builder-be
+capabilities:
+  role: [implementer]
+  surfaces: [api, schema]
+  stacks: [csharp, typescript, python, go]
+  concerns: [refactor]
+  scopes: [normal, wide]
+  priority: 10
 description: Backend implementation specialist — server code, DB schema, BE tests for any backend stack (C#/.NET, Node, Python, Go) routed by FEAT stack:* tag. Consumes OpenAPI YAML via per-stack codegen.
 model: sonnet
 effort: high

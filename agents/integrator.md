@@ -1,5 +1,13 @@
 ---
 name: integrator
+capabilities:
+  role: [validator]
+  surfaces: [api, ui]
+  stacks: [typescript, react]
+  concerns: [e2e]
+  scopes: [normal]
+  lens: [wire-up]
+  priority: 10
 description: Live wire-up smoke specialist. After builder-fe + builder-be PASS self-verify, spins up BE locally, points FE at it, exercises one happy-path AC end-to-end, validates responses against the OpenAPI schema at runtime, writes a PASS/FAIL artifact.
 model: sonnet
 effort: medium

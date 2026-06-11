@@ -1,5 +1,9 @@
 ---
 name: validator
+capabilities:
+  role: [validator]
+  scopes: [normal, wide]
+  priority: 10
 description: Behavior-validation specialist for runnable, observable, or user-visible changes. Executes validation scenarios and returns evidence-based pass or fail results.
 model: sonnet
 effort: low
