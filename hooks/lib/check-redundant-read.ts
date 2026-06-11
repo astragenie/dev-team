@@ -12,7 +12,12 @@ import {
 import { decide } from "../../scripts/lib/cost-hygiene/decide.ts";
 import { isEnabled, readCrewConfig } from "../../scripts/lib/features-service.ts";
 
-async function logEvent(repoPath: string, code: string, sessionId: string, detail: string): Promise<void> {
+async function logEvent(
+  repoPath: string,
+  code: string,
+  sessionId: string,
+  detail: string
+): Promise<void> {
   try {
     const dir = path.join(repoPath, ".claude", "logs");
     await fs.mkdir(dir, { recursive: true });
@@ -90,7 +95,10 @@ async function persistState(
   }
 }
 
-export async function runCheckRedundantReadHook(raw: string, env: NodeJS.ProcessEnv): Promise<string | null> {
+export async function runCheckRedundantReadHook(
+  raw: string,
+  env: NodeJS.ProcessEnv
+): Promise<string | null> {
   if (env.CREW_COST_HYGIENE === "0") return null;
   const input = parseInput(raw);
   if (input === null) return null;
@@ -101,7 +109,9 @@ export async function runCheckRedundantReadHook(raw: string, env: NodeJS.Process
   const fileStat = await readFileStat(absPath);
   if (fileStat === null) return null;
   const { mtimeIso, size } = fileStat;
-  const state = await loadState(cwd, session_id, (msg) => logEvent(cwd, "state-load-fail", session_id, msg));
+  const state = await loadState(cwd, session_id, (msg) =>
+    logEvent(cwd, "state-load-fail", session_id, msg)
+  );
   if (state === null) return null;
   const stored = state.entries[absPath] ?? null;
   const result = decide({
@@ -112,10 +122,16 @@ export async function runCheckRedundantReadHook(raw: string, env: NodeJS.Process
     now: new Date().toISOString(),
     force
   });
-  const out = result.action === "warn" && result.message !== null
-    ? JSON.stringify({ decision: "approve", systemMessage: result.message })
-    : null;
-  const updated = evictLRU(recordRead(state, absPath, mtimeIso, size, new Date().toISOString()), absPath);
-  await persistState(updated, cwd, session_id, (msg) => logEvent(cwd, "state-write-fail", session_id, msg));
+  const out =
+    result.action === "warn" && result.message !== null
+      ? JSON.stringify({ decision: "approve", systemMessage: result.message })
+      : null;
+  const updated = evictLRU(
+    recordRead(state, absPath, mtimeIso, size, new Date().toISOString()),
+    absPath
+  );
+  await persistState(updated, cwd, session_id, (msg) =>
+    logEvent(cwd, "state-write-fail", session_id, msg)
+  );
   return out;
 }

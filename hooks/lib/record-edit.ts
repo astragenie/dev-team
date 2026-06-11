@@ -36,9 +36,7 @@ async function logEvent(
   }
 }
 
-function parseInput(
-  raw: string
-): { session_id: string; file_path: string; cwd: string } | null {
+function parseInput(raw: string): { session_id: string; file_path: string; cwd: string } | null {
   try {
     const obj = JSON.parse(raw);
     if (
