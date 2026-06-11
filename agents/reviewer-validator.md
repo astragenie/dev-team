@@ -29,7 +29,17 @@ This role is used only when a slice is classified as `tier: light` (docs-only, �
 
 ## Workflow
 
-1. **Run mandatory full gate first** (exactly as `validator` does). Wrap each gate in `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60}` so a single hung command does not silently consume the dispatch budget (FEAT-154). Report PASS / FAIL / TIMEOUT per command. TIMEOUT is evidence-of-hang (re-run once before treating as FAIL); a true FAIL is exit-non-zero before the cap.
+1. **Run mandatory full gate first** (exactly as `validator` does). Wrap each gate in `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60}` (FEAT-154) so a single hung command does not silently consume the dispatch budget. Report PASS / FAIL / TIMEOUT per command. TIMEOUT is evidence-of-hang (re-run once before treating as FAIL); a true FAIL is exit-non-zero before the cap.
+
+   Prefer the parallel helper (FEAT-152) over running these serially when the gates don't depend on each other:
+
+   ```bash
+   bun scripts/lib/parallel-gates.ts --emit lint,format:check,validate:all | bash
+   ```
+
+   The helper backgrounds each gate, applies the cap, and prints failed-gate logs. Run the full test suite serially after the parallel block — it's the slowest gate and rarely benefits from racing other I/O.
+
+   Serial fallback (when only one gate applies or the parallel helper is unavailable):
    - `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} bun run lint` — must exit 0
    - `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} bun run format:check` — must exit 0
    - Full test suite (per `.claude/loop.json` `stack.test`) — typically `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} bun test --parallel tests/`

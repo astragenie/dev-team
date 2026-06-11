@@ -90,6 +90,16 @@ Walk this list in order; use the first source that exists. Never improvise — w
 
 `format:check` is **CHECK ONLY**. You are read-only; do NOT run `format` to fix. On failure → `failed`; formatting fix bounces to builder via `crew:fix`.
 
+### Parallel gates (FEAT-152)
+
+When the resolved gate set contains ≥2 commands that don't depend on each other (lint, format:check, typecheck, validate:all all qualify — the full test suite is its own concern), emit a parallel block via the helper instead of running them serially:
+
+```bash
+bun scripts/lib/parallel-gates.ts --emit lint,format:check,typecheck,validate:all | bash
+```
+
+The helper backgrounds each gate with `&`, writes per-gate `mktemp` logs, applies the `CREW_BASH_GATE_TIMEOUT_S` cap, and prints the failed-gate header + tail of its log on any non-zero exit. Cuts validator gate wall-clock from ~33 s serial to ~12 s parallel (typecheck dominates). The full test suite stays serial after the parallel block lands — it is the slowest gate and rarely benefits from racing other I/O.
+
 ### Timeout policy
 
 Each command gets a timeout. Use the dispatch-provided timeout if given; otherwise these defaults:
