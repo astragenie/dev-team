@@ -17,5 +17,8 @@ test("assertBunPresent: throws with an install URL when bun is missing", () => {
     err = e;
   }
   assert.ok(err instanceof Error, "expected an Error to be thrown");
-  assert.ok(String(err).includes("https://bun.sh"), `error message should reference bun.sh: ${String(err)}`);
+  assert.ok(
+    String(err).includes("https://bun.sh"),
+    `error message should reference bun.sh: ${String(err)}`
+  );
 });

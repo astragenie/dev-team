@@ -31,7 +31,7 @@ test(
       const start = process.hrtime.bigint();
       const res = spawnSync(RUNTIME, args, {
         env: { ...process.env, CREW_COST_HYGIENE: "1" },
-        input: "{}\n",
+        input: "{}\n"
       });
       const elapsedMs = Number(process.hrtime.bigint() - start) / 1_000_000;
       assert.equal(res.status, 0);

@@ -33,7 +33,7 @@ test(
         const res = spawnSync("bash", [SCRIPT, "bench_event"], {
           cwd: root,
           env: { ...process.env, CLAUDE_PROJECT_DIR: root },
-          input: '{"sample":true}\n',
+          input: '{"sample":true}\n'
         });
         const elapsedMs = Number(process.hrtime.bigint() - start) / 1_000_000;
         assert.equal(res.status, 0);
