@@ -1,6 +1,6 @@
 ---
 id: FEAT-154
-status: pending
+status: triaged
 priority: P3
 category: perf
 target_release: null
@@ -11,6 +11,12 @@ slices: []
 derived_from: docs/superpowers/specs/2026-06-11-slice-perf-2x-3x-design.md
 autonomous_safe: false
 tags: [perf, quality]
+pm_customer_impact: 0.45
+pm_effort_estimate: 0.85
+pm_strategic_alignment: 0.55
+pm_technical_risk: 0.85
+pm_dependency_depth: 0.4
+triage_notes: "Mirrors shipped 60s timeout pattern (765c53c, cfe26e7) to reviewer + reviewer-validator only; tail-latency mitigation not median; 2 file edits, lowest-risk Phase 2 lever but smallest impact."
 ---
 # FEAT-154: Bash hard caps everywhere
 

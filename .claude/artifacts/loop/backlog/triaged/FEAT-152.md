@@ -1,6 +1,6 @@
 ---
 id: FEAT-152
-status: pending
+status: triaged
 priority: P2
 category: perf
 target_release: null
@@ -11,6 +11,12 @@ slices: []
 derived_from: docs/superpowers/specs/2026-06-11-slice-perf-2x-3x-design.md
 autonomous_safe: false
 tags: [perf, quality]
+pm_customer_impact: 0.65
+pm_effort_estimate: 0.5
+pm_strategic_alignment: 0.7
+pm_technical_risk: 0.55
+pm_dependency_depth: 0.4
+triage_notes: "Parallel bash gates cut validator ~33s → ~12s, but touches 3 agent prompts + blocked by Phase 1 baseline gate; per-gate temp logs + timeout aggregation introduce moderate failure modes (orphaned temp dirs, mktemp portability)."
 ---
 # FEAT-152: Parallel bash gates helper + validator/reviewer wiring
 

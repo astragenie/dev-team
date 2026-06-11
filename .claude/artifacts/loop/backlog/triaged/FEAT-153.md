@@ -1,6 +1,6 @@
 ---
 id: FEAT-153
-status: pending
+status: triaged
 priority: P2
 category: perf
 target_release: null
@@ -11,6 +11,12 @@ slices: []
 derived_from: docs/superpowers/specs/2026-06-11-slice-perf-2x-3x-design.md
 autonomous_safe: false
 tags: [perf, quality]
+pm_customer_impact: 0.7
+pm_effort_estimate: 0.45
+pm_strategic_alignment: 0.75
+pm_technical_risk: 0.45
+pm_dependency_depth: 0.4
+triage_notes: "Skill cap=3 + pre-rendered universals saves ~600ms/skill load but renders content into every agent prompt with hash-drift CI gate; semantic-preservation risk on compression; touches all 17 agents."
 ---
 # FEAT-153: Skill cap=3 + pre-rendered universals
 

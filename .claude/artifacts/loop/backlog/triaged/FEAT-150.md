@@ -1,6 +1,6 @@
 ---
 id: FEAT-150
-status: pending
+status: triaged
 priority: P2
 category: observability
 target_release: null
@@ -11,6 +11,12 @@ slices: []
 derived_from: docs/superpowers/specs/2026-06-11-slice-perf-2x-3x-design.md
 autonomous_safe: true
 tags: [perf, observability, telemetry]
+pm_customer_impact: 0.65
+pm_effort_estimate: 0.85
+pm_strategic_alignment: 0.85
+pm_technical_risk: 0.85
+pm_dependency_depth: 0.95
+triage_notes: "Tiny PreToolUse/PostToolUse hook tap, paired with FEAT-149 telemetry; classifier + map keyed by event-id is well-understood pattern; feeds Phase 2 'hang frequency' metric."
 ---
 # FEAT-150: Bash gate timer helper
 

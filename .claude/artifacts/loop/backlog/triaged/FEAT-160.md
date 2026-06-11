@@ -1,6 +1,6 @@
 ---
 id: FEAT-160
-status: pending
+status: triaged
 priority: P3
 category: quality
 target_release: null
@@ -11,6 +11,12 @@ slices: []
 derived_from: null
 autonomous_safe: false
 tags: [refactor, governance, lead-orchestration, registry]
+pm_customer_impact: 0.4
+pm_effort_estimate: 0.3
+pm_strategic_alignment: 0.5
+pm_technical_risk: 0.35
+pm_dependency_depth: 0.9
+triage_notes: "Capability registry from OpenAI review is speculative (scales to 30+ agents — we have 17); touches every agent frontmatter + schema-debate risk (overlap with feat-tag-schema.md); declined-adjacent: pay refactor cost now for problem we don't have."
 ---
 # FEAT-160: Dynamic capability discovery (agent capability registry)
 

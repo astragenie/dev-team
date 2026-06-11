@@ -1,6 +1,6 @@
 ---
 id: FEAT-156
-status: pending
+status: triaged
 priority: P2
 category: perf
 target_release: null
@@ -11,6 +11,12 @@ slices: []
 derived_from: docs/superpowers/specs/2026-06-11-slice-perf-2x-3x-design.md
 autonomous_safe: true
 tags: [perf, observability]
+pm_customer_impact: 0.85
+pm_effort_estimate: 0.85
+pm_strategic_alignment: 0.85
+pm_technical_risk: 0.8
+pm_dependency_depth: 0.4
+triage_notes: "Extends existing check-redundant-read hook to block Edit verify-loop re-Reads: SLICE-67 measured 73 redundant Reads + 9.9% Edit failure rate; pure hook addition, autonomous_safe=true; mirrors documented user-feedback pattern."
 ---
 # FEAT-156: Edit verify-loop dedup hook extension
 
