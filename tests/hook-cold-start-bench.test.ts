@@ -46,7 +46,9 @@ test(
         // Windows: Bun cold start floor ~88ms standalone, but parallel test
         // load pushes p95 up. Linux/CI is the gating environment for the
         // tight spec target — Windows uses load-aware thresholds.
-        console.log("(Windows: p50 target relaxed to <=120ms, p95 <=250ms; Linux/CI asserts <=60ms / <=120ms)");
+        console.log(
+          "(Windows: p50 target relaxed to <=120ms, p95 <=250ms; Linux/CI asserts <=60ms / <=120ms)"
+        );
         assert.ok(p50 <= 120, `Windows p50 ${p50.toFixed(1)}ms should be <= 120ms`);
         assert.ok(p95 <= 250, `Windows p95 ${p95.toFixed(1)}ms should be <= 250ms`);
       } else {

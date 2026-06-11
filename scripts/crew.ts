@@ -385,8 +385,7 @@ interface CommandContext {
 // table replaces a 240-line else-if chain. Adding a command = one entry.
 const COMMANDS = {
   "install-global": async () => {
-    const bun = assertBunPresent();
-    console.log(`[install-global] bun ${bun.version} detected.`);
+    assertBunPresent();
     const { installGlobal } = await import("./lib/installer.ts");
     return installGlobal();
   },
@@ -395,8 +394,7 @@ const COMMANDS = {
     return auditRepo(repoPath);
   },
   bootstrap: async ({ repoPath }: CommandContext) => {
-    const bun = assertBunPresent();
-    console.log(`[bootstrap] bun ${bun.version} detected.`);
+    assertBunPresent();
     const { bootstrapRepo } = await import("./lib/installer.ts");
     const result = await bootstrapRepo(repoPath);
     if (!result.ok) {
@@ -406,8 +404,7 @@ const COMMANDS = {
     return result.value;
   },
   init: async ({ repoPath, flags }: CommandContext) => {
-    const bun = assertBunPresent();
-    console.log(`[init] bun ${bun.version} detected.`);
+    assertBunPresent();
     const { initRepo } = await import("./lib/installer.ts");
     return initRepo(repoPath, { allowExisting: flags.allowExisting });
   },

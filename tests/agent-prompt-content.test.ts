@@ -106,8 +106,15 @@ test("validator.md contains validation_skipped badge", () => {
   assert.ok(validator.includes("validation_skipped"), "validator.md missing validation_skipped");
 });
 
-test("validator.md references ux-validation skill", () => {
-  assert.ok(validator.includes("ux-validation"), "validator.md missing ux-validation");
+test("validator.md routes UI/UX scope to crew:qa-expert", () => {
+  assert.ok(
+    validator.includes("crew:qa-expert"),
+    "validator.md missing crew:qa-expert routing for UI/UX scope"
+  );
+  assert.ok(
+    validator.includes("UI/UX/a11y is NOT validator's scope"),
+    "validator.md missing explicit UI/UX-out-of-scope guard"
+  );
 });
 
 test("validator.md requires evidence gathering", () => {
