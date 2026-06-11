@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 import { maybeEmitCostReport } from "./lib/cost-hygiene/emit-cost-report.ts";
 import { costSliceHandler } from "./lib/cost-hygiene/cost-slice-handler.ts";
 import { normalizeMsysPath } from "./lib/fs-utils.ts";
+import { assertBunPresent } from "./lib/installer/bun-preflight.ts";
 
 // Flag schema. Each entry maps a CLI flag to the flags-object key and the
 // arity (whether it consumes a value). Aliases (e.g. `--verdict` → `decision`)
@@ -384,6 +385,8 @@ interface CommandContext {
 // table replaces a 240-line else-if chain. Adding a command = one entry.
 const COMMANDS = {
   "install-global": async () => {
+    const bun = assertBunPresent();
+    console.log(`[install-global] bun ${bun.version} detected.`);
     const { installGlobal } = await import("./lib/installer.ts");
     return installGlobal();
   },
@@ -392,6 +395,8 @@ const COMMANDS = {
     return auditRepo(repoPath);
   },
   bootstrap: async ({ repoPath }: CommandContext) => {
+    const bun = assertBunPresent();
+    console.log(`[bootstrap] bun ${bun.version} detected.`);
     const { bootstrapRepo } = await import("./lib/installer.ts");
     const result = await bootstrapRepo(repoPath);
     if (!result.ok) {
@@ -401,6 +406,8 @@ const COMMANDS = {
     return result.value;
   },
   init: async ({ repoPath, flags }: CommandContext) => {
+    const bun = assertBunPresent();
+    console.log(`[init] bun ${bun.version} detected.`);
     const { initRepo } = await import("./lib/installer.ts");
     return initRepo(repoPath, { allowExisting: flags.allowExisting });
   },
