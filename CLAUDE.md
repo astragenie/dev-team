@@ -175,6 +175,36 @@ when picked by the loop. State-file schema: loop repo `docs/state-contract.md`;
 Never commit secrets. Never disable hooks (`--no-verify`) without
 explicit user request. Never force-push to `main`.
 
+## HARD RULE — astra-marketplace cross-repo writes
+
+Default rule (memory `feedback_marketplace_session_constraint.md`): a
+plugin's `marketplace.json` edits must be done in the target repo's
+own session, not cross-session.
+
+**Exception for plugin source repos in the astra family
+(`hero-crew`, `loop`, `cortex`):** sessions in any of these three
+repos MAY make a paired commit to
+`sergeymilashico/astra-marketplace` to bump that plugin's `version:`
+entry in the central registry's `marketplace.json`. The change MUST
+be limited to:
+
+- the single `plugins[name=<this-plugin>].version` field
+- ONLY when this session has just cut a tagged release locally (`vX.Y.Z`
+  matches the version being written into the registry)
+- one commit, one file, no other edits in the same commit
+
+After the registry bump, push it as a separate commit on the
+`astra-marketplace` main branch. Do not stage other changes alongside.
+The constraint memory continues to apply to every other repo: those
+must still go through the target session.
+
+Why the exception: post-migration (commit `bfc4d2d`) the central
+registry is the only path consumers reach. Forcing every plugin
+release to also open a separate `astra-marketplace` session doubled
+the release ceremony with no quality benefit — the version write is
+mechanical and deterministic, and the source plugin's repo is the
+authoritative version source.
+
 ## v0.2.0 baseline addendum
 
 Phase 1 (Engineering OS) is closed at `v0.2.0` (2026-05-22). Treat the
