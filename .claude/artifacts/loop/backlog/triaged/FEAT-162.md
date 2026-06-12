@@ -1,6 +1,6 @@
 ---
 id: FEAT-162
-status: pending
+status: triaged
 priority: P2
 category: quality
 target_release: null
@@ -9,8 +9,15 @@ updated: 2026-06-12
 depends_on: []
 slices: []
 derived_from: null
+pm_customer_impact: 0.45
+pm_effort_estimate: 0.60
+pm_strategic_alignment: 0.65
+pm_technical_risk: 0.60
+pm_dependency_depth: 0.30
+composite_score: 0.508
 autonomous_safe: false
 tags: [testing, agent-eval, dev-infra, ci, subscription-billed]
+triage_notes: "via=pm triage 2026-06-12 | Demand: preventative infra targeting FEAT-161-class regressions. Stakeholder = repo maintainer (session 2026-06-12, v0.35.3 release context). NO recurring grade-dim signal pointing directly here — test_confidence 0.816 is above 0.80 bar; weak dims are observability + security (0.79 each), neither directly served by an agent-eval harness unless AC explicitly adds observability lenses (note as scope gap). Workaround = existing tests/agent-prompt-content.test.ts + scripts/e2e-smoke.ts cover structure and script logic; behavioral-agent gap is real but not bleeding. Customer impact 0.45 is intentionally damped: demand SOFTENS after FEAT-161 lands (recurrences ARE the demand source). Recommend scheduling AFTER FEAT-161 to confirm the prevention-only value still holds. Scope: smallest deliverable = SLICE-A only (scaffold + dry-run replay fixture, no live claude -p) — autonomous_safe=true at slice level. SLICE-B/C/D introduce CLI subprocess + OAuth + CI secrets — autonomous_safe=false. Whole-FEAT flag = false because the FEAT scope spans SLICE-B/D. Risk band 0.60: new dependency (claude -p subprocess + Claude Code OAuth), cross-module reach (test infra + CI workflow + scripts), schema-shape change (new fixture interface). Pre-mortem: (1) Two weeks later — SLICE-D blocks on OAuth-in-CI feasibility (no self-hosted runner; anthropic-ai/claude-code-action doesn't support non-issue OAuth contexts); SLICE-A/B sit as orphan local-only infra. (2) Rollback = git rm tests/agent-eval/ + revert test:agents script + delete workflow file; clean, no schema or external state. (3) Coverage gap: zero existing tests cover fixture-runner regressions; the new harness IS the coverage — bootstrap risk acknowledged. RECOMMEND: pre-research spike inside SLICE-A to confirm claude -p stream-json shape + OAuth-in-CI feasibility before committing to SLICE-B. Cost analog: no close match in cost-aggregate reports; SLICE-A scaffolding analog = tests/integration-smoke-skill.test.ts + e2e-smoke.ts size suggests $5-10 / 1 session for SLICE-A; full FEAT (A-D) estimate $40-80 across 3-4 slices. autonomous_safe=false for the whole FEAT per body's own decomposition: SLICE-B touches CLI process spawning + auth assumptions; SLICE-D touches CI + secrets; both require human-in-loop on review."
 ---
 # FEAT-162: Subscription-billed agent eval harness (`claude -p` + Bun fixtures)
 

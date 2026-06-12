@@ -1,16 +1,23 @@
 ---
 id: FEAT-161
-status: pending
+status: triaged
 priority: P1
 category: reliability
 target_release: null
 created: 2026-06-11
-updated: 2026-06-11
+updated: 2026-06-12
 depends_on: []
 slices: []
 derived_from: null
+pm_customer_impact: 0.80
+pm_effort_estimate: 0.40
+pm_strategic_alignment: 0.80
+pm_technical_risk: 0.40
+pm_dependency_depth: 0.20
+composite_score: 0.730
 autonomous_safe: false
 tags: [agent-prompts, dispatch, reliability, specialist-pause]
+triage_notes: "via=pm triage 2026-06-12 | Demand: 11 documented recurrences across SLICE-51..57/87/95/96 in 6 days @ ~150k tokens each (FEAT body lines 21-29). Workaround intolerable. NOTE: cited upstream-request doc loop/docs/upstream-requests/2026-06-10-...specialist-pause-completion-enforcement.md NOT FOUND at expected path — internal recurrence table is the load-bearing evidence; ask user to attach/relink before SLICE-A. SCOPE BLOCKER: FEAT body lists agents that don't exist in this repo (builder.md, reviewer.md, validator.md, builder-fe.md, builder-be.md, reviewer-validator.md, deployer.md). Actual dispatchable specialists are backend-dev, frontend-dev, fullstack-dev, inspector, inspector-verifier, verifier, lead, architect, integrator, release-engineer. SPEC REWRITE REQUIRED before slicing — recommend loop:spec-writer pass to realign Prong A target list to the current agent set (9-agent list in FEAT is wrong). Risk band 0.40: prompt-only edits, single-file-per-agent, git revert clean rollback, no contract change. Prong B prerequisite (crew write-* idempotent double-call or --update) appears already met by tests/artifact-stub-and-update.test.ts — verify before scoping SLICE-A1. Pre-mortem: (1) Two weeks later — agents follow HARD CONTRACT but lead tool-loop still exits without final call (root cause is the orchestrator's exit condition, not the specialist's last-tool intent); prompt block conflicts with v0.35.2 identity-anchor positioning. (2) Rollback = single git revert; no migration. (3) Coverage gap: zero runtime behavioral assertion that 'agent emits final write-* tool call'; agent-prompt-content.test.ts only checks markdown structure. AC must add content assertion ('HARD OUTPUT CONTRACT block exists at first heading after identity anchor') OR coordinate with FEAT-162 for behavioral coverage. Cost analog: SLICE-64 prompt-only Path A $1.88 + SLICE-68 prompt+skill edits — Prong A across 9 agent files is ~3-4x SLICE-64 scope; estimate $8-15. autonomous_safe=false per CLAUDE.md (lead prompt edits, skill authorship require human-in-loop) AND because FEAT body needs spec rewrite to align with current agent set."
 ---
 # FEAT-161: Specialist-pause prevention — stub-artifact pattern + HARD OUTPUT CONTRACT in agent prompts
 
