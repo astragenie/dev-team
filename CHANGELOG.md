@@ -5,6 +5,37 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.35.3 — 2026-06-12 — agent integration map
+
+Patch release adding an `## Integration with Other Agents` section to every
+first-party crew agent prompt (18 files under `agents/`). Each section is
+tailored to the role — self-references dropped, repo agent names mapped
+correctly (`backend-dev`, `frontend-dev`, `uxdesigner`), and missing-role
+references (`security-auditor`, `database-optimizer`) excluded since those
+agents do not exist in this plugin.
+
+The goal is to make each agent more autonomous and less dependent on
+out-of-band coordination by lead — every specialist now carries a short,
+in-prompt cheat sheet of who it consumes from and who it hands off to.
+
+Touched files: `agents/architect.md`, `agents/backend-dev.md`,
+`agents/frontend-dev.md`, `agents/fullstack-dev.md`, `agents/uxdesigner.md`,
+`agents/qa-expert.md`, `agents/performance-engineer.md`,
+`agents/release-engineer.md`, `agents/document-writer.md`,
+`agents/researcher.md`, `agents/investigator.md`, `agents/refactor.md`,
+`agents/inspector.md`, `agents/inspector-verifier.md`, `agents/verifier.md`,
+`agents/integrator.md`, `agents/parallel-runner.md`, `agents/lead.md`.
+
+`agents/lead.md` `maxLines` bumped 360 → 370 to fit the new section
+(orchestrator dispatch list is the longest of the eighteen).
+
+No source code or runtime behavior changed. CI gates green
+(`validate-agents`, `validate-skills`, `validate-manifests`, `validate-slices`,
+`lint`, `format:check`, `typecheck`, `bun run test`, `e2e-smoke`).
+
+`agents/3rdparty/` was intentionally **not** modified — those are upstream
+imports; editing them creates merge debt against the source repos.
+
 ## v0.35.2 — 2026-06-12 — identity anchor + dispatch prompt purity
 
 Patch release fixing a recurring subagent misroute pattern where the lead would
