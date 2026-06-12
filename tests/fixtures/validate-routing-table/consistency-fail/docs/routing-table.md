@@ -2,4 +2,4 @@
 
 | Signal | Route to | Notes |
 |---|---|---|
-| **Rust code change** | builder | Load `skills/domain/rust-pro/` for Rust patterns. |
+| **Rust code change** | fullstack-dev | Load `skills/domain/rust-pro/` for Rust patterns. |

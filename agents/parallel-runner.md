@@ -76,7 +76,7 @@ Translate each loop `auto` plan entry into a `DispatchPlan` for `loop dispatch`:
     {
       "id": "<featureId>",
       "priority": <P0=0|P1=1|P2=2|P3=3>,
-      "agentType": "crew:builder",
+      "agentType": "crew:fullstack-dev",
       "prompt": "<sub-agent slice ceremony prompt — see below>"
     }
   ]
@@ -99,9 +99,9 @@ The sub-agent must execute these steps in its worktree cwd (assigned by
 2. Read the generated slice file; replace any placeholder ACs with concrete ones
    derived from the feature's acceptance criteria.
 3. `node <loop-cli> slice start --id <SLICE_ID> --repo "$PWD"`
-4. Dispatch a `crew:builder` sub-agent with the returned `dispatchInstruction`.
-5. After builder PASS: dispatch `crew:reviewer`.
-6. After reviewer PASS: `node <loop-cli> slice complete --id <SLICE_ID> --repo "$PWD"`
+4. Dispatch a `crew:fullstack-dev` sub-agent with the returned `dispatchInstruction`.
+5. After fullstack-dev PASS: dispatch `crew:inspector`.
+6. After inspector PASS: `node <loop-cli> slice complete --id <SLICE_ID> --repo "$PWD"`
    (set `requires_validation: false` in the slice frontmatter before calling this
    if the FEAT is a pure refactor or structural change with no runtime behavior).
 7. `node <loop-cli> slice grade --id <SLICE_ID> --repo "$PWD"`

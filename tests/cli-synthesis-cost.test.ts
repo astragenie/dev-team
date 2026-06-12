@@ -309,7 +309,7 @@ test("cost-slice renders ## Per-dispatch breakdown when dispatch log has matchin
     {
       runId: "test-run-001",
       sliceId: "SLICE-99",
-      agent: "crew:builder",
+      agent: "crew:fullstack-dev",
       model: "claude-sonnet-4-5",
       wallMs: 5000,
       tokenIn: 10000,
@@ -321,7 +321,7 @@ test("cost-slice renders ## Per-dispatch breakdown when dispatch log has matchin
     {
       runId: "test-run-001",
       sliceId: "SLICE-99",
-      agent: "crew:reviewer",
+      agent: "crew:inspector",
       model: "claude-sonnet-4-5",
       wallMs: 8000,
       tokenIn: 8000,
@@ -369,7 +369,7 @@ test("cost-slice renders ## Per-dispatch breakdown when dispatch log has matchin
     const costResult = JSON.parse(result.output);
     const body = await fs.readFile(costResult.path, "utf8");
     assert.match(body, /## Per-dispatch breakdown/, "should include dispatch section header");
-    assert.match(body, /crew:reviewer/, "should include the slower dispatch (crew:reviewer)");
+    assert.match(body, /crew:inspector/, "should include the slower dispatch (crew:inspector)");
     assert.match(body, /13000ms/, "should show total wall-clock (5000 + 8000)");
     assert.match(body, /typecheck/, "should include bash gate breakdown");
     assert.match(body, /\| Skills \|/, "dispatch table should include Skills column header");
@@ -396,7 +396,7 @@ test("cost-slice suppresses ## Per-dispatch breakdown when CREW_COST_REPORT_DISP
   const dispatchRows = [
     {
       runId: "test-run-002",
-      agent: "crew:builder",
+      agent: "crew:fullstack-dev",
       wallMs: 3000,
       tokenIn: 5000,
       tokenOut: 1000,

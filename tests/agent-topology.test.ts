@@ -16,12 +16,12 @@ const AGENTS_ROOT = path.join(repoRoot, "agents");
  */
 const EXPECTED_AGENTS = new Set([
   "lead",
-  "builder",
-  "builder-fe",
-  "builder-be",
-  "reviewer",
-  "validator",
-  "deployer",
+  "fullstack-dev",
+  "frontend-dev",
+  "backend-dev",
+  "inspector",
+  "verifier",
+  "release-engineer",
   "integrator",
   "researcher",
   "architect",

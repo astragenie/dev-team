@@ -23,14 +23,14 @@ test("parseAgentPreInput: valid Agent PreToolUse payload → object", () => {
     session_id: "s1",
     tool_name: "Agent",
     tool_input: {
-      subagent_type: "crew:builder",
+      subagent_type: "crew:fullstack-dev",
       description: "implement the feature"
     }
   });
   const result = parseAgentPreInput(payload);
   assert.ok(result !== null);
   assert.equal(result.session_id, "s1");
-  assert.equal(result.subagent_type, "crew:builder");
+  assert.equal(result.subagent_type, "crew:fullstack-dev");
   assert.equal(result.description, "implement the feature");
 });
 
@@ -52,7 +52,7 @@ test("parseAgentPreInput: malformed JSON → null", () => {
 test("parseAgentPreInput: missing tool_name field → null", () => {
   const payload = JSON.stringify({
     session_id: "s1",
-    tool_input: { subagent_type: "crew:builder" }
+    tool_input: { subagent_type: "crew:fullstack-dev" }
   });
   assert.equal(parseAgentPreInput(payload), null);
 });
@@ -84,8 +84,8 @@ test("lookupAgentModel: crew:lead → sonnet", async () => {
   assert.equal(model, "sonnet");
 });
 
-test("lookupAgentModel: crew:builder → sonnet", async () => {
-  const model = await lookupAgentModel("crew:builder");
+test("lookupAgentModel: crew:fullstack-dev → sonnet", async () => {
+  const model = await lookupAgentModel("crew:fullstack-dev");
   assert.equal(model, "sonnet");
 });
 
@@ -111,7 +111,7 @@ test("runDispatchTimingPreTap: no-ops when CREW_DISPATCH_TIMING_LOG=0", async ()
   const payload = JSON.stringify({
     session_id: "s-noop",
     tool_name: "Agent",
-    tool_input: { subagent_type: "crew:builder", description: "test" }
+    tool_input: { subagent_type: "crew:fullstack-dev", description: "test" }
   });
   const result = await runDispatchTimingPreTap(payload, {
     ...process.env,
@@ -132,7 +132,7 @@ test("runDispatchTimingPreTap: registers a handle + JSONL row appears after end 
       session_id: "s-register",
       tool_name: "Agent",
       tool_input: {
-        subagent_type: "crew:builder",
+        subagent_type: "crew:fullstack-dev",
         description: "test dispatch"
       }
     });
@@ -155,7 +155,7 @@ test("runDispatchTimingPreTap: registers a handle + JSONL row appears after end 
         {
           runId: "run-test",
           sliceId: "SLICE-test",
-          agent: "crew:builder",
+          agent: "crew:fullstack-dev",
           model: "sonnet",
           startMs: Date.now() - 10
         },
@@ -177,7 +177,7 @@ test("runDispatchTimingPreTap: registers a handle + JSONL row appears after end 
         .split("\n")
         .map((l) => JSON.parse(l) as Record<string, unknown>);
       assert.equal(rows.length, 1);
-      assert.equal(rows[0]!["agent"], "crew:builder");
+      assert.equal(rows[0]!["agent"], "crew:fullstack-dev");
       assert.ok(typeof rows[0]!["wallMs"] === "number");
     } finally {
       process.env.CREW_DISPATCH_TIMING_LOG = origLog;

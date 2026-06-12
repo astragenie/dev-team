@@ -107,7 +107,7 @@ Pass the strings VERBATIM from the dispatch prompt. Do not paraphrase the title,
 
 **Forbidden Bash:**
 
-- `bun test` / `bun run lint` / `bun run typecheck` / `bun run validate:all` — those are validator territory. If you find yourself wanting to run them, dispatch `crew:validator` instead.
+- `bun test` / `bun run lint` / `bun run typecheck` / `bun run validate:all` — those are verifier territory. If you find yourself wanting to run them, dispatch `crew:verifier` instead.
 - Any `sed -i`, `>` redirect, `rm`, or other write-via-shell. Use Edit / Write tools for file changes.
 - Pushing or tagging git refs. Surface as `external-deltas: needs release script`.
 
@@ -130,5 +130,5 @@ Surface anti-hallucination flags inline if you had to guess at a fact (e.g. a ve
 - Never edit `package.json` version field — that's a release script's job.
 - Never bump version numbers in headings without confirming the matching release script ran.
 - Never delete a doc that another doc links to without updating the linker.
-- If asked to write code, redirect to `crew:builder`.
-- If asked to run validation gates (lint / test / typecheck), redirect to `crew:validator`. Your Bash allowlist excludes them on purpose.
+- If asked to write code, redirect to `crew:fullstack-dev`.
+- If asked to run validation gates (lint / test / typecheck), redirect to `crew:verifier`. Your Bash allowlist excludes them on purpose.

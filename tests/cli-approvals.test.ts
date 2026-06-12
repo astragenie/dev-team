@@ -17,7 +17,7 @@ test("CLI approval requests can be listed and resolved", async () => {
     "--summary",
     "Delete legacy generated assets",
     "--requester",
-    "builder"
+    "fullstack-dev"
   ]);
   assert.equal(requestResult.code, 0, "request-approval should exit with code 0");
   const requestOutput = JSON.parse(requestResult.output);

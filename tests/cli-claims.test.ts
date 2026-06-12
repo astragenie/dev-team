@@ -46,7 +46,7 @@ test("CLI claim and release manage repo-local claims", async () => {
     "--repo",
     repoPath,
     "--owner",
-    "builder",
+    "fullstack-dev",
     "src/example.ts"
   ]);
   assert.equal(claimResponse.code, 0, "claim should exit with code 0");
@@ -64,7 +64,7 @@ test("CLI claim and release manage repo-local claims", async () => {
   assert.equal(conflictsResponse.code, 0, "show-conflicts should exit with code 0");
   const conflictsResult = JSON.parse(conflictsResponse.output);
   assert.equal(conflictsResult.conflicts.length, 1);
-  assert.equal(conflictsResult.conflicts[0].owner, "builder");
+  assert.equal(conflictsResult.conflicts[0].owner, "fullstack-dev");
   assert.equal(conflictsResult.owned.length, 0);
   assert.equal(conflictsResult.available.length, 0);
 
@@ -73,7 +73,7 @@ test("CLI claim and release manage repo-local claims", async () => {
     "--repo",
     repoPath,
     "--owner",
-    "builder",
+    "fullstack-dev",
     "src/example.ts",
     "src/free.ts"
   ]);

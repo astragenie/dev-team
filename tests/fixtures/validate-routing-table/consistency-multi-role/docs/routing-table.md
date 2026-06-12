@@ -2,4 +2,4 @@
 
 | Signal | Route to | Notes |
 |---|---|---|
-| **TypeScript change** | builder + reviewer | Load `skills/domain/typescript-pro/` for type patterns. |
+| **TypeScript change** | fullstack-dev + inspector | Load `skills/domain/typescript-pro/` for type patterns. |

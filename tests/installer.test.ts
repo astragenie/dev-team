@@ -130,7 +130,7 @@ test("bootstrap upgrades legacy harness paths and CLAUDE import block", async ()
   );
   await fs.writeFile(
     path.join(repoPath, ".claude", "state", "engineering-os", "claims.json"),
-    '{\n  "claims": {\n    "src/legacy.ts": {\n      "owner": "builder"\n    }\n  }\n}\n'
+    '{\n  "claims": {\n    "src/legacy.ts": {\n      "owner": "fullstack-dev"\n    }\n  }\n}\n'
   );
 
   await bootstrapRepo(repoPath);

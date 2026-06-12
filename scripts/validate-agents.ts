@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// Agent prompt quality-bar validator. See docs/governance.md
+// Agent prompt quality-bar verifier. See docs/governance.md
 // "Agent prompt size bar" + FEAT-035 for the rule rationale.
 //
 // Errors (fail CI):
@@ -102,9 +102,9 @@ function checkRequiredSections(
 // flagged these as the highest TaskUpdate cache-prime contributors.
 const TASK_UPDATE_BATCHING_REQUIRED = new Set([
   "lead",
-  "builder",
-  "reviewer",
-  "validator",
+  "fullstack-dev",
+  "inspector",
+  "verifier",
   "architect"
 ]);
 
@@ -132,13 +132,13 @@ function checkTaskUpdateBatching(
 // pure dispatcher; the slice-close CLI sequence runs from crew:document-writer
 // per the lead-dispatch-discipline diagnostic plan).
 const BASH_COALESCING_REQUIRED = new Set([
-  "builder",
-  "builder-be",
-  "builder-fe",
-  "reviewer",
-  "validator",
+  "fullstack-dev",
+  "backend-dev",
+  "frontend-dev",
+  "inspector",
+  "verifier",
   "architect",
-  "deployer",
+  "release-engineer",
   "integrator",
   "researcher"
 ]);

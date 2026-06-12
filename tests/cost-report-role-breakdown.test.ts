@@ -78,9 +78,9 @@ function makeCostWithRoles(): CostBreakdown {
       skillInvocations: 2,
       subagentDispatches: 5,
       subagentDispatchesByRole: {
-        "crew:builder": 3,
-        "crew:reviewer": 1,
-        "crew:validator": 1
+        "crew:fullstack-dev": 3,
+        "crew:inspector": 1,
+        "crew:verifier": 1
       }
     }
   } as unknown as CostBreakdown;
@@ -144,12 +144,12 @@ test("cost-report-slice: renders subagent_dispatches_by_role section when presen
       `Expected 'subagent_dispatches_by_role' section in body.\nContent:\n${content.slice(0, 800)}`
     );
     assert.ok(
-      content.includes("crew:builder: 3"),
-      `Expected 'crew:builder: 3' in role breakdown.\nContent:\n${content.slice(0, 1000)}`
+      content.includes("crew:fullstack-dev: 3"),
+      `Expected 'crew:fullstack-dev: 3' in role breakdown.\nContent:\n${content.slice(0, 1000)}`
     );
     assert.ok(
-      content.includes("crew:reviewer: 1"),
-      `Expected 'crew:reviewer: 1' in role breakdown.\nContent:\n${content.slice(0, 1000)}`
+      content.includes("crew:inspector: 1"),
+      `Expected 'crew:inspector: 1' in role breakdown.\nContent:\n${content.slice(0, 1000)}`
     );
   } finally {
     await cleanup(tmpDir);
@@ -190,12 +190,12 @@ test("cost-report-slice: renders entries sorted by count descending", async () =
     const content = await readCostReport(tmpDir);
     assert.ok(content, "Expected cost report to be written");
 
-    const builderIdx = content.indexOf("crew:builder: 3");
-    const reviewerIdx = content.indexOf("crew:reviewer: 1");
+    const builderIdx = content.indexOf("crew:fullstack-dev: 3");
+    const reviewerIdx = content.indexOf("crew:inspector: 1");
     assert.ok(builderIdx > -1 && reviewerIdx > -1, "Expected both role entries");
     assert.ok(
       builderIdx < reviewerIdx,
-      `Expected crew:builder (3) to appear before crew:reviewer (1) (sorted by count desc)`
+      `Expected crew:fullstack-dev (3) to appear before crew:inspector (1) (sorted by count desc)`
     );
   } finally {
     await cleanup(tmpDir);
@@ -305,7 +305,7 @@ test("collectRecentCosts: aggregates roleDispatches across recent slices", async
         usd: 10,
         windowStart: "2026-05-01T00:00:00Z",
         windowEnd: "2026-05-01T01:00:00Z",
-        roleBreakdown: { "crew:builder": 3, "crew:reviewer": 1 }
+        roleBreakdown: { "crew:fullstack-dev": 3, "crew:inspector": 1 }
       })
     );
     await writeCostReport(
@@ -316,7 +316,7 @@ test("collectRecentCosts: aggregates roleDispatches across recent slices", async
         usd: 20,
         windowStart: "2026-05-02T00:00:00Z",
         windowEnd: "2026-05-02T01:00:00Z",
-        roleBreakdown: { "crew:builder": 2, "crew:validator": 2 }
+        roleBreakdown: { "crew:fullstack-dev": 2, "crew:verifier": 2 }
       })
     );
 
@@ -325,19 +325,19 @@ test("collectRecentCosts: aggregates roleDispatches across recent slices", async
 
     assert.ok(roleDispatches, `Expected roleDispatches in rollup result`);
     assert.equal(
-      roleDispatches["crew:builder"],
+      roleDispatches["crew:fullstack-dev"],
       5,
-      `Expected crew:builder: 5 (3 + 2), got ${roleDispatches["crew:builder"]}`
+      `Expected crew:fullstack-dev: 5 (3 + 2), got ${roleDispatches["crew:fullstack-dev"]}`
     );
     assert.equal(
-      roleDispatches["crew:reviewer"],
+      roleDispatches["crew:inspector"],
       1,
-      `Expected crew:reviewer: 1, got ${roleDispatches["crew:reviewer"]}`
+      `Expected crew:inspector: 1, got ${roleDispatches["crew:inspector"]}`
     );
     assert.equal(
-      roleDispatches["crew:validator"],
+      roleDispatches["crew:verifier"],
       2,
-      `Expected crew:validator: 2, got ${roleDispatches["crew:validator"]}`
+      `Expected crew:verifier: 2, got ${roleDispatches["crew:verifier"]}`
     );
   } finally {
     await cleanup(tmpDir);

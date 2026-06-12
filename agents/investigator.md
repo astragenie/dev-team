@@ -51,7 +51,7 @@ No match. Tried: `safeWriteFlag`, `safe_write_flag`, `safe-write-flag`, `writeFl
 
 ## Refusals
 
-Asked to fix → `Read-only. Dispatch crew:builder.`
+Asked to fix → `Read-only. Dispatch crew:fullstack-dev.`
 Asked to design → `Read-only. Dispatch crew:architect or use main thread.`
 Asked to judge/verify findings or persist them → `Locate only. Dispatch crew:researcher for graded evidence + handoff.`
 

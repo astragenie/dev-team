@@ -596,7 +596,7 @@ const COMMANDS = {
       );
       process.exit(2);
     }
-    const validBuilders = new Set(["builder", "builder-be", "builder-fe"]);
+    const validBuilders = new Set(["fullstack-dev", "backend-dev", "frontend-dev"]);
     if (!validBuilders.has(builder)) {
       process.stderr.write(
         `[crew] write-build-bundle refused: --builder must be one of ${[...validBuilders].join(", ")}.\n`
@@ -617,7 +617,7 @@ const COMMANDS = {
     const result = await assembleBuildBundle({
       repoPath,
       sliceId: slice,
-      builderName: builder as "builder" | "builder-be" | "builder-fe",
+      builderName: builder as "fullstack-dev" | "backend-dev" | "frontend-dev",
       runId: run,
       ...(flags.feat !== null ? { feat: flags.feat } : {}),
       handoffBody,
@@ -666,7 +666,7 @@ const COMMANDS = {
     const statusValue = flags.status !== "open" ? (flags.status ?? undefined) : undefined;
     const r = await writeArtifact(repoPath, "handoff", {
       title: flags.title || positionals.join(" ") || "Task Handoff",
-      from: flags.from || flags.owner || "builder",
+      from: flags.from || flags.owner || "fullstack-dev",
       to: flags.to ?? "lead",
       goal: flags.goal ?? undefined,
       summary: flags.summary ?? undefined,
@@ -699,8 +699,11 @@ const COMMANDS = {
     }
     // Auto-generate ISO-like run id if --run not given.
     const runId = flags.run ?? new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15) + "Z";
-    const builder = (flags.builder ?? "builder") as "builder" | "builder-be" | "builder-fe";
-    const validBuilders = new Set(["builder", "builder-be", "builder-fe"]);
+    const builder = (flags.builder ?? "fullstack-dev") as
+      | "fullstack-dev"
+      | "backend-dev"
+      | "frontend-dev";
+    const validBuilders = new Set(["fullstack-dev", "backend-dev", "frontend-dev"]);
     if (!validBuilders.has(builder)) {
       process.stderr.write(
         `[crew] write-handoff-and-bundle refused: --builder must be one of ${[...validBuilders].join(", ")}.\n`
@@ -762,7 +765,7 @@ const COMMANDS = {
     const statusValue = flags.status !== "open" ? (flags.status ?? undefined) : undefined;
     const r = await writeArtifact(repoPath, "review-result", {
       title: flags.title || positionals.join(" ") || "Review Result",
-      reviewer: flags.reviewer || flags.owner || "reviewer",
+      reviewer: flags.reviewer || flags.owner || "inspector",
       decision: decision ?? undefined,
       status: statusValue,
       summary: flags.summary ?? undefined,
@@ -787,7 +790,7 @@ const COMMANDS = {
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
     const r = await writeArtifact(repoPath, "validation-plan", {
       title: flags.title || positionals.join(" ") || "Validation Plan",
-      validator: flags.validator || flags.owner || "validator",
+      validator: flags.validator || flags.owner || "verifier",
       owner: flags.owner || "lead-session",
       environment: flags.environment ?? undefined,
       goal: flags.goal ?? undefined,
@@ -808,7 +811,7 @@ const COMMANDS = {
     const statusValue = flags.status !== "open" ? (flags.status ?? undefined) : undefined;
     const r = await writeArtifact(repoPath, "validation-result", {
       title: flags.title || positionals.join(" ") || "Validation Result",
-      validator: flags.validator || flags.owner || "validator",
+      validator: flags.validator || flags.owner || "verifier",
       environment: flags.environment ?? undefined,
       decision: flags.decision ?? undefined,
       status: statusValue,
@@ -831,7 +834,7 @@ const COMMANDS = {
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
     const r = await writeArtifact(repoPath, "deployment-check", {
       title: flags.title || positionals.join(" ") || "Deployment Check",
-      deployer: flags.deployer || flags.owner || "deployer",
+      deployer: flags.deployer || flags.owner || "release-engineer",
       environment: flags.environment ?? undefined,
       resource: flags.resource ?? undefined,
       url: flags.url ?? undefined,

@@ -35,7 +35,7 @@ test("crew.ts write-build-bundle: writes bundle artifact, prints path", async ()
       "--slice",
       "SLICE-77",
       "--builder",
-      "builder-be",
+      "backend-dev",
       "--run",
       "20260608T230000Z",
       "--feat",

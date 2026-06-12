@@ -1,7 +1,7 @@
 ---
 name: performance-engineer
 capabilities:
-  role: [reviewer]
+  role: [inspector]
   surfaces: [api, ui, infra]
   concerns: [performance]
   scopes: [normal, wide]

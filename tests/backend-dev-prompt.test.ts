@@ -5,15 +5,15 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const AGENT_PATH = path.join(REPO_ROOT, "agents", "builder-be.md");
+const AGENT_PATH = path.join(REPO_ROOT, "agents", "backend-dev.md");
 
-test("builder-be.md exists and has frontmatter name=builder-be", async () => {
+test("backend-dev.md exists and has frontmatter name=backend-dev", async () => {
   const md = await fs.readFile(AGENT_PATH, "utf8");
   assert.match(md, /^---/);
-  assert.match(md, /name:\s*builder-be/);
+  assert.match(md, /name:\s*backend-dev/);
 });
 
-test("builder-be.md declares server + DB scope and forbids FE code", async () => {
+test("backend-dev.md declares server + DB scope and forbids FE code", async () => {
   const md = await fs.readFile(AGENT_PATH, "utf8");
   assert.match(md, /Owned scope/);
   assert.match(md, /api\//);
@@ -22,26 +22,26 @@ test("builder-be.md declares server + DB scope and forbids FE code", async () =>
   assert.match(md, /UX spec files/i);
 });
 
-test("builder-be.md routes per-stack skills via FEAT stack tag", async () => {
+test("backend-dev.md routes per-stack skills via FEAT stack tag", async () => {
   const md = await fs.readFile(AGENT_PATH, "utf8");
   assert.match(md, /stack:csharp/);
   assert.match(md, /stack:python/);
   assert.match(md, /stack:node/);
 });
 
-test("builder-be.md mandates OpenAPI codegen as FIRST step", async () => {
+test("backend-dev.md mandates OpenAPI codegen as FIRST step", async () => {
   const md = await fs.readFile(AGENT_PATH, "utf8");
   assert.match(md, /contract-codegen/);
   assert.match(md, /FIRST step/i);
 });
 
-test("builder-be.md mandates drift handling via help_request", async () => {
+test("backend-dev.md mandates drift handling via help_request", async () => {
   const md = await fs.readFile(AGENT_PATH, "utf8");
   assert.match(md, /help_request/);
   assert.match(md, /do not invent/i);
 });
 
-test("builder-be.md references the shared self-verify-gate skill", async () => {
+test("backend-dev.md references the shared self-verify-gate skill", async () => {
   const md = await fs.readFile(AGENT_PATH, "utf8");
   assert.match(md, /skills\/workflow\/self-verify-gate/);
 });

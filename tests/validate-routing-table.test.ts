@@ -161,7 +161,7 @@ test("consistency-fail: missing skill in agent block exits 1 with actionable err
   );
   const output = result.stdout + result.stderr;
   assert.match(output, /rust-pro/, "Error should name the missing skill path");
-  assert.match(output, /builder/, "Error should name the agent");
+  assert.match(output, /fullstack-dev/, "Error should name the agent");
 });
 
 test("consistency-ignore: routing-lint:ignore row skips cross-check exits 0", () => {
@@ -206,7 +206,7 @@ test("consistency-empty-block: agent missing Skills-you-consult heading exits 1 
   );
   const output = result.stdout + result.stderr;
   assert.match(output, /python-pro/, "Error should name the missing skill");
-  assert.match(output, /builder/, "Error should name the agent");
+  assert.match(output, /fullstack-dev/, "Error should name the agent");
 });
 
 test("consistency-refs-collapse: ref-suffix in notes collapses to dir match exits 0", () => {
@@ -227,7 +227,7 @@ test("consistency-multi-role: multi-role row fails if any role missing skill exi
   );
   const output = result.stdout + result.stderr;
   assert.match(output, /typescript-pro/, "Error should name the missing skill");
-  assert.match(output, /reviewer/, "Error should name the reviewer agent");
+  assert.match(output, /inspector/, "Error should name the reviewer agent");
 });
 
 test("consistency-missing-agent: agent file absent exits 1 with actionable error", () => {

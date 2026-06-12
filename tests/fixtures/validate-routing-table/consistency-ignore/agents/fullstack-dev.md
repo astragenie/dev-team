@@ -1,5 +1,5 @@
 ---
-name: builder
+name: fullstack-dev
 description: Bounded implementation agent
 ---
 

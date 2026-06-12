@@ -20,7 +20,7 @@ test("aggregates top-3 slowest + top-3 token-heaviest per runId", async () => {
     const rows = [
       {
         runId: "r1",
-        agent: "crew:builder",
+        agent: "crew:fullstack-dev",
         wallMs: 5000,
         tokenIn: 10000,
         tokenOut: 2000,
@@ -30,7 +30,7 @@ test("aggregates top-3 slowest + top-3 token-heaviest per runId", async () => {
       },
       {
         runId: "r1",
-        agent: "crew:reviewer",
+        agent: "crew:inspector",
         wallMs: 8000,
         tokenIn: 8000,
         tokenOut: 1500,
@@ -53,8 +53,8 @@ test("aggregates top-3 slowest + top-3 token-heaviest per runId", async () => {
     const agg = await aggregateDispatchTiming(log, "r1");
     assert.equal(agg.totalWallMs, 13000);
     assert.equal(agg.rowCount, 2);
-    assert.equal(agg.topSlow[0]?.agent, "crew:reviewer");
-    assert.equal(agg.topTokens[0]?.agent, "crew:builder");
+    assert.equal(agg.topSlow[0]?.agent, "crew:inspector");
+    assert.equal(agg.topTokens[0]?.agent, "crew:fullstack-dev");
   } finally {
     await fs.rm(tmp, { recursive: true, force: true });
   }
@@ -203,7 +203,7 @@ test("renderDispatchBreakdownSection includes section header and slow agent row"
     totalWallMs: 13000,
     topSlow: [
       {
-        agent: "crew:reviewer",
+        agent: "crew:inspector",
         model: "claude-sonnet-4-5",
         wallMs: 8000,
         tokenIn: 8000,
@@ -217,7 +217,7 @@ test("renderDispatchBreakdownSection includes section header and slow agent row"
     ],
     topTokens: [
       {
-        agent: "crew:builder",
+        agent: "crew:fullstack-dev",
         model: "claude-sonnet-4-5",
         wallMs: 5000,
         tokenIn: 10000,
@@ -239,8 +239,8 @@ test("renderDispatchBreakdownSection includes section header and slow agent row"
   };
   const section = renderDispatchBreakdownSection(dispatchAgg, bashAgg);
   assert.match(section, /## Per-dispatch breakdown/);
-  assert.match(section, /crew:reviewer/);
-  assert.match(section, /crew:builder/);
+  assert.match(section, /crew:inspector/);
+  assert.match(section, /crew:fullstack-dev/);
   assert.match(section, /typecheck/);
   assert.match(section, /13000ms/);
 });
@@ -271,7 +271,7 @@ test("renderDispatchBreakdownSection handles missing toolCalls fields gracefully
     totalWallMs: 5000,
     topSlow: [
       {
-        agent: "crew:builder",
+        agent: "crew:fullstack-dev",
         wallMs: 5000,
         tokenIn: 100,
         tokenOut: 50,

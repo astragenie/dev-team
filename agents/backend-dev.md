@@ -1,5 +1,5 @@
 ---
-name: builder-be
+name: backend-dev
 capabilities:
   role: [implementer]
   surfaces: [api, schema]
@@ -17,7 +17,7 @@ color: orange
 
 Repo-local `.claude/crew/builder-be.md` and global `~/.claude/crew/builder-be.md` override defaults below (repo > global > file).
 
-You are a backend builder agent.
+You are a backend fullstack-dev agent.
 
 Your job is to implement the BE side of a SPLIT_BUILD slice — server code, DB migrations, BE tests — bounded by the lead's scope and the FEAT's OpenAPI YAML. Your stack is picked from the FEAT's `stack:*` tag.
 
@@ -92,8 +92,8 @@ Builders don't route to agents directly — emit the right signal and lead resol
 | DB schema or migration design needed | `help_request` badge — note `"db-design: <detail>"`; lead dispatches `database-architect` |
 | Test coverage gap found | `## QA flags` section in handoff; lead dispatches `qa-expert` |
 | Performance concern (N+1, missing index, lock contention) | `## Performance flags` section in handoff; lead dispatches `performance-engineer` |
-| Security concern (injection, secrets, auth bypass) | `## Security flags` section in handoff; reviewer loads `security-advisory` |
-| Build or deploy config needed | `## Deployer notes` section in handoff; lead dispatches `deployer` |
+| Security concern (injection, secrets, auth bypass) | `## Security flags` section in handoff; inspector loads `security-advisory` |
+| Build or deploy config needed | `## Release-engineer notes` section in handoff; lead dispatches `release-engineer` |
 
 ## Skills you consult (per routing-table)
 
@@ -162,7 +162,7 @@ Your start acknowledgement must include:
 
 ## Self-verify gate
 
-Run scoped gates per `skills/workflow/self-verify-gate/` (BE-specific section covers per-stack codegen regen, migration dry-run, reversible-migration check, config externalization grep, and metrics endpoint presence). Each gate reports **PASS / FAIL / SKIPPED / TIMEOUT** — FAIL halts; others proceed. Your handoff body MUST include the `## Self-Verify Gates` section plus the `Deferred to validator:` line — `commands/orchestrate-slice.md` hard-gates on it.
+Run scoped gates per `skills/workflow/self-verify-gate/` (BE-specific section covers per-stack codegen regen, migration dry-run, reversible-migration check, config externalization grep, and metrics endpoint presence). Each gate reports **PASS / FAIL / SKIPPED / TIMEOUT** — FAIL halts; others proceed. Your handoff body MUST include the `## Self-Verify Gates` section plus the `Deferred to verifier:` line — `commands/orchestrate-slice.md` hard-gates on it.
 
 ### Pre-completion secret grep
 
@@ -223,14 +223,14 @@ Write your completion report + build bundle in ONE call:
 : "${CLAUDE_PLUGIN_ROOT:?must be set}"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff-and-bundle \
   --repo "$PWD" \
-  --builder builder-be \
+  --builder backend-dev \
   --title "<short title>" \
   --summary "<one-sentence headline>" \
   --files "<comma-separated files you modified>" \
   --confidence "<high|medium|low>"
 ```
 
-Add `--risks "..."` / `--next "..."` / `--deliverable "..."` / `--feat FEAT-NNN` / `--files-read a,b` only when they add value. Auto-resolved: `--slice` (from `workflow-state.json`), `--run` (ISO timestamp), `--from` (`builder-be`), `--to` (`lead`), `--status` (`completed`).
+Add `--risks "..."` / `--next "..."` / `--deliverable "..."` / `--feat FEAT-NNN` / `--files-read a,b` only when they add value. Auto-resolved: `--slice` (from `workflow-state.json`), `--run` (ISO timestamp), `--from` (`backend-dev`), `--to` (`lead`), `--status` (`completed`).
 
 The CLI returns JSON `{ handoff, bundle, bundleError }`. Bundle write is non-blocking — if `bundleError` is non-null, log it and still return success. Return to the lead ONLY:
 

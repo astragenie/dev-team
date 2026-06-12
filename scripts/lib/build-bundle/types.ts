@@ -1,7 +1,7 @@
 // Shared types for build-bundle module.
 // Schema reference: docs/standards/build-bundle-schema.md
 
-export type BuilderName = "builder" | "builder-be" | "builder-fe";
+export type BuilderName = "fullstack-dev" | "backend-dev" | "frontend-dev";
 
 export type SkipReason = "outside-repo" | "deleted" | "binary";
 

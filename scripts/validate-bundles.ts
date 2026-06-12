@@ -9,7 +9,7 @@ import { SCHEMA_VERSION } from "./lib/build-bundle/types.ts";
 const BUNDLES_REL = path.join(".claude", "artifacts", "crew", "bundles");
 const REQUIRED_FIELDS = [
   "slice",
-  "builder",
+  "fullstack-dev",
   "run_id",
   "files_touched",
   "files_read",

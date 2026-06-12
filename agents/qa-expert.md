@@ -1,7 +1,7 @@
 ---
 name: qa-expert
 capabilities:
-  role: [reviewer]
+  role: [inspector]
   concerns: [test-coverage]
   scopes: [normal, wide]
   lens: [test-coverage]
@@ -20,7 +20,7 @@ Your job: identify test coverage gaps, design missing edge-case scenarios, and v
 ## Focus areas
 
 - Coverage analysis — untested paths, missing edge cases, boundary conditions
-- Scenario design — concrete Given/When/Then scenarios the builder can implement
+- Scenario design — concrete Given/When/Then scenarios the fullstack-dev can implement
 - Behavioral verification — confirm ACs are exercised by existing tests
 - Regression risk — paths changed by the slice with no test cover
 - Release readiness — smoke test + regression suite must pass before promotion; call out any gap

@@ -13,7 +13,7 @@ test("records start + end as single JSONL row with wallMs", async () => {
     const handle = recordDispatchStart({
       runId: "run-1",
       sliceId: "SLICE-99",
-      agent: "crew:builder",
+      agent: "crew:fullstack-dev",
       model: "claude-sonnet-4-6"
     });
     await new Promise<void>((r) => setTimeout(r, 25));
@@ -32,7 +32,7 @@ test("records start + end as single JSONL row with wallMs", async () => {
       .split("\n")
       .map((l) => JSON.parse(l) as Record<string, unknown>);
     assert.equal(rows.length, 1);
-    assert.equal(rows[0]!["agent"], "crew:builder");
+    assert.equal(rows[0]!["agent"], "crew:fullstack-dev");
     assert.ok(
       typeof rows[0]!["wallMs"] === "number" && rows[0]!["wallMs"] >= 25,
       `Expected wallMs >= 25, got ${String(rows[0]!["wallMs"])}`

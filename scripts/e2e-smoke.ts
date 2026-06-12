@@ -59,7 +59,7 @@ async function smokeBuildBundle(repoRoot: string): Promise<void> {
       "--slice",
       "SLICE-smoke",
       "--builder",
-      "builder",
+      "fullstack-dev",
       "--run",
       "20260608T999999Z",
       "--handoff",

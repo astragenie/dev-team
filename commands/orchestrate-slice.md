@@ -174,15 +174,15 @@ in Step 3 / 3a / 3b prepend the block when non-empty, omit it otherwise.
 
 ### Steps 2 + 3 — UX designer + Builder (parallel when both fire)
 
-`crew:uxdesigner` and `crew:builder` both consume the FEAT-scoped contracts artifact (Step 1's `CONTRACT_YAML_PATH` + `CONTRACT_MD_PATH`) but NOT each other's output. Builder works from contracts + slice ACs; uxdesigner produces UX spec for reviewer to check separately. Both fire concurrently.
+`crew:uxdesigner` and `crew:fullstack-dev` both consume the FEAT-scoped contracts artifact (Step 1's `CONTRACT_YAML_PATH` + `CONTRACT_MD_PATH`) but NOT each other's output. Builder works from contracts + slice ACs; uxdesigner produces UX spec for reviewer to check separately. Both fire concurrently.
 
 **Dispatch rules:**
 
 - `SPLIT_BUILD = false` AND `NEEDS_UX = false` AND `BEHAVIOR_CHANGED = false` — no implementation work. Skip Steps 2 + 3, jump to Step 4.
 - `SPLIT_BUILD = false` AND only `NEEDS_UX = true` — dispatch `crew:uxdesigner` only.
-- `SPLIT_BUILD = false` AND only `BEHAVIOR_CHANGED = true` — dispatch `crew:builder` only (single-builder path, unchanged).
-- `SPLIT_BUILD = false` AND BOTH true — single message with TWO Agent calls: `crew:uxdesigner` + `crew:builder` (existing v0.15.0 behavior, unchanged).
-- `SPLIT_BUILD = true` — single message with THREE Agent calls: `crew:uxdesigner` + `crew:builder-fe` + `crew:builder-be`. All consume the same FEAT-scoped OpenAPI YAML path. Builder handoffs are scoped by role: `builder-fe-<SLICE>.md` and `builder-be-<SLICE>.md`.
+- `SPLIT_BUILD = false` AND only `BEHAVIOR_CHANGED = true` — dispatch `crew:fullstack-dev` only (single-builder path, unchanged).
+- `SPLIT_BUILD = false` AND BOTH true — single message with TWO Agent calls: `crew:uxdesigner` + `crew:fullstack-dev` (existing v0.15.0 behavior, unchanged).
+- `SPLIT_BUILD = true` — single message with THREE Agent calls: `crew:uxdesigner` + `crew:frontend-dev` + `crew:backend-dev`. All consume the same FEAT-scoped OpenAPI YAML path. Builder handoffs are scoped by role: `builder-fe-<SLICE>.md` and `builder-be-<SLICE>.md`.
 
 Race-safety: each parallel agent writes its own artifact at a deterministic path. No shared mutable state. UX spec stays slice-scoped. OpenAPI YAML is read-only for both builders (drift → help_request).
 
@@ -221,7 +221,7 @@ Return ONLY the artifact path on a single line.
 
 Store the returned path as `UX_SPEC_PATH`.
 
-#### Step 3 prompt — `crew:builder`
+#### Step 3 prompt — `crew:fullstack-dev`
 
 Prepend `${SINGLE_BLOCK}` from Step 2.5 when non-empty. Omit otherwise.
 
@@ -246,7 +246,7 @@ When both branches fire, the orchestrator collects `UX_SPEC_PATH` AND `BUILDER_H
 
 #### Step 3 (SPLIT_BUILD=true) prompts
 
-##### Step 3a — `crew:builder-fe`
+##### Step 3a — `crew:frontend-dev`
 
 Prepend `${FE_BLOCK}` from Step 2.5 when non-empty. Omit otherwise.
 
@@ -272,7 +272,7 @@ Return the handoff artifact path.
 
 Store the returned path as `BUILDER_FE_HANDOFF_PATH`.
 
-##### Step 3b — `crew:builder-be`
+##### Step 3b — `crew:backend-dev`
 
 Prepend `${BE_BLOCK}` from Step 2.5 when non-empty. Omit otherwise.
 
@@ -365,7 +365,7 @@ node -e "
 
 **Classify tier:**
 
-- `tier: full` — long slices, cross-plugin, >10 changed files AND ≥7 ACs. Dispatch separate `crew:reviewer` and `crew:validator` in parallel.
+- `tier: full` — long slices, cross-plugin, >10 changed files AND ≥7 ACs. Dispatch separate `crew:inspector` and `crew:verifier` in parallel.
 - `tier: light` — short slices with `SHORT_SLICE = true` AND `BEHAVIOR_CHANGED = true`. Dispatch single `crew:reviewer-validator` (combined concurrent agent).
 
 Tier is recorded in the slice-progress tracking via `write-run-brief --tier <light|full>` (invoked by loop's internal machinery; may be logged for reference).
@@ -384,13 +384,13 @@ After builder PASS, dispatch both review and validation in parallel according to
 
 #### Dispatch selection
 
-**When `tier: full`:** Dispatch both `crew:reviewer` and `crew:validator` simultaneously (single message, two `Agent` calls, or parallel tool invocations).
+**When `tier: full`:** Dispatch both `crew:inspector` and `crew:verifier` simultaneously (single message, two `Agent` calls, or parallel tool invocations).
 
 **When `tier: light`:** Dispatch single `crew:reviewer-validator` (combined agent) instead.
 
-**Registry fallback:** If the dispatch fails with "Agent type 'crew:reviewer-validator' not found" (session started before the plugin version that ships the agent, or registry not yet refreshed), do NOT retry the same dispatch and do NOT skip gates — fall back to the full ladder: dispatch `crew:reviewer` and `crew:validator` concurrently exactly as for `tier: full`, and note `tier: light (fallback: full ladder — reviewer-validator unregistered)` in the run brief.
+**Registry fallback:** If the dispatch fails with "Agent type 'crew:reviewer-validator' not found" (session started before the plugin version that ships the agent, or registry not yet refreshed), do NOT retry the same dispatch and do NOT skip gates — fall back to the full ladder: dispatch `crew:inspector` and `crew:verifier` concurrently exactly as for `tier: full`, and note `tier: light (fallback: full ladder — reviewer-validator unregistered)` in the run brief.
 
-#### Step 4 prompt — `crew:reviewer` (full-tier only; parallel)
+#### Step 4 prompt — `crew:inspector` (full-tier only; parallel)
 
 Dispatch with this prompt:
 
@@ -417,7 +417,7 @@ Return the review-result artifact path.
 
 Store the returned path(s) as `REVIEW_RESULT_PATH` (or the aggregated set when fanning out multi-lens).
 
-#### Step 5 prompt — `crew:validator` (always; parallel)
+#### Step 5 prompt — `crew:verifier` (always; parallel)
 
 **Always run on a code-bearing slice — no skip.** The validator owns the mandatory full gate (whole-repo lint, `format:check`, the complete test suite, `validate:all`) that the scoped builders no longer run. Run it even when `BEHAVIOR_CHANGED = false`: a code-only diff still needs the full suite to run somewhere, and this is the only always-on home for it.
 
@@ -471,12 +471,12 @@ Store returned paths as `REVIEW_RESULT_PATH` and `VALIDATION_PATH`.
 
 #### Conflict rule: reviewer needs_fix invalidates validation
 
-If reviewer returns `needs_fix` (on either full-tier `crew:reviewer` or light-tier combined agent):
+If reviewer returns `needs_fix` (on either full-tier `crew:inspector` or light-tier combined agent):
 
 1. Mark validation result stale: `node scripts/crew.ts mark-badge --repo "$PWD" --badge validation_stale --note "invalidated by review needs_fix"`.
 2. Re-dispatch builder with review findings (run `/crew:fix` flow).
 3. After builder PASS on the fix bounce:
-   - If original tier was `light`: escalate to full ladder — dispatch separate `crew:reviewer` and `crew:validator` in parallel (per full-tier dispatch sections above), regardless of the SHORT_SLICE computation.
+   - If original tier was `light`: escalate to full ladder — dispatch separate `crew:inspector` and `crew:verifier` in parallel (per full-tier dispatch sections above), regardless of the SHORT_SLICE computation.
    - If original tier was `full`: use standard concurrent dispatch (both in parallel).
 4. Proceed to Step 6 after both gates PASS.
 

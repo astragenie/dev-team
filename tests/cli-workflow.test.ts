@@ -56,7 +56,7 @@ test("CLI wake-up brief summarizes repo memory and state", async () => {
     "Implementation finished and waiting for independent review"
   ]);
 
-  await runCrew(["claim", "--repo", repoPath, "--owner", "builder", "src/example.ts"]);
+  await runCrew(["claim", "--repo", repoPath, "--owner", "fullstack-dev", "src/example.ts"]);
 
   await runCrew([
     "request-approval",

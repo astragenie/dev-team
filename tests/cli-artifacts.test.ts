@@ -40,7 +40,7 @@ test("CLI artifact writers create markdown artifacts", async () => {
     "--decision",
     "approved",
     "--reviewer",
-    "reviewer",
+    "inspector",
     "--files",
     "app/templates/create.html",
     "--non-code"
@@ -77,7 +77,7 @@ test("CLI artifact writers create markdown artifacts", async () => {
     "--title",
     "Platform guidance validation plan",
     "--validator",
-    "validator",
+    "verifier",
     "--environment",
     "local",
     "--goal",
@@ -98,7 +98,7 @@ test("CLI artifact writers create markdown artifacts", async () => {
     "--title",
     "Platform guidance validation",
     "--validator",
-    "validator",
+    "verifier",
     "--environment",
     "local",
     "--decision",
@@ -122,7 +122,7 @@ test("CLI artifact writers create markdown artifacts", async () => {
     "--title",
     "Platform guidance dev deploy",
     "--deployer",
-    "deployer",
+    "release-engineer",
     "--environment",
     "dev",
     "--resource",
@@ -273,7 +273,7 @@ test("write-handoff --repo-context appends ## Repo Layout section", async () => 
     "--title",
     "Test handoff",
     "--from",
-    "builder",
+    "fullstack-dev",
     "--to",
     "lead",
     "--repo-context"
@@ -296,7 +296,7 @@ test("write-handoff without --repo-context has no ## Repo Layout section", async
     "--title",
     "Test handoff plain",
     "--from",
-    "builder",
+    "fullstack-dev",
     "--to",
     "lead"
   ]);

@@ -33,9 +33,9 @@ test("orchestrate-slice command references all required specialist agents", asyn
   const required = [
     "crew:architect",
     "crew:uxdesigner",
-    "crew:builder",
-    "crew:reviewer",
-    "crew:validator"
+    "crew:fullstack-dev",
+    "crew:inspector",
+    "crew:verifier"
   ];
   for (const agent of required) {
     assert.match(text, new RegExp(agent), `command must reference ${agent}`);

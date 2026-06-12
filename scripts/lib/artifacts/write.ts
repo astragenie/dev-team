@@ -302,7 +302,7 @@ const SIMPLE_RENDERERS: Record<string, ArtifactConfig> = {
         `# Validation Result: ${f.title || "Untitled"}`,
         "",
         renderField("Created", nowIso()),
-        renderField("Validator", f.validator || f.owner || "validator"),
+        renderField("Validator", f.validator || f.owner || "verifier"),
         renderField("Environment", f.environment),
         renderField("Decision", f.decision || "passed_with_notes")
       ];
@@ -328,7 +328,7 @@ const SIMPLE_RENDERERS: Record<string, ArtifactConfig> = {
         `# Deployment Check: ${f.title || "Untitled"}`,
         "",
         renderField("Created", nowIso()),
-        renderField("Deployer", f.deployer || f.owner || "deployer"),
+        renderField("Deployer", f.deployer || f.owner || "release-engineer"),
         renderField("Environment", f.environment),
         renderField("Resource", f.resource),
         renderField("Service URL", f.url),

@@ -200,7 +200,7 @@ export function parseRoleDispatches(text: string): Record<string, number> {
 
   const out: Record<string, number> = {};
   // Walk lines after the key, collecting indented "  - role: count" entries.
-  // Role names may contain colons (e.g. "crew:builder"), so match the LAST
+  // Role names may contain colons (e.g. "crew:fullstack-dev"), so match the LAST
   // ": <digits>" segment to split role from count.
   const afterKey = text.slice(keyIdx + 1);
   for (const line of afterKey.split(/\r?\n/)) {

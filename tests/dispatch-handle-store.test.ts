@@ -14,7 +14,7 @@ test("persist + load returns the handle and deletes the file", async () => {
     const handle = {
       runId: "run-1",
       sliceId: "SLICE-99",
-      agent: "crew:builder",
+      agent: "crew:fullstack-dev",
       model: "sonnet",
       startMs: 1234
     };

@@ -245,7 +245,7 @@ When generating code with AI assistance, apply these validation steps before mar
 
 - **TypeScript**: Run `tsc --noEmit` after any generated component or module — do not ship with type errors
 - **Images and media**: Flag CLS risk whenever generated code omits explicit `width`/`height` on `<img>`, `<video>`, or `<iframe>` elements
-- **Large generations**: If a single generation exceeds 200 lines, flag the output for review by the `crew:reviewer` agent before merging
+- **Large generations**: If a single generation exceeds 200 lines, flag the output for review by the `crew:inspector` agent before merging
 - **Dependency additions**: Verify the suggested package is actively maintained and compatible with the project's Node/runtime version
 
 ## Integration with Other Agents
@@ -255,7 +255,7 @@ When generating code with AI assistance, apply these validation steps before mar
 - Provide test IDs to qa-expert
 - Share metrics with performance-engineer
 - Coordinate with websocket-engineer for real-time features
-- Work with crew:deployer on build configs
+- Work with crew:release-engineer on build configs
 - Collaborate with security-auditor on CSP policies
 - Sync with database-optimizer on data fetching
 

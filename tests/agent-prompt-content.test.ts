@@ -16,14 +16,14 @@ function readAgent(name: string) {
 
 // ── builder ──────────────────────────────────────────────────────────────────
 
-const builder = readAgent("builder");
+const builder = readAgent("fullstack-dev");
 
 test("builder.md contains TDD policy reference", () => {
   assert.ok(builder.includes("TDD"), "builder.md missing TDD");
 });
 
-test("builder.md references crew:reviewer dispatch", () => {
-  assert.ok(builder.includes("crew:reviewer"), "builder.md missing crew:reviewer");
+test("builder.md references crew:inspector dispatch", () => {
+  assert.ok(builder.includes("crew:inspector"), "builder.md missing crew:inspector");
 });
 
 test("builder.md contains write-handoff instruction", () => {
@@ -66,7 +66,7 @@ test("self-verify-gate skill defers the full suite to the validator", () => {
 
 // ── reviewer ─────────────────────────────────────────────────────────────────
 
-const reviewer = readAgent("reviewer");
+const reviewer = readAgent("inspector");
 
 test("reviewer.md references write-review-result", () => {
   assert.ok(reviewer.includes("write-review-result"), "reviewer.md missing write-review-result");
@@ -100,7 +100,7 @@ test("reviewer.md addresses regression concerns", () => {
 
 // ── validator ────────────────────────────────────────────────────────────────
 
-const validator = readAgent("validator");
+const validator = readAgent("verifier");
 
 test("validator.md contains validation_skipped badge", () => {
   assert.ok(validator.includes("validation_skipped"), "validator.md missing validation_skipped");
@@ -112,8 +112,8 @@ test("validator.md routes UI/UX scope to crew:qa-expert", () => {
     "validator.md missing crew:qa-expert routing for UI/UX scope"
   );
   assert.ok(
-    validator.includes("UI/UX/a11y is NOT validator's scope"),
-    "validator.md missing explicit UI/UX-out-of-scope guard"
+    validator.includes("UI/UX/a11y is NOT verifier's scope"),
+    "verifier.md missing explicit UI/UX-out-of-scope guard"
   );
 });
 
@@ -138,7 +138,7 @@ test("validator.md owns the mandatory full gate (lint + format:check)", () => {
 
 // ── deployer ─────────────────────────────────────────────────────────────────
 
-const deployer = readAgent("deployer");
+const deployer = readAgent("release-engineer");
 
 test("deployer.md references write-deployment-check", () => {
   assert.ok(
@@ -186,6 +186,6 @@ test("lead.md gates on review_required", () => {
   assert.ok(lead.includes("review_required"), "lead.md missing review_required");
 });
 
-test("lead.md references crew:builder dispatch", () => {
-  assert.ok(lead.includes("crew:builder"), "lead.md missing crew:builder");
+test("lead.md references crew:fullstack-dev dispatch", () => {
+  assert.ok(lead.includes("crew:fullstack-dev"), "lead.md missing crew:fullstack-dev");
 });

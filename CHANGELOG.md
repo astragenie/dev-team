@@ -5,6 +5,73 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.35.0 — 2026-06-12 — agent rename to break crew: namespace collision
+
+### Behavior change — 6 agents renamed
+
+Lead repeatedly misrouted `Skill(crew:build)` / `Skill(crew:validate)` instead of `Agent(subagent_type: "crew:builder")` / `Agent(subagent_type: "crew:validator")`. Three reproductions today (loop SLICE-152, SLICE-153, plus one during patch verification). Root cause: `crew:` namespace collision. Slash commands (`/crew:build`, `/crew:validate`, etc.) and subagent types (`crew:builder`, `crew:validator`, etc.) look identical to the model — the three-character difference (`build` vs `builder`) doesn't survive Sonnet-tier reasoning. Three text patches (FEAT-161 SLICE-A/B + v0.33.2 + v0.34.0's `7029861`) all failed to stop the misroute.
+
+Structural fix: rename the subagents out of the colliding `crew:` namespace area. Slash commands keep their existing names; the agents move:
+
+- `crew:builder` → `crew:fullstack-dev`
+- `crew:builder-be` → `crew:backend-dev`
+- `crew:builder-fe` → `crew:frontend-dev`
+- `crew:validator` → `crew:verifier`
+- `crew:reviewer` → `crew:inspector`
+- `crew:deployer` → `crew:release-engineer`
+
+Now lead's "I'll use crew:X to kick off the build" rationalization no longer resolves — there is no `crew:builder` subagent type. Only `crew:fullstack-dev` is dispatchable, and the slash command `crew:build` is clearly a different surface.
+
+**Consumer impact**: any external repo or routing code that dispatches by the old subagent name will break. Update to the new names. `--builder` / `--reviewer` / `--validator` / `--deployer` CLI flags on `scripts/crew.ts` keep their existing names for backward compatibility; only the agent file frontmatter `name:` field changed.
+
+### Behavior change — TaskCreate → Agent pairing rule
+
+New hard-contract rule in `agents/lead.md`: every work-producing step must be `TaskCreate` followed by `Agent` dispatch in the same response. `TaskCreate` without a paired `Agent` call within the same turn is a contract violation — the Task ledger drifts from reality and slice budget tracking goes wrong. Forbidden endings: `TaskCreate` / `TaskUpdate` / `TaskList` / `TaskGet` / `ToolSearch` / `Skill` alone, or narration alone.
+
+### Changed
+
+- 6 agent files renamed (frontmatter `name:` + filename via `git mv`):
+  - `agents/builder.md` → `agents/fullstack-dev.md`
+  - `agents/builder-be.md` → `agents/backend-dev.md`
+  - `agents/builder-fe.md` → `agents/frontend-dev.md`
+  - `agents/validator.md` → `agents/verifier.md`
+  - `agents/reviewer.md` → `agents/inspector.md`
+  - `agents/deployer.md` → `agents/release-engineer.md`
+- `agents/lead.md`: TaskCreate→Agent pairing block added under HARD OUTPUT CONTRACT. `maxLines:` 350 → 360 to accommodate. Cap 354/360.
+- `docs/routing-table.md`: all Route-to column references renamed.
+- `scripts/validate-agents.ts`: `BASH_COALESCING_REQUIRED` + `TASK_UPDATE_BATCHING_REQUIRED` sets renamed.
+- `scripts/validate-routing-table.ts`: `KNOWN_CREW_ROLES` + `CREW_ROLE_IN_CELL_RE` updated to recognize new names.
+- `commands/orchestrate-slice.md`: all dispatch prompts use new names.
+- All 14 other agent files (`architect.md`, `uxdesigner.md`, `integrator.md`, `parallel-runner.md`, `refactor.md`, `qa-expert.md`, `performance-engineer.md`, `investigator.md`, `researcher.md`, `reviewer-validator.md`, `document-writer.md`): cross-references updated.
+
+### Tests
+
+- `tests/agent-topology.test.ts`: `EXPECTED_AGENTS` set renames 6 entries.
+- `tests/builder-be-prompt.test.ts` → `tests/backend-dev-prompt.test.ts` (rename + assertion updates).
+- `tests/builder-fe-prompt.test.ts` → `tests/frontend-dev-prompt.test.ts` (rename + assertion updates).
+- `tests/build-bundle-assemble.test.ts`: bundle filename + frontmatter expectations updated.
+- `tests/agent-prompt-content.test.ts`: verifier UI/UX guard text assertion updated.
+- `tests/validate-routing-table.test.ts`: assertion patterns + fixture files renamed.
+- 687/690 tests pass (3 pre-existing failures: 2 `validate-all` from marketplace.json removal, 1 `log_event.sh` timing flake).
+
+### Migration for downstream consumers
+
+Update any code or docs that dispatches by old agent names:
+
+```diff
+- Agent(subagent_type: "crew:builder", ...)
++ Agent(subagent_type: "crew:fullstack-dev", ...)
+
+- Agent(subagent_type: "crew:reviewer", ...)
++ Agent(subagent_type: "crew:inspector", ...)
+```
+
+Apply for all 6 renames. CLI flags (`--builder`, `--reviewer`, etc.) keep their existing names so `node scripts/crew.ts ... --builder backend-dev ...` continues to work.
+
+### Why structural-not-textual
+
+Three text patches landed and failed: FEAT-161 SLICE-A/B HARD CONTRACT block (commits `b31ca77`, `83fb35e`), v0.33.2 source-read prohibition (commit `158fa61`), and v0.34.0's Skill-vs-Agent block (commit `7029861`). Each time the model rationalized past the prose. Renaming the targets out of the colliding namespace removes the rationalization surface — there is no `crew:builder` for lead to reach for.
+
 ## v0.34.0 — 2026-06-11 — lead structural dispatch discipline + marketplace migration + document-writer ceremony close
 
 ### Behavior change — `crew:lead` cannot read, shell, or grep

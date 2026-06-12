@@ -27,7 +27,7 @@ test("assembleBuildBundle: happy path writes bundle with frontmatter and four se
   const result = await assembleBuildBundle({
     repoPath: repo,
     sliceId: "SLICE-99",
-    builderName: "builder-be",
+    builderName: "backend-dev",
     runId: "20260608T223000Z",
     feat: "FEAT-999",
     handoffBody: "## Handoff body\n\nsummary line\n",
@@ -36,15 +36,15 @@ test("assembleBuildBundle: happy path writes bundle with frontmatter and four se
   });
 
   assert.ok(
-    result.path.endsWith("SLICE-99/builder-be-20260608T223000Z-build-bundle.md") ||
-      result.path.endsWith("SLICE-99\\builder-be-20260608T223000Z-build-bundle.md")
+    result.path.endsWith("SLICE-99/backend-dev-20260608T223000Z-build-bundle.md") ||
+      result.path.endsWith("SLICE-99\\backend-dev-20260608T223000Z-build-bundle.md")
   );
   assert.equal(result.truncated, false);
   assert.deepEqual(result.filesReadSkipped, []);
 
   const text = await fs.readFile(result.path, "utf8");
   assert.match(text, /^---\nslice: SLICE-99\n/);
-  assert.match(text, /builder: builder-be/);
+  assert.match(text, /builder: backend-dev/);
   assert.match(text, /run_id: 20260608T223000Z/);
   assert.match(text, /feat: FEAT-999/);
   assert.match(text, new RegExp(`schema_version: ${SCHEMA_VERSION}`));
@@ -68,7 +68,7 @@ test("assembleBuildBundle: deleted file in files_read is recorded in files_read_
   const result = await assembleBuildBundle({
     repoPath: repo,
     sliceId: "SLICE-99",
-    builderName: "builder",
+    builderName: "fullstack-dev",
     runId: "20260608T223100Z",
     handoffBody: "h",
     filesTouched: ["a.ts"],
@@ -87,7 +87,7 @@ test("assembleBuildBundle: outside-repo path in files_read is dropped", async ()
   const result = await assembleBuildBundle({
     repoPath: repo,
     sliceId: "SLICE-99",
-    builderName: "builder",
+    builderName: "fullstack-dev",
     runId: "20260608T223200Z",
     handoffBody: "h",
     filesTouched: ["a.ts"],
@@ -107,7 +107,7 @@ test("assembleBuildBundle: binary file in files_touched is replaced with placeho
   const result = await assembleBuildBundle({
     repoPath: repo,
     sliceId: "SLICE-99",
-    builderName: "builder",
+    builderName: "fullstack-dev",
     runId: "20260608T223300Z",
     handoffBody: "h",
     filesTouched: ["blob.bin"],
@@ -128,7 +128,7 @@ test("assembleBuildBundle: soft cap drops files_read LRU first", async () => {
   const result = await assembleBuildBundle({
     repoPath: repo,
     sliceId: "SLICE-99",
-    builderName: "builder",
+    builderName: "fullstack-dev",
     runId: "20260608T223400Z",
     handoffBody: "h",
     filesTouched: ["small.ts"],
@@ -153,7 +153,7 @@ test("assembleBuildBundle: orphan bundle path when slice is 'unknown'", async ()
   const result = await assembleBuildBundle({
     repoPath: repo,
     sliceId: "unknown",
-    builderName: "builder",
+    builderName: "fullstack-dev",
     runId: "20260608T223500Z",
     handoffBody: "h",
     filesTouched: ["a.ts"],
@@ -170,7 +170,7 @@ test("assembleBuildBundle: deterministic output across two identical runs", asyn
   const inputs = {
     repoPath: repo,
     sliceId: "SLICE-99",
-    builderName: "builder" as const,
+    builderName: "fullstack-dev" as const,
     runId: "20260608T223600Z",
     handoffBody: "deterministic\n",
     filesTouched: ["a.ts"],
