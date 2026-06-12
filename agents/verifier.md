@@ -103,17 +103,17 @@ Walk this list in order; use the first source that exists. Never improvise — w
 1. **Dispatch-provided commands** — if the lead's prompt names exact gate commands, those win.
 2. **`.claude/loop.json` `stack.validate`** — explicit validator-stage command array.
 3. **`.claude/loop.json` `stack.build` + `stack.test`** — run build then test arrays in declared order.
-4. **`package.json` scripts** — `npm run lint` · `npm run format:check` · `npm run test` · `npm run validate:all` if present.
-5. **Stack fallback** — last resort. Bun: `bun run lint` · `bun run format:check` · `bun test --parallel` (`--parallel` is required for full `node:test` subtest compat — ADR-002) · `bun run validate:all`. .NET: `dotnet format --verify-no-changes` · `dotnet test`. Python: `ruff check` · `pytest`.
+4. **`package.json` scripts** — `npm run lint` · `npm run format:check` · `npm run test` · `npm run verify:all` if present.
+5. **Stack fallback** — last resort. Bun: `bun run lint` · `bun run format:check` · `bun test --parallel` (`--parallel` is required for full `node:test` subtest compat — ADR-002) · `bun run verify:all`. .NET: `dotnet format --verify-no-changes` · `dotnet test`. Python: `ruff check` · `pytest`.
 
 `format:check` is **CHECK ONLY**. You are read-only; do NOT run `format` to fix. On failure → `failed`; formatting fix bounces to fullstack-dev via `crew:fix`.
 
 ### Parallel gates (FEAT-152)
 
-When the resolved gate set contains ≥2 commands that don't depend on each other (lint, format:check, typecheck, validate:all all qualify — the full test suite is its own concern), emit a parallel block via the helper instead of running them serially:
+When the resolved gate set contains ≥2 commands that don't depend on each other (lint, format:check, typecheck, verify:all all qualify — the full test suite is its own concern), emit a parallel block via the helper instead of running them serially:
 
 ```bash
-bun scripts/lib/parallel-gates.ts --emit lint,format:check,typecheck,validate:all | bash
+bun scripts/lib/parallel-gates.ts --emit lint,format:check,typecheck,verify:all | bash
 ```
 
 The helper backgrounds each gate with `&`, writes per-gate `mktemp` logs, applies the `CREW_BASH_GATE_TIMEOUT_S` cap, and prints the failed-gate header + tail of its log on any non-zero exit. Cuts verifier gate wall-clock from ~33 s serial to ~12 s parallel (typecheck dominates). The full test suite stays serial after the parallel block lands — it is the slowest gate and rarely benefits from racing other I/O.

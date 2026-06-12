@@ -419,7 +419,7 @@ Store the returned path(s) as `REVIEW_RESULT_PATH` (or the aggregated set when f
 
 #### Step 5 prompt — `crew:verifier` (always; parallel)
 
-**Always run on a code-bearing slice — no skip.** The validator owns the mandatory full gate (whole-repo lint, `format:check`, the complete test suite, `validate:all`) that the scoped builders no longer run. Run it even when `BEHAVIOR_CHANGED = false`: a code-only diff still needs the full suite to run somewhere, and this is the only always-on home for it.
+**Always run on a code-bearing slice — no skip.** The validator owns the mandatory full gate (whole-repo lint, `format:check`, the complete test suite, `verify:all`) that the scoped builders no longer run. Run it even when `BEHAVIOR_CHANGED = false`: a code-only diff still needs the full suite to run somewhere, and this is the only always-on home for it.
 
 Dispatch with this prompt:
 
@@ -435,7 +435,7 @@ When SPLIT_BUILD=false:
 
 Integration artifact: <INTEGRATION_PATH or "none">
 
-Run the mandatory full gate FIRST (lint, format:check, full test suite, validate:all) per your agent prompt — this is where the complete suite runs, since builders only ran affected-class tests. Then validate that the implementation satisfies all acceptance criteria in the slice file. If an Integration artifact is provided with Outcome: PASS, you may short-circuit the scenario set per your agent prompt's SPLIT_BUILD short-circuit rule (the full gate still runs regardless).
+Run the mandatory full gate FIRST (lint, format:check, full test suite, verify:all) per your agent prompt — this is where the complete suite runs, since builders only ran affected-class tests. Then validate that the implementation satisfies all acceptance criteria in the slice file. If an Integration artifact is provided with Outcome: PASS, you may short-circuit the scenario set per your agent prompt's SPLIT_BUILD short-circuit rule (the full gate still runs regardless).
 
 Concurrently, the reviewer is running code-quality checks; you focus on behavior and gates.
 
@@ -461,7 +461,7 @@ When SPLIT_BUILD=true:
 When SPLIT_BUILD=false:
   Builder handoff: <BUILDER_HANDOFF_PATH>
 
-Run the mandatory full gate FIRST (lint, format:check, full test suite, validate:all).
+Run the mandatory full gate FIRST (lint, format:check, full test suite, verify:all).
 Then review the implementation for correctness and test coverage, and validate acceptance criteria.
 
 Return BOTH the review-result artifact path AND the validation-result artifact path (one per line).
@@ -488,7 +488,7 @@ If both return PASS (or approved_with_notes / passed_with_notes): proceed to Ste
 
 **Skip when `RELEASE_CONTENT = false`.**
 
-Dispatch `loop:document-writer` with this prompt:
+Dispatch `crew:document-writer` with this prompt:
 
 ```
 Slice: <SLICE-NN title>
@@ -506,7 +506,7 @@ Store the returned path as `CHANGELOG_WRITER_PATH`.
 
 **Skip when `DOCS_NEEDED = false`.**
 
-Dispatch `loop:document-writer` with this prompt:
+Dispatch `crew:document-writer` with this prompt:
 
 ```
 Slice: <SLICE-NN title>

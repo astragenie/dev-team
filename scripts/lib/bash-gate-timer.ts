@@ -9,7 +9,7 @@ const PATTERNS: Array<[RegExp, string]> = [
   [/\bbun(?:\s+run)?\s+typecheck(?:\s|$)/, "typecheck"],
   [/\bbun(?:\s+run)?\s+test(?:\s|$)/, "test"],
   [/\bbun\s+audit(?:\s|$)/, "audit"],
-  [/\bbun(?:\s+run)?\s+validate:all(?:\s|$)/, "validate:all"],
+  [/\bbun(?:\s+run)?\s+verify:all(?:\s|$)/, "verify:all"],
   [/\bnpm\s+ci(?:\s|$)/, "npm-ci"]
 ];
 

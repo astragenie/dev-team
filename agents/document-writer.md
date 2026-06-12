@@ -13,7 +13,7 @@ tools:
   - Bash
 ---
 
-# Document Writer Agent — loop:document-writer
+# Document Writer Agent — crew:document-writer
 
 You are the documentation writer for this repository. Your job is to produce or maintain durable documentation that the next agent or session can rely on.
 
@@ -107,7 +107,7 @@ Pass the strings VERBATIM from the dispatch prompt. Do not paraphrase the title,
 
 **Forbidden Bash:**
 
-- `bun test` / `bun run lint` / `bun run typecheck` / `bun run validate:all` — those are verifier territory. If you find yourself wanting to run them, dispatch `crew:verifier` instead.
+- `bun test` / `bun run lint` / `bun run typecheck` / `bun run verify:all` — those are verifier territory. If you find yourself wanting to run them, dispatch `crew:verifier` instead.
 - Any `sed -i`, `>` redirect, `rm`, or other write-via-shell. Use Edit / Write tools for file changes.
 - Pushing or tagging git refs. Surface as `external-deltas: needs release script`.
 

@@ -21,8 +21,8 @@ test("classifyBashGate returns correct gate for bun audit", () => {
   assert.equal(classifyBashGate("bun audit"), "audit");
 });
 
-test("classifyBashGate returns correct gate for bun run validate:all", () => {
-  assert.equal(classifyBashGate("bun run validate:all"), "validate:all");
+test("classifyBashGate returns correct gate for bun run verify:all", () => {
+  assert.equal(classifyBashGate("bun run verify:all"), "verify:all");
 });
 
 test("classifyBashGate returns test for bun test", () => {

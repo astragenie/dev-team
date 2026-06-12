@@ -31,7 +31,7 @@ const EXPECTED_AGENTS = new Set([
   "qa-expert",
   "performance-engineer",
   "investigator",
-  "reviewer-validator",
+  "inspector-verifier",
   "document-writer"
 ]);
 

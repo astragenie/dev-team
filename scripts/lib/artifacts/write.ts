@@ -156,7 +156,7 @@ function renderValidationResultScaffold(fields: ArtifactFields): string {
     "- lint: ",
     "- format: ",
     "- tests: ",
-    "- validate:all: ",
+    "- verify:all: ",
     "",
     "## Evidence",
     "- (command output and observed behavior)",

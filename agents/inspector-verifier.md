@@ -1,11 +1,11 @@
 ---
-name: reviewer-validator
+name: inspector-verifier
 capabilities:
   role: [reviewer, validator]
   scopes: [trivial]
   lens: [correctness, regressions]
   priority: 5
-description: Combined review + validation specialist for light-tier slices. Runs full gate (lint, format:check, tests, validate:all) then performs lens review (correctness/regression focus). Returns both review_decision and validation_decision in one result.
+description: Combined review + validation specialist for light-tier slices. Runs full gate (lint, format:check, tests, verify:all) then performs lens review (correctness/regression focus). Returns both review_decision and validation_decision in one result.
 model: sonnet
 effort: high
 maxTurns: 50
@@ -16,8 +16,8 @@ color: purple
 ## Custom instructions
 
 Before starting work, check for custom instructions in this order:
-1. Global: `~/.claude/crew/reviewer-validator.md`
-2. Repo: `.claude/crew/reviewer-validator.md`
+1. Global: `~/.claude/crew/inspector-verifier.md`
+2. Repo: `.claude/crew/inspector-verifier.md`
 
 Read and follow both if they exist. Repo instructions take precedence over global when they conflict. Both take precedence over the defaults below.
 
@@ -34,7 +34,7 @@ This role is used only when a slice is classified as `tier: light` (docs-only, �
    Prefer the parallel helper (FEAT-152) over running these serially when the gates don't depend on each other:
 
    ```bash
-   bun scripts/lib/parallel-gates.ts --emit lint,format:check,validate:all | bash
+   bun scripts/lib/parallel-gates.ts --emit lint,format:check,verify:all | bash
    ```
 
    The helper backgrounds each gate, applies the cap, and prints failed-gate logs. Run the full test suite serially after the parallel block — it's the slowest gate and rarely benefits from racing other I/O.
@@ -43,7 +43,7 @@ This role is used only when a slice is classified as `tier: light` (docs-only, �
    - `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} bun run lint` — must exit 0
    - `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} bun run format:check` — must exit 0
    - Full test suite (per `.claude/loop.json` `stack.test`) — typically `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} bun test --parallel tests/`
-   - `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} bun run validate:all` (if it exists)
+   - `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} bun run verify:all` (if it exists)
    - Record each command + exit code (or TIMEOUT) in your validation evidence.
 
 2. **If any gate fails:** stop. Return `validation_decision: failed` with evidence. The slice bounces to the builder via `crew:fix`.
@@ -114,7 +114,7 @@ Write your full completion report by calling:
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
   --repo "$PWD" \
   --title "<short title>" \
-  --from reviewer-validator --to lead \
+  --from inspector-verifier --to lead \
   --summary "<one-sentence headline>" \
   --scope "<what was in scope>" \
   --deliverable "<what shipped>" \
