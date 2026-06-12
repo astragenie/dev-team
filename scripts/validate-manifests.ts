@@ -92,10 +92,19 @@ export async function validateManifests(repoRoot: string) {
   const plugin = await readJson<Record<string, unknown>>(
     path.join(repoRoot, ".claude-plugin", "plugin.json")
   );
-  const marketplace = await readJson<Record<string, unknown>>(
-    path.join(repoRoot, ".claude-plugin", "marketplace.json")
-  );
   const pkg = await readJson<Record<string, unknown>>(path.join(repoRoot, "package.json"));
+
+  // marketplace.json was removed from hero-crew in commit bfc4d2d when the
+  // registry moved to sergeymilashico/astra-marketplace. When absent, skip
+  // marketplace-only checks; plugin.json + package.json sync still runs.
+  let marketplace: Record<string, unknown> | null = null;
+  try {
+    marketplace = await readJson<Record<string, unknown>>(
+      path.join(repoRoot, ".claude-plugin", "marketplace.json")
+    );
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+  }
 
   checkRequiredFields(
     plugin,
@@ -103,10 +112,13 @@ export async function validateManifests(repoRoot: string) {
     ["name", "version", "description", "author", "license"],
     fail
   );
-  checkRequiredFields(marketplace, "marketplace.json", ["name", "owner", "plugins"], fail);
   checkVersions(plugin, pkg, fail);
-  checkOwnMarketplaceEntry(plugin, marketplace, fail);
-  checkMarketplaceEntries(marketplace, fail);
+
+  if (marketplace !== null) {
+    checkRequiredFields(marketplace, "marketplace.json", ["name", "owner", "plugins"], fail);
+    checkOwnMarketplaceEntry(plugin, marketplace, fail);
+    checkMarketplaceEntries(marketplace, fail);
+  }
 
   return { ok: failures.length === 0, failures, plugin, marketplace, pkg };
 }
@@ -129,11 +141,19 @@ if (isMainEntry()) {
     console.log("Manifests OK:");
     console.log(`  plugin.json     ${result.plugin["name"]}@${result.plugin["version"]}`);
     console.log(`  package.json    ${result.pkg["name"]}@${result.pkg["version"]}`);
-    console.log(
-      `  marketplace.json (${(result.marketplace["plugins"] as unknown[]).length} entries)`
-    );
-    for (const entry of result.marketplace["plugins"] as Array<Record<string, unknown>>) {
-      console.log(`    - ${entry["name"]}@${entry["version"]}`);
+    if (result.marketplace !== null) {
+      console.log(
+        `  marketplace.json (${(result.marketplace["plugins"] as unknown[]).length} entries)`
+      );
+    } else {
+      console.log(
+        "  marketplace.json (absent — registry moved to sergeymilashico/astra-marketplace)"
+      );
+    }
+    if (result.marketplace !== null) {
+      for (const entry of result.marketplace["plugins"] as Array<Record<string, unknown>>) {
+        console.log(`    - ${entry["name"]}@${entry["version"]}`);
+      }
     }
   }
 }

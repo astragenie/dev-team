@@ -5,6 +5,39 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.35.1 — 2026-06-12 — v0.35.0 follow-up cleanup
+
+Patch release addressing leftover refs after the v0.35.0 6-agent rename + namespace fix.
+
+### Lead.md cleanup
+
+- **`Skill` + `ToolSearch` removed from lead.md tools** (and added to `disallowedTools`). Lead now has `[Agent, TaskCreate, TaskUpdate, TaskList, TaskGet]` only. Closes the last surface where Lead could rationalize calling `Skill(crew:build)` etc. Procedure-of-record content (brainstorming, using-crew, context-curation) is now embedded inside the subagents that consume it; Lead does not pre-load on their behalf.
+- **`## Custom instructions` block** rewritten — the dispatcher inlines applicable global / repo overrides into the dispatch prompt before the slice content. Lead has no `Read` tool, so it cannot open instruction files itself.
+- **Tool routing block** rewritten — no longer instructs Lead to use Skill at all; Agent is the only dispatch path.
+- **Forbidden endings list** pruned to drop `Skill` / `ToolSearch` (Lead cannot call them anyway).
+
+### Other renames
+
+- `crew:reviewer-validator` → `crew:inspector-verifier` (combined LOW-tier agent). File renamed via `git mv`; frontmatter `name:` updated; all cross-references in `agents/`, `docs/routing-table.md`, `scripts/lib/parallel-gates.ts`, `tests/agent-topology.test.ts` updated.
+- `loop:document-writer` → `crew:document-writer` everywhere. Now consistent with the agent's actual file location.
+- Confidence aggregation formula in `agents/lead.md` updated:
+  - `builder_confidence` → `dev_confidence`
+  - `reviewer_confidence` → `inspector_confidence`
+  - `validator_confidence` → `verifier_confidence`
+
+### CLI alias
+
+- New `bun run verify:all` package.json script (preferred). `bun run validate:all` kept as a deprecated alias for external tooling. Agent prompts and `commands/orchestrate-slice.md` updated to use `verify:all`.
+
+### Specialist routing
+
+- `crew:inspector-verifier` added to lead's specialist routing examples to confirm registration.
+- `caveman:cavecrew-builder` removed from specialist routing — external plugin agents are not first-class crew specialists. Explicit exclusion note added.
+
+### Tooling
+
+- `scripts/validate-manifests.ts` updated to tolerate missing `.claude-plugin/marketplace.json` (registry moved to `sergeymilashico/astra-marketplace` in commit `bfc4d2d`). It still enforces `plugin.json` ↔ `package.json` version sync; marketplace-specific checks are skipped when the file is absent.
+
 ## v0.35.0 — 2026-06-12 — agent rename to break crew: namespace collision
 
 ### Behavior change — 6 agents renamed
