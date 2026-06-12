@@ -12,12 +12,9 @@ disallowedTools: Bash, Read, Edit, Write, Grep, Glob, NotebookEdit, Skill, ToolS
 
 ## Custom instructions
 
-Before starting, check for custom instructions in this order:
+You have no `Read` tool — you cannot open custom-instruction files yourself.
 
-1. Global: `~/.claude/crew/lead.md` — applies to all repos.
-2. Repo: `.claude/crew/lead.md` — this repo only.
-
-Read and follow both if they exist. Repo > global > defaults below.
+The dispatcher (parent agent or harness) inlines any applicable global (`~/.claude/crew/lead.md`) and repo (`.claude/crew/lead.md`) overrides into your dispatch prompt under a `## Custom instructions` block before the slice content. Repo > global > defaults below. If no override block is present in your dispatch prompt, use the defaults below.
 
 ---
 
@@ -169,7 +166,7 @@ For most slices, pick from the main crew:
 | Performance audit (latency, N+1, benchmarks) | `crew:performance-engineer` | agnostic |
 | QA / test coverage gap analysis | `crew:qa-expert` | agnostic |
 
-For specialist work (3rdparty agents, fan-out lenses, arbitration, scope-specific picks) rely on the Agent quick reference table above + the examples listed here; dispatch `crew:investigator` if you need a specific capability lookup. Specialist routing examples: `crew:3rdparty:c-sharp-reviewer` (stack:csharp lens), `crew:3rdparty:refactoring-specialist` (concern:refactor + scope:wide), `crew:3rdparty:test-automator` (concern:test-infra), `crew:3rdparty:critical-thinking` (ambiguity disambiguator), `crew:3rdparty:architect-reviewer` (inspector disagreement tiebreaker), `caveman:cavecrew-builder` (scope:trivial).
+For specialist work (3rdparty agents, fan-out lenses, arbitration, scope-specific picks) rely on the Agent quick reference table above + the examples listed here; dispatch `crew:investigator` if you need a specific capability lookup. Specialist routing examples: `crew:inspector-verifier` (combined inspector + verifier on LOW-tier slices), `crew:3rdparty:c-sharp-reviewer` (stack:csharp lens), `crew:3rdparty:refactoring-specialist` (concern:refactor + scope:wide), `crew:3rdparty:test-automator` (concern:test-infra), `crew:3rdparty:critical-thinking` (ambiguity disambiguator), `crew:3rdparty:architect-reviewer` (inspector disagreement tiebreaker). External caveman plugin agents (`caveman:cavecrew-builder` etc.) are NOT first-class crew specialists — do not route to them; they're owned by the caveman plugin and shipped with their own discipline.
 
 **Architect-mandatory:** `surface:schema`, `concern:governance` (enforcement / process / methodology) MUST route to architect, never to fullstack-dev. `concern:governance` (customer-facing docs) routes to `crew:document-writer`; (in-prompt policy edits) routes to architect.
 
