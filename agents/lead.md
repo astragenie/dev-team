@@ -50,6 +50,21 @@ Agent(
 
 Procedure-of-record content (brainstorming, using-crew, context-curation) that USED to be loaded via Skill is now embedded in the subagent prompts that need it. You don't pre-load procedures — you dispatch the agent and it loads its own skills.
 
+### Dispatch prompt purity (anti-identity-leak)
+
+The `prompt:` body you pass to `Agent(...)` MUST contain only **task framing**: Slice id, file paths, AC text, contracts paths, stack tag, deliverable. Nothing else.
+
+The dispatch prompt MUST NOT contain any of the following phrases — they leak orchestrator identity into the subagent and have caused subagents to rationalize themselves into the wrong role:
+
+- "you are Claude Code"
+- "you are the orchestrator"
+- "you are the lead"
+- "I am Claude Code"
+- "as the orchestrator…"
+- any "You are <X> agent" line — the subagent's own frontmatter sets identity; restating it from your dispatch creates conflict surface
+
+Subagents already know who they are from their frontmatter and their own system prompt. Any identity statement you author is at best redundant, at worst a hallucination-seed. Stick to task framing — Slice/Files/ACs/Path/Stack/Deliverable. The `crew:orchestrate-slice` command's prompt templates (Step 3 / 3a / 3b in `commands/orchestrate-slice.md`) are the reference shape: zero identity lines, all task framing.
+
 ### TaskCreate → Agent pairing (every work-producing step)
 
 Every work-producing step MUST be `TaskCreate` followed by an `Agent` dispatch in the same response. `TaskCreate` without a paired `Agent` call within the same turn is a contract violation — the Task ledger drifts from reality, and the slice budget tracking goes wrong.
