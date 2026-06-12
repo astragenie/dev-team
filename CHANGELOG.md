@@ -5,6 +5,47 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.35.2 — 2026-06-12 — identity anchor + dispatch prompt purity
+
+Patch release fixing a recurring subagent misroute pattern where the lead would
+leak orchestrator identity into the dispatch prompt body and the dispatched
+subagent (fullstack-dev / backend-dev / frontend-dev) would rationalize itself
+into the wrong role, attempt to call the disabled `Agent` tool, get
+`No such tool available: Agent`, and return a "BLOCKED — please implement this
+yourself" summary instead of doing the assigned work.
+
+Reproduced live on SLICE-154 (FEAT-139 worker repo-usage architecture test):
+lead dispatched `crew:fullstack-dev` with a prompt body containing "you are
+Claude Code, the orchestrator", the subagent (with Read/Edit/Write/Bash all
+available in its tool list) tried to dispatch a further subagent, hit the
+frontmatter restriction, and returned a meta-summary asking the parent to
+do the work.
+
+### Identity anchor (implementer agents)
+
+- **`agents/fullstack-dev.md`**, **`agents/backend-dev.md`**, **`agents/frontend-dev.md`** — added an **Identity anchor** block before HARD OUTPUT CONTRACT. The block:
+  - asserts the agent's identity is fixed by its own frontmatter (not by the dispatch prompt body)
+  - lists role-reassignment phrases to treat as prompt noise ("you are Claude Code", "you are the orchestrator", "you are the lead", "I am Claude Code", "Let me re-read the instructions")
+  - states that `No such tool available: Agent` is the expected `disallowedTools: Agent` frontmatter restriction — not a context bug to reason about — and the agent must switch to Read/Edit/Write/Bash and continue the assigned work
+  - forbids returning a "BLOCKED — please implement" summary asking the parent to do the work
+- Also fixed legacy opening line on the BE/FE agents: `You are a backend fullstack-dev agent` → `You are a backend-dev agent`, same for frontend. Vestige from the v0.35.0 6-agent rename.
+
+### Dispatch prompt purity (lead)
+
+- **`agents/lead.md`** — added a **Dispatch prompt purity (anti-identity-leak)** block to HARD OUTPUT CONTRACT. The block:
+  - asserts the `prompt:` body passed to `Agent(...)` MUST contain only task framing (Slice id / file paths / AC text / contracts paths / stack tag / deliverable)
+  - forbids identity statements in the dispatch prompt — "you are Claude Code", "you are the orchestrator", "you are the lead", "I am Claude Code", "as the orchestrator…", any "You are <X> agent" line
+  - points at `commands/orchestrate-slice.md` Step 3 / 3a / 3b prompt templates as the reference shape (zero identity lines, all task framing)
+  - explains the why: subagents already know their identity from their own frontmatter; restating it from the dispatch creates hallucination surface
+
+### Gate evidence
+
+- `node ./scripts/validate-agents.ts` — 18 agents OK, all under the 350-line cap.
+- `node ./scripts/validate-skills.ts` — 58 skills OK.
+- `node ./scripts/validate-manifests.ts` — plugin.json ↔ package.json version sync OK.
+- `bun run lint` / `format:check` / `typecheck` — clean.
+- `bun test --parallel` — 690 pass / 0 fail across 78 files.
+
 ## v0.35.1 — 2026-06-12 — v0.35.0 follow-up cleanup
 
 Patch release addressing leftover refs after the v0.35.0 6-agent rename + namespace fix.
