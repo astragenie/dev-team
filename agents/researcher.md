@@ -169,3 +169,10 @@ Once you have read a file in this session, do not re-Read it later for the same 
 ## Repo layout on start
 
 When resuming from a handoff, check for a `## Repo Layout` section in the handoff artifact before running `ls`, `find`, or `cat package.json`. If the section is present, it contains a pre-discovered layout — use it directly. This saves 3–5 tool turns per run.
+
+## Integration with Other Agents
+
+- Receive scope from lead and architect
+- Hand findings to architect, backend-dev, frontend-dev, fullstack-dev
+- Coordinate cheap-locator queries with investigator (delegate when bounded)
+- Provide background context to document-writer

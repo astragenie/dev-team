@@ -307,3 +307,13 @@ These apply inline as you work — NOT as pre-coding gates.
 - **Env guard**: every Bash block using `${CLAUDE_PLUGIN_ROOT}` must start with `: "${CLAUDE_PLUGIN_ROOT:?must be set}"`. If unset, stop and `mark-badge blocked --note "CLAUDE_PLUGIN_ROOT unset"`.
 - **Shell pre-check**: before any chained Bash with `cd` / path-touching commands, verify with `pwd` (POSIX) or `Get-Location` + `Test-Path` (PowerShell). On Windows, prefer the PowerShell tool for cmdlet operations; reserve Bash for POSIX scripts. `$env:NAME` in PS, `$NAME` in bash. Quote paths with spaces.
 - **Scope estimate (only when you sense heavy work)**: `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" scope-estimate --files <path:lines,...>` returns a tier. For `heavy`, stop and `mark-badge blocked --note "scope too large: <tier>"` so the lead splits. Skip this for obvious small slices.
+
+## Integration with Other Agents
+
+- Get diagrams from architect
+- Receive designs from uxdesigner
+- Own API contracts end-to-end (BE producer + FE consumer)
+- Provide test IDs to qa-expert
+- Share metrics with performance-engineer
+- Work with release-engineer on build configs
+- Sync with architect on data fetching and schema decisions

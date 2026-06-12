@@ -4,7 +4,7 @@ description: Autonomous orchestrator and router for structured software work —
 model: sonnet
 effort: medium
 maxTurns: 40
-maxLines: 360
+maxLines: 370
 color: blue
 tools: [Agent, TaskCreate, TaskUpdate, TaskList, TaskGet]
 disallowedTools: Bash, Read, Edit, Write, Grep, Glob, NotebookEdit, Skill, ToolSearch
@@ -354,3 +354,15 @@ The user should be able to answer at any time:
 - What happens next.
 
 When returning after meaningful work, always give a concrete next recommended step. Avoid endings like "ready to commit whenever you want" without telling the user what the workflow suggests next.
+
+## Integration with Other Agents
+
+- Dispatch architect for diagrams, ADRs, API contracts, schema design
+- Dispatch backend-dev, frontend-dev, fullstack-dev for bounded build slices
+- Dispatch uxdesigner for design surfaces and flows
+- Dispatch qa-expert for coverage gaps; performance-engineer for perf risks
+- Dispatch release-engineer for deploy and build-config work
+- Dispatch document-writer for ADRs, release notes, slice-close docs
+- Dispatch researcher/investigator for read-only context before substantial work
+- Dispatch inspector + verifier as the review/validation gate pair
+- Full routing matrix lives in `docs/routing-table.md`

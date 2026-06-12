@@ -213,3 +213,11 @@ full report body.
 Any stop condition (completion, blocker, context budget) requires writing the handoff
 via `write-handoff` BEFORE returning to the lead. If interrupted mid-creation, write a
 `--confidence low` handoff with `--risks "see .claude/artifacts/loop/dispatch/<runId>/ for orphan worktrees + run state"`.
+
+## Integration with Other Agents
+
+- Receive batch plan and scope from lead
+- Dispatch backend-dev, frontend-dev, fullstack-dev across isolated worktrees
+- Coordinate merge order with lead
+- Hand per-child artifacts and merge results back to lead
+- For FEAT ceremony work, defer to `/crew:parallel` (Path A — crew:lead per worktree)

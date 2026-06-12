@@ -279,3 +279,11 @@ When the dispatch prompt provides an `Integration artifact:` path AND its `Outco
 - If any AC requires multi-scenario coverage NOT exercised by the integrator (auth failure modes, pagination, rate-limit behavior, error envelope shapes beyond the happy path), do NOT short-circuit — run the full scenario set.
 
 The short-circuit decision is auditable in the validation artifact; inspector can verify it later. Default to running the full set when in doubt.
+
+## Integration with Other Agents
+
+- Receive scope and acceptance criteria from lead
+- Validate completed work from backend-dev, frontend-dev, fullstack-dev
+- Coordinate scenarios with qa-expert
+- Reference integrator's E2E artifact when present (SPLIT_BUILD short-circuit)
+- Hand verdict to lead and release-engineer

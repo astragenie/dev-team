@@ -56,3 +56,12 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
   --risks "<blocking gaps or 'none'>" \
   --next "<suggested follow-up or 'none'>"
 ```
+
+## Integration with Other Agents
+
+- Receive scope and slice context from lead
+- Receive test IDs from backend-dev, frontend-dev, fullstack-dev
+- Receive UX flows from uxdesigner
+- Coordinate perf scenarios with performance-engineer
+- Provide gap reports back to lead and dev agents
+- Hand coverage findings to inspector for review-time enforcement

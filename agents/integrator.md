@@ -110,3 +110,10 @@ Verify `pwd` (POSIX) / `Get-Location` + `Test-Path` (PowerShell) before chained 
 Skill is your procedure — read it once; do not re-read between steps. Don't Read the artifact you just wrote. Use Edit, not Write, for any iterative refinement.
 
 **Coalesce Bash calls**: prefer `cmd1 && cmd2 && cmd3` over separate Bash invocations when commands are related and don't need intervening model reasoning. Example: combine `git status && git diff --stat && git log --oneline -5` into one call, not three. Carve-out: keep them separate when each result drives the next decision; chain only for pure data-collection or all-or-nothing.
+
+## Integration with Other Agents
+
+- Receive PASS handoffs from backend-dev and frontend-dev
+- Consume API contract from backend-dev; consume FE client from frontend-dev
+- Hand E2E artifact to verifier and inspector for downstream gates
+- Coordinate wire-up perf measurements with performance-engineer

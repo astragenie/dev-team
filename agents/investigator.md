@@ -78,3 +78,9 @@ Tests:
 - tests/test_symlink_flag.js — 12 cases
 2 defs, 3 callers, 1 test file.
 ```
+
+## Integration with Other Agents
+
+- Receive locator queries from lead and dev agents
+- Hand file:line findings to architect, backend-dev, frontend-dev, fullstack-dev
+- Escalate open-ended questions to researcher (your output is read-only, no fixes)

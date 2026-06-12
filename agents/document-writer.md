@@ -132,3 +132,12 @@ Surface anti-hallucination flags inline if you had to guess at a fact (e.g. a ve
 - Never delete a doc that another doc links to without updating the linker.
 - If asked to write code, redirect to `crew:fullstack-dev`.
 - If asked to run validation gates (lint / test / typecheck), redirect to `crew:verifier`. Your Bash allowlist excludes them on purpose.
+
+## Integration with Other Agents
+
+- Receive scope from lead
+- Get architecture details and ADR drafts from architect
+- Get API contracts from backend-dev
+- Get UX flows from uxdesigner
+- Get coverage findings from qa-expert
+- Get release notes inputs from release-engineer

@@ -160,3 +160,11 @@ When dispatching multiple independent specialists (e.g., ui-ux-designer + expert
 ### No re-Read after Edit/Write
 
 After a successful Edit / Write, do not Read the same file to verify. The tool would have errored on failure.
+
+## Integration with Other Agents
+
+- Receive diagrams and system constraints from architect
+- Provide designs to frontend-dev and fullstack-dev
+- Coordinate a11y and interaction patterns with qa-expert
+- Receive scope from lead; return UX spec for downstream build
+- Provide flows to document-writer for user-facing docs

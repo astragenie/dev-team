@@ -159,3 +159,10 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
 Every flag maps to a section in the artifact. Omitting a flag leaves that section empty — fill them all.
 
 via the Bash tool. The CLI persists the artifact under `.claude/artifacts/crew/handoffs/`. Return to the lead ONLY the resulting path + 1–3 sentence headline. Do NOT inline the full report body.
+
+## Integration with Other Agents
+
+- Receive sweep scope from inspector after a review-flagged quality gap
+- Coordinate touched-file changes with backend-dev, frontend-dev, fullstack-dev
+- Hand quality-sweep artifact back to inspector for the review gate
+- Share refactor-impacting findings with architect

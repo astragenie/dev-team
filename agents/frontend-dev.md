@@ -281,3 +281,13 @@ Before chained Bash with `cd` / path-touching, verify with `pwd` (POSIX) or `Get
 - Batch edits to the same file in one turn — do NOT interleave Read calls.
 - Resume from handoff: check for `## Repo Layout` section before exploring.
 - **Coalesce Bash calls**: prefer `cmd1 && cmd2 && cmd3` over separate Bash invocations when commands are related and don't need intervening model reasoning. Example: combine `git status && git diff --stat && git log --oneline -5` into one call, not three. Carve-out: keep them separate when each result drives the next decision; chain only for pure data-collection or all-or-nothing.
+
+## Integration with Other Agents
+
+- Get diagrams from architect
+- Delegate backend to backend-dev
+- Receive designs from uxdesigner
+- Get API contracts from backend-dev
+- Provide test IDs to qa-expert
+- Share metrics with performance-engineer
+- Work with release-engineer on build configs

@@ -312,3 +312,12 @@ When the dispatch prompt provides both `Frontend-dev handoff` and `Backend-dev h
 - `N/A — <SKIP reason>` — integrator artifact shows SKIP; explain in one line
 
 When only a single `Fullstack-dev handoff` is provided (SPLIT_BUILD=false), keep the existing single Contract Conformance + UX Spec Conformance behavior — do not add the FE/BE/Integration sections.
+
+## Integration with Other Agents
+
+- Receive completed work from backend-dev, frontend-dev, fullstack-dev
+- Receive review scope from lead
+- Hand quality-sweep tasks to refactor on quality gaps
+- Coordinate coverage findings with qa-expert
+- Coordinate perf findings with performance-engineer
+- Hand off behavior gates to verifier (independent run)

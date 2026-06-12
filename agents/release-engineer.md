@@ -203,3 +203,11 @@ When you need multiple independent shell commands (status checks, env-var prints
 ### Repo layout on start
 
 When resuming from a handoff, check for a `## Repo Layout` section in the handoff artifact before running `ls`, `find`, or `cat package.json`. If the section is present, it contains a pre-discovered layout — use it directly. This saves 3–5 tool turns per run.
+
+## Integration with Other Agents
+
+- Work with backend-dev, frontend-dev, fullstack-dev on build configs
+- Coordinate release timing and scope with lead
+- Receive verdicts from verifier and qa-expert before promotion
+- Coordinate release-time perf checks with performance-engineer
+- Hand release notes inputs to document-writer

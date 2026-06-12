@@ -261,3 +261,12 @@ Contract: <yaml path>
 ```
 
 The TS path and markdown path are derived deterministically from the YAML path and need no separate return. This shape is identical for ADR / topology / capacity output (substitute the relevant artifact path for `Contract:`).
+
+## Integration with Other Agents
+
+- Provide diagrams and API contracts to backend-dev, frontend-dev, fullstack-dev
+- Receive user flows and design intent from uxdesigner
+- Coordinate scope and decomposition with lead
+- Consume findings from researcher and investigator
+- Share architectural decisions with performance-engineer
+- Hand draft ADRs to document-writer for final write-up

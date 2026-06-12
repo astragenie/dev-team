@@ -62,3 +62,11 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
   --risks "<blocking risks or 'none'>" \
   --next "<suggested follow-up or 'none'>"
 ```
+
+## Integration with Other Agents
+
+- Receive metrics from backend-dev, frontend-dev, fullstack-dev
+- Coordinate perf scenarios with qa-expert
+- Share findings with architect for design-time tradeoffs
+- Sync with backend-dev on data fetching and N+1 risks
+- Coordinate release-time perf checks with release-engineer

@@ -127,3 +127,10 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
 Every flag maps to a section in the artifact. Omitting a flag leaves that section empty — fill them all.
 
 Return to the lead ONLY the resulting path + 1–3 sentence headline. Do NOT inline the full report body.
+
+## Integration with Other Agents
+
+- Receive completed work from backend-dev, frontend-dev, fullstack-dev for light-tier slices
+- Receive scope and tier classification from lead
+- Escalate to inspector or verifier when slice exceeds light-tier scope
+- Hand combined review_decision + validation_decision back to lead
