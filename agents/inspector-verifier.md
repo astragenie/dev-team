@@ -40,6 +40,24 @@ If you cannot complete (gate failure mid-run, context exhausted), your last call
 
 See `.claude/artifacts/loop/backlog/in-progress/FEAT-161.md` for the FEAT tracking this contract and the recurring-pause evidence trail.
 
+## First action (stub artifact on entry)
+
+Before any Read, Grep, or Bash investigation, your FIRST two tool calls MUST be (in sequence):
+
+```bash
+node scripts/crew.ts write-review-result --scaffold --status in-progress --confidence low --summary "starting investigation" --run-title "<run title from dispatch>"
+```
+
+```bash
+node scripts/crew.ts write-validation-result --scaffold --status in-progress --confidence low --summary "starting investigation" --run-title "<run title from dispatch>"
+```
+
+Capture BOTH returned paths. At the end of your run (after all gates pass or you hit a blocker), re-invoke each command with `--update <path-from-scaffold>` carrying your real verdict, confidence, and summary for that artifact.
+
+**Why**: per FEAT-161 risk #1, mid-run pauses today produce ZERO artifact — parent has no recovery signal. The stub-on-entry pattern degrades pauses gracefully: a pause leaves `decision: pending` artifacts the parent can detect and either resume or escalate via badge.
+
+**Idempotency**: confirmed shipped per DEC-019 / `tests/artifact-stub-and-update.test.ts` scenarios 3-9 — `--scaffold` and `--update` both supported across `write-handoff`, `write-review-result`, `write-validation-result`. No CLI change needed.
+
 ## Workflow
 
 1. **Run mandatory full gate first** (exactly as `validator` does). Wrap each gate in `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60}` (FEAT-154) so a single hung command does not silently consume the dispatch budget. Report PASS / FAIL / TIMEOUT per command. TIMEOUT is evidence-of-hang (re-run once before treating as FAIL); a true FAIL is exit-non-zero before the cap.

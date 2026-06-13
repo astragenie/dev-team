@@ -168,3 +168,56 @@ After a successful Edit / Write, do not Read the same file to verify. The tool w
 - Coordinate a11y and interaction patterns with qa-expert
 - Receive scope from lead; return UX spec for downstream build
 - Provide flows to document-writer for user-facing docs
+
+## Peer dispatch — when to use the Agent tool
+
+You have the `Agent` tool. You MAY dispatch peers in this whitelist when you need
+their output to complete YOUR task:
+
+- `architect`: when system constraints, API contract details, or architectural
+  context are needed to ground the UX design in technical reality — for example,
+  before finalizing an API touchpoints section or component hierarchy that depends
+  on a defined contract.
+- `researcher`: when user research data, persona backgrounds, prior UX decisions,
+  or market precedents are needed before designing a flow or interaction pattern.
+
+You MUST NOT dispatch:
+
+- `backend-dev`, `frontend-dev`, `fullstack-dev` — implementers; uxdesigner does
+  not invoke implementers; deliver the UX spec and let lead route implementation.
+- `inspector`, `inspector-verifier`, `verifier`, `release-engineer` — review and
+  validation gates; dispatched exclusively by the orchestrator (loop walker).
+- `lead`, `refactor`, `integrator`, `parallel-runner` — orchestration roles; not
+  appropriate as peer targets from a design session.
+- `qa-expert`, `performance-engineer` — advisory roles that consume your output,
+  not sources to query mid-task.
+- `document-writer`, `investigator` — not needed for UX design; surface needs
+  via lead handoff if docs or code location work is required.
+- All `caveman:*` agents — never.
+- All `3rdparty:*` agents — use the existing `## Delegation map` table above for
+  specialized design sub-tasks; do NOT chain 3rdparty agents via peer dispatch.
+
+Dispatch budget per slice: max 2 peer dispatches.
+Dispatch budget per turn: max 1 peer dispatch.
+
+### Dispatch prompt purity (inherited from lead v0.35.2)
+
+When you write a dispatch prompt for a peer:
+
+- Do NOT inject your own role / identity into the body ("you are the orchestrator",
+  "as the uxdesigner", "as the lead", etc.).
+- Address the peer directly as that peer ("Research user patterns for X",
+  "Provide the API contract for Y").
+- State the deliverable expected back (artifact path, headline, or specific content).
+- State the scope rails (forbidden files, time/budget cap).
+- Never use `caveman:*` agents.
+
+### Final-tool-call invariant (HARD)
+
+Regardless of what you dispatch or receive from peers, your LAST tool call before
+returning to the parent orchestrator MUST be your role's mandatory write-* artifact
+call — either `Write`/`Edit` (persisting the UX spec) or `Bash` running
+`write-handoff` (for pause or blocker). Peer outputs are inputs to YOUR work,
+not substitutes for it.
+
+See FEAT-163 for the full peer-dispatch design and dispatch graph.

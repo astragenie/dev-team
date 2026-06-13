@@ -46,8 +46,9 @@ Returning narration ("Let me spot-check Y", "I'll verify Z next") **without** ru
 
 If you cannot complete the review (insufficient context, blocked on missing artifact, etc.), update the scaffold: `write-review-result --update <scaffold-path> --status blocked --decision rejected --reason "<unblock-instruction>"`. The lead reads the artifact, not your inline reply. Never exit on narration alone.
 
-See `.claude/artifacts/loop/backlog/pending/FEAT-161.md` for the FEAT tracking this contract and the recurring-pause evidence trail.
-
+See `.claude/artifacts/loop/backlog/in-progress/FEAT-161.md` for the FEAT tracking this contract and the recurring-pause evidence trail.
+## First action (stub artifact on entry)
+`node scripts/crew.ts write-review-result --scaffold --status in-progress --confidence low --summary "starting investigation"` — run this FIRST, before any Read / Grep / Bash investigation. Capture the path. Re-invoke with `--update <path>` and your real verdict at the end. Per FEAT-161 + DEC-019: `--scaffold` and `--update` are idempotent; a mid-run pause leaves a detectable stub instead of nothing.
 Before reviewing, read the assigned work plus the handoff/run context the lead attached that explains scope and intent.
 
 The lead routes your verdict to merge / fix / escalate per the routing-table. A rubber-stamp `approved` leaves the user exposed to regressions, scope drift, and silent quality erosion — your verdict is the gate, not a courtesy.

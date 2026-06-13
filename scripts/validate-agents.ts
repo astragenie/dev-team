@@ -97,11 +97,11 @@ function checkRequiredSections(
   }
 }
 
-// FEAT-163 SLICE-71: agents that explicitly carry the Agent tool in their
-// frontmatter `tools:` list MUST also carry a `## Peer dispatch` section with
-// whitelist, blacklist, and budget lines. The allowlist here is scoped to the
-// two agents granted Agent tool in SLICE-A; extend in SLICE-B/C/D as more
-// agents gain the tool.
+// FEAT-163 SLICE-71 + SLICE-73: agents that explicitly carry the Agent tool in
+// their frontmatter `tools:` list MUST also carry a `## Peer dispatch` section
+// with whitelist, blacklist, and budget lines. SLICE-71 added document-writer
+// and refactor (SLICE-A). SLICE-73 adds the advisory tier (SLICE-B):
+// architect, uxdesigner, qa-expert, performance-engineer.
 //
 // Rule fires ONLY when:
 //   (a) agent name is in PEER_DISPATCH_ALLOWLIST, AND
@@ -112,7 +112,14 @@ function checkRequiredSections(
 // via subagent configuration) are not checked — avoids false-positives on
 // agents not yet scoped for peer dispatch. Only agents with explicit `tools:`
 // including `Agent` are caught.
-const PEER_DISPATCH_ALLOWLIST = new Set(["document-writer", "refactor"]);
+const PEER_DISPATCH_ALLOWLIST = new Set([
+  "document-writer",
+  "refactor",
+  "architect",
+  "uxdesigner",
+  "qa-expert",
+  "performance-engineer"
+]);
 
 function parseFrontmatterTools(text: string): string[] {
   const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
@@ -145,12 +152,17 @@ function checkPeerDispatchSection(
     );
     return; // no point checking sub-structure if heading absent
   }
-  // Must have at least one whitelist entry (a bullet under the heading)
-  // Check for presence of "whitelist" concept: at least one "- \`" bullet
-  // after the ## Peer dispatch heading
+  // Must have at least one whitelist entry (a bullet under the heading).
+  // Tightened (FEAT-163 SLICE-73 inspector MEDIUM): split `afterPeerDispatch`
+  // at the "MUST NOT dispatch" boundary so that backtick-formatted blacklist
+  // entries do NOT satisfy the whitelist-entry check. Only the content BEFORE
+  // the blacklist region is tested for "- `peer`" bullets.
   const peerDispatchIdx = text.search(/##\s+Peer dispatch/i);
   const afterPeerDispatch = text.slice(peerDispatchIdx);
-  const hasWhitelistEntry = /\n- `[^`]+`/.test(afterPeerDispatch);
+  const blacklistSplitIdx = afterPeerDispatch.search(/MUST NOT dispatch/i);
+  const whitelistRegion =
+    blacklistSplitIdx > -1 ? afterPeerDispatch.slice(0, blacklistSplitIdx) : afterPeerDispatch;
+  const hasWhitelistEntry = /\n- `[^`]+`/.test(whitelistRegion);
   if (!hasWhitelistEntry) {
     errors.push(
       `${label}: "## Peer dispatch" section missing whitelist entry (at least one "- \`peer\`" bullet) (FEAT-163)`

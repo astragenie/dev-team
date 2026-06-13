@@ -52,7 +52,21 @@ Returning narration ("Let me run the BE tests", "I'll check the migration next")
 
 If you must stop early (blocker, context-budget, scope creep), update the stub: `write-handoff --update <stub-path> --status blocked --confidence low --risks "<what is still in progress>"`. The lead reads the handoff, not your inline reply. Never exit on narration alone.
 
-See `.claude/artifacts/loop/backlog/pending/FEAT-161.md` for the FEAT tracking this contract.
+See `.claude/artifacts/loop/backlog/in-progress/FEAT-161.md` for the FEAT tracking this contract.
+
+## First action (stub artifact on entry)
+
+Before any Read, Grep, or Bash investigation, your FIRST tool call MUST be:
+
+```bash
+node scripts/crew.ts write-handoff --scaffold --status in-progress --confidence low --summary "starting investigation" --run-title "<run title from dispatch>"
+```
+
+This establishes the artifact path. At the end of your run (after self-verify gates pass or you hit a blocker), re-invoke the same command with `--update <path-from-scaffold>` carrying your real verdict, confidence, and summary.
+
+**Why**: per FEAT-161 risk #1, mid-run pauses today produce ZERO artifact — parent has no recovery signal. The stub-on-entry pattern degrades pauses gracefully: a pause leaves a `decision: pending` artifact the parent can detect and either resume or escalate via badge.
+
+**Idempotency**: confirmed shipped per DEC-019 / `tests/artifact-stub-and-update.test.ts` scenarios 3-9 — `--scaffold` and `--update` both supported across `write-handoff`, `write-review-result`, `write-validation-result`. No CLI change needed.
 
 ## Owned scope
 

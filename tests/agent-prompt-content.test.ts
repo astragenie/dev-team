@@ -769,3 +769,291 @@ describe("## HARD OUTPUT CONTRACT — Prong A coverage", () => {
     });
   });
 });
+
+// ── ## First action — Prong B coverage ───────────────────────────────────────
+//
+// Asserts that all 9 artifact-owning agents carry the stub-artifact-on-entry
+// section (FEAT-161 Prong B / SLICE-72). For each agent, verifies:
+//   (a) ## First action (stub artifact on entry) heading present
+//   (b) --scaffold literal substring
+//   (c) --status in-progress literal substring
+//   (d) --update literal substring
+//   (e) role-specific crew write-* command name
+//   (f) FEAT-161 cite-back
+//   (g) DEC-019 idempotency reference
+// For inspector-verifier: BOTH write-review-result AND write-validation-result present.
+
+const STUB_HEADING = "## First action (stub artifact on entry)";
+const SCAFFOLD_FLAG = "--scaffold";
+const STATUS_IN_PROGRESS = "--status in-progress";
+const UPDATE_FLAG = "--update";
+const DEC_019 = "DEC-019";
+
+describe("## First action — Prong B coverage", () => {
+  describe("fullstack-dev", () => {
+    const content = readAgent("fullstack-dev");
+    test("stub heading present", () => {
+      assert.ok(content.includes(STUB_HEADING), "fullstack-dev.md missing stub artifact heading");
+    });
+    test("--scaffold flag present", () => {
+      assert.ok(content.includes(SCAFFOLD_FLAG), "fullstack-dev.md missing --scaffold flag");
+    });
+    test("--status in-progress present", () => {
+      assert.ok(
+        content.includes(STATUS_IN_PROGRESS),
+        "fullstack-dev.md missing --status in-progress"
+      );
+    });
+    test("--update flag present", () => {
+      assert.ok(content.includes(UPDATE_FLAG), "fullstack-dev.md missing --update flag");
+    });
+    test("role-specific: write-handoff command", () => {
+      assert.ok(content.includes("write-handoff"), "fullstack-dev.md missing write-handoff");
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(content.includes(FEAT_161_CITE), "fullstack-dev.md missing FEAT-161 cite-back");
+    });
+    test("DEC-019 reference", () => {
+      assert.ok(content.includes(DEC_019), "fullstack-dev.md missing DEC-019 reference");
+    });
+  });
+
+  describe("frontend-dev", () => {
+    const content = readAgent("frontend-dev");
+    test("stub heading present", () => {
+      assert.ok(content.includes(STUB_HEADING), "frontend-dev.md missing stub artifact heading");
+    });
+    test("--scaffold flag present", () => {
+      assert.ok(content.includes(SCAFFOLD_FLAG), "frontend-dev.md missing --scaffold flag");
+    });
+    test("--status in-progress present", () => {
+      assert.ok(
+        content.includes(STATUS_IN_PROGRESS),
+        "frontend-dev.md missing --status in-progress"
+      );
+    });
+    test("--update flag present", () => {
+      assert.ok(content.includes(UPDATE_FLAG), "frontend-dev.md missing --update flag");
+    });
+    test("role-specific: write-handoff command", () => {
+      assert.ok(content.includes("write-handoff"), "frontend-dev.md missing write-handoff");
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(content.includes(FEAT_161_CITE), "frontend-dev.md missing FEAT-161 cite-back");
+    });
+    test("DEC-019 reference", () => {
+      assert.ok(content.includes(DEC_019), "frontend-dev.md missing DEC-019 reference");
+    });
+  });
+
+  describe("backend-dev", () => {
+    const content = readAgent("backend-dev");
+    test("stub heading present", () => {
+      assert.ok(content.includes(STUB_HEADING), "backend-dev.md missing stub artifact heading");
+    });
+    test("--scaffold flag present", () => {
+      assert.ok(content.includes(SCAFFOLD_FLAG), "backend-dev.md missing --scaffold flag");
+    });
+    test("--status in-progress present", () => {
+      assert.ok(
+        content.includes(STATUS_IN_PROGRESS),
+        "backend-dev.md missing --status in-progress"
+      );
+    });
+    test("--update flag present", () => {
+      assert.ok(content.includes(UPDATE_FLAG), "backend-dev.md missing --update flag");
+    });
+    test("role-specific: write-handoff command", () => {
+      assert.ok(content.includes("write-handoff"), "backend-dev.md missing write-handoff");
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(content.includes(FEAT_161_CITE), "backend-dev.md missing FEAT-161 cite-back");
+    });
+    test("DEC-019 reference", () => {
+      assert.ok(content.includes(DEC_019), "backend-dev.md missing DEC-019 reference");
+    });
+  });
+
+  describe("inspector", () => {
+    const content = readAgent("inspector");
+    test("stub heading present", () => {
+      assert.ok(content.includes(STUB_HEADING), "inspector.md missing stub artifact heading");
+    });
+    test("--scaffold flag present", () => {
+      assert.ok(content.includes(SCAFFOLD_FLAG), "inspector.md missing --scaffold flag");
+    });
+    test("--status in-progress present", () => {
+      assert.ok(content.includes(STATUS_IN_PROGRESS), "inspector.md missing --status in-progress");
+    });
+    test("--update flag present", () => {
+      assert.ok(content.includes(UPDATE_FLAG), "inspector.md missing --update flag");
+    });
+    test("role-specific: write-review-result command", () => {
+      assert.ok(
+        content.includes("write-review-result"),
+        "inspector.md missing write-review-result"
+      );
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(content.includes(FEAT_161_CITE), "inspector.md missing FEAT-161 cite-back");
+    });
+    test("DEC-019 reference", () => {
+      assert.ok(content.includes(DEC_019), "inspector.md missing DEC-019 reference");
+    });
+  });
+
+  describe("inspector-verifier (dual-stub)", () => {
+    const content = readAgent("inspector-verifier");
+    test("stub heading present", () => {
+      assert.ok(
+        content.includes(STUB_HEADING),
+        "inspector-verifier.md missing stub artifact heading"
+      );
+    });
+    test("--scaffold flag present", () => {
+      assert.ok(content.includes(SCAFFOLD_FLAG), "inspector-verifier.md missing --scaffold flag");
+    });
+    test("--status in-progress present", () => {
+      assert.ok(
+        content.includes(STATUS_IN_PROGRESS),
+        "inspector-verifier.md missing --status in-progress"
+      );
+    });
+    test("--update flag present", () => {
+      assert.ok(content.includes(UPDATE_FLAG), "inspector-verifier.md missing --update flag");
+    });
+    test("role-specific: write-review-result command (dual)", () => {
+      assert.ok(
+        content.includes("write-review-result"),
+        "inspector-verifier.md missing write-review-result"
+      );
+    });
+    test("role-specific: write-validation-result command (dual)", () => {
+      assert.ok(
+        content.includes("write-validation-result"),
+        "inspector-verifier.md missing write-validation-result"
+      );
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(
+        content.includes(FEAT_161_CITE),
+        "inspector-verifier.md missing FEAT-161 cite-back"
+      );
+    });
+    test("DEC-019 reference", () => {
+      assert.ok(content.includes(DEC_019), "inspector-verifier.md missing DEC-019 reference");
+    });
+  });
+
+  describe("verifier", () => {
+    const content = readAgent("verifier");
+    test("stub heading present", () => {
+      assert.ok(content.includes(STUB_HEADING), "verifier.md missing stub artifact heading");
+    });
+    test("--scaffold flag present", () => {
+      assert.ok(content.includes(SCAFFOLD_FLAG), "verifier.md missing --scaffold flag");
+    });
+    test("--status in-progress present", () => {
+      assert.ok(content.includes(STATUS_IN_PROGRESS), "verifier.md missing --status in-progress");
+    });
+    test("--update flag present", () => {
+      assert.ok(content.includes(UPDATE_FLAG), "verifier.md missing --update flag");
+    });
+    test("role-specific: write-validation-result command", () => {
+      assert.ok(
+        content.includes("write-validation-result"),
+        "verifier.md missing write-validation-result"
+      );
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(content.includes(FEAT_161_CITE), "verifier.md missing FEAT-161 cite-back");
+    });
+    test("DEC-019 reference", () => {
+      assert.ok(content.includes(DEC_019), "verifier.md missing DEC-019 reference");
+    });
+  });
+
+  describe("integrator", () => {
+    const content = readAgent("integrator");
+    test("stub heading present", () => {
+      assert.ok(content.includes(STUB_HEADING), "integrator.md missing stub artifact heading");
+    });
+    test("--scaffold flag present", () => {
+      assert.ok(content.includes(SCAFFOLD_FLAG), "integrator.md missing --scaffold flag");
+    });
+    test("--status in-progress present", () => {
+      assert.ok(content.includes(STATUS_IN_PROGRESS), "integrator.md missing --status in-progress");
+    });
+    test("--update flag present", () => {
+      assert.ok(content.includes(UPDATE_FLAG), "integrator.md missing --update flag");
+    });
+    test("role-specific: write-handoff command", () => {
+      assert.ok(content.includes("write-handoff"), "integrator.md missing write-handoff");
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(content.includes(FEAT_161_CITE), "integrator.md missing FEAT-161 cite-back");
+    });
+    test("DEC-019 reference", () => {
+      assert.ok(content.includes(DEC_019), "integrator.md missing DEC-019 reference");
+    });
+  });
+
+  describe("release-engineer", () => {
+    const content = readAgent("release-engineer");
+    test("stub heading present", () => {
+      assert.ok(
+        content.includes(STUB_HEADING),
+        "release-engineer.md missing stub artifact heading"
+      );
+    });
+    test("--scaffold flag present", () => {
+      assert.ok(content.includes(SCAFFOLD_FLAG), "release-engineer.md missing --scaffold flag");
+    });
+    test("--status in-progress present", () => {
+      assert.ok(
+        content.includes(STATUS_IN_PROGRESS),
+        "release-engineer.md missing --status in-progress"
+      );
+    });
+    test("--update flag present", () => {
+      assert.ok(content.includes(UPDATE_FLAG), "release-engineer.md missing --update flag");
+    });
+    test("role-specific: write-deployment-check command", () => {
+      assert.ok(
+        content.includes("write-deployment-check"),
+        "release-engineer.md missing write-deployment-check"
+      );
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(content.includes(FEAT_161_CITE), "release-engineer.md missing FEAT-161 cite-back");
+    });
+    test("DEC-019 reference", () => {
+      assert.ok(content.includes(DEC_019), "release-engineer.md missing DEC-019 reference");
+    });
+  });
+
+  describe("refactor", () => {
+    const content = readAgent("refactor");
+    test("stub heading present", () => {
+      assert.ok(content.includes(STUB_HEADING), "refactor.md missing stub artifact heading");
+    });
+    test("--scaffold flag present", () => {
+      assert.ok(content.includes(SCAFFOLD_FLAG), "refactor.md missing --scaffold flag");
+    });
+    test("--status in-progress present", () => {
+      assert.ok(content.includes(STATUS_IN_PROGRESS), "refactor.md missing --status in-progress");
+    });
+    test("--update flag present", () => {
+      assert.ok(content.includes(UPDATE_FLAG), "refactor.md missing --update flag");
+    });
+    test("role-specific: write-handoff command", () => {
+      assert.ok(content.includes("write-handoff"), "refactor.md missing write-handoff");
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(content.includes(FEAT_161_CITE), "refactor.md missing FEAT-161 cite-back");
+    });
+    test("DEC-019 reference", () => {
+      assert.ok(content.includes(DEC_019), "refactor.md missing DEC-019 reference");
+    });
+  });
+});

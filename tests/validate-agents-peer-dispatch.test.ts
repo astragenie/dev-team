@@ -280,6 +280,194 @@ Write your handoff.
   });
 });
 
+// ── Regex tightening regression case (FEAT-163 SLICE-73 inspector MEDIUM) ────
+//
+// Prior regex matched backtick bullets ANYWHERE in the post-heading content,
+// including in the blacklist region. This test verifies the tightened split:
+// a section with ONLY blacklist backtick entries and NO whitelist bullets must
+// fail the whitelist-entry check.
+
+describe("Peer dispatch lint rule — regex tightening (backtick blacklist only)", () => {
+  test("section with backtick entries only in blacklist region (no whitelist bullets) fails", async () => {
+    const content = `---
+name: refactor
+description: Code quality specialist.
+model: sonnet
+tools:
+  - Read
+  - Bash
+  - Agent
+---
+
+You are a refactor agent on a Claude Code engineering team.
+
+## Peer dispatch — when to use the Agent tool
+
+You MAY dispatch peers in this whitelist when you need their output to complete YOUR task.
+
+No whitelist bullets above — only backtick entries appear below the blacklist boundary.
+
+You MUST NOT dispatch:
+
+- \`backend-dev\`: implementers; never.
+- \`frontend-dev\`: implementers; never.
+- \`fullstack-dev\`: implementers; never.
+
+Dispatch budget per slice: max 2 peer dispatches.
+
+## Report contract
+
+Write your handoff via write-handoff.
+`;
+    const root = await makeAgentsDir({ "refactor.md": content });
+    const result = await validateAgents(root);
+    assert.equal(
+      result.ok,
+      false,
+      "Expected validation failure: backtick entries only in blacklist region should NOT satisfy whitelist-entry check"
+    );
+    assert.ok(
+      result.errors.some((e) => /missing whitelist entry/.test(e)),
+      `Expected whitelist error, got: ${result.errors.join("; ")}`
+    );
+  });
+
+  test("section with whitelist bullet BEFORE blacklist and blacklist backticks after passes", async () => {
+    const content = `---
+name: refactor
+description: Code quality specialist.
+model: sonnet
+tools:
+  - Read
+  - Bash
+  - Agent
+---
+
+You are a refactor agent on a Claude Code engineering team.
+
+## Peer dispatch — when to use the Agent tool
+
+You MAY dispatch peers in this whitelist when you need their output:
+
+- \`investigator\`: when locating target files before sweep.
+
+You MUST NOT dispatch:
+
+- \`backend-dev\`: implementers; never.
+- \`frontend-dev\`: implementers; never.
+
+Dispatch budget per slice: max 2 peer dispatches.
+
+## Report contract
+
+Write your handoff via write-handoff.
+`;
+    const root = await makeAgentsDir({ "refactor.md": content });
+    const result = await validateAgents(root);
+    assert.equal(
+      result.ok,
+      true,
+      `Whitelist bullet before blacklist should pass. Errors: ${result.errors.join("; ")}`
+    );
+  });
+});
+
+// ── Advisory agents (SLICE-73) ────────────────────────────────────────────────
+
+describe("Peer dispatch lint rule — SLICE-73 advisory agents", () => {
+  // Extra required phrases per agent (from TASK_UPDATE_BATCHING_REQUIRED and
+  // BASH_COALESCING_REQUIRED sets in validate-agents.ts).
+  // architect requires both; the others do not.
+  const ADVISORY_AGENTS: Array<{
+    name: string;
+    intro: string;
+    whitelist: string;
+    extraBody?: string;
+  }> = [
+    {
+      name: "architect",
+      intro: "You are the Architect for this crew.",
+      whitelist: "- `researcher`: when prior-decision context is needed.",
+      // architect is in TASK_UPDATE_BATCHING_REQUIRED + BASH_COALESCING_REQUIRED
+      extraBody:
+        "TaskUpdate batching: never run >=3 back-to-back without intervening work.\n" +
+        "Coalesce Bash calls: chain related data-collection commands."
+    },
+    {
+      name: "uxdesigner",
+      intro: "You are the UXDesigner for this crew.",
+      whitelist: "- `architect`: when system constraints are needed."
+    },
+    {
+      name: "qa-expert",
+      intro: "You are the QA specialist for this crew.",
+      whitelist: "- `investigator`: when locating test files."
+    },
+    {
+      name: "performance-engineer",
+      intro: "You are the performance specialist for this crew.",
+      whitelist: "- `investigator`: when locating code paths."
+    }
+  ];
+
+  for (const { name, intro, whitelist, extraBody } of ADVISORY_AGENTS) {
+    test(`allowlisted advisory agent "${name}" with Agent tool and correct Peer dispatch section passes`, async () => {
+      const content = `---
+name: ${name}
+description: ${name} specialist.
+model: sonnet
+tools:
+  - Read
+  - Bash
+  - Agent
+---
+
+${intro}
+
+${extraBody ?? ""}
+
+## Report contract
+
+Write your handoff via write-handoff.
+
+## Integration with Other Agents
+
+- Receive scope from lead.
+
+## Peer dispatch — when to use the Agent tool
+
+You MAY dispatch peers in this whitelist:
+
+${whitelist}
+
+You MUST NOT dispatch:
+
+- \`backend-dev\`, \`frontend-dev\`, \`fullstack-dev\` — implementers.
+
+Dispatch budget per slice: max 2 peer dispatches.
+Dispatch budget per turn: max 1 peer dispatch.
+
+### Dispatch prompt purity (inherited from lead v0.35.2)
+
+Do NOT inject identity. Never use caveman:* agents.
+
+### Final-tool-call invariant (HARD)
+
+Peer outputs are inputs to YOUR work. Your LAST tool call MUST be your role write-*.
+
+See FEAT-163 for the full peer-dispatch design.
+`;
+      const root = await makeAgentsDir({ [`${name}.md`]: content });
+      const result = await validateAgents(root);
+      assert.equal(
+        result.ok,
+        true,
+        `Advisory agent "${name}" with correct Peer dispatch section should pass. Errors: ${result.errors.join("; ")}`
+      );
+    });
+  }
+});
+
 // ── Exempt case ───────────────────────────────────────────────────────────────
 
 describe("Peer dispatch lint rule — exempt case (not in allowlist)", () => {
