@@ -1,0 +1,2 @@
+{"type":"slice_start","sliceId":"SLICE-69","timestamp":"2026-06-13T16:38:54.118Z","featureId":"FEAT-140","title":"SLICE-69: Pre-merge security sweep — secrets scan + supply-chain audit routing","planPath":"C:\\work\\mega\\hero-crew\\.claude\\artifacts\\loop\\plans\\20260613T163853Z-plan-SLICE-69.md","requiresApprovalGate":true}
+{"type":"slice_complete","sliceId":"SLICE-69","timestamp":"2026-06-13T17:12:51.789Z","featureId":"FEAT-140","featureMovedTo":"C:\\work\\mega\\hero-crew\\.claude\\artifacts\\loop\\backlog\\done\\FEAT-140.md","validationSatisfied":true}

@@ -20,7 +20,10 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "allowImportingTsExtensions": true,
-    "types": ["node"]
+    "types": [
+      "node",
+      "bun-types"
+    ]
   },
   "include": [
     "scripts/**/*.ts",
@@ -28,5 +31,8 @@
     "tests/**/*.ts",
     "hooks/**/*.ts"
   ],
-  "exclude": ["node_modules", "tests/fixtures"]
+  "exclude": [
+    "node_modules",
+    "tests/fixtures"
+  ]
 }

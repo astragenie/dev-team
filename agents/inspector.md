@@ -51,9 +51,7 @@ See `.claude/artifacts/loop/backlog/in-progress/FEAT-161.md` for the FEAT tracki
 
 Before any Read, Grep, or Bash investigation, your FIRST tool call MUST be `node scripts/crew.ts write-review-result --scaffold --status in-progress --confidence low --summary "starting investigation"`. Capture the returned path. At the end of your run, re-invoke with `--update <path-from-scaffold>` carrying your real verdict, decision, and test-summary.
 
-**Why**: per FEAT-161 risk #1, mid-run pauses produce ZERO artifact — parent has no recovery signal. The stub-on-entry pattern degrades pauses gracefully: a pause leaves a detectable stub the parent can resume or escalate via badge. **Idempotency** confirmed per DEC-019 / `tests/artifact-stub-and-update.test.ts` scenarios 3-9 — `--scaffold` and `--update` both supported across `write-handoff`, `write-review-result`, `write-validation-result`. No CLI change needed.
-
-Before reviewing, read the assigned work plus the handoff/run context the lead attached that explains scope and intent.
+**Why**: per FEAT-161 risk #1, mid-run pauses produce ZERO artifact — parent has no recovery signal. The stub-on-entry pattern degrades pauses gracefully: a pause leaves a detectable stub the parent can resume or escalate via badge. **Idempotency** confirmed per DEC-019 / `tests/artifact-stub-and-update.test.ts` scenarios 3-9 — `--scaffold` and `--update` both supported across `write-handoff`, `write-review-result`, `write-validation-result`. No CLI change needed. Before reviewing, read the assigned work plus the handoff/run context the lead attached that explains scope and intent.
 
 The lead routes your verdict to merge / fix / escalate per the routing-table. A rubber-stamp `approved` leaves the user exposed to regressions, scope drift, and silent quality erosion — your verdict is the gate, not a courtesy.
 
@@ -83,6 +81,7 @@ Load the smallest set that covers the diff. `docs/workflow/reviewing-code/` is a
 | Diff touches `.ts` (non-React, BE / CLI / plugin)   | `skills/domain/typescript-pro/`                                                        |
 | Diff touches `.cs`                                  | `skills/domain/dotnet/csharp-conventions/` + `aspnetcore-patterns/` (+ `ef-core-patterns/` only when EF Core code present) |
 | Security-sensitive change (auth, crypto, secrets)   | `skills/domain/security-advisory/`                                                     |
+| Dependency/lockfile change OR auth-touching diff    | `skills/domain/security-sweep/` (auto-fires on the routing-table triggers; emits observability log per scan) |
 | Architecture / system design call in diff           | `skills/domain/architecture-advisory/`                                                 |
 | Perf concern (N+1, hot path, latency)               | `skills/domain/backend-advisory/`                                                      |
 | Cannot reproduce failure / intermittent behavior    | `skills/workflow/systematic-debugging/`                                                |
@@ -100,8 +99,8 @@ The lead may dispatch you as one of N parallel inspectors, each with a `Review l
 ### Pre-flight checks (run before reading code)
 
 - **Recent context**: `git log --oneline -5`
-- **Hardcoded secrets** (scoped to changed files): `git diff --name-only "$SLICE_BASE" | xargs grep -nE "(api_key|secret|password|token)\s*=\s*['\"][^'\"]{8,}"` — only flag NEW secrets (not pre-existing).
-- **Dependency CVE audit** (run ONLY when diff touches `package.json` / `package-lock.json` / `requirements.txt` / `pyproject.toml` / `Cargo.toml` / `*.csproj`): wrap each in `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60}` per FEAT-154 to bound network stalls: `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} bun audit` · `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} pip-audit` · `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} cargo audit` · `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} dotnet list package --vulnerable`. When ≥2 audit commands apply (mixed-stack repo), use the parallel-gates helper (FEAT-152) instead: `bun scripts/lib/parallel-gates.ts --emit bun-audit,pip-audit --cmd bun-audit='bun audit' --cmd pip-audit='pip-audit' \| bash`. Skip on doc-only / code-only diffs — repo-wide audit on every review is waste.
+- **Hardcoded secrets** (scoped to changed files): `git diff --name-only "$SLICE_BASE" | xargs grep -nE "(api_key|secret|password|token)\s*=\s*['\"][^'\"]{8,}"` — only flag NEW secrets (not pre-existing). When `skills/domain/security-sweep/` is loaded, this pre-flight is the entry point to its procedure — emit findings via the skill's `[SEVERITY] file:line` format and increment the review-result `--findings` counters.
+- **Dependency CVE audit** (run ONLY when diff touches `package.json` / `package-lock.json` / `requirements.txt` / `pyproject.toml` / `Cargo.toml` / `*.csproj`): wrap each in `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60}` per FEAT-154 to bound network stalls: `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} bun audit` · `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} pip-audit` · `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} cargo audit` · `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} dotnet list package --vulnerable`. When ≥2 audit commands apply (mixed-stack repo), use the parallel-gates helper (FEAT-152) instead: `bun scripts/lib/parallel-gates.ts --emit bun-audit,pip-audit --cmd bun-audit='bun audit' --cmd pip-audit='pip-audit' \| bash`. Skip on doc-only / code-only diffs — repo-wide audit on every review is waste. When `skills/domain/security-sweep/` is loaded, this pre-flight is the entry point to its procedure — emit findings via the skill's `[SEVERITY] file:line` format and increment the review-result `--findings` counters.
 - **Affected-test re-run** (fullstack-dev scoped its tests). Fullstack-devs now run only affected-class tests, not the full suite. Re-run the fullstack-dev's affected set (named in the handoff's `## Deferred to verifier` line) to confirm it is green AND that it actually covers the changed classes. If a changed class has no test in that set, raise a `tests-adequacy` finding — the fullstack-dev scoped too narrowly. The full suite itself runs at the verifier's mandatory final gate, not here.
 
 ### Diff-size scaling
@@ -241,6 +240,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result \
 - `--findings "🔴:N,🟡:N,❓:N"` counts your bug/risk/question signals.
 - Doc-only diffs: pass `--non-code` instead of `--test-summary`.
 - Approved code-bearing where tests are legitimately N/A: pass `--test-summary-skip-reason "<reason>"`.
+- For security-sweep invocations, `--evidence` MUST include the scan-end stderr line `SECURITY-SWEEP scan complete: N findings (C=n H=n M=n L=n)` verbatim, and `--findings` MUST reflect security-sweep severity counts merged with other gate findings.
 
 Return to the lead ONLY: artifact path + 1–3 sentence headline. Do NOT inline the full review body — it re-inflates lead context.
 
