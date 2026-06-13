@@ -10,7 +10,7 @@ description: Independent review specialist focused on correctness, regressions, 
 model: sonnet
 effort: high
 maxTurns: 60
-maxLines: 325
+maxLines: 330
 disallowedTools: Write, Edit, NotebookEdit
 color: orange
 ---
@@ -48,7 +48,11 @@ If you cannot complete the review (insufficient context, blocked on missing arti
 
 See `.claude/artifacts/loop/backlog/in-progress/FEAT-161.md` for the FEAT tracking this contract and the recurring-pause evidence trail.
 ## First action (stub artifact on entry)
-`node scripts/crew.ts write-review-result --scaffold --status in-progress --confidence low --summary "starting investigation"` — run this FIRST, before any Read / Grep / Bash investigation. Capture the path. Re-invoke with `--update <path>` and your real verdict at the end. Per FEAT-161 + DEC-019: `--scaffold` and `--update` are idempotent; a mid-run pause leaves a detectable stub instead of nothing.
+
+Before any Read, Grep, or Bash investigation, your FIRST tool call MUST be `node scripts/crew.ts write-review-result --scaffold --status in-progress --confidence low --summary "starting investigation"`. Capture the returned path. At the end of your run, re-invoke with `--update <path-from-scaffold>` carrying your real verdict, decision, and test-summary.
+
+**Why**: per FEAT-161 risk #1, mid-run pauses produce ZERO artifact — parent has no recovery signal. The stub-on-entry pattern degrades pauses gracefully: a pause leaves a detectable stub the parent can resume or escalate via badge. **Idempotency** confirmed per DEC-019 / `tests/artifact-stub-and-update.test.ts` scenarios 3-9 — `--scaffold` and `--update` both supported across `write-handoff`, `write-review-result`, `write-validation-result`. No CLI change needed.
+
 Before reviewing, read the assigned work plus the handoff/run context the lead attached that explains scope and intent.
 
 The lead routes your verdict to merge / fix / escalate per the routing-table. A rubber-stamp `approved` leaves the user exposed to regressions, scope drift, and silent quality erosion — your verdict is the gate, not a courtesy.

@@ -468,6 +468,103 @@ See FEAT-163 for the full peer-dispatch design.
   }
 });
 
+// ── Inline YAML tools format (Fix 3 — SLICE-74 cleanup) ─────────────────────
+//
+// architect.md and uxdesigner.md use `tools: [Read, Grep, Agent]` (inline YAML
+// array) instead of a block-list. parseFrontmatterTools previously returned []
+// for this format, silently suppressing the Peer dispatch lint rule for both
+// agents. These tests verify the fix: inline format is parsed correctly, so the
+// rule fires as expected.
+
+describe("Peer dispatch lint rule — inline YAML tools: [A, B] format", () => {
+  test("allowlisted agent with inline tools: [Agent] and correct Peer dispatch section passes", async () => {
+    const content = `---
+name: architect
+description: Architecture specialist.
+model: opus
+tools: [Read, Grep, Glob, Bash, Edit, Write, Agent]
+---
+
+You are the Architect for this crew.
+
+TaskUpdate batching: never run >=3 back-to-back without intervening work.
+Coalesce Bash calls: chain related data-collection commands.
+
+## Report contract
+
+Write your design artifact.
+
+## Integration with Other Agents
+
+- Receive scope from lead.
+
+## Peer dispatch — when to use the Agent tool
+
+You MAY dispatch peers in this whitelist:
+
+- \`researcher\`: when prior-decision context is needed.
+
+You MUST NOT dispatch:
+
+- \`backend-dev\`, \`frontend-dev\`, \`fullstack-dev\` — implementers.
+
+Dispatch budget per slice: max 2 peer dispatches.
+Dispatch budget per turn: max 1 peer dispatch.
+
+### Dispatch prompt purity (inherited from lead v0.35.2)
+
+Do NOT inject identity. Never use caveman:* agents.
+
+### Final-tool-call invariant (HARD)
+
+Peer outputs are inputs to YOUR work. Your LAST tool call MUST be your role write-*.
+
+See FEAT-163 for the full peer-dispatch design.
+`;
+    const root = await makeAgentsDir({ "architect.md": content });
+    const result = await validateAgents(root);
+    assert.equal(
+      result.ok,
+      true,
+      `architect with inline tools and correct Peer dispatch should pass. Errors: ${result.errors.join("; ")}`
+    );
+  });
+
+  test("allowlisted agent with inline tools: [Agent] but missing Peer dispatch section fails", async () => {
+    const content = `---
+name: architect
+description: Architecture specialist.
+model: opus
+tools: [Read, Grep, Agent]
+---
+
+You are the Architect for this crew.
+
+TaskUpdate batching: never run >=3 back-to-back without intervening work.
+Coalesce Bash calls: chain related data-collection commands.
+
+## Integration with Other Agents
+
+- Receive scope from lead.
+
+## Report contract
+
+Write your design artifact.
+`;
+    const root = await makeAgentsDir({ "architect.md": content });
+    const result = await validateAgents(root);
+    assert.equal(
+      result.ok,
+      false,
+      "Expected validation failure: inline tools: [Agent] without Peer dispatch section should fail"
+    );
+    assert.ok(
+      result.errors.some((e) => /missing "## Peer dispatch" section/.test(e)),
+      `Expected missing Peer dispatch error, got: ${result.errors.join("; ")}`
+    );
+  });
+});
+
 // ── Exempt case ───────────────────────────────────────────────────────────────
 
 describe("Peer dispatch lint rule — exempt case (not in allowlist)", () => {

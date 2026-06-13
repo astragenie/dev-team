@@ -50,7 +50,7 @@ Lead-as-sole-orchestrator pattern is **abandoned** (see [[project_lead_orchestra
 
 | Agent | May dispatch | May NOT dispatch | Reason |
 |---|---|---|---|
-| `architect` | `researcher`, `investigator`, `document-writer` (for ADR finals) | implementers, gates, peers | Architect already opus + judgment role; needs to fan-out to read-only specialists during design |
+| `architect` | `researcher`, `investigator` (architect → document-writer dropped per DEC-022 to preserve DAG; route docs handoff via lead) | implementers, gates, peers | Architect already opus + judgment role; needs to fan-out to read-only specialists during design |
 | `backend-dev` | `architect` (for contract clarification), `investigator` (for code locator), `document-writer` (for API docs after impl) | `frontend-dev`, `fullstack-dev`, gates | Builder may need architect input mid-implementation; locator helps speed; downstream docs handoff is natural |
 | `frontend-dev` | `architect`, `investigator`, `uxdesigner`, `document-writer` | `backend-dev`, `fullstack-dev`, gates | Same shape as backend-dev + uxdesigner for design clarification |
 | `fullstack-dev` | `architect`, `investigator`, `uxdesigner`, `document-writer`, `performance-engineer` | `backend-dev`, `frontend-dev`, gates | Owns both ends; broader dispatch white-list |
@@ -137,6 +137,8 @@ etc.). Peer outputs are inputs to YOUR work, not substitutes for it.
 - Changing the review/validation gate dispatch path. Inspector + verifier remain orchestrator-only.
 
 ## Notes
+
+- **DEC-022 (cycle-resolution):** The `architect → document-writer` dispatch edge listed in the original "Gain Agent tool" table was dropped during SLICE-73. SLICE-71 added the `document-writer → architect` edge (document-writer may dispatch architect for source-of-truth context). Adding the reverse would have created an `architect ↔ document-writer` cycle, violating the directed-graph constraint. DEC-022 records the resolution: architect's whitelist excludes document-writer; when an architect-authored ADR needs a docs-quality pass, the lead (or loop walker) dispatches document-writer separately after architect's handoff completes.
 
 - This FEAT is the **inverse** of an earlier draft of FEAT-163 (drafted 2026-06-12 same session, never committed) which proposed adding a "you do NOT dispatch peers" caveat to v0.35.3 Integration sections. User pivoted to the opposite direction after reflecting on lead's failure. The earlier draft is documented here for completeness — the choice was made deliberately, not by oversight.
 - Expect this work to land as `v0.36.0` (minor bump, not patch) because it changes the dispatch contract for ~half the agents. v0.35.x stays the lead-orchestrated baseline.

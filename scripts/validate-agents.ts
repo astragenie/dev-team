@@ -125,7 +125,18 @@ function parseFrontmatterTools(text: string): string[] {
   const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!match || match[1] === undefined) return [];
   const fmBlock = match[1];
-  // Find `tools:` block and extract list items
+  // Inline YAML array format: tools: [Read, Grep, Agent]
+  const inlineMatch = fmBlock.match(/^tools:\s*\[(.*?)\]\s*$/m);
+  if (inlineMatch && inlineMatch[1] !== undefined) {
+    return inlineMatch[1]
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  }
+  // Block-list format:
+  //   tools:
+  //     - Read
+  //     - Agent
   const toolsMatch = fmBlock.match(/^tools:\s*\n((?:[ \t]+-[^\n]*\n?)*)/m);
   if (!toolsMatch || toolsMatch[1] === undefined) return [];
   return toolsMatch[1]
