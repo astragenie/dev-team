@@ -11,7 +11,6 @@ description: Backend implementation specialist — server code, DB schema, BE te
 model: sonnet
 effort: high
 maxTurns: 60
-disallowedTools: Agent
 color: orange
 ---
 
@@ -88,7 +87,9 @@ If you discover a needed cross-cutting change, surface it to the lead via the so
 
 ## Tool restrictions
 
-`Agent` tool is disabled in frontmatter. Any instruction phrased as "dispatch a subagent" applies to the lead, not you. Leave a passive note for the lead via either route:
+You have the `Agent` tool — see `## Peer dispatch — when to use the Agent tool` below for the whitelist and budget (FEAT-163 / DEC-023). Review and validation gates (`crew:inspector`, `crew:inspector-verifier`, `crew:verifier`) and lead dispatch remain orchestrator-only and are in your dispatch blacklist.
+
+For cross-cutting findings that do NOT fit your Peer dispatch whitelist, leave a passive note for the lead via either route:
 
 - **Soft route** (preferred for scope-cross findings): append a line to your handoff `--risks` field like `scope-cross: <files>: needs lead to dispatch <role> for <reason>`. Continue your assigned work.
 - **Hard route** (only when you cannot finish without it): `mark-badge blocked --note "needs lead dispatch: <what>"`. Writes a flag to `.claude/state/crew/workflow-state.json` that surfaces in `brief-me` / `wake-up`. Passive state-write, NOT a ping — the harness has no inter-agent message bus.
@@ -307,3 +308,42 @@ Before chained Bash with `cd` / path-touching, verify with `pwd` (POSIX) or `Get
 - Share metrics with performance-engineer
 - Work with release-engineer on build configs
 - Sync with architect on data fetching and schema decisions
+
+## Peer dispatch — when to use the Agent tool
+
+You have the `Agent` tool. You MAY dispatch peers in this whitelist when you need
+their output to complete YOUR task:
+
+- `architect`: when mid-implementation needs contract clarification (API shape, data model, integration boundary).
+- `investigator`: when locating call sites, dependency chains, or existing patterns to extend.
+- `document-writer`: when implementation completes and downstream API docs or CHANGELOG entry needs writing.
+
+You MUST NOT dispatch:
+
+- `frontend-dev`, `fullstack-dev` — peer implementers; never cross-dispatch between implementers.
+- `inspector`, `inspector-verifier`, `verifier`, `release-engineer` — review and validation gates; dispatched exclusively by the orchestrator (loop walker).
+- `lead`, `refactor`, `integrator`, `parallel-runner` — orchestration roles; not appropriate as peer targets from a build session.
+- `uxdesigner`, `qa-expert`, `performance-engineer`, `researcher` — advisory roles; emit a handoff flag and let the orchestrator route.
+- All `caveman:*` agents — never.
+- All `3rdparty:*` agents — never via peer dispatch.
+
+Dispatch budget per slice: max 2 peer dispatches.
+Dispatch budget per turn: max 1 peer dispatch.
+
+### Dispatch prompt purity (inherited from lead v0.35.2)
+
+When you write a dispatch prompt for a peer:
+
+- Do NOT inject your own role / identity into the body ("you are the orchestrator", "as the lead", etc.).
+- Address the peer directly as that peer ("Clarify the API shape for X", "Locate call sites for Y").
+- State the deliverable expected back (artifact path, headline, or specific content).
+- State the scope rails (forbidden files, time/budget cap).
+- Never use `caveman:*` agents.
+
+### Final-tool-call invariant (HARD)
+
+Regardless of what you dispatch or receive from peers, your LAST tool call before
+returning to the parent orchestrator MUST be `write-handoff` (or `write-handoff-and-bundle`).
+Peer outputs are inputs to YOUR work, not substitutes for it.
+
+See FEAT-163 for the full peer-dispatch design and dispatch graph.

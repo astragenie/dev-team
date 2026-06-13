@@ -97,11 +97,13 @@ function checkRequiredSections(
   }
 }
 
-// FEAT-163 SLICE-71 + SLICE-73: agents that explicitly carry the Agent tool in
+// FEAT-163 SLICE-71 + SLICE-73 + SLICE-75: agents that explicitly carry the Agent tool in
 // their frontmatter `tools:` list MUST also carry a `## Peer dispatch` section
 // with whitelist, blacklist, and budget lines. SLICE-71 added document-writer
 // and refactor (SLICE-A). SLICE-73 adds the advisory tier (SLICE-B):
-// architect, uxdesigner, qa-expert, performance-engineer.
+// architect, uxdesigner, qa-expert, performance-engineer. SLICE-75 adds the
+// implementer + release-engineer tier (SLICE-C/D):
+// backend-dev, frontend-dev, fullstack-dev, release-engineer.
 //
 // Rule fires ONLY when:
 //   (a) agent name is in PEER_DISPATCH_ALLOWLIST, AND
@@ -112,13 +114,21 @@ function checkRequiredSections(
 // via subagent configuration) are not checked — avoids false-positives on
 // agents not yet scoped for peer dispatch. Only agents with explicit `tools:`
 // including `Agent` are caught.
+//
+// Note: backend-dev and frontend-dev carry `disallowedTools: Agent` (not `tools:`)
+// so the rule correctly does not fire for them at runtime. Their Peer dispatch
+// sections are forward-looking documentation for when the restriction is lifted.
 const PEER_DISPATCH_ALLOWLIST = new Set([
   "document-writer",
   "refactor",
   "architect",
   "uxdesigner",
   "qa-expert",
-  "performance-engineer"
+  "performance-engineer",
+  "backend-dev",
+  "frontend-dev",
+  "fullstack-dev",
+  "release-engineer"
 ]);
 
 function parseFrontmatterTools(text: string): string[] {

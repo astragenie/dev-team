@@ -145,6 +145,16 @@ Defer until production observability signal shows the lead cannot distinguish st
 - **SLICE-A1 (DROPPED)** — was "add `--update` semantics to `scripts/crew.ts`". Already shipped per `tests/artifact-stub-and-update.test.ts` scenarios 3, 4, 5. No work needed.
 - **SLICE-C (OPTIONAL, deferred)**: instrument the `crew write-*` CLI to emit a structured "artifact updated from pending" log line so the parent can distinguish a stub promotion from a normal completion. Park behind explicit "lead can't tell stub-promoted from normal" observability trigger.
 
+## Closure (2026-06-13)
+
+FEAT-161 closes with Prong A + B landed; Prong C parked.
+
+- **Prong A (HARD OUTPUT CONTRACT block)** — shipped 2026-06-13 via SLICE-70 (commit `4b8b2d4`). 6 agents got the block; 6 already had it. Test extension covers all 12. Grade avg 0.854. DEC-019 (idempotency confirmation) extracted via SLICE-74 cleanup.
+- **Prong B (stub artifact on entry)** — shipped 2026-06-13 via SLICE-72 (commit `b02dd66`). 9 artifact-owning agents got the section. Dog-food validation: SLICE-72's own builder paused mid-narration; stub artifact was recovered via `--update`; slice closed PASS. DEC-021 (parent-side stub recovery as first-class flow) extracted.
+- **Prong C (CLI promoted-from-stub log line)** — DEFERRED. Per FEAT body line 146: "Park behind explicit 'lead can't tell stub-promoted from normal' observability trigger." Trigger has not fired. Re-open under a new FEAT when observability shows a real need to distinguish stub-promoted from normal completions. No work scheduled at FEAT-161 close.
+
+Closure rationale: the two prongs that mitigate the specialist-pause failure mode (front-loaded HARD CONTRACT + stub-on-entry recovery primitive) are both in production. Prong C is a follow-on observability enhancement that adds detection ergonomics, not failure mitigation — defer per FEAT body's own gating language.
+
 ## Notes
 
 - Loop side (`sergeymilashico/loop`) was expected to maintain a matching upstream-request at `docs/upstream-requests/2026-06-10-hero-crew-specialist-pause-completion-enforcement.md`. That file is NOT present in this checkout's loop sibling (verified 2026-06-13 via Glob `**/upstream-requests/**/*specialist-pause*` → no results). The internal recurrence table above is the load-bearing evidence. If the upstream-request gets attached later, link it from this section.

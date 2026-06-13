@@ -565,28 +565,131 @@ Write your design artifact.
   });
 });
 
-// ── Exempt case ───────────────────────────────────────────────────────────────
+// ── Implementer + release-engineer agents (SLICE-75) ─────────────────────────
 
-describe("Peer dispatch lint rule — exempt case (not in allowlist)", () => {
-  test("non-allowlisted agent with Agent in tools but NO Peer dispatch section passes", async () => {
-    // fullstack-dev has Agent in its tools via the global builder frontmatter
-    // but is NOT in PEER_DISPATCH_ALLOWLIST for SLICE-71 (SLICE-B scope).
-    // Validator must not flag it.
-    const content = `---
-name: fullstack-dev
-description: Fullstack implementation specialist.
+describe("Peer dispatch lint rule — SLICE-75 implementer + release-engineer agents", () => {
+  // backend-dev and frontend-dev carry `disallowedTools: Agent` (not `tools:`),
+  // so the lint rule does NOT fire for them (condition (b) requires `tools:` with
+  // `Agent` explicitly). fullstack-dev and release-engineer use the `tools:` format.
+  //
+  // These tests verify that agents in the SLICE-75 allowlist extension PASS
+  // validation when they carry the correct Peer dispatch section AND Agent in tools:.
+  // Separate tests cover the disallowedTools path (lint rule correctly skips them).
+
+  const IMPLEMENTER_AGENTS: Array<{
+    name: string;
+    intro: string;
+    whitelist: string;
+    extraBody?: string;
+  }> = [
+    {
+      name: "backend-dev",
+      intro: "You are a backend-dev agent.",
+      // backend-dev is in BASH_COALESCING_REQUIRED
+      extraBody: "Coalesce Bash calls: chain related data-collection commands.",
+      whitelist:
+        "- `architect`: when mid-implementation needs contract clarification.\n- `investigator`: when locating call sites or dependency chains.\n- `document-writer`: when implementation completes and API docs need writing."
+    },
+    {
+      name: "frontend-dev",
+      intro: "You are a frontend-dev agent.",
+      // frontend-dev is in BASH_COALESCING_REQUIRED
+      extraBody: "Coalesce Bash calls: chain related data-collection commands.",
+      whitelist:
+        "- `architect`: when contract clarification mid-implementation is needed.\n- `investigator`: when locating existing component patterns.\n- `uxdesigner`: when implementation hits a design ambiguity.\n- `document-writer`: when implementation completes and component docs need writing."
+    },
+    {
+      name: "fullstack-dev",
+      intro: "You are a fullstack-dev agent.",
+      // fullstack-dev is in TASK_UPDATE_BATCHING_REQUIRED + BASH_COALESCING_REQUIRED
+      extraBody:
+        "TaskUpdate batching: never run >=3 back-to-back without intervening work.\n" +
+        "Coalesce Bash calls: chain related data-collection commands.",
+      whitelist:
+        "- `architect`: when contract clarification mid-implementation is needed.\n- `investigator`: when locating call sites or existing patterns.\n- `uxdesigner`: when implementation hits a design ambiguity.\n- `document-writer`: when implementation completes and downstream docs need writing.\n- `performance-engineer`: when implementation hits a perf-critical path."
+    },
+    {
+      name: "release-engineer",
+      intro: "You are the release-engineer on a Claude Code engineering team.",
+      // release-engineer is in BASH_COALESCING_REQUIRED
+      extraBody: "Coalesce Bash calls: chain related data-collection commands.",
+      whitelist:
+        "- `document-writer`: when a release needs CHANGELOG entry, release notes, or migration doc written."
+    }
+  ];
+
+  for (const { name, intro, whitelist, extraBody } of IMPLEMENTER_AGENTS) {
+    test(`allowlisted implementer agent "${name}" with Agent in tools and correct Peer dispatch section passes`, async () => {
+      const content = `---
+name: ${name}
+description: ${name} specialist.
 model: sonnet
 tools:
   - Read
-  - Edit
-  - Write
   - Bash
   - Agent
 ---
 
-You are a fullstack-dev agent on a Claude Code engineering team.
+${intro}
 
-TaskUpdate batching: never run >=3 back-to-back without intervening work.
+${extraBody ?? ""}
+
+## Report contract
+
+Write your handoff via write-handoff.
+
+## Integration with Other Agents
+
+- Receive scope from lead.
+
+## Peer dispatch — when to use the Agent tool
+
+You have the \`Agent\` tool. You MAY dispatch peers in this whitelist when you need
+their output to complete YOUR task:
+
+${whitelist}
+
+You MUST NOT dispatch:
+
+- \`inspector\`, \`inspector-verifier\`, \`verifier\` — review and validation gates; orchestrator-only.
+- \`lead\`, \`refactor\`, \`integrator\`, \`parallel-runner\` — orchestration roles.
+
+Dispatch budget per slice: max 2 peer dispatches.
+Dispatch budget per turn: max 1 peer dispatch.
+
+### Dispatch prompt purity (inherited from lead v0.35.2)
+
+Do NOT inject identity. Address peer directly. State deliverable. Never use \`caveman:*\`.
+
+### Final-tool-call invariant (HARD)
+
+Peer outputs are inputs to YOUR work. Your LAST tool call MUST be your role write-*.
+
+See FEAT-163 for the full peer-dispatch design.
+`;
+      const root = await makeAgentsDir({ [`${name}.md`]: content });
+      const result = await validateAgents(root);
+      assert.equal(
+        result.ok,
+        true,
+        `Implementer agent "${name}" with correct Peer dispatch section should pass. Errors: ${result.errors.join("; ")}`
+      );
+    });
+  }
+
+  test("backend-dev with disallowedTools (no explicit tools: block) passes without Peer dispatch section", async () => {
+    // backend-dev in real life uses disallowedTools: Agent — no tools: block.
+    // The lint rule fires only when tools: includes Agent explicitly.
+    // This test verifies that an allowlisted agent WITHOUT Agent in tools: is not penalised.
+    const content = `---
+name: backend-dev
+description: Backend implementation specialist.
+model: sonnet
+disallowedTools: Agent
+---
+
+You are a backend-dev agent.
+
 Coalesce Bash calls: chain related data-collection commands.
 
 ## Integration with Other Agents
@@ -597,7 +700,46 @@ Coalesce Bash calls: chain related data-collection commands.
 
 Write your handoff via write-handoff.
 `;
-    const root = await makeAgentsDir({ "fullstack-dev.md": content });
+    const root = await makeAgentsDir({ "backend-dev.md": content });
+    const result = await validateAgents(root);
+    assert.equal(
+      result.ok,
+      true,
+      `backend-dev with disallowedTools (no tools: block) should pass without Peer dispatch section. Errors: ${result.errors.join("; ")}`
+    );
+  });
+});
+
+// ── Exempt case ───────────────────────────────────────────────────────────────
+
+describe("Peer dispatch lint rule — exempt case (not in allowlist)", () => {
+  test("non-allowlisted agent with Agent in tools but NO Peer dispatch section passes", async () => {
+    // investigator is NOT in PEER_DISPATCH_ALLOWLIST (it is a leaf node — consumers
+    // dispatch investigator, not the other way around). Validator must not flag it
+    // even though it has Agent in its tools: block.
+    const content = `---
+name: investigator
+description: Code investigation specialist.
+model: sonnet
+tools:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - Agent
+---
+
+You are an investigator agent on a Claude Code engineering team.
+
+## Integration with Other Agents
+
+- Receive scope from lead.
+
+## Report contract
+
+Write your handoff via write-handoff.
+`;
+    const root = await makeAgentsDir({ "investigator.md": content });
     const result = await validateAgents(root);
     assert.equal(
       result.ok,

@@ -22,13 +22,21 @@ const AGENTS_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 
 // Agents whose Peer dispatch whitelists are parsed for graph construction.
 // Must be kept in sync with PEER_DISPATCH_ALLOWLIST in validate-agents.ts.
+// SLICE-75 extended to 10 agents: added backend-dev, frontend-dev, fullstack-dev,
+// release-engineer. Note: backend-dev and frontend-dev use disallowedTools: Agent
+// (not tools:) so the lint rule does not fire for them at runtime — but their
+// whitelist declarations are still included in the graph for DAG validation.
 const PEER_DISPATCH_ALLOWLIST = new Set([
   "document-writer",
   "refactor",
   "architect",
   "uxdesigner",
   "qa-expert",
-  "performance-engineer"
+  "performance-engineer",
+  "backend-dev",
+  "frontend-dev",
+  "fullstack-dev",
+  "release-engineer"
 ]);
 
 // Documented bidirectional pairs that are intentional and MUST NOT trigger
@@ -54,7 +62,12 @@ function isBidirectionalAllowed(from: string, to: string): boolean {
  * bullets before the `MUST NOT dispatch` boundary).
  */
 export function parseWhitelistEntries(text: string): string[] {
-  const peerDispatchIdx = text.search(/##\s+Peer dispatch/i);
+  // Anchor to a heading at start-of-line — otherwise inline references to
+  // "`## Peer dispatch`" in body text (e.g. the Tool restrictions section
+  // pointing readers at the real Peer dispatch section below) would match
+  // first and the parser would start before the actual heading, producing
+  // phantom whitelist entries.
+  const peerDispatchIdx = text.search(/^##\s+Peer dispatch/im);
   if (peerDispatchIdx === -1) return [];
 
   const afterHeading = text.slice(peerDispatchIdx);

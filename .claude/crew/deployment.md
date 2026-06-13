@@ -5,7 +5,19 @@ This plugin has no server, no container, and no hosted runtime.
 
 ## Settings
 
-- `dev.stable: false` — no auto-continue from build to dev ship. Releases are manual and user-triggered. See `agents/deployer.md` → Deployment guidance schema.
+- `dev.stable: false` — no auto-continue from build to dev ship. Releases are manual and user-triggered.
+
+  When `dev.stable: true` is set, the lead and builder MAY create commits without asking after each edit,
+  provided ALL of the following hold:
+  - the change came from a `/crew:build` flow, a `/crew:fix` flow, **or** the autonomous loop's `slice-build`
+    flow (the `slice-build` path was a known gap per the SLICE-104 audit notes, resolved in FEAT-163 SLICE-D)
+  - the latest review artifact for the run is `PASS` (or `review_skipped` with explicit reason)
+  - the latest validation artifact for the run is `PASS` (or `validation_skipped` with explicit reason)
+  - no `help_request` workflow badge is open
+  - the work is local commits only — not a release tag, not a force-push, not a production deploy
+
+  See `agents/deployer.md` → Deployment guidance schema for the authoritative field definition.
+  Production promotion, tag pushes, and force-pushes are NEVER unlocked by `dev.stable`.
 
 ## Prerequisites
 
