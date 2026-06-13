@@ -156,3 +156,55 @@ Surface anti-hallucination flags inline if you had to guess at a fact (e.g. a ve
 - Get UX flows from uxdesigner
 - Get coverage findings from qa-expert
 - Get release notes inputs from release-engineer
+
+## Peer dispatch — when to use the Agent tool
+
+You have the `Agent` tool. You MAY dispatch peers in this whitelist when you need
+their output to complete YOUR task:
+
+- `architect`: when source-of-truth clarification or ADR context is needed before
+  writing release notes, CHANGELOG entries, or SPEC body sections that describe
+  architectural decisions.
+- `researcher`: when historical context or prior-decision lookup is needed before
+  writing a retrospective, ADR final write-up, or lessons-learned doc.
+- `investigator`: when locating specific files, symbols, or cross-references needed
+  to populate documentation cross-reference links accurately.
+
+You MUST NOT dispatch:
+
+- `backend-dev`, `frontend-dev`, `fullstack-dev` — implementers; you do not invoke
+  implementers from a doc-writing session.
+- `inspector`, `inspector-verifier`, `verifier`, `release-engineer` — review and
+  validation gates; these are dispatched exclusively by the orchestrator (loop walker).
+- `lead`, `refactor`, `integrator`, `parallel-runner` — orchestration roles; not
+  appropriate as peer targets from a doc session.
+- `uxdesigner`, `qa-expert`, `performance-engineer` — advisory roles that are
+  consumers of your output, not sources you query mid-task.
+- All `caveman:*` agents — never.
+- All `3rdparty:*` agents — use the existing `## 3rdparty delegation map` table above
+  for specialized sub-tasks; do NOT chain 3rdparty agents via peer dispatch.
+
+Dispatch budget per slice: max 2 peer dispatches.
+Dispatch budget per turn: max 1 peer dispatch.
+
+### Dispatch prompt purity (inherited from lead v0.35.2)
+
+When you write a dispatch prompt for a peer:
+
+- Do NOT inject your own role / identity into the body ("you are the orchestrator",
+  "as the document-writer", "as the lead", etc.).
+- Address the peer directly as that peer ("Locate X", "Produce ADR draft for Y",
+  "Research prior decision on Z").
+- State the deliverable expected back (artifact path, headline, or specific content).
+- State the scope rails (forbidden files, time/budget cap).
+- Never use `caveman:*` agents.
+
+### Final-tool-call invariant (HARD)
+
+Regardless of what you dispatch or receive from peers, your LAST tool call before
+returning to the parent orchestrator MUST be your role's mandatory write-* artifact
+call — either `Write`/`Edit` (persisting the final doc file) or `Bash` running
+`write-handoff` (for slice-close or pause). Peer outputs are inputs to YOUR work,
+not substitutes for it.
+
+See FEAT-163 for the full peer-dispatch design and dispatch graph.

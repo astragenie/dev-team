@@ -97,6 +97,83 @@ function checkRequiredSections(
   }
 }
 
+// FEAT-163 SLICE-71: agents that explicitly carry the Agent tool in their
+// frontmatter `tools:` list MUST also carry a `## Peer dispatch` section with
+// whitelist, blacklist, and budget lines. The allowlist here is scoped to the
+// two agents granted Agent tool in SLICE-A; extend in SLICE-B/C/D as more
+// agents gain the tool.
+//
+// Rule fires ONLY when:
+//   (a) agent name is in PEER_DISPATCH_ALLOWLIST, AND
+//   (b) the agent frontmatter `tools:` block explicitly includes "Agent"
+//
+// Rationale for (b): the rule parses the raw YAML tools list from frontmatter.
+// Agents that do not declare `tools:` explicitly (e.g. they inherit "All tools"
+// via subagent configuration) are not checked — avoids false-positives on
+// agents not yet scoped for peer dispatch. Only agents with explicit `tools:`
+// including `Agent` are caught.
+const PEER_DISPATCH_ALLOWLIST = new Set(["document-writer", "refactor"]);
+
+function parseFrontmatterTools(text: string): string[] {
+  const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!match || match[1] === undefined) return [];
+  const fmBlock = match[1];
+  // Find `tools:` block and extract list items
+  const toolsMatch = fmBlock.match(/^tools:\s*\n((?:[ \t]+-[^\n]*\n?)*)/m);
+  if (!toolsMatch || toolsMatch[1] === undefined) return [];
+  return toolsMatch[1]
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^\s*-\s*/, "").trim())
+    .filter(Boolean);
+}
+
+function checkPeerDispatchSection(
+  text: string,
+  fm: Record<string, string>,
+  label: string,
+  errors: string[]
+) {
+  const name = fm["name"];
+  if (name === undefined || !PEER_DISPATCH_ALLOWLIST.has(name)) return;
+  const tools = parseFrontmatterTools(text);
+  if (!tools.includes("Agent")) return;
+  // Agent tool present — enforce Peer dispatch section structure
+  const hasPeerDispatchHeading = /##\s+Peer dispatch/i.test(text);
+  if (!hasPeerDispatchHeading) {
+    errors.push(
+      `${label}: has "Agent" in tools: but missing "## Peer dispatch" section (FEAT-163)`
+    );
+    return; // no point checking sub-structure if heading absent
+  }
+  // Must have at least one whitelist entry (a bullet under the heading)
+  // Check for presence of "whitelist" concept: at least one "- \`" bullet
+  // after the ## Peer dispatch heading
+  const peerDispatchIdx = text.search(/##\s+Peer dispatch/i);
+  const afterPeerDispatch = text.slice(peerDispatchIdx);
+  const hasWhitelistEntry = /\n- `[^`]+`/.test(afterPeerDispatch);
+  if (!hasWhitelistEntry) {
+    errors.push(
+      `${label}: "## Peer dispatch" section missing whitelist entry (at least one "- \`peer\`" bullet) (FEAT-163)`
+    );
+  }
+  // Must have explicit blacklist ("MUST NOT dispatch" or "You MUST NOT")
+  const hasBlacklist = /MUST NOT dispatch/i.test(afterPeerDispatch);
+  if (!hasBlacklist) {
+    errors.push(
+      `${label}: "## Peer dispatch" section missing blacklist ("MUST NOT dispatch") (FEAT-163)`
+    );
+  }
+  // Must have dispatch budget line
+  const hasBudget =
+    /max \d+ peer dispatch/i.test(afterPeerDispatch) ||
+    /Dispatch budget per slice/i.test(afterPeerDispatch);
+  if (!hasBudget) {
+    errors.push(
+      `${label}: "## Peer dispatch" section missing dispatch budget line ("max N per slice") (FEAT-163)`
+    );
+  }
+}
+
 // FEAT-155: primary agents most exposed to TaskUpdate burst churn must carry
 // the batching rule. Light role-list — the cost-advisor SLICE-67 baseline
 // flagged these as the highest TaskUpdate cache-prime contributors.
@@ -199,6 +276,7 @@ export async function validateAgents(agentsRoot = AGENTS_ROOT) {
     checkRequiredSections(text, fm, label, errors);
     checkTaskUpdateBatching(text, fm, label, errors);
     checkBashCoalescing(text, fm, label, errors);
+    checkPeerDispatchSection(text, fm, label, errors);
   }
   checkDuplicateNames(agents, errors);
   return { ok: errors.length === 0, errors, agentCount: agents.length };
