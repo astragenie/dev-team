@@ -1,0 +1,6 @@
+[test]
+# Fixture files (*.fixture.ts) use a non-test extension and are excluded
+# from bun's default test pattern automatically. This entry is kept as
+# belt-and-suspenders documentation; the .fixture.ts extension is the
+# primary mechanism.
+exclude = ["tests/fixtures/**"]
