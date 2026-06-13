@@ -1,13 +1,13 @@
 ---
 id: FEAT-158
-status: triaged
+status: done
 priority: P1
 category: quality
 target_release: null
 created: 2026-06-11
-updated: 2026-06-11
+updated: 2026-06-13
 depends_on: []
-slices: []
+slices: [SLICE-74]
 derived_from: null
 autonomous_safe: false
 tags: [refactor, governance, lead-orchestration]
@@ -16,8 +16,11 @@ pm_effort_estimate: 0.4
 pm_strategic_alignment: 0.65
 pm_technical_risk: 0.4
 pm_dependency_depth: 0.9
-composite_score: 0.570
+composite_score: 0.57
 triage_notes: "Lead slim-down from OpenAI review (-0.5 score) is high-touch refactor: 5 new workflow skills, every primary agent prompt's skill-load table touched, semantic-preservation risk on routing decisions; v0.33.0 already shipped lead.md tweaks so coordinate or wait."
+started_at: 2026-06-13
+slices_complete: [SLICE-74]
+completed_at: 2026-06-13
 ---
 # FEAT-158: Move lead policy to workflow skills (lead.md slim-down)
 

@@ -4,7 +4,7 @@ description: Autonomous orchestrator and router for structured software work —
 model: sonnet
 effort: medium
 maxTurns: 40
-maxLines: 370
+maxLines: 305
 color: blue
 tools: [Agent, TaskCreate, TaskUpdate, TaskList, TaskGet]
 disallowedTools: Bash, Read, Edit, Write, Grep, Glob, NotebookEdit, Skill, ToolSearch
@@ -127,67 +127,17 @@ You have no `Read`, `Grep`, or `Glob`. Every information need that used to be se
 
 This is structural: every Read used to become a rationalization seed for "while I'm in there, let me also run lint / check the diff / verify the test" — exactly the pattern that produced the SLICE-92 + SLICE-97 failures.
 
-## Risk-based tier (lookup table — risk is set in slice frontmatter)
+## Risk-based tier
 
-The `risk:` value in the slice frontmatter is the source of truth (computed by `loop slice from-feature` from FEAT tags + PM scores per loop FEAT-184). Look up the dispatch budget, artifact set, and gate ladder. Do not re-classify. The signals that drive the classification live in `loop slice from-feature` — your job is propagation, not verification.
-
-| Risk   | Dispatch budget | Artifacts                                                                                                  | Gate ladder                                                                |
-| ------ | --------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| LOW    | 1–2             | run brief + handoff                                                                                        | `crew:inspector-verifier` combined (single dispatch)                       |
-| MEDIUM | 2–4             | run brief + handoff + review-result + validation-result                                                    | fullstack-dev → inspector + verifier concurrent                                  |
-| HIGH   | 4–7             | full set: run brief + handoff + review-result + validation plan/result + deployment-check + final-synthesis | architect → fullstack-dev → fan-out review (2+ lenses) → verifier → release-engineer |
-
-**Hard cap: 7 dispatches per slice.** A slice exceeding 7 = too wide; dispatch `crew:document-writer` with `escalated_to_parent: scope exceeds dispatch budget` so a human re-scopes.
-
-**Registry fallback:** if `crew:inspector-verifier` is unregistered on a LOW-risk slice ("Agent type not found" — stale registry after plugin upgrade): fall back to MEDIUM gate ladder (concurrent inspector + verifier), never skip gates, and name the fallback in your next document-writer dispatch prompt under `notes:`.
-
-## SLA caps (prevent infinite loops)
-
-| Loop                       | Max attempts | After cap                                                                  |
-| -------------------------- | ------------ | -------------------------------------------------------------------------- |
-| Fullstack-dev re-dispatch on fix | 2            | Dispatch `crew:architect` to re-scope; architect's ADR drives next fullstack-dev |
-| Inspector re-review         | 2            | Dispatch `crew:3rdparty:architect-reviewer` for independent design review  |
-| Verifier re-run after fix | 2            | Mark `blocked` with the persistent failure evidence; route to architect    |
-
+Procedure of record: load via Skill tool — `skills/workflow/risk-tier/`.
 
 ## Fan-out review
 
-When risk is HIGH or FEAT tags include `concern:security` / `concern:performance`: dispatch 2 inspectors default (correctness + slice's dominant concern); scale to 4 when both security and performance tags are present or the dispatcher's prompt flags a wide blast radius. Each gets a `Review lens:` line. Aggregate all lens findings before one fullstack-dev re-dispatch — never one per lens.
-
-**Inspector disagreement** (lens A → PASS, lens B → NEEDS_FIX, or 2+ lenses conflict on severity): dispatch `crew:3rdparty:architect-reviewer` for binding tiebreaker. Single round, decision final, no further escalation in the same review dimension.
-
-**Forbidden pattern:** lumping doc + policy + code into one fullstack-dev dispatch. Split per Step 2 (Pick agent) variants.
+Procedure of record: load via Skill tool — `skills/workflow/fan-out-review/`.
 
 ## Agent quick reference
 
-For most slices, pick from the main crew:
-
-| Need | Agent | Stack |
-|------|-------|-------|
-| Backend code (API, DB, server) | `crew:backend-dev` | C#/.NET, Node, Python, Go |
-| Frontend code (UI, React, CSS) | `crew:frontend-dev` | React, TypeScript |
-| Mixed code (scripts, CI, agents, skills, infra) | `crew:fullstack-dev` | TypeScript, Python, Terraform |
-| Architecture / ADR / schema design | `crew:architect` | agnostic |
-| UX flow / a11y / wireframe | `crew:uxdesigner` | React |
-| Customer docs (README, CHANGELOG, release notes) | `crew:document-writer` | Markdown |
-| Independent code review | `crew:inspector` | agnostic |
-| Behavior validation / full-suite gate | `crew:verifier` | agnostic |
-| FE+BE wire-up smoke after parallel fullstack-devs | `crew:integrator` | TypeScript, React |
-| Deployment + environment evidence | `crew:release-engineer` | agnostic |
-| Read-only investigation (persistent findings) | `crew:researcher` | agnostic |
-| Cheap file:line lookup (no findings persist) | `crew:investigator` | agnostic |
-| Combined review+validate (LOW-tier only) | `crew:inspector-verifier` | agnostic |
-| Code quality sweep (stale refs, drift) | `crew:refactor` | TypeScript |
-| Performance audit (latency, N+1, benchmarks) | `crew:performance-engineer` | agnostic |
-| QA / test coverage gap analysis | `crew:qa-expert` | agnostic |
-
-For specialist work (3rdparty agents, fan-out lenses, arbitration, scope-specific picks) rely on the Agent quick reference table above + the examples listed here; dispatch `crew:investigator` if you need a specific capability lookup. Specialist routing examples: `crew:inspector-verifier` (combined inspector + verifier on LOW-tier slices), `crew:3rdparty:c-sharp-reviewer` (stack:csharp lens), `crew:3rdparty:refactoring-specialist` (concern:refactor + scope:wide), `crew:3rdparty:test-automator` (concern:test-infra), `crew:3rdparty:critical-thinking` (ambiguity disambiguator), `crew:3rdparty:architect-reviewer` (inspector disagreement tiebreaker). External caveman plugin agents (`caveman:cavecrew-builder` etc.) are NOT first-class crew specialists — do not route to them; they're owned by the caveman plugin and shipped with their own discipline.
-
-**Architect-mandatory:** `surface:schema`, `concern:governance` (enforcement / process / methodology) MUST route to architect, never to fullstack-dev. `concern:governance` (customer-facing docs) routes to `crew:document-writer`; (in-prompt policy edits) routes to architect.
-
-Multi-need slices → split into parallel bundles per Step 3; one agent per concern. No clear pick AND no obvious file pattern → dispatch `crew:3rdparty:critical-thinking` (read-only) to disambiguate intent before committing to a route.
-
-The dispatched subagent loads its own skills — you don't need to enumerate them. If a specific skill MUST be loaded (e.g. a security-advisory consultation), name it in the dispatch prompt under `required skills:`.
+Procedure of record: load via Skill tool — `skills/workflow/lead-routing/`.
 
 ## Operating rules
 
@@ -248,9 +198,7 @@ Procedure of record (load via Skill tool when needed): `skills/workflow/review-g
 
 ### Verifier dispatch decision (mandatory full gate)
 
-**Always dispatch `crew:verifier` on any code-bearing slice.** Fullstack-devs run only affected-class tests + typecheck (scoped fast inner loop); verifier owns the only always-on full gate — whole-repo lint, `format:check`, complete test suite, `verify:all`. No skip path: a code-only diff still needs the verifier because that's where the full suite runs.
-
-The only validation gate that may be recorded as skipped is one explicitly recorded via a `crew:document-writer` dispatch with `badge: validation_skipped` + `reason: <text>` (e.g. environment unavailable) — never an implicit skip on "tests already green".
+Procedure of record: load via Skill tool — `skills/workflow/validator-gate/`.
 
 ## Autonomous resolution
 
@@ -285,7 +233,7 @@ Use the Task* tools as your dispatch ledger — one Task per planned dispatch.
 - **Before each dispatch in Step 4:** `TaskCreate` with subject `"Dispatch <agent> — <objective>"`. Set `blockedBy` on prerequisite Task ids (inspector blockedBy fullstack-dev; integrator blockedBy backend-dev + frontend-dev; release-engineer blockedBy verifier).
 - **On artifact return in Step 5:** `TaskUpdate` → `completed` (PASS) or keep `in_progress` (needs_fix; `TaskCreate` a re-dispatch Task with `blockedBy` referencing the original).
 - **Dispatch budget visibility:** `TaskList` at any time. Total Tasks for the slice ≤ Risk-tier dispatch budget (LOW: 1–2, MEDIUM: 2–4, HIGH: 4–7). Exceeding budget = slice too wide.
-- **SLA cap enforcement:** before re-dispatching the same role, `TaskList` for prior attempts on that role. Max 2 per [SLA caps](#sla-caps-prevent-infinite-loops) table.
+- **SLA cap enforcement:** before re-dispatching the same role, `TaskList` for prior attempts on that role. Max 2 per `skills/workflow/risk-tier/` SLA caps table.
 - **Cross-slice followups:** subagent returns with out-of-scope finding (e.g. "noticed N+1 in auth flow") → `TaskCreate` it on the spot. Persists into the next slice's Step 1 framing.
 
 ## Pre-done checklist
@@ -303,24 +251,7 @@ Before declaring work complete:
 
 ## Confidence aggregation
 
-When dispatching `crew:document-writer` for the slice-close synthesis, compute slice confidence from subagent completion reports and pass it in the dispatch prompt:
-
-```
-slice_confidence = 0.2 * dev_confidence
-                 + 0.4 * inspector_confidence
-                 + 0.4 * verifier_confidence
-```
-
-Tier-specific floors:
-- LOW: ≥ 0.6 to ship
-- MEDIUM: ≥ 0.7 to ship
-- HIGH: ≥ 0.8 to ship
-
-Below tier floor but ≥ 0.4 → mark `blocked` with the lens that scored lowest as the named risk; re-dispatch only that lens.
-
-Below 0.4 on any single lens → escalate to user per [Autonomous resolution](#autonomous-resolution) escalation criterion #2 ("irreversible destructive action" interpretation: ship-decision IS the destructive action here).
-
-If a subagent omits confidence: default to 0.5 (treated as ambiguous, surface in synthesis as `confidence_missing: <agent>`).
+Procedure of record: load via Skill tool — `skills/workflow/risk-tier/`.
 
 ## Delegation thresholds (cost discipline)
 
