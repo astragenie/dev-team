@@ -268,6 +268,68 @@ function checkBashCoalescing(
   }
 }
 
+/**
+ * SLICE-76 FEAT-153: detect drift between the marker hash in the injected
+ * pre-loaded-universals block and the rendered hash. Skips agents without
+ * the marker. Tolerates absence of the universals source cache (CI may not
+ * have plugin caches) via advisory note rather than hard error.
+ */
+/**
+ * Cached at module scope so we compute the expected hash once per validator run.
+ * `null` means "not yet checked"; `""` means "source cache absent — skip drift check".
+ */
+let cachedExpectedHash: string | null = null;
+
+async function getExpectedUniversalsHash(): Promise<string> {
+  if (cachedExpectedHash !== null) return cachedExpectedHash;
+  const { spawnSync } = await import("node:child_process");
+  const scriptPath = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "render-universal-skills.ts"
+  );
+  const res = spawnSync("bun", [scriptPath, "--print-hash"], { encoding: "utf8" });
+  if (res.status !== 0) {
+    cachedExpectedHash = ""; // CI / source-cache absent → skip drift check
+    return cachedExpectedHash;
+  }
+  cachedExpectedHash = (res.stdout ?? "").trim();
+  return cachedExpectedHash;
+}
+
+// SLICE-76 FEAT-153: explicit allowlist of agents that MUST carry the
+// pre-loaded-universals block. Mirrors PEER_DISPATCH_ALLOWLIST. SLICE-77
+// will expand this as the fan-out injects the remaining agents.
+const UNIVERSALS_DRIFT_REQUIRED = new Set(["verifier"]);
+
+async function checkUniversalsHash(
+  text: string,
+  fm: Record<string, string>,
+  label: string,
+  errors: string[]
+) {
+  const name = fm["name"];
+  if (name === undefined || !UNIVERSALS_DRIFT_REQUIRED.has(name)) return;
+  const beginRe = /<!-- pre-loaded-universals:BEGIN hash=([0-9a-f]{64}) -->/;
+  const m = text.match(beginRe);
+  if (!m) {
+    errors.push(
+      `${label}: agent is in UNIVERSALS_DRIFT_REQUIRED but missing pre-loaded-universals marker. ` +
+        `Inject via: bun scripts/render-universal-skills.ts --inject agents/${name}.md`
+    );
+    return;
+  }
+  const foundHash = m[1];
+  if (foundHash === undefined) return; // regex guarantee, but satisfy strict TS
+  const expectedHash = await getExpectedUniversalsHash();
+  if (expectedHash === "") return; // advisory: source cache absent
+  if (foundHash !== expectedHash) {
+    errors.push(
+      `${label}: pre-loaded-universals hash drift — found ${foundHash}, expected ${expectedHash}. ` +
+        `Re-render via: bun scripts/render-universal-skills.ts --inject ${label}`
+    );
+  }
+}
+
 function checkDuplicateNames(
   agents: Array<{ label: string; fm: Record<string, string> | null }>,
   errors: string[]
@@ -310,6 +372,7 @@ export async function validateAgents(agentsRoot = AGENTS_ROOT) {
     checkTaskUpdateBatching(text, fm, label, errors);
     checkBashCoalescing(text, fm, label, errors);
     checkPeerDispatchSection(text, fm, label, errors);
+    await checkUniversalsHash(text, fm, label, errors);
   }
   checkDuplicateNames(agents, errors);
   return { ok: errors.length === 0, errors, agentCount: agents.length };

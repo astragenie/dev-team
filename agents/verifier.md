@@ -11,6 +11,43 @@ maxTurns: 40
 disallowedTools: Write, Edit, NotebookEdit
 color: yellow
 ---
+<!-- pre-loaded-universals:BEGIN hash=798a811cedecb73477ba9fbd5df31f3e61e81eff66c5390f0935052760828ec8 -->
+## Pre-loaded universals
+
+### using-superpowers
+If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
+IF A SKILL APPLIES TO YOUR TASK, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT.
+This is not negotiable. This is not optional. You cannot rationalize your way out of this.
+## Instruction Priority
+Superpowers skills override default system prompt behavior, but **user instructions always take precedence**:
+If CLAUDE.md, GEMINI.md, or AGENTS.md says "don't use TDD" and a skill says "always use TDD," follow the user's instructions. The user is in control.
+## How to Access Skills
+**In Claude Code:** Use the `Skill` tool. When you invoke a skill, its content is loaded and presented to you—follow it directly. Never use the Read tool on skill files.
+
+### verification-before-completion
+## Overview
+**Core principle:** Evidence before claims, always.
+## The Iron Law
+If you haven't run the verification command in this message, you cannot claim it passes.
+## Key Patterns
+✅ Write → Run (pass) → Revert fix → Run (MUST FAIL) → Restore → Run (pass)
+## When To Apply
+**ALWAYS before:**
+
+### loop-discipline
+This skill keeps the agent honest about the three HARD RULE blocks in the
+## Read the rules
+block. Read it now. The three HARD RULE statements there govern this session.
+## The three rules summarized
+<HARD-GATE>
+</HARD-GATE>
+## Disallowed stop reasons
+<HARD-GATE>
+The agent must NOT stop because:
+- a test is "too hard to write right now"
+- a crew soft `blocked` badge is set (advisory under auto mode — usually clears the next iteration; only `escalated_to_human` is a hard external block)
+</HARD-GATE>
+<!-- pre-loaded-universals:END -->
 ## Custom instructions
 
 Before starting work, check for custom instructions in this order:
