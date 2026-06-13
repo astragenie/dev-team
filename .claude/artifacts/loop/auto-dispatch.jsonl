@@ -73,3 +73,4 @@
 {"timestamp":"2026-06-11T09:03:59.468Z","agent":"loop:architect","parentCommand":"slice from-feature","costUsd":null,"durationMs":0,"ok":true,"skipped":false,"skipReason":null}
 {"timestamp":"2026-06-11T09:09:57.927Z","agent":"loop:document-writer","parentCommand":"slice-complete","ok":true,"skipped":true,"skipReason":"cli-refusal-cli-doc-writer-disabled","durationMs":0}
 {"timestamp":"2026-06-11T22:40:23.821Z","agent":"loop:architect","parentCommand":"slice from-feature","costUsd":null,"durationMs":0,"ok":true,"skipped":false,"skipReason":null,"stepType":"dispatch","inputTokens":null,"outputTokens":null}
+{"timestamp":"2026-06-13T09:02:58.022Z","agent":"crew:document-writer","parentCommand":"slice-complete","ok":true,"skipped":true,"skipReason":"cli-refusal-cli-doc-writer-disabled","durationMs":0}

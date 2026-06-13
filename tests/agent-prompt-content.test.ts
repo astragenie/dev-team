@@ -2,7 +2,7 @@
 // Keyword assertions for agent prompts. Tests catch semantic drift that
 // structural validators (line count, sections) miss — e.g. a prompt that
 // drops a required gate keyword or names the wrong skill.
-import { test } from "node:test";
+import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
@@ -188,4 +188,584 @@ test("lead.md gates on review_required", () => {
 
 test("lead.md references crew:fullstack-dev dispatch", () => {
   assert.ok(lead.includes("crew:fullstack-dev"), "lead.md missing crew:fullstack-dev");
+});
+
+// ── ## HARD OUTPUT CONTRACT — Prong A coverage ───────────────────────────────
+//
+// Asserts that all 12 targeted agents carry the HARD OUTPUT CONTRACT block
+// with required preamble, role-specific last-tool-call substring, and
+// cite-back to FEAT-161. Covers the 6 already-compliant agents (regression
+// guard, AC-3) plus the 6 newly added agents (AC-1, AC-2, AC-4).
+
+const HARD_CONTRACT_HEADING = "## HARD OUTPUT CONTRACT (read first, every dispatch)";
+// Existing 6 agents use "LAST action before returning"; new 6 use "LAST tool call before returning".
+// Test accepts either form (the common substring "LAST" + "before returning" appears in both).
+const REQUIRED_PREAMBLE_A = "LAST action before returning";
+const REQUIRED_PREAMBLE_B = "LAST tool call before returning";
+const REQUIRED_NARRATION_PHRASE = "Returning narration";
+const REQUIRED_VIOLATION_PHRASE = "contract violation";
+const FEAT_161_CITE = "FEAT-161";
+
+/** Returns true if the content contains either accepted preamble form. */
+function hasPreamble(content: string): boolean {
+  return content.includes(REQUIRED_PREAMBLE_A) || content.includes(REQUIRED_PREAMBLE_B);
+}
+
+/** Tactical headings that MUST NOT appear before the HARD CONTRACT block (AC-1.2 / AC-2). */
+const TACTICAL_HEADINGS = [
+  "## Workflow",
+  "## Job",
+  "## Procedure",
+  "## Golden Path",
+  "## Inputs",
+  "## Operating principles"
+];
+
+/**
+ * Returns the index of the first tactical heading found in the content,
+ * or Number.MAX_SAFE_INTEGER if none are present.
+ */
+function firstTacticalIdx(content: string): number {
+  const indices = TACTICAL_HEADINGS.map((h) => content.indexOf(h)).filter((i) => i !== -1);
+  return indices.length > 0 ? Math.min(...indices) : Number.MAX_SAFE_INTEGER;
+}
+
+describe("## HARD OUTPUT CONTRACT — Prong A coverage", () => {
+  // ── 6 already-compliant agents (regression guard) ──────────────────────────
+
+  describe("lead (already compliant)", () => {
+    const content = readAgent("lead");
+    test("heading present", () => {
+      assert.ok(content.includes(HARD_CONTRACT_HEADING), "lead.md missing HARD CONTRACT heading");
+    });
+    test("required preamble phrase", () => {
+      assert.ok(
+        hasPreamble(content),
+        "lead.md missing LAST action/tool call before returning preamble"
+      );
+    });
+    test("narration + violation phrases", () => {
+      assert.ok(
+        content.includes(REQUIRED_NARRATION_PHRASE) && content.includes(REQUIRED_VIOLATION_PHRASE),
+        "lead.md missing narration/contract-violation phrases"
+      );
+    });
+    test("role-specific: Agent dispatch keyword", () => {
+      assert.ok(content.includes("Agent"), "lead.md HARD CONTRACT missing Agent dispatch keyword");
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(content.includes(FEAT_161_CITE), "lead.md missing FEAT-161 cite-back");
+    });
+    test("placement before first tactical heading", () => {
+      const contractIdx = content.indexOf(HARD_CONTRACT_HEADING);
+      assert.ok(contractIdx !== -1, "lead.md HARD CONTRACT heading not found");
+      assert.ok(
+        contractIdx < firstTacticalIdx(content),
+        "lead.md HARD CONTRACT must appear before first tactical heading"
+      );
+    });
+  });
+
+  describe("fullstack-dev (already compliant)", () => {
+    const content = readAgent("fullstack-dev");
+    test("heading present", () => {
+      assert.ok(
+        content.includes(HARD_CONTRACT_HEADING),
+        "fullstack-dev.md missing HARD CONTRACT heading"
+      );
+    });
+    test("required preamble phrase", () => {
+      assert.ok(
+        hasPreamble(content),
+        "fullstack-dev.md missing LAST action/tool call before returning preamble"
+      );
+    });
+    test("narration + violation phrases", () => {
+      assert.ok(
+        content.includes(REQUIRED_NARRATION_PHRASE) && content.includes(REQUIRED_VIOLATION_PHRASE),
+        "fullstack-dev.md missing narration/contract-violation phrases"
+      );
+    });
+    test("role-specific: write-handoff keyword", () => {
+      assert.ok(
+        content.includes("write-handoff"),
+        "fullstack-dev.md HARD CONTRACT missing write-handoff keyword"
+      );
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(content.includes(FEAT_161_CITE), "fullstack-dev.md missing FEAT-161 cite-back");
+    });
+    test("placement: after Identity anchor, before first tactical heading", () => {
+      const identityIdx = content.indexOf("## Identity anchor");
+      const contractIdx = content.indexOf(HARD_CONTRACT_HEADING);
+      assert.ok(contractIdx !== -1, "fullstack-dev.md HARD CONTRACT heading not found");
+      assert.ok(identityIdx !== -1, "fullstack-dev.md missing Identity anchor");
+      assert.ok(
+        contractIdx > identityIdx,
+        "fullstack-dev.md HARD CONTRACT must appear after Identity anchor"
+      );
+      assert.ok(
+        contractIdx < firstTacticalIdx(content),
+        "fullstack-dev.md HARD CONTRACT must appear before first tactical heading"
+      );
+    });
+  });
+
+  describe("frontend-dev (already compliant)", () => {
+    const content = readAgent("frontend-dev");
+    test("heading present", () => {
+      assert.ok(
+        content.includes(HARD_CONTRACT_HEADING),
+        "frontend-dev.md missing HARD CONTRACT heading"
+      );
+    });
+    test("required preamble phrase", () => {
+      assert.ok(
+        hasPreamble(content),
+        "frontend-dev.md missing LAST action/tool call before returning preamble"
+      );
+    });
+    test("narration + violation phrases", () => {
+      assert.ok(
+        content.includes(REQUIRED_NARRATION_PHRASE) && content.includes(REQUIRED_VIOLATION_PHRASE),
+        "frontend-dev.md missing narration/contract-violation phrases"
+      );
+    });
+    test("role-specific: write-handoff keyword", () => {
+      assert.ok(
+        content.includes("write-handoff"),
+        "frontend-dev.md HARD CONTRACT missing write-handoff keyword"
+      );
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(content.includes(FEAT_161_CITE), "frontend-dev.md missing FEAT-161 cite-back");
+    });
+    test("placement: after Identity anchor, before first tactical heading", () => {
+      const identityIdx = content.indexOf("## Identity anchor");
+      const contractIdx = content.indexOf(HARD_CONTRACT_HEADING);
+      assert.ok(contractIdx !== -1, "frontend-dev.md HARD CONTRACT heading not found");
+      assert.ok(identityIdx !== -1, "frontend-dev.md missing Identity anchor");
+      assert.ok(
+        contractIdx > identityIdx,
+        "frontend-dev.md HARD CONTRACT must appear after Identity anchor"
+      );
+      assert.ok(
+        contractIdx < firstTacticalIdx(content),
+        "frontend-dev.md HARD CONTRACT must appear before first tactical heading"
+      );
+    });
+  });
+
+  describe("backend-dev (already compliant)", () => {
+    const content = readAgent("backend-dev");
+    test("heading present", () => {
+      assert.ok(
+        content.includes(HARD_CONTRACT_HEADING),
+        "backend-dev.md missing HARD CONTRACT heading"
+      );
+    });
+    test("required preamble phrase", () => {
+      assert.ok(
+        hasPreamble(content),
+        "backend-dev.md missing LAST action/tool call before returning preamble"
+      );
+    });
+    test("narration + violation phrases", () => {
+      assert.ok(
+        content.includes(REQUIRED_NARRATION_PHRASE) && content.includes(REQUIRED_VIOLATION_PHRASE),
+        "backend-dev.md missing narration/contract-violation phrases"
+      );
+    });
+    test("role-specific: write-handoff keyword", () => {
+      assert.ok(
+        content.includes("write-handoff"),
+        "backend-dev.md HARD CONTRACT missing write-handoff keyword"
+      );
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(content.includes(FEAT_161_CITE), "backend-dev.md missing FEAT-161 cite-back");
+    });
+    test("placement: after Identity anchor, before first tactical heading", () => {
+      const identityIdx = content.indexOf("## Identity anchor");
+      const contractIdx = content.indexOf(HARD_CONTRACT_HEADING);
+      assert.ok(contractIdx !== -1, "backend-dev.md HARD CONTRACT heading not found");
+      assert.ok(identityIdx !== -1, "backend-dev.md missing Identity anchor");
+      assert.ok(
+        contractIdx > identityIdx,
+        "backend-dev.md HARD CONTRACT must appear after Identity anchor"
+      );
+      assert.ok(
+        contractIdx < firstTacticalIdx(content),
+        "backend-dev.md HARD CONTRACT must appear before first tactical heading"
+      );
+    });
+  });
+
+  describe("inspector (already compliant)", () => {
+    const content = readAgent("inspector");
+    test("heading present", () => {
+      assert.ok(
+        content.includes(HARD_CONTRACT_HEADING),
+        "inspector.md missing HARD CONTRACT heading"
+      );
+    });
+    test("required preamble phrase", () => {
+      assert.ok(
+        hasPreamble(content),
+        "inspector.md missing LAST action/tool call before returning preamble"
+      );
+    });
+    test("narration + violation phrases", () => {
+      assert.ok(
+        content.includes(REQUIRED_NARRATION_PHRASE) && content.includes(REQUIRED_VIOLATION_PHRASE),
+        "inspector.md missing narration/contract-violation phrases"
+      );
+    });
+    test("role-specific: write-review-result keyword", () => {
+      assert.ok(
+        content.includes("write-review-result"),
+        "inspector.md HARD CONTRACT missing write-review-result keyword"
+      );
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(content.includes(FEAT_161_CITE), "inspector.md missing FEAT-161 cite-back");
+    });
+    test("placement before first tactical heading", () => {
+      const contractIdx = content.indexOf(HARD_CONTRACT_HEADING);
+      assert.ok(contractIdx !== -1, "inspector.md HARD CONTRACT heading not found");
+      assert.ok(
+        contractIdx < firstTacticalIdx(content),
+        "inspector.md HARD CONTRACT must appear before first tactical heading"
+      );
+    });
+  });
+
+  describe("verifier (already compliant)", () => {
+    const content = readAgent("verifier");
+    test("heading present", () => {
+      assert.ok(
+        content.includes(HARD_CONTRACT_HEADING),
+        "verifier.md missing HARD CONTRACT heading"
+      );
+    });
+    test("required preamble phrase", () => {
+      assert.ok(
+        hasPreamble(content),
+        "verifier.md missing LAST action/tool call before returning preamble"
+      );
+    });
+    test("narration + violation phrases", () => {
+      assert.ok(
+        content.includes(REQUIRED_NARRATION_PHRASE) && content.includes(REQUIRED_VIOLATION_PHRASE),
+        "verifier.md missing narration/contract-violation phrases"
+      );
+    });
+    test("role-specific: write-validation-result keyword", () => {
+      assert.ok(
+        content.includes("write-validation-result"),
+        "verifier.md HARD CONTRACT missing write-validation-result keyword"
+      );
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(content.includes(FEAT_161_CITE), "verifier.md missing FEAT-161 cite-back");
+    });
+    test("placement before first tactical heading (Golden Path)", () => {
+      const contractIdx = content.indexOf(HARD_CONTRACT_HEADING);
+      assert.ok(contractIdx !== -1, "verifier.md HARD CONTRACT heading not found");
+      assert.ok(
+        contractIdx < firstTacticalIdx(content),
+        "verifier.md HARD CONTRACT must appear before first tactical heading"
+      );
+    });
+  });
+
+  // ── 6 newly added agents (AC-1, AC-2, AC-4) ────────────────────────────────
+
+  describe("architect (newly added)", () => {
+    const content = readAgent("architect");
+    test("heading present", () => {
+      assert.ok(
+        content.includes(HARD_CONTRACT_HEADING),
+        "architect.md missing HARD CONTRACT heading"
+      );
+    });
+    test("required preamble phrase", () => {
+      assert.ok(
+        hasPreamble(content),
+        "architect.md missing LAST action/tool call before returning preamble"
+      );
+    });
+    test("narration + violation phrases", () => {
+      assert.ok(
+        content.includes(REQUIRED_NARRATION_PHRASE) && content.includes(REQUIRED_VIOLATION_PHRASE),
+        "architect.md missing narration/contract-violation phrases"
+      );
+    });
+    test("role-specific: write-handoff keyword", () => {
+      assert.ok(
+        content.includes("write-handoff"),
+        "architect.md HARD CONTRACT missing write-handoff keyword"
+      );
+    });
+    test("role-specific: Agent dispatch keyword", () => {
+      assert.ok(
+        content.includes("Agent"),
+        "architect.md HARD CONTRACT missing Agent dispatch keyword"
+      );
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(content.includes(FEAT_161_CITE), "architect.md missing FEAT-161 cite-back");
+    });
+    test("placement: after Custom instructions, before Golden Path (tactical heading)", () => {
+      const customIdx = content.indexOf("## Custom instructions");
+      const contractIdx = content.indexOf(HARD_CONTRACT_HEADING);
+      const goldenPathIdx = content.indexOf("## Golden Path");
+      assert.ok(contractIdx !== -1, "architect.md HARD CONTRACT heading not found");
+      assert.ok(customIdx !== -1, "architect.md missing Custom instructions section");
+      assert.ok(goldenPathIdx !== -1, "architect.md missing Golden Path heading");
+      assert.ok(
+        contractIdx > customIdx,
+        "architect.md HARD CONTRACT must appear after Custom instructions"
+      );
+      assert.ok(
+        contractIdx < goldenPathIdx,
+        "architect.md HARD CONTRACT must appear before Golden Path"
+      );
+    });
+  });
+
+  describe("inspector-verifier (newly added)", () => {
+    const content = readAgent("inspector-verifier");
+    test("heading present", () => {
+      assert.ok(
+        content.includes(HARD_CONTRACT_HEADING),
+        "inspector-verifier.md missing HARD CONTRACT heading"
+      );
+    });
+    test("required preamble phrase", () => {
+      assert.ok(
+        hasPreamble(content),
+        "inspector-verifier.md missing LAST action/tool call before returning preamble"
+      );
+    });
+    test("narration + violation phrases", () => {
+      assert.ok(
+        content.includes(REQUIRED_NARRATION_PHRASE) && content.includes(REQUIRED_VIOLATION_PHRASE),
+        "inspector-verifier.md missing narration/contract-violation phrases"
+      );
+    });
+    test("role-specific: write-review-result keyword", () => {
+      assert.ok(
+        content.includes("write-review-result"),
+        "inspector-verifier.md HARD CONTRACT missing write-review-result keyword"
+      );
+    });
+    test("role-specific: write-validation-result keyword", () => {
+      assert.ok(
+        content.includes("write-validation-result"),
+        "inspector-verifier.md HARD CONTRACT missing write-validation-result keyword"
+      );
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(
+        content.includes(FEAT_161_CITE),
+        "inspector-verifier.md missing FEAT-161 cite-back"
+      );
+    });
+    test("placement: after Custom instructions, before Workflow (tactical heading)", () => {
+      const customIdx = content.indexOf("## Custom instructions");
+      const contractIdx = content.indexOf(HARD_CONTRACT_HEADING);
+      const workflowIdx = content.indexOf("## Workflow");
+      assert.ok(contractIdx !== -1, "inspector-verifier.md HARD CONTRACT heading not found");
+      assert.ok(customIdx !== -1, "inspector-verifier.md missing Custom instructions section");
+      assert.ok(workflowIdx !== -1, "inspector-verifier.md missing Workflow heading");
+      assert.ok(
+        contractIdx > customIdx,
+        "inspector-verifier.md HARD CONTRACT must appear after Custom instructions"
+      );
+      assert.ok(
+        contractIdx < workflowIdx,
+        "inspector-verifier.md HARD CONTRACT must appear before Workflow"
+      );
+    });
+  });
+
+  describe("integrator (newly added)", () => {
+    const content = readAgent("integrator");
+    test("heading present", () => {
+      assert.ok(
+        content.includes(HARD_CONTRACT_HEADING),
+        "integrator.md missing HARD CONTRACT heading"
+      );
+    });
+    test("required preamble phrase", () => {
+      assert.ok(
+        hasPreamble(content),
+        "integrator.md missing LAST action/tool call before returning preamble"
+      );
+    });
+    test("narration + violation phrases", () => {
+      assert.ok(
+        content.includes(REQUIRED_NARRATION_PHRASE) && content.includes(REQUIRED_VIOLATION_PHRASE),
+        "integrator.md missing narration/contract-violation phrases"
+      );
+    });
+    test("role-specific: write-handoff keyword", () => {
+      assert.ok(
+        content.includes("write-handoff"),
+        "integrator.md HARD CONTRACT missing write-handoff keyword"
+      );
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(content.includes(FEAT_161_CITE), "integrator.md missing FEAT-161 cite-back");
+    });
+    test("placement: after Custom instructions, before Procedure of record (tactical heading)", () => {
+      const customIdx = content.indexOf("## Custom instructions");
+      const contractIdx = content.indexOf(HARD_CONTRACT_HEADING);
+      const procedureIdx = content.indexOf("## Procedure of record");
+      assert.ok(contractIdx !== -1, "integrator.md HARD CONTRACT heading not found");
+      assert.ok(customIdx !== -1, "integrator.md missing Custom instructions section");
+      assert.ok(procedureIdx !== -1, "integrator.md missing Procedure of record heading");
+      assert.ok(
+        contractIdx > customIdx,
+        "integrator.md HARD CONTRACT must appear after Custom instructions"
+      );
+      assert.ok(
+        contractIdx < procedureIdx,
+        "integrator.md HARD CONTRACT must appear before Procedure of record"
+      );
+    });
+  });
+
+  describe("release-engineer (newly added)", () => {
+    const content = readAgent("release-engineer");
+    test("heading present", () => {
+      assert.ok(
+        content.includes(HARD_CONTRACT_HEADING),
+        "release-engineer.md missing HARD CONTRACT heading"
+      );
+    });
+    test("required preamble phrase", () => {
+      assert.ok(
+        hasPreamble(content),
+        "release-engineer.md missing LAST action/tool call before returning preamble"
+      );
+    });
+    test("narration + violation phrases", () => {
+      assert.ok(
+        content.includes(REQUIRED_NARRATION_PHRASE) && content.includes(REQUIRED_VIOLATION_PHRASE),
+        "release-engineer.md missing narration/contract-violation phrases"
+      );
+    });
+    test("role-specific: write-deployment-check keyword", () => {
+      assert.ok(
+        content.includes("write-deployment-check"),
+        "release-engineer.md HARD CONTRACT missing write-deployment-check keyword"
+      );
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(content.includes(FEAT_161_CITE), "release-engineer.md missing FEAT-161 cite-back");
+    });
+    test("placement: after Custom instructions, before deployment-specific content", () => {
+      const customIdx = content.indexOf("## Custom instructions");
+      const contractIdx = content.indexOf(HARD_CONTRACT_HEADING);
+      assert.ok(contractIdx !== -1, "release-engineer.md HARD CONTRACT heading not found");
+      assert.ok(customIdx !== -1, "release-engineer.md missing Custom instructions section");
+      assert.ok(
+        contractIdx > customIdx,
+        "release-engineer.md HARD CONTRACT must appear after Custom instructions"
+      );
+    });
+  });
+
+  describe("document-writer (newly added)", () => {
+    const content = readAgent("document-writer");
+    test("heading present", () => {
+      assert.ok(
+        content.includes(HARD_CONTRACT_HEADING),
+        "document-writer.md missing HARD CONTRACT heading"
+      );
+    });
+    test("required preamble phrase", () => {
+      assert.ok(
+        hasPreamble(content),
+        "document-writer.md missing LAST action/tool call before returning preamble"
+      );
+    });
+    test("narration + violation phrases", () => {
+      assert.ok(
+        content.includes(REQUIRED_NARRATION_PHRASE) && content.includes(REQUIRED_VIOLATION_PHRASE),
+        "document-writer.md missing narration/contract-violation phrases"
+      );
+    });
+    test("role-specific: write-handoff keyword", () => {
+      assert.ok(
+        content.includes("write-handoff"),
+        "document-writer.md HARD CONTRACT missing write-handoff keyword"
+      );
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(content.includes(FEAT_161_CITE), "document-writer.md missing FEAT-161 cite-back");
+    });
+    test("placement: before Your output contract section", () => {
+      const contractIdx = content.indexOf(HARD_CONTRACT_HEADING);
+      const outputContractIdx = content.indexOf("## Your output contract");
+      assert.ok(contractIdx !== -1, "document-writer.md HARD CONTRACT heading not found");
+      assert.ok(
+        outputContractIdx !== -1,
+        "document-writer.md missing Your output contract heading"
+      );
+      assert.ok(
+        contractIdx < outputContractIdx,
+        "document-writer.md HARD CONTRACT must appear before Your output contract section"
+      );
+    });
+  });
+
+  describe("refactor (newly added)", () => {
+    const content = readAgent("refactor");
+    test("heading present", () => {
+      assert.ok(
+        content.includes(HARD_CONTRACT_HEADING),
+        "refactor.md missing HARD CONTRACT heading"
+      );
+    });
+    test("required preamble phrase", () => {
+      assert.ok(
+        hasPreamble(content),
+        "refactor.md missing LAST action/tool call before returning preamble"
+      );
+    });
+    test("narration + violation phrases", () => {
+      assert.ok(
+        content.includes(REQUIRED_NARRATION_PHRASE) && content.includes(REQUIRED_VIOLATION_PHRASE),
+        "refactor.md missing narration/contract-violation phrases"
+      );
+    });
+    test("role-specific: write-handoff keyword", () => {
+      assert.ok(
+        content.includes("write-handoff"),
+        "refactor.md HARD CONTRACT missing write-handoff keyword"
+      );
+    });
+    test("FEAT-161 cite-back", () => {
+      assert.ok(content.includes(FEAT_161_CITE), "refactor.md missing FEAT-161 cite-back");
+    });
+    test("placement: after Custom instructions, before Concern areas content", () => {
+      const customIdx = content.indexOf("## Custom instructions");
+      const contractIdx = content.indexOf(HARD_CONTRACT_HEADING);
+      const concernIdx = content.indexOf("## Concern areas");
+      assert.ok(contractIdx !== -1, "refactor.md HARD CONTRACT heading not found");
+      assert.ok(customIdx !== -1, "refactor.md missing Custom instructions section");
+      assert.ok(concernIdx !== -1, "refactor.md missing Concern areas heading");
+      assert.ok(
+        contractIdx > customIdx,
+        "refactor.md HARD CONTRACT must appear after Custom instructions"
+      );
+      assert.ok(
+        contractIdx < concernIdx,
+        "refactor.md HARD CONTRACT must appear before Concern areas"
+      );
+    });
+  });
 });

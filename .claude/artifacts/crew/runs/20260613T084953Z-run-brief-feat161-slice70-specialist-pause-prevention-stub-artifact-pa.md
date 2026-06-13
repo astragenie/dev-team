@@ -1,0 +1,51 @@
+---
+feature: FEAT-161
+status: active
+---
+# Run Brief: FEAT161 SLICE70: Specialist-pause prevention — stub-artifact pattern + HARD OUTPUT CONTRACT in agent prompts
+
+- Created: 2026-06-13T08:49:53.274Z
+- Tier: full
+- Goal: Specialist dispatches (`crew:lead`, implementer roles, review roles, validation roles) regularly **pause mid-investigation and return without completing their mandatory `write-handoff` / `write-review-result` / `write-validation-result` step**. The parent receives narration ("I'll now check X", "Let me dispatch Y") with no tool call attached. The agentic loop's standard termination condition reads this as the final answer and returns. Parent has no artifact path, gate is unresolved, parent has t
+- Mode: autonomous
+- Pace: unattended
+- Owner: loop
+- Status: active
+- Summary: -
+- Scope:
+  - - Add `## HARD OUTPUT CONTRACT (read first
+  - every dispatch)` block to 6 agent prompts: `architect.md`
+  - `inspector-verifier.md`
+  - `integrator.md`
+  - `release-engineer.md`
+  - `document-writer.md`
+  - `refactor.md`
+- Block placement: after frontmatter + identity anchor (where present)
+  - before any tactical heading
+- Block contents per role: header
+  - preamble
+  - role-specific valid-last-tool-call list
+  - cite-back to FEAT-161
+- Extend `tests/agent-prompt-content.test.ts` with `## HARD OUTPUT CONTRACT — Prong A coverage` block asserting presence
+  - position
+  - required phrases
+  - role-specific substrings
+  - and FEAT cite-back across all 12 targeted agents
+- Out Of Scope:
+  - - The 6 already-compliant agents (`lead`
+  - `fullstack-dev`
+  - `frontend-dev`
+  - `backend-dev`
+  - `inspector`
+  - `verifier`) — text MUST NOT be reworded or moved (AC-3 enforces this)
+- Prong B (stub-artifact pattern) — separate SLICE-B
+- Prong C (CLI promoted-from-stub log) — deferred
+- Excluded agents (no dispatch surface): `investigator`
+  - `researcher`
+  - `qa-expert`
+  - `performance-engineer`
+  - `uxdesigner`
+  - `p
+- Planned Files: -
+- Next Step: Begin implementation
+
