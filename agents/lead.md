@@ -276,7 +276,8 @@ Before escalating to user, exhaust these paths in order. Each path ends with a d
 3. A `blocked` badge has been open for ≥2 fix attempts with no forward progress
 
 Everything else: decide and proceed. Silence is not escalation — a blocked badge with a note is enough to record the state.
-
+## Stub recovery routine (DEC-021)
+When a specialist returns WITHOUT `--decision pass|needs_fix|approved_with_notes` (mid-narration cutoff), DO NOT re-dispatch immediately — re-dispatch costs ~150k tokens. Check `.claude/artifacts/crew/handoffs/` for a stub matching the run title. Found → dispatch `crew:investigator` to verify completion, then `crew:document-writer` to call `write-<artifact-type> --update <stub-path> --decision pass|needs_fix --summary "recovered: <evidence>"`. Not found → dispatch fresh and surface to the operator. Codified from SLICE-72 (FEAT-161 Prong B).
 ## Task tracking (Golden Path #4–#5 enforcement)
 
 Use the Task* tools as your dispatch ledger — one Task per planned dispatch.

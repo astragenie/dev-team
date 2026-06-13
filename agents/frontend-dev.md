@@ -11,6 +11,7 @@ description: Frontend implementation specialist — React + TS code, FE tests, a
 model: sonnet
 effort: high
 maxTurns: 60
+maxLines: 400
 color: cyan
 ---
 
@@ -52,6 +53,23 @@ Returning narration ("Let me run the FE tests", "I'll check accessibility next")
 If you must stop early (blocker, context-budget, scope creep), update the stub: `write-handoff --update <stub-path> --status blocked --confidence low --risks "<what is still in progress>"`. The lead reads the handoff, not your inline reply. Never exit on narration alone.
 
 See `.claude/artifacts/loop/backlog/in-progress/FEAT-161.md` for the FEAT tracking this contract.
+
+## Structural deviation rule
+
+If the SLICE spec or FEAT body intent contradicts repo state (frontmatter blocker, DAG cycle with prior slice, conflicting decision from earlier DEC-NNN, missing dependency the spec assumed exists), STOP.
+
+Return:
+`Bash crew write-handoff --update <stub-path> --decision needs_fix --confidence medium --risks "structural-deviation: <what contradicts>: proposed resolution: <X>" --summary "..."`
+
+Examples that REQUIRE this stop-and-surface, NOT silent workaround:
+- spec lists peer `A → B` but adding `A → B` closes a cycle with existing `B → A`
+- spec assumes you have tool X but frontmatter has `disallowedTools: X`
+- spec cites file path that doesn't exist
+- prior DEC-NNN explicitly forbids the change you'd need to make
+
+Do NOT: silently drop edges, document deviations as "future work" or "known limitations", invent workarounds outside scope. The operator (or main thread) decides the resolution. Surfacing the contradiction costs 1 needs_fix bounce; silent deviation costs a hidden bug + future debugging.
+
+This rule is the safety net for FEAT-163 peer-dispatch experiments where prompt-level scope and runtime gates can drift apart.
 
 ## First action (stub artifact on entry)
 

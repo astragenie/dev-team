@@ -1057,3 +1057,110 @@ describe("## First action — Prong B coverage", () => {
     });
   });
 });
+
+// ── ## Structural deviation rule — implementer coverage ───────────────────────
+//
+// SLICE-77: Every implementer agent must contain the structural-deviation rule
+// so builders surface spec↔repo contradictions (DAG cycles, disallowedTools
+// mismatches, missing files) as needs_fix instead of silently working around them.
+//
+// Assertions per agent:
+//   (a) ## Structural deviation rule heading present
+//   (b) "decision needs_fix" literal (the return instruction)
+//   (c) "structural-deviation:" literal (the risks-field prefix convention)
+//   (d) anti-silent-workaround warning ("silently drop" OR "silent workaround")
+// ─────────────────────────────────────────────────────────────────────────────
+
+const STRUCTURAL_DEVIATION_HEADING = "## Structural deviation rule";
+const DECISION_NEEDS_FIX = "decision needs_fix";
+const STRUCTURAL_DEVIATION_PREFIX = "structural-deviation:";
+const ANTI_SILENT_WORKAROUND_A = "silently drop";
+const ANTI_SILENT_WORKAROUND_B = "silent workaround";
+
+describe("## Structural deviation rule — implementer coverage", () => {
+  for (const agentName of ["backend-dev", "frontend-dev", "fullstack-dev"] as const) {
+    describe(agentName, () => {
+      const content = readAgent(agentName);
+
+      test("structural deviation heading present", () => {
+        assert.ok(
+          content.includes(STRUCTURAL_DEVIATION_HEADING),
+          `${agentName}.md missing "${STRUCTURAL_DEVIATION_HEADING}" heading`
+        );
+      });
+
+      test("decision needs_fix instruction present", () => {
+        assert.ok(
+          content.includes(DECISION_NEEDS_FIX),
+          `${agentName}.md missing "${DECISION_NEEDS_FIX}" return instruction`
+        );
+      });
+
+      test("structural-deviation: risks-field prefix present", () => {
+        assert.ok(
+          content.includes(STRUCTURAL_DEVIATION_PREFIX),
+          `${agentName}.md missing "${STRUCTURAL_DEVIATION_PREFIX}" risks-field prefix convention`
+        );
+      });
+
+      test("anti-silent-workaround warning present", () => {
+        const hasWarning =
+          content.includes(ANTI_SILENT_WORKAROUND_A) || content.includes(ANTI_SILENT_WORKAROUND_B);
+        assert.ok(
+          hasWarning,
+          `${agentName}.md missing anti-silent-workaround warning ("silently drop" or "silent workaround")`
+        );
+      });
+    });
+  }
+});
+
+// ── ## Stub recovery routine — lead coverage ─────────────────────────────────
+//
+// SLICE-77: lead.md must contain the stub recovery routine so the orchestrator
+// knows to check for in-progress stubs before re-dispatching a specialist that
+// returned without a decision (mid-narration pause, DEC-021).
+//
+// Assertions:
+//   (a) ## Stub recovery routine heading present (section marker)
+//   (b) "--update <stub-path>" substring (the recovery CLI pattern)
+//   (c) "DEC-021" cite-back
+//   (d) "re-dispatch costs" OR "re-dispatch" substring (cost-of-re-dispatch rationale)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const STUB_RECOVERY_HEADING = "## Stub recovery routine";
+const STUB_RECOVERY_UPDATE = "--update <stub-path>";
+const STUB_RECOVERY_DEC = "DEC-021";
+const STUB_RECOVERY_REDISPATCH = "re-dispatch";
+
+describe("## Stub recovery routine — lead coverage", () => {
+  const content = readAgent("lead");
+
+  test("stub recovery heading present", () => {
+    assert.ok(
+      content.includes(STUB_RECOVERY_HEADING),
+      `lead.md missing "${STUB_RECOVERY_HEADING}" heading`
+    );
+  });
+
+  test("--update <stub-path> recovery pattern present", () => {
+    assert.ok(
+      content.includes(STUB_RECOVERY_UPDATE),
+      `lead.md missing "${STUB_RECOVERY_UPDATE}" recovery CLI pattern`
+    );
+  });
+
+  test("DEC-021 cite-back present", () => {
+    assert.ok(
+      content.includes(STUB_RECOVERY_DEC),
+      `lead.md missing "${STUB_RECOVERY_DEC}" cite-back`
+    );
+  });
+
+  test("re-dispatch cost rationale present", () => {
+    assert.ok(
+      content.includes(STUB_RECOVERY_REDISPATCH),
+      `lead.md missing re-dispatch cost rationale substring`
+    );
+  });
+});
