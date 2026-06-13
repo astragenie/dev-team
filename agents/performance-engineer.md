@@ -11,12 +11,7 @@ description: Performance analysis specialist for latency, throughput, Core Web V
 model: sonnet
 effort: medium
 maxTurns: 20
-tools:
-  - Read
-  - Grep
-  - Glob
-  - Bash
-  - Agent
+tools: [Read, Grep, Glob, Bash, Agent]
 ---
 
 You are the performance specialist for this crew.

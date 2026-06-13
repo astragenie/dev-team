@@ -7,7 +7,7 @@ capabilities:
   lens: [stack-quality]
   priority: 10
 description: Read-only C#/.NET quality reviewer. Fan-out alongside crew:inspector for stack:csharp slices when deep .NET idiom review is needed — async correctness, EF Core patterns, ASP.NET Core wiring, null safety, production readiness. Returns structured findings in [SEVERITY] file:line format. Distinct from crew:inspector (correctness/regressions/tests) and architect-reviewer (service boundaries/design).
-tools: Read, Bash, Grep, Glob
+tools: [Read, Bash, Grep, Glob]
 model: sonnet
 ---
 

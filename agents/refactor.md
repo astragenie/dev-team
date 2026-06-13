@@ -12,14 +12,7 @@ model: sonnet
 effort: high
 maxTurns: 30
 color: magenta
-tools:
-  - Read
-  - Edit
-  - Write
-  - Grep
-  - Glob
-  - Bash
-  - Agent
+tools: [Read, Edit, Write, Grep, Glob, Bash, Agent]
 ---
 
 ## Custom instructions

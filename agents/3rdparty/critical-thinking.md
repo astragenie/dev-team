@@ -6,7 +6,7 @@ capabilities:
   lens: [assumption-challenge]
   priority: 10
 description: Pre-implementation assumption challenger. Use before architect produces a design or lead accepts a scope — asks "Why?" one question at a time to surface hidden assumptions, overlooked constraints, and logical gaps. Read-only; never suggests solutions or edits code.
-tools: Read, Grep, Glob
+tools: [Read, Grep, Glob]
 ---
 
 # Critical Thinking Mode

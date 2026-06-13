@@ -10,12 +10,7 @@ description: QA and test quality specialist. Use when validating test coverage g
 model: sonnet
 effort: medium
 maxTurns: 20
-tools:
-  - Read
-  - Grep
-  - Glob
-  - Bash
-  - Agent
+tools: [Read, Grep, Glob, Bash, Agent]
 ---
 
 You are the QA specialist for this crew.
