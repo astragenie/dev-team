@@ -6,7 +6,7 @@ when that repo is installed at a sibling path; otherwise this file is
 self-contained and authoritative. The Standards repo is provenance and
 cross-team alignment, not a runtime dependency.
 
-The lint config (`eslint.config.mjs`) enforces the mechanical parts.
+Biome (`biome.json`) enforces the mechanical parts.
 This doc records the reasoning so PR reviewers can apply judgment in
 cases lint cannot reach.
 
@@ -41,9 +41,8 @@ cases lint cannot reach.
 - Named functions (`function foo() {}` / `async function foo() {}`)
   over arrow assigned to const, **except** when stored in a registry
   table or passed inline — arrow there is the right idiom.
-- Default to ≤ 80 lines per function. ESLint warns at 120. Beyond
-  that, extract a helper.
-- Default to cyclomatic complexity ≤ 12. ESLint warns at 15. Beyond
+- Default to ≤ 80 lines per function. Beyond that, extract a helper.
+- Default to cyclomatic complexity ≤ 10. Biome warns at 10. Beyond
   that, table-driven dispatch or early returns are usually the fix.
 
 ## Error returns

@@ -48,8 +48,8 @@ External-plugin skills (`context7`, `microsoft-docs:*`, `plugin-dev:*`, `terrafo
 Requires Node 22.6+ (strip-types runtime; see `docs/superpowers/specs/2026-06-07-ts-migration-and-perf-design.md`).
 
 - `bun run test` — full test suite via Bun (`bun test --parallel --timeout 30000 tests/`; requires Bun 1.3+); `bun run test:node` is the Node.js fallback.
-- `bun run lint` — ESLint flat config.
-- `bun run format` / `bun run format:check` — Prettier.
+- `bun run lint` — Biome lint.
+- `bun run format` / `bun run format:check` — Biome format.
 - `bun run e2e:smoke` — end-to-end smoke against a temp sample repo.
 - `node ./scripts/validate-manifests.ts` — manifest sanity check (CLI scripts run on Node per ADR-002).
 

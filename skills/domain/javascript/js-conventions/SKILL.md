@@ -5,7 +5,7 @@ stack: javascript
 description: JavaScript / Node ESM conventions — module shape, SOLID idioms, error handling, lint rules. Use when touching *.mjs or *.js files.
 owner: sergeymilashico
 last_reviewed: 2026-05-24
-triggers: ["*.mjs", "*.js", "node", "javascript", "eslint.config"]
+triggers: ["*.mjs", "*.js", "node", "javascript", "biome.json"]
 ---
 
 # JavaScript / Node ESM Conventions
@@ -44,8 +44,8 @@ When unsure of a library's current API surface (e.g. `vite`, `eslint`, `vitest`,
 ## Functions
 
 - Named `function foo()` over `const foo = () =>` — except registry tables and inline callbacks.
-- Default ≤80 lines per function (ESLint warns at 120).
-- Default cyclomatic complexity ≤12 (ESLint warns at 15).
+- Default ≤80 lines per function.
+- Default cyclomatic complexity ≤10 (Biome warns at 10).
 - Beyond budget: extract helper, table-driven dispatch, predicate extraction, or early returns.
 
 ## Tables over chains
@@ -91,19 +91,17 @@ async function bestEffort(fn) {
 - Optional reads: `.catch(() => null)` — don't silently swallow real I/O errors.
 - Write-atomically for config-like files to avoid spurious mtime churn.
 
-## Lint rules (ESLint flat config)
+## Lint rules (Biome)
 
 | Rule | Setting |
 |---|---|
-| `no-var` | error |
-| `prefer-const` | error |
-| `eqeqeq` | error, "smart" |
-| `no-unused-vars` | warn (`_`-prefix tolerated) |
-| `no-implicit-globals` | error (every export explicit) |
-| `max-lines-per-function` | warn 120 (off for tests) |
-| `complexity` | warn 15 (off for tests) |
+| `noVar` | error |
+| `useConst` | error |
+| `noDoubleEquals` | error (ignoreNull — allows `== null`) |
+| `noUnusedVariables` | warn (`_`-prefix tolerated) |
+| `noExcessiveCognitiveComplexity` | warn 10 (off for tests) |
 
-Prettier: `"semi": true`, `"singleQuote": false`, `"trailingComma": "none"`, `"printWidth": 100`, `"tabWidth": 2`, `"arrowParens": "always"`.
+Formatter: `semi: true`, `quoteStyle: double`, `trailingCommas: none`, `lineWidth: 100`, `indentWidth: 2`, `arrowParentheses: always`.
 
 CI gate: `bun run lint && bun run format:check && bun test --parallel` on every push.
 
@@ -122,7 +120,7 @@ CI gate: `bun run lint && bun run format:check && bun test --parallel` on every 
 - Comments that narrate what the code does instead of why.
 - Test files named after release versions (`v019-*.test.mjs`).
 - Inline magic numbers.
-- `// eslint-disable-next-line` without an inline reason.
+- `// biome-ignore lint/<category>/<rule>:` without an inline reason.
 
 ## Done criteria
 
