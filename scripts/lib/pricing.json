@@ -9,25 +9,25 @@
   },
   "models": {
     "claude-opus-4": {
-      "input": 15.00,
+      "input": 15.0,
       "cache_create_5m": 18.75,
-      "cache_create_1h": 30.00,
-      "cache_read": 1.50,
-      "output": 75.00
+      "cache_create_1h": 30.0,
+      "cache_read": 1.5,
+      "output": 75.0
     },
     "claude-sonnet-4": {
-      "input": 3.00,
+      "input": 3.0,
       "cache_create_5m": 3.75,
-      "cache_create_1h": 6.00,
-      "cache_read": 0.30,
-      "output": 15.00
+      "cache_create_1h": 6.0,
+      "cache_read": 0.3,
+      "output": 15.0
     },
     "claude-haiku-4": {
-      "input": 1.00,
+      "input": 1.0,
       "cache_create_5m": 1.25,
-      "cache_create_1h": 2.00,
-      "cache_read": 0.10,
-      "output": 5.00
+      "cache_create_1h": 2.0,
+      "cache_read": 0.1,
+      "output": 5.0
     }
   },
   "fallback": "claude-sonnet-4"

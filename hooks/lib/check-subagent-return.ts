@@ -8,7 +8,12 @@ import { isEnabled, readCrewConfig } from "../../scripts/lib/features-service.ts
 import { recordDispatchEnd } from "../../scripts/lib/dispatch-timing.ts";
 import { loadAndDeleteDispatchHandle } from "./dispatch-handle-store.ts";
 
-async function logEvent(repoPath: string, code: string, sessionId: string, detail: string): Promise<void> {
+async function logEvent(
+  repoPath: string,
+  code: string,
+  sessionId: string,
+  detail: string
+): Promise<void> {
   try {
     const dir = path.join(repoPath, ".claude", "logs");
     await fs.mkdir(dir, { recursive: true });
@@ -67,7 +72,9 @@ function extractBody(toolResponse: unknown): string | null {
   return null;
 }
 
-function parseInput(raw: string): { session_id: string; cwd: string; tool_name: string; body: string } | null {
+function parseInput(
+  raw: string
+): { session_id: string; cwd: string; tool_name: string; body: string } | null {
   try {
     const obj = JSON.parse(raw);
     if (
@@ -94,7 +101,10 @@ function parseInput(raw: string): { session_id: string; cwd: string; tool_name: 
   }
 }
 
-export async function runCheckSubagentReturnHook(raw: string, env: NodeJS.ProcessEnv): Promise<string | null> {
+export async function runCheckSubagentReturnHook(
+  raw: string,
+  env: NodeJS.ProcessEnv
+): Promise<string | null> {
   if (env.CREW_SUBAGENT_INLINE_THRESHOLD === "0") return null;
   const input = parseInput(raw);
   if (input === null) return null;
@@ -119,7 +129,7 @@ export async function runCheckSubagentReturnHook(raw: string, env: NodeJS.Proces
       bashDurationMs: 0,
       skillLoadCount: 0,
       tokenIn: usageMetrics.totalTokens,
-      tokenOut: 0,
+      tokenOut: 0
     });
   }
 

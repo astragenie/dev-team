@@ -92,7 +92,10 @@ async function countInWindowAssistantTurns(
 export async function autoDetectSourceProject({
   startedAt,
   completedAt
-}: { startedAt?: string; completedAt?: string } = {}): Promise<string | null> {
+}: {
+  startedAt?: string;
+  completedAt?: string;
+} = {}): Promise<string | null> {
   if (!startedAt) return null;
   const endIso = completedAt ?? new Date().toISOString();
   const startMs = Date.parse(startedAt);

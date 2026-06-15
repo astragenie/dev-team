@@ -162,7 +162,9 @@ async function acquireLock(lockPath: string, timeout = 5000): Promise<void> {
         const age = Date.now() - stat.mtimeMs;
         if (age > staleThreshold) {
           // Lock is stale, remove it and retry
-          await fs.unlink(lockPath).catch(() => {});
+          await fs.unlink(lockPath).catch(() => {
+            /* ignore stale-lock unlink errors */
+          });
           continue;
         }
       } catch {

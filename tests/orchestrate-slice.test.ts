@@ -92,7 +92,11 @@ test('classifySlice: SPLIT_BUILD false when slice has skip: ["split-build"]', as
     '---\nslice: SLICE-903\ntags: [surface:ui, surface:api, stack:react, stack:csharp]\nskip: ["split-build"]\n---\n\n# SLICE-903\n\n## Acceptance Criteria\n- demo\n',
     "utf8"
   );
-  t.after(() => unlink(tmp).catch(() => {}));
+  t.after(() =>
+    unlink(tmp).catch(() => {
+      /* ignore cleanup errors */
+    })
+  );
   const result = await classifySlice({ slicePath: tmp });
   assert.equal(result.SPLIT_BUILD, false);
 });

@@ -1,6 +1,10 @@
 // Core gate-timer tap for PreToolUse/PostToolUse Bash hooks (FEAT-150).
 // No stdin/stdout/process.exit — the entry shims own process I/O.
-import { type GateHandle, startGateTimer, endGateTimer } from "../../scripts/lib/bash-gate-timer.ts";
+import {
+  type GateHandle,
+  startGateTimer,
+  endGateTimer
+} from "../../scripts/lib/bash-gate-timer.ts";
 
 /** Bounded map of pending gate handles keyed by session+command identity. */
 const _gateHandles = new Map<string, GateHandle>();
@@ -38,9 +42,7 @@ export function recordGateEnd(sessionId: string, command: string, exitCode: numb
 }
 
 /** Parse PreToolUse Bash payload. */
-export function parsePreInput(
-  raw: string
-): { sessionId: string; command: string } | null {
+export function parsePreInput(raw: string): { sessionId: string; command: string } | null {
   try {
     const obj = JSON.parse(raw) as Record<string, unknown>;
     if (

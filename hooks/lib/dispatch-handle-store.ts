@@ -10,13 +10,7 @@ import path from "node:path";
 import { type DispatchHandle } from "../../scripts/lib/dispatch-timing.ts";
 
 function storeDir(pluginRoot: string): string {
-  return path.join(
-    pluginRoot,
-    ".claude",
-    "state",
-    "crew",
-    "dispatch-timing"
-  );
+  return path.join(pluginRoot, ".claude", "state", "crew", "dispatch-timing");
 }
 
 function storePath(pluginRoot: string, sessionId: string): string {
