@@ -21,40 +21,38 @@ function percentile(sorted: number[], p: number): number {
   return sorted[idx]!;
 }
 
-test(
-  `hook cold start (${RUNTIME}): median + p95 over ${RUNS} cold spawns`,
-  { timeout: 30000 },
-  () => {
-    const samples: number[] = [];
-    const args = RUNTIME === "node" ? ["--experimental-strip-types", HOOK] : [HOOK];
-    for (let i = 0; i < RUNS; i++) {
-      const start = process.hrtime.bigint();
-      const res = spawnSync(RUNTIME, args, {
-        env: { ...process.env, CREW_COST_HYGIENE: "1" },
-        input: "{}\n"
-      });
-      const elapsedMs = Number(process.hrtime.bigint() - start) / 1_000_000;
-      assert.equal(res.status, 0);
-      samples.push(elapsedMs);
-    }
-    samples.sort((a, b) => a - b);
-    const p50 = percentile(samples, 0.5);
-    const p95 = percentile(samples, 0.95);
-    console.log(`hook cold start (${RUNTIME}) p50=${p50.toFixed(1)}ms p95=${p95.toFixed(1)}ms`);
-    if (RUNTIME === "bun") {
-      if (IS_WINDOWS) {
-        // Windows: Bun cold start floor ~88ms standalone, but parallel test
-        // load pushes p95 up. Linux/CI is the gating environment for the
-        // tight spec target — Windows uses load-aware thresholds.
-        console.log(
-          "(Windows: p50 target relaxed to <=120ms, p95 <=250ms; Linux/CI asserts <=60ms / <=120ms)"
-        );
-        assert.ok(p50 <= 120, `Windows p50 ${p50.toFixed(1)}ms should be <= 120ms`);
-        assert.ok(p95 <= 250, `Windows p95 ${p95.toFixed(1)}ms should be <= 250ms`);
-      } else {
-        assert.ok(p50 <= 60, `Linux p50 ${p50.toFixed(1)}ms should be <= 60ms`);
-        assert.ok(p95 <= 120, `Linux p95 ${p95.toFixed(1)}ms should be <= 120ms`);
-      }
+test(`hook cold start (${RUNTIME}): median + p95 over ${RUNS} cold spawns`, {
+  timeout: 30000
+}, () => {
+  const samples: number[] = [];
+  const args = RUNTIME === "node" ? ["--experimental-strip-types", HOOK] : [HOOK];
+  for (let i = 0; i < RUNS; i++) {
+    const start = process.hrtime.bigint();
+    const res = spawnSync(RUNTIME, args, {
+      env: { ...process.env, CREW_COST_HYGIENE: "1" },
+      input: "{}\n"
+    });
+    const elapsedMs = Number(process.hrtime.bigint() - start) / 1_000_000;
+    assert.equal(res.status, 0);
+    samples.push(elapsedMs);
+  }
+  samples.sort((a, b) => a - b);
+  const p50 = percentile(samples, 0.5);
+  const p95 = percentile(samples, 0.95);
+  console.log(`hook cold start (${RUNTIME}) p50=${p50.toFixed(1)}ms p95=${p95.toFixed(1)}ms`);
+  if (RUNTIME === "bun") {
+    if (IS_WINDOWS) {
+      // Windows: Bun cold start floor ~88ms standalone, but parallel test
+      // load pushes p95 up. Linux/CI is the gating environment for the
+      // tight spec target — Windows uses load-aware thresholds.
+      console.log(
+        "(Windows: p50 target relaxed to <=120ms, p95 <=250ms; Linux/CI asserts <=60ms / <=120ms)"
+      );
+      assert.ok(p50 <= 120, `Windows p50 ${p50.toFixed(1)}ms should be <= 120ms`);
+      assert.ok(p95 <= 250, `Windows p95 ${p95.toFixed(1)}ms should be <= 250ms`);
+    } else {
+      assert.ok(p50 <= 60, `Linux p50 ${p50.toFixed(1)}ms should be <= 60ms`);
+      assert.ok(p95 <= 120, `Linux p95 ${p95.toFixed(1)}ms should be <= 120ms`);
     }
   }
-);
+});

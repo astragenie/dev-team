@@ -39,7 +39,11 @@ test("validateContracts reports drift when committed TS differs from regenerated
   const yamlPath = path.join(FIXTURE_DIR, "valid-feat.openapi.yaml");
   const driftedTsPath = path.join(FIXTURE_DIR, `drifted-contracts-${process.pid}-${Date.now()}.ts`);
   await writeFile(driftedTsPath, "// out of date\nexport const stale = true;\n", "utf8");
-  t.after(() => unlink(driftedTsPath).catch(() => {}));
+  t.after(() =>
+    unlink(driftedTsPath).catch(() => {
+      /* ignore cleanup errors */
+    })
+  );
   const result = await validateContracts({
     yamlPath,
     tsOutPath: driftedTsPath,

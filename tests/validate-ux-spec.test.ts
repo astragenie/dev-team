@@ -43,7 +43,11 @@ test("validateUxSpec fails when `## API touchpoints` section is absent", async (
     "---\ncontracts: tests/fixtures/openapi/valid-feat.openapi.yaml\n---\n\n# UX Spec\n\nno touchpoints section here.\n",
     "utf8"
   );
-  t.after(() => unlink(tmpPath).catch(() => {}));
+  t.after(() =>
+    unlink(tmpPath).catch(() => {
+      /* ignore cleanup errors */
+    })
+  );
   const result = await validateUxSpec({
     specPath: tmpPath,
     repoRoot: REPO_ROOT

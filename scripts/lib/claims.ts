@@ -140,7 +140,9 @@ async function acquireClaimsLock(repoPath: string): Promise<string> {
       try {
         const stat = await fs.stat(lockPath);
         if (Date.now() - stat.mtimeMs > LOCK_STALE_MS) {
-          await fs.unlink(lockPath).catch(() => {});
+          await fs.unlink(lockPath).catch(() => {
+            /* ignore stale-lock unlink errors */
+          });
           continue;
         }
       } catch {
@@ -158,7 +160,9 @@ async function acquireClaimsLock(repoPath: string): Promise<string> {
 }
 
 async function releaseClaimsLock(lockPath: string): Promise<void> {
-  await fs.unlink(lockPath).catch(() => {});
+  await fs.unlink(lockPath).catch(() => {
+    /* ignore already-deleted lock errors */
+  });
 }
 
 async function withClaimsLock<T>(repoPath: string, fn: () => Promise<T>): Promise<T> {

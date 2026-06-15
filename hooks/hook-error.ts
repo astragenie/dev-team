@@ -2,7 +2,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-export async function logHookError(repoPath: string, hookName: string, error: unknown): Promise<void> {
+export async function logHookError(
+  repoPath: string,
+  hookName: string,
+  error: unknown
+): Promise<void> {
   try {
     const dir = path.join(repoPath, ".claude", "logs");
     await fs.mkdir(dir, { recursive: true });

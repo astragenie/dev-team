@@ -5,7 +5,12 @@ import path from "node:path";
 import { runChecks } from "../../scripts/lib/preflight/checks.ts";
 import { isEnabled, readCrewConfig } from "../../scripts/lib/features-service.ts";
 
-async function logEvent(repoPath: string, code: string, sessionId: string, detail: string): Promise<void> {
+async function logEvent(
+  repoPath: string,
+  code: string,
+  sessionId: string,
+  detail: string
+): Promise<void> {
   try {
     const dir = path.join(repoPath, ".claude", "logs");
     await fs.mkdir(dir, { recursive: true });
@@ -21,7 +26,9 @@ async function logEvent(repoPath: string, code: string, sessionId: string, detai
   }
 }
 
-function parseInput(raw: string): { session_id: string; tool_name: string; command: string; cwd: string } | null {
+function parseInput(
+  raw: string
+): { session_id: string; tool_name: string; command: string; cwd: string } | null {
   try {
     const obj = JSON.parse(raw);
     if (
@@ -47,7 +54,10 @@ function parseInput(raw: string): { session_id: string; tool_name: string; comma
   }
 }
 
-export async function runPreflightShellHook(raw: string, env: NodeJS.ProcessEnv): Promise<string | null> {
+export async function runPreflightShellHook(
+  raw: string,
+  env: NodeJS.ProcessEnv
+): Promise<string | null> {
   if (env.CREW_TOOL_PREFLIGHT === "0") return null;
   const input = parseInput(raw);
   if (input === null) return null;

@@ -10,7 +10,12 @@ import {
   evictLRU
 } from "../../scripts/lib/cost-hygiene/state.ts";
 
-async function logEvent(repoPath: string, code: string, sessionId: string, detail: string): Promise<void> {
+async function logEvent(
+  repoPath: string,
+  code: string,
+  sessionId: string,
+  detail: string
+): Promise<void> {
   try {
     const dir = path.join(repoPath, ".claude", "logs");
     await fs.mkdir(dir, { recursive: true });
@@ -26,7 +31,9 @@ async function logEvent(repoPath: string, code: string, sessionId: string, detai
   }
 }
 
-function parseInput(raw: string): { session_id: string; file_path: string; content: string; cwd: string } | null {
+function parseInput(
+  raw: string
+): { session_id: string; file_path: string; content: string; cwd: string } | null {
   try {
     const obj = JSON.parse(raw);
     if (
@@ -67,13 +74,18 @@ async function loadState(
   }
 }
 
-export async function runRecordReadContentHook(raw: string, env: NodeJS.ProcessEnv): Promise<string | null> {
+export async function runRecordReadContentHook(
+  raw: string,
+  env: NodeJS.ProcessEnv
+): Promise<string | null> {
   if (env.CREW_COST_HYGIENE === "0") return null;
   const input = parseInput(raw);
   if (input === null) return null;
   const { session_id, file_path, content, cwd } = input;
   const absPath = path.resolve(cwd, file_path);
-  const state = await loadState(cwd, session_id, (msg) => logEvent(cwd, "state-load-fail", session_id, msg));
+  const state = await loadState(cwd, session_id, (msg) =>
+    logEvent(cwd, "state-load-fail", session_id, msg)
+  );
   if (state === null) return null;
   const updated = evictLRU(recordReadContent(state, absPath, content), absPath);
   try {

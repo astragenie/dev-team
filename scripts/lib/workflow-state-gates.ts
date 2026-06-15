@@ -164,9 +164,9 @@ export function createRun(fields: RunFields = {}): WorkflowRun {
 export function hasAnyWorkflowGate(run: WorkflowRun | null | undefined): boolean {
   return Boolean(
     run?.gates?.review ||
-    run?.gates?.validation ||
-    run?.gates?.deployment?.dev ||
-    run?.gates?.deployment?.prod
+      run?.gates?.validation ||
+      run?.gates?.deployment?.dev ||
+      run?.gates?.deployment?.prod
   );
 }
 
@@ -188,21 +188,21 @@ export function hasPendingGates(run: WorkflowRun | null | undefined): boolean {
 export function hasReviewOrValidationArtifact(artifacts: RunArtifacts | null | undefined): boolean {
   return Boolean(
     artifacts?.handoffs?.length ||
-    artifacts?.reviewResult ||
-    artifacts?.validationPlan ||
-    artifacts?.validationResult ||
-    artifacts?.deploymentChecks?.dev ||
-    artifacts?.deploymentChecks?.prod
+      artifacts?.reviewResult ||
+      artifacts?.validationPlan ||
+      artifacts?.validationResult ||
+      artifacts?.deploymentChecks?.dev ||
+      artifacts?.deploymentChecks?.prod
   );
 }
 
 export function hasSubstantialArtifact(artifacts: RunArtifacts | null | undefined): boolean {
   return Boolean(
     artifacts?.handoffs?.length ||
-    artifacts?.validationPlan ||
-    artifacts?.validationResult ||
-    artifacts?.deploymentChecks?.dev ||
-    artifacts?.deploymentChecks?.prod
+      artifacts?.validationPlan ||
+      artifacts?.validationResult ||
+      artifacts?.deploymentChecks?.dev ||
+      artifacts?.deploymentChecks?.prod
   );
 }
 
@@ -225,8 +225,8 @@ export function isSubstantialRunHint(run: WorkflowRun | null | undefined): boole
   if (!run) return false;
   return Boolean(
     hasSubstantialMode(run.mode) ||
-    hasSubstantialArtifact(run.artifacts) ||
-    hasSubstantialGate(run.gates)
+      hasSubstantialArtifact(run.artifacts) ||
+      hasSubstantialGate(run.gates)
   );
 }
 
