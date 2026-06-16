@@ -55,12 +55,12 @@ during investigation; the bump itself is a user-side action.
 - **Pre-check** — verify the user has Claude Code installed
   (POSIX: `which claude`; PowerShell: `(Get-Command claude).Source`),
   verify the v0.7.0 tag exists on the remote
-  (`gh release view v0.7.0 -R sergeymilashico/hero-crew`),
+  (`gh release view v0.7.0 -R astragenie/dev-team`),
   verify v0.5.6 tag for loop similarly.
 - **Bump commands** — exact Claude Code slash-command sequence:
 
   ```
-  /plugin marketplace add astra https://github.com/sergeymilashico/hero-crew
+  /plugin marketplace add astra https://github.com/astragenie/dev-team
   /plugin install crew@astra
   /plugin install loop@astra
   ```

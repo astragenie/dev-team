@@ -155,7 +155,7 @@ load without re-reading the full FEAT.
 - Renaming or removing an existing value requires a deprecation path:
   1. Add the new value alongside the old one.
   2. Communicate the change to all known producers (currently `loop:pm-triage`
-     maintainer at `sergeymilashico/loop`).
+     maintainer at `astragenie/runner-plugin`).
   3. Remove the old value in a subsequent schema version bump.
 - Schema version lives in this file's frontmatter (`version:`). Bump minor
   for additions; bump major for removals or renames after deprecation.

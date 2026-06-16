@@ -1,8 +1,8 @@
 # Crew
 
-[![test](https://github.com/sergeymilashico/hero-crew/actions/workflows/test.yml/badge.svg)](https://github.com/sergeymilashico/hero-crew/actions/workflows/test.yml)
-[![release](https://img.shields.io/github/v/tag/sergeymilashico/hero-crew?label=release&sort=semver)](https://github.com/sergeymilashico/hero-crew/releases)
-[![license](https://img.shields.io/github/license/sergeymilashico/hero-crew)](LICENSE)
+[![test](https://github.com/astragenie/dev-team/actions/workflows/test.yml/badge.svg)](https://github.com/astragenie/dev-team/actions/workflows/test.yml)
+[![release](https://img.shields.io/github/v/tag/astragenie/dev-team?label=release&sort=semver)](https://github.com/astragenie/dev-team/releases)
+[![license](https://img.shields.io/github/license/astragenie/dev-team)](LICENSE)
 
 A Claude Code plugin for lead-guided engineering work with bounded subagents, quality gates, and inspectable handoffs.
 
@@ -107,7 +107,7 @@ claude plugin install crew
 For local development, clone and register as a directory marketplace:
 
 ```
-git clone https://github.com/sergeymilashico/hero-crew.git
+git clone https://github.com/astragenie/dev-team.git
 ```
 
 Then add it as a local marketplace in `~/.claude/plugins/known_marketplaces.json`.

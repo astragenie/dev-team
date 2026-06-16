@@ -24,9 +24,9 @@ Before running the bump commands, verify:
    - POSIX shell: `which claude`
    - PowerShell: `(Get-Command claude).Source`
 2. The `v0.7.0` tag exists on the `hero-crew` remote:
-   `gh release view v0.7.0 -R sergeymilashico/hero-crew`
+   `gh release view v0.7.0 -R astragenie/dev-team`
 3. The `v0.5.6` tag exists on the `hero-crew-autonomous-loop` remote:
-   `gh release view v0.5.6 -R sergeymilashico/hero-crew-autonomous-loop`
+   `gh release view v0.5.6 -R astragenie/dev-team-autonomous-loop`
 
 If any pre-check fails, stop. Either install Claude Code, or wait for the missing release to be cut.
 
@@ -35,15 +35,15 @@ If any pre-check fails, stop. Either install Claude Code, or wait for the missin
 In Claude Code, run these slash commands once at the user level. `/plugin marketplace add` takes ONE arg — the source (`owner/repo`, full HTTPS URL, or local path). Do NOT add a marketplace nickname inline; Claude Code will reject the syntax.
 
 ```
-/plugin marketplace add sergeymilashico/hero-crew
+/plugin marketplace add astragenie/dev-team
 /plugin install crew
 /plugin install loop
 ```
 
 Equivalent forms for the marketplace arg:
 
-- `sergeymilashico/hero-crew` — GitHub `owner/repo` (shortest)
-- `https://github.com/sergeymilashico/hero-crew` — full URL (works in the interactive dialog)
+- `astragenie/dev-team` — GitHub `owner/repo` (shortest)
+- `https://github.com/astragenie/dev-team` — full URL (works in the interactive dialog)
 - `./path/to/local/clone` — local path (offline / development)
 
 If already installed at an earlier version, use the upgrade form:

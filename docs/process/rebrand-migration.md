@@ -9,7 +9,7 @@ plugin `autonomous-loop` → `loop`. Existing installs must be re-registered.
 /plugin uninstall autonomous-loop@crew-dev
 /plugin uninstall crew@crew-dev
 /plugin marketplace remove crew-dev
-/plugin marketplace add sergeymilashico/hero-crew
+/plugin marketplace add astragenie/dev-team
 /plugin install crew@astra
 /plugin install loop@astra
 ```

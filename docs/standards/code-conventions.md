@@ -1,7 +1,7 @@
 # Code Conventions — crew
 
 Mirrors
-[`Astragenie.Standards/docs/javascript/coding-conventions.md`](https://github.com/sergeymilashico/Astragenie.Standards/blob/main/docs/javascript/coding-conventions.md)
+[`Astragenie.Standards/docs/javascript/coding-conventions.md`](https://github.com/astragenie/standards/blob/main/docs/javascript/coding-conventions.md)
 when that repo is installed at a sibling path; otherwise this file is
 self-contained and authoritative. The Standards repo is provenance and
 cross-team alignment, not a runtime dependency.

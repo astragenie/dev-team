@@ -15,7 +15,7 @@ handoffs. The companion `loop` plugin sits on top of this one.
 ## Engineering standards
 
 For language-agnostic patterns + SOLID + GoF guidance, consult
-[`Astragenie.Standards`](https://github.com/sergeymilashico/Astragenie.Standards)
+[`Astragenie.Standards`](https://github.com/astragenie/standards)
 if it is installed at a sibling path. The ESM conventions are mirrored
 at `Astragenie.Standards/docs/javascript/coding-conventions.md`. The
 local `docs/standards/code-conventions.md` is self-contained and authoritative
@@ -110,7 +110,7 @@ Pre-1.0 semver-ish (see `CHANGELOG.md` header):
 ### Companion plugin (`loop`)
 
 Lives in a separate repo
-(`https://github.com/sergeymilashico/loop`) and ships from its **own
+(`https://github.com/astragenie/runner-plugin`) and ships from its **own
 standalone marketplace** (`loop/.claude-plugin/marketplace.json` in that
 repo) — this repo's `marketplace.json` no longer carries a loop entry.
 To pick up a `loop` release: bump version in the loop repo's
@@ -182,9 +182,9 @@ plugin's `marketplace.json` edits must be done in the target repo's
 own session, not cross-session.
 
 **Exception for plugin source repos in the astra family
-(`hero-crew`, `loop`, `cortex`):** sessions in any of these three
+(`dev-team`, `runner-plugin`, `memory-plugin`):** sessions in any of these three
 repos MAY make a paired commit to
-`sergeymilashico/astra-marketplace` to bump that plugin's `version:`
+`astragenie/astra-marketplace` to bump that plugin's `version:`
 entry in the central registry's `marketplace.json`. The change MUST
 be limited to:
 
