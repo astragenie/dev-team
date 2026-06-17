@@ -5,6 +5,8 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.36.0 — 2026-06-17
+
 ### SLICE-74 — lead.md slim-down: policy blocks relocated to workflow skills (FEAT-158, DEC-025)
 
 Relocated four high-volume policy blocks from `agents/lead.md` (369 → 300 lines) into four new
