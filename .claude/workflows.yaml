@@ -1,0 +1,36 @@
+version: 1
+default_workflow: regular
+
+workflows:
+  regular:
+    description: Standard slice — tag-routed builder + parallel reviewer+validator fanout
+    phases:
+      - role: builder
+        routing:
+          tag_routes:
+            fe: crew:frontend-dev
+            frontend: crew:frontend-dev
+            be: crew:backend-dev
+            backend: crew:backend-dev
+            parallel-fe-be:
+              parallel_dispatch:
+                group: [crew:frontend-dev, crew:backend-dev]
+                policy: wait_for_all
+                halt_on: any_FAIL
+          default: crew:fullstack-dev
+        emit: handoff
+      - role: reviewer
+        parallel_dispatch:
+          group: [crew:inspector, crew:inspector, crew:verifier]
+          policy: wait_for_all
+          halt_on: any_FAIL
+        aggregation:
+          halt_on_any_FAIL: true
+          wait_for_all: true
+        trigger:
+          on: handoff_written
+          from: builder
+        gate:
+          policy: all_pass
+          fail_action: route_to_fix
+        skip_when: changed_files matches "^docs/"

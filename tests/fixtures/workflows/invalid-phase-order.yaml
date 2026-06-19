@@ -1,0 +1,14 @@
+version: 1
+default_workflow: bad-order
+
+workflows:
+  bad-order:
+    description: Invalid — validator appears before builder (phase order violation)
+    phases:
+      - role: validator
+        agent: crew:verifier
+        gate:
+          policy: blocking
+      - role: builder
+        agent: crew:fullstack-dev
+        emit: handoff
