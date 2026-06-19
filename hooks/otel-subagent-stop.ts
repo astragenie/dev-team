@@ -1,7 +1,10 @@
 #!/usr/bin/env bun
 // SubagentStop OTel bridge shim for FEAT-165 SLICE-B.
 // Opt-in: cfg.enabled=true AND CREW_OTEL_ENABLED=1.
-// No shutdown — subagent stop is not session end.
+// Awaits sdk.shutdown() with 1000ms timeout so BatchSpanProcessor flushes —
+// hook process exits immediately after main() resolves; without flush the
+// BatchSpanProcessor's schedule_delay_ms buffer is lost (live-dogfood bug
+// discovered post-v0.37.0).
 // Always exits 0 — never blocks Claude.
 import { logHookError } from "./hook-error.ts";
 import { loadTelemetryConfig, bridgeEnabled } from "../scripts/lib/telemetry/config.ts";
@@ -32,6 +35,12 @@ async function main(): Promise<void> {
   if (cachedSdk === null) return;
 
   emitSubagentStopSpan(cachedSdk, payload, cfg);
+
+  // Await shutdown with 1000ms timeout so BatchSpanProcessor flushes.
+  await Promise.race([
+    cachedSdk.shutdown(),
+    new Promise<void>((resolve) => setTimeout(resolve, 1000))
+  ]);
 }
 
 main().catch(async (err) => {

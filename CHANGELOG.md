@@ -5,6 +5,18 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.37.1 — 2026-06-19 — FEAT-165 hook flush hotfix
+
+Two of three FEAT-165 SLICE-81 hooks (`PostToolUse` + `SubagentStop`) shipped without `await sdk.shutdown()` before process exit. BatchSpanProcessor buffered the span and the process died before flush — every span dropped silently. The `Stop` hook was correct (used as the reference pattern for the fix).
+
+Live dogfood against `cloud.langfuse.com` post-v0.37.0 detected the bug: hooks exited 0, no traces appeared. Cause: `InMemorySpanExporter` (used by the 20 SLICE-81 unit tests) is synchronous — it accepts spans the moment `onEnd()` queues them, masking the async batch-then-export path that `OTLPTraceExporter` uses in production.
+
+Fix:
+- `hooks/otel-post-tool-use.ts` + `hooks/otel-subagent-stop.ts` — both now wrap `sdk.shutdown()` in a 1000ms timeout race before `main()` resolves, matching `hooks/otel-stop.ts`'s existing shape.
+- `tests/telemetry-hook-flush.test.ts` — new live-flush integration test. Spawns each hook subprocess with a synthetic stdin payload + a local HTTP collector on a random port; asserts the OTLP POST arrived before the process exit. Catches future flush regressions definitively.
+
+Process learning saved as `feedback-inmemoryexporter-misses-flush-bugs`: `InMemorySpanExporter` unit tests cover business logic (PII scrub, sampling, attr shape) but cannot catch async lifecycle bugs; both layers are required.
+
 ## v0.37.0 — 2026-06-19 — observability bridge, declarative workflows, prompt frontmatter contract, agent eval foundation
 
 Six slices across four FEATs landed in two parallel-worktree batches.

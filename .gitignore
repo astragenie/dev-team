@@ -7,6 +7,11 @@ node_modules/
 # .claude/artifacts/ is committed (durable cross-machine history)
 .claude.backup.*
 *.tmp
+.env
+.env.local
+.env.*.local
+.claude/crew/telemetry.yaml
+langfuse/data/
 
 # crew:start
 # Crew framework local state. Generated; do not edit between markers.

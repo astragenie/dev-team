@@ -33,6 +33,12 @@ async function main(): Promise<void> {
   if (cachedSdk === null) return;
 
   emitPostToolUseSpan(cachedSdk, payload, cfg);
+
+  // Await shutdown with 1000ms timeout so BatchSpanProcessor flushes.
+  await Promise.race([
+    cachedSdk.shutdown(),
+    new Promise<void>((resolve) => setTimeout(resolve, 1000))
+  ]);
 }
 
 main().catch(async (err) => {
