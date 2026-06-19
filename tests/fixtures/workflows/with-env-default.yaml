@@ -1,0 +1,10 @@
+version: 1
+default_workflow: test-workflow
+
+workflows:
+  test-workflow:
+    description: ${env:CREW_TEST_DESC}
+    phases:
+      - role: builder
+        agent: crew:fullstack-dev
+        emit: handoff

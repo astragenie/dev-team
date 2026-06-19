@@ -87,6 +87,11 @@ export interface DispatchPhase {
   aggregation?: DispatchAggregation;
   /** Present on builder phases with routing. */
   routing?: RoutingResult;
+  /**
+   * Deployer-phase runtime hint: orchestrator must block on user input before
+   * invoking the agent. Propagated verbatim from the YAML phase definition.
+   */
+  require_user_approval?: boolean;
 }
 
 // ── skip_when evaluation (v1, narrowly scoped) ─────────────────────────────────
@@ -282,12 +287,16 @@ function buildDispatchPhase(
   }
 
   // Shape 3: plain agent phase
-  return {
+  const plain: DispatchPhase = {
     role: phase.role,
     agent: phase.agent ?? "",
     parallel: phase.parallel ?? 1,
     gate
   };
+  if (phase.require_user_approval === true) {
+    plain.require_user_approval = true;
+  }
+  return plain;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────

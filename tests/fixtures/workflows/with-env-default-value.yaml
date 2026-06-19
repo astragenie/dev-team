@@ -1,0 +1,10 @@
+version: 1
+default_workflow: test-workflow
+
+workflows:
+  test-workflow:
+    description: ${env:CREW_UNSET_VAR:-fallback-value}
+    phases:
+      - role: builder
+        agent: crew:fullstack-dev
+        emit: handoff

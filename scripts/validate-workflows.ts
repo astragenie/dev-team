@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// Workflow YAML CI gate — FEAT-166 SLICE-78
+// Workflow YAML CI gate — FEAT-166 SLICE-78 + SLICE-82
 //
 // Validates .claude/workflows.yaml (or a --config override) against:
 //   1. Zod schema
@@ -12,6 +12,10 @@
 //   5. Default workflow exists: config.default_workflow key must be in workflows
 //   6. routing.tag_routes refs: every string value is a valid agent ref
 //   7. parallel_dispatch group: group must have at least 2 members
+//   8. (SLICE-82) release user-approval invariant: `release` workflow deployer phase
+//      must have require_user_approval: true
+//   9. (SLICE-82) circular workflow routing: detect cycles in workflow:* tag_route refs
+//  10. (SLICE-82) workflow-name format: keys must match /^[a-z][a-z0-9_-]*$/
 //
 // Stderr observability (DEC-024): one grep-able line per failure:
 //   VALIDATE-WORKFLOWS error: <workflow> <phase-index> <reason>
@@ -241,6 +245,128 @@ async function validateWorkflow(
   return [...structuralErrors, ...agentCheckResults.flat()];
 }
 
+// ── SLICE-82 checks ────────────────────────────────────────────────────────────
+
+const WORKFLOW_NAME_RE = /^[a-z][a-z0-9_-]*$/;
+
+/**
+ * 10. Workflow-name format: every workflow key must match /^[a-z][a-z0-9_-]*$/.
+ */
+function checkWorkflowNames(config: WorkflowConfig): string[] {
+  const errors: string[] = [];
+  for (const key of Object.keys(config.workflows)) {
+    if (!WORKFLOW_NAME_RE.test(key)) {
+      errors.push(
+        `VALIDATE-WORKFLOWS error: (config) (name) workflow name "${key}" must match /^[a-z][a-z0-9_-]*$/`
+      );
+    }
+  }
+  return errors;
+}
+
+/**
+ * 8. release user-approval invariant: if the workflow named "release" contains
+ * a phase with role "deployer", that phase MUST have require_user_approval: true.
+ */
+function checkReleaseUserApproval(config: WorkflowConfig): string[] {
+  const releaseWorkflow = config.workflows["release"];
+  if (releaseWorkflow === undefined) return [];
+
+  const errors: string[] = [];
+  for (let i = 0; i < releaseWorkflow.phases.length; i++) {
+    const phase = releaseWorkflow.phases[i];
+    if (phase === undefined) continue;
+    if (phase.role === "deployer" && phase.require_user_approval !== true) {
+      errors.push(
+        `VALIDATE-WORKFLOWS error: release ${i} deployer phase missing require_user_approval: true`
+      );
+    }
+  }
+  return errors;
+}
+
+/** Collects workflow:* routing targets from a single workflow's phases. */
+function collectWorkflowTargets(wf: WorkflowConfig["workflows"][string]): Set<string> {
+  const targets = new Set<string>();
+  for (const phase of wf.phases) {
+    if (phase.routing?.tag_routes === undefined) continue;
+    for (const val of Object.values(phase.routing.tag_routes)) {
+      if (typeof val === "string" && val.startsWith("workflow:")) {
+        targets.add(val.slice("workflow:".length));
+      }
+    }
+  }
+  return targets;
+}
+
+/**
+ * Builds the workflow→workflow adjacency list from `workflow:` prefixed tag_route values.
+ * Used by checkCircularRouting.
+ */
+function buildRoutingAdjacency(config: WorkflowConfig): Map<string, Set<string>> {
+  const adjacency = new Map<string, Set<string>>();
+  for (const [wfName, wf] of Object.entries(config.workflows)) {
+    adjacency.set(wfName, collectWorkflowTargets(wf));
+  }
+  return adjacency;
+}
+
+/**
+ * DFS walk for cycle detection. Mutates visited/inStack/stackPath/errors in-place.
+ * Extracted from checkCircularRouting to keep each function under the complexity cap.
+ */
+function walkRoutingGraph(
+  node: string,
+  adjacency: Map<string, Set<string>>,
+  visited: Set<string>,
+  inStack: Set<string>,
+  stackPath: string[],
+  errors: string[]
+): void {
+  if (inStack.has(node)) {
+    const cycleStart = stackPath.indexOf(node);
+    const cycle = [...stackPath.slice(cycleStart), node];
+    errors.push(
+      `VALIDATE-WORKFLOWS error: (config) (routing) cycle detected: ${cycle.join(" -> ")}`
+    );
+    return;
+  }
+  if (visited.has(node)) return;
+
+  visited.add(node);
+  inStack.add(node);
+  stackPath.push(node);
+
+  for (const neighbor of adjacency.get(node) ?? new Set<string>()) {
+    walkRoutingGraph(neighbor, adjacency, visited, inStack, stackPath, errors);
+  }
+
+  stackPath.pop();
+  inStack.delete(node);
+}
+
+/**
+ * 9. Circular workflow routing: detect cycles in workflow:* tag_route refs.
+ *
+ * Forward-compat stub — no real workflow routes to another today.
+ * Wired and tested via tests/fixtures/workflows/circular-routing.yaml.
+ */
+function checkCircularRouting(config: WorkflowConfig): string[] {
+  const adjacency = buildRoutingAdjacency(config);
+  const errors: string[] = [];
+  const visited = new Set<string>();
+  const inStack = new Set<string>();
+  const stackPath: string[] = [];
+
+  for (const node of adjacency.keys()) {
+    if (!visited.has(node)) {
+      walkRoutingGraph(node, adjacency, visited, inStack, stackPath, errors);
+    }
+  }
+
+  return errors;
+}
+
 async function validateConfig(config: WorkflowConfig): Promise<string[]> {
   const errors: string[] = [];
 
@@ -251,6 +377,15 @@ async function validateConfig(config: WorkflowConfig): Promise<string[]> {
         `default_workflow "${config.default_workflow}" not found in workflows`
     );
   }
+
+  // 10. Workflow-name format (SLICE-82)
+  errors.push(...checkWorkflowNames(config));
+
+  // 8. release user-approval invariant (SLICE-82)
+  errors.push(...checkReleaseUserApproval(config));
+
+  // 9. Circular workflow routing (SLICE-82)
+  errors.push(...checkCircularRouting(config));
 
   const perWorkflow = await Promise.all(
     Object.entries(config.workflows).map(([name, wf]) => validateWorkflow(name, wf))

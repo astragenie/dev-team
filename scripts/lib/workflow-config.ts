@@ -2,6 +2,7 @@
  * Workflow configuration loader and schema for .claude/workflows.yaml.
  *
  * FEAT-166 SLICE-78 — declarative workflow YAML, regular only.
+ * FEAT-166 SLICE-82 — quick/spike/release workflows + ${env:VAR} substitution.
  *
  * Exports:
  *   WorkflowConfigSchema, WorkflowPhaseSchema — Zod schemas
@@ -9,9 +10,7 @@
  *   WorkflowConfig, WorkflowDefinition, WorkflowPhase — derived types
  *   loadWorkflowConfig(repoRoot) — reads + validates .claude/workflows.yaml
  *   expandWorkflow(config, name?) — returns named (or default) workflow
- *
- * TODO (SLICE-B): ${env} substitution in YAML values.
- * TODO (SLICE-B): quick / spike / release workflows.
+ *   EnvSubstitutionError — thrown when ${env:VAR} has no value and no default
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -60,6 +59,89 @@ export class UnsupportedSkipExpressionError extends Error {
     );
     this.name = "UnsupportedSkipExpressionError";
   }
+}
+
+/**
+ * Thrown when a ${env:VAR} substitution marker references an environment
+ * variable that is unset and no default was provided in the ${env:VAR:-default}
+ * form.
+ */
+export class EnvSubstitutionError extends Error {
+  readonly variable: string;
+  constructor(variable: string) {
+    super(`Environment variable "${variable}" not set and no default provided`);
+    this.name = "EnvSubstitutionError";
+    this.variable = variable;
+  }
+}
+
+// ── ${env:VAR} substitution ────────────────────────────────────────────────────
+
+/**
+ * Matches the entire-value forms:
+ *   ${env:VAR_NAME}
+ *   ${env:VAR_NAME:-default value}
+ *
+ * Capture groups:
+ *   1 — variable name (A-Z, 0-9, _ — uppercase only per shell convention)
+ *   2 — default value (may be undefined when not specified)
+ *
+ * Scope rule: only strings whose ENTIRE value matches this pattern are
+ * substituted. Embedded interpolation (e.g. "prefix-${env:X}-suffix") is
+ * NOT supported in v1.
+ */
+const ENV_SUB_RE = /^\$\{env:([A-Z_][A-Z0-9_]*)(?::-(.*))?\}$/;
+
+/**
+ * Resolves a matched ${env:VAR} or ${env:VAR:-default} expression.
+ * Extracted from substituteEnv to keep complexity below the lint cap.
+ *
+ * @throws EnvSubstitutionError when the env var is unset and no default provided.
+ */
+function resolveEnvMarker(varName: string, defaultValue: string | undefined): string {
+  const envValue = process.env[varName];
+  if (envValue !== undefined) return envValue;
+  // defaultValue is defined (possibly "") when the ":-" branch is present in the marker
+  if (defaultValue !== undefined) return defaultValue;
+  throw new EnvSubstitutionError(varName);
+}
+
+/**
+ * Recursively substitutes ${env:VAR} and ${env:VAR:-default} markers in
+ * YAML-parsed values.
+ *
+ * - Operates on values only — keys are never substituted.
+ * - Recurses into plain objects and arrays.
+ * - Does not recurse into class instances or functions.
+ * - Non-matching strings are returned as-is.
+ *
+ * @throws EnvSubstitutionError when a ${env:VAR} marker has no env value
+ *   and no default was provided.
+ */
+export function substituteEnv(value: unknown): unknown {
+  if (typeof value === "string") {
+    const m = ENV_SUB_RE.exec(value);
+    if (m !== null) return resolveEnvMarker(m[1] as string, m[2]);
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(substituteEnv);
+  }
+
+  if (
+    value !== null &&
+    typeof value === "object" &&
+    Object.getPrototypeOf(value) === Object.prototype
+  ) {
+    const result: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      result[k] = substituteEnv(v);
+    }
+    return result;
+  }
+
+  return value;
 }
 
 // ── Zod schemas ────────────────────────────────────────────────────────────────
@@ -187,6 +269,10 @@ export async function loadWorkflowConfig(repoRoot: string): Promise<WorkflowConf
   } catch (err) {
     throw new WorkflowConfigParseError(err instanceof Error ? err.message : String(err));
   }
+
+  // Apply ${env:VAR} substitution on values before Zod validates the shape.
+  // EnvSubstitutionError is allowed to propagate to the caller.
+  parsed = substituteEnv(parsed);
 
   const result = WorkflowConfigSchema.safeParse(parsed);
   if (!result.success) {

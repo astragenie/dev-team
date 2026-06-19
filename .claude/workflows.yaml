@@ -34,3 +34,53 @@ workflows:
           policy: all_pass
           fail_action: route_to_fix
         skip_when: changed_files matches "^docs/"
+
+  quick:
+    description: Light slice — single combined inspector+verifier, no fanout
+    phases:
+      - role: builder
+        agent: crew:fullstack-dev
+        emit: handoff
+      - role: reviewer_validator
+        agent: crew:inspector-verifier
+        parallel: 1
+        trigger:
+          on: handoff_written
+          from: builder
+        gate:
+          policy: all_pass
+          fail_action: route_to_fix
+
+  spike:
+    description: Throwaway exploration — builder only, no review/validate gates
+    phases:
+      - role: builder
+        agent: crew:fullstack-dev
+        emit: handoff
+
+  release:
+    description: Release slice — builder + 2 reviewers + validator + deployer (user approval required)
+    phases:
+      - role: builder
+        agent: crew:fullstack-dev
+        emit: handoff
+      - role: reviewer
+        parallel_dispatch:
+          group: [crew:inspector, crew:inspector, crew:verifier]
+          policy: wait_for_all
+          halt_on: any_FAIL
+        aggregation:
+          halt_on_any_FAIL: true
+          wait_for_all: true
+        gate:
+          policy: all_pass
+          fail_action: route_to_fix
+      - role: validator
+        agent: crew:verifier
+        gate:
+          policy: blocking
+      - role: deployer
+        agent: crew:release-engineer
+        require_user_approval: true
+        gate:
+          policy: blocking
