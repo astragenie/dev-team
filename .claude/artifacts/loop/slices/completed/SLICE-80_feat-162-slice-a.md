@@ -1,7 +1,7 @@
 ---
 id: SLICE-80
 title: "FEAT-162 SLICE-A: agent-eval harness foundation — dry-run replay fixture, no live claude -p"
-status: pending
+status: completed
 feature: FEAT-162
 phase: null
 priority: P2
@@ -13,16 +13,9 @@ developer_type: agent
 estimated_complexity: low
 languages: [typescript]
 autonomous_safe: true
-touches_files:
-  - tests/agent-eval/lib/run-claude.ts
-  - tests/agent-eval/lib/assert-trace.ts
-  - tests/agent-eval/lib/types.ts
-  - tests/agent-eval/fixtures/00-dry-run-replay.fixture.ts
-  - tests/agent-eval/fixtures/captured-traces/00-builder-handoff.trace.json
-  - tests/agent-eval/run.test.ts
-  - tests/agent-eval/README.md
-  - package.json
+touches_files: [tests/agent-eval/lib/run-claude.ts, tests/agent-eval/lib/assert-trace.ts, tests/agent-eval/lib/types.ts, tests/agent-eval/fixtures/00-dry-run-replay.fixture.ts, tests/agent-eval/fixtures/captured-traces/00-builder-handoff.trace.json, tests/agent-eval/run.test.ts, tests/agent-eval/README.md, package.json]
 touches_files_confidence: declared
+completed_at: 2026-06-19
 ---
 # SLICE-80: agent-eval harness foundation (FEAT-162 SLICE-A)
 

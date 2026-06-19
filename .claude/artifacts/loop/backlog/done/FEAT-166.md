@@ -10,7 +10,7 @@ depends_on: []
 slices: [SLICE-78]
 derived_from: null
 tags: [workflow, dispatcher, yaml-config, lead-orchestration, fan-out]
-slices_complete: [SLICE-78]
+slices_complete: [SLICE-78, SLICE-82]
 completed_at: 2026-06-19
 updated: 2026-06-19
 ---

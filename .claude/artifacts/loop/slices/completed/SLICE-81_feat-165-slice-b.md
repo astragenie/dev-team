@@ -1,7 +1,7 @@
 ---
 id: SLICE-81
 title: "FEAT-165 SLICE-B: live OTel hook bridge + OTLP HTTP exporter + config loader"
-status: pending
+status: completed
 feature: FEAT-165
 phase: null
 priority: P2
@@ -13,37 +13,10 @@ developer_type: agent
 estimated_complexity: high
 languages: [typescript]
 autonomous_safe: false
-touches_files:
-  - scripts/lib/telemetry/span.ts
-  - scripts/lib/telemetry/config.ts
-  - scripts/lib/telemetry/otel-bridge.ts
-  - scripts/lib/telemetry/scrub.ts
-  - scripts/lib/telemetry/hook-input.ts
-  - scripts/setup-langfuse-self-host.ts
-  - hooks/otel-post-tool-use.ts
-  - hooks/otel-stop.ts
-  - hooks/otel-subagent-stop.ts
-  - hooks/hooks.json
-  - .claude/crew/telemetry.example.yaml
-  - docs/observability/langfuse-bridge.md
-  - tests/telemetry-otel-bridge.test.ts
-  - tests/telemetry-config.test.ts
-  - tests/telemetry-scrub.test.ts
-  - tests/fixtures/telemetry/post-tool-use-bash.json
-  - tests/fixtures/telemetry/stop.json
-  - tests/fixtures/telemetry/subagent-stop.json
-  - package.json
+touches_files: [scripts/lib/telemetry/span.ts, scripts/lib/telemetry/config.ts, scripts/lib/telemetry/otel-bridge.ts, scripts/lib/telemetry/scrub.ts, scripts/lib/telemetry/hook-input.ts, scripts/setup-langfuse-self-host.ts, hooks/otel-post-tool-use.ts, hooks/otel-stop.ts, hooks/otel-subagent-stop.ts, hooks/hooks.json, .claude/crew/telemetry.example.yaml, docs/observability/langfuse-bridge.md, tests/telemetry-otel-bridge.test.ts, tests/telemetry-config.test.ts, tests/telemetry-scrub.test.ts, tests/fixtures/telemetry/post-tool-use-bash.json, tests/fixtures/telemetry/stop.json, tests/fixtures/telemetry/subagent-stop.json, package.json]
 touches_files_confidence: declared
-line_budgets:
-  scripts/lib/telemetry/span.ts: 130
-  scripts/lib/telemetry/config.ts: 140
-  scripts/lib/telemetry/hook-input.ts: 110
-  scripts/lib/telemetry/scrub.ts: 100
-  scripts/lib/telemetry/otel-bridge.ts: 220
-  scripts/setup-langfuse-self-host.ts: 120
-  hooks/otel-post-tool-use.ts: 50
-  hooks/otel-stop.ts: 50
-  hooks/otel-subagent-stop.ts: 50
+line_budgets: null
+completed_at: 2026-06-19
 ---
 # SLICE-81: live OTel hook bridge + OTLP HTTP exporter (FEAT-165 SLICE-B)
 

@@ -1,7 +1,7 @@
 ---
 id: SLICE-82
-title: FEAT-166 SLICE-B — quick / spike / release workflows + ${env} substitution + slice-frontmatter routing
-status: pending
+title: "FEAT-166 SLICE-B — quick / spike / release workflows + ${env} substitution + slice-frontmatter routing"
+status: completed
 feature: FEAT-166
 phase: null
 priority: P2
@@ -13,25 +13,9 @@ autonomous_safe: false
 created: 2026-06-19
 updated: 2026-06-19
 depends_on: [SLICE-78]
-touches_files:
-  - .claude/workflows.yaml
-  - scripts/lib/workflow-config.ts
-  - scripts/lib/slice-linker/dispatch.mts
-  - scripts/validate-workflows.ts
-  - scripts/validate-slices.ts
-  - tests/scripts/lib/workflow-config.test.ts
-  - tests/scripts/lib/workflow-config.env-sub.test.ts
-  - tests/scripts/lib/slice-linker/dispatch.golden-trace.test.ts
-  - tests/scripts/lib/slice-linker/dispatch.slice-routing.test.ts
-  - tests/fixtures/dispatch-traces/quick.golden.json
-  - tests/fixtures/dispatch-traces/spike.golden.json
-  - tests/fixtures/dispatch-traces/release.golden.json
-  - tests/fixtures/workflows/circular-routing.yaml
-  - tests/fixtures/workflows/missing-env.yaml
-  - tests/fixtures/workflows/with-env-default.yaml
-  - docs/standards/workflow-schema.md
-  - agents/lead.md
+touches_files: [.claude/workflows.yaml, scripts/lib/workflow-config.ts, scripts/lib/slice-linker/dispatch.mts, scripts/validate-workflows.ts, scripts/validate-slices.ts, tests/scripts/lib/workflow-config.test.ts, tests/scripts/lib/workflow-config.env-sub.test.ts, tests/scripts/lib/slice-linker/dispatch.golden-trace.test.ts, tests/scripts/lib/slice-linker/dispatch.slice-routing.test.ts, tests/fixtures/dispatch-traces/quick.golden.json, tests/fixtures/dispatch-traces/spike.golden.json, tests/fixtures/dispatch-traces/release.golden.json, tests/fixtures/workflows/circular-routing.yaml, tests/fixtures/workflows/missing-env.yaml, tests/fixtures/workflows/with-env-default.yaml, docs/standards/workflow-schema.md, agents/lead.md]
 touches_files_confidence: declared
+completed_at: 2026-06-19
 ---
 # SLICE-82 — FEAT-166 Part B: quick / spike / release workflows + `${env:VAR}` substitution + slice-frontmatter routing
 

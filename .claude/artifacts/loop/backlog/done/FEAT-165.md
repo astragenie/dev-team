@@ -10,7 +10,7 @@ depends_on: []
 slices: [SLICE-77]
 derived_from: null
 tags: [observability, otel, langfuse, hooks, telemetry, subscription-billed]
-slices_complete: [SLICE-77]
+slices_complete: [SLICE-77, SLICE-81]
 completed_at: 2026-06-19
 updated: 2026-06-19
 ---
