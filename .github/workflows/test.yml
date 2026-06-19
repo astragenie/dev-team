@@ -29,6 +29,7 @@ jobs:
       - run: node ./scripts/validate-skills.ts
       - run: node ./scripts/validate-agents.ts
       - run: node ./scripts/validate-dispatch-graph.ts
+      - run: node ./scripts/validate-workflows.ts
       - run: node ./scripts/validate-slices.ts
       - run: node ./scripts/validate-loop-state.ts
       - run: node ./scripts/validate-bundles.ts

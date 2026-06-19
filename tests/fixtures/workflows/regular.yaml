@@ -1,0 +1,24 @@
+version: 1
+default_workflow: regular
+
+workflows:
+  regular:
+    description: Standard slice — builder + 2 parallel reviewers + validator
+    phases:
+      - role: builder
+        agent: crew:fullstack-dev
+        emit: handoff
+      - role: reviewer
+        agent: crew:inspector
+        parallel: 2
+        trigger:
+          on: handoff_written
+          from: builder
+        gate:
+          policy: all_pass
+          fail_action: route_to_fix
+      - role: validator
+        agent: crew:verifier
+        gate:
+          policy: blocking
+        skip_when: changed_files matches "^docs/"

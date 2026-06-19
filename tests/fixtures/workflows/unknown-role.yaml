@@ -1,0 +1,10 @@
+version: 1
+default_workflow: bad-role
+
+workflows:
+  bad-role:
+    description: Invalid — archivist is not a valid role enum value
+    phases:
+      - role: archivist
+        agent: crew:fullstack-dev
+        emit: handoff
