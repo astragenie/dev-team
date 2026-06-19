@@ -1,5 +1,7 @@
 ---
 name: ux-methodology
+prompt_id: ux-methodology
+version: 1.0.0
 tier: domain
 description: Research-backed UX methodology covering user research, information architecture, interaction design, accessibility, and design-systems governance.
 source: aitmpl/development-team/ui-ux-designer

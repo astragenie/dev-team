@@ -1,5 +1,7 @@
 ---
 name: contract-codegen
+prompt_id: contract-codegen
+version: 1.0.0
 tier: domain
 description: Per-stack codegen recipes for FE clients/mocks and BE stubs/types from a FEAT's OpenAPI YAML. Run as the first step before any feature work.
 owner: hero-crew

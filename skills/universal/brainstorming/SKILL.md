@@ -1,5 +1,7 @@
 ---
 name: brainstorming
+prompt_id: brainstorming
+version: 1.0.0
 tier: universal
 description: "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation."
 source: aitmpl/development/brainstorming

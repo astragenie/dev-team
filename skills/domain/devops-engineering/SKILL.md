@@ -1,5 +1,7 @@
 ---
 name: devops-engineering
+prompt_id: devops-engineering
+version: 1.0.0
 tier: domain
 description: CI/CD pipelines, IaC (Terraform/Helm/Ansible), container orchestration, monitoring, incident response, and security baselines for production infrastructure.
 source: aitmpl/development-team/devops-engineer

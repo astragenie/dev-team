@@ -1,5 +1,7 @@
 ---
 name: api-documentation
+prompt_id: api-documentation
+version: 1.0.0
 tier: workflow
 description: API documentation authoring covering OpenAPI 3.1 specs, SDK reference guides, authentication docs, error documentation, versioning guides, and interactive portal setup.
 source: aitmpl/documentation/api-documenter

@@ -1,5 +1,7 @@
 ---
 name: self-verify-gate
+prompt_id: self-verify-gate
+version: 1.0.0
 tier: workflow
 description: Scoped pre-handoff verification procedure for builder agents. Resolve slice base, derive touched-set, run scoped typecheck/lint/affected-tests/repo-validators, write the `## Self-Verify Gates` section that `commands/orchestrate-slice.md` gates on.
 owner: hero-crew

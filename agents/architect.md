@@ -1,5 +1,8 @@
 ---
 name: architect
+prompt_id: architect
+version: 1.0.0
+model_pinned: opus
 capabilities:
   role: [architect]
   surfaces: [schema, api, agent-prompts, docs]

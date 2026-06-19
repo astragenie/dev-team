@@ -1,5 +1,8 @@
 ---
 name: uxdesigner
+prompt_id: uxdesigner
+version: 1.0.0
+model_pinned: sonnet
 capabilities:
   role: [architect]
   surfaces: [ui, docs]

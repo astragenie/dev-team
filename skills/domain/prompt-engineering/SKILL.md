@@ -1,5 +1,7 @@
 ---
 name: prompt-engineering
+prompt_id: prompt-engineering
+version: 1.0.0
 tier: domain
 description: World-class prompt engineering skill for LLM optimization, prompt patterns, structured outputs, and AI product development. Expertise in Claude, GPT-4, prompt design patterns, few-shot learning, chain-of-thought, and AI evaluation. Includes RAG optimization, agent design, and LLM system architecture. Use when building AI products, optimizing LLM performance, designing agentic systems, or implementing advanced prompting techniques.
 source: aitmpl/development/senior-prompt-engineer

@@ -1,5 +1,7 @@
 ---
 name: csharp-conventions
+prompt_id: csharp-conventions
+version: 1.0.0
 tier: domain
 stack: dotnet
 description: C# .NET 10 conventions — architecture, SOLID idioms, approved libraries, and code shapes. Use when touching *.cs files.

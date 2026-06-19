@@ -1,5 +1,9 @@
 ---
 name: refactor
+prompt_id: refactor
+version: 1.0.0
+model_pinned: sonnet
+evals: evals/agents/refactor.yaml
 capabilities:
   role: [implementer]
   surfaces: [agent-prompts, scripts]

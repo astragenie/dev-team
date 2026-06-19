@@ -1,5 +1,7 @@
 ---
 name: mcp-integration
+prompt_id: mcp-integration
+version: 1.0.0
 tier: domain
 description: MCP server authoring and integration — config format, server types, security, performance, naming conventions, and testing patterns for Model Context Protocol integrations.
 owner: hero-crew

@@ -1,5 +1,9 @@
 ---
 name: verifier
+prompt_id: verifier
+version: 1.0.0
+model_pinned: sonnet
+evals: evals/agents/verifier.yaml
 capabilities:
   role: [verifier]
   scopes: [normal, wide]

@@ -1,5 +1,7 @@
 ---
 name: deployment-patterns
+prompt_id: deployment-patterns
+version: 1.0.0
 tier: domain
 description: Deployment strategy patterns — DORA targets, blue-green/canary/progressive delivery, pipeline optimization, release orchestration, and rollback design.
 owner: hero-crew

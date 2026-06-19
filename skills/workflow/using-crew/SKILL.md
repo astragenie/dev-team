@@ -1,5 +1,7 @@
 ---
 name: using-crew
+prompt_id: using-crew
+version: 1.0.0
 tier: workflow
 description: Use at the start of real software work to choose the right mode, define pace, enforce ownership boundaries, and keep handoffs inspectable.
 owner: sergeymilashico

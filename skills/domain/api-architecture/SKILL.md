@@ -1,5 +1,7 @@
 ---
 name: api-architecture
+prompt_id: api-architecture
+version: 1.0.0
 tier: domain
 description: API design patterns for REST and GraphQL — three-layer REST architecture (service/manager/resilience), GraphQL resolver pattern with DataLoader, versioning, security checklist, and requirements gathering protocol.
 owner: hero-crew

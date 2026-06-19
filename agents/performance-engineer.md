@@ -1,5 +1,8 @@
 ---
 name: performance-engineer
+prompt_id: performance-engineer
+version: 1.0.0
+model_pinned: sonnet
 capabilities:
   role: [inspector]
   surfaces: [api, ui, infra]

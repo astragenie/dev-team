@@ -1,5 +1,7 @@
 ---
 name: review-gates
+prompt_id: review-gates
+version: 1.0.0
 tier: workflow
 description: Use before declaring implementation work done to separate task-compliance review from code-quality review and make approval criteria explicit.
 owner: sergeymilashico

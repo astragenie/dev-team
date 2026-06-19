@@ -1,5 +1,8 @@
 ---
 name: qa-expert
+prompt_id: qa-expert
+version: 1.0.0
+model_pinned: sonnet
 capabilities:
   role: [inspector]
   concerns: [test-coverage]

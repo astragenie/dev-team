@@ -1,5 +1,7 @@
 ---
 name: risk-tier
+prompt_id: risk-tier
+version: 1.0.0
 tier: workflow
 description: Risk-based tier lookup table (dispatch budget, artifact set, gate ladder), SLA caps for re-dispatch loops, and confidence aggregation formula for slice-close synthesis.
 owner: sergeymilashico

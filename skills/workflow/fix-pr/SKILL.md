@@ -1,5 +1,7 @@
 ---
 name: fix-pr
+prompt_id: fix-pr
+version: 1.0.0
 tier: workflow
 description: Fetch unresolved review comments on the current branch's pull request and address each one in order. Use when a reviewer has left actionable feedback on an open PR and the next step is to apply fixes + push.
 owner: astra

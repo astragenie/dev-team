@@ -1,5 +1,7 @@
 ---
 name: mobile-design
+prompt_id: mobile-design
+version: 1.0.0
 tier: domain
 description: Mobile-first design thinking and implementation patterns for iOS and Android — touch interaction, performance optimization, platform conventions, and framework selection. Use when building React Native, Flutter, or native mobile apps.
 source: davila7/claude-code-templates/cli-tool/components/skills/creative-design/mobile-design

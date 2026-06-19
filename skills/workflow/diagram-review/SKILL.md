@@ -1,5 +1,7 @@
 ---
 name: diagram-review
+prompt_id: diagram-review
+version: 1.0.0
 tier: workflow
 description: Review Mermaid/PlantUML/ASCII diagrams for syntax validity, slop patterns, and communicative clarity — catches overloaded boxes, missing labels, and structural anti-patterns before diagrams reach documentation.
 triggers: ["review diagram", "check diagram", "diagram lint", "mermaid review", "diagram quality", "validate mermaid", "diagram feedback"]

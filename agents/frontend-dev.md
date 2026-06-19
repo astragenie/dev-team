@@ -1,5 +1,9 @@
 ---
 name: frontend-dev
+prompt_id: frontend-dev
+version: 1.0.0
+model_pinned: sonnet
+evals: evals/agents/frontend-dev.yaml
 capabilities:
   role: [implementer]
   surfaces: [ui]

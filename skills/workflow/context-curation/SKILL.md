@@ -1,5 +1,7 @@
 ---
 name: context-curation
+prompt_id: context-curation
+version: 1.0.0
 tier: workflow
 description: Curate per-agent context briefings and pre-compaction checkpoints during multi-agent workflows
 source: aitmpl/development-tools/context-manager

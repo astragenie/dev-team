@@ -1,5 +1,7 @@
 ---
 name: diagram-methodology
+prompt_id: diagram-methodology
+version: 1.0.0
 tier: domain
 description: Technical diagram authoring in ASCII, Mermaid, PlantUML, and Draw.io formats — flowcharts, sequence diagrams, ERDs, state machines, architecture diagrams, and dependency graphs.
 source: aitmpl/documentation/diagram-architect

@@ -1,5 +1,7 @@
 ---
 name: react-engineering
+prompt_id: react-engineering
+version: 1.0.0
 tier: domain
 description: React 19+ engineering guidance covering hooks, state management, Server Components, Suspense, concurrent rendering, performance, testing, and modern build tooling.
 source: aitmpl/web-tools/expert-react-frontend-engineer

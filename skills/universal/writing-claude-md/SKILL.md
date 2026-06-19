@@ -1,5 +1,7 @@
 ---
 name: writing-claude-md
+prompt_id: writing-claude-md
+version: 1.0.0
 tier: universal
 description: Use when adding or updating CLAUDE.md entries to keep them concise and useful.
 owner: sergeymilashico

@@ -1,5 +1,7 @@
 ---
 name: slice-sizing
+prompt_id: slice-sizing
+version: 1.0.0
 tier: workflow
 description: Size slices so each dispatch lands under turn caps and atomic actions fit 8/80-hour bounds
 source: derived from spec-decomposition methodology + observed builder cap-hit patterns in v0.8.0 session

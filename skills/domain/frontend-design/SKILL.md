@@ -1,5 +1,7 @@
 ---
 name: frontend-design
+prompt_id: frontend-design
+version: 1.0.0
 tier: domain
 description: Create distinctive, production-grade frontend interfaces with high design quality — use when building web components, pages, dashboards, landing pages, or any web UI that needs creative, polished aesthetics beyond generic AI output.
 source: davila7/claude-code-templates/cli-tool/components/skills/creative-design/{frontend-design,premium-web-design,ui-ux-pro-max}

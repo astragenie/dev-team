@@ -66,6 +66,25 @@ function checkRequiredFields(fm: Record<string, string>, label: string, errors: 
   }
 }
 
+// FEAT-167 SLICE-A: validate prompt_id (kebab-slug) and version (semver).
+// Skills never require an `evals:` field in this slice.
+function checkPromptIdAndVersion(fm: Record<string, string>, label: string, errors: string[]) {
+  const promptId = fm["prompt_id"];
+  if (!promptId) {
+    errors.push(`${label}: missing required frontmatter "prompt_id"`);
+  } else if (!/^[a-z][a-z0-9-]*$/.test(promptId) || /--/.test(promptId) || promptId.endsWith("-")) {
+    errors.push(
+      `${label}: prompt_id "${promptId}" must be kebab-slug ([a-z0-9-]+, no leading/trailing -)`
+    );
+  }
+  const version = fm["version"];
+  if (!version) {
+    errors.push(`${label}: missing required frontmatter "version"`);
+  } else if (!/^\d+\.\d+\.\d+$/.test(version)) {
+    errors.push(`${label}: version "${version}" must be semver MAJOR.MINOR.PATCH`);
+  }
+}
+
 function checkTier(fm: Record<string, string>, label: string, errors: string[]) {
   if (fm["tier"] && !VALID_TIERS.has(fm["tier"])) {
     errors.push(`${label}: tier "${fm["tier"]}" not in {${[...VALID_TIERS].join(", ")}}`);
@@ -151,6 +170,7 @@ export async function validateSkills(skillsRoot = SKILLS_ROOT) {
     }
     skills.push({ label, filePath, fm, text });
     checkRequiredFields(fm, label, errors);
+    checkPromptIdAndVersion(fm, label, errors);
     checkTier(fm, label, errors);
     checkDirectoryName(filePath, fm, label, errors);
     checkLineCount(text, label, errors);

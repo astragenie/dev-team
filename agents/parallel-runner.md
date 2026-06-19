@@ -1,5 +1,8 @@
 ---
 name: parallel-runner
+prompt_id: parallel-runner
+version: 1.0.0
+model_pinned: opus
 description: Orchestrates parallel feature execution across isolated git worktrees.
   Reads triaged plans via the loop CLI, calls `loop dispatch prepare` to spawn
   worktrees + build the Agent batch, invokes Agent calls in parallel, then calls

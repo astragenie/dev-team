@@ -1,5 +1,7 @@
 ---
 name: cloud-architecture
+prompt_id: cloud-architecture
+version: 1.0.0
 tier: domain
 description: Multi-cloud infrastructure design, landing zones, network topology, IAM, cost optimization, disaster recovery, and Well-Architected Framework guidance across AWS, Azure, and GCP.
 source: aitmpl/devops-infrastructure/cloud-architect

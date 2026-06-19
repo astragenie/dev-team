@@ -1,5 +1,7 @@
 ---
 name: aspnetcore-patterns
+prompt_id: aspnetcore-patterns
+version: 1.0.0
 tier: domain
 stack: dotnet
 description: ASP.NET Core production patterns — middleware ordering, health checks, output caching, rate limiting, API versioning, exception handling. Load when building or reviewing ASP.NET Core endpoints.

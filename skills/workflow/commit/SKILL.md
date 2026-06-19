@@ -1,5 +1,7 @@
 ---
 name: commit
+prompt_id: commit
+version: 1.0.0
 tier: workflow
 description: Create well-formatted git commits using conventional commit format with emoji. Use when staging and committing changes, especially when the diff spans multiple logical concerns that should be split into separate commits. Pairs with the repo's pre-commit checks.
 owner: astra

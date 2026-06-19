@@ -1,5 +1,7 @@
 ---
 name: journey-builder
+prompt_id: journey-builder
+version: 1.0.0
 tier: workflow
 description: Builds an ordered scenario_chain for ux-validation journey mode. Checks slice file for ## User Journey override; falls back to sorting ACs by verb category (nav → input → action → assertion). Returns [] when < 2 steps derivable. Reusable for future full-feature regression by feeding multiple slices' ACs.
 triggers: ["ux-validation Step 2.5", "surface:ui regression", "end-to-end journey validation"]

@@ -1,5 +1,7 @@
 ---
 name: database-architecture
+prompt_id: database-architecture
+version: 1.0.0
 tier: domain
 description: Database design, data modeling, schema evolution, technology selection, partitioning, multi-tenancy, and polyglot persistence patterns for production systems.
 source: aitmpl/database/database-architect

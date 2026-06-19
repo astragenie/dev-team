@@ -1,5 +1,7 @@
 ---
 name: integration-smoke
+prompt_id: integration-smoke
+version: 1.0.0
 tier: workflow
 description: Procedure for live wire-up smoke test. Spin up BE, spin up FE, exercise one happy-path AC against real wire, validate responses against OpenAPI schema, tear down, write PASS/FAIL artifact.
 owner: hero-crew

@@ -207,6 +207,54 @@ function checkPeerDispatchSection(
   }
 }
 
+// FEAT-167 SLICE-A: agents whose role participates in the eval harness.
+// These agents MUST carry an `evals:` field (string; path existence NOT checked
+// this slice — enforced in SLICE-B).
+// TODO(FEAT-167 SLICE-B): enforce path existence here once evals/ tree lands
+const EVALS_REQUIRED_AGENT_NAMES = new Set([
+  "lead",
+  "fullstack-dev", // builder (primary)
+  "backend-dev", // builder
+  "frontend-dev", // builder
+  "refactor", // builder (transform)
+  "inspector", // reviewer
+  "inspector-verifier", // reviewer + validator
+  "verifier", // validator
+  "integrator", // validator (merge gate)
+  "release-engineer" // deployer
+]);
+
+// FEAT-167 SLICE-A: validate prompt_id (kebab-slug) and version (semver).
+function checkPromptIdAndVersion(fm: Record<string, string>, label: string, errors: string[]) {
+  const promptId = fm["prompt_id"];
+  if (!promptId) {
+    errors.push(`${label}: missing required frontmatter "prompt_id"`);
+  } else if (!/^[a-z][a-z0-9-]*$/.test(promptId) || /--/.test(promptId) || promptId.endsWith("-")) {
+    errors.push(
+      `${label}: prompt_id "${promptId}" must be kebab-slug ([a-z0-9-]+, no leading/trailing -)`
+    );
+  }
+  const version = fm["version"];
+  if (!version) {
+    errors.push(`${label}: missing required frontmatter "version"`);
+  } else if (!/^\d+\.\d+\.\d+$/.test(version)) {
+    errors.push(`${label}: version "${version}" must be semver MAJOR.MINOR.PATCH`);
+  }
+}
+
+// FEAT-167 SLICE-A: validate evals field for EVALS_REQUIRED agents.
+// TODO(FEAT-167 SLICE-B): enforce path existence here once evals/ tree lands
+function checkEvalsRequiredForRole(fm: Record<string, string>, label: string, errors: string[]) {
+  const name = fm["name"];
+  if (name === undefined || !EVALS_REQUIRED_AGENT_NAMES.has(name)) return;
+  const evals = fm["evals"];
+  if (!evals || evals.trim() === "") {
+    errors.push(
+      `${label}: agent name "${name}" requires "evals" frontmatter field (FEAT-167 SLICE-A — path existence enforced in SLICE-B)`
+    );
+  }
+}
+
 // FEAT-155: primary agents most exposed to TaskUpdate burst churn must carry
 // the batching rule. Light role-list — the cost-advisor SLICE-67 baseline
 // flagged these as the highest TaskUpdate cache-prime contributors.
@@ -366,6 +414,8 @@ export async function validateAgents(agentsRoot = AGENTS_ROOT) {
     }
     agents.push({ label, filePath, fm, text });
     checkRequiredFields(fm, label, errors);
+    checkPromptIdAndVersion(fm, label, errors);
+    checkEvalsRequiredForRole(fm, label, errors);
     checkFileName(filePath, fm, label, errors);
     checkLineCount(text, fm, label, errors);
     checkRequiredSections(text, fm, label, errors);

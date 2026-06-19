@@ -1,5 +1,7 @@
 ---
 name: docker-expert
+prompt_id: docker-expert
+version: 1.0.0
 tier: domain
 description: Docker containerization expert covering multi-stage builds, image optimization, container security hardening, Docker Compose orchestration, and production deployment patterns — use when writing or reviewing Dockerfiles, solving container issues, or setting up container-based workflows.
 source: davila7/claude-code-templates/cli-tool/components/skills/development/docker-expert

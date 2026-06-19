@@ -1,5 +1,7 @@
 ---
 name: spec-decomposition
+prompt_id: spec-decomposition
+version: 1.0.0
 tier: workflow
 description: Break complex multi-step goals into structured WBS with dependencies, parallelism map, effort estimates, and risk register
 source: aitmpl/ai-specialists/task-decomposition-expert
