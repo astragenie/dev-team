@@ -1,6 +1,6 @@
 ---
 id: FEAT-165
-status: in-progress
+status: done
 started_at: 2026-06-19
 priority: P2
 category: observability
@@ -10,8 +10,10 @@ depends_on: []
 slices: [SLICE-77]
 derived_from: null
 tags: [observability, otel, langfuse, hooks, telemetry, subscription-billed]
+slices_complete: [SLICE-77]
+completed_at: 2026-06-19
+updated: 2026-06-19
 ---
-
 # FEAT-165: Langfuse + OpenTelemetry trace bridge — production-grade observability for slice runs
 
 ## Description

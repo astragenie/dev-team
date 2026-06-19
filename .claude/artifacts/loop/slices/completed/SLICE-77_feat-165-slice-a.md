@@ -1,7 +1,7 @@
 ---
 id: SLICE-77
 title: "FEAT-165 SLICE-A: cost-report -> OTel span backfill (serialization only, no hooks, no exporter)"
-status: pending
+status: completed
 feature: FEAT-165
 phase: null
 priority: P2
@@ -13,19 +13,10 @@ developer_type: agent
 estimated_complexity: medium
 languages: [typescript]
 autonomous_safe: true
-touches_files:
-  - scripts/lib/telemetry/span.ts
-  - scripts/lib/telemetry/cost-report-loader.ts
-  - scripts/lib/telemetry/cost-report-to-spans.ts
-  - scripts/lib/telemetry/serialize-jsonl.ts
-  - scripts/cost-report-to-spans.ts
-  - tests/telemetry-span-schema.test.ts
-  - tests/telemetry-cost-report-loader.test.ts
-  - tests/telemetry-cost-report-to-spans.test.ts
-  - tests/telemetry-cli.test.ts
+touches_files: [scripts/lib/telemetry/span.ts, scripts/lib/telemetry/cost-report-loader.ts, scripts/lib/telemetry/cost-report-to-spans.ts, scripts/lib/telemetry/serialize-jsonl.ts, scripts/cost-report-to-spans.ts, tests/telemetry-span-schema.test.ts, tests/telemetry-cost-report-loader.test.ts, tests/telemetry-cost-report-to-spans.test.ts, tests/telemetry-cli.test.ts]
 touches_files_confidence: declared
+completed_at: 2026-06-19
 ---
-
 # SLICE-77: cost-report -> OTel span backfill (FEAT-165 SLICE-A)
 
 Implements **SLICE-A of FEAT-165**: cost-report -> OTel span backfill, no hooks touched. See [feature file](../../../backlog/pending/FEAT-165.md) for product context.

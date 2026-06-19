@@ -1,7 +1,7 @@
 ---
 id: SLICE-78
 title: Declarative workflow YAML — schema + loader + dispatcher refactor (regular only)
-status: pending
+status: completed
 feature: FEAT-166
 phase: null
 priority: P2
@@ -12,20 +12,10 @@ estimated_complexity: medium
 autonomous_safe: false
 created: 2026-06-19
 updated: 2026-06-19
-touches_files:
-  - .claude/workflows.yaml
-  - scripts/lib/workflow-config.ts
-  - scripts/lib/slice-linker/dispatch.mts
-  - scripts/validate-workflows.ts
-  - tests/scripts/lib/workflow-config.test.ts
-  - tests/scripts/lib/slice-linker/dispatch.golden-trace.test.ts
-  - tests/fixtures/workflows/regular.yaml
-  - tests/fixtures/workflows/invalid-phase-order.yaml
-  - tests/fixtures/workflows/unknown-role.yaml
-  - .github/workflows/test.yml
+touches_files: [.claude/workflows.yaml, scripts/lib/workflow-config.ts, scripts/lib/slice-linker/dispatch.mts, scripts/validate-workflows.ts, tests/scripts/lib/workflow-config.test.ts, tests/scripts/lib/slice-linker/dispatch.golden-trace.test.ts, tests/fixtures/workflows/regular.yaml, tests/fixtures/workflows/invalid-phase-order.yaml, tests/fixtures/workflows/unknown-role.yaml, .github/workflows/test.yml]
 touches_files_confidence: declared
+completed_at: 2026-06-19
 ---
-
 # SLICE-78 — FEAT-166 Part A: workflow YAML schema + loader + zero-behavior-change dispatcher refactor
 
 Implements **FEAT-166 SLICE-A** per the FEAT body's "Per-slice decomposition suggestion". Ships the declarative workflow definition surface (`workflows.yaml` + Zod schema + loader + validator script) and rewires the autonomous-loop dispatcher to consume `expandWorkflow('regular')` instead of a hard-coded phase sequence. **Zero behavior change for any existing slice** — `regular` is the new `default_workflow` and must match today's dispatch trace bit-for-bit (golden trace test mandatory).

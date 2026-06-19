@@ -20,6 +20,8 @@
   ],
   "loop": {
     "phaseGateArtifactDir": ".claude/artifacts/crew/validations",
+    "slicesRoot": ".claude/artifacts/loop/slices",
+    "backlogRoot": ".claude/artifacts/loop/backlog",
     "maxIterations": 25,
     "costStopThreshold": 10
   },

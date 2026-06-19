@@ -1,6 +1,6 @@
 ---
 id: FEAT-166
-status: in-progress
+status: done
 started_at: 2026-06-19
 priority: P2
 category: workflow
@@ -10,8 +10,10 @@ depends_on: []
 slices: [SLICE-78]
 derived_from: null
 tags: [workflow, dispatcher, yaml-config, lead-orchestration, fan-out]
+slices_complete: [SLICE-78]
+completed_at: 2026-06-19
+updated: 2026-06-19
 ---
-
 # FEAT-166: Declarative workflow YAML — configurable build strategies (regular / quick / spike)
 
 ## Description

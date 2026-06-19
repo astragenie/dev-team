@@ -3,41 +3,15 @@ id: SLICE-79
 feat: FEAT-167
 slice_letter: A
 title: Prompt frontmatter contract + validator extension + 1.0.0 backfill
-status: pending
+status: completed
 autonomous_safe: false
 parallel_safe_with: [FEAT-165-SLICE-A, FEAT-166-SLICE-A]
 blocks: [FEAT-167-SLICE-B]
-touches_files:
-  - scripts/validate-agents.ts
-  - scripts/validate-skills.ts
-  - tests/scripts/validate-agents-frontmatter.test.ts
-  - tests/scripts/validate-skills-frontmatter.test.ts
-  - docs/prompts/README.md
-  - agents/architect.md
-  - agents/backend-dev.md
-  - agents/document-writer.md
-  - agents/frontend-dev.md
-  - agents/fullstack-dev.md
-  - agents/inspector-verifier.md
-  - agents/inspector.md
-  - agents/integrator.md
-  - agents/investigator.md
-  - agents/lead.md
-  - agents/parallel-runner.md
-  - agents/performance-engineer.md
-  - agents/qa-expert.md
-  - agents/refactor.md
-  - agents/release-engineer.md
-  - agents/researcher.md
-  - agents/uxdesigner.md
-  - agents/verifier.md
-  - skills/universal/**/SKILL.md
-  - skills/workflow/**/SKILL.md
-  - skills/domain/**/SKILL.md
-  - skills/meta/**/SKILL.md
+touches_files: [scripts/validate-agents.ts, scripts/validate-skills.ts, tests/scripts/validate-agents-frontmatter.test.ts, tests/scripts/validate-skills-frontmatter.test.ts, docs/prompts/README.md, agents/architect.md, agents/backend-dev.md, agents/document-writer.md, agents/frontend-dev.md, agents/fullstack-dev.md, agents/inspector-verifier.md, agents/inspector.md, agents/integrator.md, agents/investigator.md, agents/lead.md, agents/parallel-runner.md, agents/performance-engineer.md, agents/qa-expert.md, agents/refactor.md, agents/release-engineer.md, agents/researcher.md, agents/uxdesigner.md, agents/verifier.md, skills/universal/**/SKILL.md, skills/workflow/**/SKILL.md, skills/domain/**/SKILL.md, skills/meta/**/SKILL.md]
 touches_files_confidence: declared
+completed_at: 2026-06-19
+updated: 2026-06-19
 ---
-
 # Spec: FEAT-167 SLICE-A — Prompt frontmatter contract + validator + 1.0.0 backfill
 
 ## Metadata
