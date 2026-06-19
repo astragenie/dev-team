@@ -28,21 +28,23 @@ export const SpanEventSchema = z.object({
   attributes: z.record(SpanAttrValueSchema).optional()
 });
 
-export const SpanRecordSchema = z.object({
-  traceId: z.string().regex(/^[0-9a-f]{32}$/),
-  spanId: z.string().regex(/^[0-9a-f]{16}$/),
-  parentSpanId: z
-    .string()
-    .regex(/^[0-9a-f]{16}$/)
-    .optional(),
-  name: z.string(),
-  kind: SpanKindSchema,
-  startTimeUnixNano: z.string(),
-  endTimeUnixNano: z.string(),
-  attributes: z.record(SpanAttrValueSchema),
-  events: z.array(SpanEventSchema).default([]),
-  status: SpanStatusSchema
-});
+export const SpanRecordSchema = z
+  .object({
+    traceId: z.string().regex(/^[0-9a-f]{32}$/),
+    spanId: z.string().regex(/^[0-9a-f]{16}$/),
+    parentSpanId: z
+      .string()
+      .regex(/^[0-9a-f]{16}$/)
+      .optional(),
+    name: z.string(),
+    kind: SpanKindSchema,
+    startTimeUnixNano: z.string(),
+    endTimeUnixNano: z.string(),
+    attributes: z.record(SpanAttrValueSchema),
+    events: z.array(SpanEventSchema).default([]),
+    status: SpanStatusSchema
+  })
+  .passthrough();
 
 export type SpanRecord = z.infer<typeof SpanRecordSchema>;
 

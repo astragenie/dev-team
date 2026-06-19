@@ -37,5 +37,10 @@
     "installer:audit": "node ./scripts/crew.ts audit",
     "e2e:smoke": "node ./scripts/e2e-smoke.ts",
     "e2e:smoke:ux": "node ./scripts/e2e-smoke-ux.ts"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.219.0",
+    "@opentelemetry/sdk-node": "^0.219.0"
   }
 }
