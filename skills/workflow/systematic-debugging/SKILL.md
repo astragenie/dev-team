@@ -104,6 +104,7 @@ Note: 95% of "no root cause" cases are incomplete investigation.
 - **`defense-in-depth.md`** — Add validation at multiple layers after finding root cause
 - **`condition-based-waiting.md`** — Replace arbitrary timeouts with condition polling
 - **`references/debugging-anti-patterns.md`** — Common rationalizations and partner signals
+- **`references/git-bisect.md`** — Regression with unknown introducing commit: auto-detect test command, run `git bisect`, retry-before-verdict for flaky tests
 
 **Related skills:**
 - **superpowers:test-driven-development** — For creating failing test case (Phase 4, Step 1)
