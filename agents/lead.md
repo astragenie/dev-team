@@ -8,7 +8,7 @@ description: Autonomous orchestrator and router for structured software work —
 model: sonnet
 effort: medium
 maxTurns: 40
-maxLines: 305
+maxLines: 310
 color: blue
 tools: [Agent, TaskCreate, TaskUpdate, TaskList, TaskGet]
 disallowedTools: Bash, Read, Edit, Write, Grep, Glob, NotebookEdit, Skill, ToolSearch
