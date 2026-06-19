@@ -1,5 +1,5 @@
 /**
- * tests/scripts/lib/workflow-config.test.ts — FEAT-166 SLICE-78
+ * tests/scripts/lib/workflow-config.test.ts — FEAT-166 SLICE-78 + SLICE-82
  *
  * Unit tests for scripts/lib/workflow-config.ts:
  *   1. Happy path — load + expand default (new shape: 2 phases, builder with routing + fanout)
@@ -12,6 +12,7 @@
  *   8. routing schema — tag_routes + default parses correctly
  *   9. Phase without agent/routing/parallel_dispatch fails refine check
  *  10. parallel-fe-be tag_routes value with nested parallel_dispatch parses correctly
+ *  11. (SLICE-82) All four workflows load from committed workflows.yaml
  */
 import { test, describe, expect } from "bun:test";
 import fs from "node:fs/promises";
@@ -247,5 +248,16 @@ describe("workflow-config loader", () => {
         expect(pfebeRoute.parallel_dispatch.group).toContain("crew:backend-dev");
       }
     }
+  });
+
+  test("11. (SLICE-82) all four workflows load from committed workflows.yaml", async () => {
+    const config = await loadWorkflowConfig(REPO_ROOT);
+    const keys = Object.keys(config.workflows);
+
+    expect(keys).toContain("regular");
+    expect(keys).toContain("quick");
+    expect(keys).toContain("spike");
+    expect(keys).toContain("release");
+    expect(keys.length).toBeGreaterThanOrEqual(4);
   });
 });

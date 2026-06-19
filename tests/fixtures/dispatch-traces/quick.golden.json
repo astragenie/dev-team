@@ -1,0 +1,9 @@
+[
+  { "role": "builder", "agent": "crew:fullstack-dev", "parallel": 1, "gate": "none" },
+  {
+    "role": "reviewer_validator",
+    "agent": "crew:inspector-verifier",
+    "parallel": 1,
+    "gate": "all_pass"
+  }
+]

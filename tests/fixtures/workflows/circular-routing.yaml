@@ -1,0 +1,22 @@
+version: 1
+default_workflow: alpha
+
+workflows:
+  alpha:
+    description: Workflow alpha — routes to beta (forward-compat circular detection fixture)
+    phases:
+      - role: builder
+        routing:
+          tag_routes:
+            beta-route: workflow:beta
+          default: crew:fullstack-dev
+        emit: handoff
+  beta:
+    description: Workflow beta — routes to alpha (creates cycle with alpha)
+    phases:
+      - role: builder
+        routing:
+          tag_routes:
+            alpha-route: workflow:alpha
+          default: crew:fullstack-dev
+        emit: handoff

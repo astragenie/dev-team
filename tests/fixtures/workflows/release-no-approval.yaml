@@ -1,0 +1,29 @@
+version: 1
+default_workflow: release
+
+workflows:
+  release:
+    description: Release slice — deployer phase missing require_user_approval (validation fixture)
+    phases:
+      - role: builder
+        agent: crew:fullstack-dev
+        emit: handoff
+      - role: reviewer
+        parallel_dispatch:
+          group: [crew:inspector, crew:inspector, crew:verifier]
+          policy: wait_for_all
+          halt_on: any_FAIL
+        aggregation:
+          halt_on_any_FAIL: true
+          wait_for_all: true
+        gate:
+          policy: all_pass
+          fail_action: route_to_fix
+      - role: validator
+        agent: crew:verifier
+        gate:
+          policy: blocking
+      - role: deployer
+        agent: crew:release-engineer
+        gate:
+          policy: blocking

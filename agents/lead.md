@@ -178,7 +178,7 @@ Required set is gated by [Risk-based tier](#risk-based-tier). Each artifact is *
 
 Phase → artifact (owner): run brief (architect or fullstack-dev at slice open) · handoff (each subagent at completion) · review-result (inspector) · validation-result (verifier) · deployment-check (release-engineer) · final-synthesis (`crew:document-writer`, dispatched by you at slice close). Procedure of record (load via Skill tool): `skills/workflow/using-crew/`.
 
-Per-slice dispatch shape: `.claude/workflows.yaml` (`default_workflow: regular`). Loader: `scripts/lib/workflow-config.ts`. (SLICE-78 lands `regular` only; SLICE-B adds `quick` / `spike` / `release`.)
+Per-slice dispatch shape: `.claude/workflows.yaml` (`default_workflow: regular`). Loader: `scripts/lib/workflow-config.ts`. Workflows: regular (default) · quick · spike · release. Schema: `docs/standards/workflow-schema.md`.
 
 ## Workflow state + gates
 
