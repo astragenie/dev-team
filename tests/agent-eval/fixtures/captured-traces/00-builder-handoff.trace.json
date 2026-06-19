@@ -1,0 +1,43 @@
+{
+  "exitCode": 0,
+  "cwd": "/tmp/agent-eval-builder-handoff-XXXXXX",
+  "finalText": "Handoff written to .claude/artifacts/crew/handoffs/SLICE-XX-builder.md. Build complete.",
+  "events": [
+    {
+      "type": "text",
+      "text": "Starting build for SLICE-XX..."
+    },
+    {
+      "type": "tool_use",
+      "name": "Agent",
+      "id": "tool_001",
+      "input": {
+        "subagent_type": "crew:builder",
+        "prompt": "Implement the backend changes for SLICE-XX per the spec.",
+        "description": "Build SLICE-XX"
+      }
+    },
+    {
+      "type": "tool_use",
+      "name": "Bash",
+      "id": "tool_002",
+      "input": {
+        "command": "bun run test --parallel",
+        "description": "Run full test suite"
+      }
+    },
+    {
+      "type": "tool_use",
+      "name": "Write",
+      "id": "tool_003",
+      "input": {
+        "file_path": ".claude/artifacts/crew/handoffs/SLICE-XX-builder.md",
+        "content": "---\nfrom: backend-dev\nto: lead\nstatus: completed\n---\n# SLICE-XX Builder Handoff\n\nverdict: PASS\n\nAll acceptance criteria met. Tests green. Handoff ready for review."
+      }
+    },
+    {
+      "type": "text",
+      "text": "Handoff written. PASS."
+    }
+  ]
+}
