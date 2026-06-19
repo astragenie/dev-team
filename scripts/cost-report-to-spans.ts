@@ -6,14 +6,7 @@
  * under --out-dir/<run_id>.jsonl. Idempotent — re-running produces the
  * same output bytes because trace/span ids are deterministic from run_id.
  *
- * Usage:
- *   node ./scripts/cost-report-to-spans.ts [--cost-dir <path>] [--out-dir <path>]
- *                                           [--only <glob>] [--emit-observability]
- *
- * Exit codes:
- *   0 = success or zero files matched
- *   1 = at least one file failed to parse or validate
- *   2 = I/O failure (unreadable cost-dir, unwritable out-dir)
+ * Exit codes: 0 = success/zero files, 1 = parse/validate failure, 2 = I/O failure
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -24,14 +17,6 @@ import { writeSpansToFile } from "./lib/telemetry/serialize-jsonl.ts";
 // ---------------------------------------------------------------------------
 // Flag parsing
 // ---------------------------------------------------------------------------
-
-const FLAG_SPEC: Record<string, string> = {
-  "--cost-dir": "costDir",
-  "--out-dir": "outDir",
-  "--only": "only",
-  "--emit-observability": "emitObservability",
-  "--help": "help"
-};
 
 function parseArgs(argv: string[]): {
   costDir: string;
@@ -50,75 +35,20 @@ function parseArgs(argv: string[]): {
   };
   for (let i = 0; i < args.length; i++) {
     const flag = args[i]!;
-    const key = FLAG_SPEC[flag];
-    if (!key) continue;
     if (flag === "--emit-observability") {
       result.emitObservability = true;
-    } else if (flag === "--help") {
-      result.help = true;
-    } else {
-      const val = args[++i] ?? null;
-      if (key === "only") {
-        result.only = val;
-      } else if (key === "costDir" && val !== null) {
-        result.costDir = val;
-      } else if (key === "outDir" && val !== null) {
-        result.outDir = val;
-      }
+      continue;
     }
+    if (flag === "--help") {
+      result.help = true;
+      continue;
+    }
+    const val = args[++i] ?? null;
+    if (flag === "--cost-dir" && val !== null) result.costDir = val;
+    else if (flag === "--out-dir" && val !== null) result.outDir = val;
+    else if (flag === "--only") result.only = val;
   }
   return result;
-}
-
-// ---------------------------------------------------------------------------
-// Glob-style filter (supports * wildcard, case-sensitive)
-// ---------------------------------------------------------------------------
-
-function matchesOnly(filename: string, pattern: string): boolean {
-  // Convert fnmatch-style pattern to regex: * -> [^/]*
-  const re = new RegExp(
-    "^" + pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$"
-  );
-  return re.test(filename);
-}
-
-// ---------------------------------------------------------------------------
-// Per-file processing (extracted to keep main() within complexity budget)
-// ---------------------------------------------------------------------------
-
-interface ProcessResult {
-  spansWritten: number;
-  failed: boolean;
-  skipped: boolean;
-}
-
-async function processFile(
-  filename: string,
-  costDir: string,
-  outDir: string
-): Promise<ProcessResult> {
-  const absPath = path.resolve(costDir, filename);
-  let report;
-  try {
-    report = await loadCostReportSafe(absPath);
-  } catch (err) {
-    process.stderr.write(`cost-report-to-spans: failed to parse '${filename}': ${err}\n`);
-    return { spansWritten: 0, failed: true, skipped: false };
-  }
-
-  // null = aggregate (skipped)
-  if (report === null) return { spansWritten: 0, failed: false, skipped: true };
-
-  const spans = costReportToSpans(report);
-  const outPath = path.resolve(outDir, `${report.runId}.jsonl`);
-  try {
-    await writeSpansToFile(spans, outPath);
-  } catch (err) {
-    process.stderr.write(`cost-report-to-spans: failed to write '${outPath}': ${err}\n`);
-    return { spansWritten: 0, failed: true, skipped: false };
-  }
-
-  return { spansWritten: spans.length, failed: false, skipped: false };
 }
 
 // ---------------------------------------------------------------------------
@@ -130,21 +60,17 @@ async function main(): Promise<void> {
 
   if (args.help) {
     console.log(
-      [
-        "Usage: node ./scripts/cost-report-to-spans.ts [options]",
-        "",
-        "Options:",
-        "  --cost-dir <path>       Cost reports dir (default: .claude/artifacts/crew/cost)",
-        "  --out-dir <path>        Output dir for JSONL files (default: .claude/artifacts/crew/spans)",
-        "  --only <glob>           Filter cost-report filenames (e.g. '*feat113*')",
-        "  --emit-observability    Emit one grep-able stderr line at end of run",
+      "Usage: node ./scripts/cost-report-to-spans.ts [options]\n\n" +
+        "Options:\n" +
+        "  --cost-dir <path>       Cost reports dir (default: .claude/artifacts/crew/cost)\n" +
+        "  --out-dir <path>        Output dir for JSONL files (default: .claude/artifacts/crew/spans)\n" +
+        "  --only <glob>           Filter cost-report filenames (e.g. '*feat113*')\n" +
+        "  --emit-observability    Emit one grep-able stderr line at end of run\n" +
         "  --help                  Show this help"
-      ].join("\n")
     );
     return;
   }
 
-  // Scan cost-dir
   let entries: string[];
   try {
     entries = await fs.readdir(args.costDir);
@@ -154,9 +80,14 @@ async function main(): Promise<void> {
     return;
   }
 
+  // Convert fnmatch-style glob (only * supported) to regex for filtering.
+  const onlyRe = args.only
+    ? new RegExp("^" + args.only.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$")
+    : null;
+
   const mdFiles = entries
     .filter((f) => f.endsWith(".md"))
-    .filter((f) => (args.only ? matchesOnly(f, args.only) : true))
+    .filter((f) => (onlyRe ? onlyRe.test(f) : true))
     .sort();
 
   let totalSpans = 0;
@@ -164,18 +95,31 @@ async function main(): Promise<void> {
   let runCount = 0;
 
   for (const filename of mdFiles) {
-    const r = await processFile(filename, args.costDir, args.outDir);
-    if (r.failed) {
+    const absPath = path.resolve(args.costDir, filename);
+    let report;
+    try {
+      report = await loadCostReportSafe(absPath);
+    } catch (err) {
+      process.stderr.write(`cost-report-to-spans: failed to parse '${filename}': ${err}\n`);
       failCount++;
       continue;
     }
-    if (r.skipped) continue;
-    totalSpans += r.spansWritten;
+    if (report === null) continue; // aggregate — skip
+
+    const spans = costReportToSpans(report);
+    const outPath = path.resolve(args.outDir, `${report.runId}.jsonl`);
+    try {
+      await writeSpansToFile(spans, outPath);
+    } catch (err) {
+      process.stderr.write(`cost-report-to-spans: failed to write '${outPath}': ${err}\n`);
+      failCount++;
+      continue;
+    }
+    totalSpans += spans.length;
     runCount++;
   }
 
   if (failCount > 0) process.exitCode = 1;
-
   if (args.emitObservability) {
     process.stderr.write(`OTEL-BACKFILL wrote ${totalSpans} spans across ${runCount} runs\n`);
   }

@@ -73,6 +73,7 @@ test("costReportToSpans: two-model report produces 4 spans", () => {
     toolUsage: { Bash: 5, Read: 3 },
     subagentDispatches: 2,
     cacheCreate1h: 5000,
+    cacheCreate5m: 0,
     cacheRead: 900000,
     inputTokens: 50000,
     outputTokens: 50000,
@@ -111,4 +112,42 @@ test("costReportToSpans: re-running produces identical spans (determinism)", asy
       `span ${i} must be byte-identical across re-runs`
     );
   }
+});
+
+// ---------------------------------------------------------------------------
+// Case 4: cache_create_5m is summed into usage.cache_creation_tokens
+// ---------------------------------------------------------------------------
+
+test("costReportToSpans: cache_create_5m + cacheCreate1h are both summed into cache_creation_tokens", () => {
+  const report: CostReport = {
+    sliceFilename: "20260202T000000Z-cost-report-cache5m.md",
+    runId: "20260202T000000Z",
+    featureId: "FEAT-165",
+    runTitle: "FEAT-165 SLICE-77 cache_create_5m test",
+    usd: 1.0,
+    durationMs: 300000,
+    totalTokens: 100000,
+    cacheHitPct: 90,
+    windowStart: "2026-02-02T00:00:00.000Z",
+    windowEnd: "2026-02-02T00:05:00.000Z",
+    createdAt: "2026-02-02T00:05:00.000Z",
+    modelMix: [{ model: "claude-sonnet-4-6", messages: 5, msgPct: 100, usd: 1.0, usdPct: 100 }],
+    toolUsage: {},
+    subagentDispatches: 0,
+    cacheCreate1h: 2000,
+    cacheCreate5m: 1000,
+    cacheRead: 50000,
+    inputTokens: 25000,
+    outputTokens: 25000,
+    aggregateAll: false
+  };
+
+  const spans = costReportToSpans(report);
+  const agentSpan = spans.find((s) => s.name === "agent.dispatch");
+  assert.ok(agentSpan, "Must have an agent.dispatch span");
+  assert.equal(
+    agentSpan.attributes["usage.cache_creation_tokens"],
+    3000,
+    "cache_creation_tokens must equal cacheCreate1h (2000) + cacheCreate5m (1000) = 3000"
+  );
 });

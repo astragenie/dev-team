@@ -84,7 +84,7 @@ export function costReportToSpans(report: CostReport): SpanRecord[] {
   const agentSpans: SpanRecord[] = report.modelMix.map((entry) => {
     const agentSpanId = newSpanId(report.runId + ".agent." + entry.model);
     // cache_creation_tokens collapses 5m + 1h since OTel attr does not distinguish.
-    const cacheCreationTokens = report.cacheCreate1h;
+    const cacheCreationTokens = report.cacheCreate1h + report.cacheCreate5m;
 
     return SpanRecordSchema.parse({
       traceId,
