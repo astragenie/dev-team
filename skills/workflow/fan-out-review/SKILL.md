@@ -1,5 +1,7 @@
 ---
 name: fan-out-review
+prompt_id: fan-out-review
+version: 1.0.0
 tier: workflow
 description: Fan-out review procedure for HIGH-risk or security/performance-tagged slices — how many inspectors to dispatch, how to aggregate findings, and how to resolve inspector disagreement.
 owner: sergeymilashico

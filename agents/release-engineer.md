@@ -1,5 +1,9 @@
 ---
 name: release-engineer
+prompt_id: release-engineer
+version: 1.0.0
+model_pinned: sonnet
+evals: evals/agents/release-engineer.yaml
 capabilities:
   role: [release-engineer]
   surfaces: [infra]

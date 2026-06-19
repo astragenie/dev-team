@@ -1,5 +1,7 @@
 ---
 name: git-commit
+prompt_id: git-commit
+version: 1.0.0
 tier: workflow
 description: Generate descriptive commit messages by analyzing git diffs. Use when the user asks for help writing commit messages or reviewing staged changes.
 source: aitmpl/development/git-commit-helper

@@ -1,5 +1,7 @@
 ---
 name: node-ts-patterns
+prompt_id: node-ts-patterns
+version: 1.0.0
 tier: domain
 stack: typescript
 description: Node.js 22/24 LTS patterns for TypeScript — ESM, streams, worker threads, node:test, context propagation, native type-stripping. Load when writing plugin code, CLI tools, or Node.js backend services in TypeScript.
@@ -189,11 +191,9 @@ Use for CLI scripts and plugin hooks. Code using decorators or advanced emit tra
 
 ## Done criteria
 
-- All imports use ESM syntax; no top-level `require()`
-- File extension `.js` on all local imports (resolves to `.ts` at compile time)
+- All imports use ESM syntax with `.js` extensions; no top-level `require()`
 - Disposable resources use `using` / `await using` instead of `try/finally`
 - Streams use `pipeline()` or async iterators — no raw event listener patterns
 - Worker thread message types are explicitly typed via discriminated union or `satisfies`
-- `unhandledRejection` handler present in process entry points
-- Graceful `SIGTERM` / `SIGINT` shutdown registered
+- `unhandledRejection` handler present in entry points; graceful `SIGTERM` / `SIGINT` shutdown registered
 - No `process.exit()` from library functions — use `process.exitCode`

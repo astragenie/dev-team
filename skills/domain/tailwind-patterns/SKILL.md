@@ -1,5 +1,7 @@
 ---
 name: tailwind-patterns
+prompt_id: tailwind-patterns
+version: 1.0.0
 tier: domain
 description: Tailwind CSS v4 patterns and best practices — CSS-first configuration, container queries, dark mode, layout, typography, color system, animation, and component extraction. Use when authoring or reviewing Tailwind CSS v4 code.
 source: davila7/claude-code-templates/cli-tool/components/skills/creative-design/tailwind-patterns

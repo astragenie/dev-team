@@ -1,5 +1,7 @@
 ---
 name: task-decomposition
+prompt_id: task-decomposition
+version: 1.0.0
 tier: domain
 description: Work breakdown methodology — decompose complex goals into WBS with dependency graphs, parallelism maps, effort estimates, and agent handoff plans.
 owner: hero-crew

@@ -1,5 +1,7 @@
 ---
 name: ux-validation
+prompt_id: ux-validation
+version: 1.0.0
 tier: workflow
 description: Auto-triggered by crew:validator when slice tags include surface:ui, concern:ux, or concern:accessibility. Drives Playwright via gstack:/qa, axe-core accessibility scan, console+404 scrape, and visual regression diff. Returns raw evidence; lead pivots per routing-table.
 triggers: ["surface:ui", "concern:ux", "concern:accessibility", "validation phase UI"]

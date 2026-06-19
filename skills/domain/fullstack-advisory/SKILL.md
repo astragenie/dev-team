@@ -1,5 +1,7 @@
 ---
 name: fullstack-advisory
+prompt_id: fullstack-advisory
+version: 1.0.0
 tier: domain
 description: Comprehensive fullstack development skill for building complete web applications with React, Next.js, Node.js, GraphQL, and PostgreSQL. Includes project scaffolding, code quality analysis, architecture patterns, and complete tech stack guidance. Use when building new projects, analyzing code quality, implementing design patterns, or setting up development workflows.
 source: aitmpl/development/senior-fullstack

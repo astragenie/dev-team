@@ -1,5 +1,7 @@
 ---
 name: webapp-testing
+prompt_id: webapp-testing
+version: 1.0.0
 tier: workflow
 description: Interact with and test local web applications using Python Playwright — use when verifying frontend functionality, debugging UI behavior, capturing screenshots, or observing browser console logs during development.
 source: davila7/claude-code-templates/cli-tool/components/skills/development/webapp-testing

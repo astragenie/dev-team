@@ -1,5 +1,7 @@
 ---
 name: lead-routing
+prompt_id: lead-routing
+version: 1.0.0
 tier: workflow
 description: Agent quick reference table and specialist routing rules for the lead orchestrator — which crew agent to dispatch for each need, architect-mandatory triggers, and multi-need split rule.
 owner: sergeymilashico

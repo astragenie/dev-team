@@ -1,5 +1,9 @@
 ---
 name: backend-dev
+prompt_id: backend-dev
+version: 1.0.0
+model_pinned: sonnet
+evals: evals/agents/backend-dev.yaml
 capabilities:
   role: [implementer]
   surfaces: [api, schema]

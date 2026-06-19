@@ -1,5 +1,7 @@
 ---
 name: test-quality
+prompt_id: test-quality
+version: 1.0.0
 tier: workflow
 description: Three-lens test-quality review for qa-expert — flaky-test heuristics (executable), anti-pattern scan (executable), and mutation-testing advisory (procedural). Load when coverage looks adequate but test_confidence grade is below 0.80 or the routing signal "test suite quality questioned" fires.
 owner: hero-crew

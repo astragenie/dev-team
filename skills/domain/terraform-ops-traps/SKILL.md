@@ -1,5 +1,7 @@
 ---
 name: terraform-ops-traps
+prompt_id: terraform-ops-traps
+version: 1.0.0
 tier: domain
 description: Operational failure patterns for Terraform provisioners, multi-env isolation, and zero-to-deployment reliability. Activate when writing null_resource provisioners, debugging containers Restarting/unhealthy after apply, setting up fresh instances with cloud-init, hitting TLS/ACME errors, or any IaC code that SSHs into remote hosts.
 owner: astra

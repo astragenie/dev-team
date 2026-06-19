@@ -1,5 +1,7 @@
 ---
 name: openapi-authoring
+prompt_id: openapi-authoring
+version: 1.0.0
 tier: domain
 description: Quality bar for OpenAPI 3.1 contract artifacts emitted by the architect agent. Defines mandatory sections, custom extensions, and example payload discipline.
 owner: hero-crew

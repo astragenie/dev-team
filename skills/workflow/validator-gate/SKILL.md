@@ -1,5 +1,7 @@
 ---
 name: validator-gate
+prompt_id: validator-gate
+version: 1.0.0
 tier: workflow
 description: Verifier dispatch decision procedure — when to dispatch crew:verifier, what constitutes the mandatory full gate, and the only allowable skip path.
 owner: sergeymilashico

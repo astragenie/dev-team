@@ -1,5 +1,7 @@
 ---
 name: typescript-pro
+prompt_id: typescript-pro
+version: 1.0.0
 tier: domain
 description: TypeScript 5.0+ type system mastery — advanced generics, full-stack type safety, build tooling, and monorepo patterns. Consult when writing or reviewing TypeScript code.
 source: aitmpl/programming-languages/typescript-pro

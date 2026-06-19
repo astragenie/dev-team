@@ -1,0 +1,38 @@
+# Task Handoff: SLICE-79: prompt_id+version frontmatter + validator extension
+
+- Created: 2026-06-19T10:06:16.528Z
+- From: fullstack-dev
+- To: lead
+- Objective: Backfilled prompt_id+version on 18 agents + 64 skills, added evals field for 10 EVALS_REQUIRED agents, extended both validators, added 9 tests, created docs/prompts/README.md; all gates green, committed 2284ff4.
+- Allowed Scope: -
+- Forbidden Scope: -
+- Deliverable: -
+- Changed Files:
+  - agents/architect.md
+  - agents/backend-dev.md
+  - agents/document-writer.md
+  - agents/frontend-dev.md
+  - agents/fullstack-dev.md
+  - agents/inspector-verifier.md
+  - agents/inspector.md
+  - agents/integrator.md
+  - agents/investigator.md
+  - agents/lead.md
+  - agents/parallel-runner.md
+  - agents/performance-engineer.md
+  - agents/qa-expert.md
+  - agents/refactor.md
+  - agents/release-engineer.md
+  - agents/researcher.md
+  - agents/uxdesigner.md
+  - agents/verifier.md
+  - scripts/validate-agents.ts
+  - scripts/validate-skills.ts
+  - tests/validate-agents-frontmatter.test.ts
+  - tests/validate-skills-frontmatter.test.ts
+  - docs/prompts/README.md
+  - skills/**SKILL.md
+- Confidence: high
+- Risks: -
+- Suggested Next Handoff: -
+

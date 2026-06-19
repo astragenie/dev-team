@@ -1,5 +1,7 @@
 ---
 name: ef-core-patterns
+prompt_id: ef-core-patterns
+version: 1.0.0
 tier: domain
 stack: dotnet
 description: EF Core 8+ ORM patterns — query optimization, compiled queries, bulk ops, global filters, migration rules, N+1 prevention. Load when writing or reviewing EF Core queries or migrations.

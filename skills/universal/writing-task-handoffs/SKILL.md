@@ -1,5 +1,7 @@
 ---
 name: writing-task-handoffs
+prompt_id: writing-task-handoffs
+version: 1.0.0
 tier: universal
 description: Use when delegating or concluding substantial work so tasks, ownership, risks, and next steps are explicit and easy to inspect.
 owner: sergeymilashico

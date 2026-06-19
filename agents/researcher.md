@@ -1,5 +1,8 @@
 ---
 name: researcher
+prompt_id: researcher
+version: 1.0.0
+model_pinned: sonnet
 capabilities:
   role: [researcher]
   scopes: [normal, wide]

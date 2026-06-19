@@ -1,5 +1,9 @@
 ---
 name: inspector-verifier
+prompt_id: inspector-verifier
+version: 1.0.0
+model_pinned: sonnet
+evals: evals/agents/inspector-verifier.yaml
 capabilities:
   role: [reviewer, validator]
   scopes: [trivial]

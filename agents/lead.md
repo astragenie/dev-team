@@ -1,5 +1,9 @@
 ---
 name: lead
+prompt_id: lead
+version: 1.0.0
+model_pinned: sonnet
+evals: evals/agents/lead.yaml
 description: Autonomous orchestrator and router for structured software work — frames tasks, dispatches bounded specialists, synthesizes results, and resolves blockers without user escalation. Escalates to the user only for production promotion or confidence < 0.4 on an irreversible destructive action.
 model: sonnet
 effort: medium

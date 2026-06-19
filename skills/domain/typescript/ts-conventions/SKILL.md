@@ -1,5 +1,7 @@
 ---
 name: ts-conventions
+prompt_id: ts-conventions
+version: 1.0.0
 tier: domain
 stack: typescript
 description: TypeScript strict-mode conventions — types, Result<T,E>, branded IDs, Zod validation, React patterns, approved libraries. Use when touching *.ts or *.tsx files.

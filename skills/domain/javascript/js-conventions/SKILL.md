@@ -1,5 +1,7 @@
 ---
 name: js-conventions
+prompt_id: js-conventions
+version: 1.0.0
 tier: domain
 stack: javascript
 description: JavaScript / Node ESM conventions — module shape, SOLID idioms, error handling, lint rules. Use when touching *.mjs or *.js files.

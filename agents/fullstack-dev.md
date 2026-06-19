@@ -1,5 +1,9 @@
 ---
 name: fullstack-dev
+prompt_id: fullstack-dev
+version: 1.0.0
+model_pinned: sonnet
+evals: evals/agents/fullstack-dev.yaml
 capabilities:
   role: [implementer]
   surfaces: [agent-prompts, infra, docs, schema, scripts]

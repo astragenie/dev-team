@@ -1,5 +1,7 @@
 ---
 name: research-coordination
+prompt_id: research-coordination
+version: 1.0.0
 tier: workflow
 description: Strategic planning for multi-source research tasks — complexity assessment, specialist allocation, iteration strategy, source cross-validation, and synthesis planning.
 source: aitmpl/deep-research-team/research-coordinator

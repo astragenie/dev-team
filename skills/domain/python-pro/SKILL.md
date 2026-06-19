@@ -1,5 +1,7 @@
 ---
 name: python-pro
+prompt_id: python-pro
+version: 1.0.0
 tier: domain
 description: Production-ready Python 3.12+ guidance — type safety, async patterns, testing, performance, and web frameworks. Consult when writing or reviewing Python code.
 source: aitmpl/programming-languages/python-pro

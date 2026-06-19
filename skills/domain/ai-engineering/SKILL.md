@@ -1,5 +1,7 @@
 ---
 name: ai-engineering
+prompt_id: ai-engineering
+version: 1.0.0
 tier: domain
 description: End-to-end AI system engineering — model selection, training pipelines, inference optimization, MLOps, ethical AI, and production deployment. Consult when building or shipping AI/ML systems.
 source: aitmpl/data-ai/ai-engineer

@@ -1,5 +1,7 @@
 ---
 name: dart-conventions
+prompt_id: dart-conventions
+version: 1.0.0
 tier: domain
 stack: dart
 description: Dart 3 conventions — null safety, sealed classes, pattern matching, Result types, lints. Use when touching *.dart files outside Flutter UI.

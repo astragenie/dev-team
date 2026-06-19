@@ -1,5 +1,7 @@
 ---
 name: security-advisory
+prompt_id: security-advisory
+version: 1.0.0
 tier: domain
 description: Comprehensive security engineering skill for application security, penetration testing, security architecture, and compliance auditing. Includes security assessment tools, threat modeling, crypto implementation, and security automation. Use when designing security architecture, conducting penetration tests, implementing cryptography, or performing security audits.
 source: aitmpl/development/senior-security

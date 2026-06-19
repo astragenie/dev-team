@@ -1,5 +1,7 @@
 ---
 name: security-sweep
+prompt_id: security-sweep
+version: 1.0.0
 tier: domain
 description: Pre-merge security sweep skill for automated secrets scanning and supply-chain CVE auditing. Auto-fires on dependency/lockfile diffs and auth-touching diffs. Emits severity-tiered findings as [SEVERITY] file:line blocks and one grep-able observability line per scan.
 owner: hero-crew

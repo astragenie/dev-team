@@ -1,5 +1,7 @@
 ---
 name: flutter-conventions
+prompt_id: flutter-conventions
+version: 1.0.0
 tier: domain
 stack: flutter
 description: Flutter conventions — widget patterns, state management, navigation, performance, approved packages. Use when touching Flutter UI code.

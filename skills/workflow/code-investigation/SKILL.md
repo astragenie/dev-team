@@ -1,5 +1,7 @@
 ---
 name: code-investigation
+prompt_id: code-investigation
+version: 1.0.0
 tier: workflow
 description: Structured codebase investigation — clarity gate, sub-question briefs, evidence grading, hypothesis grids, and stack-specific first-check lists for C#/.NET, TypeScript/React, and plugin internals. Use when dispatched to trace behavior, find root cause, compare options, or run spec pre-flight research.
 source: davila7/claude-code-templates/cli-tool/components/agents/{deep-research-team,expert-advisors}

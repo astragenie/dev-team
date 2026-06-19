@@ -1,5 +1,8 @@
 ---
 name: investigator
+prompt_id: investigator
+version: 1.0.0
+model_pinned: haiku
 capabilities:
   role: [researcher]
   scopes: [trivial]
