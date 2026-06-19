@@ -47,6 +47,10 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/log_event.sh\" subagent_stop"
+          },
+          {
+            "type": "command",
+            "command": "bun \"${CLAUDE_PLUGIN_ROOT}/hooks/otel-subagent-stop.ts\""
           }
         ]
       }
@@ -146,6 +150,24 @@
           {
             "type": "command",
             "command": "bun \"${CLAUDE_PLUGIN_ROOT}/hooks/record-edit.ts\""
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun \"${CLAUDE_PLUGIN_ROOT}/hooks/otel-post-tool-use.ts\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun \"${CLAUDE_PLUGIN_ROOT}/hooks/otel-stop.ts\""
           }
         ]
       }

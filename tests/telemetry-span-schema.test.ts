@@ -59,8 +59,30 @@ test("SpanRecordSchema: invalid traceId (31 chars) is rejected", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Case 3: newTraceId and newSpanId are deterministic across calls
+// Case 3 (SLICE-81): passthrough — extra SDK attrs survive SpanRecordSchema.parse
 // ---------------------------------------------------------------------------
+
+test("SpanRecordSchema: passthrough keeps unknown fields like traceState", () => {
+  const span = SpanRecordSchema.parse({
+    traceId: "a".repeat(32),
+    spanId: "b".repeat(16),
+    name: "tool_call",
+    kind: "INTERNAL",
+    startTimeUnixNano: "1717754000000000000",
+    endTimeUnixNano: "1717754000000000001",
+    attributes: {},
+    events: [],
+    status: { code: "OK" },
+    traceState: "vendor=x",
+    droppedAttributesCount: 0
+  }) as Record<string, unknown>;
+  assert.equal(span["traceState"], "vendor=x", "traceState must survive passthrough");
+  assert.equal(
+    span["droppedAttributesCount"],
+    0,
+    "droppedAttributesCount must survive passthrough"
+  );
+});
 
 test("newTraceId and newSpanId are deterministic", () => {
   const t1 = newTraceId("run-x");
