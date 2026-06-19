@@ -15,6 +15,7 @@
   },
   "scripts": {
     "test": "bun test --parallel --timeout 30000 tests/",
+    "test:agents": "CREW_AGENT_EVAL=1 bun test tests/agent-eval/",
     "test:node": "node --test --experimental-strip-types",
     "validate:manifests": "node ./scripts/validate-manifests.ts",
     "lint": "biome lint scripts/ hooks/",
