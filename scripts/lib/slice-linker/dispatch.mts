@@ -11,29 +11,82 @@
  * CONTRACT: planDispatch is a PURE PLAN GENERATOR — no side effects, no
  * Agent tool calls. The loop plugin owns the actual subagent runtime calls.
  *
- * Golden trace (regular, code-change slice):
+ * Golden trace (regular, fullstack default, code-change slice):
  *   [
- *     { role: "builder",   agent: "crew:fullstack-dev", parallel: 1, gate: "none" },
- *     { role: "reviewer",  agent: "crew:inspector",     parallel: 2, gate: "all_pass" },
- *     { role: "validator", agent: "crew:verifier",      parallel: 1, gate: "blocking" }
+ *     {
+ *       role: "builder",
+ *       agent: "crew:fullstack-dev",
+ *       parallel: 1,
+ *       gate: "none",
+ *       routing: { resolved_by: "default" }
+ *     },
+ *     {
+ *       role: "reviewer",
+ *       agent: "",
+ *       parallel: 1,
+ *       gate: "all_pass",
+ *       parallel_dispatch: {
+ *         group: ["crew:inspector", "crew:inspector", "crew:verifier"],
+ *         policy: "wait_for_all",
+ *         halt_on: "any_FAIL"
+ *       },
+ *       aggregation: { halt_on_any_FAIL: true, wait_for_all: true }
+ *     }
  *   ]
  */
 import {
   loadWorkflowConfig,
   expandWorkflow,
-  UnsupportedSkipExpressionError
+  UnsupportedSkipExpressionError,
+  type WorkflowPhase
 } from "../workflow-config.ts";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 export type GatePolicy = "all_pass" | "blocking" | "advisory" | "none" | "skipped";
 
+/**
+ * Parallel dispatch group — ONE Agent message with N tool calls.
+ * Field names match post-builder-fanout.mts FanoutResult for cross-repo parity.
+ * PARALLEL_DISPATCH_CONTRACT v1.
+ */
+export interface ParallelDispatchGroup {
+  group: string[];
+  policy: "wait_for_all";
+  halt_on: "any_FAIL";
+}
+
+/**
+ * Aggregation semantics for a parallel group.
+ * Field names match post-builder-fanout.mts FanoutResult.aggregation.
+ */
+export interface DispatchAggregation {
+  halt_on_any_FAIL: boolean;
+  wait_for_all: boolean;
+}
+
+/**
+ * Routing result attached to builder phases that used tag-based routing.
+ * Lets the orchestrator log which variant was selected and why.
+ */
+export interface RoutingResult {
+  resolved_by: "tag" | "default";
+  matched_tag?: string;
+}
+
 export interface DispatchPhase {
   role: string;
+  /** Resolved agent ref for single-agent phases. Empty string for parallel_dispatch phases. */
   agent: string;
   parallel: number;
   gate: GatePolicy;
   skipReason?: string;
+  /** Present on phases that fan out to multiple agents in one Agent message. */
+  parallel_dispatch?: ParallelDispatchGroup;
+  /** Aggregation contract for parallel_dispatch phases. */
+  aggregation?: DispatchAggregation;
+  /** Present on builder phases with routing. */
+  routing?: RoutingResult;
 }
 
 // ── skip_when evaluation (v1, narrowly scoped) ─────────────────────────────────
@@ -63,6 +116,60 @@ function evaluateSkipWhen(expression: string, changedFiles: string[]): boolean {
   return changedFiles.length > 0 && changedFiles.every((f) => pattern.test(f));
 }
 
+// ── Tag routing ────────────────────────────────────────────────────────────────
+
+/**
+ * Resolves the builder agent from a routing config and a slice's tag set.
+ *
+ * Replicates the pickBuilderVariant logic from the loop plugin's dispatch.mts
+ * (FEAT-190 / SLICE-104-105) but driven by the declarative YAML tag_routes map.
+ *
+ * Resolution order:
+ *   1. Exact tag match in tag_routes (first matching tag wins)
+ *   2. routing.default
+ */
+function resolveRouting(
+  routing: NonNullable<WorkflowPhase["routing"]>,
+  sliceTags: string[]
+): { agent: string; parallel_dispatch?: ParallelDispatchGroup; routing: RoutingResult } {
+  const tagRoutes = routing.tag_routes ?? {};
+
+  for (const tag of sliceTags) {
+    const routeValue = tagRoutes[tag];
+    if (routeValue === undefined) continue;
+
+    if (typeof routeValue === "string") {
+      return {
+        agent: routeValue,
+        routing: { resolved_by: "tag", matched_tag: tag }
+      };
+    }
+    // parallel_dispatch branch
+    if (
+      typeof routeValue === "object" &&
+      "parallel_dispatch" in routeValue &&
+      routeValue.parallel_dispatch !== undefined
+    ) {
+      const pd = routeValue.parallel_dispatch;
+      return {
+        agent: "",
+        parallel_dispatch: {
+          group: pd.group,
+          policy: pd.policy,
+          halt_on: pd.halt_on
+        },
+        routing: { resolved_by: "tag", matched_tag: tag }
+      };
+    }
+  }
+
+  // Default fallback
+  return {
+    agent: routing.default,
+    routing: { resolved_by: "default" }
+  };
+}
+
 // ── Public API ─────────────────────────────────────────────────────────────────
 
 /**
@@ -73,6 +180,8 @@ function evaluateSkipWhen(expression: string, changedFiles: string[]): boolean {
  *                           undefined to use config.default_workflow.
  * @param opts.changedFiles  List of file paths changed in this slice (used to
  *                           evaluate skip_when expressions).
+ * @param opts.sliceTags     Tags from the slice frontmatter (used for builder
+ *                           variant routing via routing.tag_routes).
  *
  * @returns Ordered array of DispatchPhase objects. Skipped phases have
  *          gate === "skipped" and a skipReason set.
@@ -81,8 +190,9 @@ export async function planDispatch(opts: {
   repoRoot: string;
   sliceWorkflow?: string;
   changedFiles: string[];
+  sliceTags?: string[];
 }): Promise<DispatchPhase[]> {
-  const { repoRoot, sliceWorkflow, changedFiles } = opts;
+  const { repoRoot, sliceWorkflow, changedFiles, sliceTags = [] } = opts;
 
   const config = await loadWorkflowConfig(repoRoot);
   const workflow = expandWorkflow(config, sliceWorkflow);
@@ -106,12 +216,8 @@ export async function planDispatch(opts: {
       gate = resolveGatePolicy(phase.gate?.policy);
     }
 
-    const dispatchPhase: DispatchPhase = {
-      role: phase.role,
-      agent: phase.agent,
-      parallel: phase.parallel ?? 1,
-      gate
-    };
+    // Build the dispatch phase from YAML phase definition
+    const dispatchPhase = buildDispatchPhase(phase, gate, sliceTags);
 
     if (skipReason !== undefined) {
       dispatchPhase.skipReason = skipReason;
@@ -121,6 +227,67 @@ export async function planDispatch(opts: {
   }
 
   return phases;
+}
+
+/**
+ * Constructs a DispatchPhase from a parsed WorkflowPhase YAML node.
+ * Handles the three phase shapes:
+ *   1. routing phase (builder with tag_routes)
+ *   2. parallel_dispatch phase (reviewer+validator fanout)
+ *   3. plain agent phase (legacy / simple)
+ */
+function buildDispatchPhase(
+  phase: WorkflowPhase,
+  gate: GatePolicy,
+  sliceTags: string[]
+): DispatchPhase {
+  // Shape 1: routing (builder phase with tag_routes)
+  if (phase.routing !== undefined) {
+    const resolved = resolveRouting(phase.routing, sliceTags);
+    const dispatchPhase: DispatchPhase = {
+      role: phase.role,
+      agent: resolved.agent,
+      parallel: resolved.parallel_dispatch ? resolved.parallel_dispatch.group.length : 1,
+      gate,
+      routing: resolved.routing
+    };
+    if (resolved.parallel_dispatch !== undefined) {
+      dispatchPhase.parallel_dispatch = resolved.parallel_dispatch;
+    }
+    return dispatchPhase;
+  }
+
+  // Shape 2: parallel_dispatch (fanout — reviewer-A + reviewer-B + validator)
+  if (phase.parallel_dispatch !== undefined) {
+    const pd = phase.parallel_dispatch;
+    const agg = phase.aggregation;
+    const dispatchPhase: DispatchPhase = {
+      role: phase.role,
+      agent: "",
+      parallel: pd.group.length,
+      gate,
+      parallel_dispatch: {
+        group: pd.group,
+        policy: pd.policy,
+        halt_on: pd.halt_on
+      }
+    };
+    if (agg !== undefined) {
+      dispatchPhase.aggregation = {
+        halt_on_any_FAIL: agg.halt_on_any_FAIL ?? false,
+        wait_for_all: agg.wait_for_all ?? false
+      };
+    }
+    return dispatchPhase;
+  }
+
+  // Shape 3: plain agent phase
+  return {
+    role: phase.role,
+    agent: phase.agent ?? "",
+    parallel: phase.parallel ?? 1,
+    gate
+  };
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────

@@ -1,5 +1,24 @@
 [
-  { "role": "builder", "agent": "crew:fullstack-dev", "parallel": 1, "gate": "none" },
-  { "role": "reviewer", "agent": "crew:inspector", "parallel": 2, "gate": "all_pass" },
-  { "role": "validator", "agent": "crew:verifier", "parallel": 1, "gate": "blocking" }
+  {
+    "role": "builder",
+    "agent": "crew:fullstack-dev",
+    "parallel": 1,
+    "gate": "none",
+    "routing": { "resolved_by": "default" }
+  },
+  {
+    "role": "reviewer",
+    "agent": "",
+    "parallel": 3,
+    "gate": "all_pass",
+    "parallel_dispatch": {
+      "group": ["crew:inspector", "crew:inspector", "crew:verifier"],
+      "policy": "wait_for_all",
+      "halt_on": "any_FAIL"
+    },
+    "aggregation": {
+      "halt_on_any_FAIL": true,
+      "wait_for_all": true
+    }
+  }
 ]
