@@ -11,9 +11,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
-const DOCKER_COMPOSE_CONTENT = `version: "3.8"
-
-services:
+const DOCKER_COMPOSE_CONTENT = `services:
   langfuse-db:
     image: postgres:16-alpine
     environment:

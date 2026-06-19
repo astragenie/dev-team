@@ -5,6 +5,84 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.37.0 — 2026-06-19 — observability bridge, declarative workflows, prompt frontmatter contract, agent eval foundation
+
+Six slices across four FEATs landed in two parallel-worktree batches.
+
+### SLICE-77 — Cost-report → OTel span JSONL backfill (FEAT-165 SLICE-A)
+
+Pure data-transform substrate. Reads `.claude/artifacts/crew/cost/*.md` slice cost reports and emits OTel-shaped span JSONL under `.claude/artifacts/crew/spans/<run_id>.jsonl`. Trace tree: root slice span → phase span → N `agent.dispatch` spans per modelMix entry. Deterministic SHA-256-seeded trace + span ids (byte-identical re-run). No hooks, no live exporter — substrate that SLICE-81 (live OTel hook bridge) and FEAT-167 SLICE-C (prompt_id attr injection) both consume.
+
+- New: `scripts/lib/telemetry/{span,cost-report-loader,cost-report-to-spans,serialize-jsonl}.ts`, CLI at `scripts/cost-report-to-spans.ts`, 4 test files (15 cases).
+- Grade: 0.867 average.
+
+### SLICE-78 — Declarative workflow YAML, regular only (FEAT-166 SLICE-A)
+
+`.claude/workflows.yaml` introduces a declarative source-of-truth for slice dispatch shape, consumed by both autonomous-loop and interactive `/crew:build` paths. SLICE-A ships the `regular` workflow only with **zero behavior change** vs the pre-refactor hard-coded dispatch (golden trace test pins the contract). Encodes the real post-builder-fanout shape: reviewer-A + reviewer-B + validator dispatched as one parallel Agent message with `wait_for_all` + `halt_on: any_FAIL`. Includes tag-based builder routing (frontend / backend / parallel-fe-be / default).
+
+- New: `.claude/workflows.yaml`, `scripts/lib/workflow-config.ts` (Zod schema + loader + `expandWorkflow`), `scripts/validate-workflows.ts` (new CI gate), golden trace test.
+- Grade: 0.831 average.
+
+### SLICE-79 — Prompt frontmatter contract + validator extension + 1.0.0 backfill (FEAT-167 SLICE-A)
+
+Adds `prompt_id` (kebab-slug) + `version: 1.0.0` frontmatter fields to all 18 first-party agents and 64 first-party skills. Conditional `evals: <path>` field on the 10 execution agents (builder / reviewer / validator / deployer / lead variants). Extends `scripts/validate-agents.ts` + `scripts/validate-skills.ts` to enforce the contract. New `docs/prompts/README.md` documents versioning policy. Pure metadata — no runtime code paths changed. Eval tree (FEAT-167 SLICE-B) and OTel attr injection (FEAT-167 SLICE-C) deferred.
+
+- Grade: 0.843 average.
+
+### SLICE-80 — Agent eval harness foundation, dry-run only (FEAT-162 SLICE-A)
+
+`tests/agent-eval/` scaffolds the subscription-billed agent eval harness — `claude -p --output-format stream-json` + Bun fixtures + OAuth. SLICE-A ships type contract (`Fixture`, `CapturedTrace`), 5 pure assertion helpers (`toolCallsOf`, `hasToolCall`, `dispatchedAgent`, `findArtifact`, `artifactContains`), a stub `runClaude` (throws "not implemented — SLICE-B"), one dry-run replay fixture, one synthetic captured-trace JSON, and a Bun test loop with `describe.skipIf(!CREW_AGENT_EVAL)` guard. Live `claude -p` subprocess deferred to SLICE-B. Real stream-json reference fixture (`real-claude-p-stream.jsonl`) committed for SLICE-B parser.
+
+- New: `tests/agent-eval/{lib,fixtures}/`, `package.json: "test:agents"` script.
+- Promptfoo / Inspect AI / DeepEval / Anthropic Evals SDK explicitly rejected as API-billed (DEC-TBD).
+- Grade: 0.831 average.
+
+### SLICE-81 — Live OTel hook bridge + OTLP HTTP exporter + PII scrub (FEAT-165 SLICE-B)
+
+Wires hook stdin (PostToolUse / Stop / SubagentStop) through pure parse + PII scrub + lazy-imported `@opentelemetry/sdk-node` + OTLP HTTP exporter. Default DISABLED. Two-key opt-in (`cfg.enabled: true` AND `CREW_OTEL_ENABLED=1`). Bridge NEVER calls `api.anthropic.com` (AC-9 audited). PII scrub on hot path — `tool_input.content` + `last_assistant_message` always redacted; `redact_paths` glob + length cap. Lazy SDK import keeps disabled path under ≤50ms p95 hook latency. Try/catch wrap on every `emit*` — telemetry crash never propagates to Claude.
+
+- New: `scripts/lib/telemetry/{config,hook-input,otel-bridge,scrub}.ts`, 3 hooks under `hooks/otel-*.ts`, `.claude/crew/telemetry.example.yaml`, `scripts/setup-langfuse-self-host.ts`, `docs/observability/langfuse-bridge.md`, 4 test files (20 cases).
+- Deps: `@opentelemetry/sdk-node`, `@opentelemetry/exporter-trace-otlp-http`.
+- Grade: 0.881 average — highest of the batch.
+
+### SLICE-82 — Quick / spike / release workflows + `${env:VAR}` substitution (FEAT-166 SLICE-B)
+
+Extends SLICE-78 with 3 new workflows (`quick` / `spike` / `release`) plus `${env:VAR}` and `${env:VAR:-default}` substitution. `${env:` opt-in marker prevents accidental capture of dollar-sign-containing strings. `release` workflow requires `require_user_approval: true` on the deployer phase. Slice frontmatter `workflow:` field routes individual slices to any declared workflow. Circular routing detection via DFS. `regular` golden trace BYTE-IDENTICAL to main (zero-regression contract).
+
+- New: `tests/fixtures/dispatch-traces/{quick,spike,release}.golden.json`, 5 invalid-fixture yamls, 2 new test files, `docs/standards/workflow-schema.md`.
+- Grade: 0.870 average.
+
+### FEAT-143 — bisect procedure + squash-merge detection + prune-artifacts --dry-run
+
+Landed via PR #115. `scripts/lib/branch-cleanup.ts` adds squash-merge detection; `skills/workflow/systematic-debugging` gains a `git-bisect.md` reference page. Independent of the FEAT-162/165/166/167 batch — integrated via standard merge into main.
+
+### Stabilization notes
+
+Three stabilization tests run before release:
+
+- **FEAT-166 workflow CLI smoke** — all 4 workflows load + expand correctly. Schema integrity verified.
+- **FEAT-162 trace-shape vs fixture** — real `claude -p stream-json` shape diverges from synthetic fixture (tool_use nested under `assistant.message.content[]` vs flat in `events[]`). Resolved by committing `real-claude-p-stream.jsonl` as the SLICE-B parser input contract and documenting the nested→flat transform in `tests/agent-eval/README.md`.
+- **FEAT-165 docker-compose** — Langfuse compose template valid; obsolete `version: "3.8"` field removed from both `langfuse/docker-compose.yml` and the generator at `scripts/setup-langfuse-self-host.ts`.
+
+### Out of scope / next slices
+
+- FEAT-162 SLICE-B (real `claude -p` subprocess wrapper + live fixture).
+- FEAT-165 SLICE-C (PII scrub regression tests + CI dry-run gate).
+- FEAT-166 SLICE-C (substantive `agents/lead.md` refactor — workflow loaded at slice start).
+- FEAT-167 SLICE-B (`evals/` tree + reference specs — blocked on FEAT-162 SLICE-B).
+- FEAT-167 SLICE-C (OTel `prompt_id` + `prompt_version` attr injection into agent-dispatch spans).
+
+### Process learnings
+
+Six feedback memories captured for future sessions (see `~/.claude/projects/.../memory/`):
+
+- HARD RULE: never fan out `crew:lead` as a subagent (refused / bailed / **fabricated** completion across 3 worktrees).
+- Pre-reserve slice ids before parallel spec-writer dispatch (race condition observed).
+- Pick up + finish stuck builders inline from main thread (faster than SendMessage).
+- Per-file `line_budgets:` in spec frontmatter (validated: 8/8 files in SLICE-80 respected caps first try).
+- `agents/lead.md` cap-merge collision when parallel branches both touch it.
+- `git fetch` before `git push` on main (external PR merges land out-of-band).
+
 ## v0.36.0 — 2026-06-17
 
 ### SLICE-74 — lead.md slim-down: policy blocks relocated to workflow skills (FEAT-158, DEC-025)

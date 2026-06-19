@@ -13,7 +13,35 @@ subscription-billed `claude -p --output-format stream-json` path — zero API sp
 ## Status
 
 SLICE-A landed (this commit). Dry-run replay only. Live `claude -p` lands in SLICE-B;
-nightly CI in SLICE-D. See `.claude/artifacts/loop/backlog/in-progress/FEAT-162.md`.
+nightly CI in SLICE-D. See `.claude/artifacts/loop/backlog/done/FEAT-162.md`.
+
+## SLICE-B input contract — `claude -p --output-format stream-json` shape
+
+Real-world reference: `fixtures/captured-traces/real-claude-p-stream.jsonl` (a real
+30-event capture from `claude -p "say hello" --output-format stream-json --verbose`).
+
+The raw stream is JSONL. Each event has a top-level `type` field:
+
+| `type` | Notes |
+|---|---|
+| `system` (`subtype: hook_started` / `hook_response` / `hook_progress` / `init` / `notification`) | Session lifecycle; ignored by `CapturedTrace` parser |
+| `user` | User messages; flatten `message.content` text into `events[]` as `{type: "text", ...}` |
+| `assistant` | Assistant turns; `message.content[]` is an array of `{type: "text" \| "tool_use", ...}` blocks |
+| `result` (`subtype: success` / `error`) | Terminator with `result` (`finalText`), `duration_ms`, `total_cost_usd`, `modelUsage` |
+| `rate_limit_event` | Informational; not in `CapturedTrace` |
+
+### nested → flat transform (SLICE-B parser contract)
+
+The `CapturedTrace.events[]` abstraction is FLAT: top-level `{type: "tool_use", name, id, input}` and `{type: "text", text}` items. The real stream has those NESTED inside `assistant.message.content[]`. The SLICE-B `runClaude` parser MUST:
+
+1. Read JSONL line-by-line.
+2. For each `assistant` event, expand `message.content[]` — each entry becomes one item in `CapturedTrace.events[]` preserving the original `id` and `input` fields verbatim.
+3. For each `user` event with a text body, append a `{type: "text"}` entry.
+4. Drop `system/*` and `rate_limit_event` from the abstraction (preserve session_id + uuid only for traceability).
+5. On `result/success`, set `CapturedTrace.exitCode = 0`, `finalText = result`, `usage = modelUsage[<model>]` (matches our cost-report schema fields verbatim — `inputTokens`, `outputTokens`, `cacheReadInputTokens`, `cacheCreationInputTokens`, `costUSD`).
+6. On `result/error`, set `exitCode = 1`, `finalText = result || ""`, preserve `is_error` + `api_error_status`.
+
+The synthetic `00-builder-handoff.trace.json` represents the OUTPUT of this transform (the abstraction the assert helpers operate on), NOT the input. SLICE-B's job is to write the transformer that converts `real-claude-p-stream.jsonl` shape → `00-builder-handoff.trace.json` shape.
 
 ## Running locally
 

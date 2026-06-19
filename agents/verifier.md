@@ -15,7 +15,7 @@ maxTurns: 40
 disallowedTools: Write, Edit, NotebookEdit
 color: yellow
 ---
-<!-- pre-loaded-universals:BEGIN hash=798a811cedecb73477ba9fbd5df31f3e61e81eff66c5390f0935052760828ec8 -->
+<!-- pre-loaded-universals:BEGIN hash=05a2c1e4ca18f46e4adefc3331704779c0d9c93a1533a62164b1070cc9a0585f -->
 ## Pre-loaded universals
 
 ### using-superpowers
