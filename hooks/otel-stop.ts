@@ -6,7 +6,11 @@
 import { logHookError } from "./hook-error.ts";
 import { loadTelemetryConfig, bridgeEnabled } from "../scripts/lib/telemetry/config.ts";
 import { parseStop } from "../scripts/lib/telemetry/hook-input.ts";
-import { initBridge, emitStopSpan, sampleSpan } from "../scripts/lib/telemetry/otel-bridge.ts";
+
+// otel-bridge is dynamically imported AFTER the bridgeEnabled gate so the
+// disabled path never resolves @opentelemetry/* — v0.37.2 hotfix for plugin
+// installs that lack node_modules in the plugin cache.
+type OtelBridgeModule = typeof import("../scripts/lib/telemetry/otel-bridge.ts");
 
 async function readStdin(): Promise<string> {
   const chunks: Buffer[] = [];
@@ -18,6 +22,10 @@ async function main(): Promise<void> {
   const raw = await readStdin();
   const cfg = await loadTelemetryConfig();
   if (!bridgeEnabled(cfg)) return;
+
+  const { initBridge, emitStopSpan, sampleSpan }: OtelBridgeModule = await import(
+    "../scripts/lib/telemetry/otel-bridge.ts"
+  );
 
   const payload = parseStop(raw);
   if (payload === null) return;

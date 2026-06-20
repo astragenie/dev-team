@@ -4,18 +4,40 @@
  * Converts Claude Code hook payloads into OTLP spans and exports them via
  * BatchSpanProcessor + OTLP HTTP exporter to a self-hosted Langfuse.
  *
- * @opentelemetry/api is imported at module level — it is the global singleton
- * registry (~30 kB, no heavy deps). The heavy SDK packages (sdk-node,
- * exporter-trace-otlp-http) are lazy-imported inside initBridge so the
- * disabled path never touches the OTel module graph.
+ * All @opentelemetry/* packages are lazy-imported inside initBridge so the
+ * disabled path never touches the OTel module graph AND a consumer repo
+ * without the runtime deps installed never crashes on plugin load (v0.37.2
+ * hotfix — prior versions static-imported @opentelemetry/api at top level,
+ * which ENOENT'd in plugin-cache installs that lack node_modules).
+ *
+ * The api module is cached in `cachedOtelApi` after first init so the
+ * synchronous emit* functions can call into it without awaiting an import.
+ * If init never ran (or failed to load deps), emit* no-ops.
  *
  * Every emit* is wrapped in try/catch — telemetry crash must never propagate.
  */
-import { trace, SpanKind } from "@opentelemetry/api";
 import type { SpanExporter } from "@opentelemetry/sdk-trace-base";
 import { bridgeEnabled, resolveAuthHeader, type TelemetryConfig } from "./config.ts";
 import type { PostToolUseHookInput, StopHookInput, SubagentStopHookInput } from "./hook-input.ts";
 import { scrubAttrs } from "./scrub.ts";
+
+// Cached @opentelemetry/api module — populated on first successful initBridge.
+// emit* functions read from this; null means bridge never initialized.
+let cachedOtelApi: typeof import("@opentelemetry/api") | null = null;
+
+// One-shot stderr guard so a missing-deps warning fires at most once per process.
+let warnedMissingDeps = false;
+
+function warnMissingDeps(err: unknown): void {
+  if (warnedMissingDeps) return;
+  warnedMissingDeps = true;
+  const msg = err instanceof Error ? err.message : String(err);
+  process.stderr.write(
+    `crew-otel: telemetry deps not installed, bridge disabled. ` +
+      `Run \`npm i @opentelemetry/api @opentelemetry/sdk-node @opentelemetry/exporter-trace-otlp-http @opentelemetry/sdk-trace-base @opentelemetry/resources\` ` +
+      `in this repo to enable. (${msg})\n`
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -50,10 +72,26 @@ export async function initBridge(
 ): Promise<BridgeSdk | null> {
   if (!bridgeEnabled(cfg)) return null;
 
-  // Lazy import — disabled path never loads these heavy packages.
-  const { NodeSDK } = await import("@opentelemetry/sdk-node");
-  const { OTLPTraceExporter } = await import("@opentelemetry/exporter-trace-otlp-http");
-  const { BatchSpanProcessor } = await import("@opentelemetry/sdk-trace-base");
+  // Lazy import everything — including @opentelemetry/api. Disabled path AND
+  // missing-deps path both stay quiet. ENOENT here = deps not installed in
+  // consumer repo → warn once + return null. Hook still exits 0.
+  let api: typeof import("@opentelemetry/api");
+  let NodeSDK: typeof import("@opentelemetry/sdk-node").NodeSDK;
+  let OTLPTraceExporter: typeof import("@opentelemetry/exporter-trace-otlp-http").OTLPTraceExporter;
+  let BatchSpanProcessor: typeof import("@opentelemetry/sdk-trace-base").BatchSpanProcessor;
+  let Resource: typeof import("@opentelemetry/resources").Resource;
+  try {
+    api = await import("@opentelemetry/api");
+    ({ NodeSDK } = await import("@opentelemetry/sdk-node"));
+    ({ OTLPTraceExporter } = await import("@opentelemetry/exporter-trace-otlp-http"));
+    ({ BatchSpanProcessor } = await import("@opentelemetry/sdk-trace-base"));
+    ({ Resource } = await import("@opentelemetry/resources"));
+  } catch (err) {
+    warnMissingDeps(err);
+    return null;
+  }
+
+  cachedOtelApi = api;
 
   let pkgVersion = "0.0.0";
   try {
@@ -82,7 +120,6 @@ export async function initBridge(
 
   // Resource is typed differently across the sdk-node bundle vs top-level package.
   // Cast to any to satisfy NodeSDKConfiguration without an incompatible version import.
-  const { Resource } = await import("@opentelemetry/resources");
   const resource = new Resource({
     "service.name": "crew-plugin",
     "service.version": pkgVersion
@@ -119,8 +156,9 @@ export function emitPostToolUseSpan(
   payload: PostToolUseHookInput,
   cfg: TelemetryConfig
 ): void {
+  if (cachedOtelApi === null) return; // initBridge never succeeded — silently skip
   try {
-    const tracer = trace.getTracer("crew-plugin");
+    const tracer = cachedOtelApi.trace.getTracer("crew-plugin");
     const baseAttrs: Record<string, string | number | boolean> = {
       "tool.name": payload.tool_name,
       "session.id": payload.session_id,
@@ -128,7 +166,10 @@ export function emitPostToolUseSpan(
     };
     const toolInputAttrs = flattenToolInput(payload.tool_input, cfg);
     const attrs = scrubAttrs({ ...baseAttrs, ...toolInputAttrs }, cfg);
-    const span = tracer.startSpan("tool_call", { kind: SpanKind.INTERNAL, attributes: attrs });
+    const span = tracer.startSpan("tool_call", {
+      kind: cachedOtelApi.SpanKind.INTERNAL,
+      attributes: attrs
+    });
     span.end();
   } catch {
     // swallow — telemetry crash must never propagate
@@ -136,14 +177,18 @@ export function emitPostToolUseSpan(
 }
 
 export function emitStopSpan(_sdk: BridgeSdk, payload: StopHookInput, cfg: TelemetryConfig): void {
+  if (cachedOtelApi === null) return;
   try {
-    const tracer = trace.getTracer("crew-plugin");
+    const tracer = cachedOtelApi.trace.getTracer("crew-plugin");
     const raw: Record<string, string | number | boolean> = {
       "session.id": payload.session_id,
       reason: payload.reason ?? "unknown"
     };
     const attrs = scrubAttrs(raw, cfg);
-    const span = tracer.startSpan("session.stop", { kind: SpanKind.INTERNAL, attributes: attrs });
+    const span = tracer.startSpan("session.stop", {
+      kind: cachedOtelApi.SpanKind.INTERNAL,
+      attributes: attrs
+    });
     span.end();
     // NOTE: shutdown is intentionally NOT called here. The otel-stop.ts hook
     // entry calls sdk.shutdown() after emitStopSpan so it can await the flush
@@ -158,8 +203,9 @@ export function emitSubagentStopSpan(
   payload: SubagentStopHookInput,
   cfg: TelemetryConfig
 ): void {
+  if (cachedOtelApi === null) return;
   try {
-    const tracer = trace.getTracer("crew-plugin");
+    const tracer = cachedOtelApi.trace.getTracer("crew-plugin");
     const raw: Record<string, string | number | boolean> = {
       agent: payload.agent_name ?? "unknown",
       "session.id": payload.session_id
@@ -170,7 +216,7 @@ export function emitSubagentStopSpan(
     }
     const attrs = scrubAttrs(raw, cfg);
     const span = tracer.startSpan("agent.dispatch", {
-      kind: SpanKind.INTERNAL,
+      kind: cachedOtelApi.SpanKind.INTERNAL,
       attributes: attrs
     });
     span.end();

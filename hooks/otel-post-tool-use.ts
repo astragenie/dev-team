@@ -5,11 +5,15 @@
 import { logHookError } from "./hook-error.ts";
 import { loadTelemetryConfig, bridgeEnabled } from "../scripts/lib/telemetry/config.ts";
 import { parsePostToolUse } from "../scripts/lib/telemetry/hook-input.ts";
-import { initBridge, emitPostToolUseSpan, sampleSpan } from "../scripts/lib/telemetry/otel-bridge.ts";
+
+// otel-bridge is dynamically imported AFTER the bridgeEnabled gate so the
+// disabled path never resolves @opentelemetry/* — v0.37.2 hotfix for plugin
+// installs that lack node_modules in the plugin cache.
+type OtelBridgeModule = typeof import("../scripts/lib/telemetry/otel-bridge.ts");
 
 // Module-scope SDK cache — one process per hook invocation; this is a no-op cache
 // but mirrors the pattern for future long-lived hook processes.
-let cachedSdk: Awaited<ReturnType<typeof initBridge>> = null;
+let cachedSdk: Awaited<ReturnType<OtelBridgeModule["initBridge"]>> = null;
 
 async function readStdin(): Promise<string> {
   const chunks: Buffer[] = [];
@@ -21,6 +25,10 @@ async function main(): Promise<void> {
   const raw = await readStdin();
   const cfg = await loadTelemetryConfig();
   if (!bridgeEnabled(cfg)) return;
+
+  const { initBridge, emitPostToolUseSpan, sampleSpan }: OtelBridgeModule = await import(
+    "../scripts/lib/telemetry/otel-bridge.ts"
+  );
 
   const payload = parsePostToolUse(raw);
   if (payload === null) return;

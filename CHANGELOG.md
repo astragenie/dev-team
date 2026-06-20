@@ -5,6 +5,20 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.37.2 — 2026-06-19 — FEAT-165 plugin-cache ENOENT hotfix
+
+Customer-repo report: every hook fire emitted `error: ENOENT while resolving package '@opentelemetry/api' from '...crew/0.37.1/scripts/lib/telemetry/otel-bridge.ts'` to stderr. Non-blocking (hooks still exit 0 via `main().catch`), but noisy on every tool call.
+
+Root cause: `scripts/lib/telemetry/otel-bridge.ts` static-imported `@opentelemetry/api` at module top level (with a comment claiming it was safe because the package is "the global singleton registry, ~30 kB, no heavy deps"). The three `hooks/otel-*.ts` entries then statically imported `otel-bridge.ts`. Plugin installs land at `~/.claude/plugins/cache/astra/crew/<version>/` with the repo's `package.json` but no `node_modules` — the plugin loader does not run `npm install` against the cache. So the static `import "@opentelemetry/api"` ENOENT'd on every hook spawn, regardless of `bridgeEnabled(cfg)` (which checks AFTER the import already failed). The comment that justified the top-level import was wrong for the plugin-cache install path.
+
+Fix:
+- `scripts/lib/telemetry/otel-bridge.ts` — dropped top-level `import { trace, SpanKind } from "@opentelemetry/api"`. The api module is now lazy-imported inside `initBridge` (alongside the existing lazy SDK imports), cached at module scope as `cachedOtelApi`, and read by the synchronous `emit*` functions. If `cachedOtelApi` is null (init never ran or failed), the emitters silently no-op. Init wraps all `@opentelemetry/*` dynamic imports in try/catch; on `MODULE_NOT_FOUND` it writes a one-shot friendly stderr line (`crew-otel: telemetry deps not installed, bridge disabled. Run \`npm i @opentelemetry/api ...\` in this repo to enable.`) and returns null.
+- `hooks/otel-{post-tool-use,stop,subagent-stop}.ts` — moved the `otel-bridge` import behind the `bridgeEnabled(cfg)` gate via a dynamic `await import(...)`. The disabled path (the default — `CREW_OTEL_ENABLED` unset OR `cfg.enabled !== true`) now never resolves `otel-bridge.ts` AT ALL, which means no `@opentelemetry/*` resolution attempts are made at any layer. Stderr is silent.
+
+Net effect for the customer repo: zero stderr noise on every hook fire (disabled telemetry path). Consumers who actively opt in to telemetry (`CREW_OTEL_ENABLED=1` + `cfg.enabled: true` in `.claude/crew/telemetry.yaml`) get the friendly one-line install prompt instead of the cryptic Bun resolver error if the deps are missing in their repo. Plugin shape stays runtime-light — no bundled `node_modules`, no esbuild step, no plugin-cache bloat.
+
+Test telemetry suite stays 7/7 pass (the suite has the deps installed via the plugin repo's own `npm install`, so the lazy load resolves on first init).
+
 ## v0.37.1 — 2026-06-19 — FEAT-165 hook flush hotfix
 
 Two of three FEAT-165 SLICE-81 hooks (`PostToolUse` + `SubagentStop`) shipped without `await sdk.shutdown()` before process exit. BatchSpanProcessor buffered the span and the process died before flush — every span dropped silently. The `Stop` hook was correct (used as the reference pattern for the fix).
