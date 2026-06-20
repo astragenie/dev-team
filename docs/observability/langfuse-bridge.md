@@ -121,3 +121,38 @@ The bridge only POSTs to the `endpoint` you configure (default:
 grep -rn 'api.anthropic.com' scripts/lib/telemetry/ hooks/otel-*.ts
 # Expected: zero matches
 ```
+
+## Plugin-cache constraint — NO top-level `@opentelemetry/*` imports in the hook graph
+
+Claude Code installs plugins to `~/.claude/plugins/cache/astra/crew/<version>/`.
+The plugin loader does NOT guarantee `npm install` runs against the cache, and
+in practice some consumer installs ship with `node_modules/` populated for
+`yaml` + `zod` but missing `@opentelemetry/*` entirely. A top-level static
+`import "@opentelemetry/api"` (or any other `@opentelemetry/*` package) in any
+file statically reachable from `hooks/otel-*.ts` will then ENOENT on every
+hook invocation — even on the disabled-telemetry path, because the import
+resolves at module load before any runtime gate fires.
+
+**Rule for contributors touching telemetry:**
+
+- All `@opentelemetry/*` imports — including the `api` package — MUST be lazy
+  (`await import("@opentelemetry/...")`) and MUST be gated behind
+  `bridgeEnabled(cfg)` so the disabled path never resolves them.
+- The `api` module is cached at module scope inside `otel-bridge.ts` as
+  `cachedOtelApi` so the synchronous `emit*` functions can call into it without
+  awaiting per-call. If `cachedOtelApi` is `null` (init never ran or deps
+  missing), the emitters silently no-op.
+- The lazy-import block wraps all dynamic imports in `try/catch`. On
+  `MODULE_NOT_FOUND` it writes a one-shot friendly stderr line
+  (`crew-otel: telemetry deps not installed, bridge disabled. Run \`npm i ...\`
+  in this repo to enable.`) and returns `null`.
+
+**Regression gate**: `tests/telemetry-plugin-cache-smoke.test.ts` copies the
+hook + telemetry source tree to a temp dir, mirrors the repo `node_modules`
+MINUS `@opentelemetry/*`, then spawns each hook subprocess on the default
+disabled-telemetry path. Any stderr containing `@opentelemetry`, `ENOENT`, or
+`MODULE_NOT_FOUND` fails the test. This catches any future top-level
+`@opentelemetry/*` import in the hook graph before release.
+
+This constraint exists because of the v0.37.1 → v0.37.2 hotfix
+(commit `938df50`); see `CHANGELOG.md` v0.37.2 entry for the original incident.
