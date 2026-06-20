@@ -100,7 +100,12 @@ const FLAG_SPEC = {
   "--validator": { key: "validator" },
   "--verdict": { key: "decision" }, // alias of --decision
   "--verified-from": { key: "verifiedFrom" },
-  "--window": { key: "window" }
+  "--window": { key: "window" },
+  "--role": { key: "role" },
+  "--surface": { key: "surface" },
+  "--stack": { key: "stack" },
+  "--concern": { key: "concern" },
+  "--lens": { key: "lens" }
 } as const;
 
 type FlagSpecValues = (typeof FLAG_SPEC)[keyof typeof FLAG_SPEC];
@@ -196,7 +201,12 @@ function parseArgs(argv: string[]) {
     tier: null,
     updatePath: null,
     agent: null,
-    window: null
+    window: null,
+    role: null,
+    surface: null,
+    stack: null,
+    concern: null,
+    lens: null
   };
   const positionals = [];
 
@@ -286,7 +296,9 @@ function usage(target: string | null = null) {
       "  node scripts/crew.mjs cost-slice --repo <path> [--started-at <iso>] [--completed-at <iso>] [--run-title <text>] [--source-project <slug>] [--aggregate-all]",
     "cost-advise": "  node scripts/crew.mjs cost-advise --repo <path>",
     "agent-stats":
-      "  node scripts/crew.ts agent-stats [--agent <name>] [--window last_n_slices:<N>] [--repo <path>]"
+      "  node scripts/crew.ts agent-stats [--agent <name>] [--window last_n_slices:<N>] [--repo <path>]",
+    "agent-route":
+      "  node scripts/crew.ts agent-route [--role <r>] [--surface <s>] [--stack <s>] [--concern <c>] [--lens <l>] [--scope <s>] [--repo <path>]"
   };
 
   const subcommandsMap = subcommands as Record<string, string | undefined>;
@@ -984,6 +996,35 @@ const COMMANDS = {
     // Print the table directly (not via JSON.stringify).
     process.stdout.write(lines.join("\n") + "\n");
     return artifactPath;
+  },
+
+  "agent-route": async ({ repoPath, flags }: CommandContext) => {
+    const { loadAgentRegistry, routeByTags } = await import("./lib/agent-registry.ts");
+    const registry = await loadAgentRegistry(repoPath);
+    const query: import("./lib/agent-registry.ts").RouteQuery = {};
+    if (flags.role) query.role = flags.role;
+    if (flags.surface) query.surface = flags.surface;
+    if (flags.stack) query.stack = flags.stack;
+    if (flags.concern) query.concern = flags.concern;
+    if (flags.lens) query.lens = flags.lens;
+    if (flags.scope) query.scope = flags.scope;
+    const matches = routeByTags(registry, query);
+    const askedFilters = Object.values(query).filter(Boolean).length;
+
+    const lines: string[] = [
+      `Agent route — query: ${askedFilters === 0 ? "(none — listing all)" : JSON.stringify(query)} (${matches.length} match(es))`,
+      "",
+      "Rank  Score  Agent".padEnd(60) + "Matched dimensions",
+      "-".repeat(110)
+    ];
+    matches.slice(0, 20).forEach((m, i) => {
+      lines.push(
+        `${String(i + 1).padStart(4)}  ${String(m.score).padStart(5)}  ${m.entry.name.padEnd(40)} ${m.matched.join(", ")}`
+      );
+    });
+    if (matches.length > 20) lines.push("", `... ${matches.length - 20} more not shown`);
+    process.stdout.write(lines.join("\n") + "\n");
+    return { registryCount: registry.length, matchCount: matches.length };
   }
 };
 
