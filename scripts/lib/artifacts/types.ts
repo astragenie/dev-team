@@ -49,6 +49,8 @@ export interface ArtifactFields {
   tier?: "full" | "light";
   /** Pre-aggregated dispatch + bash-gate telemetry for the Per-dispatch breakdown section (FEAT-151). */
   dispatchBreakdown?: DispatchBreakdown | undefined;
+  /** Per-agent rolling stats for the `## Agent stats (rolling)` cost-report section (FEAT-159 SLICE-B). */
+  agentStats?: import("../agent-stats-aggregator.ts").AgentStatsRow[] | undefined;
 }
 
 /** Aggregated telemetry for the ## Per-dispatch breakdown cost-report section (FEAT-151). */

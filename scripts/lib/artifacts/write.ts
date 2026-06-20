@@ -590,6 +590,34 @@ function renderCostReportDispatchBreakdown(
  * Shared body renderer for all three cost-report kinds.
  * variant controls frontmatter field overrides.
  */
+/**
+ * Render the ## Agent stats (rolling) cost-report section (FEAT-159 SLICE-B).
+ * Top-5 agents by sample_count desc. Empty array → no section emitted.
+ */
+function renderCostReportAgentStats(
+  rows: ArtifactFields["agentStats"]
+): string[] {
+  if (!rows || rows.length === 0) return [];
+  const top = [...rows].sort((a, b) => b.sample_count - a.sample_count).slice(0, 5);
+  const win = top[0]?.window ?? "";
+  const fmtPct = (x: number): string => `${(x * 100).toFixed(0)}%`;
+  const out: string[] = [
+    "## Agent stats (rolling)",
+    "",
+    `Window: \`${win}\` · top-5 by sample count`,
+    "",
+    "| Agent | N | pass% | wallMs | tokens | rework% | valfail% | medDisp |",
+    "|---|---:|---:|---:|---:|---:|---:|---:|"
+  ];
+  for (const r of top) {
+    out.push(
+      `| ${r.agent} | ${r.sample_count} | ${fmtPct(r.pass_rate)} | ${r.mean_wall_ms} | ${r.mean_tokens} | ${fmtPct(r.review_rework_rate)} | ${fmtPct(r.validation_fail_rate)} | ${r.median_dispatches_to_pass} |`
+    );
+  }
+  out.push("");
+  return out;
+}
+
 function renderCostReportBody(
   fields: ArtifactFields,
   variant: "slice" | "aggregate" | null
@@ -626,7 +654,8 @@ function renderCostReportBody(
     ...renderCostReportCachePriming(breakdown),
     ...renderCostReportByModel(breakdown),
     ...(fields.notes ? ["## Notes", "", fields.notes, ""] : []),
-    ...renderCostReportDispatchBreakdown(fields.dispatchBreakdown)
+    ...renderCostReportDispatchBreakdown(fields.dispatchBreakdown),
+    ...renderCostReportAgentStats(fields.agentStats)
   ].join("\n");
 }
 

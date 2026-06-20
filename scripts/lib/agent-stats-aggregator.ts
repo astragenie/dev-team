@@ -218,7 +218,8 @@ export async function aggregateAgentStats(opts: AggregateOpts): Promise<AgentSta
   ]);
 
   const byAgent = groupRows(allRows.filter((r) => r.sliceId != null && ws.has(r.sliceId)));
-  const rework = decisionSet(revs, ws, /needs.?fix/i);
+  // Rework: needs_fix OR rejected — both are review decisions that block landing.
+  const rework = decisionSet(revs, ws, /(needs.?fix|rejected)/i);
   const fail = decisionSet(vals, ws, /fail/i);
   const af = agents?.length ? new Set(agents) : null;
   const out: AgentStatsRow[] = [];

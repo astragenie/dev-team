@@ -104,10 +104,23 @@ real repo artifacts. To seed your own fixtures:
 tail -n 100 .claude/logs/dispatch-timing.jsonl > tests/fixtures/agent-stats/dispatch-timing-seed.jsonl
 ```
 
+## Cost-report embedding (SLICE-85)
+
+Per-slice cost reports now include an `## Agent stats (rolling)` section listing
+the top-5 agents by sample_count in the configured window. Section is appended
+AFTER `## Per-dispatch breakdown`. Empty result (no telemetry sources) → no section.
+
+Disable per-run via env: `CREW_COST_REPORT_AGENT_STATS=0`. (Mirrors the existing
+`CREW_COST_REPORT_DISPATCH_DETAIL=0` gate at `emit-cost-report.ts:16`.)
+
+Window: defaults to `last_n_slices:10`. Override via `CREW_AGENT_STATS_WINDOW=<N>`.
+
 ## Lead consumer — intentionally NOT wired in this slice
 
-As of SLICE-84, the lead agent does **not** read `agent-stats` artifacts at
-slice-start. The follow-up slice (`autonomous_safe: false`) will wire the
-artifact into `agents/lead.md` Step 3 (model/agent picking) after human-in-loop
-review. This deferral keeps SLICE-84 `autonomous_safe: true` and avoids editing
-`agents/lead.md` (which is governed as `autonomous_safe: false` per `CLAUDE.md`).
+As of SLICE-85, the lead agent does **not** read `agent-stats` artifacts at
+slice-start. Operators see the embedded section in cost reports, but the lead's
+own dispatch logic still picks blindly. The follow-up slice
+(`autonomous_safe: false` — FEAT-159 SLICE-C) will wire the artifact into
+`agents/lead.md` Step 3 (model/agent picking) after human-in-loop review.
+This deferral avoids editing `agents/lead.md` (governed as
+`autonomous_safe: false` per `CLAUDE.md`).

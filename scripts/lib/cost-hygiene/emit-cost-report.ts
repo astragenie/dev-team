@@ -8,6 +8,23 @@ import {
   getLatestRunId
 } from "../dispatch-timing-reader.ts";
 import type { DispatchBreakdown } from "../artifacts/types.ts";
+import type { AgentStatsRow } from "../agent-stats-aggregator.ts";
+
+async function collectAgentStatsForRun(repoPath: string): Promise<AgentStatsRow[] | undefined> {
+  if (process.env["CREW_COST_REPORT_AGENT_STATS"] === "0") return undefined;
+  try {
+    const { aggregateAgentStats } = await import("../agent-stats-aggregator.ts");
+    const n = Number.parseInt(process.env["CREW_AGENT_STATS_WINDOW"] ?? "10", 10);
+    const rows = await aggregateAgentStats({
+      repo: repoPath,
+      window: { kind: "last_n_slices", n: Number.isFinite(n) && n > 0 ? n : 10 }
+    });
+    return rows.length > 0 ? rows : undefined;
+  } catch {
+    // Non-fatal — telemetry layer should never break cost-report emission.
+    return undefined;
+  }
+}
 
 async function collectDispatchBreakdownForRun(
   repoPath: string,
@@ -121,7 +138,7 @@ async function emitCostReportInner(
     string,
     unknown
   >;
-  const [sliceCost, dispatchBreakdown] = await Promise.all([
+  const [sliceCost, dispatchBreakdown, agentStats] = await Promise.all([
     computeSessionCost(repoPath, {
       startedAt: run.startedAt,
       completedAt,
@@ -130,7 +147,8 @@ async function emitCostReportInner(
     collectDispatchBreakdownForRun(
       repoPath,
       (run as unknown as Record<string, unknown>)["runId"] as string | undefined
-    )
+    ),
+    collectAgentStatsForRun(repoPath)
   ]);
   const sliceArtifact = await writeArtifact(repoPath, "cost-report-slice", {
     title,
@@ -139,7 +157,8 @@ async function emitCostReportInner(
     outcome,
     ...(feature != null ? { feature } : {}),
     ...(phase != null ? { phase } : {}),
-    ...(dispatchBreakdown != null ? { dispatchBreakdown } : {})
+    ...(dispatchBreakdown != null ? { dispatchBreakdown } : {}),
+    ...(agentStats != null ? { agentStats } : {})
   });
   const aggregateArtifact = await maybeEmitAggregateCost({
     repoPath,
