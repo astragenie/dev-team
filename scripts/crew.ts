@@ -25,6 +25,7 @@ const FLAG_SPEC = {
   "--repo-context": { key: "repoContext", boolean: true },
   "--scaffold": { key: "scaffold", boolean: true },
   // Value-consuming flags.
+  "--agent": { key: "agent" },
   "--alerts": { key: "alerts" },
   "--approver": { key: "approver" },
   "--badge": { key: "badge" },
@@ -98,7 +99,8 @@ const FLAG_SPEC = {
   "--validation-evidence": { key: "validationEvidence" },
   "--validator": { key: "validator" },
   "--verdict": { key: "decision" }, // alias of --decision
-  "--verified-from": { key: "verifiedFrom" }
+  "--verified-from": { key: "verifiedFrom" },
+  "--window": { key: "window" }
 } as const;
 
 type FlagSpecValues = (typeof FLAG_SPEC)[keyof typeof FLAG_SPEC];
@@ -192,7 +194,9 @@ function parseArgs(argv: string[]) {
     run: null,
     slice: null,
     tier: null,
-    updatePath: null
+    updatePath: null,
+    agent: null,
+    window: null
   };
   const positionals = [];
 
@@ -280,7 +284,9 @@ function usage(target: string | null = null) {
       "  node scripts/crew.mjs write-final-synthesis --repo <path> --title <text> --external-deltas <text|none> [--summary <text>] [--run-steps <a,b>] [--files <a,b>] [--force]",
     "cost-slice":
       "  node scripts/crew.mjs cost-slice --repo <path> [--started-at <iso>] [--completed-at <iso>] [--run-title <text>] [--source-project <slug>] [--aggregate-all]",
-    "cost-advise": "  node scripts/crew.mjs cost-advise --repo <path>"
+    "cost-advise": "  node scripts/crew.mjs cost-advise --repo <path>",
+    "agent-stats":
+      "  node scripts/crew.ts agent-stats [--agent <name>] [--window last_n_slices:<N>] [--repo <path>]"
   };
 
   const subcommandsMap = subcommands as Record<string, string | undefined>;
@@ -916,7 +922,69 @@ const COMMANDS = {
       artifactPath: writePath
     };
   },
-  "cost-slice": ({ repoPath, flags }: CommandContext) => costSliceHandler({ repoPath, flags })
+  "cost-slice": ({ repoPath, flags }: CommandContext) => costSliceHandler({ repoPath, flags }),
+
+  "agent-stats": async ({ repoPath, flags }: CommandContext) => {
+    const { aggregateAgentStats, writeAgentStatsArtifact, windowSlug } = await import(
+      "./lib/agent-stats-aggregator.ts"
+    );
+
+    // Parse --window flag (default: last_n_slices:10 or env override).
+    const rawWindow =
+      flags.window ?? `last_n_slices:${process.env["CREW_AGENT_STATS_WINDOW"] ?? "10"}`;
+    const windowMatch = /^last_n_slices:(\d+)$/.exec(rawWindow);
+    if (!windowMatch) {
+      process.stderr.write(
+        `[crew] agent-stats: unsupported window spec "${rawWindow}". Expected last_n_slices:<N>.\n`
+      );
+      process.exit(2);
+    }
+    const n = parseInt(windowMatch[1] ?? "10", 10);
+    const window = { kind: "last_n_slices" as const, n };
+
+    // Optional agent filter.
+    const agentFilter = flags.agent ? [flags.agent] : undefined;
+
+    const rows = await aggregateAgentStats(
+      agentFilter
+        ? { repo: repoPath, window, agents: agentFilter }
+        : { repo: repoPath, window }
+    );
+    const artifactPath = await writeAgentStatsArtifact(repoPath, rows, window);
+
+    // Pretty-print table to stdout.
+    const slug = windowSlug(window);
+    const lines: string[] = [
+      `Agent stats — window: ${slug} (${rows.length} agent(s))`,
+      "",
+      "Agent".padEnd(30) +
+        "N".padStart(4) +
+        "  pass%".padStart(7) +
+        "  wallMs".padStart(9) +
+        "  tokens".padStart(9) +
+        "  rework%".padStart(10) +
+        "  valfail%".padStart(11) +
+        "  medDisp".padStart(10),
+      "-".repeat(90)
+    ];
+    for (const r of rows) {
+      lines.push(
+        r.agent.padEnd(30) +
+          String(r.sample_count).padStart(4) +
+          `  ${(r.pass_rate * 100).toFixed(1)}%`.padStart(7) +
+          `  ${r.mean_wall_ms}`.padStart(9) +
+          `  ${r.mean_tokens}`.padStart(9) +
+          `  ${(r.review_rework_rate * 100).toFixed(1)}%`.padStart(10) +
+          `  ${(r.validation_fail_rate * 100).toFixed(1)}%`.padStart(11) +
+          `  ${r.median_dispatches_to_pass}`.padStart(10)
+      );
+    }
+    lines.push("", `Artifact written: ${artifactPath}`);
+
+    // Print the table directly (not via JSON.stringify).
+    process.stdout.write(lines.join("\n") + "\n");
+    return artifactPath;
+  }
 };
 
 export async function runCrew(argv: string[]): Promise<{ code: number; output: string }> {
