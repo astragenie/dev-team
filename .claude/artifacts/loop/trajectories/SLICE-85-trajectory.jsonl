@@ -1,0 +1,2 @@
+{"type":"slice_start","sliceId":"SLICE-85","timestamp":"2026-06-20T09:08:16.983Z","featureId":"FEAT-159","title":"SLICE-85: FEAT-159 SLICE-B — Cost-report agent-stats section + regex fix","planPath":"C:\\work\\mega\\hero-crew\\.claude\\artifacts\\loop\\plans\\20260620T090816Z-plan-SLICE-85.md","requiresApprovalGate":false}
+{"type":"slice_complete","sliceId":"SLICE-85","timestamp":"2026-06-20T09:12:06.373Z","featureId":"FEAT-159","featureMovedTo":null,"validationSatisfied":false}

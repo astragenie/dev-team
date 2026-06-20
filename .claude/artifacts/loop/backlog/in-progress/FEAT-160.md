@@ -1,13 +1,13 @@
 ---
 id: FEAT-160
-status: triaged
+status: in-progress
 priority: P3
 category: quality
 target_release: null
 created: 2026-06-11
-updated: 2026-06-11
+updated: 2026-06-20
 depends_on: []
-slices: []
+slices: [SLICE-86]
 derived_from: null
 autonomous_safe: false
 tags: [refactor, governance, lead-orchestration, registry]
@@ -18,7 +18,8 @@ pm_technical_risk: 0.35
 pm_dependency_depth: 0.9
 composite_score: 0.468
 triage_notes: "Capability registry from OpenAI review is speculative (scales to 30+ agents — we have 17); touches every agent frontmatter + schema-debate risk (overlap with feat-tag-schema.md); declined-adjacent: pay refactor cost now for problem we don't have."
-partial_progress: "Audit 2026-06-20: 30 agent files already carry `capabilities:` frontmatter (one AC effectively satisfied). Remaining work = scripts/lib/agent-registry.ts builder + `crew.ts route` CLI + lead.md slimming. Re-scoping the FEAT to the registry-builder + CLI is now a smaller delivery."
+partial_progress: "SLICE-86 (2026-06-20) shipped registry + CLI: scripts/lib/agent-registry.ts (loadAgentRegistry + routeByTags) + `node scripts/crew.ts agent-route` subcommand + 7 tests. Capabilities frontmatter was already on all 30 agents from a prior pass. REMAINING: lead.md slim-down — replace hardcoded Tag-to-agent table with `see agent-registry` reference, keep top-5 canonical routes inline. autonomous_safe=false (agents/lead.md edit per CLAUDE.md governance, requires human-in-loop review)."
+started_at: 2026-06-20
 ---
 # FEAT-160: Dynamic capability discovery (agent capability registry)
 

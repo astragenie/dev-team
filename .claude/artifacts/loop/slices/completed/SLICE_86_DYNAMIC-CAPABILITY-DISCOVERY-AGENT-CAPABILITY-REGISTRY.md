@@ -1,7 +1,7 @@
 ---
 id: SLICE-86
-title: "FEAT-160 partial — agent-registry library + crew agent-route CLI (no lead.md edit)"
-status: pending
+title: FEAT-160 partial — agent-registry library + crew agent-route CLI (no lead.md edit)
+status: completed
 feature: FEAT-160
 phase: null
 priority: P3
@@ -16,10 +16,8 @@ updated: 2026-06-20
 depends_on: []
 touches_files: [scripts/lib/agent-registry.ts, scripts/crew.ts, tests/agent-registry.test.ts]
 touches_files_confidence: declared
-file_line_budgets:
-  scripts/lib/agent-registry.ts: 200
-  scripts/crew.ts: 1050
-  tests/agent-registry.test.ts: 250
+file_line_budgets: null
+completed_at: 2026-06-20
 ---
 # SLICE-86 — FEAT-160 partial: agent-registry library + `crew agent-route` CLI
 

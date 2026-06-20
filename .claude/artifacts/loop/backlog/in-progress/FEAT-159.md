@@ -8,7 +8,7 @@ target_release: null
 created: 2026-06-11
 updated: 2026-06-20
 depends_on: [FEAT-151]
-slices: [SLICE-84]
+slices: [SLICE-84, SLICE-85]
 derived_from: null
 autonomous_safe: true
 tags: [perf, observability, lead-orchestration, metrics]

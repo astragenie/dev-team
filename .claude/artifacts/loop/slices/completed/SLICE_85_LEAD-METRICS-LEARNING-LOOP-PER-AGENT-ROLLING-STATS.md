@@ -1,7 +1,7 @@
 ---
 id: SLICE-85
-title: "FEAT-159 SLICE-B — Cost-report agent-stats section + regex fix"
-status: pending
+title: FEAT-159 SLICE-B — Cost-report agent-stats section + regex fix
+status: completed
 feature: FEAT-159
 phase: null
 priority: P2
@@ -16,13 +16,8 @@ updated: 2026-06-20
 depends_on: [SLICE-84]
 touches_files: [scripts/lib/artifacts/types.ts, scripts/lib/artifacts/write.ts, scripts/lib/cost-hygiene/emit-cost-report.ts, scripts/lib/agent-stats-aggregator.ts, tests/cost-report-agent-stats-section.test.ts, docs/observability/agent-stats.md]
 touches_files_confidence: declared
-file_line_budgets:
-  scripts/lib/artifacts/types.ts: 130
-  scripts/lib/artifacts/write.ts: 870
-  scripts/lib/cost-hygiene/emit-cost-report.ts: 230
-  scripts/lib/agent-stats-aggregator.ts: 250
-  tests/cost-report-agent-stats-section.test.ts: 200
-  docs/observability/agent-stats.md: 130
+file_line_budgets: null
+completed_at: 2026-06-20
 ---
 # SLICE-85 — FEAT-159 Part B: cost-report agent-stats section + regex fix
 

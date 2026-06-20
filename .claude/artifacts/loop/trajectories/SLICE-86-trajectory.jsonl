@@ -1,0 +1,2 @@
+{"type":"slice_start","sliceId":"SLICE-86","timestamp":"2026-06-20T09:21:02.874Z","featureId":"FEAT-160","title":"SLICE-86: FEAT-160 partial — agent-registry library + crew agent-route CLI (no lead.md edit)","planPath":"C:\\work\\mega\\hero-crew\\.claude\\artifacts\\loop\\plans\\20260620T092102Z-plan-SLICE-86.md","requiresApprovalGate":true}
+{"type":"slice_complete","sliceId":"SLICE-86","timestamp":"2026-06-20T09:21:48.659Z","featureId":"FEAT-160","featureMovedTo":null,"validationSatisfied":false}
