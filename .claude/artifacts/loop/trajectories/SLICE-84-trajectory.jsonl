@@ -1,0 +1,2 @@
+{"type":"slice_start","sliceId":"SLICE-84","timestamp":"2026-06-20T08:24:44.863Z","featureId":"FEAT-159","title":"SLICE-84: FEAT-159 SLICE-A — Per-agent rolling stats aggregator + CLI (no lead integration)","planPath":"C:\\work\\mega\\hero-crew\\.claude\\artifacts\\loop\\plans\\20260620T082444Z-plan-SLICE-84.md","requiresApprovalGate":false}
+{"type":"slice_complete","sliceId":"SLICE-84","timestamp":"2026-06-20T08:56:02.550Z","featureId":"FEAT-159","featureMovedTo":"C:\\work\\mega\\hero-crew\\.claude\\artifacts\\loop\\backlog\\done\\FEAT-159.md","validationSatisfied":true}

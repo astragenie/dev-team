@@ -1,6 +1,7 @@
 ---
 id: FEAT-159
 status: in-progress
+partial_progress: "SLICE-84 (2026-06-20) shipped 1 of 3 deliverables: aggregator + CLI + tests + doc. Remaining: (a) cost-report writer integration (autonomous_safe, separate slice), (b) lead consumption at slice-start Step 3 (autonomous_safe=false — agents/lead.md edit per CLAUDE.md governance, requires human-in-loop review)."
 priority: P2
 category: observability
 target_release: null
@@ -19,6 +20,8 @@ pm_dependency_depth: 0.4
 composite_score: 0.58
 triage_notes: "Per-agent rolling stats aggregator from OpenAI review feedback: pure additive layer over Phase 1 telemetry (autonomous_safe=true claimed in body), but requires FEAT-149/150/151 data first; CLI + report section + new artifact tree is moderate scope."
 started_at: 2026-06-20
+slices_complete: [SLICE-84]
+completed_at: 2026-06-20
 ---
 # FEAT-159: Lead metrics + learning loop (per-agent rolling stats)
 

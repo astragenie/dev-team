@@ -1,7 +1,7 @@
 ---
 id: SLICE-84
-title: "FEAT-159 SLICE-A — Per-agent rolling stats aggregator + CLI (no lead integration)"
-status: pending
+title: FEAT-159 SLICE-A — Per-agent rolling stats aggregator + CLI (no lead integration)
+status: completed
 feature: FEAT-159
 phase: null
 priority: P2
@@ -16,11 +16,8 @@ updated: 2026-06-20
 depends_on: [FEAT-149, FEAT-150, FEAT-151]
 touches_files: [scripts/lib/agent-stats-aggregator.ts, scripts/crew.ts, tests/agent-stats-aggregator.test.ts, tests/fixtures/agent-stats/dispatch-timing-seed.jsonl, tests/fixtures/agent-stats/grades-seed.jsonl, docs/observability/agent-stats.md]
 touches_files_confidence: declared
-file_line_budgets:
-  scripts/lib/agent-stats-aggregator.ts: 250
-  scripts/crew.ts: 80
-  tests/agent-stats-aggregator.test.ts: 300
-  docs/observability/agent-stats.md: 120
+file_line_budgets: null
+completed_at: 2026-06-20
 ---
 # SLICE-84 — FEAT-159 Part A: per-agent rolling stats aggregator + CLI
 
