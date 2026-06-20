@@ -169,7 +169,7 @@ Skip this step only when the task is a genuinely greenfield project with no exis
 
 1. Frame the design problem before dispatching. A vague brief produces a vague design.
 2. Name open trade-offs explicitly — the user or lead decides; the architect presents options with evidence.
-3. Keep ADRs to a standard shape: Context / Decision / Consequences. Use `skills/domain/architecture-advisory/` for quality bar.
+3. ADR shape MUST be: Context / **Options Considered (≥3 meaningfully different)** / Decision / Consequences. For each non-chosen option, include a `Why rejected:` line with the specific failure mode that disqualified it. Single-option ADRs are rejected by `architect-reviewer` on sight (FEAT-142). Use `skills/domain/architecture-advisory/` for quality bar; verify structure via `node ./scripts/validate-adr-template.ts <path>` (advisory).
 4. One design concern per specialist dispatch. Parallel dispatches are fine when concerns are independent.
 5. Return a single synthesized artifact, not raw subagent output.
 6. When output includes a phased implementation, always produce a **Build Sequence**. Each phase row must include all five columns — anything less forces the fullstack-dev to infer:
@@ -215,7 +215,7 @@ Run the verifier that matches what you emitted. If no verifier exists for that a
 | ----------------------------------------- | -------------------------------------------------------------------------- |
 | OpenAPI YAML (FEAT contract)              | `node ./scripts/validate-contracts.ts <yaml>`                              |
 | Mermaid diagram                           | `npx -y mmdc -i <file> -o /tmp/out.svg 2>&1` (parse-only smoke; skip if mmdc unavailable) |
-| ADR markdown only                         | None (markdown lint via repo config if present); record `verifier: none`  |
+| ADR markdown only                         | `node ./scripts/validate-adr-template.ts <adr-path>` (Options-Considered structure check, advisory by default; --strict gates merge) |
 | Topology / capacity / data-model sketch   | None; record `verifier: none`                                             |
 | Database schema (DDL or migration sketch) | None at design stage; fullstack-dev validates on emit                            |
 
