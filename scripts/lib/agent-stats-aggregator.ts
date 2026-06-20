@@ -219,8 +219,10 @@ export async function aggregateAgentStats(opts: AggregateOpts): Promise<AgentSta
 
   const byAgent = groupRows(allRows.filter((r) => r.sliceId != null && ws.has(r.sliceId)));
   // Rework: needs_fix OR rejected — both are review decisions that block landing.
-  const rework = decisionSet(revs, ws, /(needs.?fix|rejected)/i);
-  const fail = decisionSet(vals, ws, /fail/i);
+  // Word boundaries prevent substring false-positives like `not-rejected` (inspector SLICE-85 LOW advisory).
+  // `fail` covers `fail`, `failed`, `failure` etc. (validation verb forms vary).
+  const rework = decisionSet(revs, ws, /\b(needs.?fix|rejected)\b/i);
+  const fail = decisionSet(vals, ws, /\bfail/i);
   const af = agents?.length ? new Set(agents) : null;
   const out: AgentStatsRow[] = [];
   for (const [a, ar] of byAgent) {
