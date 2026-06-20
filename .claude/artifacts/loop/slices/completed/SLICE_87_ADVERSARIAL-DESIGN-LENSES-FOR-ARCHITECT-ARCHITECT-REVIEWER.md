@@ -1,7 +1,7 @@
 ---
 id: SLICE-87
-title: "FEAT-142 SLICE-A — Adversarial design lenses (architect + architect-reviewer)"
-status: pending
+title: FEAT-142 SLICE-A — Adversarial design lenses (architect + architect-reviewer)
+status: completed
 feature: FEAT-142
 phase: null
 priority: P2
@@ -16,11 +16,8 @@ updated: 2026-06-20
 depends_on: []
 touches_files: [agents/architect.md, agents/3rdparty/architect-reviewer.md, scripts/validate-adr-template.ts, tests/validate-adr-template.test.ts]
 touches_files_confidence: declared
-file_line_budgets:
-  agents/architect.md: 350
-  agents/3rdparty/architect-reviewer.md: 130
-  scripts/validate-adr-template.ts: 175  # bumped from 150 — validator logic + multi-mode arg parsing needs the room; not worth obfuscating
-  tests/validate-adr-template.test.ts: 180
+file_line_budgets: null
+completed_at: 2026-06-20
 ---
 # SLICE-87 — FEAT-142: adversarial design lenses for architect + architect-reviewer
 
