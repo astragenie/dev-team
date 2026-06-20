@@ -1,7 +1,9 @@
 ---
 id: FEAT-159
-status: in-progress
-partial_progress: "SLICE-84 (2026-06-20) shipped 1 of 3 deliverables: aggregator + CLI + tests + doc. Remaining: (a) cost-report writer integration (autonomous_safe, separate slice), (b) lead consumption at slice-start Step 3 (autonomous_safe=false — agents/lead.md edit per CLAUDE.md governance, requires human-in-loop review)."
+status: done
+closed_at: 2026-06-20
+closed_via: lead-orchestration-abandoned-superseded
+closure_note: "SLICE-84 (aggregator + CLI + tests + doc) + SLICE-85 (cost-report embedding + regex fix + word-boundary follow-up) shipped 2 of 3 originally-planned deliverables. The third — SLICE-C lead consumption at slice-start Step 3 — is now DEAD WORK: the lead-as-sole-orchestrator pattern was abandoned 2026-06-12 per memory project_lead_orchestration_abandoned. Loop slice-build dispatch now drives autonomous orchestration; lead.md is no longer the routing authority. Cost-report embedding (SLICE-85) IS the operator-facing surface for agent-stats — sufficient on its own. Closing FEAT-159 done."
 priority: P2
 category: observability
 target_release: null

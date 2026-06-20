@@ -1,6 +1,9 @@
 ---
 id: FEAT-160
-status: in-progress
+status: done
+closed_at: 2026-06-20
+closed_via: lead-orchestration-abandoned-superseded
+closure_note: "SLICE-86 shipped the agent-registry library + `crew agent-route` CLI on top of the pre-existing capabilities frontmatter (already present on 30 agent files). The remaining lead.md slim-down is now DEAD WORK: lead-as-sole-orchestrator was abandoned 2026-06-12 per memory project_lead_orchestration_abandoned. Loop slice-build dispatch + inline-from-main-thread orchestration replaced lead routing. The agent-registry library remains useful — any future orchestrator (e.g. /crew:orchestrate-slice, loop dispatch) can consume it without lead.md being involved. Closing FEAT-160 done."
 priority: P3
 category: quality
 target_release: null
