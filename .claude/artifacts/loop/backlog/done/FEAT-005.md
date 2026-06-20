@@ -1,11 +1,14 @@
 ---
 id: FEAT-005
-status: triaged
+status: done
+closed_at: 2026-06-20
+closed_via: audit-supersede
+closure_note: "Audit 2026-06-20: tag-based routing on tags=[surface:ui|api|schema|docs, stack:*] in commands/orchestrate-slice.md (lines 38-44, 185) supersedes the originally-proposed single surface: frontmatter field. Loop emits the tag taxonomy (10+ done FEATs use it). Dispatched agents are crew:frontend-dev / crew:backend-dev / crew:fullstack-dev (current naming) rather than the originally-proposed crew:builder-fe / crew:builder-be (those files do not exist). The 63->0 generic-builder problem cited in the FEAT body is structurally addressed by the SPLIT_BUILD path. No further work needed."
 priority: P2
 category: routing
 target_release: null
 created: 2026-06-07
-updated: 2026-06-10
+updated: 2026-06-20
 depends_on: []
 slices: []
 derived_from: null

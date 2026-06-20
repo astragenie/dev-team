@@ -1,11 +1,14 @@
 ---
 id: FEAT-143
-status: triaged
+status: done
+closed_at: 2026-06-20
+closed_via: audit-already-built
+closure_note: "Audit 2026-06-20: all 3 bundled deliverables landed in prior slices. (1) git-bisect procedure at skills/workflow/systematic-debugging/references/git-bisect.md. (2) squash-merge detection at scripts/lib/branch-cleanup.ts + tests/branch-cleanup.test.ts (handles empty `git diff base...branch --stat` case). (3) prune-artifacts --dry-run flag documented at commands/prune-artifacts.md lines 14-15 + scripts/prune-artifacts.ts. No further work needed."
 priority: P3
 category: ci/maintenance
 target_release: null
 created: 2026-06-10
-updated: 2026-06-10
+updated: 2026-06-20
 depends_on: []
 slices: []
 derived_from: null

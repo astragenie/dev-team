@@ -18,6 +18,7 @@ pm_technical_risk: 0.35
 pm_dependency_depth: 0.9
 composite_score: 0.468
 triage_notes: "Capability registry from OpenAI review is speculative (scales to 30+ agents — we have 17); touches every agent frontmatter + schema-debate risk (overlap with feat-tag-schema.md); declined-adjacent: pay refactor cost now for problem we don't have."
+partial_progress: "Audit 2026-06-20: 30 agent files already carry `capabilities:` frontmatter (one AC effectively satisfied). Remaining work = scripts/lib/agent-registry.ts builder + `crew.ts route` CLI + lead.md slimming. Re-scoping the FEAT to the registry-builder + CLI is now a smaller delivery."
 ---
 # FEAT-160: Dynamic capability discovery (agent capability registry)
 
