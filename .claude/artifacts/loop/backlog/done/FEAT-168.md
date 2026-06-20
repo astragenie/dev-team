@@ -1,23 +1,26 @@
 ---
 id: FEAT-168
-status: triaged
+status: done
 priority: P2
 category: quality
 target_release: null
 created: 2026-06-20
 updated: 2026-06-20
 depends_on: []
-slices: []
+slices: [SLICE-83]
 derived_from: null
 autonomous_safe: true
 tags: [test, observability, regression-gate, plugin-cache]
-pm_customer_impact: 0.60
+pm_customer_impact: 0.6
 pm_effort_estimate: 0.25
-pm_strategic_alignment: 0.60
-pm_technical_risk: 0.20
-pm_dependency_depth: 0.10
-composite_score: 0.610
-triage_notes: "Derived 2026-06-20 from v0.37.2 hotfix (commit 938df50). Caps the bug class that produced the v0.37.1 customer-repo ENOENT on every hook fire: a top-level static `import \"@opentelemetry/*\"` in any file reachable from a hook entry crashes Bun resolution in plugin-cache installs because the cache lacks node_modules. SLICE-81 unit tests + v0.37.1 flush integration test both missed it — both run with the repo's own node_modules populated. Pure additive test (no prod code, no agent prompts, no command authorship) → autonomous_safe=true; risk band 0.2. Effort 0.25: 1 test file, spawn subprocess in temp cwd with PATH stripped of node_modules. Customer impact 0.6: prevents recurrence of a high-visibility (per-tool-call stderr noise) bug, not blocking a new use case."
+pm_strategic_alignment: 0.6
+pm_technical_risk: 0.2
+pm_dependency_depth: 0.1
+composite_score: 0.61
+triage_notes: "Derived 2026-06-20 from v0.37.2 hotfix (commit 938df50). Caps the bug class that produced the v0.37.1 customer-repo ENOENT on every hook fire: a top-level static `import \\\\\"@opentelemetry/*\\\\\"` in any file reachable from a hook entry crashes Bun resolution in plugin-cache installs because the cache lacks node_modules. SLICE-81 unit tests + v0.37.1 flush integration test both missed it — both run with the repo's own node_modules populated. Pure additive test (no prod code, no agent prompts, no command authorship) → autonomous_safe=true; risk band 0.2. Effort 0.25: 1 test file, spawn subprocess in temp cwd with PATH stripped of node_modules. Customer impact 0.6: prevents recurrence of a high-visibility (per-tool-call stderr noise) bug, not blocking a new use case."
+started_at: 2026-06-20
+slices_complete: [SLICE-83]
+completed_at: 2026-06-20
 ---
 # FEAT-168: Plugin-cache install smoke for hook entries
 
