@@ -1,6 +1,10 @@
 ---
 id: FEAT-164
-status: triaged
+status: done
+closed_at: 2026-06-20
+closed_via: cross-repo-redirect
+closure_note: "Ported to loop repo as FEAT-202. SLICE-A (read-only inventory + audit hints for non-DONE children) landed in loop main as commit f908330 (merge commit). Hero-crew side has no code to change — commands/parallel.md dispatches loop CLI for `dispatch finalize`, so the teardown work belongs in `src/scripts/lib/dispatch-{merge,worktree}.mts` of the loop repo. SLICE-B (destructive teardown, autonomous_safe=false) deferred to gated session in loop repo."
+linked_external: "astragenie/runner-plugin FEAT-202 (commit f908330, branch merged to main 2026-06-20)"
 priority: P2
 category: bugfix
 target_release: null
