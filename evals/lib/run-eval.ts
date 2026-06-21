@@ -67,10 +67,18 @@ export interface TestResult {
   error?: string;
   asserts: Array<{ type: string; pass: boolean; message: string }>;
   durationMs: number;
+  /** FEAT-174: human-readable duration (durationMs / 1000, rounded to 0.1s). */
+  durationSec: number;
   /** validate_with entries — present when disagreement flow ran. */
   validations?: ValidationEntry[];
   /** true when primary verdict and any validate_with verdict disagree. */
   disagreement?: boolean;
+  /** FEAT-174: captured candidate response (truncated at 8KB). */
+  candidateOutput?: string;
+  /** FEAT-174: captured fixture content (truncated at 4KB). */
+  fixtureContent?: string;
+  /** FEAT-174: rationale from llm-rubric asserts (judge YES/NO + explanation). */
+  judgeRationales?: string[];
 }
 
 export interface EvalRunResult {
@@ -82,6 +90,14 @@ export interface EvalRunResult {
   summary: { total: number; passed: number; failed: number; errored: number };
   /** Judge resolution errors from fallback chain — non-fatal if heuristic asserts still ran. */
   judgeErrors?: string[];
+  /** FEAT-174: total wall-clock duration of the run in seconds. */
+  totalDurationSec?: number;
+  /** FEAT-174: prompt_version from agent frontmatter at run time. */
+  promptVersion?: string;
+  /** FEAT-174: git SHA at run time for reproducibility. */
+  gitSha?: string;
+  /** FEAT-174: judge id used for the run (e.g. claude-p). */
+  judgeId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -260,10 +276,12 @@ async function resolveJudge(
 async function dryRunTest(test: EvalTest, repoRoot: string): Promise<TestResult> {
   const start = Date.now();
   let candidateOutput = "";
+  let fixtureContent = "";
   let trace: Record<string, unknown> | undefined;
 
   if (test.fixture) {
     const { text, parsed } = await loadFixture(test.fixture, repoRoot);
+    fixtureContent = text;
     if (parsed && typeof parsed["candidateOutput"] === "string") {
       // Structured fixture: { candidateOutput, toolCalls, dispatches, ... }
       candidateOutput = parsed["candidateOutput"];
@@ -284,12 +302,51 @@ async function dryRunTest(test: EvalTest, repoRoot: string): Promise<TestResult>
   }
 
   const pass = assertResults.every((r) => r.pass);
-  return {
-    name: test.name,
+  const durationMs = Date.now() - start;
+  return makeResult(test.name, pass, assertResults, durationMs, candidateOutput, fixtureContent);
+}
+
+// FEAT-174 helpers — capture rich context per TestResult
+const MAX_CANDIDATE_BYTES = 8000;
+const MAX_FIXTURE_BYTES = 4000;
+
+function truncate(s: string, max: number): string {
+  if (s.length <= max) return s;
+  return `${s.slice(0, max)}…[truncated ${s.length - max} chars]`;
+}
+
+function durationSecFromMs(ms: number): number {
+  return Math.round((ms / 1000) * 10) / 10;
+}
+
+function extractJudgeRationales(
+  asserts: Array<{ type: string; pass: boolean; message: string }>
+): string[] {
+  return asserts
+    .filter((a) => a.type === "llm-rubric")
+    .map((a) => a.message);
+}
+
+function makeResult(
+  name: string,
+  pass: boolean,
+  asserts: Array<{ type: string; pass: boolean; message: string }>,
+  durationMs: number,
+  candidateOutput: string,
+  fixtureContent: string
+): TestResult {
+  const result: TestResult = {
+    name,
     pass,
-    asserts: assertResults,
-    durationMs: Date.now() - start
+    asserts,
+    durationMs,
+    durationSec: durationSecFromMs(durationMs)
   };
+  if (candidateOutput.length > 0) result.candidateOutput = truncate(candidateOutput, MAX_CANDIDATE_BYTES);
+  if (fixtureContent.length > 0) result.fixtureContent = truncate(fixtureContent, MAX_FIXTURE_BYTES);
+  const rationales = extractJudgeRationales(asserts);
+  if (rationales.length > 0) result.judgeRationales = rationales;
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -340,12 +397,15 @@ async function liveTest(
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       // Surface as test-level error rather than crashing the whole run
+      const dms = Date.now() - start;
       return {
         name: test.name,
         pass: false,
         error: `candidate-dispatch failed: ${msg}`,
         asserts: [],
-        durationMs: Date.now() - start
+        durationMs: dms,
+        durationSec: durationSecFromMs(dms),
+        fixtureContent: truncate(fixtureText, MAX_FIXTURE_BYTES)
       };
     }
   }
@@ -363,12 +423,15 @@ async function liveTest(
   }
 
   const primaryPass = assertResults.every((r) => r.pass);
-  const testResult: TestResult = {
-    name: test.name,
-    pass: primaryPass,
-    asserts: assertResults,
-    durationMs: Date.now() - start
-  };
+  const dms = Date.now() - start;
+  const testResult: TestResult = makeResult(
+    test.name,
+    primaryPass,
+    assertResults,
+    dms,
+    candidateOutput,
+    fixtureText
+  );
 
   // validate_with disagreement flow
   if (validateWithCfgs.length > 0) {
@@ -422,8 +485,13 @@ export async function runEval(options: {
     candidateLive = false
   } = options;
 
+  const runStart = Date.now();
   const raw = await fs.readFile(specFile, "utf8");
   const spec = parseYaml(raw) as EvalSpec;
+
+  // FEAT-174: capture prompt version + git SHA for run reproducibility.
+  const promptVersion = await readPromptVersion(repoRoot, spec.prompt_id);
+  const gitSha = await readGitSha(repoRoot);
 
   // Resolve judge for live mode (needed by llm-rubric asserts)
   let judge: JudgeProvider | null = null;
@@ -466,8 +534,13 @@ export async function runEval(options: {
     dryRun,
     timestamp: new Date().toISOString(),
     tests: testResults,
-    summary: { total: testResults.length, passed, failed, errored }
+    summary: { total: testResults.length, passed, failed, errored },
+    totalDurationSec: durationSecFromMs(Date.now() - runStart)
   };
+
+  if (promptVersion) result.promptVersion = promptVersion;
+  if (gitSha) result.gitSha = gitSha;
+  if (judge?.id) result.judgeId = judge.id;
 
   // Surface judge resolution errors as metadata (non-fatal if all asserts passed heuristically)
   if (judgeErrors.length > 0) {
@@ -539,4 +612,42 @@ export async function findSpecByPromptId(
     if (spec.prompt_id === promptId) return abs;
   }
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// FEAT-174: prompt version + git SHA capture for run reproducibility
+// ---------------------------------------------------------------------------
+
+async function readPromptVersion(repoRoot: string, promptId: string): Promise<string | null> {
+  try {
+    const promptPath = path.join(repoRoot, "agents", `${promptId}.md`);
+    const raw = await fs.readFile(promptPath, "utf8");
+    const fmMatch = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    if (!fmMatch || !fmMatch[1]) return null;
+    const versionMatch = fmMatch[1].match(/^version:\s*(.+)$/m);
+    return versionMatch?.[1]?.trim() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function readGitSha(repoRoot: string): Promise<string | null> {
+  const { spawn } = await import("node:child_process");
+  return new Promise((resolve) => {
+    const child = spawn("git", ["rev-parse", "--short", "HEAD"], {
+      cwd: repoRoot,
+      stdio: ["ignore", "pipe", "ignore"],
+      windowsHide: true
+    });
+    let out = "";
+    child.stdout.on("data", (b: Buffer) => {
+      out += b.toString("utf8");
+    });
+    child.on("close", (code) => {
+      resolve(code === 0 ? out.trim() : null);
+    });
+    child.on("error", () => {
+      resolve(null);
+    });
+  });
 }

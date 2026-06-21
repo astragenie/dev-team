@@ -27,6 +27,7 @@ interface CliArgs {
   validate: boolean;
   candidateLive: boolean;
   help: boolean;
+  diffPaths: [string, string] | null;
 }
 
 function consumeNext(argv: string[], i: number): [string | undefined, number] {
@@ -42,6 +43,7 @@ function parseArgs(argv: string[]): CliArgs {
   let validate = false;
   let candidateLive = false;
   let help = false;
+  let diffPaths: [string, string] | null = null;
   let i = 0;
   while (i < argv.length) {
     const arg = argv[i] ?? "";
@@ -55,6 +57,11 @@ function parseArgs(argv: string[]): CliArgs {
       validate = true;
     } else if (arg === "--candidate-live") {
       candidateLive = true;
+    } else if (arg === "--diff") {
+      const [pathA, ni1] = consumeNext(argv, i);
+      const [pathB, ni2] = consumeNext(argv, ni1);
+      if (pathA && pathB) diffPaths = [pathA, pathB];
+      i = ni2;
     } else if (arg === "--judge") {
       [judge, i] = consumeNext(argv, i);
     } else if (arg === "--prompt" || arg === "-p") {
@@ -66,7 +73,7 @@ function parseArgs(argv: string[]): CliArgs {
     }
     i++;
   }
-  return { prompt, root, dryRun, live, judge, validate, candidateLive, help };
+  return { prompt, root, dryRun, live, judge, validate, candidateLive, help, diffPaths };
 }
 
 function printHelp(): void {
@@ -77,6 +84,7 @@ Usage:
   bun run evals --dry-run --prompt <id> [--root <dir>]
   bun run evals --live --prompt <id> [--judge <provider>] [--root <dir>]
   bun run evals --live --prompt <id> --validate
+  bun run evals --diff <runA.json> <runB.json>     # FEAT-175 side-by-side compare
 
 Options:
   --prompt <id>     eval spec prompt_id to run (e.g. fullstack-dev)
@@ -108,14 +116,26 @@ Validation tier (fires on disagreement or --validate):
 // Output helpers
 // ---------------------------------------------------------------------------
 
+function fmtDur(t: { durationSec?: number; durationMs: number }): string {
+  const sec = t.durationSec ?? Math.round((t.durationMs / 1000) * 10) / 10;
+  return `${sec}s`;
+}
+
 function printResult(result: EvalRunResult): void {
   const { summary, tests } = result;
   const modeTag = result.dryRun ? "dry-run" : "live";
-  console.log(`\nEval: ${result.promptId}  [${modeTag}]`);
+  const meta = [
+    result.promptVersion ? `v${result.promptVersion}` : null,
+    result.gitSha ? `git:${result.gitSha}` : null,
+    result.judgeId ? `judge:${result.judgeId}` : null
+  ]
+    .filter(Boolean)
+    .join("  ");
+  console.log(`\nEval: ${result.promptId}  [${modeTag}]${meta ? `  (${meta})` : ""}`);
   for (const t of tests) {
     const icon = t.error ? "ERROR" : t.pass ? "PASS" : "FAIL";
     const disagreeTag = t.disagreement ? "  [DISAGREEMENT]" : "";
-    console.log(`  ${icon}  ${t.name} (${t.durationMs}ms)${disagreeTag}`);
+    console.log(`  ${icon}  ${t.name} (${fmtDur(t)})${disagreeTag}`);
     if (t.error) {
       console.log(`    ! ${t.error}`);
     }
@@ -131,10 +151,55 @@ function printResult(result: EvalRunResult): void {
       }
     }
   }
+  const totalLine = result.totalDurationSec ? ` in ${result.totalDurationSec}s` : "";
   console.log(
-    `\nSummary: ${summary.passed}/${summary.total} passed` +
-      (summary.errored > 0 ? `, ${summary.errored} errored` : "")
+    `\nSummary: ${summary.passed}/${summary.total} passed${
+      summary.errored > 0 ? `, ${summary.errored} errored` : ""
+    }${totalLine}`
   );
+}
+
+// FEAT-175: side-by-side diff of two run artifacts.
+async function printDiff(pathA: string, pathB: string): Promise<void> {
+  const [rawA, rawB] = await Promise.all([
+    fs.readFile(pathA, "utf8"),
+    fs.readFile(pathB, "utf8")
+  ]);
+  const a = JSON.parse(rawA) as EvalRunResult;
+  const b = JSON.parse(rawB) as EvalRunResult;
+
+  console.log(
+    `\nDiff: ${path.basename(pathA)}  →  ${path.basename(pathB)}\nprompt: ${a.promptId}  ${a.promptVersion ?? "-"} → ${b.promptVersion ?? "-"}  ${a.gitSha ?? "-"} → ${b.gitSha ?? "-"}\n`
+  );
+
+  const byName = new Map<string, { a?: (typeof a.tests)[number]; b?: (typeof b.tests)[number] }>();
+  for (const t of a.tests) byName.set(t.name, { a: t });
+  for (const t of b.tests) {
+    const cur = byName.get(t.name) ?? {};
+    cur.b = t;
+    byName.set(t.name, cur);
+  }
+
+  const verdict = (t: (typeof a.tests)[number] | undefined): string =>
+    !t ? "----" : t.error ? "ERR " : t.pass ? "PASS" : "FAIL";
+
+  let flips = 0;
+  console.log(`  ${"test".padEnd(36)}  A     B     Δ`);
+  console.log(`  ${"-".repeat(36)}  ----  ----  ---`);
+  for (const [name, { a: ta, b: tb }] of byName) {
+    const va = verdict(ta);
+    const vb = verdict(tb);
+    const flip = va !== vb ? (vb === "PASS" ? " 🠅" : vb === "FAIL" ? " 🠇" : " *") : "";
+    if (flip) flips++;
+    console.log(`  ${name.padEnd(36)}  ${va}  ${vb}  ${flip}`);
+  }
+  const sumA = a.summary;
+  const sumB = b.summary;
+  console.log(
+    `\n  Summary A: ${sumA.passed}/${sumA.total}  total ${a.totalDurationSec ?? "?"}s`
+  );
+  console.log(`  Summary B: ${sumB.passed}/${sumB.total}  total ${b.totalDurationSec ?? "?"}s`);
+  console.log(`  Flips:     ${flips}`);
 }
 
 async function writeRunJson(result: EvalRunResult, repoRoot: string): Promise<string> {
@@ -157,6 +222,14 @@ async function main(): Promise<void> {
 
   if (args.help) {
     printHelp();
+    process.exitCode = 0;
+    return;
+  }
+
+  // FEAT-175: --diff <runA.json> <runB.json> side-by-side compare
+  if (args.diffPaths) {
+    const [a, b] = args.diffPaths;
+    await printDiff(a, b);
     process.exitCode = 0;
     return;
   }
