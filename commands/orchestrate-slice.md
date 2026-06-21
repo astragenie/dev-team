@@ -178,11 +178,22 @@ in Step 3 / 3a / 3b prepend the block when non-empty, omit it otherwise.
 
 **Dispatch rules:**
 
-- `SPLIT_BUILD = false` AND `NEEDS_UX = false` AND `BEHAVIOR_CHANGED = false` — no implementation work. Skip Steps 2 + 3, jump to Step 4.
-- `SPLIT_BUILD = false` AND only `NEEDS_UX = true` — dispatch `crew:uxdesigner` only.
-- `SPLIT_BUILD = false` AND only `BEHAVIOR_CHANGED = true` — dispatch `crew:fullstack-dev` only (single-builder path, unchanged).
-- `SPLIT_BUILD = false` AND BOTH true — single message with TWO Agent calls: `crew:uxdesigner` + `crew:fullstack-dev` (existing v0.15.0 behavior, unchanged).
-- `SPLIT_BUILD = true` — single message with THREE Agent calls: `crew:uxdesigner` + `crew:frontend-dev` + `crew:backend-dev`. All consume the same FEAT-scoped OpenAPI YAML path. Builder handoffs are scoped by role: `builder-fe-<SLICE>.md` and `builder-be-<SLICE>.md`.
+**Builder routing (FEAT-170 SLICE-C — single-stack specialization):**
+
+The classifier now exposes `FE_ONLY` and `BE_ONLY` alongside `SPLIT_BUILD`. Single-stack slices route to specialist builders; `crew:fullstack-dev` reserved for legitimately cross-cutting or untagged slices.
+
+| Signals | Builder dispatch |
+|---|---|
+| `SPLIT_BUILD = false` AND `NEEDS_UX = false` AND `BEHAVIOR_CHANGED = false` | No implementation. Skip Steps 2 + 3, jump to Step 4. |
+| `SPLIT_BUILD = false` AND only `NEEDS_UX = true` | `crew:uxdesigner` only. |
+| `BE_ONLY = true` AND `BEHAVIOR_CHANGED = true` | `crew:backend-dev` only (no UX needed). |
+| `FE_ONLY = true` AND `BEHAVIOR_CHANGED = true` AND `NEEDS_UX = false` | `crew:frontend-dev` only. |
+| `FE_ONLY = true` AND `NEEDS_UX = true` | `crew:uxdesigner` + `crew:frontend-dev` in single parallel message. |
+| Untagged (`FE_ONLY = false` AND `BE_ONLY = false` AND `SPLIT_BUILD = false`) AND `BEHAVIOR_CHANGED = true` | `crew:fullstack-dev` only (generalist path — agent/skill/script/hook/doc edits without surface tags). |
+| Untagged AND BOTH `NEEDS_UX` + `BEHAVIOR_CHANGED` true | `crew:uxdesigner` + `crew:fullstack-dev` in single parallel message. |
+| `SPLIT_BUILD = true` | Single parallel message with THREE Agent calls: `crew:uxdesigner` + `crew:frontend-dev` + `crew:backend-dev`. All consume the same FEAT-scoped OpenAPI YAML. Handoffs scoped by role: `builder-fe-<SLICE>.md` and `builder-be-<SLICE>.md`. |
+
+Rationale: `fullstack-dev` previously ate every untagged slice + every single-stack slice — generalist agent paid the cost of every dispatch including ones a specialist handles better. SLICE-C routes specialists when the FEAT declares `surface:api / surface:schema / stack:csharp / stack:node / stack:python` (→ backend-dev) or `surface:ui / stack:react` (→ frontend-dev). fullstack-dev keeps the legitimate use case: untagged slices (agent/skill/script/hook/doc/CI edits) plus explicit cross-layer slices that skip SPLIT_BUILD.
 
 Race-safety: each parallel agent writes its own artifact at a deterministic path. No shared mutable state. UX spec stays slice-scoped. OpenAPI YAML is read-only for both builders (drift → help_request).
 

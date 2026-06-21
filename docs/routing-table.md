@@ -4,6 +4,20 @@ Prescriptive heuristic map that the lead consults at session start to classify i
 
 Anything ambiguous, blocked, or spanning multiple tiers routes to **lead** for re-scoping.
 
+## Builder routing matrix (FEAT-170 SLICE-C)
+
+`commands/orchestrate-slice.md` Step 3 dispatch consults the slice classifier (`scripts/orchestrate-slice-classify.ts`) which now exposes `SPLIT_BUILD`, `FE_ONLY`, `BE_ONLY` signals from FEAT/slice frontmatter `tags`:
+
+| Tags resolve to | Builder dispatch |
+|---|---|
+| `surface:ui` OR `stack:react` only | `crew:frontend-dev` (+ `crew:uxdesigner` if `NEEDS_UX`) |
+| `surface:api` / `surface:schema` / `stack:csharp` / `stack:node` / `stack:python` only | `crew:backend-dev` |
+| BOTH FE + BE tags | `crew:frontend-dev` + `crew:backend-dev` + `crew:uxdesigner` parallel (SPLIT_BUILD) |
+| No FE/BE tags (untagged — agent/skill/script/hook/doc/CI edits) | `crew:fullstack-dev` (legitimate generalist) |
+| Cross-layer with `skip: ["split-build"]` | `crew:fullstack-dev` (explicit override) |
+
+Rationale: `crew:fullstack-dev` previously ate every untagged + every single-stack slice. The generalist agent paid every dispatch cost including specialist-territory slices. SLICE-C routes specialists when FEAT declares stack/surface tags, reserves fullstack-dev for genuine generalist use cases. See `commands/orchestrate-slice.md` "Builder routing" section for the full dispatch matrix.
+
 ---
 
 ### Workflow signals

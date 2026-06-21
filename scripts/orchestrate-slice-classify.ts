@@ -77,7 +77,14 @@ export async function classifySlice(opts: { slicePath: string }) {
   const NEEDS_UX = computeNeedsUx(fm, FE);
   const SPLIT_BUILD = FE && BE && !skip.includes("split-build");
 
-  return { SPLIT_BUILD, NEEDS_CONTRACT, NEEDS_UX, tags, skip };
+  // FEAT-170 SLICE-C: surface single-stack routing signals so the orchestrator
+  // can default to a specialist builder (backend-dev / frontend-dev) instead of
+  // falling through to fullstack-dev for single-surface slices.
+  // FE_ONLY / BE_ONLY fire only when SPLIT_BUILD is false (avoid double-routing).
+  const FE_ONLY = FE && !BE && !SPLIT_BUILD;
+  const BE_ONLY = BE && !FE && !SPLIT_BUILD;
+
+  return { SPLIT_BUILD, FE_ONLY, BE_ONLY, NEEDS_CONTRACT, NEEDS_UX, tags, skip };
 }
 
 function tagsHaveAny(tags: string[], set: Set<string>) {

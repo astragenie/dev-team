@@ -101,6 +101,63 @@ test('classifySlice: SPLIT_BUILD false when slice has skip: ["split-build"]', as
   assert.equal(result.SPLIT_BUILD, false);
 });
 
+// FEAT-170 SLICE-C — single-stack routing signals
+test("classifySlice: BE_ONLY true when only backend tags present", async () => {
+  const result = await classifySlice({
+    slicePath: "tests/fixtures/slices/single-stack-demo.md"
+  });
+  assert.equal(result.SPLIT_BUILD, false);
+  assert.equal(result.BE_ONLY, true);
+  assert.equal(result.FE_ONLY, false);
+});
+
+test("classifySlice: FE_ONLY true when only frontend tags present", async (t) => {
+  const tmp = `tests/fixtures/slices/fe-only-demo-${process.pid}-${Date.now()}.md`;
+  const { writeFile, unlink } = await import("node:fs/promises");
+  await writeFile(
+    tmp,
+    "---\nslice: SLICE-904\ntags: [surface:ui, stack:react]\n---\n\n# SLICE-904\n\n## Acceptance Criteria\n- demo\n",
+    "utf8"
+  );
+  t.after(() =>
+    unlink(tmp).catch(() => {
+      /* ignore cleanup errors */
+    })
+  );
+  const result = await classifySlice({ slicePath: tmp });
+  assert.equal(result.SPLIT_BUILD, false);
+  assert.equal(result.FE_ONLY, true);
+  assert.equal(result.BE_ONLY, false);
+});
+
+test("classifySlice: both BE_ONLY and FE_ONLY false when no surface tags", async (t) => {
+  const tmp = `tests/fixtures/slices/untagged-demo-${process.pid}-${Date.now()}.md`;
+  const { writeFile, unlink } = await import("node:fs/promises");
+  await writeFile(
+    tmp,
+    "---\nslice: SLICE-905\ntags: [doc]\n---\n\n# SLICE-905\n\n## Acceptance Criteria\n- demo\n",
+    "utf8"
+  );
+  t.after(() =>
+    unlink(tmp).catch(() => {
+      /* ignore cleanup errors */
+    })
+  );
+  const result = await classifySlice({ slicePath: tmp });
+  assert.equal(result.SPLIT_BUILD, false);
+  assert.equal(result.FE_ONLY, false);
+  assert.equal(result.BE_ONLY, false);
+});
+
+test("classifySlice: BE_ONLY and FE_ONLY both false when SPLIT_BUILD true", async () => {
+  const result = await classifySlice({
+    slicePath: "tests/fixtures/slices/split-build-demo.md"
+  });
+  assert.equal(result.SPLIT_BUILD, true);
+  assert.equal(result.FE_ONLY, false);
+  assert.equal(result.BE_ONLY, false);
+});
+
 // isShortSlice tests
 test("isShortSlice: acCount ≤ 6, changedFilesCount > 10 → true (AC count alone qualifies)", () => {
   assert.equal(isShortSlice({ acCount: 4, changedFilesCount: 15 }), true);
