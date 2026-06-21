@@ -48,7 +48,7 @@ When you spot a symptom of a deeper issue:
 2. **Reproduce consistently** — can you trigger it reliably? Not reproducible → gather more data, don't guess.
 3. **Check recent changes** — `git diff`, recent commits, new dependencies, config changes, environmental differences.
 4. **Gather evidence in multi-component systems** — add diagnostic instrumentation at each component boundary; log what data enters and exits each layer; run once to gather evidence showing WHERE it breaks.
-5. **Trace data flow backward** — where does bad value originate? Keep tracing UP until you find the source. Fix at source, not at symptom. See `root-cause-tracing.md` for the complete backward-tracing technique.
+5. **Trace data flow backward** — where does bad value originate? Keep tracing UP until you find the source. Fix at source, not at symptom. See `investigation.md` Part 1 for the complete backward-tracing technique.
 
 ### Phase 2: Pattern analysis
 
@@ -100,7 +100,7 @@ If you catch yourself thinking any of the following, STOP and return to Phase 1:
 - "One more fix attempt" (when already tried 2+)
 - Each fix reveals a new problem in a different place
 
-See `references/debugging-anti-patterns.md` for common rationalizations and partner signals.
+See `investigation.md` Part 3 for common rationalizations and partner signals.
 
 ## Decision tree (in-slice vs out-of-slice)
 
@@ -160,11 +160,10 @@ Note: 95% of "no root cause" cases are incomplete investigation.
 
 ## Supporting techniques
 
-- `root-cause-tracing.md` — trace bugs backward through the call stack to find the original trigger.
-- `defense-in-depth.md` — add validation at multiple layers AFTER finding root cause.
-- `condition-based-waiting.md` — replace arbitrary timeouts with condition polling.
-- `references/debugging-anti-patterns.md` — common rationalizations and partner signals.
-- `references/git-bisect.md` — regression with unknown introducing commit: auto-detect test command, run `git bisect`, retry-before-verdict for flaky tests.
+- `investigation.md` — three complementary techniques for finding root cause: (1) backward stack tracing, (2) `git bisect` for regressions with unknown introducing commit, (3) anti-patterns + partner signals to refuse along the way.
+- `flake-and-hardening.md` — two after-cause techniques: (1) condition-based waiting to kill timing flakes, (2) defense-in-depth validation across four layers to make the bug structurally impossible.
+- `find-polluter.sh` — executable: bisects a test suite to find which test pollutes shared state.
+- `condition-based-waiting-example.ts` — domain-specific helpers (`waitForEvent`, `waitForEventCount`, `waitForEventMatch`).
 
 **Related skills:**
 
