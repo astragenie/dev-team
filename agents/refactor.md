@@ -140,7 +140,7 @@ After writing the artifact, commit changes, then report done.
 - `.ts` / `.tsx` edit → `skills/domain/typescript-pro/`
 - React component / hooks (`*.tsx`, `*.jsx`) → `skills/domain/ui/react-engineering/`
 - `.cs` / .NET edit → `skills/domain/backend/dotnet/`
-- SQL / migration file → `skills/domain/infra/database-architecture/`
+- SQL / migration file → `skills/domain/backend/database-architecture/`
 - `.py` edit → `skills/domain/python-pro/`
 - `agents/*.md` or `skills/**/*.md` edit → `skills/domain/prompt-engineering/`
 - Editing a `SKILL.md` specifically → `skills/meta/skill-creator/`

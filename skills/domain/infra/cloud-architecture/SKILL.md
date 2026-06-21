@@ -112,7 +112,7 @@ Consult this skill when:
 ## Cross-references
 
 - General architecture principles → `skills/domain/architecture-advisory/`
-- Database provisioning (managed RDS, VPC peering, connection pooling, backup) → `skills/domain/infra/database-architecture/`
+- Database provisioning (managed RDS, VPC peering, connection pooling, backup) → `skills/domain/backend/database-architecture/`
 - IaC patterns (Terraform, Bicep, Helm) → `skills/domain/infra/devops-engineering/references/iac.md`
 - Security audit (RBAC, secrets, STRIDE) → `skills/domain/security-advisory/`
 
