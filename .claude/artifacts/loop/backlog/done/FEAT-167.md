@@ -1,16 +1,29 @@
 ---
 id: FEAT-167
-status: in-progress
+status: done
 started_at: 2026-06-19
+completed_at: 2026-06-21
 priority: P2
 category: quality
 target_release: null
 created: 2026-06-19
+updated: 2026-06-21
 depends_on: [FEAT-162, FEAT-165]
 slices: [SLICE-79]
+slices_complete: [SLICE-79]
 derived_from: null
 tags: [prompt-versioning, agent-eval, langfuse, frontmatter, subscription-billed]
+follow_up: FEAT-169
 ---
+
+> **Scope-narrowed close (2026-06-21):** Only SLICE-A (frontmatter contract +
+> validator extension + backfill) landed under this FEAT. The body's
+> SLICE-B/C/D (eval runtime, Langfuse dataset emission, nightly CI) are
+> superseded by **FEAT-169** which refines the design with a pluggable
+> judge registry (Generic/Groq/claude-p/Ollama/Gemini + Azure/Bedrock
+> validation tier). The subscription-only memory was loosened to permit
+> free-tier APIs (Groq/Gemini/Cerebras) as judges — see
+> `feedback_subscription_only_evals.md`.
 
 # FEAT-167: Prompt ADR frontmatter + version tracking — trackable, observable, comparable agent + skill prompts
 
