@@ -1,7 +1,7 @@
 ---
 name: engineering-standards
 prompt_id: engineering-standards
-version: 1.2.0
+version: 1.3.0
 tier: universal
 model_pinned: sonnet
 description: Engineering-standards INDEX + fast-path checklists. Routes to vendored references (definition-of-done, code quality, minimal change, testing, API design, error handling, observability, DevOps deployment). Carries inline fast-path checklists for common cases (new endpoint, new error path, deployment-impacting change) so builders don't load 4 reference files for a routine slice. Vendored from kb/08-engineering/ for portability.
@@ -76,15 +76,14 @@ If the fast path doesn't answer the question, route to a reference file.
 
 ## Reference router
 
-Read the specific reference for the concern. Don't load all 8 at once.
+Read the specific reference for the concern. Don't load all 6 at once.
 
 | Concern | Reference file |
 |---|---|
 | Is this slice "done"? Does it satisfy the launch bar? | `references/05-definition-of-done.md` |
-| Should I refactor this opportunistically? How big is too big? | `references/06-code-quality-standards.md` + `references/07-minimal-change-policy.md` |
+| Should I refactor this opportunistically? How big is too big? Readability + minimal-change discipline. | `references/06-change-quality-standards.md` |
 | What tests do I owe for net-new behavior? Unit vs integration vs e2e? | `references/08-testing-standards.md` |
-| API contract design (REST shape, status codes, pagination, versioning) | `references/09-api-design-standards.md` |
-| How should errors propagate? When throw vs return? Where do logs go? | `references/10-error-handling-standards.md` |
+| API contract design (REST shape, pagination, versioning) + error propagation + RFC 7807 shape | `references/09-api-error-contract-standards.md` |
 | What spans / metrics / structured logs does this endpoint need? | `references/11-observability-standards.md` |
 | Deployment + DevOps gates the change must satisfy | `references/19-devops-deployment-standards.md` |
 
