@@ -106,10 +106,20 @@ function checkDirectoryName(
   }
 }
 
-function checkLineCount(text: string, label: string, errors: string[]) {
+function checkLineCount(
+  text: string,
+  fm: Record<string, string>,
+  label: string,
+  errors: string[]
+) {
   const lines = text.split("\n").length;
-  if (lines > MAX_LINES) {
-    errors.push(`${label}: ${lines} lines exceeds the ${MAX_LINES}-line skill quality bar`);
+  // Per-skill maxLines: frontmatter override (defaults to MAX_LINES). Use sparingly —
+  // most skills should stay under 200 lines; complex skills (e.g. builder-ceremony)
+  // can declare a higher cap explicitly.
+  const override = fm["maxLines"] ? Number.parseInt(fm["maxLines"], 10) : Number.NaN;
+  const cap = Number.isFinite(override) && override > 0 ? override : MAX_LINES;
+  if (lines > cap) {
+    errors.push(`${label}: ${lines} lines exceeds the ${cap}-line skill cap`);
   }
 }
 
@@ -173,7 +183,7 @@ export async function validateSkills(skillsRoot = SKILLS_ROOT) {
     checkPromptIdAndVersion(fm, label, errors);
     checkTier(fm, label, errors);
     checkDirectoryName(filePath, fm, label, errors);
-    checkLineCount(text, label, errors);
+    checkLineCount(text, fm, label, errors);
     checkRecommendedFields(fm, label, warnings);
     checkSectionHeadings(text, label, warnings);
   }

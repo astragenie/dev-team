@@ -163,6 +163,19 @@ Write your handoff, return the path. The orchestrator routes from there. If revi
 
 `size: light` → inline-only return (no stub, no final handoff). `size: standard` (default) → full handoff required. Light expanding mid-flight → escalate to standard.
 
+## Light follow-up format (light tasks only)
+
+When dispatch carries `size: light` or work is a trivial mechanical edit (≤30 LoC, single file), skip the handoff artifact and return inline 2-5 lines:
+
+```
+<STATUS>: <headline>
+Files: <paths or "(none)">
+Risks: <issues / band-aid / scope-cross | "none">
+[Next: <follow-up FEAT or hint>]
+```
+
+STATUS = one of `DONE` / `BLOCKED` / `HELP` / `IN-PROGRESS` (all-caps). Full examples + acceptance rules + scope-cross fallback (mid-slice specialist re-route via badge instead of cross-dispatch) → `skills/workflow/builder-ceremony/SKILL.md`.
+
 ## Ceremony — load builder-ceremony skill
 
 All ceremony details (completion handoff CLI flags, self-verify gate per `skills/workflow/self-verify-gate/`, badges incl. context-ceiling, secret grep, prior-handoff extraction, commit discipline incl. `dev.stable` worktree carve-out, final 2-3 line return format) are in `skills/workflow/builder-ceremony/SKILL.md`. Load it at slice boundaries (start, blocker, completion).
@@ -222,10 +235,13 @@ When you write a dispatch prompt for a peer:
 - State the scope rails (forbidden files, time/budget cap).
 - Never use `caveman:*` agents.
 
-### Final-tool-call invariant (HARD)
+### Final return invariant (HARD)
 
-Regardless of what you dispatch or receive from peers, your LAST tool call before
-returning to the parent orchestrator MUST be `write-handoff` (or `write-handoff-and-bundle`).
-Peer outputs are inputs to YOUR work, not substitutes for it.
+Regardless of what you dispatch or receive from peers, peer outputs are inputs to YOUR work, not substitutes for it. Before returning to the orchestrator:
+
+- **Standard tasks** (`size: standard` or unspecified): LAST tool call MUST be `write-handoff` or `write-handoff-and-bundle`. Return 2-3 line summary (handoff path + bundle path + headline).
+- **Light tasks** (`size: light` or trivial mechanical edit ≤30 LoC): skip the handoff artifact. Emit applicable badge (if any) + return the 2-5 line structured follow-up directly per `## Light follow-up format`.
+
+Either path: never exit on narration alone.
 
 See FEAT-163 for the full peer-dispatch design and dispatch graph.

@@ -1,11 +1,12 @@
 ---
 name: builder-ceremony
 prompt_id: builder-ceremony
-version: 1.0.0
+version: 1.1.0
 tier: workflow
 model_pinned: sonnet
-description: Builder dispatch ceremony — completion handoff CLI invocation, self-verify gates, workflow badges, secret grep, commit discipline, prior-handoff extraction, context ceiling. Loaded by backend-dev / frontend-dev / fullstack-dev so the builder prompts focus on the JOB and consult this skill only at slice boundaries.
-triggers: ["write-handoff", "completion", "bundle", "badge", "self-verify", "secret grep", "context ceiling"]
+maxLines: 320
+description: Builder dispatch ceremony — completion handoff CLI invocation, self-verify gates, workflow badges, secret grep, commit discipline, prior-handoff extraction, context ceiling, light task return format, scope-cross fallback. Loaded by backend-dev / frontend-dev / fullstack-dev so the builder prompts focus on the JOB and consult this skill only at slice boundaries.
+triggers: ["write-handoff", "completion", "bundle", "badge", "self-verify", "secret grep", "context ceiling", "light task", "scope-cross"]
 ---
 
 # Builder ceremony — handoff + gates + badges
@@ -152,6 +153,99 @@ Commit autonomously when ALL of:
 Rationale: slice-scoped tests catch functional regressions. typecheck / lint / format catch style + type drift — those are cheap to fix later in the review dispatch, and on C# / large solutions they cost 30s+ per cycle. Blocking autonomous commits on every full-suite gate kills slice velocity.
 
 Use the `git-commit` skill for message authoring. When in doubt, write the handoff with `--risks "commit deferred for orchestrator review"` and let the orchestrator decide.
+
+## Light task return format
+
+When the dispatch carries `size: light` or the work is a trivial mechanical edit (≤30 LoC, single file, no behavior change), skip the handoff artifact entirely. Emit applicable badge first, then return 2-5 lines inline:
+
+```
+<STATUS>: <one-sentence headline>
+Files: <comma-separated paths or "(none)">
+Risks: <issues / band-aid surface / scope-cross | "none">
+[Next: <follow-up FEAT id or dispatch hint>]
+```
+
+Status tokens (all-caps, explicit): `DONE` / `BLOCKED` / `HELP` / `IN-PROGRESS`.
+
+### Examples
+
+```
+DONE: Fix typo in identity-anchor leak phrase list.
+Files: agents/fullstack-dev.md
+Risks: none
+```
+
+```
+DONE: Add timeout guard around langfuse fetch.
+Files: evals/lib/langfuse-emit.ts
+Risks: band-aid: catch swallows non-404 errors; root cause = wrong endpoint, needs FEAT-176
+Next: FEAT-176 endpoint detection
+```
+
+```
+[badge: blocked]
+BLOCKED: claude CLI not on PATH.
+Files: (none)
+Reason: which claude → not found
+Next: install CLI or set PATH; rerun
+```
+
+```
+[badge: help_request]
+HELP: Contract drift on /users endpoint shape.
+Files: api/users/handler.ts
+Risks: OpenAPI says response.avatar string; impl returns object
+Next: needs architect clarification
+```
+
+### Acceptance rules (reviewer / orchestrator)
+
+| Field | Rule |
+|---|---|
+| STATUS | Present, all-caps token from {DONE, BLOCKED, HELP, IN-PROGRESS} |
+| Headline | Informative — names what + where; never "did stuff" |
+| Files | Comma-separated paths OR `(none)` |
+| Risks | Names issues / band-aid (with FEAT pointer) / scope-cross OR `none` |
+| Next | Follow-up FEAT id or dispatch hint when applicable |
+| Length | 2-5 lines total. Longer = escalate to standard handoff. |
+| Band-aid surface | Must use the exact `band-aid: <patch>: root cause = <X> needs FEAT-NNN` form per `skills/workflow/durability-discipline/SKILL.md` |
+
+### When to use light vs standard
+
+| Task shape | Format |
+|---|---|
+| Single-file mechanical edit ≤30 LoC | Light (inline) |
+| Typo / rename / comment fix | Light |
+| Trivial bug fix with reproducer in 1 file | Light |
+| Multi-file change | Standard (full handoff + bundle) |
+| Net-new behavior (function / endpoint / migration) | Standard |
+| `size: light` from dispatch hint | Light |
+| `size: standard` (default unspecified) | Standard |
+| Band-aid with deferred root cause | Standard (needs evidence trail) |
+
+## Scope-cross fallback (no peer cross-dispatch)
+
+When mid-slice you discover the work would be better done by a different specialist builder (e.g. fullstack-dev hits a FE-heavy section that belongs in frontend-dev; backend-dev hits FE work; frontend-dev hits BE work), you CANNOT cross-dispatch — peer dispatch blacklist forbids it (`backend-dev` ↔ `frontend-dev` ↔ `fullstack-dev` cross-dispatch is the most regression-prone pattern).
+
+The correct fallback:
+
+1. **Stop your work at the slice boundary** that's still in your scope. Finish what's legitimately yours.
+2. **Emit `mark-badge blocked --note "scope-cross: <files>: needs orchestrator to dispatch <specialist> for <reason>"`** OR append the same line to handoff `--risks`.
+3. **Return with STATUS = `BLOCKED` (or `DONE` if your portion completed)** + the scope-cross flag visible in Risks.
+4. **Orchestrator next-cycles**: reads the handoff/badge, dispatches the recommended specialist on the remaining scope. Your job is to surface the signal cleanly, not to chain the dispatch yourself.
+
+Routing recommendations to include in Risks / Next:
+
+| Discovery during your work | Surface as |
+|---|---|
+| FE work (`*.tsx`, `*.css`, `src/components/`) in BE/generalist slice | `scope-cross: <files>: needs orchestrator to dispatch crew:frontend-dev` |
+| BE service work (`*.cs` ASP.NET, deep API/DB) in FE slice | `scope-cross: <files>: needs orchestrator to dispatch crew:backend-dev` |
+| Cross-layer work both BE + FE | `scope-cross: SPLIT_BUILD: <files>: orchestrator splits into BE-only + FE-only` |
+| Infra / CI / deploy work | `scope-cross: <files>: needs orchestrator to dispatch crew:release-engineer` |
+| UX design ambiguity blocking implementation | `scope-cross: needs orchestrator to dispatch crew:uxdesigner` |
+| Architecture / contract clarification | `scope-cross: needs orchestrator to dispatch crew:architect` (or peer-dispatch architect if mid-implementation per your whitelist) |
+
+This is the ONLY safe path to specialist routing from a builder dispatch.
 
 ## Handoff before stop (final-tool-call rule, simplified)
 

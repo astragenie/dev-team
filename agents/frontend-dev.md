@@ -302,10 +302,13 @@ When you write a dispatch prompt for a peer:
 - State the scope rails (forbidden files, time/budget cap).
 - Never use `caveman:*` agents.
 
-### Final-tool-call invariant (HARD)
+### Final return invariant (HARD)
 
-Regardless of what you dispatch or receive from peers, your LAST tool call before
-returning to the parent orchestrator MUST be `write-handoff` (or `write-handoff-and-bundle`).
-Peer outputs are inputs to YOUR work, not substitutes for it.
+Peer outputs are inputs to YOUR work, not substitutes. Before returning to the orchestrator:
+
+- **Standard tasks**: LAST tool call MUST be `write-handoff` or `write-handoff-and-bundle`. Return 2-3 line summary.
+- **Light tasks** (`size: light` or trivial mechanical edit ≤30 LoC): skip the handoff artifact. Emit applicable badge (if any) + return the 2-5 line structured follow-up per `skills/workflow/builder-ceremony/SKILL.md` "Light task return format".
+
+Either path: never exit on narration alone.
 
 See FEAT-163 for the full peer-dispatch design and dispatch graph.
