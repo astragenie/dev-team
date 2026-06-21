@@ -110,7 +110,7 @@ STATUS = `DONE` / `BLOCKED` / `HELP` / `IN-PROGRESS` (all-caps). NEVER invoke `w
 | Work clearly belongs to a different specialist (BE / FE) — dispatcher routes a fresh slice | `specialist_recommended` (note: `<specialist-name>: <why>`) | `BLOCKED` |
 | Task too challenging or scope too large for one builder run — needs dispatcher to decompose / re-route / re-scope | `escalated_to_dispatcher` | `BLOCKED` |
 | Self-verify gate intentionally skipped (you own that decision) | `validation_skipped` | `DONE` |
-| Time / turn ceiling hit mid-flight | `blocked` (note: `context_ceiling_reached: <files touched>`) | `IN-PROGRESS` |
+| Time ceiling hit mid-flight | `blocked` (note: `time_ceiling_reached: <files touched>`) | `IN-PROGRESS` |
 
 Emit the badge BEFORE returning the follow-up. Badge writes to `.claude/state/crew/workflow-state.json`; dispatcher reads on next cycle.
 
@@ -177,12 +177,12 @@ Load `skills/workflow/durability-discipline/SKILL.md`. Patches over root-cause f
 
 ## Time + turn budget
 
-Hard cap: **12 min wallclock OR 50 tool uses** (whichever first). Wind-down starts at **9 min OR 40 tools**: finish current edit, skip new investigation, return follow-up.
+Hard cap: **12 min wallclock**. Wind-down starts at **9 min**: finish current edit, skip new investigation, return follow-up.
 
 On overrun (you OR the harness detects it):
 
 ```bash
-node scripts/crew.ts mark-badge --repo "$PWD" --badge blocked --note "context_ceiling_reached: [files touched]"
+node scripts/crew.ts mark-badge --repo "$PWD" --badge blocked --note "time_ceiling_reached: [files touched]"
 ```
 
 Then return:
