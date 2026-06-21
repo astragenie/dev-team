@@ -182,6 +182,7 @@ A "bug fix" without regression test is not a fix.
 | Plugin internals (`agents/`, `skills/`, `commands/`, `hooks/`, `.claude-plugin/`) | `plugin-dev:agent-development` / `skill-development` / `command-development` / `hook-development` as appropriate |
 | Cross-layer BE + FE (genuinely both) | `skills/workflow/fullstack-cross-layer/SKILL.md` |
 | Tailwind CSS — utility classes, `@theme`, container queries, dark mode, `tailwind.config.*`, `*.css` with `@tailwind` directives | `skills/domain/ui/tailwind-patterns/` |
+| New landing page / dashboard / marketing surface, design polish, visual direction decisions (typography / palette / motion / spatial composition) | `skills/domain/ui/frontend-design/` |
 | New surface, error handling, observability, deployment standards | `skills/universal/engineering-standards/` (vendored kb/08-engineering) |
 
 Always-on (mandatory):

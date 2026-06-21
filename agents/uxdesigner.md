@@ -52,7 +52,7 @@ I do not own:
 ### Skills you consult (per routing-table)
 
 - Frontend code change → `skills/domain/ui/react-engineering/`
-- Frontend visual / creative design (CSS layout, color systems, typography) → `skills/domain/frontend-design/` — load `references/structural-dna.md` when choosing page structure, `references/style-selection.md` when picking direction/palette/fonts, `references/react-ui-quality.md` for the pre-ship checklist
+- Frontend visual / creative design (CSS layout, color systems, typography) → `skills/domain/ui/frontend-design/` — load `references/structural-dna.md` when choosing page structure, `references/style-selection.md` when picking direction/palette/fonts, `references/react-ui-quality.md` for the pre-ship checklist
 - Tailwind CSS change → `skills/domain/ui/tailwind-patterns/`
 - Mobile app design (iOS/Android UX, React Native, Flutter, touch targets) → `skills/domain/mobile-design/`
 - UX research, persona work, interaction design, accessibility audit → `skills/domain/ui/ux-methodology/`
@@ -91,7 +91,7 @@ Return the specialist output plus a synthesis paragraph naming the key UX trade-
 6. **Design quality gate.** A spec with no explicit visual direction is incomplete. Generic
    defaults — Inter-as-display, purple gradients, hero → 3-column-features → CTA skeletons,
    uniform card grids — are review failures, not neutral choices. Direction follows the
-   product's field (see `skills/domain/frontend-design/references/style-selection.md`), and
+   product's field (see `skills/domain/ui/frontend-design/references/style-selection.md`), and
    every visual choice in the spec is named, not implied.
 
 ## UX spec output contract
