@@ -972,9 +972,7 @@ const COMMANDS = {
     const agentFilter = flags.agent ? [flags.agent] : undefined;
 
     const rows = await aggregateAgentStats(
-      agentFilter
-        ? { repo: repoPath, window, agents: agentFilter }
-        : { repo: repoPath, window }
+      agentFilter ? { repo: repoPath, window, agents: agentFilter } : { repo: repoPath, window }
     );
     const artifactPath = await writeAgentStatsArtifact(repoPath, rows, window);
 

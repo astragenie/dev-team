@@ -28,7 +28,7 @@ const TRIVIAL_REJECTION_PATTERNS = [
   /^not\s+a\s+fit$/i,
   /^overkill$/i,
   /^n\/a$/i,
-  /^\-+$/
+  /^-+$/
 ];
 
 function extractOptionsConsideredSection(md: string): string | null {
@@ -153,7 +153,11 @@ export async function run(argv: string[]): Promise<{ findings: AdrFinding[]; exi
   const findings: AdrFinding[] = [];
   for (const f of files) {
     let md = "";
-    try { md = await fs.readFile(f, "utf-8"); } catch { continue; }
+    try {
+      md = await fs.readFile(f, "utf-8");
+    } catch {
+      continue;
+    }
     findings.push(...validateAdr(path.relative(repo, f), md));
   }
   const errors = findings.filter((x) => x.severity === "error").length;
@@ -161,12 +165,17 @@ export async function run(argv: string[]): Promise<{ findings: AdrFinding[]; exi
 }
 
 // Run when invoked directly (not when imported by tests).
-const isMain = import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith("validate-adr-template.ts");
+const isMain =
+  import.meta.url === `file://${process.argv[1]}` ||
+  process.argv[1]?.endsWith("validate-adr-template.ts");
 if (isMain) {
   const { findings, exitCode } = await run(process.argv.slice(2));
   for (const f of findings) {
     process.stdout.write(`[${f.severity.toUpperCase()}] ${f.file}: ${f.rule} — ${f.detail}\n`);
   }
-  if (findings.length === 0) process.stdout.write(`adr-template: no findings (${process.argv.includes("--strict") ? "strict" : "advisory"} mode)\n`);
+  if (findings.length === 0)
+    process.stdout.write(
+      `adr-template: no findings (${process.argv.includes("--strict") ? "strict" : "advisory"} mode)\n`
+    );
   process.exit(exitCode);
 }

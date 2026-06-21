@@ -44,7 +44,8 @@ export async function bootstrapRepo(repoPath: string): Promise<
   await writeRepoLocalGuides(repoPath, writes);
   await updateSettings(repoPath, writes);
   const costSetup = await runCostSetup(repoPath);
-  if (costSetup.written) writes.push(path.relative(repoPath, costSetup.configPath) || costSetup.configPath);
+  if (costSetup.written)
+    writes.push(path.relative(repoPath, costSetup.configPath) || costSetup.configPath);
 
   return ok({
     mode: "bootstrap",

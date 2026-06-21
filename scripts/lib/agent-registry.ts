@@ -17,10 +17,10 @@ export interface AgentCapabilities {
 }
 
 export interface AgentRegistryEntry {
-  name: string;          // agent file basename without .md
-  path: string;          // relative to repo root
+  name: string; // agent file basename without .md
+  path: string; // relative to repo root
   capabilities: AgentCapabilities;
-  priority: number;      // 0 if absent
+  priority: number; // 0 if absent
 }
 
 export type RouteQuery = {
@@ -34,8 +34,8 @@ export type RouteQuery = {
 
 export interface RouteMatch {
   entry: AgentRegistryEntry;
-  matched: string[];     // which dimensions matched (e.g. ["role:implementer", "stack:typescript"])
-  score: number;         // matched-count * 10 + priority (deterministic ranking)
+  matched: string[]; // which dimensions matched (e.g. ["role:implementer", "stack:typescript"])
+  score: number; // matched-count * 10 + priority (deterministic ranking)
 }
 
 // ── Frontmatter parser ──────────────────────────────────────────────────────
@@ -98,7 +98,11 @@ async function walkAgentDir(dir: string, repo: string): Promise<AgentRegistryEnt
     }
     if (!e.isFile() || !e.name.endsWith(".md")) continue;
     let md = "";
-    try { md = await fs.readFile(full, "utf-8"); } catch { continue; }
+    try {
+      md = await fs.readFile(full, "utf-8");
+    } catch {
+      continue;
+    }
     const name = e.name.replace(/\.md$/, "");
     const rel = path.relative(repo, full).split(path.sep).join("/");
     const entry = parseEntry(name, rel, md);
@@ -107,7 +111,10 @@ async function walkAgentDir(dir: string, repo: string): Promise<AgentRegistryEnt
   return out;
 }
 
-export async function loadAgentRegistry(repo: string, agentsSubdir = "agents"): Promise<AgentRegistryEntry[]> {
+export async function loadAgentRegistry(
+  repo: string,
+  agentsSubdir = "agents"
+): Promise<AgentRegistryEntry[]> {
   const dir = path.isAbsolute(agentsSubdir) ? agentsSubdir : path.join(repo, agentsSubdir);
   const all = await walkAgentDir(dir, repo);
   return all.sort((a, b) => a.name.localeCompare(b.name));
@@ -115,7 +122,12 @@ export async function loadAgentRegistry(repo: string, agentsSubdir = "agents"): 
 
 // ── Query ──────────────────────────────────────────────────────────────────
 
-function matchDimension(values: string[] | undefined, needle: string | undefined, label: string, hits: string[]): boolean {
+function matchDimension(
+  values: string[] | undefined,
+  needle: string | undefined,
+  label: string,
+  hits: string[]
+): boolean {
   if (!needle) return true;
   if (!values || !values.includes(needle)) return false;
   hits.push(`${label}:${needle}`);

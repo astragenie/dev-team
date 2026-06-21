@@ -68,11 +68,7 @@ async function buildPluginCacheTemp(): Promise<string> {
       const scopedEntries = await readdir(scopedSrc, { withFileTypes: true });
       for (const child of scopedEntries) {
         if (!child.isDirectory()) continue;
-        await symlink(
-          join(scopedSrc, child.name),
-          join(scopedDst, child.name),
-          SYMLINK_DIR_TYPE
-        );
+        await symlink(join(scopedSrc, child.name), join(scopedDst, child.name), SYMLINK_DIR_TYPE);
       }
       continue;
     }

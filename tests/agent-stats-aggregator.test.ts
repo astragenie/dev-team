@@ -19,7 +19,10 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
-import { aggregateAgentStats, writeAgentStatsArtifact } from "../scripts/lib/agent-stats-aggregator.ts";
+import {
+  aggregateAgentStats,
+  writeAgentStatsArtifact
+} from "../scripts/lib/agent-stats-aggregator.ts";
 import type { WindowSpec } from "../scripts/lib/agent-stats-aggregator.ts";
 
 // Fixture helpers
@@ -35,12 +38,24 @@ const DISPATCH_SEED = path.join(FIXTURE_DIR, "dispatch-timing-seed.jsonl");
 // Grade records matching dispatch-timing-seed.jsonl (SLICE-S01..S05). Newest-first.
 // `mk` keeps lines short while preserving exact per-slice averages used by the math ACs.
 function mk(slice: string, date: string, avg: number) {
-  return { slice, graded_at: date, scores: { architecture_quality: avg, reliability: avg, observability: avg, production_readiness: avg, security: avg, test_confidence: avg, product_completeness: avg } };
+  return {
+    slice,
+    graded_at: date,
+    scores: {
+      architecture_quality: avg,
+      reliability: avg,
+      observability: avg,
+      production_readiness: avg,
+      security: avg,
+      test_confidence: avg,
+      product_completeness: avg
+    }
+  };
 }
 const SEED_GRADES = [
   mk("SLICE-S05", "2026-06-05", 0.86),
   mk("SLICE-S04", "2026-06-04", 0.671), // < 0.7 → drags pass_rate
-  mk("SLICE-S03", "2026-06-03", 0.90),
+  mk("SLICE-S03", "2026-06-03", 0.9),
   mk("SLICE-S02", "2026-06-02", 0.82),
   mk("SLICE-S01", "2026-06-01", 0.88)
 ];
@@ -182,10 +197,7 @@ slice: SLICE-S03
 - Decision: failed
 - Evidence: some tests failed
 `;
-  await fs.writeFile(
-    path.join(validationsDir, "validation-slice-s03.md"),
-    validationContent
-  );
+  await fs.writeFile(path.join(validationsDir, "validation-slice-s03.md"), validationContent);
 
   const rows = await aggregateAgentStats({
     repo,
@@ -211,14 +223,15 @@ test("AC-T5: median_dispatches_to_pass with extra fix dispatches", async () => {
   const repo = await makeTempRepo();
 
   // Create a custom dispatch log where builder has 3 rows for SLICE-S05.
-  const customDispatch = [
-    // SLICE-S05: 3 builder dispatches (fix loop)
-    `{"runId":"run-s05-a","sliceId":"SLICE-S05","agent":"crew:builder","model":"claude-sonnet","wallMs":40000,"tokenIn":30000,"tokenOut":8000,"toolCalls":{},"bashDurationMs":0,"skillLoadCount":0}`,
-    `{"runId":"run-s05-fix1","sliceId":"SLICE-S05","agent":"crew:builder","model":"claude-sonnet","wallMs":20000,"tokenIn":15000,"tokenOut":4000,"toolCalls":{},"bashDurationMs":0,"skillLoadCount":0}`,
-    `{"runId":"run-s05-fix2","sliceId":"SLICE-S05","agent":"crew:builder","model":"claude-sonnet","wallMs":10000,"tokenIn":8000,"tokenOut":2000,"toolCalls":{},"bashDurationMs":0,"skillLoadCount":0}`,
-    // SLICE-S04: 1 builder dispatch (clean pass)
-    `{"runId":"run-s04-a","sliceId":"SLICE-S04","agent":"crew:builder","model":"claude-sonnet","wallMs":55000,"tokenIn":40000,"tokenOut":10000,"toolCalls":{},"bashDurationMs":0,"skillLoadCount":0}`
-  ].join("\n") + "\n";
+  const customDispatch =
+    [
+      // SLICE-S05: 3 builder dispatches (fix loop)
+      `{"runId":"run-s05-a","sliceId":"SLICE-S05","agent":"crew:builder","model":"claude-sonnet","wallMs":40000,"tokenIn":30000,"tokenOut":8000,"toolCalls":{},"bashDurationMs":0,"skillLoadCount":0}`,
+      `{"runId":"run-s05-fix1","sliceId":"SLICE-S05","agent":"crew:builder","model":"claude-sonnet","wallMs":20000,"tokenIn":15000,"tokenOut":4000,"toolCalls":{},"bashDurationMs":0,"skillLoadCount":0}`,
+      `{"runId":"run-s05-fix2","sliceId":"SLICE-S05","agent":"crew:builder","model":"claude-sonnet","wallMs":10000,"tokenIn":8000,"tokenOut":2000,"toolCalls":{},"bashDurationMs":0,"skillLoadCount":0}`,
+      // SLICE-S04: 1 builder dispatch (clean pass)
+      `{"runId":"run-s04-a","sliceId":"SLICE-S04","agent":"crew:builder","model":"claude-sonnet","wallMs":55000,"tokenIn":40000,"tokenOut":10000,"toolCalls":{},"bashDurationMs":0,"skillLoadCount":0}`
+    ].join("\n") + "\n";
 
   const dispatchPath = path.join(repo, "dispatch-timing.jsonl");
   await fs.writeFile(dispatchPath, customDispatch);
@@ -228,12 +241,28 @@ test("AC-T5: median_dispatches_to_pass with extra fix dispatches", async () => {
     {
       slice: "SLICE-S05",
       graded_at: "2026-06-05",
-      scores: { architecture_quality: 0.9, reliability: 0.9, observability: 0.9, production_readiness: 0.9, security: 0.9, test_confidence: 0.9, product_completeness: 0.9 }
+      scores: {
+        architecture_quality: 0.9,
+        reliability: 0.9,
+        observability: 0.9,
+        production_readiness: 0.9,
+        security: 0.9,
+        test_confidence: 0.9,
+        product_completeness: 0.9
+      }
     },
     {
       slice: "SLICE-S04",
       graded_at: "2026-06-04",
-      scores: { architecture_quality: 0.88, reliability: 0.88, observability: 0.88, production_readiness: 0.88, security: 0.88, test_confidence: 0.88, product_completeness: 0.88 }
+      scores: {
+        architecture_quality: 0.88,
+        reliability: 0.88,
+        observability: 0.88,
+        production_readiness: 0.88,
+        security: 0.88,
+        test_confidence: 0.88,
+        product_completeness: 0.88
+      }
     }
   ];
 

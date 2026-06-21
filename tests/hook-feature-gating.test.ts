@@ -402,13 +402,7 @@ test("check-redundant-read: cost-hygiene feature disabled → no warn/no state (
 
     assert.equal(result.exitCode, 0);
     assert.equal(result.stdout, "");
-    const stateFile = path.join(
-      repo,
-      ".claude",
-      "state",
-      "cost-hygiene",
-      "test_umbrella_off.json"
-    );
+    const stateFile = path.join(repo, ".claude", "state", "cost-hygiene", "test_umbrella_off.json");
     try {
       await fs.stat(stateFile);
       assert.fail("State file should not exist when cost-hygiene feature is disabled");

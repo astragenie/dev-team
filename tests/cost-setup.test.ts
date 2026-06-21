@@ -33,17 +33,11 @@ test("parseFeatureOverrides: parses on|off|true|false|1|0", () => {
 });
 
 test("parseFeatureOverrides: unknown feature throws", () => {
-  assert.throws(
-    () => parseFeatureOverrides("not-a-real-feature=on"),
-    /Unknown feature/
-  );
+  assert.throws(() => parseFeatureOverrides("not-a-real-feature=on"), /Unknown feature/);
 });
 
 test("parseFeatureOverrides: invalid value throws", () => {
-  assert.throws(
-    () => parseFeatureOverrides("cost-hygiene=maybe"),
-    /Invalid value/
-  );
+  assert.throws(() => parseFeatureOverrides("cost-hygiene=maybe"), /Invalid value/);
 });
 
 test("parseFeatureOverrides: missing = throws", () => {
@@ -58,8 +52,11 @@ test("runCostSetup: writes default features block on empty repo", async () => {
     const config = await readCrewConfigOrEmpty(repo);
     assert.ok(config.features);
     for (const name of Object.keys(FEATURES)) {
-      assert.equal(config.features![name]?.enabled, FEATURES[name as keyof typeof FEATURES]!.default,
-        `${name} should match registry default`);
+      assert.equal(
+        config.features![name]?.enabled,
+        FEATURES[name as keyof typeof FEATURES]!.default,
+        `${name} should match registry default`
+      );
     }
   } finally {
     await cleanup(repo);
@@ -124,7 +121,11 @@ test("runCostSetup: existing feature override is preserved when not in overrides
     const result = await runCostSetup(repo);
     const config = await readCrewConfigOrEmpty(repo);
     assert.equal(config.features!["cost-hygiene"]!.enabled, false, "user's off should stick");
-    assert.equal(config.features!["shell-preflight"]!.enabled, true, "missing entries get defaults");
+    assert.equal(
+      config.features!["shell-preflight"]!.enabled,
+      true,
+      "missing entries get defaults"
+    );
     assert.equal(result.written, true, "missing default entries triggered a write");
   } finally {
     await cleanup(repo);

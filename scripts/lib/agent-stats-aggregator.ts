@@ -34,11 +34,22 @@ export type AggregateOpts = {
 
 async function readJsonlFile<T>(filePath: string): Promise<T[]> {
   let raw = "";
-  try { raw = await fs.readFile(filePath, "utf-8"); } catch { return []; }
-  return raw.split("\n").filter(Boolean).flatMap((line) => {
-    // Caller-owned format; Zod validation deferred to boundary consumer (see AggregateOpts.dispatchTimingPath).
-    try { return [JSON.parse(line) as T]; } catch { return []; }
-  });
+  try {
+    raw = await fs.readFile(filePath, "utf-8");
+  } catch {
+    return [];
+  }
+  return raw
+    .split("\n")
+    .filter(Boolean)
+    .flatMap((line) => {
+      // Caller-owned format; Zod validation deferred to boundary consumer (see AggregateOpts.dispatchTimingPath).
+      try {
+        return [JSON.parse(line) as T];
+      } catch {
+        return [];
+      }
+    });
 }
 
 // ── Frontmatter helpers ───────────────────────────────────────────────────────
@@ -49,23 +60,31 @@ function extractFm(md: string): string | null {
 
 function parseKv(line: string): [string, string] | null {
   const m = /^(\w+):\s*(.+)$/.exec(line);
-  const k = m?.[1]; const v = m?.[2];
+  const k = m?.[1];
+  const v = m?.[2];
   return k && v !== undefined ? [k, v.replace(/^["']|["']$/g, "")] : null;
 }
 
 function parseScore(line: string): [string, number] | null {
   const m = /^\s{2}(\w+):\s*([\d.]+)/.exec(line);
-  const k = m?.[1]; const v = m?.[2];
+  const k = m?.[1];
+  const v = m?.[2];
   return k && v ? [k, parseFloat(v)] : null;
 }
 
 function processFmLine(
-  line: string, result: Record<string, unknown>, scoreMap: Record<string, number>, inS: boolean
+  line: string,
+  result: Record<string, unknown>,
+  scoreMap: Record<string, number>,
+  inS: boolean
 ): boolean {
   if (line.startsWith("scores:")) return true;
   if (inS) {
     const s = parseScore(line);
-    if (s) { scoreMap[s[0]] = s[1]; return true; }
+    if (s) {
+      scoreMap[s[0]] = s[1];
+      return true;
+    }
     return false;
   }
   const kv = parseKv(line);
@@ -89,12 +108,20 @@ function parseFm(md: string): Record<string, unknown> | null {
 async function loadGrades(repo: string): Promise<GradeRecord[]> {
   const dir = path.join(repo, ".claude", "artifacts", "loop", "grades");
   let entries: string[] = [];
-  try { entries = await fs.readdir(dir); } catch { return []; }
+  try {
+    entries = await fs.readdir(dir);
+  } catch {
+    return [];
+  }
   const grades: GradeRecord[] = [];
   for (const e of entries) {
     if (!e.endsWith(".md")) continue;
     let c = "";
-    try { c = await fs.readFile(path.join(dir, e), "utf-8"); } catch { continue; }
+    try {
+      c = await fs.readFile(path.join(dir, e), "utf-8");
+    } catch {
+      continue;
+    }
     const g = parseFm(c);
     if (
       g?.["slice"] &&
@@ -127,22 +154,31 @@ function fmDecision(body: string): string | null {
 
 function parseAD(content: string): ArtifactDecision {
   const body = extractFm(content);
-  const dec = (body ? fmDecision(body) : null)
-    ?? (/^-\s*Decision:\s*(.+)$/im.exec(content)?.[1]?.trim() ?? "");
+  const dec =
+    (body ? fmDecision(body) : null) ?? /^-\s*Decision:\s*(.+)$/im.exec(content)?.[1]?.trim() ?? "";
   const sliceId = body
-    ? (/^slice:\s*(.+)$/.exec(body.split("\n").find((l) => /^slice:/.test(l)) ?? "")?.[1]?.trim() ?? null)
+    ? (/^slice:\s*(.+)$/.exec(body.split("\n").find((l) => /^slice:/.test(l)) ?? "")?.[1]?.trim() ??
+      null)
     : null;
   return { slice: sliceId, decision: dec };
 }
 
 async function scanArtifacts(dir: string): Promise<ArtifactDecision[]> {
   let entries: string[] = [];
-  try { entries = await fs.readdir(dir); } catch { return []; }
+  try {
+    entries = await fs.readdir(dir);
+  } catch {
+    return [];
+  }
   const out: ArtifactDecision[] = [];
   for (const e of entries) {
     if (!e.endsWith(".md")) continue;
     let c = "";
-    try { c = await fs.readFile(path.join(dir, e), "utf-8"); } catch { continue; }
+    try {
+      c = await fs.readFile(path.join(dir, e), "utf-8");
+    } catch {
+      continue;
+    }
     out.push(parseAD(c));
   }
   return out;
@@ -150,12 +186,16 @@ async function scanArtifacts(dir: string): Promise<ArtifactDecision[]> {
 
 // ── Window / math ─────────────────────────────────────────────────────────────
 
-export function windowSlug(w: WindowSpec): string { return `${w.kind}_${w.n}`; }
+export function windowSlug(w: WindowSpec): string {
+  return `${w.kind}_${w.n}`;
+}
 
 function selectWindow(grades: GradeRecord[], w: WindowSpec): Set<string> {
   return new Set(
-    [...grades].sort((a, b) => new Date(b.graded_at).getTime() - new Date(a.graded_at).getTime())
-      .slice(0, w.n).map((g) => g.slice)
+    [...grades]
+      .sort((a, b) => new Date(b.graded_at).getTime() - new Date(a.graded_at).getTime())
+      .slice(0, w.n)
+      .map((g) => g.slice)
   );
 }
 
@@ -169,11 +209,16 @@ function median(arr: number[]): number {
 // ── Row computation ───────────────────────────────────────────────────────────
 
 function computeRow(
-  agent: string, rows: DispatchRow[], w: WindowSpec,
-  grades: Map<string, number>, rework: Set<string>, fail: Set<string>
+  agent: string,
+  rows: DispatchRow[],
+  w: WindowSpec,
+  grades: Map<string, number>,
+  rework: Set<string>,
+  fail: Set<string>
 ): AgentStatsRow {
   const slices = new Set(rows.map((r) => r.sliceId).filter((s): s is string => s != null));
-  const n = rows.length; const sn = slices.size;
+  const n = rows.length;
+  const sn = slices.size;
   const passCount = [...slices].filter((s) => (grades.get(s) ?? 0) >= 0.7).length;
   const round3 = (x: number) => Math.round(x * 1000) / 1000;
   return {
@@ -182,10 +227,14 @@ function computeRow(
     sample_count: n,
     pass_rate: round3(sn > 0 ? passCount / sn : 0),
     mean_wall_ms: Math.round(n > 0 ? rows.reduce((a, r) => a + (r.wallMs ?? 0), 0) / n : 0),
-    mean_tokens: Math.round(n > 0 ? rows.reduce((a, r) => a + (r.tokenIn ?? 0) + (r.tokenOut ?? 0), 0) / n : 0),
+    mean_tokens: Math.round(
+      n > 0 ? rows.reduce((a, r) => a + (r.tokenIn ?? 0) + (r.tokenOut ?? 0), 0) / n : 0
+    ),
     review_rework_rate: round3(sn > 0 ? [...slices].filter((s) => rework.has(s)).length / sn : 0),
     validation_fail_rate: round3(sn > 0 ? [...slices].filter((s) => fail.has(s)).length / sn : 0),
-    median_dispatches_to_pass: median([...slices].map((s) => rows.filter((r) => r.sliceId === s).length))
+    median_dispatches_to_pass: median(
+      [...slices].map((s) => rows.filter((r) => r.sliceId === s).length)
+    )
   };
 }
 
@@ -195,12 +244,21 @@ function hasSlice(a: ArtifactDecision): a is ArtifactDecision & { slice: string 
   return a.slice !== null;
 }
 function decisionSet(ads: ArtifactDecision[], ws: Set<string>, re: RegExp): Set<string> {
-  return new Set(ads.filter(hasSlice).filter((a) => ws.has(a.slice) && re.test(a.decision)).map((a) => a.slice));
+  return new Set(
+    ads
+      .filter(hasSlice)
+      .filter((a) => ws.has(a.slice) && re.test(a.decision))
+      .map((a) => a.slice)
+  );
 }
 
 function groupRows(rows: DispatchRow[]): Map<string, DispatchRow[]> {
   const m = new Map<string, DispatchRow[]>();
-  for (const r of rows) { const ex = m.get(r.agent); if (ex) ex.push(r); else m.set(r.agent, [r]); }
+  for (const r of rows) {
+    const ex = m.get(r.agent);
+    if (ex) ex.push(r);
+    else m.set(r.agent, [r]);
+  }
   return m;
 }
 
@@ -210,11 +268,19 @@ export async function aggregateAgentStats(opts: AggregateOpts): Promise<AgentSta
   const ws = selectWindow(grades, w);
   if (!ws.size) return [];
 
-  const gradeMap = new Map(grades.filter((g) => ws.has(g.slice)).map((g) => [g.slice, avgScores(g.scores)]));
+  const gradeMap = new Map(
+    grades.filter((g) => ws.has(g.slice)).map((g) => [g.slice, avgScores(g.scores)])
+  );
   const [allRows, revs, vals] = await Promise.all([
-    readJsonlFile<DispatchRow>(opts.dispatchTimingPath ?? path.join(opts.repo, ".claude", "logs", "dispatch-timing.jsonl")),
-    scanArtifacts(opts.reviewsDir ?? path.join(opts.repo, ".claude", "artifacts", "crew", "reviews")),
-    scanArtifacts(opts.validationsDir ?? path.join(opts.repo, ".claude", "artifacts", "crew", "validations"))
+    readJsonlFile<DispatchRow>(
+      opts.dispatchTimingPath ?? path.join(opts.repo, ".claude", "logs", "dispatch-timing.jsonl")
+    ),
+    scanArtifacts(
+      opts.reviewsDir ?? path.join(opts.repo, ".claude", "artifacts", "crew", "reviews")
+    ),
+    scanArtifacts(
+      opts.validationsDir ?? path.join(opts.repo, ".claude", "artifacts", "crew", "validations")
+    )
   ]);
 
   const byAgent = groupRows(allRows.filter((r) => r.sliceId != null && ws.has(r.sliceId)));
@@ -232,12 +298,24 @@ export async function aggregateAgentStats(opts: AggregateOpts): Promise<AgentSta
 }
 
 export async function writeAgentStatsArtifact(
-  repo: string, rows: AgentStatsRow[], window: WindowSpec
+  repo: string,
+  rows: AgentStatsRow[],
+  window: WindowSpec
 ): Promise<string> {
   const dir = path.join(repo, ".claude", "artifacts", "crew", "agent-stats");
   await fs.mkdir(dir, { recursive: true });
-  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z");
+  const stamp = new Date()
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d+Z$/, "Z");
   const fp = path.join(dir, `${stamp}-agent-stats-${windowSlug(window)}.json`);
-  await fs.writeFile(fp, JSON.stringify({ generated_at: new Date().toISOString(), window: { kind: window.kind, n: window.n }, rows }, null, 2) + "\n");
+  await fs.writeFile(
+    fp,
+    JSON.stringify(
+      { generated_at: new Date().toISOString(), window: { kind: window.kind, n: window.n }, rows },
+      null,
+      2
+    ) + "\n"
+  );
   return fp;
 }

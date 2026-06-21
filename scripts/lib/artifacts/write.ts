@@ -592,9 +592,7 @@ function renderCostReportDispatchBreakdown(
  * Render the ## Agent stats (rolling) cost-report section (FEAT-159 SLICE-B).
  * Top-5 agents by sample_count desc. Empty array → no section emitted.
  */
-function renderCostReportAgentStats(
-  rows: ArtifactFields["agentStats"]
-): string[] {
+function renderCostReportAgentStats(rows: ArtifactFields["agentStats"]): string[] {
   if (!rows || rows.length === 0) return [];
   const top = [...rows].sort((a, b) => b.sample_count - a.sample_count).slice(0, 5);
   const win = top[0]?.window ?? "";

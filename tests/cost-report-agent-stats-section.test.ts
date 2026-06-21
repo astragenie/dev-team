@@ -117,9 +117,17 @@ test("AC-T4: regex extension — `rejected` review decision counts toward rework
   await fs.writeFile(
     dispatchSeed,
     JSON.stringify({
-      runId: "r1", sliceId: "SLICE-Z01", agent: "crew:builder", model: "sonnet",
-      startMs: 1, wallMs: 10000, toolCalls: {}, bashDurationMs: 0, skillLoadCount: 0,
-      tokenIn: 10000, tokenOut: 5000
+      runId: "r1",
+      sliceId: "SLICE-Z01",
+      agent: "crew:builder",
+      model: "sonnet",
+      startMs: 1,
+      wallMs: 10000,
+      toolCalls: {},
+      bashDurationMs: 0,
+      skillLoadCount: 0,
+      tokenIn: 10000,
+      tokenOut: 5000
     }) + "\n"
   );
   const rows = await aggregateAgentStats({

@@ -13,7 +13,10 @@ interface ParsedOverride {
  */
 export function parseFeatureOverrides(raw: string | null | undefined): ParsedOverride[] {
   if (!raw) return [];
-  const parts = raw.split(",").map((p) => p.trim()).filter((p) => p.length > 0);
+  const parts = raw
+    .split(",")
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0);
   const result: ParsedOverride[] = [];
   for (const part of parts) {
     const eq = part.indexOf("=");
@@ -21,11 +24,12 @@ export function parseFeatureOverrides(raw: string | null | undefined): ParsedOve
       throw new Error(`Invalid feature override "${part}". Expected NAME=on|off.`);
     }
     const feature = part.slice(0, eq).trim();
-    const valueRaw = part.slice(eq + 1).trim().toLowerCase();
+    const valueRaw = part
+      .slice(eq + 1)
+      .trim()
+      .toLowerCase();
     if (!(feature in FEATURES)) {
-      throw new Error(
-        `Unknown feature "${feature}". Known: ${Object.keys(FEATURES).join(", ")}`
-      );
+      throw new Error(`Unknown feature "${feature}". Known: ${Object.keys(FEATURES).join(", ")}`);
     }
     let enabled: boolean;
     if (valueRaw === "on" || valueRaw === "true" || valueRaw === "1") enabled = true;

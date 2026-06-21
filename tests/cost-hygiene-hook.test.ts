@@ -154,9 +154,7 @@ test("hook with malformed stdin exits 0 silently", async () => {
 
 const POST_HOOK_PATH = path.join(__dirname, "..", "hooks", "record-read-content.ts");
 
-function runPostHook(
-  stdin: string
-): Promise<{ exitCode: number; stdout: string; stderr: string }> {
+function runPostHook(stdin: string): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
     const proc = spawn("node", ["--experimental-strip-types", POST_HOOK_PATH], {
       env: { ...process.env }
