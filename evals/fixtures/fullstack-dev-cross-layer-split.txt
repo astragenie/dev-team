@@ -1,0 +1,31 @@
+Implement SLICE-82 for FEAT-163 peer dispatch wiring.
+
+## Task
+
+Wire peer dispatch for the release-engineer agent and extend the dispatch graph validator.
+
+## Files to touch
+
+| Path | Action | Notes |
+|---|---|---|
+| `api/handlers/release.ts` | create | New BE handler for release-trigger endpoint |
+| `src/components/ReleaseStatus.tsx` | create | FE status indicator component |
+| `scripts/validate-dispatch-graph.ts` | edit | Add release-engineer edges to PEER_DISPATCH_ALLOWLIST |
+| `tests/validate-dispatch-graph.test.ts` | create | 3 new cases for release-engineer dispatch edges |
+
+## Acceptance criteria
+
+1. `api/handlers/release.ts` exposes POST /api/release/trigger with auth guard.
+2. `src/components/ReleaseStatus.tsx` polls the above endpoint for status.
+3. `scripts/validate-dispatch-graph.ts` validates the new peer edges.
+4. All tests pass.
+
+## Stack
+
+stack:typescript, surface:api, surface:ui, concern:reliability
+
+## Constraints
+
+- BE handler must not import from src/components/.
+- FE component must not import from api/handlers/.
+- No new npm dependencies.

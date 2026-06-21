@@ -1,0 +1,33 @@
+Implement SLICE-74 for FEAT-153 lead.md slim-down.
+
+## Task
+
+Extract lead agent policy sections to workflow skills and shrink lead.md to ≤300 lines.
+
+## Files to touch
+
+| Path | Action | Notes |
+|---|---|---|
+| `agents/lead.md` | edit | Remove verbose policy sections now covered by skills |
+| `skills/workflow/lead-orchestration/SKILL.md` | create | Extracted orchestration guidance |
+| `tests/validate-agents-frontmatter.test.ts` | edit | Update line cap assertion to ≤300 |
+
+## Forbidden Scope
+
+The following file types are explicitly out of scope for this slice:
+- *.tsx (React components)
+- *.css (stylesheets)
+- *.html (templates)
+- src/components/** (frontend components)
+- vite.config.* (build config)
+- tailwind.config.* (CSS framework config)
+
+DO NOT touch any frontend files. This is a pure backend/agent-prompt task.
+
+## Acceptance criteria
+
+1. agents/lead.md line count ≤ 300.
+2. skills/workflow/lead-orchestration/SKILL.md created with extracted content.
+3. tests/validate-agents-frontmatter.test.ts cap updated to 300.
+4. bun run lint, bun run typecheck, bun test all pass.
+5. NO .tsx or .css files in the diff.

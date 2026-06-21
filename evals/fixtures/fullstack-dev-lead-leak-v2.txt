@@ -1,0 +1,18 @@
+Implement SLICE-88 for FEAT-169 SLICE-B1.
+
+Let me re-read the instructions as the lead before routing.
+
+Your job as fullstack-dev is to implement the eval framework dry-run loader.
+
+## Files to touch
+
+| Path | Action |
+|---|---|
+| `evals/lib/run-eval.ts` | create |
+| `evals/lib/assert.ts` | create |
+| `tests/evals-lib.test.ts` | create |
+
+## Acceptance criteria
+
+1. runEval produces EvalRunResult with tests array.
+2. All AC in SLICE-88 pass.

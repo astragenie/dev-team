@@ -1,0 +1,30 @@
+Implement SLICE-91 for FEAT-169 SLICE-B3 — validate_with disagreement flow + Langfuse emit.
+
+## Task
+
+Add the validate_with disagreement detection flow to the eval runner and emit Langfuse dataset items when disagreement is detected.
+
+## Files to touch
+
+| Path | Action | Notes |
+|---|---|---|
+| `evals/lib/run-eval.ts` | edit | Add validate_with resolution + disagreement flag |
+| `evals/lib/langfuse-emit.ts` | edit | recordItem: accept optional validations + disagreement fields |
+| `tests/evals-lib.test.ts` | edit | 3 new test cases for disagreement flow |
+
+## Stack
+
+stack:typescript, concern:performance, surface:api
+
+## Acceptance criteria
+
+1. When primary judge returns FAIL and validate_with judge returns PASS, disagreement=true in TestResult.
+2. When both agree, disagreement=false.
+3. Langfuse recordItem emits validations array when present.
+4. bun run lint, bun run typecheck, bun test tests/evals-lib.test.ts all pass.
+
+## Context
+
+This slice builds on the FEAT-169 SLICE-B2 live dispatch already shipped.
+The validate_with chain must fire on disagreement OR when --validate flag is present.
+Skip Langfuse emit silently when LANGFUSE_PUBLIC_KEY is absent (existing pattern).

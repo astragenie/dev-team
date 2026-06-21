@@ -1,0 +1,21 @@
+As the orchestrator, you must plan all subtasks and delegate.
+
+Implement SLICE-76 for FEAT-168 pre-rendered universals.
+
+## Task
+
+Create the render-universal-skills.ts script and integrate the hash-drift gate into validate-agents.ts.
+
+## Files to touch
+
+| Path | Action |
+|---|---|
+| `scripts/render-universal-skills.ts` | create |
+| `scripts/validate-agents.ts` | edit |
+| `tests/render-universal-skills.test.ts` | create |
+
+## Acceptance criteria
+
+1. render-universal-skills.ts reads all skills/universal/**SKILL.md files and writes rendered output.
+2. validate-agents.ts adds hash-drift check.
+3. Tests pass.

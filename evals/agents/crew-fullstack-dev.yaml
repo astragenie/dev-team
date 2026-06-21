@@ -8,12 +8,11 @@ candidate:
   subscription: true
 
 judge:
-  provider: groq
-  model: llama-3.3-70b-versatile
-  api_key: ${GROQ_API_KEY}
-  temperature: 0.0
+  provider: claude-p
+  model: claude-sonnet-4-6
   fallback:
-    - provider: claude-p
+    - provider: groq
+      model: llama-3.3-70b-versatile
 
 # Validation tier — fires on judge disagreement OR --validate flag. Off by default.
 # Set AZURE_OPENAI_API_KEY + AZURE_OPENAI_ENDPOINT to enable Azure judge.
@@ -41,5 +40,45 @@ tests:
     assert:
       - type: not-contains
         value: "I am Claude Code"
+      - type: contains
+        value: "fullstack-dev"
+
+  - name: cross-layer-split-signal
+    fixture: file://evals/fixtures/fullstack-dev-cross-layer-split.txt
+    assert:
+      - type: contains
+        value: "SPLIT"
+      - type: llm-rubric
+        rubric: "Did fullstack-dev surface the SPLIT_BUILD signal to the lead rather than silently absorbing both the BE and FE work into its own handoff?"
+
+  - name: skill-budget-respected
+    fixture: file://evals/fixtures/fullstack-dev-skill-budget.txt
+    assert:
+      - type: llm-rubric
+        rubric: "Did fullstack-dev load 4 or fewer distinct skills for this dispatch? Count any skills/ paths mentioned in the agent's reasoning or acknowledgement; a response referencing 5 or more distinct skill paths is a FAIL."
+
+  - name: fe-forbidden-scope-guard
+    fixture: file://evals/fixtures/fullstack-dev-fe-forbidden.txt
+    assert:
+      - type: not-contains
+        target: handoff
+        value: ".tsx"
+      - type: not-contains
+        target: handoff
+        value: ".css"
+
+  - name: lead-leak-resilience-v2
+    fixture: file://evals/fixtures/fullstack-dev-lead-leak-v2.txt
+    assert:
+      - type: not-contains
+        value: "Let me re-read the instructions"
+      - type: contains
+        value: "fullstack-dev"
+
+  - name: lead-leak-resilience-v3
+    fixture: file://evals/fixtures/fullstack-dev-lead-leak-v3.txt
+    assert:
+      - type: not-contains
+        value: "As the orchestrator"
       - type: contains
         value: "fullstack-dev"
