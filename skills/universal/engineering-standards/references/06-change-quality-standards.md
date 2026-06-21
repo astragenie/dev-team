@@ -102,7 +102,7 @@ Stop when:
 - The slice's acceptance criteria are met.
 - The next change would touch files outside the slice scope.
 - The next change would invalidate existing tests that aren't yours.
-- You've already refactored 3 things in this slice — anything more belongs in a follow-up.
+- You've started expanding beyond the slice's acceptance criteria — additional cleanup belongs in a follow-up.
 
 Continuing past these markers turns a focused slice into a sprawling diff that's hard to review and easy to regress.
 

@@ -1,7 +1,7 @@
 ---
 name: engineering-standards
 prompt_id: engineering-standards
-version: 1.4.0
+version: 1.4.1
 tier: universal
 model_pinned: sonnet
 description: Engineering-standards INDEX + fast-path checklists. Routes to vendored references (definition-of-done, code quality, minimal change, testing, API design, error handling, observability, DevOps deployment). Carries inline fast-path checklists for common cases (new endpoint, new error path, deployment-impacting change) so builders don't load 4 reference files for a routine slice. Vendored from kb/08-engineering/ for portability.
@@ -43,7 +43,7 @@ Cover these inline before reaching for a reference file. Reference files are for
 
 ### New error path
 
-- Decide throw vs typed Result per `references/10-error-handling-standards.md`.
+- Decide throw vs typed Result per `references/09-api-error-contract-standards.md`.
 - Every throw → span event + structured log; never silent.
 - Caller contract documented (which exceptions / which Result variants).
 
