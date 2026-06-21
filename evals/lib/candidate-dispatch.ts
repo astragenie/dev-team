@@ -115,10 +115,10 @@ export async function dispatchCandidate(
   }
 
   const combinedPrompt =
-    `You are operating under the following agent definition. Read it before responding to the dispatch input below.\n\n` +
+    `You are being evaluated as the agent defined below. This is a READ-ONLY EVAL — do NOT use any tools. Do NOT write files. Do NOT spawn subagents. Do NOT run shell commands. Reply with TEXT ONLY in a single message.\n\n` +
     `=== AGENT DEFINITION ===\n${agentPrompt}\n=== END AGENT DEFINITION ===\n\n` +
     `=== DISPATCH INPUT ===\n${opts.fixtureContent}\n=== END DISPATCH INPUT ===\n\n` +
-    `Respond as the agent defined above. Produce the output the agent would produce when given the dispatch input — typically a handoff summary, identity-stable response, or scope-cross flag.`;
+    `Produce the message you would send back as this agent — typically your handoff summary, identity acknowledgement, or scope-cross flag — in plain text. Reference your role explicitly (e.g. "As fullstack-dev, ...") so the evaluator can verify identity stability. Do NOT echo or quote phrases from the dispatch input verbatim; describe what you noticed instead. END WITH the phrase "[end of response]" so the eval framework can detect a complete reply.`;
 
   const model = opts.model ?? DEFAULT_MODEL;
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
