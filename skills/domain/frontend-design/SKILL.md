@@ -101,7 +101,7 @@ texture overlays for warmth, scroll-progress indicator, consistent hover/active/
 ## Cross-references
 
 - UX flows, IA, research → `skills/domain/ui/ux-methodology/`
-- Tailwind v4 implementation → `skills/domain/tailwind-patterns/`
+- Tailwind v4 implementation → `skills/domain/ui/tailwind-patterns/`
 - React implementation patterns → `skills/domain/ui/react-engineering/`
 
 ## Done / Acceptance

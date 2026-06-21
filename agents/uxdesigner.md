@@ -53,7 +53,7 @@ I do not own:
 
 - Frontend code change → `skills/domain/ui/react-engineering/`
 - Frontend visual / creative design (CSS layout, color systems, typography) → `skills/domain/frontend-design/` — load `references/structural-dna.md` when choosing page structure, `references/style-selection.md` when picking direction/palette/fonts, `references/react-ui-quality.md` for the pre-ship checklist
-- Tailwind CSS change → `skills/domain/tailwind-patterns/`
+- Tailwind CSS change → `skills/domain/ui/tailwind-patterns/`
 - Mobile app design (iOS/Android UX, React Native, Flutter, touch targets) → `skills/domain/mobile-design/`
 - UX research, persona work, interaction design, accessibility audit → `skills/domain/ui/ux-methodology/`
 - Brainstorming / option divergence → `skills/universal/brainstorming/`
