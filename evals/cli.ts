@@ -3,9 +3,10 @@
  *
  * Usage:
  *   bun run evals --dry-run --prompt fullstack-dev
+ *   bun run evals --live --prompt fullstack-dev [--judge ollama]
  *   bun run evals --dry-run --prompt fullstack-dev --root /path/to/repo
  *
- * SLICE-B1: --dry-run only. Live judge dispatch errors with guidance.
+ * SLICE-B2: --live mode added; --dry-run remains the default (safe) mode.
  */
 
 import fs from "node:fs/promises";
@@ -21,6 +22,8 @@ interface CliArgs {
   prompt: string | undefined;
   root: string;
   dryRun: boolean;
+  live: boolean;
+  judge: string | undefined;
   help: boolean;
 }
 
@@ -32,6 +35,8 @@ function parseArgs(argv: string[]): CliArgs {
   let prompt: string | undefined;
   let root = process.cwd();
   let dryRun = false;
+  let live = false;
+  let judge: string | undefined;
   let help = false;
   let i = 0;
   while (i < argv.length) {
@@ -40,6 +45,10 @@ function parseArgs(argv: string[]): CliArgs {
       help = true;
     } else if (arg === "--dry-run") {
       dryRun = true;
+    } else if (arg === "--live") {
+      live = true;
+    } else if (arg === "--judge") {
+      [judge, i] = consumeNext(argv, i);
     } else if (arg === "--prompt" || arg === "-p") {
       [prompt, i] = consumeNext(argv, i);
     } else if (arg === "--root") {
@@ -49,7 +58,7 @@ function parseArgs(argv: string[]): CliArgs {
     }
     i++;
   }
-  return { prompt, root, dryRun, help };
+  return { prompt, root, dryRun, live, judge, help };
 }
 
 function printHelp(): void {
@@ -58,14 +67,22 @@ crew-eval — pluggable agent prompt evaluation framework
 
 Usage:
   bun run evals --dry-run --prompt <id> [--root <dir>]
+  bun run evals --live --prompt <id> [--judge <provider>] [--root <dir>]
 
 Options:
-  --prompt <id>   eval spec prompt_id to run (e.g. fullstack-dev)
-  --dry-run       replay fixture without live dispatch (SLICE-B1 only mode)
-  --root <dir>    repo root (default: cwd)
-  --help          show this help
+  --prompt <id>     eval spec prompt_id to run (e.g. fullstack-dev)
+  --dry-run         replay fixture without live judge dispatch (default safe mode)
+  --live            use live judge from spec (requires GROQ_API_KEY or GEMINI_API_KEY)
+  --judge <id>      override judge provider (e.g. ollama, gemini, groq, claude-p)
+  --root <dir>      repo root (default: cwd)
+  --help            show this help
 
-Note: live judge dispatch ships in SLICE-B2.
+Providers:
+  groq              Groq llama-3.3-70b-versatile (requires GROQ_API_KEY)
+  gemini            Google Gemini Flash (requires GEMINI_API_KEY)
+  ollama            Local Ollama llama3.3 (requires Ollama running at localhost:11434)
+  claude-p          claude CLI subscription judge (requires claude CLI installed)
+  generic-openai    Any OpenAI-compatible endpoint
 `);
 }
 
@@ -75,16 +92,23 @@ Note: live judge dispatch ships in SLICE-B2.
 
 function printResult(result: EvalRunResult): void {
   const { summary, tests } = result;
-  console.log(`\nEval: ${result.promptId}  [dry-run=${result.dryRun}]`);
+  const modeTag = result.dryRun ? "dry-run" : "live";
+  console.log(`\nEval: ${result.promptId}  [${modeTag}]`);
   for (const t of tests) {
-    const icon = t.pass ? "PASS" : "FAIL";
+    const icon = t.error ? "ERROR" : t.pass ? "PASS" : "FAIL";
     console.log(`  ${icon}  ${t.name} (${t.durationMs}ms)`);
+    if (t.error) {
+      console.log(`    ! ${t.error}`);
+    }
     for (const a of t.asserts) {
-      const aIcon = a.pass ? "  ✓" : "  ✗";
+      const aIcon = a.pass ? "  +" : "  -";
       console.log(`    ${aIcon} [${a.type}] ${a.message}`);
     }
   }
-  console.log(`\nSummary: ${summary.passed}/${summary.total} passed`);
+  console.log(
+    `\nSummary: ${summary.passed}/${summary.total} passed` +
+      (summary.errored > 0 ? `, ${summary.errored} errored` : "")
+  );
 }
 
 async function writeRunJson(result: EvalRunResult, repoRoot: string): Promise<string> {
@@ -111,11 +135,8 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (!args.dryRun) {
-    console.error("Error: live judge dispatch ships in SLICE-B2 — pass --dry-run");
-    process.exitCode = 1;
-    return;
-  }
+  // Default to dry-run if neither --dry-run nor --live specified
+  const dryRun = !args.live;
 
   if (!args.prompt) {
     console.error("Error: --prompt <id> is required");
@@ -133,13 +154,19 @@ async function main(): Promise<void> {
     return;
   }
 
-  const result = await runEval({ specFile, repoRoot: args.root, dryRun: true });
+  if (!dryRun && args.judge) {
+    // --judge override: patch the spec's judge provider at runtime
+    // (passed via env so run-eval picks it up via JUDGE_REGISTRY default)
+    process.env["CREW_EVAL_JUDGE_OVERRIDE"] = args.judge;
+  }
+
+  const result = await runEval({ specFile, repoRoot: args.root, dryRun });
   printResult(result);
 
   const outPath = await writeRunJson(result, args.root);
   console.log(`\nRun saved: ${outPath}`);
 
-  if (result.summary.failed > 0) {
+  if (result.summary.failed > 0 || result.summary.errored > 0) {
     process.exitCode = 1;
   }
 }

@@ -67,10 +67,25 @@ async function loadGroq(): Promise<{
 }> {
   return await import("../providers/groq.ts");
 }
+async function loadClaudeP(): Promise<{
+  ClaudePJudge: new () => JudgeProvider;
+}> {
+  return await import("../providers/claude-p.ts");
+}
+async function loadOllama(): Promise<{
+  OllamaJudge: new () => JudgeProvider;
+}> {
+  return await import("../providers/ollama.ts");
+}
+async function loadGemini(): Promise<{
+  GeminiJudge: new () => JudgeProvider;
+}> {
+  return await import("../providers/gemini.ts");
+}
 
 /**
  * JUDGE_REGISTRY: maps provider id → async factory.
- * AC4: Object.keys(JUDGE_REGISTRY).length >= 2.
+ * AC3 (SLICE-B2): Object.keys(JUDGE_REGISTRY).length >= 5.
  */
 export const JUDGE_REGISTRY: Record<
   string,
@@ -88,5 +103,17 @@ export const JUDGE_REGISTRY: Record<
   groq: async (config) => {
     const { GroqJudge } = await loadGroq();
     return new GroqJudge(config);
+  },
+  "claude-p": async () => {
+    const { ClaudePJudge } = await loadClaudeP();
+    return new ClaudePJudge();
+  },
+  ollama: async () => {
+    const { OllamaJudge } = await loadOllama();
+    return new OllamaJudge();
+  },
+  gemini: async () => {
+    const { GeminiJudge } = await loadGemini();
+    return new GeminiJudge();
   }
 };

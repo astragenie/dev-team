@@ -4,11 +4,14 @@
  *
  * SLICE-88 (FEAT-169 SLICE-B1):
  *   contains / not-contains / regex / artifact-exists / json-shape / tool-called / dispatched-agent
- *   llm-rubric is a stub returning pass=true (deferred to SLICE-B2).
+ * SLICE-89 (FEAT-169 SLICE-B2):
+ *   llm-rubric — real implementation dispatching the configured judge.
  */
 
 import fs from "node:fs/promises";
 import path from "node:path";
+import { JUDGE_REGISTRY } from "./judge.ts";
+import type { JudgeProvider } from "./judge.ts";
 
 export interface AssertInput {
   /** Candidate output text (handoff body / CLI stdout). */
@@ -19,6 +22,14 @@ export interface AssertInput {
   trace?: Record<string, unknown>;
   /** Repository root used for artifact-exists resolution. */
   repoRoot?: string;
+  /**
+   * Judge provider for llm-rubric asserts (SLICE-B2).
+   * If not provided, falls back to the groq registry entry.
+   * Pass a mock in tests.
+   */
+  judge?: JudgeProvider;
+  /** Judge provider id for lazy-loading from JUDGE_REGISTRY (default: groq). */
+  judgeProviderId?: string;
 }
 
 export interface AssertResult {
@@ -159,14 +170,42 @@ export function assertDispatchedAgent(input: AssertInput, agentId: string): Asse
 }
 
 // ---------------------------------------------------------------------------
-// llm-rubric (stub — deferred to SLICE-B2)
+// llm-rubric (SLICE-B2: real implementation)
 // ---------------------------------------------------------------------------
 
-export function assertLlmRubric(_input: AssertInput, _rubric: string): AssertResult {
-  // Live LLM judge dispatch ships in SLICE-B2.
+export async function assertLlmRubric(input: AssertInput, rubric: string): Promise<AssertResult> {
+  let judge = input.judge;
+
+  if (!judge) {
+    const providerId = input.judgeProviderId ?? "groq";
+    const factory = JUDGE_REGISTRY[providerId];
+    if (!factory) {
+      return {
+        pass: false,
+        message: `llm-rubric: unknown judge provider "${providerId}"`
+      };
+    }
+    try {
+      judge = await factory();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { pass: false, message: `llm-rubric: failed to load judge "${providerId}": ${msg}` };
+    }
+  }
+
+  let result: Awaited<ReturnType<typeof judge.judge>>;
+  try {
+    result = await judge.judge({ rubric, candidateOutput: input.candidateOutput });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { pass: false, message: `llm-rubric: judge error: ${msg}` };
+  }
+
   return {
-    pass: true,
-    message: "llm-rubric deferred to SLICE-B2 — stub returns pass=true"
+    pass: result.pass,
+    message: result.pass
+      ? `llm-rubric PASS (score=${result.score}): ${result.rationale}`
+      : `llm-rubric FAIL (score=${result.score}): ${result.rationale}`
   };
 }
 
@@ -212,7 +251,7 @@ export async function runAssert(spec: AssertSpec, input: AssertInput): Promise<A
     case "dispatched-agent":
       return assertDispatchedAgent(input, spec.value ?? "");
     case "llm-rubric":
-      return assertLlmRubric(input, spec.rubric ?? spec.value ?? "");
+      return await assertLlmRubric(input, spec.rubric ?? spec.value ?? "");
     default: {
       const _exhaustive: never = spec.type;
       return { pass: false, message: `unknown assert type: ${String(_exhaustive)}` };

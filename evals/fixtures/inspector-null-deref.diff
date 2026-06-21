@@ -1,0 +1,13 @@
+diff --git a/services/order-processor.ts b/services/order-processor.ts
+index a3f1b2c..d7e4f89 100644
+--- a/services/order-processor.ts
++++ b/services/order-processor.ts
+@@ -12,7 +12,10 @@ export async function processOrder(orderId: string): Promise<void> {
+   const order = await db.orders.findById(orderId);
+-  if (!order) return;
++  // order may be null if not found; accessing .items below without guard
+   const items = order.items;
++  for (const item of items) {
++    await fulfillItem(item);
++  }
+ }

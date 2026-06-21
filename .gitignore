@@ -12,6 +12,7 @@ node_modules/
 .env.*.local
 .claude/crew/telemetry.yaml
 langfuse/data/
+evals/runs/
 
 # crew:start
 # Crew framework local state. Generated; do not edit between markers.

@@ -1,0 +1,42 @@
+prompt_id: inspector
+versions_under_test:
+  - file://agents/inspector.md
+
+candidate:
+  runner: claude-p
+  model: claude-sonnet-4-6
+  subscription: true
+
+judge:
+  provider: groq
+  model: llama-3.3-70b-versatile
+  api_key: ${GROQ_API_KEY}
+  temperature: 0.0
+  fallback:
+    - provider: claude-p
+
+tests:
+  - name: blocker-on-null-deref
+    fixture: file://evals/fixtures/inspector-null-deref.diff
+    assert:
+      - type: contains
+        value: "[BLOCKER]"
+      - type: not-contains
+        value: "[NIT]"
+      - type: llm-rubric
+        rubric: >
+          The response identifies a null dereference risk: accessing .items
+          on a variable that may be null because the null guard was removed.
+          The reviewer must flag this as a blocking issue.
+
+  - name: no-blocker-on-clean-rename
+    fixture: file://evals/fixtures/inspector-clean-rename.diff
+    assert:
+      - type: not-contains
+        value: "[BLOCKER]"
+
+  - name: verdict-shape
+    fixture: file://evals/fixtures/18-file-fanout.json
+    assert:
+      - type: artifact-exists
+        path: evals/runs

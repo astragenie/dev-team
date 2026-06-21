@@ -200,11 +200,28 @@ describe("assertDispatchedAgent", () => {
   });
 });
 
-describe("assertLlmRubric (stub)", () => {
-  test("always returns pass=true in SLICE-B1", () => {
-    const r = assertLlmRubric(makeInput("any output"), "some rubric");
+describe("assertLlmRubric (SLICE-B2)", () => {
+  test("fails gracefully with unknown provider when no judge injected", async () => {
+    // Without a judge injected, assertLlmRubric falls back to "groq" in JUDGE_REGISTRY.
+    // In test env GROQ_API_KEY is not set; the factory will instantiate GroqJudge
+    // which will throw on actual HTTP call. We provide judgeProviderId="nonexistent-xyz"
+    // to get a deterministic "unknown provider" failure instead.
+    const r = await assertLlmRubric(
+      makeInput("any output", { judgeProviderId: "nonexistent-xyz" }),
+      "some rubric"
+    );
+    assert.equal(r.pass, false);
+    assert.ok(r.message.includes("nonexistent-xyz"));
+  });
+
+  test("passes when judge injected and returns pass=true", async () => {
+    const mockJudge = {
+      id: "mock",
+      judge: async () => ({ pass: true, score: 1, rationale: "passes", raw: {} })
+    };
+    const r = await assertLlmRubric(makeInput("any output", { judge: mockJudge }), "some rubric");
     assert.equal(r.pass, true);
-    assert.ok(r.message.includes("SLICE-B2"));
+    assert.ok(r.message.includes("PASS"));
   });
 });
 
@@ -218,8 +235,15 @@ describe("runAssert dispatch", () => {
     assert.equal(r.pass, true);
   });
 
-  test("routes llm-rubric to stub", async () => {
-    const r = await runAssert({ type: "llm-rubric", rubric: "check this" }, makeInput("output"));
+  test("routes llm-rubric with injected mock judge", async () => {
+    const mockJudge = {
+      id: "mock",
+      judge: async () => ({ pass: true, score: 1, rationale: "ok", raw: {} })
+    };
+    const r = await runAssert(
+      { type: "llm-rubric", rubric: "check this" },
+      makeInput("output", { judge: mockJudge })
+    );
     assert.equal(r.pass, true);
   });
 });
@@ -229,13 +253,6 @@ describe("runAssert dispatch", () => {
 // ---------------------------------------------------------------------------
 
 describe("runEval (dry-run)", () => {
-  test("errors without --dry-run flag", async () => {
-    await assert.rejects(
-      () => runEval({ specFile: "does-not-matter.yaml", repoRoot: process.cwd(), dryRun: false }),
-      /SLICE-B2/
-    );
-  });
-
   test("produces structured EvalRunResult from reference spec", async () => {
     const repoRoot = path.join(import.meta.dir, "..");
     const specFile = path.join(repoRoot, "evals", "agents", "crew-fullstack-dev.yaml");

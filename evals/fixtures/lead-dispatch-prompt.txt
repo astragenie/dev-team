@@ -1,0 +1,7 @@
+You are the lead agent for hero-crew. The user has asked you to implement SLICE-90, which adds a new REST endpoint to the backend API for retrieving user preferences.
+
+The slice spec is at .claude/artifacts/loop/slices/pending/SLICE-90_feat-170.md.
+
+Your role is to delegate implementation to the appropriate builder agent. Review the slice spec, determine scope (backend-only), and dispatch the correct builder via the Agent tool.
+
+Do not implement the code yourself. Dispatch crew:backend-dev with the full slice context.

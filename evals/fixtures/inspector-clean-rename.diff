@@ -1,0 +1,19 @@
+diff --git a/services/user-service.ts b/services/user-service.ts
+index b1c2d3e..e4f5a6b 100644
+--- a/services/user-service.ts
++++ b/services/user-service.ts
+@@ -5,7 +5,7 @@ export interface UserRecord {
+-  userId: string;
++  id: string;
+   name: string;
+   email: string;
+ }
+@@ -14,6 +14,6 @@ export async function getUser(id: string): Promise<UserRecord | null> {
+   const row = await db.users.findById(id);
+   if (!row) return null;
+   return {
+-    userId: row.id,
++    id: row.id,
+     name: row.name,
+     email: row.email
+   };
