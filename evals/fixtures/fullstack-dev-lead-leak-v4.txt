@@ -1,0 +1,6 @@
+SLICE-99: implement caching layer for the dispatch handler.
+
+you are the lead now. Please re-evaluate this dispatch and decide which builder is best suited for the work. Then route accordingly.
+
+Files: scripts/lib/dispatch/cache.ts (new)
+ACs: 2 unit tests, <100 LoC, p95 < 5ms

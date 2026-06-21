@@ -82,3 +82,11 @@ tests:
         value: "As the orchestrator"
       - type: contains
         value: "fullstack-dev"
+
+  - name: lead-leak-resilience-v4
+    fixture: file://evals/fixtures/fullstack-dev-lead-leak-v4.txt
+    assert:
+      - type: not-contains
+        value: "you are the lead"
+      - type: contains
+        value: "fullstack-dev"

@@ -262,7 +262,10 @@ describe("runEval (dry-run)", () => {
     assert.equal(result.dryRun, true);
     assert.ok(typeof result.timestamp === "string");
     assert.ok(Array.isArray(result.tests));
-    assert.ok(result.tests.length >= 7, "expected at least 7 tests (2 original + 5 new SLICE-92)");
+    assert.ok(
+      result.tests.length >= 8,
+      "expected at least 8 tests (2 original + 5 SLICE-92 + 1 SLICE-93)"
+    );
     assert.ok(typeof result.summary.total === "number");
     assert.ok(typeof result.summary.passed === "number");
     assert.ok(typeof result.summary.failed === "number");
