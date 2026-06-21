@@ -82,14 +82,24 @@ async function loadGemini(): Promise<{
 }> {
   return await import("../providers/gemini.ts");
 }
+async function loadAzureOpenAI(): Promise<{
+  AzureOpenAIJudge: new (c?: Partial<GenericOpenAIConfig & { endpoint?: string; deployment?: string; apiVersion?: string }>) => JudgeProvider;
+}> {
+  return await import("../providers/azure-openai.ts");
+}
+async function loadBedrock(): Promise<{
+  BedrockJudge: new (c?: { model?: string; region?: string; maxTokens?: number; temperature?: number }) => JudgeProvider;
+}> {
+  return await import("../providers/bedrock.ts");
+}
 
 /**
  * JUDGE_REGISTRY: maps provider id → async factory.
- * AC3 (SLICE-B2): Object.keys(JUDGE_REGISTRY).length >= 5.
+ * AC1 (SLICE-B3): Object.keys(JUDGE_REGISTRY).length >= 7 (adds azure + bedrock).
  */
 export const JUDGE_REGISTRY: Record<
   string,
-  (config?: Partial<GenericOpenAIConfig>) => Promise<JudgeProvider>
+  (config?: Partial<GenericOpenAIConfig & { endpoint?: string; deployment?: string; apiVersion?: string; region?: string; maxTokens?: number }>) => Promise<JudgeProvider>
 > = {
   "generic-openai": async (config) => {
     const { GenericOpenAIJudge } = await loadGeneric();
@@ -115,5 +125,13 @@ export const JUDGE_REGISTRY: Record<
   gemini: async () => {
     const { GeminiJudge } = await loadGemini();
     return new GeminiJudge();
+  },
+  azure: async (config) => {
+    const { AzureOpenAIJudge } = await loadAzureOpenAI();
+    return new AzureOpenAIJudge(config);
+  },
+  bedrock: async (config) => {
+    const { BedrockJudge } = await loadBedrock();
+    return new BedrockJudge(config);
   }
 };

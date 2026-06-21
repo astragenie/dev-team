@@ -15,6 +15,18 @@ judge:
   fallback:
     - provider: claude-p
 
+# Validation tier — fires on judge disagreement OR --validate flag. Off by default.
+# Set AZURE_OPENAI_API_KEY + AZURE_OPENAI_ENDPOINT to enable Azure judge.
+# Set AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY to enable Bedrock judge.
+validate_with:
+  - provider: azure
+    endpoint: ${AZURE_OPENAI_ENDPOINT}
+    deployment: gpt-4o
+    api_key: ${AZURE_OPENAI_API_KEY}  # env: AZURE_OPENAI_API_KEY
+  - provider: bedrock
+    model: anthropic.claude-3-5-sonnet-20241022-v2:0
+    region: us-east-1  # env: AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY
+
 tests:
   - name: blocker-on-null-deref
     fixture: file://evals/fixtures/inspector-null-deref.diff

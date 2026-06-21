@@ -4,6 +4,7 @@
  *
  * SLICE-88 (FEAT-169 SLICE-B1): dry-run replay only.
  * SLICE-89 (FEAT-169 SLICE-B2): live candidate dispatch + judge fallback chain.
+ * SLICE-90 (FEAT-169 SLICE-B3): validate_with disagreement flow + Langfuse emit.
  */
 
 import fs from "node:fs/promises";
@@ -13,6 +14,7 @@ import { runAssert } from "./assert.ts";
 import { JUDGE_REGISTRY } from "./judge.ts";
 import type { JudgeProvider } from "./judge.ts";
 import type { AssertInput, AssertSpec } from "./assert.ts";
+import { ensureDataset, recordRun, recordItem } from "./langfuse-emit.ts";
 
 // ---------------------------------------------------------------------------
 // Eval spec types (matches evals/agents/*.yaml shape)
@@ -50,6 +52,13 @@ interface EvalSpec {
 // Result types
 // ---------------------------------------------------------------------------
 
+/** One validate_with judge verdict recorded alongside the primary verdict. */
+export interface ValidationEntry {
+  judge: string;
+  verdict: "pass" | "fail" | "skipped";
+  rationale: string;
+}
+
 export interface TestResult {
   name: string;
   pass: boolean;
@@ -57,6 +66,10 @@ export interface TestResult {
   error?: string;
   asserts: Array<{ type: string; pass: boolean; message: string }>;
   durationMs: number;
+  /** validate_with entries — present when disagreement flow ran. */
+  validations?: ValidationEntry[];
+  /** true when primary verdict and any validate_with verdict disagree. */
+  disagreement?: boolean;
 }
 
 export interface EvalRunResult {
@@ -91,6 +104,101 @@ async function loadFixture(
     // plain-text fixture — leave parsed as null
   }
   return { text: raw, parsed };
+}
+
+// ---------------------------------------------------------------------------
+// validate_with disagreement flow
+// ---------------------------------------------------------------------------
+
+type ValidateWithCfg = NonNullable<EvalSpec["validate_with"]>[number];
+
+/**
+ * Resolve a single validate_with judge entry into a JudgeProvider.
+ * Returns null + records error on failure (skipped verdict).
+ */
+async function resolveValidateJudge(
+  cfg: ValidateWithCfg
+): Promise<{ judge: JudgeProvider | null; error?: string }> {
+  const factory = JUDGE_REGISTRY[cfg.provider];
+  if (!factory) {
+    return { judge: null, error: `unknown validate_with provider: ${cfg.provider}` };
+  }
+  try {
+    const judge = await factory({
+      model: cfg.model,
+      apiKey: cfg.api_key,
+      endpoint: cfg.endpoint,
+      deployment: cfg.deployment,
+      region: cfg.region
+    } as Parameters<typeof factory>[0]);
+    return { judge };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { judge: null, error: `${cfg.provider}: ${msg}` };
+  }
+}
+
+/**
+ * Run the validate_with chain for a given primary pass/fail verdict.
+ * Fires when: primaryPass !== any validate_with verdict OR forceValidate=true.
+ * Returns validation entries and whether a disagreement was detected.
+ */
+async function runValidateWith(
+  validateWithCfgs: ValidateWithCfg[],
+  rubric: string,
+  candidateOutput: string,
+  primaryPass: boolean,
+  forceValidate: boolean
+): Promise<{ entries: ValidationEntry[]; disagreement: boolean }> {
+  // Resolve all validate_with judges in parallel
+  const resolved = await Promise.all(validateWithCfgs.map((cfg) => resolveValidateJudge(cfg)));
+
+  const entries: ValidationEntry[] = [];
+  let anyDisagreement = false;
+
+  await Promise.all(
+    resolved.map(async ({ judge, error }, idx) => {
+      if (!judge) {
+        entries[idx] = {
+          judge: validateWithCfgs[idx]?.provider ?? "unknown",
+          verdict: "skipped",
+          rationale: error ?? "judge unavailable"
+        };
+        return;
+      }
+
+      try {
+        const result = await judge.judge({ rubric, candidateOutput });
+        const verdictStr = result.pass ? "pass" : "fail";
+        entries[idx] = {
+          judge: judge.id,
+          verdict: verdictStr,
+          rationale: result.rationale
+        };
+        if (result.pass !== primaryPass) {
+          anyDisagreement = true;
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        entries[idx] = {
+          judge: judge.id,
+          verdict: "skipped",
+          rationale: `judge error: ${msg}`
+        };
+      }
+    })
+  );
+
+  // Filter out any sparse slots (shouldn't happen, but defensive)
+  const filteredEntries = entries.filter(Boolean);
+
+  // Check if we should actually return results:
+  // Only return if forceValidate OR there was a disagreement
+  if (!forceValidate && !anyDisagreement) {
+    return { entries: [], disagreement: false };
+  }
+
+  return { entries: filteredEntries, disagreement: anyDisagreement };
 }
 
 // ---------------------------------------------------------------------------
@@ -190,13 +298,12 @@ async function dryRunTest(test: EvalTest, repoRoot: string): Promise<TestResult>
 async function liveTest(
   test: EvalTest,
   repoRoot: string,
-  judge: JudgeProvider | null
+  judge: JudgeProvider | null,
+  validateWithCfgs: NonNullable<EvalSpec["validate_with"]>,
+  forceValidate: boolean
 ): Promise<TestResult> {
   const start = Date.now();
 
-  // For live mode, we still load the fixture for asserts that need it;
-  // full candidate subprocess dispatch is SLICE-B3 (validate_with flow).
-  // This slice wires up the judge + fallback chain and llm-rubric asserts.
   let candidateOutput = "";
   let trace: Record<string, unknown> | undefined;
 
@@ -222,13 +329,38 @@ async function liveTest(
     assertResults.push({ type: spec.type, pass: result.pass, message: result.message });
   }
 
-  const pass = assertResults.every((r) => r.pass);
-  return {
+  const primaryPass = assertResults.every((r) => r.pass);
+  const testResult: TestResult = {
     name: test.name,
-    pass,
+    pass: primaryPass,
     asserts: assertResults,
     durationMs: Date.now() - start
   };
+
+  // validate_with disagreement flow
+  if (validateWithCfgs.length > 0) {
+    // Build a combined rubric from llm-rubric asserts, or use a summary rubric
+    const rubrics = test.assert
+      .filter((a) => a.type === "llm-rubric")
+      .map((a) => a.rubric ?? a.value ?? "");
+    const combinedRubric =
+      rubrics.length > 0 ? rubrics.join("; ") : `All asserts pass for test: ${test.name}`;
+
+    const { entries, disagreement } = await runValidateWith(
+      validateWithCfgs,
+      combinedRubric,
+      candidateOutput,
+      primaryPass,
+      forceValidate
+    );
+
+    if (entries.length > 0 || forceValidate) {
+      testResult.validations = entries;
+      testResult.disagreement = disagreement;
+    }
+  }
+
+  return testResult;
 }
 
 // ---------------------------------------------------------------------------
@@ -239,8 +371,10 @@ export async function runEval(options: {
   specFile: string;
   repoRoot: string;
   dryRun: boolean;
+  /** Force validate_with chain on every test, even when primary passes. */
+  validate?: boolean;
 }): Promise<EvalRunResult> {
-  const { specFile, repoRoot, dryRun } = options;
+  const { specFile, repoRoot, dryRun, validate: forceValidate = false } = options;
 
   const raw = await fs.readFile(specFile, "utf8");
   const spec = parseYaml(raw) as EvalSpec;
@@ -254,12 +388,14 @@ export async function runEval(options: {
     judgeErrors = resolved.errors;
   }
 
+  const validateWithCfgs = spec.validate_with ?? [];
+
   const testResults: TestResult[] = [];
   for (const test of spec.tests) {
     if (dryRun) {
       testResults.push(await dryRunTest(test, repoRoot));
     } else {
-      testResults.push(await liveTest(test, repoRoot, judge));
+      testResults.push(await liveTest(test, repoRoot, judge, validateWithCfgs, forceValidate));
     }
   }
 
@@ -281,7 +417,47 @@ export async function runEval(options: {
     result.judgeErrors = judgeErrors;
   }
 
+  // Langfuse dataset emit (skips silently if LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY absent)
+  if (!dryRun) {
+    const judgeId = judge?.id ?? "unknown";
+    await emitToLangfuse(spec.prompt_id, judgeId, testResults).catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`langfuse: emit failed: ${msg}\n`);
+    });
+  }
+
   return result;
+}
+
+/**
+ * Emit the test results to Langfuse as a dataset run.
+ * All errors are caught by the caller; this function is fire-and-try.
+ */
+async function emitToLangfuse(
+  promptId: string,
+  judgeId: string,
+  testResults: TestResult[]
+): Promise<void> {
+  const datasetId = await ensureDataset(promptId);
+  if (datasetId === null) return; // keys absent — already warned
+
+  const runId = await recordRun({ datasetId, promptId, judgeId });
+  if (runId === null) return;
+
+  await Promise.all(
+    testResults.map((t) => {
+      const item: Parameters<typeof recordItem>[0] = {
+        runId,
+        testName: t.name,
+        pass: t.pass,
+        durationMs: t.durationMs,
+        asserts: t.asserts
+      };
+      if (t.validations !== undefined) item.validations = t.validations;
+      if (t.disagreement !== undefined) item.disagreement = t.disagreement;
+      return recordItem(item);
+    })
+  );
 }
 
 // ---------------------------------------------------------------------------

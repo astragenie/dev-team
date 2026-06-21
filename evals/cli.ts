@@ -24,6 +24,7 @@ interface CliArgs {
   dryRun: boolean;
   live: boolean;
   judge: string | undefined;
+  validate: boolean;
   help: boolean;
 }
 
@@ -37,6 +38,7 @@ function parseArgs(argv: string[]): CliArgs {
   let dryRun = false;
   let live = false;
   let judge: string | undefined;
+  let validate = false;
   let help = false;
   let i = 0;
   while (i < argv.length) {
@@ -47,6 +49,8 @@ function parseArgs(argv: string[]): CliArgs {
       dryRun = true;
     } else if (arg === "--live") {
       live = true;
+    } else if (arg === "--validate") {
+      validate = true;
     } else if (arg === "--judge") {
       [judge, i] = consumeNext(argv, i);
     } else if (arg === "--prompt" || arg === "-p") {
@@ -58,7 +62,7 @@ function parseArgs(argv: string[]): CliArgs {
     }
     i++;
   }
-  return { prompt, root, dryRun, live, judge, help };
+  return { prompt, root, dryRun, live, judge, validate, help };
 }
 
 function printHelp(): void {
@@ -68,21 +72,27 @@ crew-eval — pluggable agent prompt evaluation framework
 Usage:
   bun run evals --dry-run --prompt <id> [--root <dir>]
   bun run evals --live --prompt <id> [--judge <provider>] [--root <dir>]
+  bun run evals --live --prompt <id> --validate
 
 Options:
   --prompt <id>     eval spec prompt_id to run (e.g. fullstack-dev)
   --dry-run         replay fixture without live judge dispatch (default safe mode)
   --live            use live judge from spec (requires GROQ_API_KEY or GEMINI_API_KEY)
-  --judge <id>      override judge provider (e.g. ollama, gemini, groq, claude-p)
+  --validate        force validate_with chain on every test (even when primary passes)
+  --judge <id>      override judge provider (e.g. ollama, gemini, groq, claude-p, azure, bedrock)
   --root <dir>      repo root (default: cwd)
   --help            show this help
 
-Providers:
+Primary providers (free tier):
   groq              Groq llama-3.3-70b-versatile (requires GROQ_API_KEY)
   gemini            Google Gemini Flash (requires GEMINI_API_KEY)
   ollama            Local Ollama llama3.3 (requires Ollama running at localhost:11434)
   claude-p          claude CLI subscription judge (requires claude CLI installed)
   generic-openai    Any OpenAI-compatible endpoint
+
+Validation tier (fires on disagreement or --validate):
+  azure             Azure OpenAI (requires AZURE_OPENAI_API_KEY + AZURE_OPENAI_ENDPOINT)
+  bedrock           AWS Bedrock (requires AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY)
 `);
 }
 
@@ -96,13 +106,21 @@ function printResult(result: EvalRunResult): void {
   console.log(`\nEval: ${result.promptId}  [${modeTag}]`);
   for (const t of tests) {
     const icon = t.error ? "ERROR" : t.pass ? "PASS" : "FAIL";
-    console.log(`  ${icon}  ${t.name} (${t.durationMs}ms)`);
+    const disagreeTag = t.disagreement ? "  [DISAGREEMENT]" : "";
+    console.log(`  ${icon}  ${t.name} (${t.durationMs}ms)${disagreeTag}`);
     if (t.error) {
       console.log(`    ! ${t.error}`);
     }
     for (const a of t.asserts) {
       const aIcon = a.pass ? "  +" : "  -";
       console.log(`    ${aIcon} [${a.type}] ${a.message}`);
+    }
+    if (t.validations && t.validations.length > 0) {
+      console.log("    validate_with:");
+      for (const v of t.validations) {
+        const vIcon = v.verdict === "pass" ? "+" : v.verdict === "skipped" ? "~" : "-";
+        console.log(`      ${vIcon} [${v.judge}] ${v.verdict}: ${v.rationale}`);
+      }
     }
   }
   console.log(
@@ -160,7 +178,7 @@ async function main(): Promise<void> {
     process.env["CREW_EVAL_JUDGE_OVERRIDE"] = args.judge;
   }
 
-  const result = await runEval({ specFile, repoRoot: args.root, dryRun });
+  const result = await runEval({ specFile, repoRoot: args.root, dryRun, validate: args.validate });
   printResult(result);
 
   const outPath = await writeRunJson(result, args.root);
