@@ -4,12 +4,16 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { SCHEMA_VERSION } from "./lib/build-bundle/types.ts";
+import {
+  CURRENT_BUILDER_NAMES,
+  LEGACY_BUILDER_NAMES,
+  SCHEMA_VERSION
+} from "./lib/build-bundle/types.ts";
 
 const BUNDLES_REL = path.join(".claude", "artifacts", "crew", "bundles");
 const REQUIRED_FIELDS = [
   "slice",
-  "fullstack-dev",
+  "builder",
   "run_id",
   "files_touched",
   "files_read",
@@ -17,6 +21,8 @@ const REQUIRED_FIELDS = [
   "truncated",
   "schema_version"
 ] as const;
+
+const ALLOWED_BUILDERS = new Set<string>([...CURRENT_BUILDER_NAMES, ...LEGACY_BUILDER_NAMES]);
 
 function repoRoot(): string {
   if (process.env.CREW_VALIDATE_BUNDLES_REPO) {
@@ -58,17 +64,30 @@ function validateOne(filePath: string, text: string): Finding | null {
   const body = match[1] ?? "";
   const have = new Set<string>();
   let schemaVersion: number | null = null;
+  let builderValue: string | null = null;
   for (const raw of body.split(/\r?\n/)) {
     const line = raw.trim();
-    const m = line.match(/^([a-z_]+):/);
+    // Field names may include hyphens (e.g. `files_read_skipped`, `builder`).
+    const m = line.match(/^([a-z][a-z0-9_-]*):/);
     if (m && m[1]) have.add(m[1]);
     const sv = line.match(/^schema_version:\s*(\d+)\s*$/);
     if (sv && sv[1]) schemaVersion = Number(sv[1]);
+    const bv = line.match(/^builder:\s*([\w-]+)\s*$/);
+    if (bv && bv[1]) builderValue = bv[1];
   }
   for (const f of REQUIRED_FIELDS) {
     if (!have.has(f)) {
       return { file: filePath, reason: `missing required field: ${f}` };
     }
+  }
+  if (builderValue === null) {
+    return { file: filePath, reason: "builder value unparseable" };
+  }
+  if (!ALLOWED_BUILDERS.has(builderValue)) {
+    return {
+      file: filePath,
+      reason: `builder "${builderValue}" not in allowed set [${[...ALLOWED_BUILDERS].sort().join(", ")}]`
+    };
   }
   if (schemaVersion === null) {
     return { file: filePath, reason: "schema_version unparseable" };

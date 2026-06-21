@@ -1,7 +1,25 @@
 // Shared types for build-bundle module.
 // Schema reference: docs/standards/build-bundle-schema.md
 
-export type BuilderName = "fullstack-dev" | "backend-dev" | "frontend-dev";
+export type BuilderName =
+  | "fullstack-dev"
+  | "backend-dev"
+  | "frontend-dev"
+  | "aiplugin-dev"
+  | "release-engineer";
+
+// Legacy builder identities accepted by validate-bundles for historical
+// bundles emitted before the v0.35.0 agent rename. Not valid for new bundles.
+export const LEGACY_BUILDER_NAMES = ["builder", "builder-be", "builder-fe"] as const;
+export type LegacyBuilderName = (typeof LEGACY_BUILDER_NAMES)[number];
+
+export const CURRENT_BUILDER_NAMES = [
+  "fullstack-dev",
+  "backend-dev",
+  "frontend-dev",
+  "aiplugin-dev",
+  "release-engineer"
+] as const satisfies readonly BuilderName[];
 
 export type SkipReason = "outside-repo" | "deleted" | "binary";
 
