@@ -1,7 +1,7 @@
 ---
 name: engineering-standards
 prompt_id: engineering-standards
-version: 1.1.0
+version: 1.2.0
 tier: universal
 model_pinned: sonnet
 description: Engineering-standards INDEX + fast-path checklists. Routes to vendored references (definition-of-done, code quality, minimal change, testing, API design, error handling, observability, DevOps deployment). Carries inline fast-path checklists for common cases (new endpoint, new error path, deployment-impacting change) so builders don't load 4 reference files for a routine slice. Vendored from kb/08-engineering/ for portability.
@@ -47,6 +47,24 @@ Cover these inline before reaching for a reference file. Reference files are for
 - Every throw → span event + structured log; never silent.
 - Caller contract documented (which exceptions / which Result variants).
 
+### New UI surface (component / page / form)
+
+- Loading, error, empty, and success states explicitly handled — never a blank screen on async work.
+- Accessibility impact assessed (focus order, ARIA roles, label association, color contrast, keyboard reachability).
+- Analytics / telemetry events follow the existing pattern; reuse before creating a new event name.
+- No hardcoded user-facing strings when the project uses i18n / localization.
+- Component tests when behavior (not just markup) changes.
+- No secrets / tokens / PII in client-side logs or telemetry payloads.
+
+### New background job / workflow / agent execution
+
+- Idempotent (same input → same output; safe to retry).
+- Retry-safe with bounded backoff; classify transient vs permanent failure before retry.
+- Observable: OTel span on each step + structured log + outcome counter.
+- Bounded timeout on every external call (DB, HTTP, queue, LLM); no infinite-wait.
+- Durable state outside process memory (DB / queue / blob); resumable from last checkpoint.
+- Idempotency key on every outbound side effect (email, payment, webhook, LLM dispatch).
+
 ### Deployment-impacting change
 
 - Migrations safe (expand-contract, reversible, idempotent backfill).
@@ -87,6 +105,4 @@ You've consulted this skill correctly when:
 
 ## Maintenance
 
-- `last_reviewed` field on this skill = last sync date with the kb source. Bump when copying updated files from `kb/08-engineering/`.
-- Cross-check: `references/*.md` here should match `kb/08-engineering/*.md` byte-for-byte. Drift between them = real bug.
-- Future: a CI job that diff-checks the references against the kb source, gated by a `KB_ENGINEERING_ROOT` env var. Not yet wired.
+Maintainer / drift / sync notes live in `skills/universal/engineering-standards/README.md`. Agents do not need them.
