@@ -146,7 +146,7 @@ Add observability when introducing a new **feature root**, **route**, **agent-dr
 
 ## Systematic debugging
 
-Intermittent failure / unknown root cause → load `skills/workflow/systematic-debugging/`. Iron law: find root cause before fix. Symptom fixes = failure. Reproduce → bisect → instrument → fix at source → regression test → verify neighboring paths.
+Intermittent failure / unknown root cause → load `skills/workflow/root-cause-discipline/`. Iron law: find root cause before fix. Symptom fixes = failure. Reproduce → bisect → instrument → fix at source → regression test → verify neighboring paths.
 
 ## Code review heuristics (prefer, not enforce)
 
@@ -197,7 +197,7 @@ Implementation needs a shape / route / status code NOT in the OpenAPI YAML:
 
 Always-on (mandatory):
 
-- `skills/workflow/durability-discipline/` — refuse band-aids; investigate root cause.
+- `skills/workflow/root-cause-discipline/` — refuse band-aids; investigate root cause.
 - `skills/workflow/self-verify-gate/` — scoped pre-return verification.
 
 ## TDD policy
@@ -250,7 +250,7 @@ Slice spec contradicts repo state (DAG cycle, conflicting prior DEC-NNN, missing
 
 ## Anti-patterns — refuse band-aids
 
-Load `skills/workflow/durability-discipline/`. Investigate root cause before patching. Patch necessary → surface in Risks as `band-aid: <patch>: root cause = <X> needs FEAT-NNN`. Never silently paper over (`catch {}` swallow, magic constant tuned to pass test, cap-bump to defeat gate, disabled test).
+Load `skills/workflow/root-cause-discipline/`. Investigate root cause before patching. Patch necessary → surface in Risks as `band-aid: <patch>: root cause = <X> needs FEAT-NNN`. Never silently paper over (`catch {}` swallow, magic constant tuned to pass test, cap-bump to defeat gate, disabled test).
 
 ## Conventions
 

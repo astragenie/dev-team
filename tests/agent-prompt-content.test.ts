@@ -30,26 +30,26 @@ test("fullstack-dev.md stays under 330 line cap (FEAT-170 SLICE-D)", () => {
   );
 });
 
-test("fullstack-dev.md declares durability-discipline skill (FEAT-170 SLICE-D)", () => {
+test("fullstack-dev.md declares root-cause-discipline skill (FEAT-170 SLICE-D)", () => {
   assert.ok(
-    builder.includes("durability-discipline"),
-    "fullstack-dev.md missing durability-discipline skill reference (FEAT-170 SLICE-D)"
+    builder.includes("root-cause-discipline"),
+    "fullstack-dev.md missing root-cause-discipline skill reference (FEAT-170 SLICE-D)"
   );
 });
 
-test("backend-dev.md declares durability-discipline skill (FEAT-170 SLICE-D)", () => {
+test("backend-dev.md declares root-cause-discipline skill (FEAT-170 SLICE-D)", () => {
   const be = readAgent("backend-dev");
   assert.ok(
-    be.includes("durability-discipline"),
-    "backend-dev.md missing durability-discipline skill reference (FEAT-170 SLICE-D)"
+    be.includes("root-cause-discipline"),
+    "backend-dev.md missing root-cause-discipline skill reference (FEAT-170 SLICE-D)"
   );
 });
 
-test("frontend-dev.md declares durability-discipline skill (FEAT-170 SLICE-D)", () => {
+test("frontend-dev.md declares root-cause-discipline skill (FEAT-170 SLICE-D)", () => {
   const fe = readAgent("frontend-dev");
   assert.ok(
-    fe.includes("durability-discipline"),
-    "frontend-dev.md missing durability-discipline skill reference (FEAT-170 SLICE-D)"
+    fe.includes("root-cause-discipline"),
+    "frontend-dev.md missing root-cause-discipline skill reference (FEAT-170 SLICE-D)"
   );
 });
 

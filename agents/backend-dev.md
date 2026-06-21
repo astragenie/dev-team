@@ -77,7 +77,7 @@ Precedence when instructions conflict: **existing implementation → ADR → dis
 
 Load the matching skill when the slice introduces:
 
-- **Long-running workflow / background job / agent orchestration** → `skills/workflow/durability-discipline/` (resumable + idempotent + retry-safe + process-restart-safe + idempotency-key on outbound).
+- **Long-running workflow / background job / agent orchestration** → `skills/workflow/root-cause-discipline/` (resumable + idempotent + retry-safe + process-restart-safe + idempotency-key on outbound).
 - **New service / workflow / cross-service state change** → `skills/domain/microservices-patterns/` (outbox + inbox + correlation-id + saga over 2PC + timeouts).
 - **Memory-eligible data (entities / events / executions)** — reuse the existing AstraMemory ingestion pipeline. Never roll a parallel memory mechanism.
 - **New provider / adapter** — interface + adapter pattern; provider swappable.
@@ -180,7 +180,7 @@ Reuse existing telemetry before creating new (annotate spans, label existing met
 
 ## Systematic debugging
 
-Intermittent failure / unknown root cause → load `skills/workflow/systematic-debugging/`. Iron law: find root cause before attempting fix. Symptom fixes = failure. Reproduce → bisect → instrument → fix at source → regression test → verify neighboring paths.
+Intermittent failure / unknown root cause → load `skills/workflow/root-cause-discipline/`. Iron law: find root cause before attempting fix. Symptom fixes = failure. Reproduce → bisect → instrument → fix at source → regression test → verify neighboring paths.
 
 ## Code review heuristics (prefer, not enforce)
 
@@ -241,7 +241,7 @@ Other backend stacks (Node, Python, Go) are out of scope — surface via `mark-b
 
 Always-on (mandatory):
 
-- `skills/workflow/durability-discipline/` — refuse band-aids; investigate root cause.
+- `skills/workflow/root-cause-discipline/` — refuse band-aids; investigate root cause.
 - `skills/workflow/self-verify-gate/` — scoped pre-return verification.
 
 ## TDD policy
@@ -287,7 +287,7 @@ Slice spec contradicts repo state (DAG cycle, conflicting prior DEC-NNN, missing
 
 ## Anti-patterns — refuse band-aids
 
-Load `skills/workflow/durability-discipline/`. Investigate root cause before patching. Patch necessary → surface in Risks as `band-aid: <patch>: root cause = <X>`. Never silently paper over (`catch {}` swallow, magic constant tuned to pass test, cap-bump to defeat gate, disabled test).
+Load `skills/workflow/root-cause-discipline/`. Investigate root cause before patching. Patch necessary → surface in Risks as `band-aid: <patch>: root cause = <X>`. Never silently paper over (`catch {}` swallow, magic constant tuned to pass test, cap-bump to defeat gate, disabled test).
 
 ## Conventions
 

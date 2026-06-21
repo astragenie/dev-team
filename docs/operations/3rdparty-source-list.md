@@ -13,7 +13,7 @@ npx claude-code-templates@latest --skill development/senior-prompt-engineer
 npx claude-code-templates@latest --skill development/brainstorming
 npx claude-code-templates@latest --skill development/skill-creator
 npx claude-code-templates@latest --skill development/git-commit-helper
-npx claude-code-templates@latest --skill development/systematic-debugging
+npx claude-code-templates@latest --skill development/root-cause-discipline
 ```
 
 ## Distributed locations
@@ -23,7 +23,7 @@ npx claude-code-templates@latest --skill development/systematic-debugging
 | `development/brainstorming` | `skills/universal/brainstorming/` | 2026-06-04 |
 | `development/code-reviewer` | `skills/workflow/reviewing-code/` | 2026-06-04 |
 | `development/git-commit-helper` | `skills/workflow/git-commit/` | 2026-06-04 |
-| `development/systematic-debugging` | `skills/workflow/systematic-debugging/` | 2026-06-04 |
+| `development/root-cause-discipline` | `skills/workflow/root-cause-discipline/` | 2026-06-04 |
 | `development/senior-architect` | `skills/domain/architecture-advisory/` | 2026-06-04 |
 | `development/senior-backend` | `skills/domain/backend-advisory/` | 2026-06-04 |
 | `development/senior-frontend` | `skills/domain/frontend-advisory/` | 2026-06-04 |

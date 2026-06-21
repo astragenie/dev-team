@@ -90,7 +90,7 @@ Read the specific reference for the concern. Don't load all 8 at once.
 
 ## What this skill does NOT do
 
-- Does NOT replace `durability-discipline` (band-aid refusal). Load both when both apply.
+- Does NOT replace `root-cause-discipline` (band-aid refusal). Load both when both apply.
 - Does NOT carry stack-specific recipes — those live in `skills/domain/typescript-pro/`, `skills/domain/dotnet/*`, etc.
 - Does NOT carry plugin-internals guidance — `plugin-dev:*` skills own that.
 

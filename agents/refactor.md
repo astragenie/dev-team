@@ -145,7 +145,7 @@ After writing the artifact, commit changes, then report done.
 - `agents/*.md` or `skills/**/*.md` edit → `skills/domain/prompt-engineering/`
 - Editing a `SKILL.md` specifically → `skills/meta/skill-creator/`
 - Authoring a git commit message → `skills/workflow/git-commit/`
-- Ambiguous stale-ref root cause → `skills/workflow/systematic-debugging/`
+- Ambiguous stale-ref root cause → `skills/workflow/root-cause-discipline/`
 
 ---
 

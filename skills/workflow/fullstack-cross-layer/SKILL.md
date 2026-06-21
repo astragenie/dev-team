@@ -38,7 +38,7 @@ Skip loading for pure-BE, pure-FE, doc-only, hooks/agents/skills/commands edits.
 | MCP server authoring / debugging          | `skills/domain/mcp-integration/`                                 |
 | AI app / LLM SDK code                     | `skills/domain/ai-engineering/`                                  |
 | Drafting a commit message                 | `skills/workflow/git-commit/`                                    |
-| Bug RCA / intermittent failure            | `skills/workflow/systematic-debugging/`                          |
+| Bug RCA / intermittent failure            | `skills/workflow/root-cause-discipline/`                          |
 
 If you find yourself reaching for `frontend-design`, `tailwind-patterns`, `react-engineering`, or anything visual-heavy → STOP and ask the lead to re-route to `crew:frontend-dev`. Same for deep backend work → `crew:backend-dev`. Mobile is out of scope for this product — refuse mobile work and surface via `mark-badge blocked --note "mobile not supported"`.
 

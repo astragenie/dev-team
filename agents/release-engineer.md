@@ -79,7 +79,7 @@ Rules:
 - Docker containerization (Dockerfile, multi-stage builds, docker-compose, registry) → `skills/domain/docker-expert/`
 - Incident response / production troubleshooting → `skills/domain/devops-engineering/references/troubleshooting.md`
 - Terraform operational issue → `skills/domain/terraform-ops-traps/`
-- Incident response / production troubleshooting (systematic) → `skills/workflow/systematic-debugging/`
+- Incident response / production troubleshooting (systematic) → `skills/workflow/root-cause-discipline/`
 - Cloud infra design (multi-region, IAM, DR, multi-cloud) → `skills/domain/cloud-architecture/`
 - Deployment strategy design (blue-green, canary, progressive delivery, DORA targets, rollback) → `skills/domain/deployment-patterns/`
 - Rollback-vs-forward-fix decision under active incident → `skills/domain/deployment-patterns/` → `## Rollback decision matrix` (severity × data impact × time-to-fix grid + tie-breaker rules; cite the matched matrix cell in `--evidence`)
@@ -205,7 +205,7 @@ When a deploy fails mid-flight:
 
 ## Durability discipline (mandatory on every dispatch)
 
-Load `skills/workflow/durability-discipline/SKILL.md`. Refuse band-aids — investigate root cause before patching CI/build/deploy failures; if patch is necessary, surface in `--risks` as `band-aid: <patch>: root cause = <X> needs FEAT-NNN`. Never silently paper over a failing gate, a hung subprocess, or a non-reproducible test.
+Load `skills/workflow/root-cause-discipline/SKILL.md`. Refuse band-aids — investigate root cause before patching CI/build/deploy failures; if patch is necessary, surface in `--risks` as `band-aid: <patch>: root cause = <X> needs FEAT-NNN`. Never silently paper over a failing gate, a hung subprocess, or a non-reproducible test.
 
 ## Infrastructure scope (FEAT-170 SLICE-D — expanded)
 

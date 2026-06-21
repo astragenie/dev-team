@@ -114,7 +114,7 @@ Next: needs architect clarification
 | Risks | Names issues / band-aid / scope-cross OR `none` |
 | Next | Follow-up id or dispatch hint when applicable |
 | Length | 2-5 lines |
-| Band-aid surface | Use exact `band-aid: <patch>: root cause = <X>` form per `skills/workflow/durability-discipline/` |
+| Band-aid surface | Use exact `band-aid: <patch>: root cause = <X>` form per `skills/workflow/root-cause-discipline/` |
 
 ## Scope-cross fallback (the only safe specialist routing)
 

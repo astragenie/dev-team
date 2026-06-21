@@ -29,7 +29,7 @@ crew-plugin/
 │ ├── Agent: context-manager
 │ ├── Skill: brainstorming
 │ ├── Skill: senior-prompt-engineer
-│ └── Skill: systematic-debugging
+│ └── Skill: root-cause-discipline
 │
 ├── Architect
 │ ├── Agent: backend-architect
@@ -56,7 +56,7 @@ crew-plugin/
 │ ├── Skill: senior-frontend
 │ ├── Skill: senior-fullstack
 │ ├── Skill: senior-prompt-engineer
-│ ├── Skill: systematic-debugging
+│ ├── Skill: root-cause-discipline
 │ └── Skill: git-commit-helper
 │
 ├── Reviewer
@@ -68,14 +68,14 @@ crew-plugin/
 │ ├── Skill: senior-backend
 │ ├── Skill: senior-frontend
 │ ├── Skill: senior-architect
-│ └── Skill: systematic-debugging
+│ └── Skill: root-cause-discipline
 │
 ├── Validator
 │ ├── Agent: fact-checker
 │ ├── Agent: devops-troubleshooter
 │ ├── Agent: code-reviewer
 │ ├── Skill: code-reviewer
-│ ├── Skill: systematic-debugging
+│ ├── Skill: root-cause-discipline
 │ ├── Skill: senior-security
 │ └── Skill: senior-backend
 │
@@ -85,7 +85,7 @@ crew-plugin/
 │ ├── Agent: devops-troubleshooter
 │ ├── Skill: senior-security
 │ ├── Skill: senior-backend
-│ ├── Skill: systematic-debugging
+│ ├── Skill: root-cause-discipline
 │ └── Skill: senior-architect
 │
 ├── uxdesigner
@@ -112,5 +112,5 @@ crew-plugin/
 ├── development/senior-prompt-engineer
 ├── development/brainstorming
 ├── development/skill-creator
-├── development/systematic-debugging
+├── development/root-cause-discipline
 └── development/git-commit-helper

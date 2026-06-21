@@ -157,7 +157,7 @@ After identifying the introducing commit:
 1. `git show <sha>` — read the full diff.
 2. Trace which change in that diff is the root cause (see `root-cause-tracing.md`).
 3. Document: "Regression introduced in `<sha>` by `<specific change>`."
-4. Proceed to Phase 3 (Hypothesis) of the main systematic-debugging flow.
+4. Proceed to Phase 3 (Hypothesis) of the main root-cause-discipline flow.
 
 ## Edge Cases
 
