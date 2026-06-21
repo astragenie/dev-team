@@ -274,6 +274,13 @@ const BADGE_TABLE: Record<string, BadgeSpec> = {
   prod_failed: { selector: (run) => [run.gates.deployment, "prod"], status: "failed" },
   prod_skipped: { selector: (run) => [run.gates.deployment, "prod"], status: "skipped" },
   blocked: { selector: (run) => [run.gates, "blocked"], status: "blocked", custom: true },
+  specialist_recommended: {
+    // FEAT-180: builder surfaces "this work belongs to <specialist>".
+    // Dispatcher reads + routes a fresh slice to the named specialist.
+    selector: (run) => [run.gates, "specialist"],
+    status: "recommended",
+    custom: true
+  },
   escalated_to_dispatcher: {
     selector: (run) => [run.gates, "escalation"],
     status: "escalated",

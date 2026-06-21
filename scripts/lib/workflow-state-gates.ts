@@ -13,6 +13,7 @@ export type GateStatus =
   | "expected"
   | "blocked"
   | "escalated"
+  | "recommended"
   | "stale";
 
 export interface GateEntry {

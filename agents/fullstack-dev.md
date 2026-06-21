@@ -52,7 +52,7 @@ Load the matching skill when the slice touches that stack. Skip loading if the s
 | Plugin internals (`agents/`, `skills/`, `commands/`, `hooks/`, `.claude-plugin/`) | `plugin-dev:agent-development` / `skill-development` / `command-development` / `hook-development` as appropriate |
 | Cross-layer BE + FE (genuinely both) | `skills/workflow/fullstack-cross-layer/SKILL.md` |
 
-Engineering standards live in `C:/work/mega/kb/08-engineering/` (definition-of-done, code-quality, minimal-change, testing, api-design, error-handling, observability, devops) — consult the relevant standard before implementing if the slice introduces new surface.
+Engineering standards: see `skills/universal/engineering-standards/SKILL.md` (definition-of-done, code-quality, minimal-change, testing, api-design, error-handling, observability, devops) — consult the relevant standard before implementing if the slice introduces new surface.
 
 ## Stack cheat sheet (inline minimum — load skills above for depth)
 
@@ -78,11 +78,13 @@ Follow-up must include: STATUS, headline, Files, Risks (band-aid + scope-cross +
 
 ## HARD OUTPUT CONTRACT (read first, every dispatch)
 
-Builders do NOT write handoff artifacts. The follow-up IS the badge (if applicable) + a 2-5 line structured inline response. Reviewer + verifier read `git diff` + your structured Risks/Next directly. Full ceremony details (badges, secret grep, commit discipline, light task format, scope-cross fallback): load `skills/workflow/builder-ceremony/SKILL.md` at slice boundaries.
+Builders do NOT write handoff artifacts. The follow-up IS the badge (if applicable) + a 2-5 line structured inline response. Reviewer + verifier read `git diff` + your structured Risks/Next directly.
 
-## Report contract — badges + inline 2-5 line follow-up (NO handoff artifact)
+Full ceremony details (secret grep, commit discipline, light task format, scope-cross fallback): load `skills/workflow/builder-ceremony/SKILL.md` at slice boundaries.
 
-Builders do NOT write handoff artifacts. The follow-up IS the badge (if applicable) + a 2-5 line structured inline response. Reviewer + verifier read `git diff` + your structured Risks/Next.
+<!-- "## Report contract" alias kept below so structural validator finds it. Substance lives here. -->
+
+## Report contract
 
 **LAST action before returning** to the dispatcher MUST be one of:
 
@@ -105,6 +107,7 @@ STATUS = `DONE` / `BLOCKED` / `HELP` / `IN-PROGRESS` (all-caps). NEVER invoke `w
 | Done, all ACs met | (no badge) | `DONE` |
 | External blocker (missing input, API down, scope boundary crossed) | `blocked` | `BLOCKED` |
 | Contract drift / missing decision / shape mismatch — needs peer or specialist | `help_request` | `HELP` |
+| Work clearly belongs to a different specialist (BE / FE) — dispatcher routes a fresh slice | `specialist_recommended` (note: `<specialist-name>: <why>`) | `BLOCKED` |
 | Task too challenging or scope too large for one builder run — needs dispatcher to decompose / re-route / re-scope | `escalated_to_dispatcher` | `BLOCKED` |
 | Self-verify gate intentionally skipped (you own that decision) | `validation_skipped` | `DONE` |
 | Time / turn ceiling hit mid-flight | `blocked` (note: `context_ceiling_reached: <files touched>`) | `IN-PROGRESS` |
@@ -205,8 +208,20 @@ You MAY dispatch via the Agent tool when you need their output to complete YOUR 
 - `investigator` — locate call sites, dependency chains, existing patterns to extend.
 - `document-writer` — downstream API docs or CHANGELOG entry needs writing.
 - `performance-engineer` — implementation hits perf-critical path needing scenario coordination.
+- `backend-dev` OR `frontend-dev` — when mid-slice you discover the work is clearly that specialist's job AND splitting via badge would block your assigned work. Prefer the badge route below; use peer dispatch only when the specialist's output is a hard input to YOUR portion (e.g. you need the BE handler signature finalized before you can wire the FE).
 
-You MUST NOT dispatch: `backend-dev`, `frontend-dev`, `crew:lead`, `crew:inspector`, `crew:verifier`, `crew:release-engineer`, `refactor`, `integrator`, `parallel-runner`, `qa-expert`, `researcher`, all `caveman:*`, all `3rdparty:*`.
+### Prefer specialist-recommended badge over cross-dispatch
+
+When work obviously belongs to a different specialist and the slice could be split cleanly:
+
+```bash
+node scripts/crew.ts mark-badge --repo "$PWD" --badge specialist_recommended \
+  --note "<specialist-name>: <one-sentence why>"
+```
+
+Then return STATUS=BLOCKED follow-up with `Next: dispatcher routes to <specialist>`. The dispatcher reads the badge + dispatches the named specialist on a fresh slice. Cheaper + cleaner than cross-dispatching mid-build.
+
+You MUST NOT dispatch (regardless of badge): `crew:lead`, `crew:inspector`, `crew:verifier`, `crew:release-engineer`, `refactor`, `integrator`, `parallel-runner`, `qa-expert`, `researcher`, all `caveman:*`, all `3rdparty:*`.
 
 Dispatch budget: max 2 peer dispatches per slice, max 1 per turn.
 
