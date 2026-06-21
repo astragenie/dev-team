@@ -1,11 +1,11 @@
 ---
 name: builder-ceremony
 prompt_id: builder-ceremony
-version: 2.0.0
+version: 2.1.0
 tier: workflow
 model_pinned: sonnet
 description: Builder slice-boundary discipline — inline task return format, workflow badges, pre-completion secret grep, scope-cross fallback, context-ceiling escalation. Loaded by backend-dev / frontend-dev / fullstack-dev so the builder prompts focus on the JOB. Inline-only: no handoff artifacts, no bundles, no stubs.
-triggers: ["badge", "secret grep", "scope-cross", "context ceiling", "light task", "inline return", "scope-cross fallback"]
+triggers: ["badge", "secret grep", "scope-cross", "context ceiling", "primary return contract", "inline return", "scope-cross fallback"]
 ---
 
 # Builder ceremony — inline return + gates + badges
@@ -14,12 +14,11 @@ Builders return inline. No handoff artifacts, no bundles, no stubs. Reviewer rea
 
 ## Trigger
 
-Load when:
-- Emitting a workflow badge (blocked, help_request, escalated_to_dispatcher, validation_skipped)
-- Pre-completion secret grep
-- Hit context ceiling mid-slice
-- Discover scope-cross to a different specialist
-- Drafting the final inline return
+Load at slice boundaries:
+- Completion (final return)
+- Blocker / escalation / help / skipped gate (any badge emission)
+- Scope-cross discovery
+- Context ceiling
 
 Trivial single-line / typo / mechanical-rename tasks skip the ceremony.
 
@@ -57,9 +56,9 @@ Match → halt + `mark-badge blocked --note "secrets in diff"`. False positives 
 
 ## Self-verify gate
 
-Before returning, run scoped gates per `skills/workflow/self-verify-gate/`. Each reports PASS / FAIL / SKIPPED / TIMEOUT — FAIL halts and you return BLOCKED; others proceed and the verifier picks up the deferred check.
+Run `skills/workflow/self-verify-gate/` before return. FAIL → BLOCKED. Verifier picks up SKIPPED / TIMEOUT.
 
-## Light task return format (primary contract)
+## Primary return contract
 
 Every builder dispatch returns this shape — no exceptions for completed work:
 
@@ -71,6 +70,8 @@ Risks: <issues / band-aid surface / scope-cross | "none">
 ```
 
 Status tokens (all-caps): `DONE` / `BLOCKED` / `HELP` / `IN-PROGRESS`. 2-5 lines total. Longer = compress.
+
+**Structured returns are for machines.** Keep headlines concise — name what + where, no narrative. Avoid prose preambles ("I investigated...", "Done, let me explain..."). The dispatcher parses this format; prose breaks routing.
 
 ### Examples
 
@@ -91,7 +92,7 @@ Next: endpoint detection follow-up
 [badge: blocked]
 BLOCKED: claude CLI not on PATH.
 Files: (none)
-Reason: which claude → not found
+Risks: which claude → not found
 Next: install CLI or set PATH; rerun
 ```
 
@@ -166,7 +167,7 @@ You may return when:
 - Self-verify gates show no FAIL (or you BLOCKED on the FAIL)
 - Secret grep passed (or you BLOCKED on a match)
 - Applicable badge emitted (or none applies for clean DONE)
-- Inline return follows the Light task return format
+- Inline return follows the Primary return contract
 - No scope-cross discovered without surfacing in Risks
 - No context-ceiling without IN-PROGRESS + remaining ACs in Risks
 
