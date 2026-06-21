@@ -19,13 +19,37 @@ function readAgent(name: string) {
 const builder = readAgent("fullstack-dev");
 
 // FEAT-170 SLICE-D: hard line cap enforcement. SLICE-93 shrunk fullstack-dev
-// from 397 → 313 lines; cap dropped to 320 in frontmatter. CI gate ensures
-// regression. Future shrinks may lower further; relax this test in tandem.
-test("fullstack-dev.md stays under 320 line cap (FEAT-170 SLICE-D)", () => {
+// from 397 → 313 lines; SLICE-D adds C# capability + durability discipline +
+// plugin-aware framing, cap relaxed to 330. CI gate enforces no regression
+// beyond that. Future shrinks may lower further; relax this test in tandem.
+test("fullstack-dev.md stays under 330 line cap (FEAT-170 SLICE-D)", () => {
   const lines = builder.split(/\r?\n/).length;
   assert.ok(
-    lines <= 320,
-    `fullstack-dev.md is ${lines} lines, exceeds 320-line cap (FEAT-170 SLICE-D regression gate)`
+    lines <= 330,
+    `fullstack-dev.md is ${lines} lines, exceeds 330-line cap (FEAT-170 SLICE-D regression gate)`
+  );
+});
+
+test("fullstack-dev.md declares durability-discipline skill (FEAT-170 SLICE-D)", () => {
+  assert.ok(
+    builder.includes("durability-discipline"),
+    "fullstack-dev.md missing durability-discipline skill reference (FEAT-170 SLICE-D)"
+  );
+});
+
+test("backend-dev.md declares durability-discipline skill (FEAT-170 SLICE-D)", () => {
+  const be = readAgent("backend-dev");
+  assert.ok(
+    be.includes("durability-discipline"),
+    "backend-dev.md missing durability-discipline skill reference (FEAT-170 SLICE-D)"
+  );
+});
+
+test("frontend-dev.md declares durability-discipline skill (FEAT-170 SLICE-D)", () => {
+  const fe = readAgent("frontend-dev");
+  assert.ok(
+    fe.includes("durability-discipline"),
+    "frontend-dev.md missing durability-discipline skill reference (FEAT-170 SLICE-D)"
   );
 });
 

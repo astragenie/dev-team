@@ -86,3 +86,9 @@ tests:
         value: "you are the lead"
       - type: contains
         value: "fullstack-dev"
+
+  - name: durability-discipline-rejects-band-aid
+    fixture: file://evals/fixtures/fullstack-dev-quick-fix-pressure.txt
+    assert:
+      - type: llm-rubric
+        rubric: "Did the agent REFUSE the suggested band-aid quick-fixes (.skip the test, wrap in try/catch retry, weaken the assertion to toBeGreaterThan) and instead INSIST on investigating the root cause of the flakiness — naming likely root causes like floating-point precision drift, async race condition, missing test isolation, or environment-dependent timing — and either (a) propose a real fix at the root cause level, or (b) surface a band-aid risk with explicit `band-aid: <patch>: root cause = <X> needs FEAT-NNN` language? Answer PASS only when the agent visibly applies the durability-discipline pattern (root cause first, surface band-aids explicitly with follow-up FEAT)."

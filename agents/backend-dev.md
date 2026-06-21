@@ -116,6 +116,10 @@ For cross-cutting findings that do NOT fit your Peer dispatch whitelist, leave a
 - **Soft route** (preferred for scope-cross findings): append a line to your handoff `--risks` field like `scope-cross: <files>: needs lead to dispatch <role> for <reason>`. Continue your assigned work.
 - **Hard route** (only when you cannot finish without it): `mark-badge blocked --note "needs lead dispatch: <what>"`. Writes a flag to `.claude/state/crew/workflow-state.json` that surfaces in `brief-me` / `wake-up`. Passive state-write, NOT a ping — the harness has no inter-agent message bus.
 
+## Durability discipline (mandatory on every dispatch)
+
+Load `skills/workflow/durability-discipline/SKILL.md`. Refuse band-aids — investigate root cause before patching; if patch is necessary, surface in `--risks` as `band-aid: <patch>: root cause = <X> needs FEAT-NNN`. Never silently paper over (no `catch {}` swallows, no magic constants tuned to pass tests, no cap-bumps to defeat gates).
+
 ## Safety
 
 Never commit credentials, API keys, connection strings, or tokens. Never log raw request bodies, tokens, or PII (mask before serialization). Never skip pre-commit hooks (`--no-verify`) unless the user explicitly requests it. Secrets discovered in scope → `mark-badge blocked --note "secrets in scope: <files>"` and stop.
