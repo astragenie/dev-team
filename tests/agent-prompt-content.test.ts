@@ -53,6 +53,69 @@ test("frontend-dev.md declares durability-discipline skill (FEAT-170 SLICE-D)", 
   );
 });
 
+// FEAT-170 SLICE-D drift prevention: "lead" mentions in builder prompts are
+// allowed ONLY for protective + structural reasons. New "lead" mentions outside
+// the whitelist are likely orchestrator-vs-lead conflation creep.
+//
+// Whitelist patterns (substring match):
+//   - "you are the lead", "as the lead" — identity-anchor leak phrases (PROTECT)
+//   - "crew:lead" — explicit agent name (dispatch blacklist + cross-reference)
+//   - "escalated_to_lead" — CLI badge name (backward compat)
+//   - "--to lead" — CLI flag default
+//   - "(interactive Claude session, `/crew:build`, autonomous loop, or `crew:lead` dispatch" — orchestrator glossary
+//
+// Any other occurrence of "lead" is treated as drift.
+const LEAD_WHITELIST_PATTERNS = [
+  /["']you are the lead["']/, // identity-anchor leak phrase (double or single quoted)
+  /["']as the lead["']/, // identity-anchor leak phrase
+  /`crew:lead`/, // explicit agent name reference
+  /escalated_to_lead/, // CLI badge name (backward compat)
+  /--to lead/, // CLI flag default value
+  /\(interactive Claude session/, // orchestrator glossary clause
+  /^- `lead`/m // peer dispatch blacklist entry
+];
+
+function leadDriftScan(content: string, file: string): string[] {
+  const drifts: string[] = [];
+  const lines = content.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    if (!/\blead\b/i.test(line)) continue;
+    const allowed = LEAD_WHITELIST_PATTERNS.some((p) => p.test(line));
+    if (!allowed) {
+      drifts.push(`${file}:${i + 1}: ${line.slice(0, 100)}`);
+    }
+  }
+  return drifts;
+}
+
+test("fullstack-dev.md has no 'lead' drift outside whitelist (FEAT-170 SLICE-D)", () => {
+  const drifts = leadDriftScan(builder, "agents/fullstack-dev.md");
+  assert.equal(
+    drifts.length,
+    0,
+    `fullstack-dev.md has ${drifts.length} 'lead' mention(s) outside whitelist (use 'orchestrator' instead):\n${drifts.join("\n")}`
+  );
+});
+
+test("backend-dev.md has no 'lead' drift outside whitelist (FEAT-170 SLICE-D)", () => {
+  const drifts = leadDriftScan(readAgent("backend-dev"), "agents/backend-dev.md");
+  assert.equal(
+    drifts.length,
+    0,
+    `backend-dev.md has ${drifts.length} 'lead' mention(s) outside whitelist:\n${drifts.join("\n")}`
+  );
+});
+
+test("frontend-dev.md has no 'lead' drift outside whitelist (FEAT-170 SLICE-D)", () => {
+  const drifts = leadDriftScan(readAgent("frontend-dev"), "agents/frontend-dev.md");
+  assert.equal(
+    drifts.length,
+    0,
+    `frontend-dev.md has ${drifts.length} 'lead' mention(s) outside whitelist:\n${drifts.join("\n")}`
+  );
+});
+
 test("fullstack-dev.md declares Cross-layer split detection section (FEAT-170 SLICE-B)", () => {
   assert.ok(
     builder.includes("## Cross-layer split detection") || builder.includes("SPLIT_BUILD"),
@@ -872,21 +935,13 @@ describe("## First action — Prong B coverage", () => {
     });
   });
 
+  // FEAT-170 SLICE-D — frontend-dev + backend-dev ceremony extracted to
+  // skills/workflow/builder-ceremony/SKILL.md. The redundant "## First action"
+  // section + DEC-019/scaffold details now live in the skill. Each builder
+  // keeps write-handoff + FEAT-161 cite inline as the core protective markers.
   describe("frontend-dev", () => {
     const content = readAgent("frontend-dev");
-    test("stub heading present", () => {
-      assert.ok(content.includes(STUB_HEADING), "frontend-dev.md missing stub artifact heading");
-    });
-    test("--scaffold flag present", () => {
-      assert.ok(content.includes(SCAFFOLD_FLAG), "frontend-dev.md missing --scaffold flag");
-    });
-    test("--status in-progress present", () => {
-      assert.ok(
-        content.includes(STATUS_IN_PROGRESS),
-        "frontend-dev.md missing --status in-progress"
-      );
-    });
-    test("--update flag present", () => {
+    test("--update flag present (substance moved to builder-ceremony skill)", () => {
       assert.ok(content.includes(UPDATE_FLAG), "frontend-dev.md missing --update flag");
     });
     test("role-specific: write-handoff command", () => {
@@ -895,26 +950,11 @@ describe("## First action — Prong B coverage", () => {
     test("FEAT-161 cite-back", () => {
       assert.ok(content.includes(FEAT_161_CITE), "frontend-dev.md missing FEAT-161 cite-back");
     });
-    test("DEC-019 reference", () => {
-      assert.ok(content.includes(DEC_019), "frontend-dev.md missing DEC-019 reference");
-    });
   });
 
   describe("backend-dev", () => {
     const content = readAgent("backend-dev");
-    test("stub heading present", () => {
-      assert.ok(content.includes(STUB_HEADING), "backend-dev.md missing stub artifact heading");
-    });
-    test("--scaffold flag present", () => {
-      assert.ok(content.includes(SCAFFOLD_FLAG), "backend-dev.md missing --scaffold flag");
-    });
-    test("--status in-progress present", () => {
-      assert.ok(
-        content.includes(STATUS_IN_PROGRESS),
-        "backend-dev.md missing --status in-progress"
-      );
-    });
-    test("--update flag present", () => {
+    test("--update flag present (substance moved to builder-ceremony skill)", () => {
       assert.ok(content.includes(UPDATE_FLAG), "backend-dev.md missing --update flag");
     });
     test("role-specific: write-handoff command", () => {
@@ -922,9 +962,6 @@ describe("## First action — Prong B coverage", () => {
     });
     test("FEAT-161 cite-back", () => {
       assert.ok(content.includes(FEAT_161_CITE), "backend-dev.md missing FEAT-161 cite-back");
-    });
-    test("DEC-019 reference", () => {
-      assert.ok(content.includes(DEC_019), "backend-dev.md missing DEC-019 reference");
     });
   });
 
