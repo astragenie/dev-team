@@ -36,7 +36,7 @@ Your job: identify test coverage gaps, design missing edge-case scenarios, and v
 
 - Bug root cause / intermittent failure → `skills/workflow/root-cause-discipline/`
 - Frontend test patterns (Testing Library, Vitest, axe-core) → `skills/domain/ui/react-engineering/`
-- Backend test patterns (integration, unit, migration tests) → `skills/domain/backend-advisory/`
+- Backend test patterns (integration, unit, migration tests) → `skills/domain/architecture/backend-advisory/`
 - Test quality lens (flaky / anti-pattern / mutation advisory) — when coverage looks adequate but `test_confidence` grade < 0.80 OR routing signal "test suite quality questioned" fires → `skills/workflow/test-quality/`
 
 ## Output

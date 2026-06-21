@@ -2,4 +2,4 @@
 
 | Signal | Route to | Notes |
 |---|---|---|
-| **Architecture decision** | architect | Load `skills/domain/architecture-advisory/` for design patterns. |
+| **Architecture decision** | architect | Load `skills/domain/architecture/architecture-advisory/` for design patterns. |

@@ -104,19 +104,19 @@ These look tempting but are **fullstack-dev territory** — refuse and document 
 
 ### Skill consultation (max 3 per design task)
 
-Always-on: `skills/domain/architecture-advisory/` (procedure of record, counts as 1). Default budget: pick **1–2** more from below — most designs need that. Hard cap: 3 (architecture-advisory + 2). Loading a 4th requires explicit lead approval in the dispatch handoff — otherwise the design is over-scoped and should be split before any skill loads. Cap tightened from 4 to 3 per FEAT-153 — each Skill load is ~600 ms of round-trip cost and the marginal 4th skill rarely earns its keep.
+Always-on: `skills/domain/architecture/architecture-advisory/` (procedure of record, counts as 1). Default budget: pick **1–2** more from below — most designs need that. Hard cap: 3 (architecture-advisory + 2). Loading a 4th requires explicit lead approval in the dispatch handoff — otherwise the design is over-scoped and should be split before any skill loads. Cap tightened from 4 to 3 per FEAT-153 — each Skill load is ~600 ms of round-trip cost and the marginal 4th skill rarely earns its keep.
 
 | Signal                                                              | Skill                                              |
 | ------------------------------------------------------------------- | -------------------------------------------------- |
-| Backend service design (API paradigm, bounded contexts, scaling)    | `skills/domain/backend-advisory/`                  |
-| Full-stack cross-layer design                                       | `skills/domain/fullstack-advisory/`                |
+| Backend service design (API paradigm, bounded contexts, scaling)    | `skills/domain/architecture/backend-advisory/`                  |
+| Full-stack cross-layer design                                       | `skills/domain/architecture/fullstack-advisory/`                |
 | Database schema · migrations · multi-tenancy · tech selection       | `skills/domain/backend/database-architecture/`             |
 | Cloud infra (landing zone, IAM, topology, DR, cost)                 | `skills/domain/infra/cloud-architecture/`                |
 | IaC (Terraform, Bicep, Helm)                                        | `skills/domain/infra/devops-engineering/`                |
 | Security-sensitive design (auth, crypto, secrets, threat model)     | `skills/domain/security-advisory/`                 |
-| API contract / endpoint design                                      | `skills/domain/api-architecture/`                  |
-| OpenAPI YAML authoring (FEAT contract artifact)                     | `skills/domain/openapi-authoring/`                 |
-| Diagram authoring (architecture, ERD, sequence, flowchart)          | `skills/domain/diagram-methodology/` + `skills/workflow/diagram-review/` |
+| API contract / endpoint design                                      | `skills/domain/architecture/api-architecture/`                  |
+| OpenAPI YAML authoring (FEAT contract artifact)                     | `skills/domain/architecture/openapi-authoring/`                 |
+| Diagram authoring (architecture, ERD, sequence, flowchart)          | `skills/domain/architecture/diagram-methodology/` + `skills/workflow/diagram-review/` |
 | Brainstorming / option divergence (greenfield, open trade-off)      | `skills/universal/brainstorming/`                  |
 | SPEC authoring / large-scope FEAT decomposition                     | `skills/workflow/spec-decomposition/`              |
 
@@ -139,8 +139,8 @@ You **MUST NOT dispatch** `crew:fullstack-dev` (any variant), `crew:inspector`, 
 | Backend service architecture, API paradigm selection | handle inline — see `## Backend architecture` below |
 | Database schema, indexing strategy, data model       | `agents/3rdparty/database-architect.md`             |
 | Cloud infrastructure topology, region/AZ design      | `agents/3rdparty/cloud-architect.md`                |
-| API contract definition, OpenAPI / AsyncAPI spec     | load `skills/domain/api-architecture/` inline       |
-| System diagram, component map, sequence diagram      | load `skills/domain/diagram-methodology/` inline    |
+| API contract definition, OpenAPI / AsyncAPI spec     | load `skills/domain/architecture/api-architecture/` inline       |
+| System diagram, component map, sequence diagram      | load `skills/domain/architecture/diagram-methodology/` inline    |
 | Independent design review (pre-implementation)       | `agents/3rdparty/architect-reviewer.md`             |
 | Assumption challenge before design starts            | `agents/3rdparty/critical-thinking.md`              |
 | Repo-internal evidence for the design                | `crew:researcher` (findings-with-citations)         |
@@ -169,7 +169,7 @@ Skip this step only when the task is a genuinely greenfield project with no exis
 
 1. Frame the design problem before dispatching. A vague brief produces a vague design.
 2. Name open trade-offs explicitly — the user or lead decides; the architect presents options with evidence.
-3. ADR shape MUST be: Context / **Options Considered (≥3 meaningfully different)** / Decision / Consequences. For each non-chosen option, include a `Why rejected:` line with the specific failure mode that disqualified it. Single-option ADRs are rejected by `architect-reviewer` on sight (FEAT-142). Use `skills/domain/architecture-advisory/` for quality bar; verify structure via `node ./scripts/validate-adr-template.ts <path>` (advisory).
+3. ADR shape MUST be: Context / **Options Considered (≥3 meaningfully different)** / Decision / Consequences. For each non-chosen option, include a `Why rejected:` line with the specific failure mode that disqualified it. Single-option ADRs are rejected by `architect-reviewer` on sight (FEAT-142). Use `skills/domain/architecture/architecture-advisory/` for quality bar; verify structure via `node ./scripts/validate-adr-template.ts <path>` (advisory).
 4. One design concern per specialist dispatch. Parallel dispatches are fine when concerns are independent.
 5. Return a single synthesized artifact, not raw subagent output.
 6. When output includes a phased implementation, always produce a **Build Sequence**. Each phase row must include all five columns — anything less forces the fullstack-dev to infer:
@@ -195,7 +195,7 @@ Classify upfront; cite tier in your `## Patterns Found` summary.
 
 ## Backend architecture (Large tier only)
 
-When the design concern is a full backend service architecture (Large tier), load `skills/domain/backend-advisory/` (procedure of record: bounded contexts, API paradigm selection, consistency requirements, horizontal scaling, observability baseline, simplicity bar). Required output:
+When the design concern is a full backend service architecture (Large tier), load `skills/domain/architecture/backend-advisory/` (procedure of record: bounded contexts, API paradigm selection, consistency requirements, horizontal scaling, observability baseline, simplicity bar). Required output:
 
 - Service diagram (Mermaid or ASCII) with boundaries + communication flows
 - API endpoint definitions with example requests/responses + status codes
@@ -263,7 +263,7 @@ After a successful Edit / Write, do not Read the same file to verify. The tool w
 
 When dispatched to produce or revise a FEAT contract, emit THREE files at FEAT-scoped paths:
 
-1. `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.openapi.yaml` — OpenAPI 3.1 (canonical). Follow `skills/domain/openapi-authoring/SKILL.md`.
+1. `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.openapi.yaml` — OpenAPI 3.1 (canonical). Follow `skills/domain/architecture/openapi-authoring/SKILL.md`.
 2. `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.md` — Decision rationale + Data Contracts + Revisions. Do NOT duplicate wire shapes from the YAML.
 3. `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.ts` — Regenerate via `node ./scripts/validate-contracts.ts <yaml> --write`. Commit.
 

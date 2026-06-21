@@ -24,10 +24,10 @@ npx claude-code-templates@latest --skill development/root-cause-discipline
 | `development/code-reviewer` | `skills/workflow/reviewing-code/` | 2026-06-04 |
 | `development/git-commit-helper` | `skills/workflow/git-commit/` | 2026-06-04 |
 | `development/root-cause-discipline` | `skills/workflow/root-cause-discipline/` | 2026-06-04 |
-| `development/senior-architect` | `skills/domain/architecture-advisory/` | 2026-06-04 |
-| `development/senior-backend` | `skills/domain/backend-advisory/` | 2026-06-04 |
+| `development/senior-architect` | `skills/domain/architecture/architecture-advisory/` | 2026-06-04 |
+| `development/senior-backend` | `skills/domain/architecture/backend-advisory/` | 2026-06-04 |
 | `development/senior-frontend` | `skills/domain/ui/react-engineering/` | 2026-06-04 |
-| `development/senior-fullstack` | `skills/domain/fullstack-advisory/` | 2026-06-04 |
+| `development/senior-fullstack` | `skills/domain/architecture/fullstack-advisory/` | 2026-06-04 |
 | `development/senior-security` | `skills/domain/security-advisory/` | 2026-06-04 |
 | `development/senior-prompt-engineer` | `skills/domain/prompt-engineering/` | 2026-06-04 |
 | `development/skill-creator` | `skills/meta/skill-creator/` | 2026-06-04 |

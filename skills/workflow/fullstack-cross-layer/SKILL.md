@@ -33,8 +33,8 @@ Skip loading for pure-BE, pure-FE, doc-only, hooks/agents/skills/commands edits.
 | `*.ts` / `*.tsx`                          | `skills/domain/typescript-pro/`                                  |
 | `*.cs` / `*.csproj` / `appsettings*.json` | `skills/domain/backend/dotnet/csharp-conventions/` + `skills/domain/backend/dotnet/aspnetcore-patterns/` (load `ef-core-patterns/` only when EF Core touched). For deep BE work → re-route to `crew:backend-dev` |
 | `*.py`                                    | `skills/domain/python-pro/`                                      |
-| Backend logic (server, API, data layer)   | `skills/domain/backend-advisory/`                                |
-| Full-stack spanning FE + BE               | `skills/domain/fullstack-advisory/`                              |
+| Backend logic (server, API, data layer)   | `skills/domain/architecture/backend-advisory/`                                |
+| Full-stack spanning FE + BE               | `skills/domain/architecture/fullstack-advisory/`                              |
 | MCP server authoring / debugging          | `skills/domain/mcp-integration/`                                 |
 | AI app / LLM SDK code                     | `skills/domain/ai-engineering/`                                  |
 | Drafting a commit message                 | `skills/workflow/git-commit/`                                    |

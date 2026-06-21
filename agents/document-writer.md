@@ -68,9 +68,9 @@ After writing, print a summary block:
 - `superpowers:writing-skills` — when authoring or editing skill prompts (canonical template + verification)
 - `loop:authoring-slices` — when writing slice files or slice-derived docs
 - `skills/workflow/api-documentation/` — when authoring or editing API reference docs (OpenAPI specs, SDK guides, integration guides)
-- `skills/domain/diagram-methodology/` — when authoring or editing diagram captions, Mermaid prose, PlantUML, ERDs
-- `skills/domain/backend-advisory/` — when API design concerns arise during API reference authoring
-- `skills/domain/architecture-advisory/` — when writing architecture narrative or context for ADRs and design docs
+- `skills/domain/architecture/diagram-methodology/` — when authoring or editing diagram captions, Mermaid prose, PlantUML, ERDs
+- `skills/domain/architecture/backend-advisory/` — when API design concerns arise during API reference authoring
+- `skills/domain/architecture/architecture-advisory/` — when writing architecture narrative or context for ADRs and design docs
 
 ## 3rdparty delegation map
 

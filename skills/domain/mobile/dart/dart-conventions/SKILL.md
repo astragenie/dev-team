@@ -12,7 +12,7 @@ triggers: ["*.dart", "pubspec.yaml", "pubspec.lock", "dart"]
 
 # Dart Conventions
 
-Applies to Dart 3 code. For Flutter-specific UI patterns, see `skills/domain/flutter/flutter-conventions`.
+Applies to Dart 3 code. For Flutter-specific UI patterns, see `skills/domain/mobile/flutter/flutter-conventions`.
 
 ## When to Use
 

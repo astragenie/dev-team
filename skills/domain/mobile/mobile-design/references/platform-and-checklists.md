@@ -1,6 +1,6 @@
 # Mobile Design — Platform Conventions & Checklists
 
-Reference for `skills/domain/mobile-design/`.
+Reference for `skills/domain/mobile/mobile-design/`.
 
 ---
 

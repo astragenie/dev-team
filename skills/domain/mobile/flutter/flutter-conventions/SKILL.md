@@ -12,7 +12,7 @@ triggers: ["*.dart", "pubspec.yaml", "flutter", "Widget", "BuildContext", "State
 
 # Flutter Conventions
 
-Applies to Flutter UI code. For domain / business logic patterns, see `skills/domain/dart/dart-conventions`.
+Applies to Flutter UI code. For domain / business logic patterns, see `skills/domain/mobile/dart/dart-conventions`.
 
 ## When to Use
 

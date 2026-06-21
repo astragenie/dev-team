@@ -85,8 +85,8 @@ Load the smallest set that covers the diff. `docs/workflow/reviewing-code/` is a
 | Diff touches `.cs`                                  | `skills/domain/backend/dotnet/csharp-conventions/` + `aspnetcore-patterns/` (+ `ef-core-patterns/` only when EF Core code present) |
 | Security-sensitive change (auth, crypto, secrets)   | `skills/domain/security-advisory/`                                                     |
 | Dependency/lockfile change OR auth-touching diff    | `skills/domain/security-sweep/` (auto-fires on the routing-table triggers; emits observability log per scan) |
-| Architecture / system design call in diff           | `skills/domain/architecture-advisory/`                                                 |
-| Perf concern (N+1, hot path, latency)               | `skills/domain/backend-advisory/`                                                      |
+| Architecture / system design call in diff           | `skills/domain/architecture/architecture-advisory/`                                                 |
+| Perf concern (N+1, hot path, latency)               | `skills/domain/architecture/backend-advisory/`                                                      |
 | Cannot reproduce failure / intermittent behavior    | `skills/workflow/root-cause-discipline/`                                                |
 | Runnable change (server / worker / hook / CLI / job) | `skills/workflow/review-gates/` → Gate 2 Silent-failure hunt (swallowed errors, missing health-check tiers, inadequate fallbacks) |
 

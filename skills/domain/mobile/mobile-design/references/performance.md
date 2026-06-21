@@ -1,6 +1,6 @@
 # Mobile Design — Performance Reference
 
-Reference for `skills/domain/mobile-design/`.
+Reference for `skills/domain/mobile/mobile-design/`.
 
 ---
 
