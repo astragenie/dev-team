@@ -5,7 +5,7 @@ This plugin has no server, no container, and no hosted runtime.
 
 ## Settings
 
-- `dev.stable: false` — no auto-continue from build to dev ship. Releases are manual and user-triggered.
+- `dev.stable: true` — lead, builder, and validator MAY create local commits without per-edit user approval. Releases (tags, production promotion) remain manual and user-triggered.
 
   When `dev.stable: true` is set, the lead and builder MAY create commits without asking after each edit,
   provided ALL of the following hold:
