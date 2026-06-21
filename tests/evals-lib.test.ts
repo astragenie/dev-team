@@ -33,6 +33,7 @@ import type { AssertInput } from "../evals/lib/assert.ts";
 
 // Eval runner
 import { runEval, findSpecByPromptId } from "../evals/lib/run-eval.ts";
+import { recordItem } from "../evals/lib/langfuse-emit.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -314,5 +315,140 @@ describe("findSpecByPromptId", () => {
     const agentsDir = path.join(repoRoot, "evals", "agents");
     const found = await findSpecByPromptId("nonexistent-agent-xyz", agentsDir);
     assert.equal(found, null);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validate_with disagreement flow (SLICE-91 AC1, AC2, AC3)
+// ---------------------------------------------------------------------------
+
+describe("validate_with disagreement flow (SLICE-91)", () => {
+  test("AC1: disagreement=true when primary=FAIL and validate_with=PASS", async () => {
+    JUDGE_REGISTRY["mock-fail-91"] = async () => ({
+      id: "mock-fail-91",
+      judge: async () => ({ pass: false, score: 0, rationale: "mock fail", raw: {} })
+    });
+    JUDGE_REGISTRY["mock-pass-91"] = async () => ({
+      id: "mock-pass-91",
+      judge: async () => ({ pass: true, score: 1, rationale: "mock pass", raw: {} })
+    });
+
+    const dir = await makeTempDir();
+    try {
+      await fs.writeFile(path.join(dir, "fixture.txt"), "test candidate output", "utf8");
+      const specYaml = `prompt_id: test-disagree-91
+judge:
+  provider: mock-fail-91
+validate_with:
+  - provider: mock-pass-91
+tests:
+  - name: disagree-case
+    fixture: fixture.txt
+    assert:
+      - type: llm-rubric
+        rubric: test rubric
+`;
+      const specFile = path.join(dir, "spec.yaml");
+      await fs.writeFile(specFile, specYaml, "utf8");
+
+      const result = await runEval({ specFile, repoRoot: dir, dryRun: false });
+
+      assert.equal(result.tests.length, 1);
+      const t = result.tests[0];
+      assert.ok(t !== undefined, "test result missing");
+      assert.equal(t?.pass, false, "primary should fail");
+      assert.equal(t?.disagreement, true, "expected disagreement=true");
+      assert.ok(Array.isArray(t?.validations), "expected validations array");
+      assert.equal(t?.validations?.length, 1);
+      assert.equal(t?.validations?.[0]?.verdict, "pass");
+      assert.equal(t?.validations?.[0]?.judge, "mock-pass-91");
+    } finally {
+      await fs.rm(dir, { recursive: true });
+      delete JUDGE_REGISTRY["mock-fail-91"];
+      delete JUDGE_REGISTRY["mock-pass-91"];
+    }
+  });
+
+  test("AC2: disagreement=false when primary and validate_with both pass (forceValidate=true)", async () => {
+    JUDGE_REGISTRY["mock-pass-91b"] = async () => ({
+      id: "mock-pass-91b",
+      judge: async () => ({ pass: true, score: 1, rationale: "mock pass", raw: {} })
+    });
+
+    const dir = await makeTempDir();
+    try {
+      await fs.writeFile(path.join(dir, "fixture.txt"), "test candidate output", "utf8");
+      const specYaml = `prompt_id: test-agree-91
+validate_with:
+  - provider: mock-pass-91b
+tests:
+  - name: agree-case
+    fixture: fixture.txt
+    assert:
+      - type: contains
+        value: candidate
+`;
+      const specFile = path.join(dir, "spec.yaml");
+      await fs.writeFile(specFile, specYaml, "utf8");
+
+      const result = await runEval({ specFile, repoRoot: dir, dryRun: false, validate: true });
+
+      assert.equal(result.tests.length, 1);
+      const t = result.tests[0];
+      assert.ok(t !== undefined, "test result missing");
+      assert.equal(t?.pass, true, "primary should pass");
+      assert.equal(t?.disagreement, false, "expected disagreement=false when both agree");
+      assert.ok(Array.isArray(t?.validations), "expected validations array");
+      assert.equal(t?.validations?.[0]?.verdict, "pass");
+    } finally {
+      await fs.rm(dir, { recursive: true });
+      delete JUDGE_REGISTRY["mock-pass-91b"];
+    }
+  });
+
+  test("AC3: recordItem emits validations array and disagreement in POST payload", async () => {
+    let capturedBody: Record<string, unknown> | null = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const origFetch = (globalThis as any).fetch as typeof fetch;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).fetch = async (url: RequestInfo | URL, init?: RequestInit) => {
+      const body = JSON.parse((init?.body as string) ?? "{}") as Record<string, unknown>;
+      if (String(url).includes("/dataset-items")) capturedBody = body;
+      return new Response(JSON.stringify({ id: "test-run", name: "test-run" }), { status: 200 });
+    };
+
+    const prevPub = process.env["LANGFUSE_PUBLIC_KEY"];
+    const prevSec = process.env["LANGFUSE_SECRET_KEY"];
+    process.env["LANGFUSE_PUBLIC_KEY"] = "test-pub";
+    process.env["LANGFUSE_SECRET_KEY"] = "test-sec";
+
+    try {
+      await recordItem({
+        runId: "test-run",
+        testName: "my-test",
+        pass: false,
+        durationMs: 42,
+        asserts: [{ type: "llm-rubric", pass: false, message: "fail" }],
+        validations: [{ judge: "mock-pass-91", verdict: "pass", rationale: "ok" }],
+        disagreement: true
+      });
+
+      assert.ok(capturedBody !== null, "fetch was not called for dataset-items endpoint");
+      const output = capturedBody["output"] as Record<string, unknown>;
+      assert.ok(Array.isArray(output["validations"]), "output.validations should be array");
+      assert.equal((output["validations"] as unknown[]).length, 1);
+      assert.equal(output["disagreement"], true);
+      const meta = capturedBody["metadata"] as Record<string, unknown>;
+      assert.equal(meta["disagreement"], true);
+      assert.equal(meta["validationCount"], 1);
+    } finally {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (globalThis as any).fetch = origFetch;
+      if (prevPub === undefined) delete process.env["LANGFUSE_PUBLIC_KEY"];
+      else process.env["LANGFUSE_PUBLIC_KEY"] = prevPub;
+      if (prevSec === undefined) delete process.env["LANGFUSE_SECRET_KEY"];
+      else process.env["LANGFUSE_SECRET_KEY"] = prevSec;
+    }
   });
 });

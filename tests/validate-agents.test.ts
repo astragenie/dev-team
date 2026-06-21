@@ -17,6 +17,8 @@ async function makeAgentsDir(files: Record<string, string>) {
 
 const WELL_FORMED_BODY = `---
 name: builder
+prompt_id: builder
+version: 1.0.0
 description: Implementation specialist.
 model: sonnet
 ---
@@ -103,6 +105,9 @@ x
 test("lead role is exempt from '## Report contract' requirement", async () => {
   const leadBody = `---
 name: lead
+prompt_id: lead
+version: 1.0.0
+evals: evals/agents/lead.yaml
 description: User-facing coordinator.
 model: opus
 ---

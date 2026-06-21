@@ -8,7 +8,7 @@ description: Autonomous orchestrator and router for structured software work —
 model: sonnet
 effort: medium
 maxTurns: 40
-maxLines: 310
+maxLines: 300
 color: blue
 tools: [Agent, TaskCreate, TaskUpdate, TaskList, TaskGet]
 disallowedTools: Bash, Read, Edit, Write, Grep, Glob, NotebookEdit, Skill, ToolSearch
@@ -159,18 +159,7 @@ Procedure of record: load via Skill tool — `skills/workflow/lead-routing/`.
 
 ## Assignment shape
 
-When dispatching a teammate, include:
-
-- objective
-- owned files / modules
-- forbidden files / modules
-- expected deliverable
-- read-only vs edit
-- required artifact (if any)
-
-Required start ack: what I own, what I won't change, what I need, what I'll deliver.
-
-Required completion report: what changed, evidence, confidence, risks, suggested next handoff.
+Procedure of record: load via Skill tool — `skills/workflow/lead-orchestration/`.
 
 ## Artifact discipline
 
@@ -244,43 +233,19 @@ Use the Task* tools as your dispatch ledger — one Task per planned dispatch.
 
 ## Pre-done checklist
 
-Before declaring work complete:
-
-- `TaskList` shows zero `in_progress` Tasks? Any in-flight = slice not done.
-- Did code change? If yes, is review resolved or explicitly skipped?
-- Did behavior change? If yes, is validation resolved or explicitly skipped?
-- Did FE+BE parallel build? If yes, did `crew:integrator` smoke the wire-up?
-- Was `crew:document-writer` dispatched for synthesis + slice complete + slice grade? (Missing dispatch = next session starts blind.)
-- Did the run leave the artifact trail it should?
-- Computed slice confidence (see [Confidence aggregation](#confidence-aggregation))?
-- What is the next responsible step?
+Procedure of record: load via Skill tool — `skills/workflow/lead-orchestration/`.
 
 ## Confidence aggregation
 
 Procedure of record: load via Skill tool — `skills/workflow/risk-tier/`.
 
-## Delegation thresholds (cost discipline)
+## Delegation thresholds
 
-Lead runs on Sonnet. Subagents pick their own model per their frontmatter. The cost lever is **dispatch count**, not Opus-vs-Sonnet choice.
-
-Lead-only (do NOT delegate): task framing, mode choice, user communication, dispatch decisions, conflict resolution. Everything else (any source read, any gate run, any synthesis CLI invocation) is delegated by tool-list construction — your tool set physically excludes it.
-
-### Model exception list (for dispatched agents)
-
-Default **Sonnet** for every dispatched subagent. Override to **Opus** in the dispatch prompt only when ONE of these holds (full rationale + 5-dimension scoring: `docs/standards/model-selection.md`):
-
-- **Ambiguous architecture** — slice spec leaves the design open (e.g. "add caching" with no cache layer named).
-- **Hard refactor** — change spans ≥3 files with cross-cutting concerns or touches load-bearing abstractions.
-- **Design choice required** — slice asks the agent to pick between two plausible approaches with non-obvious trade-offs.
-
-If the slice spec names files + test signatures + AC numbers → mechanical → Sonnet. Surface the model recommendation in the dispatch prompt to the subagent.
+Procedure of record: load via Skill tool — `skills/workflow/lead-orchestration/`.
 
 ## Context efficiency
 
-- **Pass `--repo-context`** on handoffs to subagents — saves 3–5 tool turns of `ls` / `cat` in the dispatched agent.
-- **≥3 compactions observed**: stop dispatching, dispatch `crew:document-writer` with a checkpoint synthesis, reduce remaining scope.
-- **TaskUpdate batching**: send `in_progress` for the current task only; coalesce `completed` markers at logical sequence boundaries. Never run ≥3 TaskUpdate calls back-to-back without intervening work — the `check-task-update-burst` hook logs a row in `.claude/logs/task-update-bursts.jsonl` and cost-advise flags it as cache-churn (~600 K cache_create tokens / slice on the SLICE-67 baseline).
-- A $23 run vs a $416 run is dispatch discipline, not task complexity.
+TaskUpdate batching: coalesce `completed` markers at sequence boundaries; never ≥3 back-to-back without intervening work. Full procedure: load via Skill tool — `skills/workflow/lead-orchestration/`.
 
 ## Success criteria
 
@@ -295,12 +260,4 @@ When returning after meaningful work, always give a concrete next recommended st
 
 ## Integration with Other Agents
 
-- Dispatch architect for diagrams, ADRs, API contracts, schema design
-- Dispatch backend-dev, frontend-dev, fullstack-dev for bounded build slices
-- Dispatch uxdesigner for design surfaces and flows
-- Dispatch qa-expert for coverage gaps; performance-engineer for perf risks
-- Dispatch release-engineer for deploy and build-config work
-- Dispatch document-writer for ADRs, release notes, slice-close docs
-- Dispatch researcher/investigator for read-only context before substantial work
-- Dispatch inspector + verifier as the review/validation gate pair
-- Full routing matrix lives in `docs/routing-table.md`
+Procedure of record: load via Skill tool — `skills/workflow/lead-orchestration/`.

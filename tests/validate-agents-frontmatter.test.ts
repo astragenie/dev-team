@@ -185,3 +185,69 @@ x
     `should not require evals for architect, got: ${result.errors.join("; ")}`
   );
 });
+
+// AC-AT-7: maxLines: 300 — agent at exactly 300 lines passes
+test("AC-AT-7: passes when agent body is exactly at maxLines: 300 cap", async () => {
+  const header = `---
+name: foo
+prompt_id: foo
+version: 1.0.0
+description: A test agent.
+model: sonnet
+maxLines: 300
+---
+
+You are a foo agent on a Claude Code engineering team.
+
+TaskUpdate batching: never run >=3 back-to-back without intervening work.
+Coalesce Bash calls: chain related data-collection commands.
+
+## Report contract
+
+Write your handoff via write-handoff.`;
+  const headerLineCount = header.split("\n").length;
+  const padding = Array(300 - headerLineCount)
+    .fill("x")
+    .join("\n");
+  const body = `${header}\n${padding}`;
+  assert.equal(body.split("\n").length, 300);
+
+  const root = await makeAgentsDir({ "foo.md": body });
+  const result = await validateAgents(root);
+  assert.equal(result.ok, true, `unexpected errors: ${result.errors.join("; ")}`);
+});
+
+// AC-AT-8: maxLines: 300 — agent at 301 lines fails
+test("AC-AT-8: fails when agent body exceeds maxLines: 300 cap", async () => {
+  const header = `---
+name: foo
+prompt_id: foo
+version: 1.0.0
+description: A test agent.
+model: sonnet
+maxLines: 300
+---
+
+You are a foo agent on a Claude Code engineering team.
+
+TaskUpdate batching: never run >=3 back-to-back without intervening work.
+Coalesce Bash calls: chain related data-collection commands.
+
+## Report contract
+
+Write your handoff via write-handoff.`;
+  const headerLineCount = header.split("\n").length;
+  const padding = Array(301 - headerLineCount)
+    .fill("x")
+    .join("\n");
+  const body = `${header}\n${padding}`;
+  assert.equal(body.split("\n").length, 301);
+
+  const root = await makeAgentsDir({ "foo.md": body });
+  const result = await validateAgents(root);
+  assert.equal(result.ok, false);
+  assert.ok(
+    result.errors.some((e) => /exceeds the 300-line agent prompt cap/.test(e)),
+    `expected 300-line cap error, got: ${result.errors.join("; ")}`
+  );
+});
