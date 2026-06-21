@@ -1,12 +1,17 @@
 ---
 id: FEAT-169
-status: triaged
+status: done
 priority: P2
 category: quality
 target_release: null
 created: 2026-06-21
+updated: 2026-06-21
+completed_at: 2026-06-21
 depends_on: [FEAT-162, FEAT-165, FEAT-167]
-slices: []
+slices: [SLICE-88, SLICE-89, SLICE-90]
+slices_complete: [SLICE-88, SLICE-89, SLICE-90]
+slices_deferred: [SLICE-91]
+deferred_until: "OAuth-in-CI feasible: either self-hosted runner with persistent claude CLI auth OR anthropic-ai/claude-code-action supports non-issue OAuth contexts. Re-open as new FEAT when trigger condition observed."
 derived_from: FEAT-167
 pm_customer_impact: 0.65
 pm_effort_estimate: 0.55
