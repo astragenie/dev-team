@@ -54,27 +54,9 @@ Load the matching skill when the slice touches that stack. Skip loading if the s
 
 Engineering standards: see `skills/universal/engineering-standards/SKILL.md` (definition-of-done, code-quality, minimal-change, testing, api-design, error-handling, observability, devops) — consult the relevant standard before implementing if the slice introduces new surface.
 
-## Stack cheat sheet (inline minimum — load skills above for depth)
-
-**TypeScript (default — plugin code):**
-- ESM only; `.ts` extension on relative imports; `| undefined` explicit when an optional field can be undefined.
-- `bun run typecheck` / `bun run lint` (Biome) — both fast (<2s).
-- `bun test path/x.test.ts` — scoped. `describe` + `test` from `bun:test`; `assert` from `node:assert/strict`.
-- Subprocess: `spawn(cmd, args, { cwd, stdio, windowsHide: true })`; SIGTERM on timeout; cleanup tempdir.
-- Never `process.exit(N)` from library code; throw or return typed result.
-
-**C# / .NET 10 (regular ASP.NET Core controllers + EF Core 10):**
-- `[ApiController]` + `[Route("api/[controller]")]` + `ControllerBase` (NOT minimal API).
-- `[HttpGet("{id:guid}")]` / `[HttpPost]` etc.; primary constructors for DI; `record` for DTOs; `nullable enable`.
-- `dotnet test --filter FullyQualifiedName~X` — scoped. Build takes 5-30s on large solutions.
-- EF Core 10: projection (`Select(x => new Dto { ... })`), compiled queries on hot paths, never `.Include().ThenInclude()` chains. Migrations: `dotnet ef migrations add <Name>`.
-- Error response: `Problem()` / `StatusCode(...)` with RFC7807 ProblemDetails — never raw exceptions to client.
-
 ## TDD policy
 
-TDD required on net-new behavior (new public function, new artifact kind, new CLI subcommand, new badge) and bug fixes with no regression test. NOT required for refactor with existing coverage, doc/config/CI tweaks, mechanical renames. When skipping on net-new, say so explicitly in follow-up Risks — silence forces inspector to invent claims or reject. Full table + procedure: load `skills/workflow/fullstack-cross-layer/SKILL.md`. Procedure of record: superpowers `test-driven-development` skill.
-
-Follow-up must include: STATUS, headline, Files, Risks (band-aid + scope-cross + missing tests). Reviewer reads git diff + your structured Risks/Next.
+TDD required on net-new behavior + bug fixes lacking a regression test. NOT required for refactor with coverage, doc/config tweaks, mechanical renames. When skipping on net-new, say so in follow-up Risks (silence forces inspector to invent claims). Full table: `skills/workflow/fullstack-cross-layer/`. Procedure: superpowers `test-driven-development`.
 
 ## HARD OUTPUT CONTRACT (read first, every dispatch)
 
@@ -151,50 +133,19 @@ Builder peer-dispatch blacklist: NEVER cross-dispatch `crew:backend-dev` / `crew
 
 ## Structural deviation rule
 
-If the slice spec contradicts repo state (DAG cycle, conflicting prior DEC-NNN, missing dependency the spec assumed exists, file path that doesn't exist), STOP. Don't silently drop edges or invent workarounds outside scope. Emit `mark-badge blocked --note "structural-deviation: <what contradicts>"` + return:
-
-```
-BLOCKED: structural-deviation in slice spec.
-Files: (none)
-Risks: structural-deviation: <what contradicts>: proposed resolution: <X>
-Next: dispatcher decides resolution
-```
-
-Surfacing it costs 1 needs_fix bounce; silent workaround costs a hidden bug + future debugging.
+Slice spec contradicts repo state (DAG cycle, conflicting prior DEC-NNN, missing assumed dependency, nonexistent file path)? STOP. Emit `mark-badge blocked --note "structural-deviation: <what>"` + return `BLOCKED: structural-deviation in slice spec.` with `Risks: structural-deviation: <what contradicts>: proposed resolution: <X>` and `Next: dispatcher decides`. Never silently drop edges or invent workarounds outside scope.
 
 ## Conventions
 
-- **TaskUpdate batching**: send `in_progress` for the current task only; coalesce `completed` markers at logical sequence boundaries. Never run ≥3 TaskUpdate calls back-to-back without intervening work (the `check-task-update-burst` hook logs evidence to `.claude/logs/task-update-bursts.jsonl`). (FEAT-155)
-- **Coalesce Bash calls**: prefer `cmd1 && cmd2 && cmd3` over separate Bash invocations when commands are related + don't need intervening reasoning. Example: chain `git status && git diff --stat && git log --oneline -5` into one call, not three. Carve-out: keep separate when each result drives the next decision. (FEAT-157)
+TaskUpdate batching (FEAT-155): no ≥3 `TaskUpdate` calls back-to-back. Coalesce Bash calls (FEAT-157): chain `cmd1 && cmd2 && cmd3` for related data-collection. Full rationale: `skills/workflow/builder-ceremony/`.
 
 ## Anti-patterns — refuse band-aids
 
-Load `skills/workflow/durability-discipline/SKILL.md`. Patches over root-cause fixes are this codebase's most expensive regression source. When you spot a symptom of a deeper issue:
+Load `skills/workflow/durability-discipline/`. Investigate root cause before patching. If patch is necessary, surface in Risks as `band-aid: <patch>: root cause = <X> needs FEAT-NNN`. Never silently paper over (`catch {}` swallow, magic constant tuned to pass test, cap-bump to defeat gate, disabled test).
 
-- **Root cause in slice scope** → fix it. Patch IS the fix.
-- **Root cause OUT of scope** → write patch + surface in Risks: `band-aid: <patch>: root cause = <X> needs FEAT-NNN`. Open follow-up FEAT or cite existing.
-- **Never silently paper over**: no `catch {}` swallows, no magic constants tuned to pass tests, no cap-bumps to defeat gates, no disabled tests instead of fixed bugs.
+## Time budget
 
-## Time + turn budget
-
-Hard cap: **12 min wallclock**. Wind-down starts at **9 min**: finish current edit, skip new investigation, return follow-up.
-
-On overrun (you OR the harness detects it):
-
-```bash
-node scripts/crew.ts mark-badge --repo "$PWD" --badge blocked --note "time_ceiling_reached: [files touched]"
-```
-
-Then return:
-
-```
-IN-PROGRESS: ceiling hit at step <N> of golden path
-Files: <files touched so far>
-Risks: ceiling reached; remaining: <list of unfinished ACs>
-Next: dispatcher continues at step <N> — fresh builder picks up
-```
-
-Dispatcher fans out a fresh builder with the remaining work + your Files trail.
+Hard cap **12 min wallclock**. Wind-down at **9 min**: finish current edit, skip new investigation, return follow-up. On overrun: `mark-badge blocked --note "time_ceiling_reached: <files touched>"` + return `IN-PROGRESS` follow-up with current step + remaining ACs in Risks. Dispatcher fans out fresh builder.
 
 ## Cross-layer split detection
 
