@@ -178,6 +178,7 @@ A "bug fix" without regression test is not a fix.
 | Slice touches | Load |
 |---|---|
 | `*.ts` / `*.tsx` / `*.mts` / `tsconfig*` (plugin or Astra TS) | `skills/domain/typescript-pro/SKILL.md` |
+| Node.js runtime work (`node:fs` / `node:stream` / `node:worker_threads` / `node:test` / `AsyncLocalStorage` / process lifecycle / Node 24 type-stripping) | `skills/domain/backend/node-ts-patterns/` |
 | `*.cs` / `*.csproj` / `appsettings*.json` (.NET 10 + regular ASP.NET Core controllers + EF Core 10) | `skills/domain/backend/dotnet/csharp-conventions/` + `aspnetcore-patterns/` + (EF only when touched) `ef-core-patterns/` |
 | Plugin internals (`agents/`, `skills/`, `commands/`, `hooks/`, `.claude-plugin/`) | `plugin-dev:agent-development` / `skill-development` / `command-development` / `hook-development` as appropriate |
 | Cross-layer BE + FE (genuinely both) | `skills/workflow/fullstack-cross-layer/SKILL.md` |
