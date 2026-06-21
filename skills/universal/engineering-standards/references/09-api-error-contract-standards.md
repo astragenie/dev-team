@@ -1,146 +1,99 @@
 # API + Error Contract Standards
 
-Combined API design + error handling. The two form one contract surface — the response shape AND the failure shape belong to the same contract. RFC 7807 ProblemDetails is the common pivot.
+The shape an API returns AND the shape it fails with belong to the same contract surface. RFC 7807 ProblemDetails is the pivot.
 
 ## Purpose
 
-Maintain consistent, scalable, predictable APIs whose failures are understandable, observable, and recoverable.
+Predictable, observable, versionable, secure APIs whose failures are understandable + recoverable.
 
----
+## API shape
 
-## Part 1: API design
+- REST for CRUD; streaming for AI generation; async workflows for long-running operations.
+- `application/json` for normal responses; `application/problem+json` for errors.
+- Endpoint naming: plural nouns + stable semantics (`/api/notebooks`, `/api/sources`). No verbs in paths. Consistent casing.
+- AI endpoints expose grounding / citation / evaluation metadata where applicable.
 
-### Core principles
+## Versioning
 
-APIs must be:
+- Explicit API versioning (URL or header — pick one per service).
+- Backward-compatible evolution: additive only, never repurpose a field.
+- Deprecate via `Deprecation` + `Sunset` headers + minor version bump.
+- Breaking change = new route or new version.
 
-- predictable
-- observable
-- versionable
-- secure
-- cancellation-aware
+## Pagination
 
-### API style
+- Cursor pagination preferred (`?cursor=` + `next_cursor`); page/pageSize acceptable for small bounded sets.
+- Deterministic ordering — never rely on insertion order without an explicit `ORDER BY`.
+- Total count optional (expensive on large sets) — document the choice per endpoint.
 
-- REST for CRUD.
-- Streaming endpoints for AI generation.
-- Async workflows for long-running operations.
-- RFC 7807 ProblemDetails for all errors.
-- Versioned with an explicit backward-compatibility strategy.
-- Support cancellation and pagination on appropriate endpoints.
+## Validation
 
-### Endpoint naming
+- Validate inputs at the boundary (model binding + validator); reject before service-layer call.
+- Sanitize uploads (size cap, MIME check, content scan where required).
+- Reject invalid states explicitly — never silently coerce.
 
-Use:
+## Async workflows
 
-- Nouns.
-- Plural collections.
-- Stable semantics.
+Long-running operations:
 
-Examples:
+- Return a job id.
+- Support cancellation (DELETE on the job).
+- Expose progress (poll endpoint or stream).
+- Support retries (idempotency key on submit).
 
-- `/api/notebooks`
-- `/api/sources`
-- `/api/memories`
+## Security
 
-Avoid:
+- Validate authorization on every endpoint.
+- Enforce tenant / notebook / scope boundaries — cross-tenant leakage = security defect.
+- Protect sensitive memory; mask PII in responses unless the contract requires it.
 
-- Verbs in endpoints.
-- Inconsistent casing.
+## ProblemDetails (RFC 7807) — required error shape
 
-### Versioning
+Every error response includes:
 
-Required:
+| Field | Purpose |
+|---|---|
+| `code` | Stable machine-readable error code |
+| `message` | User-safe human-readable message |
+| `correlation_id` | Propagated from `X-Correlation-Id` / `traceparent` |
+| `retryable` (bool) or `retry_after` (secs) | Retry guidance |
+| `detail` | Actionable specifics (which field, which constraint) |
 
-- Explicit API versioning.
-- Backward-compatibility strategy.
+## Status code semantics
 
-### Async workflow rules
+`400` bad request · `401` auth · `403` policy · `404` resource · `409` conflict · `422` semantic · `429` rate-limited · `5xx` server.
 
-Long-running operations must:
+## Retry semantics
 
-- Return job ids.
-- Support cancellation.
-- Expose progress.
-- Support retries.
+Retry only:
 
-### Pagination rules
+- Transient network failures (`connection reset`, `timeout`).
+- `429`, `5xx` (except `501`, `505`).
+- Idempotent operations only.
 
-Required:
+Never retry: `400` / `401` / `403` / `404` / `409` / non-idempotent writes without an idempotency key.
 
-- Cursor pagination preferred.
-- Deterministic ordering.
+Bounded backoff; classify transient vs permanent before retry.
 
-### Validation rules
+## Logging on failure
 
-All APIs must:
-
-- Validate inputs.
-- Sanitize uploads.
-- Reject invalid states.
-
-### AI endpoint rules
-
-AI endpoints must expose:
-
-- Grounding metadata.
-- Citation metadata.
-- Evaluation metadata where applicable.
-
-### Security rules
-
-APIs must:
-
-- Validate authorization.
-- Enforce notebook boundaries.
-- Protect sensitive memory.
-
----
-
-## Part 2: Error handling
-
-### Core principle
-
-Users (and on-call engineers) should understand:
-
-- What failed.
-- Why it failed.
-- Whether retry is safe.
-
-Errors must be actionable. Never expose secrets. Preserve correlation IDs. Prefer typed errors. Avoid generic messages.
-
-### Forbidden behaviors
-
-- Generic "Something went wrong".
-- Swallowed exceptions.
-- Leaking internal stack traces.
-- Silent failures.
-
-### Required error structure (RFC 7807 ProblemDetails)
-
-Every error response must include:
-
-- `code` — stable machine-readable error code.
-- `message` — user-safe human-readable message.
-- `correlation_id` — propagated from `X-Correlation-Id` / `traceparent`.
-- `retry_after` or `retryable: boolean` — retry guidance.
-- `detail` — actionable specifics (which field, which constraint).
-
-`application/problem+json` content type.
-
-### Logging rules
-
-All important failures must log:
-
-- Exception (type + message + stack).
-- Context (operation, parameters scrubbed of PII).
-- Notebook id.
-- User id if safe (hashed if PII).
+- Exception type + message + scrubbed stack.
+- Operation + parameters (PII masked).
+- Tenant / user id (hashed if PII).
 - Workflow state.
 
-### AI workflow errors
+## Anti-patterns
 
-AI failures must distinguish:
+- Generic "Something went wrong" responses.
+- Swallowed exceptions (silent `catch { }`).
+- Leaking internal stack traces to the caller.
+- Repurposing a field's meaning across versions.
+- Retry storms (no backoff, no jitter, no cap).
+- Duplicate side effects on retry (no idempotency key).
+
+## AI workflow errors
+
+Distinguish + log separately:
 
 - Retrieval failure.
 - Grounding failure.
@@ -148,30 +101,10 @@ AI failures must distinguish:
 - Evaluation failure.
 - Parsing failure.
 
-### Retry rules
+## UX
 
-Retry only:
-
-- Transient network failures.
-- Temporary provider failures.
-- Retry-safe workflows (idempotent operations).
-
-Avoid:
-
-- Retry storms.
-- Duplicate side effects.
-
-### UX rules
-
-Users must see:
-
-- Useful errors.
-- Recovery actions.
-- Retry options.
-- Preserved work state.
-
----
+Users see useful errors, recovery actions, retry options, and preserved work state — never raw stack traces.
 
 ## Cross-reference
 
-The fast path in `SKILL.md` carries the stable status-code semantics (400 / 401 / 403 / 404 / 409 / 422 / 429 / 5xx). Use this reference for depth on shape + retry guidance.
+`SKILL.md` fast path carries the status-code mnemonic + RFC 7807 requirement. This file is the depth.

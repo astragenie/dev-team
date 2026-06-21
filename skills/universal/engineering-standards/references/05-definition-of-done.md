@@ -1,124 +1,71 @@
 # Definition of Done
 
-# Purpose
-
-Prevent incomplete AI-generated engineering work.
-
-A feature is NOT complete until all required engineering, UX, observability, and documentation work is finished.
-
----
-
-# Mandatory Completion Requirements
+High-level launch checklist. A feature is NOT complete until every applicable bullet is satisfied — depth on each lives in the sibling references.
 
 ## Implementation
 
-Feature is complete only if:
-
-- feature implemented
-- code compiles
-- architecture preserved
-- existing patterns reused
-- implementation works
-- tests added
-- logging added
-- loading states exist
-- error handling exists
-- responsive behavior works
-- docs updated
-
----
+- Feature implemented; code compiles; lint + typecheck clean.
+- Existing architecture + patterns reused (see `06-change-quality-standards.md`).
+- Behavior verified end-to-end (not just unit-tested in isolation).
+- No dead code, no commented-out blocks, no debug spam in the diff.
 
 ## Testing
 
-Required:
-- unit tests
-- integration tests where appropriate
-- evaluation tests for AI workflows
+- Unit tests for net-new logic.
+- Integration tests where boundaries are crossed.
+- Regression test for any bug fix.
+- Evaluation tests for AI workflows (where applicable).
+- Skipped tests carry a documented reason + follow-up id. See `08-testing-standards.md`.
 
----
+## Error handling + observability
 
-## Error Handling
+- Failures are safe, structured (RFC 7807), and user-actionable.
+- Required logs / spans / metrics emitted per `09-api-error-contract-standards.md` + `11-observability-standards.md`.
+- Correlation id propagated through every outbound call.
 
-Must include:
-- safe failures
-- user-friendly messages
-- structured errors
-- logging
+## UX (when surface is user-facing)
 
----
+- Loading state, empty state, error state, success state all handled.
+- Responsive layout verified.
+- Accessibility checks pass (keyboard nav, ARIA, contrast, focus order).
+- No hardcoded user-facing strings when i18n is in play.
 
-## UX
+## Security
 
-Required:
-- loading states
-- empty states
-- responsive behavior
-- accessibility checks
-- keyboard navigation
-
----
-
-## Observability
-
-Required:
-- structured logs
-- tracing
-- metrics
-- correlation IDs
-
----
+- No secrets / tokens / connection strings committed or logged.
+- Input validation at the boundary.
+- Authorization enforced; multi-tenant isolation preserved.
+- Pre-completion secret grep passed (see `skills/workflow/builder-ceremony/`).
 
 ## Documentation
 
-Required:
-- update PRD if behavior changed
-- update ADR if architecture changed
-- update README if setup changed
+- Update the PRD if behavior changed.
+- Update / add an ADR if architecture changed.
+- Update README if setup or run instructions changed.
+- CHANGELOG entry for user-visible change.
 
----
+## Deployment
 
-# AI-Specific Requirements
+- Migrations expand-contract + reversible + safe under load. See `19-devops-deployment-standards.md`.
+- Env vars + secrets registered.
+- Health endpoints exercised by smoke test for new services.
+- Rollback path verified.
 
-## Grounding
+## AI-specific (when AI surfaces ship)
 
-All AI outputs must:
-- preserve citations
-- avoid hallucinations
-- expose confidence where appropriate
+- Outputs preserve citations / grounding metadata.
+- Hallucination guards in place where the contract requires.
+- Memory writes preserve traceability + version history.
+- Eval suite green on the new prompt + model combination.
 
----
-
-## Memory Integration
-
-Features touching memory must:
-- preserve traceability
-- preserve version history
-- support evaluation
-
----
-
-# Security Requirements
-
-- no secrets exposed
-- validation added
-- authorization respected
-
----
-
-# Deployment Requirements
-
-- migrations validated
-- environment-safe configuration
-- rollback-safe deployment
-
----
-
-# Completion Checklist
+## Final completion checklist
 
 Before marking complete:
-- tests pass
-- logs validated
-- UI reviewed
-- docs updated
-- edge cases reviewed
-- performance reviewed
+
+- Tests pass (slice-scoped at minimum; full suite for risky changes).
+- Logs validated against expected shape.
+- UI reviewed manually if user-facing changed.
+- Docs updated.
+- Edge cases reviewed (boundary, null, concurrent, idempotent retry, error path).
+- Performance reviewed against documented budget; regressions surfaced in Risks.
+- Self-verify gates green or BLOCKED surfaced.

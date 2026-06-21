@@ -94,3 +94,25 @@ Prefer:
 - Additive migrations.
 - Backward compatibility.
 - Gradual evolution.
+
+## When to stop refactoring
+
+Stop when:
+
+- The slice's acceptance criteria are met.
+- The next change would touch files outside the slice scope.
+- The next change would invalidate existing tests that aren't yours.
+- You've already refactored 3 things in this slice — anything more belongs in a follow-up.
+
+Continuing past these markers turns a focused slice into a sprawling diff that's hard to review and easy to regress.
+
+## When to open a follow-up
+
+Open a follow-up (and surface in Risks as `follow-up: <description>`) when you observed code that needs work but it's NOT in the current slice:
+
+- Larger refactor that needs its own slice.
+- Stack-wide pattern that needs a separate cleanup pass.
+- Architectural concern (deserves an ADR).
+- Tech-debt smell with no clear in-scope fix.
+
+Never silently leave a `// TODO` without a tracked follow-up — see `skills/workflow/root-cause-discipline/` for the band-aid surface contract.

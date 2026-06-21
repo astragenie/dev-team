@@ -1,7 +1,7 @@
 ---
 name: engineering-standards
 prompt_id: engineering-standards
-version: 1.3.0
+version: 1.4.0
 tier: universal
 model_pinned: sonnet
 description: Engineering-standards INDEX + fast-path checklists. Routes to vendored references (definition-of-done, code quality, minimal change, testing, API design, error handling, observability, DevOps deployment). Carries inline fast-path checklists for common cases (new endpoint, new error path, deployment-impacting change) so builders don't load 4 reference files for a routine slice. Vendored from kb/08-engineering/ for portability.
