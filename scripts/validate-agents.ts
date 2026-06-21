@@ -327,7 +327,7 @@ function checkBashCoalescing(
 // follow `evals/agents/<role>.yaml`, not backlog ids — so scanning whole-
 // file is safe and catches stray ids that slip into prompt_id / version
 // comments or anywhere else.
-const NO_BACKLOG_IDS_REQUIRED = new Set(["backend-dev", "fullstack-dev"]);
+const NO_BACKLOG_IDS_REQUIRED = new Set(["backend-dev", "frontend-dev", "fullstack-dev"]);
 
 function checkNoBacklogIds(
   text: string,
