@@ -5,6 +5,63 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.38.0 — 2026-06-21 — config-driven feature gates; drop env-var escape hatches
+
+Consolidates four `CREW_*` env-var toggles into the existing `crew.json`
+`features` block. Adds a `FEATURES` registry with per-feature SemVer + owner
+metadata, a `/crew:cost-setup` command that seeds + migrates the block
+idempotently, and a `crew features-list` CLI subcommand for ops
+discoverability. Bootstrap (`/crew:adopt`) now auto-seeds the features block
+on first install.
+
+### Removed env vars
+
+The following env vars are gone. Each one was an escape-hatch on top of an
+already-existing `features['<name>'].enabled` config gate, so config-driven
+behavior is unchanged; only the env-var override is removed.
+
+- `CREW_COST_HYGIENE`              → control via `features['cost-hygiene'].enabled`
+- `CREW_TOOL_PREFLIGHT`            → control via `features['shell-preflight'].enabled`
+- `CREW_SUBAGENT_INLINE_THRESHOLD` (escape-hatch `"0"` disables) → `features['subagent-inline-warn'].enabled`
+- `CREW_COST_REPORT_DISPATCH_DETAIL` → always-on; flag had no real opt-out users
+
+### New config knob (was env-only)
+
+- `features['subagent-inline-warn'].threshold` (number, bytes, default `512`).
+  Replaces the previous numeric reading of `CREW_SUBAGENT_INLINE_THRESHOLD`.
+
+### New surface
+
+- `FEATURES` registry in `scripts/lib/features-service.ts` — per-feature
+  `version`, `default`, `description`, `scope`, `owner`, `since`, optional
+  `deprecates` (records the env vars or config keys this entry replaces).
+- `listFeatures()` + `getFeatureMeta()` helpers.
+- `/crew:cost-setup` command + `scripts/lib/cost-setup.ts` (idempotent
+  seeder; safe to re-run). Accepts `--features cost-hygiene=off,...` to
+  override registry defaults at write time.
+- `crew features-list` CLI subcommand — dumps the FEATURES registry as JSON.
+- `bootstrapRepo()` / `initRepo()` auto-seed the `features` block in
+  `.claude/crew.json` on first install. Existing fields outside `features`
+  are preserved.
+
+### Migration
+
+For consumer repos that explicitly set any of the removed env vars: drop the
+env-var lines from your shell profile / CI config. To disable a feature now,
+edit `.claude/crew.json` (or run `/crew:cost-setup --features <name>=off`).
+
+### Tests
+
+-8 env-var-bound tests (replaced by 2 config-driven gate tests); +10
+`cost-setup` tests; +1 `cost-hygiene` config-disable test. Net: +4 passing
+tests (693 → 697). Zero regressions against the 39 pre-existing
+Windows-timing / Bun `test()`-in-`test()` failures.
+
+### LOC
+
+26 modified + 3 new = 29 files changed. Tracked diff: +249 / -412 = **-163
+net LOC**.
+
 ## v0.37.2 — 2026-06-19 — FEAT-165 plugin-cache ENOENT hotfix
 
 Customer-repo report: every hook fire emitted `error: ENOENT while resolving package '@opentelemetry/api' from '...crew/0.37.1/scripts/lib/telemetry/otel-bridge.ts'` to stderr. Non-blocking (hooks still exit 0 via `main().catch`), but noisy on every tool call.
