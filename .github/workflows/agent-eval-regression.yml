@@ -1,0 +1,40 @@
+name: agent-eval-regression
+# FEAT-170 SLICE-D: label-gated agent eval regression gate.
+# - Default: skipped on every PR (rate-limit + claude CLI not available in GH runner).
+# - Triggers: workflow_dispatch (manual) OR pull_request with the `run-evals` label.
+# - Mode: dry-run only initially (heuristic asserts, no live judge or candidate
+#   dispatch). Live mode lands when OAuth-in-CI is feasible (tracked: FEAT-169
+#   SLICE-91 deferred, FEAT-162 SLICE-D pre-mortem).
+# - Verdict: advisory (continue-on-error: true) until 2-week stability baseline.
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt_id:
+        description: Eval prompt_id to run (e.g. fullstack-dev)
+        required: true
+        default: fullstack-dev
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+jobs:
+  eval-regression:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'run-evals'))
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - name: Eval prompt (dry-run heuristic asserts)
+        env:
+          LANGFUSE_DISABLE: '1' # FEAT-176 — skip emit, no Langfuse keys in CI
+        run: |
+          PROMPT_ID="${{ github.event.inputs.prompt_id || 'fullstack-dev' }}"
+          bun run evals --dry-run --prompt "$PROMPT_ID"
+      - name: Enforce agent prompt line caps (FEAT-170 SLICE-D)
+        run: bun test tests/agent-prompt-content.test.ts

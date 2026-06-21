@@ -18,6 +18,47 @@ function readAgent(name: string) {
 
 const builder = readAgent("fullstack-dev");
 
+// FEAT-170 SLICE-D: hard line cap enforcement. SLICE-93 shrunk fullstack-dev
+// from 397 → 313 lines; cap dropped to 320 in frontmatter. CI gate ensures
+// regression. Future shrinks may lower further; relax this test in tandem.
+test("fullstack-dev.md stays under 320 line cap (FEAT-170 SLICE-D)", () => {
+  const lines = builder.split(/\r?\n/).length;
+  assert.ok(
+    lines <= 320,
+    `fullstack-dev.md is ${lines} lines, exceeds 320-line cap (FEAT-170 SLICE-D regression gate)`
+  );
+});
+
+test("fullstack-dev.md declares Cross-layer split detection section (FEAT-170 SLICE-B)", () => {
+  assert.ok(
+    builder.includes("## Cross-layer split detection") || builder.includes("SPLIT_BUILD"),
+    "fullstack-dev.md missing SPLIT_BUILD signal guidance (FEAT-170 SLICE-B)"
+  );
+});
+
+test("fullstack-dev.md declares Forbidden block (FEAT-170 SLICE-B)", () => {
+  assert.ok(
+    builder.includes("## Forbidden"),
+    "fullstack-dev.md missing ## Forbidden block (FEAT-170 SLICE-B)"
+  );
+});
+
+test("fullstack-dev.md identity-anchor lists expanded leak phrases (FEAT-170 SLICE-B)", () => {
+  for (const phrase of [
+    "you are Claude Code",
+    "you are the orchestrator",
+    "you are the lead",
+    "I am Claude Code",
+    "Let me re-read",
+    "As the orchestrator"
+  ]) {
+    assert.ok(
+      builder.includes(phrase),
+      `fullstack-dev.md identity-anchor missing leak phrase "${phrase}"`
+    );
+  }
+});
+
 test("builder.md contains TDD policy reference", () => {
   assert.ok(builder.includes("TDD"), "builder.md missing TDD");
 });
@@ -792,19 +833,11 @@ const DEC_019 = "DEC-019";
 describe("## First action — Prong B coverage", () => {
   describe("fullstack-dev", () => {
     const content = readAgent("fullstack-dev");
-    test("stub heading present", () => {
-      assert.ok(content.includes(STUB_HEADING), "fullstack-dev.md missing stub artifact heading");
-    });
-    test("--scaffold flag present", () => {
-      assert.ok(content.includes(SCAFFOLD_FLAG), "fullstack-dev.md missing --scaffold flag");
-    });
-    test("--status in-progress present", () => {
-      assert.ok(
-        content.includes(STATUS_IN_PROGRESS),
-        "fullstack-dev.md missing --status in-progress"
-      );
-    });
-    test("--update flag present", () => {
+    // FEAT-170 SLICE-B (2026-06-21) removed the redundant "## First action
+    // (stub artifact on entry)" section — substance was a duplicate of
+    // HARD OUTPUT CONTRACT. The remaining Prong B coverage now lives in
+    // HARD OUTPUT CONTRACT (write-handoff + --update + FEAT-161 cite).
+    test("--update flag present (substance moved to HARD OUTPUT CONTRACT)", () => {
       assert.ok(content.includes(UPDATE_FLAG), "fullstack-dev.md missing --update flag");
     });
     test("role-specific: write-handoff command", () => {
@@ -812,9 +845,6 @@ describe("## First action — Prong B coverage", () => {
     });
     test("FEAT-161 cite-back", () => {
       assert.ok(content.includes(FEAT_161_CITE), "fullstack-dev.md missing FEAT-161 cite-back");
-    });
-    test("DEC-019 reference", () => {
-      assert.ok(content.includes(DEC_019), "fullstack-dev.md missing DEC-019 reference");
     });
   });
 

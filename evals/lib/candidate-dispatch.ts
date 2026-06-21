@@ -11,6 +11,7 @@
 
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 
 export interface CandidateDispatchOptions {
@@ -138,16 +139,19 @@ export async function dispatchCandidate(
   };
 }
 
-function runSubprocess(prompt: string, model: string, timeoutMs: number): Promise<string> {
+async function runSubprocess(prompt: string, model: string, timeoutMs: number): Promise<string> {
+  // FEAT-173: spawn claude -p in an isolated tempdir cwd so the subprocess
+  // cannot read the repo's CLAUDE.md, git status, memory, or other state.
+  // Prevents judge cross-contamination ("untracked handoff stubs") and any
+  // residual write-attempt from leaking into the live repo.
+  const tempCwd = await fs.mkdtemp(path.join(os.tmpdir(), "crew-eval-"));
+
   return new Promise((resolve, reject) => {
     // Stream prompt via stdin to avoid Windows 32KB command-line length limit.
     // --verbose required by `claude -p` when using --output-format stream-json.
-    // --dangerously-skip-permissions: candidate dispatch is read-only eval — no
-    // file writes should occur; permission prompts would stall the subprocess.
-    // --max-turns 3: constrain candidate to single-response (acknowledge +
-    // produce handoff-shaped output) rather than multi-turn investigation
-    // loops that blow eval timeout budget. Eval measures the FIRST response
-    // pattern, not the agent's full work.
+    // --dangerously-skip-permissions: candidate is text-only — no writes should
+    // be attempted; flag prevents any rogue permission prompt from stalling.
+    // --max-turns 3: cap turns to prevent investigation loops.
     const args = [
       "-p",
       "--output-format",
@@ -160,6 +164,7 @@ function runSubprocess(prompt: string, model: string, timeoutMs: number): Promis
       model
     ];
     const child = spawn("claude", args, {
+      cwd: tempCwd,
       stdio: ["pipe", "pipe", "pipe"],
       windowsHide: true
     });
@@ -174,13 +179,21 @@ function runSubprocess(prompt: string, model: string, timeoutMs: number): Promis
       stderr += chunk.toString("utf8");
     });
 
+    const cleanup = () => {
+      fs.rm(tempCwd, { recursive: true, force: true }).catch(() => {
+        /* best-effort tempdir cleanup */
+      });
+    };
+
     const timer = setTimeout(() => {
       child.kill("SIGTERM");
+      cleanup();
       reject(new Error(`candidate-dispatch: subprocess timed out after ${timeoutMs}ms`));
     }, timeoutMs);
 
     child.on("close", (code) => {
       clearTimeout(timer);
+      cleanup();
       if (code !== 0 && stdout.trim().length === 0) {
         reject(
           new Error(
@@ -194,6 +207,7 @@ function runSubprocess(prompt: string, model: string, timeoutMs: number): Promis
 
     child.on("error", (err) => {
       clearTimeout(timer);
+      cleanup();
       reject(new Error(`candidate-dispatch: failed to spawn claude: ${err.message}`));
     });
 

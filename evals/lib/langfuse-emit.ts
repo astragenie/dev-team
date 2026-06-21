@@ -57,6 +57,24 @@ function basicHeader(pub: string, sec: string): string {
   return `Basic ${Buffer.from(`${pub}:${sec}`).toString("base64")}`;
 }
 
+// FEAT-176: disable emit entirely when LANGFUSE_DISABLE=1 (e.g. when host
+// has stale endpoints and 404 noise pollutes the eval output).
+function isDisabled(): boolean {
+  return process.env["LANGFUSE_DISABLE"] === "1";
+}
+
+// FEAT-176: extract a short snippet from error responses. HTML pages (Langfuse
+// 404 returns Next.js HTML) get truncated to title only; JSON bodies stay
+// readable. Prevents 200 KB of Next.js bundle paths in the eval console.
+function summarizeErrorBody(text: string): string {
+  const trimmed = text.trim();
+  if (trimmed.startsWith("<!DOCTYPE") || trimmed.startsWith("<html")) {
+    const titleMatch = trimmed.match(/<title>([^<]*)<\/title>/i);
+    return titleMatch?.[1]?.trim() ?? "(HTML response — endpoint not found on host)";
+  }
+  return trimmed.slice(0, 200);
+}
+
 async function post(host: string, pub: string, sec: string, endpoint: string, body: Record<string, unknown>): Promise<Record<string, unknown>> {
   const res = await fetch(`${host}${endpoint}`, {
     method: "POST",
@@ -65,13 +83,14 @@ async function post(host: string, pub: string, sec: string, endpoint: string, bo
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`langfuse POST ${endpoint} HTTP ${res.status}: ${text.slice(0, 200)}`);
+    throw new Error(`langfuse POST ${endpoint} HTTP ${res.status}: ${summarizeErrorBody(text)}`);
   }
   return (await res.json()) as Record<string, unknown>;
 }
 
 /** Ensure a dataset exists. Idempotent by name. Returns dataset id or null when keys absent. */
 export async function ensureDataset(promptId: string): Promise<DatasetId | null> {
+  if (isDisabled()) return null;
   const auth = getAuth();
   if (!auth) return null;
   const data = await post(getHost(), auth.publicKey, auth.secretKey, "/api/public/datasets",

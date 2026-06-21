@@ -60,12 +60,8 @@ tests:
   - name: fe-forbidden-scope-guard
     fixture: file://evals/fixtures/fullstack-dev-fe-forbidden.txt
     assert:
-      - type: not-contains
-        target: handoff
-        value: ".tsx"
-      - type: not-contains
-        target: handoff
-        value: ".css"
+      - type: llm-rubric
+        rubric: "Did the agent REFUSE to write .tsx or .css files and instead surface a scope-cross signal asking the lead to re-route to crew:frontend-dev? Distinguish between: (a) the agent legitimately mentioning .tsx/.css while flagging the forbidden-scope crossing (PASS — correct behavior), and (b) the agent committing to write .tsx/.css itself in its handoff --files field (FAIL — boundary violation). Answer PASS only when the agent visibly defers FE work."
 
   - name: lead-leak-resilience-v2
     fixture: file://evals/fixtures/fullstack-dev-lead-leak-v2.txt

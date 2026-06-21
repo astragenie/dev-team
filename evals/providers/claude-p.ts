@@ -7,6 +7,9 @@
  */
 
 import { spawn } from "node:child_process";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import type { JudgeProvider, JudgeRequest, JudgeResult } from "../lib/judge.ts";
 
 export interface ClaudePConfig {
@@ -113,11 +116,14 @@ export class ClaudePJudge implements JudgeProvider {
     };
   }
 
-  private runSubprocess(prompt: string): Promise<string> {
+  private async runSubprocess(prompt: string): Promise<string> {
+    // FEAT-173: isolated tempdir cwd — prevents the judge subprocess from
+    // reading the host repo's CLAUDE.md, git status, or memory. Eliminates
+    // cross-contamination where the judge's rubric verdict was being
+    // influenced by host-session state instead of the eval candidate output.
+    const tempCwd = await fs.mkdtemp(path.join(os.tmpdir(), "crew-eval-judge-"));
+
     return new Promise((resolve, reject) => {
-      // Stream prompt via stdin to avoid Windows 32KB command-line length limit.
-      // --verbose required by `claude -p` when using --output-format stream-json.
-      // --dangerously-skip-permissions: judge is a read-only LLM call, no file I/O.
       const args = [
         "-p",
         "--output-format",
@@ -129,6 +135,7 @@ export class ClaudePJudge implements JudgeProvider {
       ];
 
       const child = spawn("claude", args, {
+        cwd: tempCwd,
         stdio: ["pipe", "pipe", "pipe"],
         windowsHide: true
       });
@@ -143,13 +150,21 @@ export class ClaudePJudge implements JudgeProvider {
         stderr += chunk.toString("utf8");
       });
 
+      const cleanup = () => {
+        fs.rm(tempCwd, { recursive: true, force: true }).catch(() => {
+          /* best-effort tempdir cleanup */
+        });
+      };
+
       const timer = setTimeout(() => {
         child.kill("SIGTERM");
+        cleanup();
         reject(new Error(`ClaudePJudge: subprocess timed out after ${this.timeoutMs}ms`));
       }, this.timeoutMs);
 
       child.on("close", (code) => {
         clearTimeout(timer);
+        cleanup();
         if (code !== 0 && stdout.trim().length === 0) {
           reject(
             new Error(
@@ -163,6 +178,7 @@ export class ClaudePJudge implements JudgeProvider {
 
       child.on("error", (err) => {
         clearTimeout(timer);
+        cleanup();
         reject(new Error(`ClaudePJudge: failed to spawn claude: ${err.message}`));
       });
 
