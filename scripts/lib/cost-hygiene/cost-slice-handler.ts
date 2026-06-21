@@ -104,13 +104,11 @@ function resolveCostSliceParams(
 /**
  * Collect dispatch + bash-gate telemetry for the cost-report breakdown section (FEAT-151).
  * Non-fatal: returns undefined on any error so the rest of the report still renders.
- * Gated by CREW_COST_REPORT_DISPATCH_DETAIL env (set to "0" to suppress).
  */
 async function collectDispatchBreakdown(
   repoPath: string,
   runId: string | undefined
 ): Promise<DispatchBreakdown | undefined> {
-  if (process.env["CREW_COST_REPORT_DISPATCH_DETAIL"] === "0") return undefined;
   try {
     const pluginRoot = process.env["CLAUDE_PLUGIN_ROOT"] ?? repoPath;
     const dispatchLog =

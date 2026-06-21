@@ -570,13 +570,11 @@ function renderCostReportByModel(breakdown: CostBreakdown | undefined): string[]
 
 /**
  * Render the ## Per-dispatch breakdown section from pre-aggregated telemetry.
- * Gated by CREW_COST_REPORT_DISPATCH_DETAIL env: set to "0" to suppress.
- * Returns an empty array when the feature is disabled or data is absent.
+ * Returns an empty array when data is absent.
  */
 function renderCostReportDispatchBreakdown(
   dispatchBreakdown: DispatchBreakdown | undefined
 ): string[] {
-  if (process.env["CREW_COST_REPORT_DISPATCH_DETAIL"] === "0") return [];
   if (!dispatchBreakdown) return [];
   const section = renderDispatchBreakdownSection(
     dispatchBreakdown.dispatch,

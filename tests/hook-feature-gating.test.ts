@@ -367,133 +367,54 @@ test("preflight-shell: missing crew.json → feature defaults to enabled", async
 });
 
 // ──────────────────────────────────────────────────────────────────────────
-// Env-var override tests
+// cost-hygiene umbrella feature (replaces former CREW_COST_HYGIENE env var)
 // ──────────────────────────────────────────────────────────────────────────
 
-test("check-redundant-read: env-var CREW_COST_HYGIENE=0 overrides feature enabled", async () => {
+test("check-redundant-read: cost-hygiene feature disabled → no warn/no state (umbrella)", async () => {
   const repo = await makeRepo();
   try {
     const file = path.join(repo, "test.txt");
     await fs.writeFile(file, "content", "utf8");
 
-    // Create crew.json with feature enabled
+    // Umbrella disable: cost-hygiene off, redundant-read-stop on. Umbrella wins.
     const crewDir = path.join(repo, ".claude");
     await fs.mkdir(crewDir, { recursive: true });
     await fs.writeFile(
       path.join(crewDir, "crew.json"),
       JSON.stringify({
         features: {
+          "cost-hygiene": { enabled: false },
           "redundant-read-stop": { enabled: true }
         }
       }),
       "utf8"
     );
 
-    // But CREW_COST_HYGIENE=0 should disable it
     const result = await runHook(
       CHECK_REDUNDANT_READ_PATH,
       JSON.stringify({
-        session_id: "test_envvar_override",
+        session_id: "test_umbrella_off",
         tool_name: "Read",
         tool_input: { file_path: file },
         cwd: repo
-      }),
-      { CREW_COST_HYGIENE: "0" }
+      })
     );
 
     assert.equal(result.exitCode, 0);
-    // State should NOT be created (env-var takes precedence)
+    assert.equal(result.stdout, "");
     const stateFile = path.join(
       repo,
       ".claude",
       "state",
       "cost-hygiene",
-      "test_envvar_override.json"
+      "test_umbrella_off.json"
     );
     try {
       await fs.stat(stateFile);
-      assert.fail("State file should not exist when CREW_COST_HYGIENE=0");
+      assert.fail("State file should not exist when cost-hygiene feature is disabled");
     } catch (err) {
       // Expected: file does not exist
     }
-  } finally {
-    await cleanup(repo);
-  }
-});
-
-test("preflight-shell: env-var CREW_TOOL_PREFLIGHT=0 overrides feature enabled", async () => {
-  const repo = await makeRepo();
-  try {
-    // Create crew.json with feature enabled
-    const crewDir = path.join(repo, ".claude");
-    await fs.mkdir(crewDir, { recursive: true });
-    await fs.writeFile(
-      path.join(crewDir, "crew.json"),
-      JSON.stringify({
-        features: {
-          "shell-preflight": { enabled: true }
-        }
-      }),
-      "utf8"
-    );
-
-    // But CREW_TOOL_PREFLIGHT=0 should disable it
-    const result = await runHook(
-      PREFLIGHT_SHELL_PATH,
-      JSON.stringify({
-        session_id: "test_envvar_override",
-        tool_name: "Bash",
-        tool_input: { command: "echo $env:HOME" },
-        cwd: repo
-      }),
-      { CREW_TOOL_PREFLIGHT: "0" }
-    );
-
-    // When env-var is set to 0, exit code should be 0
-    assert.equal(
-      result.exitCode,
-      0,
-      `Exit code should be 0 when CREW_TOOL_PREFLIGHT=0, got ${result.exitCode}`
-    );
-    // No output when env-var is set
-    assert.equal(result.stdout, "");
-  } finally {
-    await cleanup(repo);
-  }
-});
-
-test("check-subagent-return: env-var CREW_SUBAGENT_INLINE_THRESHOLD=0 overrides feature enabled", async () => {
-  const repo = await makeRepo();
-  try {
-    // Create crew.json with feature enabled
-    const crewDir = path.join(repo, ".claude");
-    await fs.mkdir(crewDir, { recursive: true });
-    await fs.writeFile(
-      path.join(crewDir, "crew.json"),
-      JSON.stringify({
-        features: {
-          "subagent-inline-warn": { enabled: true }
-        }
-      }),
-      "utf8"
-    );
-
-    // But CREW_SUBAGENT_INLINE_THRESHOLD=0 should disable it
-    const largeBody = "x".repeat(10000) + " no artifact path";
-    const result = await runHook(
-      CHECK_SUBAGENT_RETURN_PATH,
-      JSON.stringify({
-        session_id: "test_envvar_override",
-        tool_name: "Agent",
-        tool_response: largeBody,
-        cwd: repo
-      }),
-      { CREW_SUBAGENT_INLINE_THRESHOLD: "0" }
-    );
-
-    assert.equal(result.exitCode, 0);
-    // No output when env-var is set
-    assert.equal(result.stdout, "");
   } finally {
     await cleanup(repo);
   }

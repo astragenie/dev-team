@@ -54,11 +54,7 @@ function parseInput(
   }
 }
 
-export async function runPreflightShellHook(
-  raw: string,
-  env: NodeJS.ProcessEnv
-): Promise<string | null> {
-  if (env.CREW_TOOL_PREFLIGHT === "0") return null;
+export async function runPreflightShellHook(raw: string): Promise<string | null> {
   const input = parseInput(raw);
   if (input === null) return null;
   const { session_id, tool_name, command, cwd } = input;

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// PostToolUse hook on Read. Default-on; opt out with CREW_COST_HYGIENE=0. Always exits 0.
+// PostToolUse hook on Read. Default-on; opt out via crew.json features["cost-hygiene"].enabled=false.
+// Always exits 0.
 import { runRecordReadContentHook } from "./lib/record-read-content.ts";
 import { logHookError } from "./hook-error.ts";
 
@@ -10,11 +11,8 @@ async function readStdin(): Promise<string> {
 }
 
 async function main(): Promise<void> {
-  if (process.env.CREW_COST_HYGIENE === "0") {
-    process.exit(0);
-  }
   const raw = await readStdin();
-  await runRecordReadContentHook(raw, process.env);
+  await runRecordReadContentHook(raw);
 }
 
 main().catch(async (err) => {

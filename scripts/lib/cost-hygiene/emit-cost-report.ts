@@ -30,7 +30,6 @@ async function collectDispatchBreakdownForRun(
   repoPath: string,
   runId: string | undefined
 ): Promise<DispatchBreakdown | undefined> {
-  if (process.env["CREW_COST_REPORT_DISPATCH_DETAIL"] === "0") return undefined;
   try {
     const pluginRoot = process.env["CLAUDE_PLUGIN_ROOT"] ?? repoPath;
     const dispatchLog =

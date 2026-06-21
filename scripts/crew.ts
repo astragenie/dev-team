@@ -48,6 +48,7 @@ const FLAG_SPEC = {
   "--extra-root": { key: "extraRoot" },
   "--feat": { key: "feat" },
   "--feature": { key: "feature" },
+  "--features": { key: "features" },
   "--files": { key: "files" },
   "--files-read": { key: "filesRead" },
   "--findings": { key: "findings" },
@@ -181,6 +182,7 @@ function parseArgs(argv: string[]) {
     sourceProject: null,
     blockedBy: null,
     feature: null,
+    features: null,
     nonCode: false,
     noSelf: false,
     aggregateAll: false,
@@ -935,6 +937,18 @@ const COMMANDS = {
     };
   },
   "cost-slice": ({ repoPath, flags }: CommandContext) => costSliceHandler({ repoPath, flags }),
+
+  "cost-setup": async ({ repoPath, flags }: CommandContext) => {
+    const { parseFeatureOverrides, runCostSetup } = await import("./lib/cost-setup.ts");
+    const featuresFlag = typeof flags.features === "string" ? flags.features : null;
+    const overrides = parseFeatureOverrides(featuresFlag);
+    return runCostSetup(repoPath, overrides);
+  },
+
+  "features-list": async () => {
+    const { listFeatures } = await import("./lib/features-service.ts");
+    return { features: listFeatures() };
+  },
 
   "agent-stats": async ({ repoPath, flags }: CommandContext) => {
     const { aggregateAgentStats, writeAgentStatsArtifact, windowSlug } = await import(

@@ -35,7 +35,7 @@ async function readBurstLog(repo: string): Promise<string[]> {
 test("FEAT-155: 1 TaskUpdate → no burst row", async () => {
   const repo = await makeRepo();
   try {
-    await runCheckTaskUpdateBurstHook(makePayload("s1", repo), {});
+    await runCheckTaskUpdateBurstHook(makePayload("s1", repo));
     const lines = await readBurstLog(repo);
     assert.equal(lines.length, 0);
   } finally {
@@ -46,8 +46,8 @@ test("FEAT-155: 1 TaskUpdate → no burst row", async () => {
 test("FEAT-155: 2 consecutive TaskUpdates → no burst row (below threshold)", async () => {
   const repo = await makeRepo();
   try {
-    await runCheckTaskUpdateBurstHook(makePayload("s2", repo), {});
-    await runCheckTaskUpdateBurstHook(makePayload("s2", repo), {});
+    await runCheckTaskUpdateBurstHook(makePayload("s2", repo));
+    await runCheckTaskUpdateBurstHook(makePayload("s2", repo));
     const lines = await readBurstLog(repo);
     assert.equal(lines.length, 0);
   } finally {
@@ -58,9 +58,9 @@ test("FEAT-155: 2 consecutive TaskUpdates → no burst row (below threshold)", a
 test("FEAT-155: 3 consecutive TaskUpdates → burst row written", async () => {
   const repo = await makeRepo();
   try {
-    await runCheckTaskUpdateBurstHook(makePayload("s3", repo), {});
-    await runCheckTaskUpdateBurstHook(makePayload("s3", repo), {});
-    await runCheckTaskUpdateBurstHook(makePayload("s3", repo), {});
+    await runCheckTaskUpdateBurstHook(makePayload("s3", repo));
+    await runCheckTaskUpdateBurstHook(makePayload("s3", repo));
+    await runCheckTaskUpdateBurstHook(makePayload("s3", repo));
     const lines = await readBurstLog(repo);
     assert.equal(lines.length, 1);
     const row: unknown = JSON.parse(lines[0]!);
@@ -75,7 +75,7 @@ test("FEAT-155: 5 consecutive TaskUpdates → 3 burst rows (>=3, >=4, >=5)", asy
   const repo = await makeRepo();
   try {
     for (let i = 0; i < 5; i++) {
-      await runCheckTaskUpdateBurstHook(makePayload("s4", repo), {});
+      await runCheckTaskUpdateBurstHook(makePayload("s4", repo));
     }
     const lines = await readBurstLog(repo);
     assert.equal(lines.length, 3);
@@ -85,12 +85,18 @@ test("FEAT-155: 5 consecutive TaskUpdates → 3 burst rows (>=3, >=4, >=5)", asy
   }
 });
 
-test("FEAT-155: CREW_COST_HYGIENE=0 disables hook (no burst row, no state file)", async () => {
+test("FEAT-155: cost-hygiene config feature disabled → no burst row, no state file", async () => {
   const repo = await makeRepo();
   try {
-    await runCheckTaskUpdateBurstHook(makePayload("s5", repo), { CREW_COST_HYGIENE: "0" });
-    await runCheckTaskUpdateBurstHook(makePayload("s5", repo), { CREW_COST_HYGIENE: "0" });
-    await runCheckTaskUpdateBurstHook(makePayload("s5", repo), { CREW_COST_HYGIENE: "0" });
+    await fs.mkdir(path.join(repo, ".claude"), { recursive: true });
+    await fs.writeFile(
+      path.join(repo, ".claude", "crew.json"),
+      JSON.stringify({ features: { "cost-hygiene": { enabled: false } } }),
+      "utf8"
+    );
+    await runCheckTaskUpdateBurstHook(makePayload("s5", repo));
+    await runCheckTaskUpdateBurstHook(makePayload("s5", repo));
+    await runCheckTaskUpdateBurstHook(makePayload("s5", repo));
     const lines = await readBurstLog(repo);
     assert.equal(lines.length, 0);
     const stateFile = path.join(repo, ".claude", "state", "task-update-burst", "s5.json");
@@ -110,8 +116,8 @@ test("FEAT-155: CREW_COST_HYGIENE=0 disables hook (no burst row, no state file)"
 test("FEAT-155: malformed payload → no throw, no burst row", async () => {
   const repo = await makeRepo();
   try {
-    await runCheckTaskUpdateBurstHook("not-json", {});
-    await runCheckTaskUpdateBurstHook(JSON.stringify({ session_id: 123 }), {});
+    await runCheckTaskUpdateBurstHook("not-json");
+    await runCheckTaskUpdateBurstHook(JSON.stringify({ session_id: 123 }));
     const lines = await readBurstLog(repo);
     assert.equal(lines.length, 0);
   } finally {

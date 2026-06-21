@@ -2,7 +2,7 @@
 // hooks/check-subagent-return.ts shim owns process I/O.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { parseThreshold, checkSubagentReturn } from "../../scripts/lib/subagent-return/check.ts";
+import { checkSubagentReturn } from "../../scripts/lib/subagent-return/check.ts";
 import { isEnabled, readCrewConfig } from "../../scripts/lib/features-service.ts";
 // TELEMETRY: dispatch-timing tap (FEAT-149)
 import { recordDispatchEnd } from "../../scripts/lib/dispatch-timing.ts";
@@ -101,17 +101,25 @@ function parseInput(
   }
 }
 
-export async function runCheckSubagentReturnHook(
-  raw: string,
-  env: NodeJS.ProcessEnv
-): Promise<string | null> {
-  if (env.CREW_SUBAGENT_INLINE_THRESHOLD === "0") return null;
+const DEFAULT_INLINE_THRESHOLD_BYTES = 512;
+
+function readConfigThreshold(config: unknown): number | undefined {
+  if (!config || typeof config !== "object") return undefined;
+  const features = (config as Record<string, unknown>).features;
+  if (!features || typeof features !== "object") return undefined;
+  const feat = (features as Record<string, unknown>)["subagent-inline-warn"];
+  if (!feat || typeof feat !== "object") return undefined;
+  const value = (feat as Record<string, unknown>).threshold;
+  return typeof value === "number" && Number.isFinite(value) ? Math.floor(value) : undefined;
+}
+
+export async function runCheckSubagentReturnHook(raw: string): Promise<string | null> {
   const input = parseInput(raw);
   if (input === null) return null;
   const { session_id, cwd, body } = input;
   const config = await readCrewConfig(cwd);
   if (!isEnabled("subagent-inline-warn", config)) return null;
-  const threshold = parseThreshold(env.CREW_SUBAGENT_INLINE_THRESHOLD);
+  const threshold = readConfigThreshold(config) ?? DEFAULT_INLINE_THRESHOLD_BYTES;
   const { warnings } = checkSubagentReturn({ body, threshold });
 
   // TELEMETRY: dispatch-timing tap (FEAT-149)

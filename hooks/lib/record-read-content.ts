@@ -9,6 +9,7 @@ import {
   recordReadContent,
   evictLRU
 } from "../../scripts/lib/cost-hygiene/state.ts";
+import { isEnabled, readCrewConfig } from "../../scripts/lib/features-service.ts";
 
 async function logEvent(
   repoPath: string,
@@ -74,14 +75,12 @@ async function loadState(
   }
 }
 
-export async function runRecordReadContentHook(
-  raw: string,
-  env: NodeJS.ProcessEnv
-): Promise<string | null> {
-  if (env.CREW_COST_HYGIENE === "0") return null;
+export async function runRecordReadContentHook(raw: string): Promise<string | null> {
   const input = parseInput(raw);
   if (input === null) return null;
   const { session_id, file_path, content, cwd } = input;
+  const config = await readCrewConfig(cwd);
+  if (!isEnabled("cost-hygiene", config)) return null;
   const absPath = path.resolve(cwd, file_path);
   const state = await loadState(cwd, session_id, (msg) =>
     logEvent(cwd, "state-load-fail", session_id, msg)

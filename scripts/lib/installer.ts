@@ -16,6 +16,7 @@ import { migrateLegacyHarness } from "./installer/legacy-migration.ts";
 import { buildWelcome } from "./installer/welcome.ts";
 import { auditRepo } from "./installer/audit.ts";
 import { installGlobal } from "./installer/global.ts";
+import { runCostSetup } from "./cost-setup.ts";
 
 export { auditRepo, installGlobal };
 
@@ -42,6 +43,8 @@ export async function bootstrapRepo(repoPath: string): Promise<
   await writeHarnessFiles(repoPath, writes);
   await writeRepoLocalGuides(repoPath, writes);
   await updateSettings(repoPath, writes);
+  const costSetup = await runCostSetup(repoPath);
+  if (costSetup.written) writes.push(path.relative(repoPath, costSetup.configPath) || costSetup.configPath);
 
   return ok({
     mode: "bootstrap",

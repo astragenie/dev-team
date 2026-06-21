@@ -348,10 +348,8 @@ test("cost-slice renders ## Per-dispatch breakdown when dispatch log has matchin
 
   const savedDispatchLog = process.env["CREW_DISPATCH_TIMING_LOG"];
   const savedBashLog = process.env["CREW_BASH_GATE_LOG"];
-  const savedDetail = process.env["CREW_COST_REPORT_DISPATCH_DETAIL"];
   process.env["CREW_DISPATCH_TIMING_LOG"] = dispatchLog;
   process.env["CREW_BASH_GATE_LOG"] = bashLog;
-  delete process.env["CREW_COST_REPORT_DISPATCH_DETAIL"];
 
   try {
     const result = await runCrew([
@@ -383,70 +381,5 @@ test("cost-slice renders ## Per-dispatch breakdown when dispatch log has matchin
     else process.env["CREW_DISPATCH_TIMING_LOG"] = savedDispatchLog;
     if (savedBashLog === undefined) delete process.env["CREW_BASH_GATE_LOG"];
     else process.env["CREW_BASH_GATE_LOG"] = savedBashLog;
-    if (savedDetail === undefined) delete process.env["CREW_COST_REPORT_DISPATCH_DETAIL"];
-    else process.env["CREW_COST_REPORT_DISPATCH_DETAIL"] = savedDetail;
-  }
-});
-
-test("cost-slice suppresses ## Per-dispatch breakdown when CREW_COST_REPORT_DISPATCH_DETAIL=0", async () => {
-  const repoPath = await makeTempDir("crew-cli-dispatch-suppressed-");
-  const dispatchLog = path.join(repoPath, "dispatch-timing.jsonl");
-  const bashLog = path.join(repoPath, "bash-gates.jsonl");
-
-  const dispatchRows = [
-    {
-      runId: "test-run-002",
-      agent: "crew:fullstack-dev",
-      wallMs: 3000,
-      tokenIn: 5000,
-      tokenOut: 1000,
-      toolCalls: {},
-      bashDurationMs: 0,
-      skillLoadCount: 0
-    }
-  ];
-  await fs.writeFile(
-    dispatchLog,
-    dispatchRows.map((r) => JSON.stringify(r)).join("\n") + "\n",
-    "utf-8"
-  );
-  await fs.writeFile(bashLog, "", "utf-8");
-
-  await runCrew(["init", "--repo", repoPath]);
-
-  const savedDispatchLog = process.env["CREW_DISPATCH_TIMING_LOG"];
-  const savedBashLog = process.env["CREW_BASH_GATE_LOG"];
-  const savedDetail = process.env["CREW_COST_REPORT_DISPATCH_DETAIL"];
-  process.env["CREW_DISPATCH_TIMING_LOG"] = dispatchLog;
-  process.env["CREW_BASH_GATE_LOG"] = bashLog;
-  process.env["CREW_COST_REPORT_DISPATCH_DETAIL"] = "0";
-
-  try {
-    const result = await runCrew([
-      "cost-slice",
-      "--repo",
-      repoPath,
-      "--started-at",
-      "2026-05-22T00:00:00Z",
-      "--completed-at",
-      "2026-05-22T00:05:00Z",
-      "--run-title",
-      "suppressed-dispatch-test"
-    ]);
-    assert.equal(result.code, 0, "cost-slice should succeed");
-    const costResult = JSON.parse(result.output);
-    const body = await fs.readFile(costResult.path, "utf8");
-    assert.doesNotMatch(
-      body,
-      /## Per-dispatch breakdown/,
-      "dispatch section should be suppressed when env=0"
-    );
-  } finally {
-    if (savedDispatchLog === undefined) delete process.env["CREW_DISPATCH_TIMING_LOG"];
-    else process.env["CREW_DISPATCH_TIMING_LOG"] = savedDispatchLog;
-    if (savedBashLog === undefined) delete process.env["CREW_BASH_GATE_LOG"];
-    else process.env["CREW_BASH_GATE_LOG"] = savedBashLog;
-    if (savedDetail === undefined) delete process.env["CREW_COST_REPORT_DISPATCH_DETAIL"];
-    else process.env["CREW_COST_REPORT_DISPATCH_DETAIL"] = savedDetail;
   }
 });

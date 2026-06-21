@@ -15,23 +15,21 @@ const HOOK_PATH = path.join(__dirname, "..", "hooks", "preflight-shell.ts");
  * In-process hook runner: import core, call directly, return { exitCode: 0, stdout, stderr: "" }
  */
 async function runHook(
-  stdin: string,
-  env: NodeJS.ProcessEnv = {}
+  stdin: string
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
-  const out = await runPreflightShellHook(stdin, { ...process.env, ...env });
+  const out = await runPreflightShellHook(stdin);
   return { exitCode: 0, stdout: out ?? "", stderr: "" };
 }
 
 /**
- * Spawn-based smoke runner: validates truly-unset env and stdin/stdout wiring.
+ * Spawn-based smoke runner: validates stdin/stdout wiring.
  */
 function runHookSpawn(
-  stdin: string,
-  env: NodeJS.ProcessEnv = {}
+  stdin: string
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
     const proc = spawn("node", ["--experimental-strip-types", HOOK_PATH], {
-      env: { ...process.env, ...env }
+      env: { ...process.env }
     });
     let stdout = "";
     let stderr = "";
@@ -51,45 +49,21 @@ function makeStdin(toolName: string, command: string, cwd: string) {
   });
 }
 
-// ── AC-5: CREW_TOOL_PREFLIGHT=0 short-circuits ──────────────────────────────
+// ── Default-on behavior (config-driven; disable via crew.json features) ─────
 
-test("AC-5: CREW_TOOL_PREFLIGHT=0 short-circuits — no output regardless of command", async () => {
-  const result = await runHook(makeStdin("Bash", "echo $env:HOME", process.cwd()), {
-    CREW_TOOL_PREFLIGHT: "0"
-  });
+test("default-on — hook runs and warns on $env: in Bash without any crew.json", async () => {
+  const result = await runHook(makeStdin("Bash", "echo $env:HOME", process.cwd()));
   assert.equal(result.exitCode, 0);
-  assert.equal(result.stdout, "");
-});
-
-// ── AC-6: Default-on — hook runs without env var ─────────────────────────────
-
-test("AC-6: default-on — hook runs when CREW_TOOL_PREFLIGHT is unset", async () => {
-  // Use a command that would warn if the hook runs (Bash + $env:HOME)
-  const env = { ...process.env };
-  delete env.CREW_TOOL_PREFLIGHT;
-
-  const result = await runHook(
-    makeStdin("Bash", "echo $env:HOME", process.cwd()),
-    // Pass env without CREW_TOOL_PREFLIGHT to confirm hook runs
-    { CREW_TOOL_PREFLIGHT: "" } // empty string is not "0", so hook should run
-  );
-  assert.equal(result.exitCode, 0);
-  // Hook runs and should warn about $env: in Bash
   assert.notEqual(result.stdout, "");
   const parsed = JSON.parse(result.stdout);
   assert.equal(parsed.decision, "approve");
   assert.match(parsed.systemMessage, /\$env:/);
 });
 
-// SMOKE: Hook runtime contract with truly-unset env (not mockable in-process)
-test("smoke: AC-6b — hook runs with no env var set (truly unset)", async () => {
-  // Spawn without CREW_TOOL_PREFLIGHT in env at all
-  const cleanEnv = Object.fromEntries(
-    Object.entries(process.env).filter(([k]) => k !== "CREW_TOOL_PREFLIGHT")
-  );
-  const result = await runHookSpawn(makeStdin("Bash", "echo $env:HOME", process.cwd()), cleanEnv);
+// SMOKE: Hook runtime contract default-on (verifies stdin→stdout wiring)
+test("smoke: default-on — hook runs via spawn with no special env", async () => {
+  const result = await runHookSpawn(makeStdin("Bash", "echo $env:HOME", process.cwd()));
   assert.equal(result.exitCode, 0);
-  // Hook should run and warn
   assert.notEqual(result.stdout, "");
 });
 

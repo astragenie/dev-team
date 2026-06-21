@@ -22,23 +22,21 @@ async function cleanup(dir: string) {
  * In-process hook runner: import core, call directly, return { exitCode: 0, stdout, stderr: "" }
  */
 async function runHook(
-  stdin: string,
-  env: NodeJS.ProcessEnv = {}
+  stdin: string
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
-  const out = await runCheckRedundantReadHook(stdin, { ...process.env, ...env });
+  const out = await runCheckRedundantReadHook(stdin);
   return { exitCode: 0, stdout: out ?? "", stderr: "" };
 }
 
 /**
- * Spawn-based smoke runner: validates truly-unset env and stdin/stdout wiring.
+ * Spawn-based smoke runner: validates stdin/stdout wiring.
  */
 function runHookSpawn(
-  stdin: string,
-  env: NodeJS.ProcessEnv = {}
+  stdin: string
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
     const proc = spawn("node", ["--experimental-strip-types", HOOK_PATH], {
-      env: { ...process.env, ...env }
+      env: { ...process.env }
     });
     let stdout = "";
     let stderr = "";
@@ -49,8 +47,7 @@ function runHookSpawn(
   });
 }
 
-test("hook with no env-var exits 0 silently on missing file (default-on)", async () => {
-  // Default-on: hook runs without CREW_COST_HYGIENE set; missing file → silent no-op.
+test("hook exits 0 silently on missing file (default-on)", async () => {
   const repo = await makeRepo();
   try {
     const result = await runHook(
@@ -68,8 +65,7 @@ test("hook with no env-var exits 0 silently on missing file (default-on)", async
   }
 });
 
-test("hook with no env-var fires and writes state (default-on)", async () => {
-  // AC-1: hook fires without any env var set.
+test("hook fires and writes state (default-on)", async () => {
   const repo = await makeRepo();
   try {
     const file = path.join(repo, "default-on.txt");
@@ -81,7 +77,6 @@ test("hook with no env-var fires and writes state (default-on)", async () => {
         tool_input: { file_path: file },
         cwd: repo
       })
-      // no env override — default-on
     );
     assert.equal(result.exitCode, 0);
     const stateFile = path.join(repo, ".claude", "state", "cost-hygiene", "s_default.json");
@@ -93,33 +88,7 @@ test("hook with no env-var fires and writes state (default-on)", async () => {
   }
 });
 
-// SMOKE: Hook runtime contract with gated-off env (not mockable in-process)
-test("smoke: hook with CREW_COST_HYGIENE=0 exits 0 silently (opt-out)", async () => {
-  // AC-2: CREW_COST_HYGIENE=0 suppresses the hook.
-  const repo = await makeRepo();
-  try {
-    const file = path.join(repo, "opt-out.txt");
-    await fs.writeFile(file, "content", "utf8");
-    const result = await runHookSpawn(
-      JSON.stringify({
-        session_id: "s_optout",
-        tool_name: "Read",
-        tool_input: { file_path: file },
-        cwd: repo
-      }),
-      { CREW_COST_HYGIENE: "0" }
-    );
-    assert.equal(result.exitCode, 0);
-    assert.equal(result.stdout, "");
-    // State file must NOT have been written.
-    const stateFile = path.join(repo, ".claude", "state", "cost-hygiene", "s_optout.json");
-    await assert.rejects(fs.readFile(stateFile, "utf8"));
-  } finally {
-    await cleanup(repo);
-  }
-});
-
-test("hook with env-var on + first-read stdin emits empty stdout, writes state", async () => {
+test("hook with first-read stdin emits empty stdout, writes state", async () => {
   const repo = await makeRepo();
   try {
     const file = path.join(repo, "hello.txt");
@@ -130,8 +99,7 @@ test("hook with env-var on + first-read stdin emits empty stdout, writes state",
         tool_name: "Read",
         tool_input: { file_path: file },
         cwd: repo
-      }),
-      { CREW_COST_HYGIENE: "1" }
+      })
     );
     assert.equal(result.exitCode, 0);
     assert.equal(result.stdout, "");
@@ -145,7 +113,7 @@ test("hook with env-var on + first-read stdin emits empty stdout, writes state",
 });
 
 // SMOKE: Hook runtime contract with warning path (verifies stdin→stdout payload wiring)
-test("smoke: hook with env-var on + reread stdin emits decision + systemMessage with content", async () => {
+test("smoke: hook with reread stdin emits decision + systemMessage with content", async () => {
   const repo = await makeRepo();
   try {
     const file = path.join(repo, "ack.txt");
@@ -156,7 +124,7 @@ test("smoke: hook with env-var on + reread stdin emits decision + systemMessage 
       tool_input: { file_path: file },
       cwd: repo
     });
-    await runHookSpawn(stdin, { CREW_COST_HYGIENE: "1" });
+    await runHookSpawn(stdin);
 
     // Simulate PostToolUse capturing the content — write it directly to the state file.
     const stateFile = path.join(repo, ".claude", "state", "cost-hygiene", "s3.json");
@@ -167,7 +135,7 @@ test("smoke: hook with env-var on + reread stdin emits decision + systemMessage 
     await fs.writeFile(stateFile, JSON.stringify(state, null, 2), "utf8");
 
     // Second read attempt → should warn
-    const result = await runHookSpawn(stdin, { CREW_COST_HYGIENE: "1" });
+    const result = await runHookSpawn(stdin);
     assert.equal(result.exitCode, 0);
     const parsed = JSON.parse(result.stdout);
     assert.equal(parsed.decision, "approve");
@@ -179,25 +147,19 @@ test("smoke: hook with env-var on + reread stdin emits decision + systemMessage 
 });
 
 test("hook with malformed stdin exits 0 silently", async () => {
-  const result = await runHook("not json at all", { CREW_COST_HYGIENE: "1" });
+  const result = await runHook("not json at all");
   assert.equal(result.exitCode, 0);
   assert.equal(result.stdout, "");
 });
 
 const POST_HOOK_PATH = path.join(__dirname, "..", "hooks", "record-read-content.ts");
 
-/**
- * @param {string} stdin
- * @param {Record<string, string>} env
- * @returns {Promise<{exitCode: number, stdout: string, stderr: string}>}
- */
 function runPostHook(
-  stdin: string,
-  env: Record<string, string> = {}
+  stdin: string
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
     const proc = spawn("node", ["--experimental-strip-types", POST_HOOK_PATH], {
-      env: { ...process.env, ...env }
+      env: { ...process.env }
     });
     let stdout = "";
     let stderr = "";
@@ -220,7 +182,7 @@ test("post-hook captures Read tool result content into state", async () => {
       tool_input: { file_path: file },
       cwd: repo
     });
-    await runHook(preStdin, { CREW_COST_HYGIENE: "1" });
+    await runHook(preStdin);
 
     const postStdin = JSON.stringify({
       session_id: "s4",
@@ -229,7 +191,7 @@ test("post-hook captures Read tool result content into state", async () => {
       tool_response: { content: "wisp" },
       cwd: repo
     });
-    const result = await runPostHook(postStdin, { CREW_COST_HYGIENE: "1" });
+    const result = await runPostHook(postStdin);
     assert.equal(result.exitCode, 0);
     assert.equal(result.stdout, "");
     const state = JSON.parse(
@@ -241,13 +203,11 @@ test("post-hook captures Read tool result content into state", async () => {
   }
 });
 
-test("post-hook fires by default (no env var) and writes state (default-on)", async () => {
-  // AC-1: post-hook fires without any env var set.
+test("post-hook fires by default and writes state", async () => {
   const repo = await makeRepo();
   try {
     const file = path.join(repo, "post-default.txt");
     await fs.writeFile(file, "bloom", "utf8");
-    // Seed state via pre-hook (also default-on).
     const preStdin = JSON.stringify({
       session_id: "s5",
       tool_name: "Read",
@@ -269,28 +229,6 @@ test("post-hook fires by default (no env var) and writes state (default-on)", as
       await fs.readFile(path.join(repo, ".claude", "state", "cost-hygiene", "s5.json"), "utf8")
     );
     assert.equal(state.entries[file].content, "bloom");
-  } finally {
-    await cleanup(repo);
-  }
-});
-
-test("post-hook with CREW_COST_HYGIENE=0 exits without writing state (opt-out)", async () => {
-  // AC-2: CREW_COST_HYGIENE=0 suppresses the post-hook.
-  const repo = await makeRepo();
-  try {
-    const file = path.join(repo, "post-optout.txt");
-    await fs.writeFile(file, "quiet", "utf8");
-    const postStdin = JSON.stringify({
-      session_id: "s6",
-      tool_name: "Read",
-      tool_input: { file_path: file },
-      tool_response: { content: "quiet" },
-      cwd: repo
-    });
-    const result = await runPostHook(postStdin, { CREW_COST_HYGIENE: "0" });
-    assert.equal(result.exitCode, 0);
-    const stateFile = path.join(repo, ".claude", "state", "cost-hygiene", "s6.json");
-    await assert.rejects(fs.readFile(stateFile, "utf8"));
   } finally {
     await cleanup(repo);
   }

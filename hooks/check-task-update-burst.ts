@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// PreToolUse hook on TaskUpdate. Default-on; opt out with CREW_COST_HYGIENE=0.
-// Always exits 0. Non-blocking telemetry only — agent prompt rule does the
-// actual gating (FEAT-155).
+// PreToolUse hook on TaskUpdate. Default-on; opt out via
+// crew.json features["cost-hygiene"].enabled=false. Always exits 0.
+// Non-blocking telemetry only — agent prompt rule does the actual gating (FEAT-155).
 import { runCheckTaskUpdateBurstHook } from "./lib/check-task-update-burst.ts";
 import { logHookError } from "./hook-error.ts";
 
@@ -12,11 +12,8 @@ async function readStdin(): Promise<string> {
 }
 
 async function main(): Promise<void> {
-  if (process.env.CREW_COST_HYGIENE === "0") {
-    process.exit(0);
-  }
   const raw = await readStdin();
-  await runCheckTaskUpdateBurstHook(raw, process.env);
+  await runCheckTaskUpdateBurstHook(raw);
 }
 
 main().catch(async (err) => {

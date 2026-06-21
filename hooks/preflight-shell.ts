@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// PreToolUse hook on Bash and PowerShell. Env-var gated (default ON). Always exits 0.
+// PreToolUse hook on Bash and PowerShell. Default-on; opt out via
+// crew.json features["shell-preflight"].enabled=false. Always exits 0.
 import { runPreflightShellHook } from "./lib/preflight-shell.ts";
 import { logHookError } from "./hook-error.ts";
 
@@ -10,12 +11,8 @@ async function readStdin(): Promise<string> {
 }
 
 async function main() {
-  if (process.env.CREW_TOOL_PREFLIGHT === "0") {
-    process.stdin.resume();
-    return;
-  }
   const raw = await readStdin();
-  const out = await runPreflightShellHook(raw, process.env);
+  const out = await runPreflightShellHook(raw);
   if (out !== null) process.stdout.write(out);
 }
 

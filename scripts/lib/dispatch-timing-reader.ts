@@ -203,9 +203,6 @@ function renderGateTable(byGate: Record<string, number>): string[] {
  *
  * Returns an empty string when both aggregates are empty (no rows),
  * so the section is omitted from cost-reports without active telemetry.
- *
- * Callers should also gate on process.env.CREW_COST_REPORT_DISPATCH_DETAIL !== "0"
- * before calling this function.
  */
 export function renderDispatchBreakdownSection(
   dispatch: DispatchAggregate,

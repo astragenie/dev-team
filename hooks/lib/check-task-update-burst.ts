@@ -11,6 +11,7 @@
 // the cost of a global PreToolUse counter that would fire on every tool.
 import fs from "node:fs/promises";
 import path from "node:path";
+import { isEnabled, readCrewConfig } from "../../scripts/lib/features-service.ts";
 
 const BURST_THRESHOLD = 3;
 const BURST_RESET_WINDOW_MS = 30_000;
@@ -94,14 +95,12 @@ async function logBurst(
   }
 }
 
-export async function runCheckTaskUpdateBurstHook(
-  raw: string,
-  env: NodeJS.ProcessEnv
-): Promise<string | null> {
-  if (env.CREW_COST_HYGIENE === "0") return null;
+export async function runCheckTaskUpdateBurstHook(raw: string): Promise<string | null> {
   const input = parseInput(raw);
   if (input === null) return null;
   const { session_id, cwd } = input;
+  const config = await readCrewConfig(cwd);
+  if (!isEnabled("cost-hygiene", config)) return null;
   const nowIso = new Date().toISOString();
   const state = await loadBurstState(cwd, session_id, nowIso);
   const elapsed = Date.parse(nowIso) - Date.parse(state.last_call_at);

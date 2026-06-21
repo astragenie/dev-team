@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import url from "node:url";
+import fs from "node:fs/promises";
+import os from "node:os";
 import {
   parseThreshold,
   hasArtifactPath,
@@ -23,23 +25,21 @@ const HOOK_PATH = path.join(__dirname, "..", "hooks", "check-subagent-return.ts"
  * In-process hook runner: import core, call directly, return { exitCode: 0, stdout, stderr: "" }
  */
 async function runHook(
-  stdin: string,
-  env: NodeJS.ProcessEnv = {}
+  stdin: string
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
-  const out = await runCheckSubagentReturnHook(stdin, { ...process.env, ...env });
+  const out = await runCheckSubagentReturnHook(stdin);
   return { exitCode: 0, stdout: out ?? "", stderr: "" };
 }
 
 /**
- * Spawn-based smoke runner: validates truly-unset env and stdin/stdout wiring.
+ * Spawn-based smoke runner: validates stdin/stdout wiring.
  */
 function runHookSpawn(
-  stdin: string,
-  env: NodeJS.ProcessEnv = {}
+  stdin: string
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
     const proc = spawn("node", ["--experimental-strip-types", HOOK_PATH], {
-      env: { ...process.env, ...env }
+      env: { ...process.env }
     });
     let stdout = "";
     let stderr = "";
@@ -48,6 +48,18 @@ function runHookSpawn(
     proc.on("close", (exitCode) => resolve({ exitCode: exitCode ?? -1, stdout, stderr }));
     proc.stdin.end(stdin);
   });
+}
+
+/** Helper: write a temp crew.json with a feature config + payload pointing cwd → that repo. */
+async function makeRepoWithCrewJson(featuresJson: Record<string, unknown>): Promise<string> {
+  const repo = await fs.mkdtemp(path.join(os.tmpdir(), "subagent-return-test-"));
+  await fs.mkdir(path.join(repo, ".claude"), { recursive: true });
+  await fs.writeFile(
+    path.join(repo, ".claude", "crew.json"),
+    JSON.stringify({ features: featuresJson }),
+    "utf8"
+  );
+  return repo;
 }
 
 // Build a PostToolUse Agent stdin payload with the given body.
@@ -95,53 +107,52 @@ test("smoke: AC-9 — body > threshold (1000 bytes) WITHOUT artifact path → wa
   assert.match(parsed.systemMessage, /1000/);
 });
 
-// SMOKE: Hook runtime contract with gated-off env (not mockable in-process)
-// AC-5: CREW_SUBAGENT_INLINE_THRESHOLD=0 → short-circuit (silent even on large body without path)
-test("smoke: AC-5 — CREW_SUBAGENT_INLINE_THRESHOLD=0 → silent even on large body", async () => {
-  const result = await runHookSpawn(makeStdin(makeBody(5000)), {
-    CREW_SUBAGENT_INLINE_THRESHOLD: "0"
-  });
-  assert.equal(result.exitCode, 0);
-  assert.equal(result.stdout, "");
+// Feature off via crew.json: short-circuit (silent even on large body without path)
+test("config: subagent-inline-warn disabled → silent even on large body", async () => {
+  const repo = await makeRepoWithCrewJson({ "subagent-inline-warn": { enabled: false } });
+  try {
+    const result = await runHook(makeStdin(makeBody(5000), repo));
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.stdout, "");
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
 });
 
-// AC-10: CREW_SUBAGENT_INLINE_THRESHOLD=2048 → body=1500 silent; body=2500 warn
-test("AC-10a: CREW_SUBAGENT_INLINE_THRESHOLD=2048 + body=1500 → silent", async () => {
-  const result = await runHook(makeStdin(makeBody(1500)), {
-    CREW_SUBAGENT_INLINE_THRESHOLD: "2048"
+// Threshold knob in crew.json: 2048 → body=1500 silent
+test("config: features['subagent-inline-warn'].threshold=2048 + body=1500 → silent", async () => {
+  const repo = await makeRepoWithCrewJson({
+    "subagent-inline-warn": { enabled: true, threshold: 2048 }
   });
-  assert.equal(result.exitCode, 0);
-  assert.equal(result.stdout, "");
+  try {
+    const result = await runHook(makeStdin(makeBody(1500), repo));
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.stdout, "");
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
 });
 
-test("AC-10b: CREW_SUBAGENT_INLINE_THRESHOLD=2048 + body=2500 → warn", async () => {
-  const result = await runHook(makeStdin(makeBody(2500)), {
-    CREW_SUBAGENT_INLINE_THRESHOLD: "2048"
+// Threshold knob in crew.json: 2048 → body=2500 warn
+test("config: features['subagent-inline-warn'].threshold=2048 + body=2500 → warn", async () => {
+  const repo = await makeRepoWithCrewJson({
+    "subagent-inline-warn": { enabled: true, threshold: 2048 }
   });
-  assert.equal(result.exitCode, 0);
-  assert.notEqual(result.stdout, "");
-  const parsed = JSON.parse(result.stdout);
-  assert.equal(parsed.decision, "approve");
-  assert.match(parsed.systemMessage, /cost-discipline rule #2/);
+  try {
+    const result = await runHook(makeStdin(makeBody(2500), repo));
+    assert.equal(result.exitCode, 0);
+    assert.notEqual(result.stdout, "");
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.decision, "approve");
+    assert.match(parsed.systemMessage, /cost-discipline rule #2/);
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
 });
 
-// AC-6: Default-on — unset env var with body=1000 no path → warn
-test("AC-6: default-on — no env var set + body=1000 no path → warn", async () => {
-  // Build env without CREW_SUBAGENT_INLINE_THRESHOLD
-  const cleanEnv = Object.fromEntries(
-    Object.entries(process.env).filter(([k]) => k !== "CREW_SUBAGENT_INLINE_THRESHOLD")
-  );
-  const result = await new Promise<{ exitCode: number; stdout: string; stderr: string }>(
-    (resolve) => {
-      const proc = spawn("node", ["--experimental-strip-types", HOOK_PATH], { env: cleanEnv });
-      let stdout = "";
-      let stderr = "";
-      proc.stdout.on("data", (b) => (stdout += b.toString("utf8")));
-      proc.stderr.on("data", (b) => (stderr += b.toString("utf8")));
-      proc.on("close", (exitCode) => resolve({ exitCode: exitCode ?? -1, stdout, stderr }));
-      proc.stdin.end(makeStdin(makeBody(1000)));
-    }
-  );
+// Default-on: no crew.json, body=1000 no path → warn at default 512 threshold
+test("default-on — no crew.json + body=1000 no path → warn", async () => {
+  const result = await runHookSpawn(makeStdin(makeBody(1000)));
   assert.equal(result.exitCode, 0);
   assert.notEqual(result.stdout, "");
   const parsed = JSON.parse(result.stdout);

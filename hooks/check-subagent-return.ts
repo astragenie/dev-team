@@ -1,5 +1,7 @@
 #!/usr/bin/env node
-// PostToolUse hook on Agent. Default-ON; opt-out via CREW_SUBAGENT_INLINE_THRESHOLD=0.
+// PostToolUse hook on Agent. Default-on; opt out via
+// crew.json features["subagent-inline-warn"].enabled=false. Threshold via
+// features["subagent-inline-warn"].threshold (bytes, default 512).
 // Emits a soft-warn systemMessage when a subagent return body exceeds the byte
 // threshold AND contains no .claude/artifacts/crew/* artifact path. Never blocks.
 import { runCheckSubagentReturnHook } from "./lib/check-subagent-return.ts";
@@ -12,13 +14,8 @@ async function readStdin(): Promise<string> {
 }
 
 async function main(): Promise<void> {
-  if (process.env.CREW_SUBAGENT_INLINE_THRESHOLD === "0") {
-    process.stdin.resume();
-    return;
-  }
-
   const raw = await readStdin();
-  const out = await runCheckSubagentReturnHook(raw, process.env);
+  const out = await runCheckSubagentReturnHook(raw);
   if (out !== null) process.stdout.write(out);
 }
 

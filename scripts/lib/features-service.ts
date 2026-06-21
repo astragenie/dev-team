@@ -2,6 +2,72 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 /**
+ * Per-feature metadata. Each feature carries its own SemVer so we can
+ * deprecate or rename one without touching the others. Add a new entry
+ * here when a feature ships; bump `version` when you change its semantics.
+ */
+export interface FeatureMeta {
+  version: string;
+  default: boolean;
+  description: string;
+  scope: "crew" | "shared";
+  owner: string;
+  since: string;
+  deprecates?: string[];
+}
+
+export const FEATURES: Readonly<Record<string, FeatureMeta>> = {
+  "cost-hygiene": {
+    version: "2.0.0",
+    default: true,
+    description:
+      "Umbrella telemetry: read/edit tracking, redundant-read warn, TaskUpdate burst detection.",
+    scope: "crew",
+    owner: "platform",
+    since: "0.38.0",
+    deprecates: ["CREW_COST_HYGIENE (env)"]
+  },
+  "redundant-read-stop": {
+    version: "1.1.0",
+    default: true,
+    description:
+      "Warn the agent when re-reading a file with identical content. Gates the warn-emit only; recording still happens under cost-hygiene.",
+    scope: "crew",
+    owner: "platform",
+    since: "0.33.0"
+  },
+  "shell-preflight": {
+    version: "2.0.0",
+    default: true,
+    description: "Pre-Bash hook: warn on $env: syntax, redirect anti-patterns, etc.",
+    scope: "crew",
+    owner: "safety",
+    since: "0.33.11",
+    deprecates: ["CREW_TOOL_PREFLIGHT (env)"]
+  },
+  "subagent-inline-warn": {
+    version: "2.0.0",
+    default: true,
+    description:
+      "Warn when a subagent returns a large body without an artifact path. Threshold knob: features['subagent-inline-warn'].threshold (bytes, default 512).",
+    scope: "crew",
+    owner: "platform",
+    since: "0.33.0",
+    deprecates: ["CREW_SUBAGENT_INLINE_THRESHOLD (env)"]
+  }
+} as const;
+
+export type FeatureName = keyof typeof FEATURES;
+
+export function getFeatureMeta(name: string): FeatureMeta | undefined {
+  return FEATURES[name];
+}
+
+export function listFeatures(): ReadonlyArray<{ name: string } & FeatureMeta> {
+  return Object.entries(FEATURES).map(([name, meta]) => ({ name, ...meta }));
+}
+
+/**
  * Check if a feature is enabled.
  *
  * Reads config.features?.[feature]?.enabled.

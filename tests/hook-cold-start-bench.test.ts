@@ -29,7 +29,7 @@ test(`hook cold start (${RUNTIME}): median + p95 over ${RUNS} cold spawns`, {
   for (let i = 0; i < RUNS; i++) {
     const start = process.hrtime.bigint();
     const res = spawnSync(RUNTIME, args, {
-      env: { ...process.env, CREW_COST_HYGIENE: "1" },
+      env: { ...process.env },
       input: "{}\n"
     });
     const elapsedMs = Number(process.hrtime.bigint() - start) / 1_000_000;

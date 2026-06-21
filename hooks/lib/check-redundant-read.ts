@@ -95,15 +95,12 @@ async function persistState(
   }
 }
 
-export async function runCheckRedundantReadHook(
-  raw: string,
-  env: NodeJS.ProcessEnv
-): Promise<string | null> {
-  if (env.CREW_COST_HYGIENE === "0") return null;
+export async function runCheckRedundantReadHook(raw: string): Promise<string | null> {
   const input = parseInput(raw);
   if (input === null) return null;
   const { session_id, file_path, cwd, force } = input;
   const config = await readCrewConfig(cwd);
+  if (!isEnabled("cost-hygiene", config)) return null;
   if (!isEnabled("redundant-read-stop", config)) return null;
   const absPath = path.resolve(cwd, file_path);
   const fileStat = await readFileStat(absPath);
