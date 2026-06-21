@@ -63,17 +63,28 @@ These situations create merge conflicts, wasted effort, or confused ownership th
 
 Baseline: do not create commits unless the user explicitly asks. Unrequested commits in the user's repo are a quality and trust risk they cannot easily undo.
 
-Exception — `dev.stable` opt-in:
+Exception — `dev.stable: true` worktree carve-out (revised 2026-06-21):
 
-- If the current repo's `.claude/crew/deployment.md` contains a `dev.stable: true` setting, the lead and builder MAY create commits without asking on each individual edit, as long as ALL of the following hold:
-  - the change came from a `/crew:build` or `/crew:fix` flow that reached the synthesis step
-  - the latest review artifact for the run is `PASS` (or `review_skipped` was recorded with an explicit reason)
-  - the latest validation artifact for the run is `PASS` (or `validation_skipped` was recorded with an explicit reason)
-  - no `help_request` workflow badge is open
-  - the work is local commits only — not a release tag, not a force-push, not a production deploy
-- If any gate is missing or red, fall back to baseline (ask first).
-- The user may override the flag at any time by saying "do not commit" or equivalent during the session. Session-level instruction always beats the repo flag.
-- Production promotion, tag pushes, and force-pushes are NEVER unlocked by `dev.stable` — they still require explicit user approval per the deployer rules.
+If `.claude/crew/deployment.md` has `dev.stable: true` AND the builder is on a feature branch or worktree (NOT `main` / `master`), the builder MAY commit autonomously when ALL of:
 
-See `agents/deployer.md` → Deployment guidance schema for the field definition.
+- **Slice-scoped tests pass** — the tests that actually exercise the changed files. Mandatory.
+- **Pre-completion secret grep passed** — no credentials in diff. Mandatory.
+- **No `help_request` badge open.** Mandatory.
+- **Commit is local-only** — never a release tag, never a force-push, never a production deploy.
+
+NOT required to block the commit (deferred to the orchestrator's review cycle):
+
+- typecheck (`tsc --noEmit` for TS; `dotnet build` for C#) — fast on TS (~1s), slow on C# (5-30s+). Advisory.
+- lint (Biome / Roslyn analyzers). Advisory.
+- format:check. Advisory.
+
+Rationale: slice-scoped tests catch functional regressions. typecheck / lint / format catch style + type drift — those are cheap to fix later and run as part of the orchestrator's review + validation dispatch. Blocking the autonomous commit on every full-suite gate kills slice velocity, especially on C# / large solutions where build + analyzers take 30s+ per cycle.
+
+Branch protection: if the current branch is `main` or `master`, fall back to baseline (ask first) — `dev.stable` does NOT unlock commits to mainline.
+
+The user may override at any time by saying "do not commit" or equivalent during the session. Session-level instruction always beats the repo flag.
+
+Production promotion, tag pushes, and force-pushes are NEVER unlocked by `dev.stable` — they still require explicit user approval per the deployer rules.
+
+See `agents/release-engineer.md` → Deployment guidance schema for the field definition.
 
