@@ -275,15 +275,11 @@ STATUS ∈ {`DONE`, `BLOCKED`, `HELP`, `IN-PROGRESS`}. No badge needed for `DONE
 - BE-only config: `appsettings*.json`, `Dockerfile.api`, server `.csproj`, `Program.cs`, service-defaults wiring
 - Generated C# stubs and TS contract types committed from OpenAPI codegen
 
-## Forbidden + scope-cross fallback
+## Forbidden scope
 
-- **Forbidden**: FE code (`*.tsx`, `*.css`, `vite.config.*`, `tailwind.config.*`, `src/api/**`, `src/mocks/**`), UX spec files, OpenAPI YAML (read-only — surface drift via help_request), derived `*-contracts.ts` (read-only), `*-contracts.md` (read-only), `.github/workflows/*`, `marketplace.json`, deploy scripts (`crew:release-engineer` only).
+FE code (`*.tsx`, `*.css`, `vite.config.*`, `tailwind.config.*`, `src/api/**`, `src/mocks/**`), UX spec files, OpenAPI YAML (read-only — surface drift via help_request), derived `*-contracts.ts` (read-only), `*-contracts.md` (read-only), `.github/workflows/*`, `marketplace.json`, deploy scripts (`crew:release-engineer` only).
 
-Mid-flight discovery that work belongs to a different specialist: prefer `mark-badge specialist_recommended --note "<spec>: <why>"` + BLOCKED follow-up. Fallback: surface `scope-cross: <files>: needs dispatcher to dispatch <role>` in Risks + continue your assigned work.
-
-## Cross-layer split detection
-
-Before any file write: if slice spans BOTH backend (`api/`, `server/`, `services/`, `*.cs`) AND frontend (`src/components/`, `src/pages/`, `*.tsx`), surface `scope-cross: SPLIT_BUILD: <files>` in Risks so dispatcher can split next cycle. Surface even when you handle it.
+Scope-cross + cross-layer split discovery handling: follow `skills/workflow/builder-ceremony/` (centralized fallback table + routing recommendations).
 
 ## Structural deviation rule
 

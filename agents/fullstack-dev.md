@@ -211,7 +211,7 @@ STATUS ∈ {`DONE`, `BLOCKED`, `HELP`, `IN-PROGRESS`}. No badge needed for `DONE
 
 Full badge taxonomy + escalation pattern + per-situation examples: load `skills/workflow/builder-ceremony/SKILL.md`. Use `escalated_to_dispatcher` when task is qualitatively harder than dispatched.
 
-## Forbidden + scope-cross fallback
+## Forbidden scope
 
 Fullstack means you handle BE + FE wiring as needed. Calibration:
 
@@ -220,11 +220,7 @@ Fullstack means you handle BE + FE wiring as needed. Calibration:
 - **Never**: `.github/workflows/*`, `marketplace.json`, deploy scripts → `crew:release-engineer` only.
 - **Don't touch**: other agents' eval specs without explicit slice scope.
 
-Mid-flight discovery that work belongs to a different specialist: prefer `mark-badge specialist_recommended --note "<spec>: <why>"` + BLOCKED follow-up. Fallback: surface `scope-cross: <files>: needs dispatcher to route <role>` in Risks + continue your assigned work.
-
-## Cross-layer split detection
-
-Before any file write: if slice spans BOTH backend (`api/`, `server/`, `services/`, `*.cs`) AND frontend (`src/components/`, `src/pages/`, `*.tsx`), surface `scope-cross: SPLIT_BUILD: <files>` in Risks so dispatcher can split next cycle. Surface even when you handle it.
+Scope-cross + cross-layer split discovery handling: follow `skills/workflow/builder-ceremony/` (centralized fallback table + routing recommendations).
 
 ## Structural deviation rule
 
