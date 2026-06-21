@@ -111,10 +111,19 @@ export class ClaudePJudge implements JudgeProvider {
 
   private runSubprocess(prompt: string): Promise<string> {
     return new Promise((resolve, reject) => {
-      const args = ["-p", prompt, "--output-format", "stream-json", "--model", this.model];
+      // Stream prompt via stdin to avoid Windows 32KB command-line length limit.
+      // --verbose required by `claude -p` when using --output-format stream-json.
+      const args = [
+        "-p",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--model",
+        this.model
+      ];
 
       const child = spawn("claude", args, {
-        stdio: ["ignore", "pipe", "pipe"],
+        stdio: ["pipe", "pipe", "pipe"],
         windowsHide: true
       });
 
@@ -150,6 +159,9 @@ export class ClaudePJudge implements JudgeProvider {
         clearTimeout(timer);
         reject(new Error(`ClaudePJudge: failed to spawn claude: ${err.message}`));
       });
+
+      child.stdin.write(prompt);
+      child.stdin.end();
     });
   }
 }

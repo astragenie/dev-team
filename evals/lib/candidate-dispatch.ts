@@ -116,9 +116,12 @@ export async function dispatchCandidate(
 
 function runSubprocess(prompt: string, model: string, timeoutMs: number): Promise<string> {
   return new Promise((resolve, reject) => {
-    const args = ["-p", prompt, "--output-format", "stream-json", "--model", model];
+    // Stream prompt via stdin to avoid Windows 32KB command-line length limit
+    // (agent prompts can be 300+ lines + fixture content).
+    // --verbose required by `claude -p` when using --output-format stream-json.
+    const args = ["-p", "--output-format", "stream-json", "--verbose", "--model", model];
     const child = spawn("claude", args, {
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: ["pipe", "pipe", "pipe"],
       windowsHide: true
     });
 
@@ -154,5 +157,9 @@ function runSubprocess(prompt: string, model: string, timeoutMs: number): Promis
       clearTimeout(timer);
       reject(new Error(`candidate-dispatch: failed to spawn claude: ${err.message}`));
     });
+
+    // Write prompt to stdin
+    child.stdin.write(prompt);
+    child.stdin.end();
   });
 }
