@@ -100,13 +100,16 @@ Analyze stack traces:
 
 If something appears during tests but you don't know which test:
 
-Use the bisection script `find-polluter.sh` in this directory:
+Use the bisection script `find-polluter.sh` in this directory. Signature: `<pollution_path> <test_root> [glob]`. Default glob is `*.test.ts`. `TEST_CMD` env var overrides the runner.
 
 ```bash
-./find-polluter.sh '.git' 'src/**/*.test.ts'
+./find-polluter.sh '.git' src '*.test.ts'
+./find-polluter.sh '/tmp/leak' tests              # uses default *.test.ts
+./find-polluter.sh '.cache' . '*.spec.js'         # alternate glob
+TEST_CMD='npm test' ./find-polluter.sh '.git' src # override runner
 ```
 
-Runs tests one-by-one, stops at first polluter. See script for usage.
+Runs tests one-by-one, stops at first polluter. See script header for full usage.
 
 ### Real example: empty projectDir
 

@@ -86,7 +86,7 @@ async function waitFor<T>(
 }
 ```
 
-See `condition-based-waiting-example.ts` in this directory for the complete implementation with domain-specific helpers (`waitForEvent`, `waitForEventCount`, `waitForEventMatch`) from an actual debugging session.
+See `condition-based-waiting-example.ts` in this directory for the generic implementation: `waitFor<T>(condition, description, timeoutMs, pollMs)` for single-value waits and `waitForCount<T>(collect, count, description, ...)` for multi-item waits. A real-world before/after example (timing-fluke flake → deterministic) sits at the bottom of that file as a comment.
 
 ### Common mistakes
 
@@ -98,8 +98,8 @@ See `condition-based-waiting-example.ts` in this directory for the complete impl
 
 ```typescript
 // Tool ticks every 100ms - need 2 ticks to verify partial output
-await waitForEvent(manager, 'TOOL_STARTED'); // First: wait for condition
-await new Promise(r => setTimeout(r, 200));   // Then: wait for timed behavior
+await waitFor(() => events.find(e => e.type === 'TOOL_STARTED'), 'TOOL_STARTED'); // First: wait for condition
+await new Promise(r => setTimeout(r, 200));                                        // Then: wait for timed behavior
 // 200ms = 2 ticks at 100ms intervals - documented and justified
 ```
 
