@@ -964,31 +964,34 @@ describe("## First action — Prong B coverage", () => {
   // skills/workflow/builder-ceremony/SKILL.md. The redundant "## First action"
   // section + DEC-019/scaffold details now live in the skill. Each builder
   // keeps write-handoff + FEAT-161 cite inline as the core protective markers.
-  describe("frontend-dev", () => {
-    const content = readAgent("frontend-dev");
-    test("--update flag present (substance moved to builder-ceremony skill)", () => {
-      assert.ok(content.includes(UPDATE_FLAG), "frontend-dev.md missing --update flag");
+  // FEAT-170 SLICE-D follow-up: no-handoff contract now applies to all three
+  // builders. They MUST contain the prohibitive "do NOT write handoff" +
+  // "NEVER invoke write-handoff" guardrails. FEAT-161 cite remains (pause
+  // semantics now via badge state, not artifact).
+  for (const agentName of ["frontend-dev", "backend-dev"] as const) {
+    describe(`${agentName} (no-handoff contract — FEAT-170 SLICE-D)`, () => {
+      const content = readAgent(agentName);
+      test("FEAT-161 cite-back (pause-detection via badge state)", () => {
+        assert.ok(content.includes(FEAT_161_CITE), `${agentName}.md missing FEAT-161 cite-back`);
+      });
+      test("prohibits write-handoff CLI invocation", () => {
+        assert.ok(
+          content.includes("do NOT write handoff") || content.includes("DO NOT write handoff"),
+          `${agentName}.md must contain "do NOT write handoff" guardrail`
+        );
+        assert.ok(
+          content.includes("NEVER invoke `write-handoff`") ||
+            content.includes("NEVER invoke write-handoff"),
+          `${agentName}.md must contain "NEVER invoke write-handoff" guardrail`
+        );
+      });
+      test("declares STATUS-token follow-up format", () => {
+        for (const token of ["DONE", "BLOCKED", "HELP", "IN-PROGRESS"]) {
+          assert.ok(content.includes(token), `${agentName}.md missing STATUS token "${token}"`);
+        }
+      });
     });
-    test("role-specific: write-handoff command", () => {
-      assert.ok(content.includes("write-handoff"), "frontend-dev.md missing write-handoff");
-    });
-    test("FEAT-161 cite-back", () => {
-      assert.ok(content.includes(FEAT_161_CITE), "frontend-dev.md missing FEAT-161 cite-back");
-    });
-  });
-
-  describe("backend-dev", () => {
-    const content = readAgent("backend-dev");
-    test("--update flag present (substance moved to builder-ceremony skill)", () => {
-      assert.ok(content.includes(UPDATE_FLAG), "backend-dev.md missing --update flag");
-    });
-    test("role-specific: write-handoff command", () => {
-      assert.ok(content.includes("write-handoff"), "backend-dev.md missing write-handoff");
-    });
-    test("FEAT-161 cite-back", () => {
-      assert.ok(content.includes(FEAT_161_CITE), "backend-dev.md missing FEAT-161 cite-back");
-    });
-  });
+  }
 
   describe("inspector", () => {
     const content = readAgent("inspector");

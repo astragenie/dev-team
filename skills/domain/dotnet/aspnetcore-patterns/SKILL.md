@@ -1,32 +1,69 @@
 ---
 name: aspnetcore-patterns
 prompt_id: aspnetcore-patterns
-version: 1.0.0
+version: 1.1.0
 tier: domain
 stack: dotnet
-description: ASP.NET Core production patterns — middleware ordering, health checks, output caching, rate limiting, API versioning, exception handling. Load when building or reviewing ASP.NET Core endpoints.
+description: ASP.NET Core production patterns for .NET 10 — controller-based routing (regular ASP.NET Core MVC), middleware ordering, health checks, output caching, rate limiting, API versioning, exception handling. Load when building or reviewing ASP.NET Core controller endpoints.
 owner: hero-crew
-last_reviewed: 2026-06-09
-triggers: ["Program.cs", "Startup.cs", "*.Api", "WebApplication", "MapGet", "MapPost", "IEndpointRouteBuilder", "middleware", "health", "rate limit", "api version", "MinimalApis", "ControllerBase"]
+last_reviewed: 2026-06-21
+triggers: ["Program.cs", "Startup.cs", "*.Api", "WebApplication", "MapControllers", "ControllerBase", "ApiController", "HttpGet", "HttpPost", "middleware", "health", "rate limit", "api version", "Authorize"]
 ---
 
 # ASP.NET Core Patterns
 
-Production patterns for ASP.NET Core 8+ (Minimal APIs preferred; Controllers for complex CRUD surfaces).
+Production patterns for **ASP.NET Core on .NET 10** using **regular controller-based routing** (NOT minimal APIs).
 
 ## When to use
 
-Load when building new endpoints, reviewing middleware configuration, wiring health checks, adding rate limiting, or configuring API versioning.
+Load when building new controller endpoints, reviewing middleware configuration, wiring health checks, adding rate limiting, or configuring API versioning.
 
-## Minimal APIs vs Controllers
+## Controllers are the default
 
-| Use Minimal APIs | Use Controllers |
-|---|---|
-| ≤ 10 endpoints per feature | Large CRUD surface (≥ 10 endpoints) |
-| Microservice / bounded context | MVC filters required (global model binding) |
-| Simple request/response shape | Complex model binding or validation attributes |
+This product targets **regular ASP.NET Core controllers**, not minimal APIs. Reasons:
 
-Prefer Minimal APIs by default. Group with `MapGroup` for shared prefix and middleware.
+- Consistent `[ApiController]` attribute auto-validation + ProblemDetails responses
+- MVC filter pipeline (auth, model binding, action filters) is the contract
+- Strong typing via `[FromBody]` / `[FromQuery]` / `[FromRoute]` + DTOs as records
+- Easier to integrate with established repos that use controller patterns
+
+Controller skeleton:
+
+```csharp
+[ApiController]
+[Route("api/[controller]")]
+public sealed class UsersController(IUserService users, ILogger<UsersController> logger)
+    : ControllerBase
+{
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<UserDto>> GetAsync(
+        Guid id,
+        CancellationToken ct)
+    {
+        var user = await users.FindAsync(id, ct);
+        return user is null ? NotFound() : Ok(user);
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<UserDto>> CreateAsync(
+        [FromBody] CreateUserRequest request,
+        CancellationToken ct)
+    {
+        // [ApiController] auto-validates ModelState → 400 ProblemDetails
+        var created = await users.CreateAsync(request, ct);
+        return CreatedAtAction(nameof(GetAsync), new { id = created.Id }, created);
+    }
+}
+```
+
+Wire in `Program.cs`:
+
+```csharp
+builder.Services.AddControllers();
+// ... other services
+var app = builder.Build();
+app.MapControllers();
+```
 
 ## Middleware pipeline ordering
 
@@ -74,8 +111,10 @@ builder.Services.AddOutputCache(o => {
                                   .SetVaryByHeader("Authorization"));
 });
 
-// endpoint
-app.MapGet("/products", GetProducts).CacheOutput("Short");
+// controller action — apply [OutputCache(PolicyName = "Short")] attribute
+[HttpGet]
+[OutputCache(PolicyName = "Short")]
+public async Task<ActionResult<IEnumerable<ProductDto>>> GetProducts(CancellationToken ct) => Ok(await service.ListAsync(ct));
 ```
 
 Never cache endpoints that write state or return user-specific sensitive data without explicit vary-by.
