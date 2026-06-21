@@ -17,7 +17,11 @@ export interface ClaudePConfig {
 }
 
 const DEFAULT_MODEL = "claude-sonnet-4-6";
-const DEFAULT_TIMEOUT_MS = 180_000;
+const DEFAULT_TIMEOUT_MS = (() => {
+  const env = process.env["CREW_EVAL_JUDGE_TIMEOUT_MS"];
+  const parsed = env ? Number.parseInt(env, 10) : Number.NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 60_000;
+})();
 
 /** NDJSON event emitted by `claude -p --output-format stream-json`. */
 interface StreamEvent {
@@ -113,11 +117,13 @@ export class ClaudePJudge implements JudgeProvider {
     return new Promise((resolve, reject) => {
       // Stream prompt via stdin to avoid Windows 32KB command-line length limit.
       // --verbose required by `claude -p` when using --output-format stream-json.
+      // --dangerously-skip-permissions: judge is a read-only LLM call, no file I/O.
       const args = [
         "-p",
         "--output-format",
         "stream-json",
         "--verbose",
+        "--dangerously-skip-permissions",
         "--model",
         this.model
       ];

@@ -20,7 +20,7 @@ export interface CandidateDispatchOptions {
   fixtureContent: string;
   /** Claude model to use (default: claude-sonnet-4-6). */
   model?: string;
-  /** Per-dispatch timeout in ms (default: 300_000 — 5 min). */
+  /** Per-dispatch timeout in ms (default: 90_000 — 90s; override via CREW_EVAL_CANDIDATE_TIMEOUT_MS). */
   timeoutMs?: number;
 }
 
@@ -32,7 +32,11 @@ export interface CandidateDispatchResult {
 }
 
 const DEFAULT_MODEL = "claude-sonnet-4-6";
-const DEFAULT_TIMEOUT_MS = 300_000;
+const DEFAULT_TIMEOUT_MS = (() => {
+  const env = process.env["CREW_EVAL_CANDIDATE_TIMEOUT_MS"];
+  const parsed = env ? Number.parseInt(env, 10) : Number.NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 180_000;
+})();
 
 interface StreamEvent {
   type: string;
@@ -116,10 +120,25 @@ export async function dispatchCandidate(
 
 function runSubprocess(prompt: string, model: string, timeoutMs: number): Promise<string> {
   return new Promise((resolve, reject) => {
-    // Stream prompt via stdin to avoid Windows 32KB command-line length limit
-    // (agent prompts can be 300+ lines + fixture content).
+    // Stream prompt via stdin to avoid Windows 32KB command-line length limit.
     // --verbose required by `claude -p` when using --output-format stream-json.
-    const args = ["-p", "--output-format", "stream-json", "--verbose", "--model", model];
+    // --dangerously-skip-permissions: candidate dispatch is read-only eval — no
+    // file writes should occur; permission prompts would stall the subprocess.
+    // --max-turns 3: constrain candidate to single-response (acknowledge +
+    // produce handoff-shaped output) rather than multi-turn investigation
+    // loops that blow eval timeout budget. Eval measures the FIRST response
+    // pattern, not the agent's full work.
+    const args = [
+      "-p",
+      "--output-format",
+      "stream-json",
+      "--verbose",
+      "--dangerously-skip-permissions",
+      "--max-turns",
+      "3",
+      "--model",
+      model
+    ];
     const child = spawn("claude", args, {
       stdio: ["pipe", "pipe", "pipe"],
       windowsHide: true
