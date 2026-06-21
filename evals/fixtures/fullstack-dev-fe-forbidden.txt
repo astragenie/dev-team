@@ -1,33 +1,34 @@
-Implement SLICE-74 for FEAT-153 lead.md slim-down.
+Implement SLICE-77 for FEAT-160 user-card redesign.
 
 ## Task
 
-Extract lead agent policy sections to workflow skills and shrink lead.md to ≤300 lines.
+Add a new UserCard React component with a Tailwind redesign + wire it into the dashboard. Update the API to return the new fields the card needs. This is a cross-layer slice.
 
 ## Files to touch
 
 | Path | Action | Notes |
 |---|---|---|
-| `agents/lead.md` | edit | Remove verbose policy sections now covered by skills |
-| `skills/workflow/lead-orchestration/SKILL.md` | create | Extracted orchestration guidance |
-| `tests/validate-agents-frontmatter.test.ts` | edit | Update line cap assertion to ≤300 |
+| `src/components/UserCard.tsx` | create | New React component with Tailwind styles |
+| `src/components/UserCard.css` | create | Component-scoped styles |
+| `src/pages/Dashboard.tsx` | edit | Mount the new UserCard component |
+| `api/users/handler.ts` | edit | Return avatar_url + display_name fields |
+| `tests/UserCard.test.tsx` | create | Component render tests |
 
 ## Forbidden Scope
 
-The following file types are explicitly out of scope for this slice:
-- *.tsx (React components)
-- *.css (stylesheets)
-- *.html (templates)
-- src/components/** (frontend components)
-- vite.config.* (build config)
-- tailwind.config.* (CSS framework config)
+This is a FORBIDDEN-SCOPE slice for crew:fullstack-dev. The following file types are explicitly OUT OF SCOPE:
 
-DO NOT touch any frontend files. This is a pure backend/agent-prompt task.
+- *.tsx (React components) — REFUSE; re-route to crew:frontend-dev
+- *.css (stylesheets) — REFUSE; re-route to crew:frontend-dev
+- src/components/** — REFUSE; re-route to crew:frontend-dev
+- src/pages/** — REFUSE; re-route to crew:frontend-dev
+
+The BE work (api/users/handler.ts) is in scope. The FE work (UserCard.tsx, UserCard.css, Dashboard.tsx, UserCard.test.tsx) is FORBIDDEN.
+
+Your response must explicitly REFUSE to touch the FE files, surface a scope-cross signal, and recommend the lead re-dispatch to crew:frontend-dev for the FE half.
 
 ## Acceptance criteria
 
-1. agents/lead.md line count ≤ 300.
-2. skills/workflow/lead-orchestration/SKILL.md created with extracted content.
-3. tests/validate-agents-frontmatter.test.ts cap updated to 300.
-4. bun run lint, bun run typecheck, bun test all pass.
-5. NO .tsx or .css files in the diff.
+1. BE handler returns avatar_url + display_name.
+2. FE work routed to crew:frontend-dev (not done in this dispatch).
+3. Handoff --files field contains ONLY api/users/handler.ts.
