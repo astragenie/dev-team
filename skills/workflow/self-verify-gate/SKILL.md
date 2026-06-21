@@ -13,9 +13,11 @@ triggers: ["builder / builder-fe / builder-be about to write completion handoff"
 
 ## When to use
 
-Builder agents (`builder`, `builder-fe`, `builder-be`) MUST run this gate before writing the completion handoff. It is the fast inner loop — the validator's mandatory final gate re-runs the whole-repo lint, format check, and full test suite ONCE at the end. Here you run only the SCOPED equivalents on paths in your diff, never the whole tree.
+Builder agents (`backend-dev`, `frontend-dev`, `fullstack-dev`) MUST run this gate before returning their follow-up. It is the fast inner loop — the validator's mandatory final gate re-runs the whole-repo lint, format check, and full test suite ONCE at the end. Here you run only the SCOPED equivalents on paths in your diff. **Affected-class only — never the whole tree.**
 
-`commands/orchestrate-slice.md` reads the `## Self-Verify Gates` section your handoff body emits and HARD-GATES on every gate showing PASS (FAIL halts the slice).
+**Hard rule (FEAT-180 — builder velocity)**: tests, lint, format, typecheck run ONLY against the files in your diff. If your slice touched `evals/lib/judge.ts`, run `bun test tests/evals-lib.test.ts` (the test file that covers it) + `bun run lint evals/lib/judge.ts`. Do NOT run `bun test` (full suite) or `bun run lint` (whole repo) — that's the validator's job at the end of the slice. Whole-tree runs kill builder slice velocity (TS gates ~1s each + the full suite is 30s+; C# gates can hit 30s+ per file). Scoped runs return in 1-5s.
+
+The dispatcher reads your follow-up Risks/Next; FAIL gates surface there.
 
 ## State model
 

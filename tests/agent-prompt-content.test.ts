@@ -453,19 +453,16 @@ describe("## HARD OUTPUT CONTRACT — Prong A coverage", () => {
     test("FEAT-161 cite-back", () => {
       assert.ok(content.includes(FEAT_161_CITE), "fullstack-dev.md missing FEAT-161 cite-back");
     });
-    test("placement: after Identity anchor, before first tactical heading", () => {
+    // FEAT-180 (v2.0.0 builder rewrite): fullstack-dev now uses Golden-Path-
+    // first ordering. HARD OUTPUT CONTRACT sits early (after Golden path +
+    // Stack router + TDD policy); Identity anchor moved to a defensive
+    // section near the end since it's only applied when the dispatch prompt
+    // is suspect. Both required headings must still be present.
+    test("placement: HARD CONTRACT + Identity anchor both present", () => {
       const identityIdx = content.indexOf("## Identity anchor");
       const contractIdx = content.indexOf(HARD_CONTRACT_HEADING);
       assert.ok(contractIdx !== -1, "fullstack-dev.md HARD CONTRACT heading not found");
       assert.ok(identityIdx !== -1, "fullstack-dev.md missing Identity anchor");
-      assert.ok(
-        contractIdx > identityIdx,
-        "fullstack-dev.md HARD CONTRACT must appear after Identity anchor"
-      );
-      assert.ok(
-        contractIdx < firstTacticalIdx(content),
-        "fullstack-dev.md HARD CONTRACT must appear before first tactical heading"
-      );
     });
   });
 
