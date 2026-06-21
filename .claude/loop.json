@@ -23,7 +23,14 @@
     "slicesRoot": ".claude/artifacts/loop/slices",
     "backlogRoot": ".claude/artifacts/loop/backlog",
     "maxIterations": 25,
-    "costStopThreshold": 10
+    "cost": {
+      "ceilingUsd": 75,
+      "regression": {
+        "multiplier": 3,
+        "window": 5,
+        "minSamples": 3
+      }
+    }
   },
   "stack": {
     "build": [
