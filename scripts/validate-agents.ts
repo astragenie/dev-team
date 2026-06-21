@@ -316,6 +316,36 @@ function checkBashCoalescing(
   }
 }
 
+// Backlog-id discipline: agent prompts must not embed FEAT-NNN / DEC-NNN /
+// SLICE-NN references — ids rot, skill pointers don't. Applied as a hard
+// gate only to agents in NO_BACKLOG_IDS_REQUIRED (the prompts that have
+// already been swept). Other agents emit no error so CI stays green while
+// the cleanup fans out. Expand the allowlist as each agent is cleaned.
+//
+// Implementation note: the validator scans the entire file (frontmatter +
+// body). Frontmatter does not legitimately carry FEAT-NNN ids — eval paths
+// follow `evals/agents/<role>.yaml`, not backlog ids — so scanning whole-
+// file is safe and catches stray ids that slip into prompt_id / version
+// comments or anywhere else.
+const NO_BACKLOG_IDS_REQUIRED = new Set(["backend-dev", "fullstack-dev"]);
+
+function checkNoBacklogIds(
+  text: string,
+  fm: Record<string, string>,
+  label: string,
+  errors: string[]
+) {
+  const name = fm["name"];
+  if (name === undefined || !NO_BACKLOG_IDS_REQUIRED.has(name)) return;
+  const matches = text.match(/\b(FEAT-\d+|DEC-\d+|SLICE-\d+)\b/g);
+  if (matches && matches.length > 0) {
+    const uniq = [...new Set(matches)].sort();
+    errors.push(
+      `${label}: backlog ids must not appear in agent prompts (ids rot; cite skills instead). Found: ${uniq.join(", ")}`
+    );
+  }
+}
+
 /**
  * SLICE-76 FEAT-153: detect drift between the marker hash in the injected
  * pre-loaded-universals block and the rendered hash. Skips agents without
@@ -421,6 +451,7 @@ export async function validateAgents(agentsRoot = AGENTS_ROOT) {
     checkRequiredSections(text, fm, label, errors);
     checkTaskUpdateBatching(text, fm, label, errors);
     checkBashCoalescing(text, fm, label, errors);
+    checkNoBacklogIds(text, fm, label, errors);
     checkPeerDispatchSection(text, fm, label, errors);
     await checkUniversalsHash(text, fm, label, errors);
   }

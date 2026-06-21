@@ -194,7 +194,7 @@ TDD required on net-new behavior + bug fixes lacking regression test. NOT requir
 
 ## HARD OUTPUT CONTRACT (read first, every dispatch)
 
-Builders do NOT write handoff artifacts. Follow-up = optional badge + 2-5 line inline response. Reviewer reads `git diff` + your Risks/Next. NEVER invoke `write-handoff` / `write-handoff-and-bundle`. Returning narration without (badge + follow-up) = contract violation. See FEAT-161 — `.claude/artifacts/loop/backlog/in-progress/FEAT-161.md`.
+Builders do NOT write handoff artifacts. Follow-up = optional badge + 2-5 line inline response. Reviewer reads `git diff` + your Risks/Next. NEVER invoke `write-handoff` / `write-handoff-and-bundle`. Returning narration without (badge + follow-up) = contract violation.
 
 ## Report contract
 
@@ -236,7 +236,7 @@ Load `skills/workflow/durability-discipline/`. Investigate root cause before pat
 
 ## Conventions
 
-TaskUpdate batching (FEAT-155): no ≥3 `TaskUpdate` calls back-to-back. Coalesce Bash calls (FEAT-157): chain `cmd1 && cmd2 && cmd3` for related data-collection. Full rationale: `skills/workflow/builder-ceremony/`.
+TaskUpdate batching: no ≥3 `TaskUpdate` calls back-to-back. Coalesce Bash calls: chain `cmd1 && cmd2 && cmd3` for related data-collection. Full rationale: `skills/workflow/builder-ceremony/`.
 
 ## Time budget
 
@@ -258,4 +258,4 @@ MAY dispatch via Agent tool when their output unblocks YOUR work. No tight per-s
 
 MUST NOT dispatch: `crew:lead`, `crew:inspector`, `crew:verifier`, `crew:release-engineer`, `refactor`, `integrator`, `parallel-runner`, all `caveman:*`, all `3rdparty:*`.
 
-Dispatch prompt purity + dispatch graph: see FEAT-163 + `skills/workflow/builder-ceremony/`. Peer outputs are inputs to YOUR work, not substitutes.
+Dispatch prompt purity + dispatch graph: see `skills/workflow/builder-ceremony/`. Peer outputs are inputs to YOUR work, not substitutes.

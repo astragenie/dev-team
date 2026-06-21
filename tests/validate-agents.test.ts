@@ -206,3 +206,73 @@ test("returns ok and agentCount:0 when agents/ directory is missing", async () =
   assert.equal(result.ok, true);
   assert.equal(result.agentCount, 0);
 });
+
+// Backlog-id discipline: agents on the no-backlog-ids allowlist must not
+// embed FEAT-NNN / DEC-NNN / SLICE-NN. Tested via a synthetic backend-dev.md
+// — using a real allowlisted name is intentional because the rule keys off
+// frontmatter `name`, not the file path.
+const BACKEND_DEV_BASE = `---
+name: backend-dev
+prompt_id: backend-dev
+version: 1.0.0
+description: backend specialist.
+model: sonnet
+evals: evals/agents/backend-dev.yaml
+---
+
+You are the backend-dev on a Claude Code engineering team.
+
+Coalesce Bash calls: chain related data-collection commands.
+
+## Report contract
+
+Write your handoff via write-handoff.
+`;
+
+test("fails when an allowlisted agent embeds FEAT-NNN in its prompt body", async () => {
+  const withFeatRef = BACKEND_DEV_BASE.replace(
+    "## Report contract",
+    "See FEAT-163 for peer dispatch design.\n\n## Report contract"
+  );
+  const root = await makeAgentsDir({ "backend-dev.md": withFeatRef });
+  const result = await validateAgents(root);
+  assert.equal(result.ok, false);
+  assert.ok(
+    result.errors.some((e) => /backlog ids must not appear/.test(e) && /FEAT-163/.test(e)),
+    `expected backlog-id error citing FEAT-163, got: ${result.errors.join("; ")}`
+  );
+});
+
+test("fails when an allowlisted agent embeds DEC-NNN or SLICE-NN", async () => {
+  const withRefs = BACKEND_DEV_BASE.replace(
+    "## Report contract",
+    "Per DEC-023 and SLICE-71.\n\n## Report contract"
+  );
+  const root = await makeAgentsDir({ "backend-dev.md": withRefs });
+  const result = await validateAgents(root);
+  assert.equal(result.ok, false);
+  assert.ok(
+    result.errors.some((e) => /DEC-023/.test(e) && /SLICE-71/.test(e)),
+    `expected backlog-id error citing DEC-023 + SLICE-71, got: ${result.errors.join("; ")}`
+  );
+});
+
+test("passes on an allowlisted agent with zero backlog ids", async () => {
+  const root = await makeAgentsDir({ "backend-dev.md": BACKEND_DEV_BASE });
+  const result = await validateAgents(root);
+  assert.equal(result.ok, true, `unexpected errors: ${result.errors.join("; ")}`);
+});
+
+test("ignores backlog ids on agents NOT in the no-backlog-ids allowlist", async () => {
+  const builderWithRef = WELL_FORMED_BODY.replace(
+    "## Report contract",
+    "See FEAT-163.\n\n## Report contract"
+  );
+  const root = await makeAgentsDir({ "builder.md": builderWithRef });
+  const result = await validateAgents(root);
+  // `builder` is not in NO_BACKLOG_IDS_REQUIRED, so the FEAT ref must not error.
+  assert.ok(
+    !result.errors.some((e) => /backlog ids must not appear/.test(e)),
+    `unexpected backlog-id error for non-allowlisted agent: ${result.errors.join("; ")}`
+  );
+});
