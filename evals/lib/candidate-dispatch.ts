@@ -45,9 +45,21 @@ interface StreamEvent {
   content?: Array<{ type: string; text?: string }> | string;
 }
 
+/**
+ * Parse stream-json NDJSON output from `claude -p`.
+ *
+ * Strategy (FEAT-174 fix — capture assistant response, not session noise):
+ *   1. Prefer the final `event: "result"` if present (clean canonical text).
+ *   2. Else aggregate ALL assistant message text blocks in order (max-turns
+ *      cap can prevent a result event from firing).
+ *   3. Else return empty string — caller will surface as "candidate produced
+ *      no parseable response" rather than dumping raw NDJSON (which includes
+ *      session-start hook noise + the original fixture echoed in user events).
+ */
 function parseStreamJson(stdout: string): string {
   const lines = stdout.split("\n").filter((l) => l.trim().length > 0);
-  let finalText = "";
+  let resultText = "";
+  const messageTexts: string[] = [];
 
   for (const line of lines) {
     let event: StreamEvent;
@@ -58,7 +70,7 @@ function parseStreamJson(stdout: string): string {
     }
 
     if (event.type === "result" && typeof event.result === "string") {
-      finalText = event.result;
+      resultText = event.result;
     } else if (
       event.type === "message" &&
       event.role === "assistant" &&
@@ -68,12 +80,14 @@ function parseStreamJson(stdout: string): string {
         .filter((c) => c.type === "text" && typeof c.text === "string")
         .map((c) => c.text ?? "");
       if (parts.length > 0) {
-        finalText = parts.join("");
+        messageTexts.push(parts.join(""));
       }
     }
   }
 
-  return finalText.trim();
+  if (resultText.trim().length > 0) return resultText.trim();
+  if (messageTexts.length > 0) return messageTexts.join("\n\n").trim();
+  return "";
 }
 
 /**
@@ -112,8 +126,14 @@ export async function dispatchCandidate(
   const stdout = await runSubprocess(combinedPrompt, model, timeoutMs);
   const candidateOutput = parseStreamJson(stdout);
 
+  // Never fall back to raw stdout — it contains session-start hook noise +
+  // the original fixture echoed in user events. Surface explicit error
+  // marker so asserts treat it as no-response rather than matching against noise.
   return {
-    candidateOutput: candidateOutput.length > 0 ? candidateOutput : stdout.trim(),
+    candidateOutput:
+      candidateOutput.length > 0
+        ? candidateOutput
+        : "[candidate produced no parseable response — likely hit max-turns or timed out mid-stream]",
     rawStdout: stdout
   };
 }
