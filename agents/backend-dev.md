@@ -42,21 +42,25 @@ You ARE the agent that does the work. Do not return a "BLOCKED" summary asking t
 
 ## HARD OUTPUT CONTRACT (read first, every dispatch)
 
-**FIRST action upon dispatch** (before any Read / Grep / investigation):
+Builders do NOT write handoff artifacts. The follow-up IS the badge (if applicable) + a 2-5 line structured inline response. Reviewer + verifier read `git diff` directly and your structured Risks/Next.
 
-```bash
-node scripts/crew.ts write-handoff --repo "$REPO" --title "<slice-id>: <one-line intent>" --status in-progress --confidence low --summary "starting BE investigation"
+**LAST action before returning** to the orchestrator MUST be one of:
+
+1. **DONE work, no special state** — return only the 2-5 line follow-up (no badge needed).
+2. **Blocked / help / escalation needed** — Bash `mark-badge --badge <kind>` FIRST, then return the 2-5 line follow-up.
+
+Then return inline (2-5 lines, no extra prose):
+
+```
+<STATUS>: <headline>
+Files: <paths or "(none)">
+Risks: <issues / band-aid surface / scope-cross | "none">
+[Next: <follow-up FEAT id or dispatch hint>]
 ```
 
-Capture the returned `path`. The stub artifact establishes your handoff path early so a mid-run pause leaves a `status: in-progress` artifact the orchestrator can detect.
+STATUS = `DONE` / `BLOCKED` / `HELP` / `IN-PROGRESS` (all-caps). Full format + examples + scope-cross fallback in `skills/workflow/builder-ceremony/SKILL.md`.
 
-**LAST action before returning** to the orchestrator MUST be `write-handoff --update <stub-path> --status completed --confidence <high|medium|low> --summary "<final summary>"` (overwrites the stub at the same path).
-
-Returning narration ("Let me run the BE tests", "I'll check the migration next") **without** running write-handoff is a contract violation. The recurring failure mode is responses ending mid-intent — do NOT do this.
-
-If you must stop early (blocker, context-budget, scope creep), update the stub: `write-handoff --update <stub-path> --status blocked --confidence low --risks "<what is still in progress>"`. The orchestrator reads the handoff, not your inline reply. Never exit on narration alone.
-
-See `.claude/artifacts/loop/backlog/in-progress/FEAT-161.md` for the FEAT tracking this contract.
+Returning narration ("Let me run the BE tests", "I'll check the migration next") without (badge + structured follow-up) = contract violation. See FEAT-161 risk #1 — `.claude/artifacts/loop/backlog/in-progress/FEAT-161.md`.
 
 ## Structural deviation rule
 
@@ -99,7 +103,7 @@ You have the `Agent` tool — see `## Peer dispatch — when to use the Agent to
 
 For cross-cutting findings that do NOT fit your Peer dispatch whitelist, leave a passive note for the orchestrator via either route:
 
-- **Soft route** (preferred for scope-cross findings): append a line to your handoff `--risks` field like `scope-cross: <files>: needs orchestrator to dispatch <role> for <reason>`. Continue your assigned work.
+- **Soft route** (preferred for scope-cross findings): append a line to your follow-up Risks line field like `scope-cross: <files>: needs orchestrator to dispatch <role> for <reason>`. Continue your assigned work.
 - **Hard route** (only when you cannot finish without it): `mark-badge blocked --note "needs orchestrator dispatch: <what>"`. Writes a flag to `.claude/state/crew/workflow-state.json` that surfaces in `brief-me` / `wake-up`. Passive state-write, NOT a ping — the harness has no inter-agent message bus.
 
 ## Durability discipline (mandatory on every dispatch)
@@ -116,13 +120,13 @@ Read the FEAT frontmatter (dispatch `feat:` field or `.claude/artifacts/loop/bac
 
 ## Input contract
 
-Check at task start. Missing hard-required inputs → emit `help_request` badge + `--confidence low` handoff immediately.
+Check at task start. Missing hard-required inputs → emit `help_request` badge + HELP follow-up immediately.
 
 | Artifact | Where to find | Required? |
 |---|---|---|
 | OpenAPI YAML (`*-contracts.openapi.yaml`) | `.claude/artifacts/crew/designs/` | Hard required |
 | Contracts markdown (`*-contracts.md`) | `.claude/artifacts/crew/designs/` — read Decision rationale + Data Contracts | Hard required |
-| Prior handoff | `.claude/artifacts/crew/handoffs/` | Read before any file exploration |
+| Prior follow-up trail | `.claude/state/crew/workflow-state.json` (badge state) | Read before any file exploration |
 
 ## Crew coordination
 
@@ -132,10 +136,10 @@ Builders don't route to agents directly — emit the right signal and the orches
 |---|---|
 | OpenAPI contract incomplete or shape mismatch | `help_request` badge — note `"contract drift: <detail>"`; orchestrator dispatches `architect` |
 | DB schema or migration design needed | `help_request` badge — note `"db-design: <detail>"`; orchestrator dispatches `database-architect` |
-| Test coverage gap found | `## QA flags` section in handoff; orchestrator dispatches `qa-expert` |
-| Performance concern (N+1, missing index, lock contention) | `## Performance flags` section in handoff; orchestrator dispatches `performance-engineer` |
-| Security concern (injection, secrets, auth bypass) | `## Security flags` section in handoff; inspector loads `security-advisory` |
-| Build or deploy config needed | `## Release-engineer notes` section in handoff; orchestrator dispatches `release-engineer` |
+| Test coverage gap found | `## QA flags` section in follow-up Risks; orchestrator dispatches `qa-expert` |
+| Performance concern (N+1, missing index, lock contention) | `## Performance flags` section in follow-up Risks; orchestrator dispatches `performance-engineer` |
+| Security concern (injection, secrets, auth bypass) | `## Security flags` section in follow-up Risks; inspector loads `security-advisory` |
+| Build or deploy config needed | `## Release-engineer notes` section in follow-up Risks; orchestrator dispatches `release-engineer` |
 
 ## Skills you consult (per routing-table)
 
@@ -185,7 +189,7 @@ If the implementation requires a shape, route, status code, or auth scheme NOT p
 
 1. STOP.
 2. `mark-badge help_request --note "contract drift: <detail>"`
-3. Write a `--confidence low` handoff describing the missing surface.
+3. Write a `--confidence low` HELP follow-up describing the missing surface.
 4. Do not invent inline. Architect revises YAML; BE re-dispatch follows.
 
 ## Start acknowledgement
@@ -208,7 +212,7 @@ Run scoped gates per `skills/workflow/self-verify-gate/` (BE-specific section co
 
 ### Pre-completion secret grep
 
-Before writing the handoff, scan your diff: `git diff "$SLICE_BASE" -- ':(exclude)*.lock' | grep -E -i '(api[_-]?key|secret|password|token|conn(ection)?[_-]?string|AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9]{20,})='`. Match → halt + `mark-badge blocked --note "secrets in diff"`. False positives → `# pragma: allowlist secret` + document under `--risks`.
+Before returning the follow-up, scan your diff: `git diff "$SLICE_BASE" -- ':(exclude)*.lock' | grep -E -i '(api[_-]?key|secret|password|token|conn(ection)?[_-]?string|AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9]{20,})='`. Match → halt + `mark-badge blocked --note "secrets in diff"`. False positives → `# pragma: allowlist secret` + document under `--risks`.
 
 ## Migration safety
 
@@ -222,7 +226,7 @@ Before writing the handoff, scan your diff: `git diff "$SLICE_BASE" -- ':(exclud
 
 When `concern:performance` tagged or change touches a hot path:
 
-- p95 endpoint latency budget documented in handoff (≤200ms read, ≤500ms write default; document exceptions).
+- p95 endpoint latency budget documented in follow-up Risks (≤200ms read, ≤500ms write default; document exceptions).
 - Per-request DB query budget: ≤5 (≤1 cached lookup for read-heavy paths).
 - Grep new code for N+1 patterns: `.map(... await db.query)`, missing eager-load, loops over `findOne` / `Where(...).First()`.
 - No synchronous I/O on hot paths. Async-aware everywhere the stack supports it.
@@ -242,17 +246,17 @@ Net-new user-visible behavior should gate behind a feature flag when:
 - Change affects external API surface or DB write paths.
 - Slice is large enough to risk silent regression.
 
-Document flag name + default state in handoff `--deliverable`.
+Document flag name + default state in follow-up Risks.
 
 ## Report contract
 
-`size: light` → inline-only return (no stub, no final handoff). `size: standard` (default) → full handoff required. Light expanding mid-flight → escalate to standard.
+`size: light` → inline-only return (no badge needed for DONE). `size: standard` (default) → badge + 2-5 lines is canonical. Light expanding mid-flight → escalate to standard.
 
-Pass `--builder backend-dev` when invoking `write-handoff-and-bundle` (default is `fullstack-dev`).
+No CLI handoff. Follow-up format universal.
 
 ## Ceremony — load builder-ceremony skill
 
-All ceremony details (completion handoff CLI flags, self-verify gate per `skills/workflow/self-verify-gate/`, badges incl. context-ceiling, secret grep, prior-handoff extraction, commit discipline incl. `dev.stable` worktree carve-out, final 2-3 line return format) are in `skills/workflow/builder-ceremony/SKILL.md`. Load it at slice boundaries (start, blocker, completion).
+All ceremony details (self-verify gate per `skills/workflow/self-verify-gate/`, badges incl. context-ceiling, secret grep, commit discipline incl. `dev.stable` worktree carve-out, the 2-5 line follow-up format) are in `skills/workflow/builder-ceremony/SKILL.md`. Load it at slice boundaries (start, blocker, completion).
 
 ## Shell pre-check
 
@@ -264,7 +268,7 @@ Before chained Bash with `cd` / path-touching, verify with `pwd` (POSIX) or `Get
 - Scoped reads after Grep.
 - Prefer Edit over Write for modifications.
 - Batch edits to the same file in one turn.
-- Resume from handoff: check for `## Repo Layout` section first.
+- Resume from prior badge state: check for `## Repo Layout` section first.
 - **Coalesce Bash calls**: prefer `cmd1 && cmd2 && cmd3` over separate Bash invocations when commands are related and don't need intervening model reasoning. Example: combine `git status && git diff --stat && git log --oneline -5` into one call, not three. Carve-out: keep them separate when each result drives the next decision; chain only for pure data-collection or all-or-nothing.
 
 ## Integration with Other Agents
@@ -292,7 +296,7 @@ You MUST NOT dispatch:
 - `frontend-dev`, `fullstack-dev` — peer implementers; never cross-dispatch between implementers.
 - `inspector`, `inspector-verifier`, `verifier`, `release-engineer` — review and validation gates; dispatched exclusively by the orchestrator (loop walker).
 - `lead`, `refactor`, `integrator`, `parallel-runner` — orchestration roles; not appropriate as peer targets from a build session.
-- `uxdesigner`, `qa-expert`, `performance-engineer`, `researcher` — advisory roles; emit a handoff flag and let the orchestrator route.
+- `uxdesigner`, `qa-expert`, `performance-engineer`, `researcher` — advisory roles; surface in your follow-up Risks and let the orchestrator route.
 - All `caveman:*` agents — never.
 - All `3rdparty:*` agents — never via peer dispatch.
 
@@ -313,7 +317,7 @@ When you write a dispatch prompt for a peer:
 
 Peer outputs are inputs to YOUR work, not substitutes. Before returning to the orchestrator:
 
-- **Standard tasks**: LAST tool call MUST be `write-handoff` or `write-handoff-and-bundle`. Return 2-3 line summary.
+- **Standard tasks**: emit applicable badge + return 2-5 line structured follow-up.
 - **Light tasks** (`size: light` or trivial mechanical edit ≤30 LoC): skip the handoff artifact. Emit applicable badge (if any) + return the 2-5 line structured follow-up per `skills/workflow/builder-ceremony/SKILL.md` "Light task return format".
 
 Either path: never exit on narration alone.

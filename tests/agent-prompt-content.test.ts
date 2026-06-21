@@ -166,11 +166,41 @@ test("builder.md references mark-badge", () => {
   assert.ok(builder.includes("mark-badge"), "builder.md missing mark-badge");
 });
 
-test("builder.md references the shared self-verify-gate skill", () => {
+// FEAT-170 SLICE-D follow-up: fullstack-dev's ceremony moved to
+// skills/workflow/builder-ceremony/SKILL.md (which itself references the
+// self-verify-gate skill). The builder prompt now points at builder-ceremony
+// instead of carrying the self-verify reference inline.
+test("builder.md points at builder-ceremony skill (which carries self-verify reference)", () => {
   assert.ok(
-    builder.includes("skills/workflow/self-verify-gate"),
-    "builder.md must reference the shared self-verify procedure skill"
+    builder.includes("skills/workflow/builder-ceremony"),
+    "builder.md must point at builder-ceremony skill"
   );
+});
+
+// FEAT-170 SLICE-D follow-up: builders MUST NOT invoke write-handoff. The
+// follow-up IS the badge + 2-5 line structured response. Prohibitive
+// "Builders do NOT write handoff artifacts" + "NEVER invoke write-handoff"
+// language stays as the protective guardrail; any constructive "write the
+// handoff" pattern would regress the new contract.
+test("builder.md prohibits write-handoff CLI invocation (FEAT-170 SLICE-D)", () => {
+  assert.ok(
+    builder.includes("do NOT write handoff") || builder.includes("DO NOT write handoff"),
+    "fullstack-dev.md must contain the prohibitive 'Builders do NOT write handoff artifacts' guardrail"
+  );
+  assert.ok(
+    builder.includes("NEVER invoke `write-handoff`") ||
+      builder.includes("NEVER invoke write-handoff"),
+    "fullstack-dev.md must contain the 'NEVER invoke write-handoff' guardrail"
+  );
+});
+
+test("builder.md declares the STATUS-token follow-up format (FEAT-170 SLICE-D)", () => {
+  for (const token of ["DONE", "BLOCKED", "HELP", "IN-PROGRESS"]) {
+    assert.ok(
+      builder.includes(token),
+      `fullstack-dev.md missing STATUS token "${token}" — see Report contract section`
+    );
+  }
 });
 
 const selfVerifySkill = readFileSync(
@@ -918,19 +948,14 @@ const UPDATE_FLAG = "--update";
 const DEC_019 = "DEC-019";
 
 describe("## First action — Prong B coverage", () => {
-  describe("fullstack-dev", () => {
+  describe("fullstack-dev (no-handoff contract — FEAT-170 SLICE-D)", () => {
     const content = readAgent("fullstack-dev");
-    // FEAT-170 SLICE-B (2026-06-21) removed the redundant "## First action
-    // (stub artifact on entry)" section — substance was a duplicate of
-    // HARD OUTPUT CONTRACT. The remaining Prong B coverage now lives in
-    // HARD OUTPUT CONTRACT (write-handoff + --update + FEAT-161 cite).
-    test("--update flag present (substance moved to HARD OUTPUT CONTRACT)", () => {
-      assert.ok(content.includes(UPDATE_FLAG), "fullstack-dev.md missing --update flag");
-    });
-    test("role-specific: write-handoff command", () => {
-      assert.ok(content.includes("write-handoff"), "fullstack-dev.md missing write-handoff");
-    });
-    test("FEAT-161 cite-back", () => {
+    // Builders no longer call write-handoff. The only acceptable mentions are
+    // PROHIBITIVE guardrails ("Builders do NOT write handoff", "NEVER invoke
+    // write-handoff"). The "write-handoff" substring still appears in those
+    // negative-pattern lines; assert FEAT-161 cite still present (pause-detection
+    // semantics now carried by badge state).
+    test("FEAT-161 cite-back (pause-detection now via badge state)", () => {
       assert.ok(content.includes(FEAT_161_CITE), "fullstack-dev.md missing FEAT-161 cite-back");
     });
   });
@@ -1180,10 +1205,17 @@ describe("## Structural deviation rule — implementer coverage", () => {
         );
       });
 
-      test("decision needs_fix instruction present", () => {
+      test("structural-deviation return instruction present (decision needs_fix OR BLOCKED + structural-deviation)", () => {
+        // FEAT-170 SLICE-D: fullstack-dev uses BLOCKED follow-up form instead
+        // of `--decision needs_fix` CLI flag. Either pattern satisfies the
+        // semantic intent (surface the contradiction; don't silently work around).
+        const usesLegacyDecision = content.includes(DECISION_NEEDS_FIX);
+        const usesBlockedFollowUp =
+          content.includes("BLOCKED: structural-deviation") ||
+          content.includes("BLOCKED: structural deviation");
         assert.ok(
-          content.includes(DECISION_NEEDS_FIX),
-          `${agentName}.md missing "${DECISION_NEEDS_FIX}" return instruction`
+          usesLegacyDecision || usesBlockedFollowUp,
+          `${agentName}.md missing structural-deviation return instruction (either "${DECISION_NEEDS_FIX}" CLI flag OR BLOCKED follow-up form)`
         );
       });
 

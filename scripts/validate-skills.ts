@@ -106,12 +106,7 @@ function checkDirectoryName(
   }
 }
 
-function checkLineCount(
-  text: string,
-  fm: Record<string, string>,
-  label: string,
-  errors: string[]
-) {
+function checkLineCount(text: string, fm: Record<string, string>, label: string, errors: string[]) {
   const lines = text.split("\n").length;
   // Per-skill maxLines: frontmatter override (defaults to MAX_LINES). Use sparingly —
   // most skills should stay under 200 lines; complex skills (e.g. builder-ceremony)
