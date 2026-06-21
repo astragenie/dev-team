@@ -5,6 +5,66 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.39.0 — 2026-06-21 — pluggable agent eval framework + no-handoff builder contract + dispatcher terminology
+
+Substantial release covering the eval framework + builder agent rewrite worked on across the 2026-06-21 session.
+
+### Pluggable agent eval framework (FEAT-169 / SLICE-88..90 + FEAT-171 / FEAT-174 / FEAT-175 / FEAT-176)
+
+- New `evals/` tree under hero-crew with strict module boundary (Biome path restriction on `evals/lib/**` + `evals/providers/**`).
+- Judge registry with 7 providers shipped: `generic-openai` (base adapter — covers Cerebras / DeepSeek / Mistral / Together / OpenRouter / GitHub Models / xAI / SambaNova / vLLM / LM Studio via a single adapter), `groq`, `claude-p` (subscription via `claude -p` subprocess), `ollama`, `gemini`, `azure`, `bedrock`.
+- Eval YAML spec format with assertion library (`contains` / `not-contains` / `regex` / `artifact-exists` / `json-shape` / `tool-called` / `dispatched-agent` / `llm-rubric`) + `validate_with` disagreement flow + fallback chain on judge errors.
+- FEAT-171 candidate dispatch — `evals/lib/candidate-dispatch.ts` spawns `claude -p` with the target agent's prompt prepended to the fixture content, captures stream-json output, runs asserts against the real agent response.
+- FEAT-173 isolated tempdir cwd for both candidate + judge subprocesses — eliminates host-session state leakage into rubric verdicts.
+- FEAT-174 rich run artifacts — duration in seconds, captured candidate output, judge rationales, fixture content, git SHA, prompt version, judge id.
+- FEAT-175 side-by-side diff CLI — `bun run evals --diff <runA.json> <runB.json>` shows verdict deltas + flip count + git SHA delta.
+- FEAT-176 Langfuse emit hardening — HTML 404 truncation, `LANGFUSE_DISABLE=1` env override.
+- Subprocess hardening: stdin piped (avoids Windows 32 KB command-line limit), `--verbose` for stream-json, `--dangerously-skip-permissions` for read-only evals, `--max-turns 3` cap, configurable per-call timeouts via env, parser aggregates assistant message events (never falls back to raw stdout).
+- Reference specs: `evals/agents/crew-fullstack-dev.yaml` (9 tests including durability discipline + scope-cross + identity-leak resilience + bundle size + skill budget), `crew-inspector.yaml`, `crew-lead.yaml`.
+
+### fullstack-dev fix (FEAT-170)
+
+- SLICE-92 diagnostic baseline: 5 new fixtures + claude-p live eval + `docs/diagnostics/fullstack-dev-baseline-2026-06-21.md` identifying 5 failure modes.
+- SLICE-93 prompt shrink: 397 → 313 LoC + extraction to new `skills/workflow/fullstack-cross-layer/SKILL.md`. Added `## Cross-layer split detection`, `## Forbidden`, expanded identity-anchor (2 more leak phrases).
+- SLICE-94 routing classifier: `scripts/orchestrate-slice-classify.ts` now exposes `FE_ONLY` + `BE_ONLY` signals alongside `SPLIT_BUILD`. Orchestrate-slice command Step 3 dispatch routes single-stack slices to specialist builders, reserving fullstack-dev for genuinely untagged or cross-layer work.
+- SLICE-95 advisory CI workflow `agent-eval-regression.yml` + line cap enforcement in tests.
+- Final eval verdict: 9/9 PASS (baseline 2/7).
+
+### Builder no-handoff contract (universal across backend-dev / frontend-dev / fullstack-dev)
+
+- `HARD OUTPUT CONTRACT` rewritten — builders do NOT write handoff artifacts. The follow-up IS a badge (when applicable) + a 2-5 line structured inline response with explicit STATUS token (`DONE` / `BLOCKED` / `HELP` / `IN-PROGRESS`), Files, Risks, optional Next.
+- Identity-anchor expanded across all three builders — defends against `"you are the orchestrator"` + `"you are the dispatcher"` + `"you are the lead"` + `"As the orchestrator"` + `"As the dispatcher"` + `"as the lead"` leak phrases. Hard rule on echoes added (stay silent on leak; explaining the leak IS itself an echo).
+- Body prose generalized: `orchestrator` / `lead` → `dispatcher` for non-protective mentions. Whitelist preserves CLI badge name (`escalated_to_lead` — legacy identifier), explicit `crew:lead` agent name in dispatch blacklist, FEAT-163 historical reference.
+- Final return invariant simplified — single path (emit badge + return 2-5 lines) replacing the prior standard/light split.
+- Stack execution router in fullstack-dev (no inline cheat sheet): point at `skills/domain/dotnet/csharp-conventions/` + `aspnetcore-patterns/` + `ef-core-patterns/` for .NET; `typescript-pro/` for TS plugin code; `plugin-dev:*` for plugin internals; `fullstack-cross-layer/` for genuinely cross-layer.
+- Lead drift lint test prevents future "lead" mentions outside the documented whitelist.
+
+### New skills
+
+- `skills/workflow/builder-ceremony/SKILL.md` — completion handoff CLI (legacy reference for downstream tooling), self-verify gate, workflow badges (incl. context-ceiling folded in), pre-completion secret grep, prior-handoff extraction, commit discipline (incl. `dev.stable` worktree carve-out), Light task return format, scope-cross fallback, orchestrator terminology note. `maxLines: 320` (frontmatter override supported via new validator field).
+- `skills/workflow/durability-discipline/SKILL.md` — refuse band-aids; investigate root cause first; surface deferred patches as `--risks: band-aid: <patch>: root cause = <X> needs FEAT-NNN`. Anti-pattern checklist + decision tree + repo-incident examples (FEAT-171 Windows 32 KB, FEAT-176 Langfuse 404, round-5 parser fallback, SLICE-79 bundle truncation).
+- `skills/workflow/lead-orchestration/SKILL.md` (FEAT-172) — extracted from `agents/lead.md` (308 → 263 LoC) covering assignment shape, pre-done checklist, delegation thresholds, context-efficiency rules, agent integration index.
+
+### Constitution changes
+
+- `.claude/crew/constitution.md` `dev.stable: true` worktree carve-out relaxed (revised 2026-06-21):
+  - Only the **slice-scoped tests must pass** to unlock autonomous commits inside isolated worktrees / feature branches.
+  - `typecheck` / `lint` / `format:check` demoted to advisory (deferred to dispatcher's review cycle). Rationale: TS gates run in ~1 s but C# / large-solution gates can hit 30 s+ per cycle; blocking autonomous commits on every full-suite gate kills slice velocity. Functional regressions still caught by tests; style/type drift caught downstream in review.
+  - Branch protection: `dev.stable` does NOT unlock commits to `main` / `master`.
+
+### Release-engineer expanded role
+
+- `agents/release-engineer.md` now declares `role: [release-engineer, infrastructure-engineer]` and owns CI/CD workflow authoring, plugin manifest sync, OTel/Langfuse config, plus live troubleshooting flowcharts (CI / local build / hook crash / test timeout / OTel span drop / marketplace version drift / red tag) and a repo-incident catalogue.
+
+### .NET skill drift fix
+
+- `skills/domain/dotnet/aspnetcore-patterns/SKILL.md` updated from ASP.NET Core 8+ minimal API → **ASP.NET Core on .NET 10 with regular controller-based routing**. Controller skeleton + `Program.cs` wiring added; OutputCache example rewritten as a controller attribute.
+
+### Infrastructure
+
+- `scripts/validate-skills.ts` gained `maxLines:` frontmatter override (mirrors `validate-agents.ts` pattern). Skills that legitimately need >200 LoC declare the cap explicitly.
+- Boundary lint rule in `biome.json` for `evals/lib/**` + `evals/providers/**` (no imports from `agents/`, `scripts/`, `src/`, `hooks/`, `commands/`).
+
 ## v0.38.0 — 2026-06-21 — config-driven feature gates; drop env-var escape hatches
 
 Consolidates four `CREW_*` env-var toggles into the existing `crew.json`
