@@ -20,7 +20,7 @@ const DEFAULT_MODEL = "claude-sonnet-4-6";
 const DEFAULT_TIMEOUT_MS = (() => {
   const env = process.env["CREW_EVAL_JUDGE_TIMEOUT_MS"];
   const parsed = env ? Number.parseInt(env, 10) : Number.NaN;
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 60_000;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 120_000;
 })();
 
 /** NDJSON event emitted by `claude -p --output-format stream-json`. */
