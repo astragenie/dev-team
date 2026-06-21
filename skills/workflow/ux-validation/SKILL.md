@@ -136,7 +136,7 @@ The skill returns raw evidence. Pivot decision lives in
 | `ac_results[*].status == fail` | row 84 → `/crew:fix` |
 | `a11y.violations[*]` serious/critical | row 84 + `concern:accessibility` skill set |
 | `console.errors[*]` | row 95 → `gstack:/investigate` |
-| `visual.diffs[*]` over tolerance | row 84 → `/crew:fix` + frontend-advisory |
+| `visual.diffs[*]` over tolerance | row 84 → `/crew:fix` + ui/react-engineering |
 | `network.failures[*]` | row 84 → `/crew:fix` |
 | Multiple categories | lead splits per Pre-dispatch decomposition rule |
 

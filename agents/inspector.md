@@ -80,9 +80,9 @@ Load the smallest set that covers the diff. `docs/workflow/reviewing-code/` is a
 | --------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | Stack tag from PM triage                            | Match `stack:*` per `docs/standards/feat-tag-schema.md` — ONE domain skill             |
 | Concern tag from PM triage                          | Match `concern:*` — ONE co-load (e.g. `concern:security` → `security-advisory/`)       |
-| Diff touches `.tsx` / `.jsx`                        | `skills/domain/react-engineering/` (+ `typescript/ts-conventions/` for `.tsx`)         |
+| Diff touches `.tsx` / `.jsx`                        | `skills/domain/ui/react-engineering/` (+ `typescript/ts-conventions/` for `.tsx`)         |
 | Diff touches `.ts` (non-React, BE / CLI / plugin)   | `skills/domain/typescript-pro/`                                                        |
-| Diff touches `.cs`                                  | `skills/domain/dotnet/csharp-conventions/` + `aspnetcore-patterns/` (+ `ef-core-patterns/` only when EF Core code present) |
+| Diff touches `.cs`                                  | `skills/domain/backend/dotnet/csharp-conventions/` + `aspnetcore-patterns/` (+ `ef-core-patterns/` only when EF Core code present) |
 | Security-sensitive change (auth, crypto, secrets)   | `skills/domain/security-advisory/`                                                     |
 | Dependency/lockfile change OR auth-touching diff    | `skills/domain/security-sweep/` (auto-fires on the routing-table triggers; emits observability log per scan) |
 | Architecture / system design call in diff           | `skills/domain/architecture-advisory/`                                                 |

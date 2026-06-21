@@ -95,5 +95,5 @@ docker build -t app:latest . && docker-compose up -d
 
 ## See also
 
-- **Database architecture** (schema design, migrations, technology selection, partitioning) → `skills/domain/database-architecture/`
+- **Database architecture** (schema design, migrations, technology selection, partitioning) → `skills/domain/infra/database-architecture/`
 - **Cloud architecture** (multi-cloud, landing zones, IAM, DR, cost optimization) → `skills/domain/cloud-architecture/`

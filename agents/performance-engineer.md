@@ -39,9 +39,9 @@ Your job: identify performance risks in changed code, measure where measurable, 
 ## Skills you consult
 
 - Backend patterns and query design → `skills/domain/backend-advisory/`
-- React performance (re-renders, bundle, CWV in React context) → `skills/domain/react-engineering/`
-- General frontend patterns and CWV → `skills/domain/frontend-advisory/`
-- Database design → `skills/domain/database-architecture/`
+- React performance (re-renders, bundle, CWV in React context) → `skills/domain/ui/react-engineering/`
+- General frontend patterns and CWV → `skills/domain/ui/react-engineering/`
+- Database design → `skills/domain/infra/database-architecture/`
 
 ## Output
 

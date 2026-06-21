@@ -77,8 +77,8 @@ Precedence when instructions conflict: **existing implementation → ADR → dis
 
 Load the matching skill when the slice introduces:
 
-- **Long-running workflow / background job / agent orchestration** — resumable + idempotent + retry-safe + process-restart-safe + idempotency-key on outbound. Patterns + outbox/inbox detail: `skills/domain/microservices-patterns/`.
-- **New service / workflow / cross-service state change** → `skills/domain/microservices-patterns/` (outbox + inbox + correlation-id + saga over 2PC + timeouts).
+- **Long-running workflow / background job / agent orchestration** — resumable + idempotent + retry-safe + process-restart-safe + idempotency-key on outbound. Patterns + outbox/inbox detail: `skills/domain/infra/microservices-patterns/`.
+- **New service / workflow / cross-service state change** → `skills/domain/infra/microservices-patterns/` (outbox + inbox + correlation-id + saga over 2PC + timeouts).
 - **Memory-eligible data (entities / events / executions)** — reuse the existing AstraMemory ingestion pipeline. Never roll a parallel memory mechanism.
 - **New provider / adapter** — interface + adapter pattern; provider swappable.
 
@@ -154,7 +154,7 @@ Before introducing **caching, retries, circuit breakers, telemetry, health check
 
 ## Microservice reliability
 
-Cross-service state change touching both a DB row AND an outbound message → dual-write trap. Load `skills/domain/microservices-patterns/` for outbox / inbox / correlation-id / saga / retry-classification / circuit-breaker / timeout discipline. Two non-negotiables at this level: (1) DB commit + broker publish is NOT atomic — use the platform outbox; (2) every outbound call has an explicit bounded timeout (5s inter-service default, 30s LLM default). No infinite-wait.
+Cross-service state change touching both a DB row AND an outbound message → dual-write trap. Load `skills/domain/infra/microservices-patterns/` for outbox / inbox / correlation-id / saga / retry-classification / circuit-breaker / timeout discipline. Two non-negotiables at this level: (1) DB commit + broker publish is NOT atomic — use the platform outbox; (2) every outbound call has an explicit bounded timeout (5s inter-service default, 30s LLM default). No infinite-wait.
 
 ## API design defaults
 
@@ -231,9 +231,9 @@ Contract-first service, implementation needs a shape / route / status code / aut
 
 | Slice touches | Load |
 |---|---|
-| `*.cs` / `*.csproj` / `appsettings*.json` (.NET 10 + ASP.NET Core controllers + EF Core 10) | `skills/domain/dotnet/csharp-conventions/` + `aspnetcore-patterns/` + (EF only when touched) `ef-core-patterns/` |
-| Schema design / migrations / DB performance (PostgreSQL primary) | `skills/domain/database-architecture/` |
-| Microservices, inter-service calls, queues, circuit breakers, sagas, outbox/inbox | `skills/domain/microservices-patterns/` |
+| `*.cs` / `*.csproj` / `appsettings*.json` (.NET 10 + ASP.NET Core controllers + EF Core 10) | `skills/domain/backend/dotnet/csharp-conventions/` + `aspnetcore-patterns/` + (EF only when touched) `ef-core-patterns/` |
+| Schema design / migrations / DB performance (PostgreSQL primary) | `skills/domain/infra/database-architecture/` |
+| Microservices, inter-service calls, queues, circuit breakers, sagas, outbox/inbox | `skills/domain/infra/microservices-patterns/` |
 | OpenAPI codegen — regen generated C# stubs / TS contract types (committed) | `skills/domain/contract-codegen/` (BE recipes) — **first step before feature work** |
 | New surface, error handling, observability, deployment standards | `skills/universal/engineering-standards/` |
 

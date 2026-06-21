@@ -187,11 +187,11 @@ Implementation needs a shape / route / status code NOT in the OpenAPI YAML:
 
 | Slice touches | Load |
 |---|---|
-| React component / hooks / state | `skills/domain/react-engineering/` |
+| React component / hooks / state | `skills/domain/ui/react-engineering/` |
 | `*.ts` / `*.tsx` / `tsconfig*` | `skills/domain/typescript-pro/` |
-| Frontend code change | `skills/domain/frontend-advisory/` |
+| Frontend code change | `skills/domain/ui/react-engineering/` |
 | Orval clients / openapi-msw handlers from OpenAPI YAML | `skills/domain/contract-codegen/` (FE recipes) |
-| `concern:accessibility` tagged | `skills/domain/ux-methodology/references/accessibility.md` |
+| `concern:accessibility` tagged | `skills/domain/ui/ux-methodology/references/accessibility.md` |
 | `concern:ux` tagged | re-read the UX spec before designing |
 | New surface, error handling, observability, deployment standards | `skills/universal/engineering-standards/` |
 

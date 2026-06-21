@@ -19,9 +19,9 @@ Your job: apply the full .NET quality bar to the diff and return structured find
 
 - Read the diff (`git diff` or files specified in the dispatch)
 - Load and apply all three dotnet skills:
-  1. `skills/domain/dotnet/csharp-conventions/` — language, DI, types, async, LINQ, size budgets
-  2. `skills/domain/dotnet/aspnetcore-patterns/` — middleware, health checks, caching, rate limiting, versioning
-  3. `skills/domain/dotnet/ef-core-patterns/` — queries, N+1, compiled queries, bulk ops, migrations
+  1. `skills/domain/backend/dotnet/csharp-conventions/` — language, DI, types, async, LINQ, size budgets
+  2. `skills/domain/backend/dotnet/aspnetcore-patterns/` — middleware, health checks, caching, rate limiting, versioning
+  3. `skills/domain/backend/dotnet/ef-core-patterns/` — queries, N+1, compiled queries, bulk ops, migrations
 - Check every `.cs` file in the diff against the checklist below
 - Report findings — do not fix them
 

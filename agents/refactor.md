@@ -138,9 +138,9 @@ After writing the artifact, commit changes, then report done.
 
 - Before fixing any `.ts`, `.tsx`, `.cs`, `.sql`, or `.py` file → `skills/workflow/reviewing-code/`
 - `.ts` / `.tsx` edit → `skills/domain/typescript-pro/`
-- React component / hooks (`*.tsx`, `*.jsx`) → `skills/domain/react-engineering/`
-- `.cs` / .NET edit → `skills/domain/dotnet/`
-- SQL / migration file → `skills/domain/database-architecture/`
+- React component / hooks (`*.tsx`, `*.jsx`) → `skills/domain/ui/react-engineering/`
+- `.cs` / .NET edit → `skills/domain/backend/dotnet/`
+- SQL / migration file → `skills/domain/infra/database-architecture/`
 - `.py` edit → `skills/domain/python-pro/`
 - `agents/*.md` or `skills/**/*.md` edit → `skills/domain/prompt-engineering/`
 - Editing a `SKILL.md` specifically → `skills/meta/skill-creator/`

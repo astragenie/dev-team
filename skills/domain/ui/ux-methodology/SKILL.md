@@ -61,8 +61,8 @@ Each reference is self-contained — no prior context from this SKILL.md is requ
 
 ## Cross-references
 
-- Frontend implementation of design decisions → `skills/domain/frontend-advisory/`
-- React component architecture for UX patterns → `skills/domain/react-engineering/`
+- Frontend implementation of design decisions → `skills/domain/ui/react-engineering/`
+- React component architecture for UX patterns → `skills/domain/ui/react-engineering/`
 - Prompt and AI UX patterns (beyond visual design) → `skills/domain/prompt-engineering/`
 
 ## Done / Acceptance

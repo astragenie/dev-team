@@ -26,7 +26,7 @@ npx claude-code-templates@latest --skill development/root-cause-discipline
 | `development/root-cause-discipline` | `skills/workflow/root-cause-discipline/` | 2026-06-04 |
 | `development/senior-architect` | `skills/domain/architecture-advisory/` | 2026-06-04 |
 | `development/senior-backend` | `skills/domain/backend-advisory/` | 2026-06-04 |
-| `development/senior-frontend` | `skills/domain/frontend-advisory/` | 2026-06-04 |
+| `development/senior-frontend` | `skills/domain/ui/react-engineering/` | 2026-06-04 |
 | `development/senior-fullstack` | `skills/domain/fullstack-advisory/` | 2026-06-04 |
 | `development/senior-security` | `skills/domain/security-advisory/` | 2026-06-04 |
 | `development/senior-prompt-engineer` | `skills/domain/prompt-engineering/` | 2026-06-04 |

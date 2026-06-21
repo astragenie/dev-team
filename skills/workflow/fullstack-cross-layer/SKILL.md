@@ -31,7 +31,7 @@ Skip loading for pure-BE, pure-FE, doc-only, hooks/agents/skills/commands edits.
 | `hooks/*`                                 | `plugin-dev:hook-development`                                    |
 | `plugin.json` / `marketplace.json`        | `plugin-dev:plugin-validator` (pre-commit check)                 |
 | `*.ts` / `*.tsx`                          | `skills/domain/typescript-pro/`                                  |
-| `*.cs` / `*.csproj` / `appsettings*.json` | `skills/domain/dotnet/csharp-conventions/` + `skills/domain/dotnet/aspnetcore-patterns/` (load `ef-core-patterns/` only when EF Core touched). For deep BE work → re-route to `crew:backend-dev` |
+| `*.cs` / `*.csproj` / `appsettings*.json` | `skills/domain/backend/dotnet/csharp-conventions/` + `skills/domain/backend/dotnet/aspnetcore-patterns/` (load `ef-core-patterns/` only when EF Core touched). For deep BE work → re-route to `crew:backend-dev` |
 | `*.py`                                    | `skills/domain/python-pro/`                                      |
 | Backend logic (server, API, data layer)   | `skills/domain/backend-advisory/`                                |
 | Full-stack spanning FE + BE               | `skills/domain/fullstack-advisory/`                              |

@@ -51,15 +51,15 @@ I do not own:
 
 ### Skills you consult (per routing-table)
 
-- Frontend code change → `skills/domain/frontend-advisory/`
+- Frontend code change → `skills/domain/ui/react-engineering/`
 - Frontend visual / creative design (CSS layout, color systems, typography) → `skills/domain/frontend-design/` — load `references/structural-dna.md` when choosing page structure, `references/style-selection.md` when picking direction/palette/fonts, `references/react-ui-quality.md` for the pre-ship checklist
 - Tailwind CSS change → `skills/domain/tailwind-patterns/`
 - Mobile app design (iOS/Android UX, React Native, Flutter, touch targets) → `skills/domain/mobile-design/`
-- UX research, persona work, interaction design, accessibility audit → `skills/domain/ux-methodology/`
+- UX research, persona work, interaction design, accessibility audit → `skills/domain/ui/ux-methodology/`
 - Brainstorming / option divergence → `skills/universal/brainstorming/`
 - Authoring a new skill or design pattern → `skills/meta/skill-creator/`
 - UX research synthesis → `skills/workflow/research-coordination/`
-- React implementation handoff → `skills/domain/react-engineering/`
+- React implementation handoff → `skills/domain/ui/react-engineering/`
 
 ## Delegation map
 

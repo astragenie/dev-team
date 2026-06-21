@@ -65,8 +65,8 @@ Each reference is self-contained — no prior context from this SKILL.md is requ
 ## Cross-references
 
 - TypeScript type patterns (generics, discriminated unions, utility types) → `skills/domain/typescript-pro/`
-- General frontend patterns (CSS, browser APIs, multi-framework considerations) → `skills/domain/frontend-advisory/`
-- UX methodology for the components being built → `skills/domain/ux-methodology/`
+- General frontend patterns (CSS, browser APIs, multi-framework considerations) → `skills/domain/ui/react-engineering/`
+- UX methodology for the components being built → `skills/domain/ui/ux-methodology/`
 - AI app / LLM SDK integration in React contexts → `skills/domain/ai-engineering/`
 
 ## Done / Acceptance
