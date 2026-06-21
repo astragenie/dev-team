@@ -1,33 +1,64 @@
 ---
 name: engineering-standards
 prompt_id: engineering-standards
-version: 1.0.0
+version: 1.1.0
 tier: universal
 model_pinned: sonnet
-description: Repo-portable engineering standards covering definition-of-done, code quality, minimal change policy, testing, API design, error handling, observability, and DevOps deployment. Vendored from C:/work/mega/kb/08-engineering/ so builders can consult the canonical standards without a hardcoded path. Loaded by any agent that ships product code.
+description: Engineering-standards INDEX + fast-path checklists. Routes to vendored references (definition-of-done, code quality, minimal change, testing, API design, error handling, observability, DevOps deployment). Carries inline fast-path checklists for common cases (new endpoint, new error path, deployment-impacting change) so builders don't load 4 reference files for a routine slice. Vendored from kb/08-engineering/ for portability.
 owner: astragenie
 last_reviewed: 2026-06-21
 triggers: ["definition of done", "code quality", "minimal change", "testing standards", "api design", "error handling", "observability", "devops", "deployment standards", "production readiness"]
 ---
 
-# Engineering Standards
+# Engineering Standards — index + fast paths
 
-Canonical engineering bar for any product code the team ships. Source of truth was `C:/work/mega/kb/08-engineering/` — vendored here as `references/` so builders can load it portably regardless of which machine the agent runs on.
+Thin router over the vendored engineering bar (`references/`). For routine work, consult the fast-path checklist below. Load reference files only when the slice needs depth on one specific concern.
 
 ## Trigger
 
-Load when:
+Load when the slice introduces or changes:
 
-- Slice introduces a NEW public surface (function / endpoint / artifact kind / CLI subcommand)
-- Slice changes how errors are emitted, how things are logged, how observability is wired
-- Builder needs to confirm test scope / production-readiness bar before declaring DONE
-- Reviewer is gating against repo standards
+- Public behavior (new endpoint, CLI subcommand, exported function, artifact kind)
+- Error handling (how errors are emitted, propagated, or surfaced)
+- Observability (spans, metrics, structured logs)
+- API shape (route, request/response contract, status codes)
+- Testing strategy (new test layer, deferred test, coverage commitment)
+- Deployment impact (env vars, migrations, infra wiring, release gates)
 
-Skip when the slice is a single-line typo fix, a docs-only change, or a mechanical rename. The standards apply to product code, not chore commits.
+Skip for: typos, comment edits, docs-only changes, mechanical renames, formatting-only commits. Standards apply to product code, not chore commits.
 
-## How to consult
+## Fast path
 
-Read the specific reference for the concern at hand. Don't load all 8 at once.
+Cover these inline before reaching for a reference file. Reference files are for depth on a specific concern, not lookup for every slice.
+
+### New endpoint / handler
+
+- RFC 7807 ProblemDetails on errors (`application/problem+json`); no raw stack traces.
+- Stable status codes: 400 bad request, 401 auth, 403 policy, 404 resource, 409 conflict, 422 semantic, 429 rate-limited, 5xx server.
+- Pagination on lists (page/pageSize + total, OR cursor + next_cursor).
+- Input validation at the boundary (model binding + validator) before service call.
+- Scoped tests (golden path + edge cases per `references/08-testing-standards.md`).
+- OTel span + structured log per request (`{request_id, user_id_hashed, method, path, status, duration_ms, outcome}`).
+- No secrets or PII in logs; mask before serialization.
+
+### New error path
+
+- Decide throw vs typed Result per `references/10-error-handling-standards.md`.
+- Every throw → span event + structured log; never silent.
+- Caller contract documented (which exceptions / which Result variants).
+
+### Deployment-impacting change
+
+- Migrations safe (expand-contract, reversible, idempotent backfill).
+- Env vars + secrets registered in deployment guidance.
+- Health endpoints (`/health`, `/ready`, `/metrics`) exercised by smoke test for new services.
+- Release gate per `references/19-devops-deployment-standards.md`.
+
+If the fast path doesn't answer the question, route to a reference file.
+
+## Reference router
+
+Read the specific reference for the concern. Don't load all 8 at once.
 
 | Concern | Reference file |
 |---|---|
@@ -39,40 +70,20 @@ Read the specific reference for the concern at hand. Don't load all 8 at once.
 | What spans / metrics / structured logs does this endpoint need? | `references/11-observability-standards.md` |
 | Deployment + DevOps gates the change must satisfy | `references/19-devops-deployment-standards.md` |
 
-## When to apply (decision tree)
-
-```
-New public surface?
-  ├─ YES → consult definition-of-done + api-design + testing + observability
-  └─ NO  → just minimal-change + the concern-specific standard
-```
-
-```
-Error handling changed?
-  ├─ THROW path     → error-handling + observability (every throw is a span event)
-  ├─ RETURN typed   → error-handling (typed Result pattern)
-  └─ SILENT swallow → REFUSE per durability-discipline; see anti-patterns
-```
-
-```
-Deployment-impacting?
-  ├─ YES → devops-deployment + observability (every deploy is a deploy event)
-  └─ NO  → skip devops-deployment for this slice
-```
-
 ## What this skill does NOT do
 
-- It does NOT replace the durability-discipline skill (band-aid refusal). That's a separate concern; load both when both apply.
-- It does NOT carry stack-specific recipes — those live in `skills/domain/typescript-pro/`, `skills/domain/dotnet/*`, etc.
-- It does NOT carry plugin-internals guidance — those live in `plugin-dev:*` skills.
+- Does NOT replace `durability-discipline` (band-aid refusal). Load both when both apply.
+- Does NOT carry stack-specific recipes — those live in `skills/domain/typescript-pro/`, `skills/domain/dotnet/*`, etc.
+- Does NOT carry plugin-internals guidance — `plugin-dev:*` skills own that.
 
 ## Done / Acceptance
 
 You've consulted this skill correctly when:
 
-- The specific reference file you loaded matches the concern you're solving (no scatter loading).
-- Your follow-up Risks line cites which standard you applied (e.g. `Risks: applied error-handling §3 (typed Result pattern); no observability work in scope`).
-- You did NOT vendor the standard's text inline in your code — the reference exists; cite it, don't paraphrase.
+- The fast path covered the routine concerns inline (no reference file load needed for a routine slice).
+- A reference file was loaded only when the slice needed depth on that one concern.
+- Standards influenced the diff (visible in code shape — RFC 7807 errors, paginated lists, span on new endpoint, etc.).
+- Mention an applied standard in your Risks/Next only when it materially affects review or follow-up (e.g. `Risks: applied minimal-change policy; full refactor deferred`). Routine application doesn't need narration.
 
 ## Maintenance
 
