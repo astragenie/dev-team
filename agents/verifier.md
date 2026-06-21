@@ -196,7 +196,7 @@ Cap tightened from 4 to 3 per FEAT-153 — each Skill load is ~600 ms of round-t
 
 Load the smallest set needed. Pick at most 3 from below.
 
-> **UI/UX/a11y is NOT verifier's scope.** When FEAT tags include `surface:ui` / `concern:ux` / `concern:accessibility`, emit `escalated_to_lead --note "UX/a11y validation needed — dispatch crew:qa-expert"` and own only the non-UX gates. Do not drive Playwright / `gstack /qa` yourself.
+> **UI/UX/a11y is NOT verifier's scope.** When FEAT tags include `surface:ui` / `concern:ux` / `concern:accessibility`, emit `escalated_to_dispatcher --note "UX/a11y validation needed — dispatch crew:qa-expert"` and own only the non-UX gates. Do not drive Playwright / `gstack /qa` yourself.
 
 | Signal                                                              | Skill                                                                  |
 | ------------------------------------------------------------------- | ---------------------------------------------------------------------- |
@@ -260,7 +260,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge <b
 `<badge>` for verifier manual emission:
 
 - `blocked` — external blocker (environment unavailable, cannot exercise scenario; flaky scenario after SLA cap). Add `--blocked-by <artifact-id>` when applicable.
-- `escalated_to_lead` — decision requires human judgment.
+- `escalated_to_dispatcher` — decision requires human judgment.
 - `validation_skipped` — skipped validation gate; concrete reason only (e.g. environment unavailable).
 
 **Hard constraint**: `validation_skipped` on a blocking gate CANNOT produce a `passed` decision. See [Decision rules](#decision-rules). Use `failed` (or `passed_with_notes` only if the skipped item is unrelated and non-blocking).

@@ -274,6 +274,13 @@ const BADGE_TABLE: Record<string, BadgeSpec> = {
   prod_failed: { selector: (run) => [run.gates.deployment, "prod"], status: "failed" },
   prod_skipped: { selector: (run) => [run.gates.deployment, "prod"], status: "skipped" },
   blocked: { selector: (run) => [run.gates, "blocked"], status: "blocked", custom: true },
+  escalated_to_dispatcher: {
+    selector: (run) => [run.gates, "escalation"],
+    status: "escalated",
+    custom: true
+  },
+  // FEAT-180 v2.0.0 rename: dispatcher → semantic concept; lead alias kept
+  // for backward-compat with historical artifacts + consumer state files.
   escalated_to_lead: {
     selector: (run) => [run.gates, "escalation"],
     status: "escalated",
@@ -522,7 +529,10 @@ const PENDING_BADGE_SPECS: Array<{
     check: (run) => run?.gates?.deployment?.prod?.status === "expected"
   },
   { badge: "blocked", check: (run) => run?.gates?.blocked?.status === "blocked" },
-  { badge: "escalated_to_lead", check: (run) => run?.gates?.escalation?.status === "escalated" }
+  {
+    badge: "escalated_to_dispatcher",
+    check: (run) => run?.gates?.escalation?.status === "escalated"
+  }
 ];
 
 function collectPendingBadges(currentRun: WorkflowRun | null | undefined): string[] {

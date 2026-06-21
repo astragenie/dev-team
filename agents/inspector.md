@@ -112,7 +112,7 @@ The lead may dispatch you as one of N parallel inspectors, each with a `Review l
 |---|---|
 | < 20 files | Read each changed file in full |
 | 20–100 files | Diff-first; deep-read high-risk files (auth, payment, config, migrations, shared utilities) |
-| > 100 files | `mark-badge escalated_to_lead --note "diff too large to review in one pass; lead should split the slice"` — do NOT ask the user (inspector is read-only and dispatched by lead) |
+| > 100 files | `mark-badge escalated_to_dispatcher --note "diff too large to review in one pass; lead should split the slice"` — do NOT ask the user (inspector is read-only and dispatched by lead) |
 
 **Opening statement** (one paragraph, no headings): what I am reviewing · what I will NOT change (you are read-only) · which gates + repo standards + configured review skills I will apply · what I will deliver (review-result artifact + decision).
 
@@ -259,7 +259,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge <b
 `<badge>` for inspector manual emission:
 
 - `blocked` — external blocker (missing context, cannot access diff, scope unclear). Add `--blocked-by <artifact-id>` when applicable.
-- `escalated_to_lead` — decision requires human judgment.
+- `escalated_to_dispatcher` — decision requires human judgment.
 - `review_skipped` — skipped review gate; concrete reason only.
 
 ## Report contract

@@ -69,7 +69,8 @@ const LEAD_WHITELIST_PATTERNS = [
   /["']you are the lead["']/, // identity-anchor leak phrase (double or single quoted)
   /["']as the lead["']/, // identity-anchor leak phrase
   /`crew:lead`/, // explicit agent name reference
-  /escalated_to_lead/, // CLI badge name (backward compat)
+  /escalated_to_dispatcher/, // CLI badge name (FEAT-180 rename)
+  /escalated_to_lead/, // CLI badge name (backward-compat alias)
   /--to lead/, // CLI flag default value
   /\(interactive Claude session/, // orchestrator glossary clause
   /^- `lead`/m // peer dispatch blacklist entry
@@ -453,16 +454,18 @@ describe("## HARD OUTPUT CONTRACT — Prong A coverage", () => {
     test("FEAT-161 cite-back", () => {
       assert.ok(content.includes(FEAT_161_CITE), "fullstack-dev.md missing FEAT-161 cite-back");
     });
-    // FEAT-180 (v2.0.0 builder rewrite): fullstack-dev now uses Golden-Path-
-    // first ordering. HARD OUTPUT CONTRACT sits early (after Golden path +
-    // Stack router + TDD policy); Identity anchor moved to a defensive
-    // section near the end since it's only applied when the dispatch prompt
-    // is suspect. Both required headings must still be present.
-    test("placement: HARD CONTRACT + Identity anchor both present", () => {
+    // FEAT-180 (v2.0.0 builder rewrite): Identity anchor stays at the FRONT
+    // (per user "you are builder / fullstack-developer up top"), HARD
+    // OUTPUT CONTRACT comes later after Golden path + Stack router + TDD.
+    test("placement: Identity anchor present + HARD CONTRACT present", () => {
       const identityIdx = content.indexOf("## Identity anchor");
       const contractIdx = content.indexOf(HARD_CONTRACT_HEADING);
       assert.ok(contractIdx !== -1, "fullstack-dev.md HARD CONTRACT heading not found");
       assert.ok(identityIdx !== -1, "fullstack-dev.md missing Identity anchor");
+      assert.ok(
+        identityIdx < contractIdx,
+        "fullstack-dev.md Identity anchor must appear before HARD CONTRACT"
+      );
     });
   });
 

@@ -100,8 +100,8 @@ When you hit an external blocker or need to escalate before writing the handoff,
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge blocked --note "<reason>"
 
 # Escalate when a decision is beyond agent judgment
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge escalated_to_lead --note "<reason>"
-# NOTE: badge name is `escalated_to_lead` for CLI compatibility; semantically
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge escalated_to_dispatcher --note "<reason>"
+# NOTE: badge name is `escalated_to_dispatcher` for CLI compatibility; semantically
 # this means "escalated to whatever orchestrator dispatched this run" —
 # interactive Claude session, /crew:build, autonomous loop, etc.
 
@@ -251,7 +251,7 @@ This is the ONLY safe path to specialist routing from a builder dispatch.
 
 Before returning to the orchestrator, do TWO things in order:
 
-1. **Emit a badge** if applicable (blocker / help_request / escalated_to_lead / validation_skipped / context_ceiling). Optional if the run completed cleanly.
+1. **Emit a badge** if applicable (blocker / help_request / escalated_to_dispatcher / validation_skipped / context_ceiling). Optional if the run completed cleanly.
 2. **Write the handoff** via `write-handoff-and-bundle` (or `write-handoff --update <stub>` for resumed runs).
 
 Then return 2-3 lines to the orchestrator:
@@ -276,4 +276,4 @@ That's it. The orchestrator reads the handoff body, not your inline reply — do
 - Autonomous loop walker (`/loop:slice start` → `slice-build` dispatch)
 - Explicit `crew:lead` dispatch
 
-The builder doesn't need to know which — write the handoff + emit badges, and whichever entity dispatched will read them at the next cycle. The CLI flag defaults (`--to lead`, `escalated_to_lead`) use "lead" for backward compatibility; semantically read as "orchestrator".
+The builder doesn't need to know which — write the handoff + emit badges, and whichever entity dispatched will read them at the next cycle. The CLI flag defaults (`--to lead`, `escalated_to_dispatcher`) use "lead" for backward compatibility; semantically read as "orchestrator".
