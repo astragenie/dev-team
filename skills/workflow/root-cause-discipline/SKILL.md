@@ -1,23 +1,34 @@
 ---
 name: root-cause-discipline
 prompt_id: root-cause-discipline
-version: 1.0.0
+version: 1.1.0
 tier: workflow
 model_pinned: sonnet
 maxLines: 250
-description: Root-cause-first discipline. Two halves of one principle — refuse band-aids (the anti-pattern taxonomy) + investigate root cause before fixing (the four-phase procedure). Loaded by every builder dispatch (backend-dev / frontend-dev / fullstack-dev) and by anyone touching an intermittent / unknown-root-cause failure. Replaces the prior durability-discipline + systematic-debugging skills (merged 2026-06-21).
+description: Root-cause-first discipline for debugging work. Refuse band-aids (anti-pattern taxonomy) + investigate root cause before fixing (four-phase procedure). Loaded ON-DEMAND for bug fixes, test failures, flakes, regressions, and suspicious patches — NOT on every builder dispatch. Builders carry the band-aid mini-contract in builder-ceremony; this skill loads when debugging.
 source: aitmpl/development/systematic-debugging
 source_version: 2026-06-04
 last_reviewed: 2026-06-21
 owner: hero-crew
-triggers: ["band-aid", "try/catch swallow", "magic constant", "disable test", "TODO fix", "quick fix", "hardcode", "bug", "test failure", "unexpected behavior", "intermittent failure", "root cause", "repro"]
+triggers: ["bug fix", "test failure", "flaky test", "regression", "intermittent failure", "unknown root cause", "band-aid", "try/catch swallow", "magic constant", "disable test", "hardcode fallback", "bump timeout", "cap bump", "TODO fix"]
 ---
 
 # Root-cause discipline — refuse band-aids + find the cause
 
 ## Trigger
 
-Load on every builder dispatch (backend-dev / frontend-dev / fullstack-dev). The skill is short, cheap, uniform across stacks. Load ESPECIALLY when: under time pressure, "just one quick fix" seems obvious, you've already tried multiple fixes, or you don't fully understand the issue.
+Load when:
+
+- Fixing a bug or addressing a reported failure.
+- A test fails unexpectedly (yours or someone else's).
+- Root cause of a behavior is unclear after a normal read.
+- A bug is intermittent / flaky / non-deterministic.
+- You're tempted to write a band-aid: swallow an error, disable a test, bump a timeout / cap, hardcode a fallback, or apply a magic constant.
+- A regression appeared and the introducing commit is unknown.
+
+DO NOT load on routine feature work. Builders carry the short band-aid mini-contract in `skills/workflow/builder-ceremony/` and only escalate to this skill when debugging.
+
+ESPECIALLY load when: under time pressure, "just one quick fix" seems obvious, you've already tried multiple fixes, or you don't fully understand the issue.
 
 ## The iron law
 
@@ -29,11 +40,11 @@ NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST
 
 If you haven't completed Phase 1 (Root Cause Investigation), you cannot propose fixes.
 
-## The rule (band-aid policy)
+## Band-aid policy
 
 When you spot a symptom of a deeper issue:
 
-1. **Investigate root cause BEFORE writing the patch.** One Read or Grep, not zero. Run Phase 1 below.
+1. **Investigate before patching.** Perform enough investigation to identify the likely root cause — a shallow grep is rarely enough for a real bug. Run Phase 1 below.
 2. **If root cause is IN the slice scope** — fix it at the source. The patch IS the fix.
 3. **If root cause is OUT of slice scope** — write the patch + surface a `Risks` entry: `band-aid: <patch>: root cause = <X>`. Reference an existing follow-up id when one exists; never let a band-aid land without explicit, named tech debt.
 4. **Never silently paper over.** Silent patches become hidden regressions when the next slice touches the area.
@@ -149,27 +160,7 @@ If systematic investigation reveals a truly environmental, timing-dependent, or 
 2. Implement appropriate handling (retry, timeout, error message).
 3. Add monitoring / logging for future investigation.
 
-Note: 95% of "no root cause" cases are incomplete investigation.
-
-## Real-world impact
-
-- Systematic approach: 15–30 minutes to fix.
-- Random fixes approach: 2–3 hours of thrashing.
-- First-time fix rate: 95% vs 40%.
-- New bugs introduced: near zero vs common.
-
-## Supporting techniques
-
-- `investigation.md` — three complementary techniques for finding root cause: (1) backward stack tracing, (2) `git bisect` for regressions with unknown introducing commit, (3) anti-patterns + partner signals to refuse along the way.
-- `flake-and-hardening.md` — two after-cause techniques: (1) condition-based waiting to kill timing flakes, (2) defense-in-depth validation across four layers to make the bug structurally impossible.
-- `find-polluter.sh` — executable: bisects a test suite to find which test pollutes shared state.
-- `condition-based-waiting-example.ts` — domain-specific helpers (`waitForEvent`, `waitForEventCount`, `waitForEventMatch`).
-
-**Related skills:**
-
-- `superpowers:test-driven-development` — for creating the failing test case (Phase 4, Step 1).
-- `superpowers:verification-before-completion` — verify fix worked before claiming success.
-- `agents/inspector.md` — review lens for band-aid detection rules.
+Treat the "environmental" verdict with skepticism — most "no root cause" calls turn out to be incomplete investigation. Try Phase 1 again before settling for handling-without-root-cause.
 
 ## Done / Acceptance
 
@@ -178,3 +169,18 @@ Note: 95% of "no root cause" cases are incomplete investigation.
 - The fix resolves the failing test and no other tests regress.
 - Fix is targeted at the root cause; no unrelated changes are bundled.
 - Any necessary band-aid is surfaced in `Risks` with named follow-up.
+
+## Supporting techniques + related skills
+
+Load these depth files only when SKILL.md isn't enough:
+
+- `investigation.md` — backward stack tracing + `git bisect` for unknown-commit regressions + anti-pattern rationalizations.
+- `flake-and-hardening.md` — condition-based waiting (kill timing flakes) + defense-in-depth validation (make the bug structurally impossible).
+- `find-polluter.sh` — bisects a test suite to find which test pollutes shared state.
+- `condition-based-waiting-example.ts` — generic `waitFor` utility implementation.
+
+Related skills (consult on demand):
+
+- `superpowers:test-driven-development` — for creating the failing test case (Phase 4 Step 1).
+- `superpowers:verification-before-completion` — verify fix worked before claiming success.
+- `agents/inspector.md` — review lens for band-aid detection rules.

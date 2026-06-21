@@ -77,7 +77,7 @@ Precedence when instructions conflict: **existing implementation → ADR → dis
 
 Load the matching skill when the slice introduces:
 
-- **Long-running workflow / background job / agent orchestration** → `skills/workflow/root-cause-discipline/` (resumable + idempotent + retry-safe + process-restart-safe + idempotency-key on outbound).
+- **Long-running workflow / background job / agent orchestration** — resumable + idempotent + retry-safe + process-restart-safe + idempotency-key on outbound. Patterns + outbox/inbox detail: `skills/domain/microservices-patterns/`.
 - **New service / workflow / cross-service state change** → `skills/domain/microservices-patterns/` (outbox + inbox + correlation-id + saga over 2PC + timeouts).
 - **Memory-eligible data (entities / events / executions)** — reuse the existing AstraMemory ingestion pipeline. Never roll a parallel memory mechanism.
 - **New provider / adapter** — interface + adapter pattern; provider swappable.
@@ -241,8 +241,11 @@ Other backend stacks (Node, Python, Go) are out of scope — surface via `mark-b
 
 Always-on (mandatory):
 
-- `skills/workflow/root-cause-discipline/` — refuse band-aids; investigate root cause.
 - `skills/workflow/self-verify-gate/` — scoped pre-return verification.
+
+On-demand (load when debugging):
+
+- `skills/workflow/root-cause-discipline/` — bug fixes, test failures, flakes, regressions, or tempted to band-aid. Builder-ceremony carries the band-aid mini-contract for routine work.
 
 ## TDD policy
 

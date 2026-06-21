@@ -1,158 +1,95 @@
-// Complete implementation of condition-based waiting utilities
-// From: Lace test infrastructure improvements (2025-10-03)
-// Context: Fixed 15 flaky tests by replacing arbitrary timeouts
-
-import type { ThreadManager } from '~/threads/thread-manager';
-import type { LaceEvent, LaceEventType } from '~/threads/types';
-
-/**
- * Wait for a specific event type to appear in thread
- *
- * @param threadManager - The thread manager to query
- * @param threadId - Thread to check for events
- * @param eventType - Type of event to wait for
- * @param timeoutMs - Maximum time to wait (default 5000ms)
- * @returns Promise resolving to the first matching event
- *
- * Example:
- *   await waitForEvent(threadManager, agentThreadId, 'TOOL_RESULT');
- */
-export function waitForEvent(
-  threadManager: ThreadManager,
-  threadId: string,
-  eventType: LaceEventType,
-  timeoutMs = 5000
-): Promise<LaceEvent> {
-  return new Promise((resolve, reject) => {
-    const startTime = Date.now();
-
-    const check = () => {
-      const events = threadManager.getEvents(threadId);
-      const event = events.find((e) => e.type === eventType);
-
-      if (event) {
-        resolve(event);
-      } else if (Date.now() - startTime > timeoutMs) {
-        reject(new Error(`Timeout waiting for ${eventType} event after ${timeoutMs}ms`));
-      } else {
-        setTimeout(check, 10); // Poll every 10ms for efficiency
-      }
-    };
-
-    check();
-  });
-}
+// Generic condition-based waiting utilities.
+//
+// Drop-in for any TS/JS test suite. The original Lace-specific versions
+// (waitForEvent / waitForEventCount / waitForEventMatch typed against
+// LaceEvent / ThreadManager) were generalized in v1.1.0.
+//
+// Pattern: pass a closure that returns the value when ready, undefined /
+// null / false otherwise. The poller resolves with the value on first
+// success, or rejects with a clear error after timeoutMs.
 
 /**
- * Wait for a specific number of events of a given type
+ * Wait for a condition to become truthy and return its value.
  *
- * @param threadManager - The thread manager to query
- * @param threadId - Thread to check for events
- * @param eventType - Type of event to wait for
- * @param count - Number of events to wait for
- * @param timeoutMs - Maximum time to wait (default 5000ms)
- * @returns Promise resolving to all matching events once count is reached
+ * @param condition - Closure returning the awaited value, or undefined / null / false while not ready.
+ * @param description - Human-readable description used in the timeout error.
+ * @param timeoutMs - Maximum wait in milliseconds (default 5000ms).
+ * @param pollMs - Polling interval in milliseconds (default 10ms). Don't go below 5ms; CPU waste.
  *
- * Example:
- *   // Wait for 2 AGENT_MESSAGE events (initial response + continuation)
- *   await waitForEventCount(threadManager, agentThreadId, 'AGENT_MESSAGE', 2);
+ * Example — wait for an item in a queue:
+ *   const job = await waitFor(() => queue.find(j => j.id === wantId), 'job ' + wantId);
+ *
+ * Example — wait for state:
+ *   await waitFor(() => machine.state === 'ready', 'machine ready');
+ *
+ * Example — wait for file presence:
+ *   await waitFor(() => fs.existsSync(path) ? path : undefined, 'file ' + path);
  */
-export function waitForEventCount(
-  threadManager: ThreadManager,
-  threadId: string,
-  eventType: LaceEventType,
-  count: number,
-  timeoutMs = 5000
-): Promise<LaceEvent[]> {
-  return new Promise((resolve, reject) => {
-    const startTime = Date.now();
-
-    const check = () => {
-      const events = threadManager.getEvents(threadId);
-      const matchingEvents = events.filter((e) => e.type === eventType);
-
-      if (matchingEvents.length >= count) {
-        resolve(matchingEvents);
-      } else if (Date.now() - startTime > timeoutMs) {
-        reject(
-          new Error(
-            `Timeout waiting for ${count} ${eventType} events after ${timeoutMs}ms (got ${matchingEvents.length})`
-          )
-        );
-      } else {
-        setTimeout(check, 10);
-      }
-    };
-
-    check();
-  });
-}
-
-/**
- * Wait for an event matching a custom predicate
- * Useful when you need to check event data, not just type
- *
- * @param threadManager - The thread manager to query
- * @param threadId - Thread to check for events
- * @param predicate - Function that returns true when event matches
- * @param description - Human-readable description for error messages
- * @param timeoutMs - Maximum time to wait (default 5000ms)
- * @returns Promise resolving to the first matching event
- *
- * Example:
- *   // Wait for TOOL_RESULT with specific ID
- *   await waitForEventMatch(
- *     threadManager,
- *     agentThreadId,
- *     (e) => e.type === 'TOOL_RESULT' && e.data.id === 'call_123',
- *     'TOOL_RESULT with id=call_123'
- *   );
- */
-export function waitForEventMatch(
-  threadManager: ThreadManager,
-  threadId: string,
-  predicate: (event: LaceEvent) => boolean,
+export async function waitFor<T>(
+  condition: () => T | undefined | null | false,
   description: string,
-  timeoutMs = 5000
-): Promise<LaceEvent> {
-  return new Promise((resolve, reject) => {
-    const startTime = Date.now();
+  timeoutMs = 5000,
+  pollMs = 10
+): Promise<T> {
+  const startTime = Date.now();
 
-    const check = () => {
-      const events = threadManager.getEvents(threadId);
-      const event = events.find(predicate);
+  while (true) {
+    const result = condition();
+    if (result) return result as T;
 
-      if (event) {
-        resolve(event);
-      } else if (Date.now() - startTime > timeoutMs) {
-        reject(new Error(`Timeout waiting for ${description} after ${timeoutMs}ms`));
-      } else {
-        setTimeout(check, 10);
-      }
-    };
+    if (Date.now() - startTime > timeoutMs) {
+      throw new Error(`Timeout waiting for ${description} after ${timeoutMs}ms`);
+    }
 
-    check();
-  });
+    await new Promise((r) => setTimeout(r, pollMs));
+  }
 }
 
-// Usage example from actual debugging session:
+/**
+ * Wait until a collection contains at least `count` items matching the predicate.
+ * Resolves with the matching subset.
+ *
+ * Example — wait for 2 results to arrive:
+ *   const results = await waitForCount(() => store.results.filter(r => r.type === 'OK'), 2, '2 OK results');
+ */
+export async function waitForCount<T>(
+  collect: () => readonly T[],
+  count: number,
+  description: string,
+  timeoutMs = 5000,
+  pollMs = 10
+): Promise<T[]> {
+  const startTime = Date.now();
+
+  while (true) {
+    const matches = collect();
+    if (matches.length >= count) return matches.slice(0, count);
+
+    if (Date.now() - startTime > timeoutMs) {
+      throw new Error(
+        `Timeout waiting for ${count} ${description} after ${timeoutMs}ms (got ${matches.length})`
+      );
+    }
+
+    await new Promise((r) => setTimeout(r, pollMs));
+  }
+}
+
+// Real-world usage shape (from the original debugging session that motivated
+// this utility — names anonymized):
 //
-// BEFORE (flaky):
-// ---------------
-// const messagePromise = agent.sendMessage('Execute tools');
-// await new Promise(r => setTimeout(r, 300)); // Hope tools start in 300ms
-// agent.abort();
-// await messagePromise;
-// await new Promise(r => setTimeout(r, 50));  // Hope results arrive in 50ms
-// expect(toolResults.length).toBe(2);         // Fails randomly
+// BEFORE (flaky — 60% pass rate, random failures):
+//   const messagePromise = client.send('Execute tools');
+//   await new Promise(r => setTimeout(r, 300)); // hope tools start in 300ms
+//   client.abort();
+//   await messagePromise;
+//   await new Promise(r => setTimeout(r, 50));  // hope results arrive in 50ms
+//   expect(toolResults.length).toBe(2);
 //
-// AFTER (reliable):
-// ----------------
-// const messagePromise = agent.sendMessage('Execute tools');
-// await waitForEventCount(threadManager, threadId, 'TOOL_CALL', 2); // Wait for tools to start
-// agent.abort();
-// await messagePromise;
-// await waitForEventCount(threadManager, threadId, 'TOOL_RESULT', 2); // Wait for results
-// expect(toolResults.length).toBe(2); // Always succeeds
-//
-// Result: 60% pass rate → 100%, 40% faster execution
+// AFTER (deterministic — 100% pass rate, 40% faster):
+//   const messagePromise = client.send('Execute tools');
+//   await waitForCount(() => events.filter(e => e.type === 'TOOL_CALL'), 2, 'TOOL_CALL events');
+//   client.abort();
+//   await messagePromise;
+//   await waitForCount(() => events.filter(e => e.type === 'TOOL_RESULT'), 2, 'TOOL_RESULT events');
+//   expect(toolResults.length).toBe(2);

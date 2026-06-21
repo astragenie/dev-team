@@ -1,7 +1,7 @@
 ---
 name: builder-ceremony
 prompt_id: builder-ceremony
-version: 2.1.0
+version: 2.2.0
 tier: workflow
 model_pinned: sonnet
 description: Builder slice-boundary discipline — inline task return format, workflow badges, pre-completion secret grep, scope-cross fallback, context-ceiling escalation. Loaded by backend-dev / frontend-dev / fullstack-dev so the builder prompts focus on the JOB. Inline-only: no handoff artifacts, no bundles, no stubs.
@@ -57,6 +57,17 @@ Match → halt + `mark-badge blocked --note "secrets in diff"`. False positives 
 ## Self-verify gate
 
 Run `skills/workflow/self-verify-gate/` before return. FAIL → BLOCKED. Verifier picks up SKIPPED / TIMEOUT.
+
+## Band-aid mini-contract (always-on)
+
+You carry this rule even when `root-cause-discipline` isn't loaded:
+
+- No band-aids without `Risks` surface.
+- Bug fixes + test failures + flakes + regressions → STOP and load `skills/workflow/root-cause-discipline/` before patching.
+- Never swallow errors silently, disable tests, bump timeouts / caps to defeat a gate, or hardcode fallbacks that mask the real failure mode.
+- Patch necessary → `band-aid: <patch>: root cause = <X>` in Risks + named follow-up.
+
+Full anti-pattern taxonomy + investigation procedure: load `skills/workflow/root-cause-discipline/` on debugging work only.
 
 ## Primary return contract
 

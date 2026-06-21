@@ -185,8 +185,11 @@ A "bug fix" without regression test is not a fix.
 
 Always-on (mandatory):
 
-- `skills/workflow/root-cause-discipline/` — refuse band-aids; investigate root cause.
 - `skills/workflow/self-verify-gate/` — scoped pre-return verification.
+
+On-demand (load when debugging):
+
+- `skills/workflow/root-cause-discipline/` — bug fixes, test failures, flakes, regressions, or tempted to band-aid. Builder-ceremony carries the band-aid mini-contract for routine work.
 
 ## TDD policy
 
