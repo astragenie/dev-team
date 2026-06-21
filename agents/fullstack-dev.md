@@ -1,7 +1,7 @@
 ---
 name: fullstack-dev
 prompt_id: fullstack-dev
-version: 2.1.0
+version: 2.1.1
 model_pinned: sonnet
 evals: evals/agents/crew-fullstack-dev.yaml
 capabilities:
@@ -186,9 +186,9 @@ A "bug fix" without regression test is not a fix.
 | New landing page / dashboard / marketing surface, design polish, visual direction decisions (typography / palette / motion / spatial composition) | `skills/domain/ui/frontend-design/` |
 | New surface, error handling, observability, deployment standards | `skills/universal/engineering-standards/` (vendored kb/08-engineering) |
 
-Always-on (mandatory):
+Always consult for non-trivial changes:
 
-- `skills/workflow/self-verify-gate/` — scoped pre-return verification.
+- `skills/workflow/self-verify-gate/` — scoped pre-return verification. Trivial slices (typo, 1-line copy, mechanical rename) MAY skip loading the skill when no verification is needed.
 
 On-demand (load when debugging):
 
@@ -200,11 +200,11 @@ TDD required on net-new behavior + bug fixes lacking regression test. NOT requir
 
 ## HARD OUTPUT CONTRACT (read first, every dispatch)
 
-Builders do NOT write handoff artifacts. Follow-up = optional badge + 2-5 line inline response. Reviewer reads `git diff` + your Risks/Next. NEVER invoke `write-handoff` / `write-handoff-and-bundle`. Returning narration without (badge + follow-up) = contract violation.
+Builders do NOT write handoff artifacts. Return shape (before final response, every dispatch): optional badge + 2-5 line inline follow-up. Reviewer reads `git diff` + your Risks/Next. NEVER invoke `write-handoff` / `write-handoff-and-bundle`. Returning narration without (badge + follow-up) = contract violation.
 
 ## Report contract
 
-**LAST action before returning** to the dispatcher: optionally `mark-badge --badge <kind>`, then return inline:
+Immediately before the final response, call `mark-badge --badge <kind>` when required and the CLI is available. Then return inline:
 
 ```
 <STATUS>: <one-sentence headline>
