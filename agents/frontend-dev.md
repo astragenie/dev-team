@@ -190,7 +190,9 @@ Implementation needs a shape / route / status code NOT in the OpenAPI YAML:
 | React component / hooks / state / RSC | `skills/domain/ui/react-engineering/` |
 | `*.ts` / `*.tsx` / `tsconfig*` | `skills/domain/typescript-pro/` |
 | Tailwind CSS — utility classes, `@theme`, container queries, dark mode, `tailwind.config.*`, `*.css` with `@tailwind` directives | `skills/domain/ui/tailwind-patterns/` |
-| New landing page / dashboard / marketing surface, design polish, "looks generic" feedback, visual direction decisions (typography / palette / motion / spatial composition) | `skills/domain/ui/frontend-design/` — load `references/structural-dna.md` when picking layout concept, `references/style-selection.md` for direction/palette/fonts, `references/react-ui-quality.md` for pre-ship checklist |
+| Dashboard / admin / observability / agent platform / data table / command palette / filter bar / activity feed / timeline / AI assistant panel / internal product UI | `skills/domain/ui/product-ui-patterns/` |
+| Marketing / landing / public-product / brand surface — design polish, "looks generic" feedback, visual direction decisions (typography / palette / motion / spatial composition). **Do NOT use for internal dashboards** — those route to product-ui-patterns. | `skills/domain/ui/frontend-design/` — load `references/structural-dna.md` for layout concept, `references/style-selection.md` for direction/palette/fonts |
+| Pre-ship review / about-to-DONE on user-facing UI / `concern:ui` slice | `skills/domain/ui/react-ui-quality/` — CRITICAL items are review blockers; HIGH items need stated reason; MEDIUM is polish |
 | Orval clients / openapi-msw handlers from OpenAPI YAML | `skills/domain/contract-codegen/` (FE recipes) |
 | `concern:accessibility` tagged | `skills/domain/ui/ux-methodology/references/accessibility.md` |
 | `concern:ux` tagged | re-read the UX spec before designing |

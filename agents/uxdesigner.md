@@ -52,7 +52,7 @@ I do not own:
 ### Skills you consult (per routing-table)
 
 - Frontend code change → `skills/domain/ui/react-engineering/`
-- Frontend visual / creative design (CSS layout, color systems, typography) → `skills/domain/ui/frontend-design/` — load `references/structural-dna.md` when choosing page structure, `references/style-selection.md` when picking direction/palette/fonts, `references/react-ui-quality.md` for the pre-ship checklist
+- Frontend visual / creative design (CSS layout, color systems, typography) → `skills/domain/ui/frontend-design/` — load `references/structural-dna.md` when choosing page structure, `references/style-selection.md` when picking direction/palette/fonts, `skills/domain/ui/react-ui-quality/` for the pre-ship checklist
 - Tailwind CSS change → `skills/domain/ui/tailwind-patterns/`
 - Mobile app design (iOS/Android UX, React Native, Flutter, touch targets) → `skills/domain/mobile/mobile-design/`
 - UX research, persona work, interaction design, accessibility audit → `skills/domain/ui/ux-methodology/`

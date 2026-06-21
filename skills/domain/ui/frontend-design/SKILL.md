@@ -20,9 +20,17 @@ result reverts to template.
 
 ## When to use
 
-- Building web components, pages, dashboards, landing pages, or complete UI applications
-- Styling or beautifying any web UI with creative intent
-- The user asks for "beautiful," "polished," "premium," or complains the UI "looks generic"
+Use for **external surfaces** where visual + brand intent matter — marketing pages, landing pages, public dashboards, product surfaces with editorial polish, brand sites.
+
+- Building marketing / landing / public-product surfaces with creative intent.
+- Styling or beautifying any user-facing web UI for external audiences.
+- The user asks for "beautiful," "polished," "premium," or complains the UI "looks generic."
+
+**NOT for internal product UI** — dashboards, admin tools, observability surfaces, agent platforms, IDE-inspired layouts. Those route to `skills/domain/ui/product-ui-patterns/` (density + scannability + keyboard flow beat editorial pacing on internal tools).
+
+## Core principle: distinctive over generic
+
+Push back on cookie-cutter SaaS aesthetics. Generic choices signal low design investment — credibility judgments form in 50ms. Editorial flair is the right call for marketing surfaces; product-ui-patterns rules for internal tools. This skill enforces the WHY behind distinctive direction; do not apply it to admin / dashboard surfaces.
 
 ## Process (in order, before coding)
 
@@ -82,8 +90,7 @@ result reverts to template.
 - Skeleton screens matching layout, never generic spinners.
 - Banned: uniform fade-in-from-below on every section (AOS look), hover = scale+shadow everywhere,
   hover effects that shift layout.
-- Scroll-driven patterns (parallax speeds, pinned narrative, library choice):
-  [references/react-ui-quality.md](references/react-ui-quality.md).
+- Scroll-driven patterns (parallax speeds, pinned narrative, library choice): see `skills/domain/ui/react-ui-quality/` "Scroll-driven UX" section.
 
 ## Micro-details that signal craft
 
@@ -96,10 +103,11 @@ texture overlays for warmth, scroll-progress indicator, consistent hover/active/
 | ---------------------------------------------------------------- | ---------------------------------------------------------- |
 | [references/structural-dna.md](references/structural-dna.md)     | Choosing page structure or nav pattern                     |
 | [references/style-selection.md](references/style-selection.md)   | Picking style direction, palette, fonts per product type   |
-| [references/react-ui-quality.md](references/react-ui-quality.md) | Implementing in React/Tailwind; pre-ship quality checklist |
 
 ## Cross-references
 
+- Internal product UI (dashboards, admin, observability, agent platforms) → `skills/domain/ui/product-ui-patterns/`
+- Pre-ship quality checklist → `skills/domain/ui/react-ui-quality/`
 - UX flows, IA, research → `skills/domain/ui/ux-methodology/`
 - Tailwind v4 implementation → `skills/domain/ui/tailwind-patterns/`
 - React implementation patterns → `skills/domain/ui/react-engineering/`

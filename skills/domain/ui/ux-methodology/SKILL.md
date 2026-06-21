@@ -33,8 +33,6 @@ Consult this skill when:
 
 - **Research over opinions** — every recommendation cites NN Group studies, eye-tracking data,
   A/B results, or academic usability research.
-- **Distinctive over generic** — push back on cookie-cutter SaaS aesthetics; generic choices
-  signal low design investment (credibility judgments form in 50ms).
 - **Evidence-based critique** — identify issues with data, explain the why, provide a specific
   fix; no vague "consider using…" recommendations.
 - **Practical over aspirational** — prioritize by impact × effort; favor implementable fixes

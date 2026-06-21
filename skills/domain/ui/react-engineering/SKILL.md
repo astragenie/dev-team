@@ -48,6 +48,35 @@ Consult this skill when:
 - **Modern build tooling** — Vite 6+ for standalone apps; Turbopack for Next.js; Biome v2
   or ESLint v9 flat config; pnpm as package manager.
 
+## React Compiler decision tree
+
+Adoption is mixed across projects. Check before optimizing:
+
+```
+Is React Compiler enabled? (vite.config.* / babel.config / next.config)
+├─ YES → trust the compiler:
+│        • Remove existing useMemo/useCallback unless profiling proves
+│          they help (rare; compiler covers ≥95% of cases).
+│        • Skip `memo()` wrapping — compiler memoizes returned JSX too.
+│        • Linter (`eslint-plugin-react-compiler`) flags
+│          rule-of-hooks violations the compiler can't compile.
+│
+└─ NO  → standard React 18 optimization rules:
+         • `useMemo` for expensive derivations (>1ms or large objects).
+         • `useCallback` ONLY when the callback is a stable dep of a
+           memoized child or another hook.
+         • `React.memo()` for components rendered in a hot list with
+           reference-stable props.
+         • Stable list-key strategy (no array indices on dynamic lists).
+         • Avoid inline object/array literals in props of memoized
+           children — they break referential equality.
+```
+
+How to check (in order):
+1. Grep `vite.config.*` / `next.config.*` for `react-compiler` / `babel-plugin-react-compiler`.
+2. Check `package.json` for `babel-plugin-react-compiler` or `eslint-plugin-react-compiler`.
+3. Ask in dispatch prompt or check the slice spec — when unsure, assume compiler-OFF and apply standard rules; surface as a Risk that compiler status was unclear.
+
 ## Subtopics
 
 Detailed guidance lives in `references/`. Load a reference when the work matches its scope:
