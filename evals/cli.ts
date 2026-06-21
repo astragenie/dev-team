@@ -25,6 +25,7 @@ interface CliArgs {
   live: boolean;
   judge: string | undefined;
   validate: boolean;
+  candidateLive: boolean;
   help: boolean;
 }
 
@@ -39,6 +40,7 @@ function parseArgs(argv: string[]): CliArgs {
   let live = false;
   let judge: string | undefined;
   let validate = false;
+  let candidateLive = false;
   let help = false;
   let i = 0;
   while (i < argv.length) {
@@ -51,6 +53,8 @@ function parseArgs(argv: string[]): CliArgs {
       live = true;
     } else if (arg === "--validate") {
       validate = true;
+    } else if (arg === "--candidate-live") {
+      candidateLive = true;
     } else if (arg === "--judge") {
       [judge, i] = consumeNext(argv, i);
     } else if (arg === "--prompt" || arg === "-p") {
@@ -62,7 +66,7 @@ function parseArgs(argv: string[]): CliArgs {
     }
     i++;
   }
-  return { prompt, root, dryRun, live, judge, validate, help };
+  return { prompt, root, dryRun, live, judge, validate, candidateLive, help };
 }
 
 function printHelp(): void {
@@ -79,6 +83,10 @@ Options:
   --dry-run         replay fixture without live judge dispatch (default safe mode)
   --live            use live judge from spec (requires GROQ_API_KEY or GEMINI_API_KEY)
   --validate        force validate_with chain on every test (even when primary passes)
+  --candidate-live  dispatch candidate agent via claude -p against fixture input (FEAT-171).
+                    When candidate.runner: claude-p set in spec, runs the real agent prompt
+                    and evaluates its actual response instead of treating fixture as output.
+                    Requires claude CLI on PATH + Pro/Max subscription auth.
   --judge <id>      override judge provider (e.g. ollama, gemini, groq, claude-p, azure, bedrock)
   --root <dir>      repo root (default: cwd)
   --help            show this help
@@ -178,7 +186,13 @@ async function main(): Promise<void> {
     process.env["CREW_EVAL_JUDGE_OVERRIDE"] = args.judge;
   }
 
-  const result = await runEval({ specFile, repoRoot: args.root, dryRun, validate: args.validate });
+  const result = await runEval({
+    specFile,
+    repoRoot: args.root,
+    dryRun,
+    validate: args.validate,
+    candidateLive: args.candidateLive
+  });
   printResult(result);
 
   const outPath = await writeRunJson(result, args.root);

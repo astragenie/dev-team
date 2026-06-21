@@ -15,6 +15,7 @@ import { JUDGE_REGISTRY } from "./judge.ts";
 import type { JudgeProvider } from "./judge.ts";
 import type { AssertInput, AssertSpec } from "./assert.ts";
 import { ensureDataset, recordRun, recordItem } from "./langfuse-emit.ts";
+import { dispatchCandidate } from "./candidate-dispatch.ts";
 
 // ---------------------------------------------------------------------------
 // Eval spec types (matches evals/agents/*.yaml shape)
@@ -300,20 +301,52 @@ async function liveTest(
   repoRoot: string,
   judge: JudgeProvider | null,
   validateWithCfgs: NonNullable<EvalSpec["validate_with"]>,
-  forceValidate: boolean
+  forceValidate: boolean,
+  candidateLive: boolean,
+  candidateCfg: EvalSpec["candidate"],
+  promptId: string
 ): Promise<TestResult> {
   const start = Date.now();
 
   let candidateOutput = "";
   let trace: Record<string, unknown> | undefined;
+  let fixtureText = "";
 
   if (test.fixture) {
     const { text, parsed } = await loadFixture(test.fixture, repoRoot);
+    fixtureText = text;
     if (parsed && typeof parsed["candidateOutput"] === "string") {
       candidateOutput = parsed["candidateOutput"];
       trace = parsed;
     } else {
       candidateOutput = text;
+    }
+  }
+
+  // FEAT-171: When --candidate-live AND candidate.runner = claude-p, dispatch
+  // the candidate agent against the fixture input and use its response as
+  // candidateOutput. Otherwise fall through to the SLICE-89 behavior of
+  // treating fixture text as candidate output directly.
+  if (candidateLive && candidateCfg?.runner === "claude-p" && fixtureText.length > 0) {
+    const agentPromptPath = path.join(repoRoot, "agents", `${promptId}.md`);
+    try {
+      const dispatch = await dispatchCandidate({
+        agentPromptPath,
+        fixtureContent: fixtureText,
+        model: candidateCfg.model ?? "claude-sonnet-4-6"
+      });
+      candidateOutput = dispatch.candidateOutput;
+      trace = undefined; // live dispatch overrides any structured trace
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      // Surface as test-level error rather than crashing the whole run
+      return {
+        name: test.name,
+        pass: false,
+        error: `candidate-dispatch failed: ${msg}`,
+        asserts: [],
+        durationMs: Date.now() - start
+      };
     }
   }
 
@@ -373,8 +406,21 @@ export async function runEval(options: {
   dryRun: boolean;
   /** Force validate_with chain on every test, even when primary passes. */
   validate?: boolean;
+  /**
+   * FEAT-171: dispatch the candidate agent (`candidate.runner: claude-p`)
+   * against fixture input and assert against its actual response, not the
+   * fixture text. Requires claude CLI on PATH + Pro/Max subscription auth.
+   * Skipped when false (legacy SLICE-89 behavior — fixture used as candidate).
+   */
+  candidateLive?: boolean;
 }): Promise<EvalRunResult> {
-  const { specFile, repoRoot, dryRun, validate: forceValidate = false } = options;
+  const {
+    specFile,
+    repoRoot,
+    dryRun,
+    validate: forceValidate = false,
+    candidateLive = false
+  } = options;
 
   const raw = await fs.readFile(specFile, "utf8");
   const spec = parseYaml(raw) as EvalSpec;
@@ -395,7 +441,18 @@ export async function runEval(options: {
     if (dryRun) {
       testResults.push(await dryRunTest(test, repoRoot));
     } else {
-      testResults.push(await liveTest(test, repoRoot, judge, validateWithCfgs, forceValidate));
+      testResults.push(
+        await liveTest(
+          test,
+          repoRoot,
+          judge,
+          validateWithCfgs,
+          forceValidate,
+          candidateLive,
+          spec.candidate,
+          spec.prompt_id
+        )
+      );
     }
   }
 

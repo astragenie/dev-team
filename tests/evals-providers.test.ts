@@ -382,22 +382,25 @@ describe("assertLlmRubric (SLICE-B2 real implementation)", () => {
 // ---------------------------------------------------------------------------
 
 describe("runEval fallback chain (live mode)", () => {
-  test("live mode no longer throws 'SLICE-B2' error", async () => {
-    const { runEval, findSpecByPromptId } = await import("../evals/lib/run-eval.ts");
-    const path = await import("node:path");
-    const repoRoot = path.join(import.meta.dir, "..");
-    const specFile = await findSpecByPromptId(
-      "fullstack-dev",
-      path.join(repoRoot, "evals", "agents")
-    );
-    assert.ok(specFile, "fullstack-dev spec not found");
-
-    // Live mode should not throw "SLICE-B2" error anymore.
-    // It attempts judge resolution; GROQ_API_KEY missing in CI → judge null but
-    // heuristic asserts (contains, not-contains) still run fine.
-    const result = await runEval({ specFile: specFile!, repoRoot, dryRun: false });
-    assert.ok(typeof result.promptId === "string");
-    assert.ok(typeof result.summary.total === "number");
-    assert.ok(typeof result.summary.errored === "number");
-  });
+  // Gated behind CREW_EVAL_LIVE=1 because live mode resolves the judge factory
+  // (claude-p) which can spawn a real subprocess for llm-rubric asserts —
+  // 8 tests × ~60s per subprocess = several minutes, not safe in default suite.
+  // Live behavior verified via manual `bun run evals --live --prompt fullstack-dev`.
+  test.skipIf(process.env["CREW_EVAL_LIVE"] !== "1")(
+    "live mode no longer throws 'SLICE-B2' error",
+    async () => {
+      const { runEval, findSpecByPromptId } = await import("../evals/lib/run-eval.ts");
+      const path = await import("node:path");
+      const repoRoot = path.join(import.meta.dir, "..");
+      const specFile = await findSpecByPromptId(
+        "fullstack-dev",
+        path.join(repoRoot, "evals", "agents")
+      );
+      assert.ok(specFile, "fullstack-dev spec not found");
+      const result = await runEval({ specFile: specFile!, repoRoot, dryRun: false });
+      assert.ok(typeof result.promptId === "string");
+      assert.ok(typeof result.summary.total === "number");
+      assert.ok(typeof result.summary.errored === "number");
+    }
+  );
 });
