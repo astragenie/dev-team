@@ -1,7 +1,7 @@
 ---
 name: aiplugin-dev
 prompt_id: aiplugin-dev
-version: 1.2.0
+version: 1.2.1
 model_pinned: sonnet
 evals: evals/agents/aiplugin-dev.yaml
 capabilities:
@@ -82,7 +82,7 @@ Slice introduces a runtime path — apply the rails:
 3. **Hook handlers are bounded.** Synchronous hooks finish within 100ms p50; async hooks declare a p99 budget. Hook failures fall back to "let user proceed" — never silently block.
 4. **Subprocess + LLM call timeouts mandatory.** Every outbound has an explicit timeout; no infinite-wait. Reuse `scripts/lib/subprocess/*` if it exists rather than rolling your own spawn.
 5. **MCP servers validate inputs at the boundary.** MCP runs in a trusted context; treat tool args as untrusted until validated via Zod or equivalent.
-6. **Manifest changes are atomic.** `plugin.json` + `marketplace.json` registry bumps land in the same release commit. Mid-state half-bumps break consumer install.
+6. **Manifest changes are scoped.** This agent prepares `plugin.json` changes ONLY. The central `marketplace.json` registry bump belongs to `crew:release-engineer`. If a slice genuinely requires both — surface `scope-cross: marketplace.json: needs dispatcher to dispatch crew:release-engineer for registry bump` in Risks and stop at the `plugin.json` boundary.
 
 Slice violates a rail → surface in Risks + propose follow-up.
 
@@ -101,14 +101,14 @@ Agent prompts and skill SKILL.md files are PRIMARY product surfaces. Apply the s
 - **Skill-pointer over content duplication** — when content already lives in a sibling skill, point at it. Duplication forces multi-place updates.
 - **No backlog IDs in body.** FEAT-NNN / DEC-NNN / SLICE-NN refs rot — cite skills, not backlog ids. Validator enforces on `backend-dev`, `frontend-dev`, `fullstack-dev`, `aiplugin-dev`.
 
-**Skill load discipline.** Prefer router skills over loading multiple deep references. If >5 skills seem needed for one slice, the slice is over-scoped — split it or escalate to the dispatcher via `mark-badge escalated_to_dispatcher --note "skill load budget exceeded: <N> skills required"`.
+**Skill load discipline.** Normal budget: ≤5 skills per slice. Prefer router skills over loading multiple deep references. If >5 skills seem needed AND the slice is not explicitly `wide` (per `capabilities.scopes`), split or escalate via `mark-badge escalated_to_dispatcher --note "skill load budget exceeded: <N> skills required"`. Wide slices (multi-surface plugin change touching agent + skill + script + validator + manifest) MAY load more — document the load list in Risks.
 
 ## TypeScript plugin scripts
 
 When the slice touches `scripts/**/*.ts` or `src/**/*.ts`:
 
 - Load `skills/domain/typescript-pro/` for strict-mode conventions + Result + Zod + approved/banned libs + LLM guardrails.
-- Load `skills/domain/backend/node-ts-patterns/` for Node runtime concerns (workers, streams, `AsyncLocalStorage`, `node:test`, process lifecycle, Node 24 type-stripping).
+- Load `skills/domain/backend/node-ts-patterns/` for Node runtime concerns (workers, streams, `AsyncLocalStorage`, `node:test`, process lifecycle). Runtime baseline = Node 22.6+ strip-types per ADR-002 unless the slice spec or a current ADR says otherwise.
 - Plugin scripts are CLI tools — use Result return types, no `process.exit(N)` from library functions.
 - Hook scripts must terminate within budget; use timeouts on every subprocess + LLM call.
 
@@ -208,7 +208,7 @@ Coalesce Bash calls (chain `&&` for data-collection). Batch TaskUpdates (no ≥3
 | Node runtime work (`node:fs`, `node:stream`, `node:worker_threads`, `node:test`, `AsyncLocalStorage`, process lifecycle) | `skills/domain/backend/node-ts-patterns/` |
 | LLM dispatch / candidate / eval infrastructure | `skills/domain/ai-engineering/` |
 | OpenAPI codegen for plugin API surfaces | `skills/domain/contract-codegen/` |
-| New surface, error handling, observability, deployment standards | `skills/universal/engineering-standards/` |
+| New public surface, error handling, observability, or testing standards (deployment standards = `crew:release-engineer`, not this agent) | `skills/universal/engineering-standards/` |
 
 Self-verify load rule:
 
