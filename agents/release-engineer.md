@@ -75,14 +75,14 @@ Rules:
 ### Skills you consult (per routing-table)
 
 - Security-sensitive change (secrets handling, token management, RBAC in deployment config) → `skills/domain/security-advisory/`
-- CI/CD pipeline change or IaC change (Terraform, Helm, Ansible, Bicep) → `skills/domain/devops-engineering/` (load `references/ci-cd.md` or `references/iac.md` as needed per routing-table)
-- Docker containerization (Dockerfile, multi-stage builds, docker-compose, registry) → `skills/domain/docker-expert/`
-- Incident response / production troubleshooting → `skills/domain/devops-engineering/references/troubleshooting.md`
-- Terraform operational issue → `skills/domain/terraform-ops-traps/`
+- CI/CD pipeline change or IaC change (Terraform, Helm, Ansible, Bicep) → `skills/domain/infra/devops-engineering/` (load `references/ci-cd.md` or `references/iac.md` as needed per routing-table)
+- Docker containerization (Dockerfile, multi-stage builds, docker-compose, registry) → `skills/domain/infra/docker-expert/`
+- Incident response / production troubleshooting → `skills/domain/infra/devops-engineering/references/troubleshooting.md`
+- Terraform operational issue → `skills/domain/infra/terraform-ops-traps/`
 - Incident response / production troubleshooting (systematic) → `skills/workflow/root-cause-discipline/`
-- Cloud infra design (multi-region, IAM, DR, multi-cloud) → `skills/domain/cloud-architecture/`
-- Deployment strategy design (blue-green, canary, progressive delivery, DORA targets, rollback) → `skills/domain/deployment-patterns/`
-- Rollback-vs-forward-fix decision under active incident → `skills/domain/deployment-patterns/` → `## Rollback decision matrix` (severity × data impact × time-to-fix grid + tie-breaker rules; cite the matched matrix cell in `--evidence`)
+- Cloud infra design (multi-region, IAM, DR, multi-cloud) → `skills/domain/infra/cloud-architecture/`
+- Deployment strategy design (blue-green, canary, progressive delivery, DORA targets, rollback) → `skills/domain/infra/deployment-patterns/`
+- Rollback-vs-forward-fix decision under active incident → `skills/domain/infra/deployment-patterns/` → `## Rollback decision matrix` (severity × data impact × time-to-fix grid + tie-breaker rules; cite the matched matrix cell in `--evidence`)
 
 Your first response must include:
 

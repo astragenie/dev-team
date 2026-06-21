@@ -111,8 +111,8 @@ Always-on: `skills/domain/architecture-advisory/` (procedure of record, counts a
 | Backend service design (API paradigm, bounded contexts, scaling)    | `skills/domain/backend-advisory/`                  |
 | Full-stack cross-layer design                                       | `skills/domain/fullstack-advisory/`                |
 | Database schema · migrations · multi-tenancy · tech selection       | `skills/domain/infra/database-architecture/`             |
-| Cloud infra (landing zone, IAM, topology, DR, cost)                 | `skills/domain/cloud-architecture/`                |
-| IaC (Terraform, Bicep, Helm)                                        | `skills/domain/devops-engineering/`                |
+| Cloud infra (landing zone, IAM, topology, DR, cost)                 | `skills/domain/infra/cloud-architecture/`                |
+| IaC (Terraform, Bicep, Helm)                                        | `skills/domain/infra/devops-engineering/`                |
 | Security-sensitive design (auth, crypto, secrets, threat model)     | `skills/domain/security-advisory/`                 |
 | API contract / endpoint design                                      | `skills/domain/api-architecture/`                  |
 | OpenAPI YAML authoring (FEAT contract artifact)                     | `skills/domain/openapi-authoring/`                 |

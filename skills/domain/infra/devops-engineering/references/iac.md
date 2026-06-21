@@ -2,7 +2,7 @@
 
 Patterns for Terraform, Helm, Ansible, and Bicep — provisioning, state management, variable isolation, and multi-environment discipline.
 
-> For operational incident patterns (provisioner timing traps, multi-env state drift, TLS/ACME failures) see `skills/domain/terraform-ops-traps/` which covers those precisely.
+> For operational incident patterns (provisioner timing traps, multi-env state drift, TLS/ACME failures) see `skills/domain/infra/terraform-ops-traps/` which covers those precisely.
 
 ## Terraform — module and state patterns
 

@@ -13,7 +13,7 @@ triggers: ["blue-green", "canary", "progressive delivery", "rolling update", "fe
 
 Consult when designing or reviewing a deployment strategy, optimizing an existing pipeline for velocity or safety, planning a release with rollback requirements, or evaluating DORA metrics gaps.
 
-For Azure/Terraform/IaC specifics → `skills/domain/devops-engineering/`. For Docker → `skills/domain/docker-expert/`. For cloud infra topology → `skills/domain/cloud-architecture/`.
+For Azure/Terraform/IaC specifics → `skills/domain/infra/devops-engineering/`. For Docker → `skills/domain/infra/docker-expert/`. For cloud infra topology → `skills/domain/infra/cloud-architecture/`.
 
 ## DORA targets
 

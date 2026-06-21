@@ -1,6 +1,6 @@
 # Docker Expert — Compose Orchestration & Development Workflow
 
-Reference for `skills/domain/docker-expert/`.
+Reference for `skills/domain/infra/docker-expert/`.
 
 ---
 

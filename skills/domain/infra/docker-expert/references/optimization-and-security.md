@@ -1,6 +1,6 @@
 # Docker Expert — Optimization & Security Patterns
 
-Reference for `skills/domain/docker-expert/`.
+Reference for `skills/domain/infra/docker-expert/`.
 
 ---
 

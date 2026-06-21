@@ -205,7 +205,7 @@ Load the smallest set needed. Pick at most 3 from below.
 | `concern:performance` (latency, throughput)                         | use gstack `/benchmark` (see [Performance scenarios](#performance-scenarios--use-gstack-benchmark)) |
 | Diff under review (spot correctness gaps during validation)         | `skills/workflow/reviewing-code/`                                      |
 | Bug root cause / intermittent failure / flaky scenario              | `skills/workflow/root-cause-discipline/`                                |
-| Production incident response / deploy troubleshooting               | `skills/domain/devops-engineering/references/troubleshooting.md`       |
+| Production incident response / deploy troubleshooting               | `skills/domain/infra/devops-engineering/references/troubleshooting.md`       |
 
 **Opening statement** (one paragraph, no headings): what I am validating · what I will NOT change (you are read-only) · which scenarios I will exercise · which environment (local / CI / staging) · what I will deliver (validation-result artifact + decision).
 

@@ -53,7 +53,7 @@ Each reference file is self-contained — no prior context from this SKILL.md is
 
 ## Cross-references
 
-- Terraform HCL specifics → also consult `skills/domain/terraform-ops-traps/` for provisioner timing traps, multi-env isolation, and TLS/ACME failures not covered here.
+- Terraform HCL specifics → also consult `skills/domain/infra/terraform-ops-traps/` for provisioner timing traps, multi-env isolation, and TLS/ACME failures not covered here.
 - Security-sensitive changes (RBAC, secrets, token management) → co-cite `skills/domain/security-advisory/`.
 
 ## Done / Acceptance
