@@ -37,7 +37,8 @@
     "installer:init": "node ./scripts/crew.ts init",
     "installer:audit": "node ./scripts/crew.ts audit",
     "e2e:smoke": "node ./scripts/e2e-smoke.ts",
-    "e2e:smoke:ux": "node ./scripts/e2e-smoke-ux.ts"
+    "e2e:smoke:ux": "node ./scripts/e2e-smoke-ux.ts",
+    "evals": "bun evals/cli.ts"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",

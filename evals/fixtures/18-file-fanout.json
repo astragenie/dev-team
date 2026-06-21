@@ -1,0 +1,22 @@
+{
+  "description": "Pre-captured trace modeling the FEAT-167 SLICE-79 bundle-truncation pattern",
+  "promptId": "fullstack-dev",
+  "scenario": "18-file-fanout",
+  "candidateOutput": "Handoff: .claude/artifacts/crew/handoffs/20260621T100000Z-handoff-slice-79.md\nBundle: .claude/artifacts/crew/bundles/slice-79-fullstack-dev.md\nShipped 18-file fanout for FEAT-167 frontmatter contract across all first-party agents and skills.",
+  "toolCalls": [
+    { "name": "Write", "path": "agents/fullstack-dev.md" },
+    { "name": "Write", "path": "agents/backend-dev.md" },
+    { "name": "Write", "path": "agents/architect.md" }
+  ],
+  "dispatches": [],
+  "bundle": {
+    "files": 18,
+    "totalLines": 1800,
+    "sizeCapExceeded": false
+  },
+  "handoffFields": {
+    "status": "completed",
+    "confidence": "high",
+    "summary": "FEAT-167 SLICE-79: frontmatter + validator shipped across 18 agents and 64 skills"
+  }
+}

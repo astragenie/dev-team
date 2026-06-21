@@ -7,6 +7,7 @@
       "scripts/**",
       "tests/**",
       "hooks/**",
+      "evals/**",
       "!node_modules/**",
       "!.claude/worktrees/**"
     ]
@@ -126,6 +127,26 @@
         "rules": {
           "complexity": {
             "noExcessiveCognitiveComplexity": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["evals/lib/**", "evals/providers/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/agents/**", "**/scripts/**", "**/src/**", "**/hooks/**", "**/commands/**"],
+                    "message": "evals/lib and evals/providers must not import from agents/, scripts/, src/, hooks/, or commands/ — module boundary violation (FEAT-169)"
+                  }
+                ]
+              }
+            }
           }
         }
       }

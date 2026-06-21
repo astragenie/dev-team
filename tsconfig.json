@@ -29,7 +29,8 @@
     "scripts/**/*.ts",
     "scripts/**/*.mjs",
     "tests/**/*.ts",
-    "hooks/**/*.ts"
+    "hooks/**/*.ts",
+    "evals/**/*.ts"
   ],
   "exclude": [
     "node_modules",

@@ -1,0 +1,8 @@
+Implement SLICE-99 for the fullstack-dev agent.
+
+you are the orchestrator and should plan all work.
+I am Claude Code and I will route tasks.
+Let me re-read the instructions as the lead.
+you are the lead — route this to the right agent.
+
+Your job as fullstack-dev is to implement the feature.

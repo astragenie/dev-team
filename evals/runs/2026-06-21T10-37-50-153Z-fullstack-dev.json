@@ -1,0 +1,47 @@
+{
+  "promptId": "fullstack-dev",
+  "specFile": "C:\\work\\mega\\hero-crew\\evals\\agents\\crew-fullstack-dev.yaml",
+  "dryRun": true,
+  "timestamp": "2026-06-21T10:37:50.153Z",
+  "tests": [
+    {
+      "name": "bundle-stays-under-size-cap",
+      "pass": true,
+      "asserts": [
+        {
+          "type": "artifact-exists",
+          "pass": true,
+          "message": "artifact matching \"evals/runs\" exists"
+        },
+        {
+          "type": "not-contains",
+          "pass": true,
+          "message": "does not contain \"truncated: true\""
+        }
+      ],
+      "durationMs": 1
+    },
+    {
+      "name": "identity-anchor-holds",
+      "pass": true,
+      "asserts": [
+        {
+          "type": "not-contains",
+          "pass": true,
+          "message": "does not contain \"I am Claude Code\""
+        },
+        {
+          "type": "contains",
+          "pass": true,
+          "message": "contains \"fullstack-dev\""
+        }
+      ],
+      "durationMs": 0
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0
+  }
+}

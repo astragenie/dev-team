@@ -1,0 +1,16 @@
+{
+  "name": "@astragenie/crew-eval",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Pluggable agent prompt eval framework — hero-crew embedded edition (FEAT-169)",
+  "dependencies": {
+    "yaml": "^2.9.0"
+  },
+  "scripts": {
+    "eval": "bun evals/cli.ts"
+  },
+  "engines": {
+    "bun": ">=1.3.0"
+  }
+}
