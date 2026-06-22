@@ -63,7 +63,7 @@ specialist builder (FEAT tag → builder, same routing as /crew:build)
 parallel fan-out — single Agent-tool message with N=2 invocations:
    Inspector A (stack-specific)     Inspector B (generalist + lens)
       diff has .cs → crew:c-sharp-reviewer   crew:inspector with lens chosen by FEAT concern:*
-      diff has .ts → crew:3rdparty:typescript-reviewer   concern:security → security
+      diff has .ts → crew:typescript-reviewer   concern:security → security
       no stack match → SKIP A, B uses code-quality lens   concern:perf → performance
    ↓                                         concern:correctness (default)
    └──────────────────┬───────────────────────┘

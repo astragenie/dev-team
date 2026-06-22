@@ -5,27 +5,24 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+### Changed — typescript-reviewer promoted to first-party
+
+- **`agents/3rdparty/typescript-reviewer.md` → `agents/typescript-reviewer.md`** — mirrors the c-sharp-reviewer promotion pattern (v0.41.0). Adjusted frontmatter to crew shape (prompt_id, version, model_pinned, evals, effort, maxTurns, maxLines, color, disallowedTools).
+- **HARD OUTPUT CONTRACT** added (scaffold-on-entry + scoped LAST-action variants matching c-sharp-reviewer + inspector pattern).
+- **Approval policy** table: CRITICAL → rejected, HIGH → rejected unless isolated, ≥3 MEDIUM → approved_with_notes, LOW only → approved.
+- **`commands/build.md`** + **`commands/fix.md`** routing updated: `.ts` diff → `crew:typescript-reviewer` (was `crew:3rdparty:typescript-reviewer`). Closes the routing inconsistency where c-sharp-reviewer was first-party but typescript-reviewer was still 3rdparty-namespaced.
+- **`scripts/validate-agents.ts`** `NO_LEAD_REF_REQUIRED` + **`tests/agent-topology.test.ts`** `EXPECTED_AGENTS` + **`tests/agent-prompt-content.test.ts`** `NO_LEAD_AGENTS` extended.
+- **Active first-party agents: 20 → 21.**
+
 ## v0.45.1 — 2026-06-22 — investigator vs researcher routing fix (recovers broken v0.44.1)
 
-v0.44.1 release commit was made before the underlying refactor merged into main (same bash-chain exit-code masking bug that caused the v0.43.0 incident — `| tail -3` swallows non-zero exit, `## [Unreleased]## [Unreleased]` chain continued past the failed merge). v0.45.1 ships the same intended content with the actual refactor merged in via 7-file merge commit. Tag v0.44.1 remains as broken-history audit trail per HARD RULE "Never delete tags".
+v0.44.1 release commit was made before the underlying refactor merged into main (same bash-chain exit-code masking bug that caused the v0.43.0 incident — `| tail -3` swallows non-zero exit, `&&` chain continued past the failed merge). v0.45.1 ships the same intended content with the actual refactor merged in via 7-file merge commit. Tag v0.44.1 remains as broken-history audit trail per HARD RULE "Never delete tags".
 
 ## v0.44.1 — 2026-06-22 — investigator vs researcher routing fix
 
 ## v0.45.0 — 2026-06-22 — drop deprecated env-var metadata from features registry
 
-Cleanup pass: removes the `deprecates: [...env]` arrays from
-`cost-hygiene`, `shell-preflight`, and `subagent-inline-warn` feature
-metadata. The three env vars (`CREW_COST_HYGIENE`, `CREW_TOOL_PREFLIGHT`,
-`CREW_SUBAGENT_INLINE_THRESHOLD`) were deprecated in v0.38.0 / v0.33.x
-and have had zero live consumers in code or tests for multiple releases.
-Migration metadata kept for documentation was sufficient; the structural
-`deprecates` field is no longer earning its keep.
-
-Each feature's metadata `version` bumped 2.0.0 → 2.1.0 to mark the
-breaking metadata-removal (the field itself is optional, but external
-dashboards reading the registry will notice).
-
-No behavioral change. No consumer code change.
+Cleanup pass: removes the `deprecates: [...env]` arrays from `cost-hygiene`, `shell-preflight`, and `subagent-inline-warn` feature metadata. The three env vars (`CREW_COST_HYGIENE`, `CREW_TOOL_PREFLIGHT`, `CREW_SUBAGENT_INLINE_THRESHOLD`) were deprecated in v0.38.0 / v0.33.x and have had zero live consumers in code or tests for multiple releases. Migration metadata kept for documentation was sufficient; the structural `deprecates` field is no longer earning its keep. Each feature's metadata `version` bumped 2.0.0 → 2.1.0. No behavioral change. No consumer code change.
 
 ## v0.44.0 — 2026-06-22 — inspector-lite v1.1 + /crew:fix light path + retry loop
 
@@ -35,21 +32,6 @@ No behavioral change. No consumer code change.
 
 ## v0.42.2 — 2026-06-22 — dev-lite v1.2 + atomic commit rule
 
-### Changed — builder agent unification (extract shared posture + ceremony into skills)
-
-Four builder agents (fullstack-dev, backend-dev, frontend-dev, aiplugin-dev) had ~50% duplicated prose across nine universal sections. Extracted into two skills loaded by every builder.
-
-- **NEW `skills/universal/builder-mindset/`** (~120 lines) — owns: identity anchor + leak phrases, senior engineer mindset (4 questions), Astra delivery principles (11 items), SOLID/DRY/YAGNI judgment notes, code review heuristics with size budgets, anti-pattern band-aid refusal, Architecture decisions + ADR awareness, TDD policy core, Systematic debugging pointer, default platform preferences (cross-stack), Done/Acceptance.
-- **`skills/workflow/builder-ceremony/`** (v2.2.0 → v2.3.0) — absorbed: structural deviation rule, conventions (TaskUpdate batching + Coalesce Bash), time budget. Now owns all four builder ceremony concerns end-to-end.
-- **All 4 builder agents** stripped:
-  - `agents/fullstack-dev.md` 263 → 206 lines (-22%)
-  - `agents/backend-dev.md` 318 → 266 lines (-16%)
-  - `agents/frontend-dev.md` 254 → 208 lines (-18%)
-  - `agents/aiplugin-dev.md` 248 → 217 lines (-13%)
-  - **Total: 1083 → 897 lines (-186, -17%)**
-- **Each agent retains stack-specific content**: default platform preferences (stack-bound packages), performance budgets addenda, observability span APIs, platform pattern triggers, verification ladder, role-specific anti-patterns (aiplugin eval-gaming patterns), peer dispatch whitelist.
-- **Naming normalization** (Tier 5): `Observability hierarchy` → `Observability`, `Peer dispatch (open consultation; favor velocity)` → `Peer dispatch`, `Stack router — load skills based on slice content` → `Stack router — load skills per slice content`. Identity anchor heading unified across all 4 (was 2 used "Identity + output contract").
-- **Test updates**: identity-anchor leak phrase test + structural deviation rule tests now read from extracted skill files (per-agent assertions check the skill-load reference).
 ### Changed — builder agent unification (extract shared posture + ceremony into skills)
 
 Four builder agents (fullstack-dev, backend-dev, frontend-dev, aiplugin-dev) had ~50% duplicated prose across nine universal sections. Extracted into two skills loaded by every builder.
@@ -113,7 +95,7 @@ Rule: after each completed subtask (a logical unit that compiles + tests green i
 
 ### Added — build/fix/ship workflow overhaul
 
-- **`commands/build.md`** — append parallel inspector fan-out: Inspector A (stack-specific: `crew:c-sharp-reviewer` for `.cs`, `crew:3rdparty:typescript-reviewer` for `.ts`) + Inspector B (`crew:inspector` with lens from FEAT `concern:*` tag). Verifier removed from build flow.
+- **`commands/build.md`** — append parallel inspector fan-out: Inspector A (stack-specific: `crew:c-sharp-reviewer` for `.cs`, `crew:typescript-reviewer` for `.ts`) + Inspector B (`crew:inspector` with lens from FEAT `concern:*` tag). Verifier removed from build flow.
 - **`commands/fix.md`** — full rewrite to investigator-first flow: `crew:investigator` (root cause) → specialist builder (per FEAT-tag routing) → parallel inspector fan-out → `mark-badge fix_complete`. QA dispatched only if Inspector B raises a test-coverage finding. Verifier removed from fix flow.
 - **`commands/ship.md`** — full rewrite to parallel QA+verifier with auto-fix loop: dispatch `crew:qa-expert` + `crew:verifier` in single parallel Agent-tool message → aggregate → both PASS files PR via `gh pr create`; either FAIL dispatches specialist builder to fix → retry counter (bounded by `ship.fix_retry_limit` in `.claude/crew/deployment.md`, default N=2) → `ship_blocked` badge on N exhausted.
 - **`hooks/pre-push-verifier.ts`** — new hook. Registered on `PreToolUse` filtered to `Bash` commands matching `git push` / `gh pr create`. Cache hit when `.claude/artifacts/crew/validations/*.md` shows recent PASS; else blocks push with stderr message naming the failing artifact.
@@ -1322,7 +1304,7 @@ No agent prompt or skill content change — tests only.
 - **Reviewer fan-out by lens + affected-test backstop.** `lead` may dispatch
   N parallel `crew:reviewer` subagents, one per `Review lens:`
   (correctness/regression, security, performance, tests-adequacy) plus
-  stack-idiom via `crew:3rdparty:typescript-reviewer` / `c-sharp-reviewer`.
+  stack-idiom via `crew:typescript-reviewer` / `c-sharp-reviewer`.
   Each reviewer re-runs the builder's affected-class set to confirm it covers
   the changed classes (the full suite still runs at the validator gate).
 

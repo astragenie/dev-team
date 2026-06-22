@@ -1225,6 +1225,7 @@ const NO_LEAD_AGENTS = [
   "uxdesigner",
   "parallel-runner",
   "c-sharp-reviewer",
+  "typescript-reviewer",
   "dev-lite",
   "inspector-lite"
 ] as const;

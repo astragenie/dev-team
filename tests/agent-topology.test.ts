@@ -34,6 +34,7 @@ const EXPECTED_AGENTS = new Set([
   "document-writer",
   "aiplugin-dev",
   "c-sharp-reviewer",
+  "typescript-reviewer",
   "dev-lite"
 ]);
 

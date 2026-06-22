@@ -370,6 +370,7 @@ const NO_LEAD_REF_REQUIRED = new Set([
   "uxdesigner",
   "parallel-runner",
   "c-sharp-reviewer",
+  "typescript-reviewer",
   "dev-lite",
   "inspector-lite"
 ]);
