@@ -5,6 +5,15 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+### Changed — dev-lite v1.0.0 → v1.1.0 (OpenAI code-review pass)
+
+- **`agents/dev-lite.md`** tightened per external review (8.5/10 → target 9.5+):
+  - **Scope ambiguity fixed**: dropped "single-function rewrites" (could imply 3+ files when test + interface + caller change). Replaced with explicit ALLOWED / FORBIDDEN lists.
+  - **LOC limit added**: ≤50 lines diff in addition to ≤2 file cap. File-count alone misses "rewrite authentication middleware" pattern (1 file but huge).
+  - **Forbidden markers explicit**: async/await/Task/Promise, throw/try/catch, React hooks, SQL/IQueryable, null operators. Same semantic-complexity set the light-path detector in `commands/build.md` uses — agents stay in sync with dispatcher.
+  - **Compression**: Workflow section collapsed to one line (`Read → Edit → Re-Read verify → Receipt`). Receipt format retained.
+  - Net 100 → 93 lines.
+
 ## v0.42.0 — 2026-06-22 — Light-path workflow + dev-lite + inspector-lite
 
 ### Added — light-path workflow for small features
