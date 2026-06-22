@@ -5,6 +5,8 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.42.0 — 2026-06-22 — Light-path workflow + dev-lite + inspector-lite
+
 ### Added — light-path workflow for small features
 
 - **`commands/build.md`** — light-path detection block added BEFORE standard FEAT-tag routing. Matches when: ≤2 files changed, ≤50 lines diff, no semantic markers (`async`/`await`/`Task`/`throw`/`try`/`catch`/React hooks/`IQueryable`/null operators), no release-sensitive files. Light-path dispatch: `crew:dev-lite` → `crew:inspector-lite` → `build_complete`. Two-dispatch flow vs three-dispatch standard ladder; ~60% subagent token savings on trivial diffs. Auto-fallthrough to standard ladder if inspector-lite returns `rejected: semantic complexity detected`.
