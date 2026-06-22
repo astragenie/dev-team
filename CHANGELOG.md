@@ -5,6 +5,15 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+### Changed — typescript-reviewer promoted to first-party
+
+- **`agents/3rdparty/typescript-reviewer.md` → `agents/typescript-reviewer.md`** — mirrors the c-sharp-reviewer promotion pattern (v0.41.0). Adjusted frontmatter to crew shape (prompt_id, version, model_pinned, evals, effort, maxTurns, maxLines, color, disallowedTools).
+- **HARD OUTPUT CONTRACT** added (scaffold-on-entry + scoped LAST-action variants matching c-sharp-reviewer + inspector pattern).
+- **Approval policy** table: CRITICAL → rejected, HIGH → rejected unless isolated, ≥3 MEDIUM → approved_with_notes, LOW only → approved.
+- **`commands/build.md`** + **`commands/fix.md`** routing updated: `.ts` diff → `crew:typescript-reviewer` (was `crew:3rdparty:typescript-reviewer`). Closes the routing inconsistency where c-sharp-reviewer was first-party but typescript-reviewer was still 3rdparty-namespaced.
+- **`scripts/validate-agents.ts`** `NO_LEAD_REF_REQUIRED` + **`tests/agent-topology.test.ts`** `EXPECTED_AGENTS` + **`tests/agent-prompt-content.test.ts`** `NO_LEAD_AGENTS` extended.
+- **Active first-party agents: 20 → 21.**
+
 ### Changed — builder agent unification (extract shared posture + ceremony into skills)
 
 Four builder agents (fullstack-dev, backend-dev, frontend-dev, aiplugin-dev) had ~50% duplicated prose across nine universal sections. Extracted into two skills loaded by every builder.
@@ -68,7 +77,7 @@ Rule: after each completed subtask (a logical unit that compiles + tests green i
 
 ### Added — build/fix/ship workflow overhaul
 
-- **`commands/build.md`** — append parallel inspector fan-out: Inspector A (stack-specific: `crew:c-sharp-reviewer` for `.cs`, `crew:3rdparty:typescript-reviewer` for `.ts`) + Inspector B (`crew:inspector` with lens from FEAT `concern:*` tag). Verifier removed from build flow.
+- **`commands/build.md`** — append parallel inspector fan-out: Inspector A (stack-specific: `crew:c-sharp-reviewer` for `.cs`, `crew:typescript-reviewer` for `.ts`) + Inspector B (`crew:inspector` with lens from FEAT `concern:*` tag). Verifier removed from build flow.
 - **`commands/fix.md`** — full rewrite to investigator-first flow: `crew:investigator` (root cause) → specialist builder (per FEAT-tag routing) → parallel inspector fan-out → `mark-badge fix_complete`. QA dispatched only if Inspector B raises a test-coverage finding. Verifier removed from fix flow.
 - **`commands/ship.md`** — full rewrite to parallel QA+verifier with auto-fix loop: dispatch `crew:qa-expert` + `crew:verifier` in single parallel Agent-tool message → aggregate → both PASS files PR via `gh pr create`; either FAIL dispatches specialist builder to fix → retry counter (bounded by `ship.fix_retry_limit` in `.claude/crew/deployment.md`, default N=2) → `ship_blocked` badge on N exhausted.
 - **`hooks/pre-push-verifier.ts`** — new hook. Registered on `PreToolUse` filtered to `Bash` commands matching `git push` / `gh pr create`. Cache hit when `.claude/artifacts/crew/validations/*.md` shows recent PASS; else blocks push with stderr message naming the failing artifact.
@@ -1277,7 +1286,7 @@ No agent prompt or skill content change — tests only.
 - **Reviewer fan-out by lens + affected-test backstop.** `lead` may dispatch
   N parallel `crew:reviewer` subagents, one per `Review lens:`
   (correctness/regression, security, performance, tests-adequacy) plus
-  stack-idiom via `crew:3rdparty:typescript-reviewer` / `c-sharp-reviewer`.
+  stack-idiom via `crew:typescript-reviewer` / `c-sharp-reviewer`.
   Each reviewer re-runs the builder's affected-class set to confirm it covers
   the changed classes (the full suite still runs at the validator gate).
 

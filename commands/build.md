@@ -56,7 +56,7 @@ Dispatch Inspector A and Inspector B in a **single Agent-tool message** (two par
 
 **Inspector A — stack-specific reviewer:**
 - diff contains `.cs` files → `crew:c-sharp-reviewer`
-- diff contains `.ts` files (no `.cs`) → `crew:3rdparty:typescript-reviewer`
+- diff contains `.ts` files (no `.cs`) → `crew:typescript-reviewer`
 - no stack reviewer matches → **SKIP A** (no dispatch); promote B to `code-quality` lens
 
 **Inspector B — generalist + lens:**
