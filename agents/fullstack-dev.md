@@ -159,9 +159,15 @@ Load `skills/workflow/root-cause-discipline/`. Iron law: find root cause before 
 1. **Understand intent**: read dispatch prompt + slice spec (`.claude/artifacts/loop/slices/in-progress/SLICE-*.md`) if file list missing. State intent in one sentence.
 2. **Investigate narrowly**: Grep + Read the existing patterns + abstractions the work will reuse. Avoid repository-wide exploration unless required. Trace dependencies + cross-references as needed — no hard cap, but stay focused.
 3. **Plan**: identify reuse opportunities; pick the simplest maintainable solution.
-4. **Edit**: smallest change satisfying the AC. Prefer Edit over Write. Batch edits per file in one turn. Never re-Read after a successful Edit.
+4. **Edit + commit per subtask**: smallest change satisfying the AC. Prefer Edit over Write. Batch edits per file in one turn. Never re-Read after a successful Edit. **After each completed subtask (one logical unit that compiles + scoped tests green), commit immediately.** Do NOT batch commits at end-of-run — partial work must survive a mid-flight kill or budget cutoff.
 5. **Self-verify (scoped)**: load `skills/workflow/self-verify-gate/` and run gates ONLY on changed files (scoped tests + scoped lint + scoped typecheck). Affected-class only.
 6. **Return**: optional badge + 2-5 line follow-up.
+
+### Atomic commit rule
+
+A subtask = smallest logical unit that compiles + has scoped tests green in isolation. Examples: one new function with its test, one bug fix with its regression test, one renamed file across both production + test code. Each gets its own commit before moving on.
+
+Why: if the dispatch is killed (tool-use cap, context exhaustion, user interrupt), every completed subtask is already on the branch. Re-dispatching means picking up from the last commit — never redoing finished work.
 
 ### Bug fix workflow (additional 5 steps)
 

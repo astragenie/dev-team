@@ -11,11 +11,13 @@ You are the dispatcher for `/crew:build`. Detect light-path eligibility first; o
 Match ALL of the following for the light path:
 
 1. **Size**: `git diff --stat HEAD` → ≤2 files changed AND ≤50 lines added/removed
-2. **No semantic markers** in the diff additions:
+2. **No semantic markers** in the diff additions (escalates to standard ladder if matched):
    ```bash
    git diff HEAD | grep -E '^\+' | grep -vE '^\+\+\+' | \
-     grep -qE '\b(async|await|Task|throw|try|catch|use[A-Z][a-z]+|IQueryable|Include|\?\.|\?\?)\b'
+     grep -qE '\b(async|await|Task|Promise|IQueryable|Include|use[A-Z][a-z]+)\b|\btry\s*\{|\bcatch\s*\('
    # exit 1 (no match) = light path eligible
+   # Note: null-safety reads (?., ??) and replacement throws are allowed in light
+   # path — dev-lite agent will catch the genuinely new exception-flow cases.
    ```
 3. **No release-sensitive files**: diff does NOT touch `package.json` / `plugin.json` / `marketplace.json` / `hooks/**` / `.claude-plugin/**`
 4. User did NOT pass `--full` flag

@@ -5,6 +5,26 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+### Changed — dev-lite v1.1.0 → v1.2.0 (OpenAI second review pass)
+
+- **PRECHECK section** added at top of agent body. Before any `Read`/`Edit`, inspect dispatch prompt + `git status` + `git diff --stat` and refuse early if scope obviously doesn't fit. Saves wasted reads/edits on mis-routed dispatches.
+- **Public-surface guard** added: any change to public/protected/exported surface (interface, class signature, DTO, type export, route, header) → refuse with `public-surface: <symbol>. needs full builder.`. Catches accidental contract changes that file-count and LOC checks miss.
+- **Null operators relaxed**: simple null-safety reads (`user?.Name`, `value ?? default`) ALLOWED when the null path stays the same as before. Only "Null-safety redesign affecting control flow" escalates.
+- **Throw rule refined**: replacing an existing throw is mechanical and ALLOWED. Only "New exception-handling flow" (new try/catch where none existed) escalates.
+- **Import reordering** reclassified to "Mechanical formatting change" — recognizes it can touch many lines.
+- **`commands/build.md`** light-path regex updated: `?.` / `??` / standalone `throw` no longer auto-escalate; only `try {` and `catch (` markers do.
+
+### Changed — atomic commit rule on full builders
+
+All full-builder agents now require atomic commit-per-subtask so partial work survives a mid-flight kill. Applied to:
+
+- `agents/fullstack-dev.md`
+- `agents/backend-dev.md`
+- `agents/frontend-dev.md`
+- `agents/aiplugin-dev.md`
+
+Rule: after each completed subtask (a logical unit that compiles + tests green in isolation), write the commit immediately. Do NOT batch commits at end-of-run. If the agent runs over budget or gets killed, all completed subtasks must already be on the branch.
+
 ## v0.42.1 — 2026-06-22 — dev-lite scope tightened (OpenAI review pass)
 
 ### Changed — dev-lite v1.0.0 → v1.1.0 (OpenAI code-review pass)

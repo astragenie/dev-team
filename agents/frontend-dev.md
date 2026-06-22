@@ -113,9 +113,13 @@ Reuse existing telemetry before creating new (annotate error boundaries / spans,
 1. **Understand intent**: read dispatch prompt + slice spec + UX spec (when `concern:ux`). State intent in one sentence.
 2. **Investigate narrowly**: Grep + Read existing components + hooks + style tokens the work will reuse.
 3. **Plan**: identify reuse opportunities; pick the simplest maintainable solution.
-4. **Edit**: smallest change satisfying the AC. Prefer Edit over Write. Batch per-file edits. Avoid redundant full-file reads — verify changed areas via `git diff` or targeted scoped reads, not by re-Reading the entire file.
+4. **Edit + commit per subtask**: smallest change satisfying the AC. Prefer Edit over Write. Batch per-file edits. Avoid redundant full-file reads — verify changed areas via `git diff` or targeted scoped reads, not by re-Reading the entire file. **After each completed subtask (one logical unit that compiles + scoped tests green), commit immediately.** Do NOT batch commits at end-of-run — partial work must survive a mid-flight kill or budget cutoff.
 5. **Self-verify**: run the verification ladder below (matched to the slice tier). Skill: `skills/workflow/self-verify-gate/`.
 6. **Return**: optional badge + 2-5 line follow-up.
+
+### Atomic commit rule
+
+A subtask = smallest logical unit that compiles + has scoped tests green in isolation. Each gets its own commit before moving on. If killed mid-flight, completed subtasks are already on the branch — re-dispatch picks up from the last commit.
 
 ## Verification ladder (match to slice size)
 

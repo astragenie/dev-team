@@ -135,9 +135,13 @@ Prompt-only / skill-only / docs-only edits skip ceremony. Full surface contract:
 1. **Understand intent**: read dispatch prompt + slice spec. State intent in one sentence.
 2. **Investigate narrowly**: Grep + Read existing prompts / skills / commands the work will reuse or revise.
 3. **Plan**: identify reuse opportunities; pick the simplest maintainable solution.
-4. **Edit**: smallest change satisfying the AC. Prefer Edit over Write. Batch per-file edits. Avoid redundant full-file reads — verify changed areas via `git diff` or targeted scoped reads.
+4. **Edit + commit per subtask**: smallest change satisfying the AC. Prefer Edit over Write. Batch per-file edits. Avoid redundant full-file reads — verify changed areas via `git diff` or targeted scoped reads. **After each completed subtask (one logical unit that validates green in isolation — e.g. one new agent prompt, one renamed skill, one hook registration), commit immediately.** Do NOT batch commits at end-of-run — partial work must survive a mid-flight kill or budget cutoff.
 5. **Self-verify**: run the verification ladder below (matched to the slice tier).
 6. **Return**: optional badge + 2-5 line follow-up.
+
+### Atomic commit rule
+
+A subtask = smallest logical unit that passes the relevant validator in isolation (e.g. `validate-agents.ts` green after one prompt edit, `validate-skills.ts` green after one skill polish). Each gets its own commit before moving on. If killed mid-flight, completed subtasks are already on the branch — re-dispatch picks up from the last commit.
 
 ## Verification ladder (match to slice size)
 

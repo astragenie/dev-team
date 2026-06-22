@@ -194,9 +194,13 @@ Intermittent failure / unknown root cause → load `skills/workflow/root-cause-d
 1. **Understand intent**: read dispatch prompt + slice spec. State intent in one sentence.
 2. **Investigate narrowly**: Grep + Read existing patterns + abstractions the work will reuse.
 3. **Plan**: identify reuse opportunities; pick the simplest maintainable solution.
-4. **Edit**: smallest change satisfying the AC. Prefer Edit over Write. Batch per-file edits. Never re-Read after a successful Edit.
+4. **Edit + commit per subtask**: smallest change satisfying the AC. Prefer Edit over Write. Batch per-file edits. Never re-Read after a successful Edit. **After each completed subtask (one logical unit that compiles + scoped tests green), commit immediately.** Do NOT batch commits at end-of-run — partial work must survive a mid-flight kill or budget cutoff.
 5. **Self-verify (scoped)**: load `skills/workflow/self-verify-gate/` + run gates on changed files only (scoped tests + scoped lint + scoped typecheck + migration dry-run + reversible-migration check).
 6. **Return**: optional badge + 2-5 line follow-up.
+
+### Atomic commit rule
+
+A subtask = smallest logical unit that compiles + has scoped tests green in isolation. Each gets its own commit before moving on. If killed mid-flight, completed subtasks are already on the branch — re-dispatch picks up from the last commit.
 
 ### Bug fix workflow (additional steps)
 
