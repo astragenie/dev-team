@@ -12,6 +12,7 @@
 //
 // Default-ON; opt out via CREW_PUSH_VERIFY=0.
 import fs from "node:fs/promises";
+import type { Dirent } from "node:fs";
 import path from "node:path";
 import { logHookError } from "./hook-error.ts";
 
@@ -65,7 +66,7 @@ async function scanValidationArtifacts(repoPath: string): Promise<ValidationScan
   const validationsDir = path.join(repoPath, ".claude", "artifacts", "crew", "validations");
   const cutoffMs = Date.now() - CACHE_WINDOW_MS;
 
-  let entries: import("node:fs").Dirent[];
+  let entries: Dirent[];
   try {
     entries = await fs.readdir(validationsDir, { withFileTypes: true });
   } catch {
@@ -86,7 +87,9 @@ async function scanValidationArtifacts(repoPath: string): Promise<ValidationScan
     } catch {
       continue;
     }
-    if (stat.mtimeMs < cutoffMs) break; // files are sorted desc; once past window, stop
+    // Filename-sort doesn't guarantee mtime-sort (fresh clone resets all mtimes
+    // to checkout time). Use `continue` to keep scanning instead of `break`.
+    if (stat.mtimeMs < cutoffMs) continue;
 
     let content: string;
     try {
@@ -97,7 +100,7 @@ async function scanValidationArtifacts(repoPath: string): Promise<ValidationScan
 
     // Match "Decision: passed" or "Decision: approved" (case-insensitive, leading whitespace ok)
     const decisionMatch = content.match(/^[-\s]*Decision:\s*(\w+)/im);
-    const decision = decisionMatch ? decisionMatch[1]!.toLowerCase() : null;
+    const decision = (decisionMatch?.[1] ?? "").toLowerCase() || null;
 
     if (decision === "passed" || decision === "approved") {
       return { hasPassed: true, newestArtifactPath: filePath, newestDecision: decision };

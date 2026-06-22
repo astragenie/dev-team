@@ -171,7 +171,7 @@ Plugin shape (`agents/`, `commands/`, `hooks/`, `.mcp.json`, `plugin.json`, `.cl
 
 ## Report contract
 
-`review-result` is the only completion artifact — do NOT write a separate handoff. The LAST `write-review-result --update` call must populate: `decision`, `summary`, `evidence`, `files`, `test-summary` (or `--test-summary-skip-reason` / `--non-code`), `findings` (`🔴:N,🟡:N,❓:N`), `risks`, `next`, `confidence`, `confidence_reason`. Security-sweep: `--evidence` MUST include verbatim `SECURITY-SWEEP scan complete: N findings (C=n H=n M=n L=n)` and `--findings` must merge sweep counts. Return to orchestrator: artifact path + 1–3 sentence headline only.
+`review-result` is the only completion artifact — do NOT write a separate handoff. The LAST `write-review-result --update` call must populate CLI flags: `--decision`, `--summary`, `--evidence`, `--files`, `--test-summary` (or `--test-summary-skip-reason` / `--non-code`), `--findings` (`🔴:N,🟡:N,❓:N`), `--risks`, `--next`, `--confidence` (`high`/`medium`/`low`). The `confidence_reason` (e.g. "full diff read + tests run") is artifact prose — embed it in `--summary` or `--evidence`, NOT as a separate CLI flag (no `--confidence-reason` exists). Security-sweep: `--evidence` MUST include verbatim `SECURITY-SWEEP scan complete: N findings (C=n H=n M=n L=n)` and `--findings` must merge sweep counts. Return to orchestrator: artifact path + 1–3 sentence headline only.
 
 ## Workflow badges
 
