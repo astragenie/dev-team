@@ -5,6 +5,20 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.40.1 — 2026-06-22 — CI stability + inspector hardening
+
+Patch release: three post-v0.40.0 fixes.
+
+### CI / test
+
+- **`log_event.sh` p95 bench** — skipped in CI environments (`CI=true`) in addition to Windows. Parallel test load on GitHub Actions runners pushes bash startup above the 20ms gate; assertion remains active on quiet local Linux machines.
+
+### Inspector improvements
+
+- **`write-review-result` CLI example** — expanded to show all structured output fields (`--summary`, `--evidence`, `--files`, `--test-summary`, `--findings`, `--risks`, `--next`) so inspectors populate the full artifact schema.
+- **Plugin-dev skill cap** — `plugin-dev:plugin-validator` and `plugin-dev:skill-reviewer` no longer count against the 3-skill load cap; they are mandatory scoped gates when their triggers fire.
+- **`SLICE_BASE` guard** — hardcoded-secrets pre-flight grep now uses `${SLICE_BASE:-HEAD~1}` so the command does not fail when the variable is unset.
+
 ## v0.40.0 — 2026-06-22 — aiplugin-dev agent + builder/skill ecosystem v2 + domain tiering
 
 Large refactor pass across the builder fleet, skill ecosystem, and a new agent for Claude Code plugin internals. 46 commits since v0.39.0.
