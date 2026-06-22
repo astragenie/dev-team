@@ -5,6 +5,8 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.44.0 — 2026-06-22 — inspector-lite v1.1 + /crew:fix light path + retry loop
+
 ## v0.43.1 — 2026-06-22 — Fix: v0.43.0 release commit was missing refactor
 
 ## v0.43.0 — 2026-06-22 — Builder unification + shared posture/ceremony skills
