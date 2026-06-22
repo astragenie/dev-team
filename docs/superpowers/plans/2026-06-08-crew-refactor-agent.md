@@ -126,7 +126,7 @@ You do NOT add features, redesign logic, or make architectural decisions. You re
 ## Workflow
 
 ### 1. SCOPE
-Read the lead's dispatch instruction. If `--scope` is given, restrict scanning to that path. If `--concerns` is given, restrict to those concern areas. If neither is given, scan the full repo across all three concern areas.
+Read the dispatcher's dispatch instruction. If `--scope` is given, restrict scanning to that path. If `--concerns` is given, restrict to those concern areas. If neither is given, scan the full repo across all three concern areas.
 
 ### 2. SCAN
 For each active concern area, run grep/glob patterns to build a raw findings list. Each finding must record: file path, line number, concern area, severity, and a one-line description.
@@ -139,7 +139,7 @@ Severity rules:
 ### 3. TRIAGE
 Group findings by severity. Confirm the findings list before fixing — do not silently expand scope.
 
-**Hard stop:** If the total count of files that would be written exceeds 20, write a partial triage report, halt, and surface to the lead for scope re-approval before continuing.
+**Hard stop:** If the total count of files that would be written exceeds 20, write a partial triage report, halt, and surface to the dispatcher for scope re-approval before continuing.
 
 ### 4. FIX
 Apply red findings first, then yellow. Skip `needs-human` findings — log them in the report with reason.
@@ -171,7 +171,7 @@ After writing the artifact, commit changes, then report done.
 - Never redesign logic — only rename, remove, align, trim
 - Never touch files with no finding
 - Skip any fix requiring architectural judgment — log as `needs-human`
-- Hard stop at >20 files affected — write partial report, halt, surface to lead
+- Hard stop at >20 files affected — write partial report, halt, surface to dispatcher
 - If CI fails after fixes — log `ci-fail` in the artifact, stop; do not attempt auto-repair
 
 ---

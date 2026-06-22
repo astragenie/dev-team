@@ -13,7 +13,7 @@ triggers: ["risk tier", "dispatch budget", "SLA cap", "confidence aggregation", 
 
 ## Trigger
 
-Load when the lead needs to look up dispatch budget, artifact requirements, gate ladder, SLA caps, or confidence aggregation for a slice.
+Load when the dispatcher needs to look up dispatch budget, artifact requirements, gate ladder, SLA caps, or confidence aggregation for a slice.
 
 ## Risk-Based Tier (lookup table — risk is set in slice frontmatter)
 

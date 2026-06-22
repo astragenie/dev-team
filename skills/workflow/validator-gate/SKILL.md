@@ -13,7 +13,7 @@ triggers: ["verifier dispatch", "validation gate", "validator gate", "skip valid
 
 ## Trigger
 
-Load when the lead needs to decide whether and how to dispatch `crew:verifier` after a code-bearing slice completes.
+Load when the dispatcher needs to decide whether and how to dispatch `crew:verifier` after a code-bearing slice completes.
 
 ## Verifier Dispatch Decision (mandatory full gate)
 

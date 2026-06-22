@@ -56,7 +56,7 @@ Return a performance report with:
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
   --repo "$PWD" \
   --title "<short title>" \
-  --from performance-engineer --to lead \
+  --from performance-engineer --to dispatcher \
   --summary "<verdict + top risk>" \
   --scope "<what was analysed>" \
   --deliverable "<performance report with risk areas>" \
@@ -89,27 +89,27 @@ their output to complete YOUR task:
 You MUST NOT dispatch:
 
 - `backend-dev`, `frontend-dev`, `fullstack-dev` — implementers; performance-engineer
-  does not invoke implementers; surface risks in the report for lead to route.
+  does not invoke implementers; surface risks in the report for the dispatcher to route.
 - `inspector`, `inspector-verifier`, `verifier`, `release-engineer` — review and
   validation gates; dispatched exclusively by the orchestrator (loop walker).
-- `lead`, `refactor`, `integrator`, `parallel-runner` — orchestration roles; not
+- (dispatcher role removed), `refactor`, `integrator`, `parallel-runner` — orchestration roles; not
   appropriate as peer targets from a performance session.
 - `architect`, `uxdesigner` — upstream design roles; performance-engineer is a
   consumer of their output, not a dispatcher of them.
 - `researcher`, `document-writer` — not needed for performance analysis; surface
-  doc needs via lead handoff.
+  doc needs via dispatcher handoff.
 - All `caveman:*` agents — never.
 - All `3rdparty:*` agents — not applicable; performance work is done inline.
 
 Dispatch budget per slice: max 2 peer dispatches.
 Dispatch budget per turn: max 1 peer dispatch.
 
-### Dispatch prompt purity (inherited from lead v0.35.2)
+### Dispatch prompt purity (established pattern)
 
 When you write a dispatch prompt for a peer:
 
 - Do NOT inject your own role / identity into the body ("you are the orchestrator",
-  "as the performance-engineer", "as the lead", etc.).
+  "as the performance-engineer", "as the dispatcher", etc.).
 - Address the peer directly as that peer ("Locate the query at X",
   "Design a stress-test scenario for Y").
 - State the deliverable expected back (artifact path, headline, or specific content).

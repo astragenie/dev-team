@@ -5,6 +5,17 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+### Removed — lead agent (hard cut)
+
+- **`agents/lead.md` deleted** along with `agents/3rdparty/backup/lead.md` and `evals/agents/crew-lead.yaml`. There is no `lead` agent anymore. Orchestration is a concept (the slash command + main thread), not a callable role.
+- **`lead` → `dispatcher`** swept across all active `agents/*.md`, `commands/*.md`, `skills/**/SKILL.md`, `docs/routing-table.md`, `docs/architecture/*.md`, `docs/standards/*.md`. Inspector's existing `orchestrator` refs normalized to `dispatcher` for single-noun consistency.
+- **`/crew:build` becomes the dispatcher itself.** `commands/build.md` preamble rewritten: the slash command reads inline routing, picks the specialist builder by FEAT tag (`crew:frontend-dev` / `crew:backend-dev` / `crew:fullstack-dev` / `crew:aiplugin-dev`), dispatches via the `Agent` tool. No agent intermediary.
+- **`skills/workflow/lead-orchestration/` → `skills/workflow/dispatcher-orchestration/`** and **`skills/workflow/lead-routing/` → `skills/workflow/dispatcher-routing/`** directory renames.
+- **`NO_LEAD_REF_REQUIRED` validator gate** added to `scripts/validate-agents.ts`. Body-text check fails any active agent referencing `the lead` / `to the lead` / `by the lead` / `crew:lead`.
+- **`tests/agent-prompt-content.test.ts`** parametrized — inspector's single `no 'lead' caller assumption` test became a loop over all 18 active agents.
+
+Out of scope (deferred): `build.yaml` skeleton + agent/workflow YAML separation, auto-memory cleanup, historical artifact rewrite, third-party `agents/3rdparty/*` and `docs/superpowers/plans/` (historical planning artifacts).
+
 ## v0.40.1 — 2026-06-22 — CI stability + inspector hardening
 
 Patch release: three post-v0.40.0 fixes.

@@ -14,9 +14,9 @@ linked_handoff: .claude/artifacts/crew/handoffs/2026-06-04-ux-validation-gate-br
 
 The validator phase today references gstack `/qa` for browser-rendered
 behavior via `docs/routing-table.md` row 84 ("Web UI behavior changed").
-Routing is reactive: it depends on the lead noticing that a slice
+Routing is reactive: it depends on the dispatcher noticing that a slice
 changed UI. UX/React-bearing FEATs can therefore reach merge without
-real browser validation when the lead misses the cue.
+real browser validation when the dispatcher misses the cue.
 
 We need an auto-triggered, structured UX validation gate that:
 
@@ -24,7 +24,7 @@ We need an auto-triggered, structured UX validation gate that:
 - Runs Playwright against acceptance criteria
 - Collects accessibility, console, network, and visual-regression
   evidence in a single pass
-- Returns raw evidence so the lead can pivot to the right next step
+- Returns raw evidence so the dispatcher can pivot to the right next step
   (`/crew:fix`, `/investigate`, `/cso`, `gstack:/benchmark`,
   escalation) per the existing routing-table
 
@@ -350,7 +350,7 @@ The `.md` body contains only:
 | `console.errors[*]` runtime exception | row 95 → `gstack:/investigate` |
 | `visual.diffs[*]` over tolerance | row 84 → `/crew:fix` + frontend-advisory |
 | `network.failures[*]` 404 on asset | row 84 → `/crew:fix` (build/deploy issue) |
-| Multiple categories simultaneously | lead splits per Pre-dispatch decomposition rule |
+| Multiple categories simultaneously | dispatcher splits per Pre-dispatch decomposition rule |
 
 ### Gate self-failure modes
 
@@ -452,7 +452,7 @@ regression that changes evidence ordering or capture behavior.
   Mitigation: Playwright tolerance threshold plus animation-freeze
   convention in `/qa`. Tune during smoke implementation.
 - Lead pivot routing trusts the validator's evidence shape. If
-  evidence is noisy, the lead pivots to the wrong target.
+  evidence is noisy, the dispatcher pivots to the wrong target.
   Mitigation: strict JSON schema in `ux-evidence.json` plus the
   Error handling section's dominant-category mapping table.
 - Skill taxonomy says `workflow/` skills are invoked per phase. This

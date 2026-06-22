@@ -12,12 +12,12 @@ owner: architect
 
 Decouple the loop plugin's triage emitter from the crew plugin's agent-dispatch
 consumer. The loop observes FEAT content and emits abstract, namespaced tags.
-The crew lead reads those tags and maps them to crew agents + skill auto-loads.
+The dispatcher reads those tags and maps them to crew agents + skill auto-loads.
 Swapping the orchestrator means re-authoring the mapping table here — the loop
 source stays untouched.
 
 This document is the canonical definition of the tag schema. Any producer
-(today: `loop:pm-triage`) and any consumer (today: `crew:lead`) MUST agree on
+(today: `loop:pm-triage`) and any consumer (today: `crew:build`) MUST agree on
 the enum values in this file as the contract surface.
 
 ---
@@ -127,10 +127,10 @@ dominant concern.
 
 ---
 
-## Consumer contract — how `crew:lead` reads tags
+## Consumer contract — how `crew:build` reads tags
 
-The lead reads the `tags:` array at slice start and uses the tag-to-agent
-mapping in `agents/lead.md` ("Tag-to-agent mapping" section) to decide:
+The dispatcher reads the `tags:` array at slice start and uses the tag-to-agent
+mapping in `(removed v0.41)` ("Tag-to-agent mapping" section) to decide:
 
 - **Primary agent** — who owns the implementation slice.
 - **Skills to auto-load** — domain skills the agent should invoke on dispatch.
@@ -138,8 +138,8 @@ mapping in `agents/lead.md` ("Tag-to-agent mapping" section) to decide:
   Pre-dispatch decomposition rule and run parallel dispatches.
 
 When no `tags:` field is present (loop has not yet adopted the schema), the
-lead falls back to the file-by-file Pre-dispatch decomposition rule in
-`agents/lead.md`.
+the dispatcher falls back to the file-by-file Pre-dispatch decomposition rule in
+`(removed v0.41)`.
 
 Tags are cited in the dispatch handoff so the assignee knows which skill to
 load without re-reading the full FEAT.
@@ -202,10 +202,10 @@ tags: [stack:llm, surface:docs, concern:performance]
 ```
 
 Rationale: the slice authors agent-prompt text (LLM-facing content); the
-visible artifact is a docs change to `agents/lead.md`; the driver is cost/
+visible artifact is a docs change to `(removed v0.41)`; the driver is cost/
 performance optimization (Opus → Sonnet model selection).
 
-Primary agent: **architect** (agents/lead.md is a policy/doc file, not code).
+Primary agent: **architect** ((removed v0.41) is a policy/doc file, not code).
 Skills auto-loaded: `architecture-advisory`, `prompt-engineering`.
 
 ---

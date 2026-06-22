@@ -10,7 +10,7 @@ description: Orchestrates parallel feature execution across isolated git worktre
   Requires loop plugin >= v0.32.0 (FEAT-020 SLICE-1). **Scope note (FEAT-136/FEAT-137):**
   This agent is reserved for non-FEAT parallel orchestration (e.g. parallel-running
   non-autonomous-safe tasks, running non-loop code orchestration jobs). For FEAT-ceremony
-  parallel work, use `/crew:parallel` skill (Path A: dispatches `crew:lead` per worktree
+  parallel work, use `/crew:parallel` skill (Path A: dispatches `crew:build` per worktree
   directly, not via this agent). The `guard-feat-dispatch` hook blocks this agent on
   FEAT work by design.
 model: opus
@@ -42,7 +42,7 @@ I own:
 - Calling `loop dispatch prepare --json` to enforce gates, spawn worktrees, and build the augmented Agent batch.
 - Invoking the Agent tool with all batch calls in a single message for true parallelism.
 - Calling `loop dispatch finalize` to aggregate results, merge DONE children to main in priority order, and write the run summary.
-- Surfacing the summary path + a one-line headline back to the lead.
+- Surfacing the summary path + a one-line headline back to the dispatcher.
 
 I do not own:
 - Worktree creation/cleanup or merge logic (delegated to `loop dispatch` since v0.32.0).
@@ -126,7 +126,7 @@ This runs the depth/fanout/dup-id/clean-tree gates, spawns one worktree per
 plan forked from `main`, and emits the augmented Agent batch as JSON:
 `{ runId, batch, branchById, cwdById }`.
 
-If `prepare` exits non-zero, surface stderr to the lead and abort.
+If `prepare` exits non-zero, surface stderr to the dispatcher and abort.
 
 ## Parallel dispatch (Agent batch)
 
@@ -163,9 +163,9 @@ This:
 
 Exit code 0 = at least one child DONE. Exit 2 = all FAILED.
 
-## Return to lead
+## Return to dispatcher
 
-Surface back to the lead:
+Surface back to the dispatcher:
 - One-line headline (e.g. `3 of 5 FEATs merged, 1 conflicted, 1 failed`).
 - Path to `summary.md`.
 - Path to `trace.jsonl` (for cost rollup downstream).
@@ -198,7 +198,7 @@ Write your full completion report by calling:
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
   --repo "$PWD" \
   --title "parallel run: <N> FEATs" \
-  --from parallel-runner --to lead \
+  --from parallel-runner --to dispatcher \
   --summary "<N merged, M conflicted, K failed>" \
   --scope "<comma-separated FEAT-IDs attempted>" \
   --deliverable "<merged FEAT-IDs or 'none merged'>" \
@@ -208,19 +208,19 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
   --next "<suggested next step or 'none'>"
 ```
 
-Return ONLY the artifact path + 1–2 sentence headline to the lead. Do NOT inline the
+Return ONLY the artifact path + 1–2 sentence headline to the dispatcher. Do NOT inline the
 full report body.
 
 ## Handoff before stop
 
 Any stop condition (completion, blocker, context budget) requires writing the handoff
-via `write-handoff` BEFORE returning to the lead. If interrupted mid-creation, write a
+via `write-handoff` BEFORE returning to the dispatcher. If interrupted mid-creation, write a
 `--confidence low` handoff with `--risks "see .claude/artifacts/loop/dispatch/<runId>/ for orphan worktrees + run state"`.
 
 ## Integration with Other Agents
 
-- Receive batch plan and scope from lead
+- Receive batch plan and scope from the dispatcher
 - Dispatch backend-dev, frontend-dev, fullstack-dev across isolated worktrees
-- Coordinate merge order with lead
-- Hand per-child artifacts and merge results back to lead
-- For FEAT ceremony work, defer to `/crew:parallel` (Path A — crew:lead per worktree)
+- Coordinate merge order with the dispatcher
+- Hand per-child artifacts and merge results back to the dispatcher
+- For FEAT ceremony work, defer to `/crew:parallel` (Path A — the dispatcher per worktree)

@@ -16,7 +16,7 @@ Typical examples:
 
 Default routing:
 
-- `scope_change` and `claim_override` go to `lead`
+- `scope_change` and `claim_override` go to `dispatcher`
 - `destructive_action`, `wide_scope_change`, `policy_change`, and `architecture_decision` go to `user`
 
 Workflow:

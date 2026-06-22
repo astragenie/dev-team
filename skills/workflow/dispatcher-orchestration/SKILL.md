@@ -1,9 +1,9 @@
 ---
-name: lead-orchestration
-prompt_id: lead-orchestration
+name: dispatcher-orchestration
+prompt_id: dispatcher-orchestration
 version: 1.0.0
 tier: workflow
-description: Orchestration reference for the lead — assignment shape, pre-done checklist, delegation thresholds, model exception list, context efficiency, and agent integration index.
+description: Orchestration reference for the dispatcher — assignment shape, pre-done checklist, delegation thresholds, model exception list, context efficiency, and agent integration index.
 owner: sergeymilashico
 last_reviewed: 2026-06-21
 triggers: ["assignment shape", "pre-done checklist", "delegation", "model exception", "context efficiency", "integration with other agents"]
@@ -13,7 +13,7 @@ triggers: ["assignment shape", "pre-done checklist", "delegation", "model except
 
 ## Trigger
 
-Load when the lead needs assignment dispatch shape, pre-completion checklist, delegation cost guidance, or the agent integration index.
+Load when the dispatcher needs assignment dispatch shape, pre-completion checklist, delegation cost guidance, or the agent integration index.
 
 ## Assignment shape
 
@@ -80,4 +80,4 @@ If the slice spec names files + test signatures + AC numbers → mechanical → 
 
 ## Done
 
-This skill is fully consumed when the lead has the dispatch shape, pre-done checklist, delegation thresholds, and agent index needed for the current slice decision.
+This skill is fully consumed when the dispatcher has the dispatch shape, pre-done checklist, delegation thresholds, and agent index needed for the current slice decision.

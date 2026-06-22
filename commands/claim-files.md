@@ -24,4 +24,4 @@ Workflow:
 
 Deliverable:
 
-- a short ownership update for the user or lead
+- a short ownership update for the user or dispatcher

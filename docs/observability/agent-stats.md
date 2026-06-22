@@ -1,7 +1,7 @@
 # Agent Stats — per-agent rolling metrics (FEAT-159 SLICE-A)
 
 This document covers the `agent-stats` aggregator: artifact shape, CLI invocation,
-telemetry sources, and the intentional deferral of lead-consumer wiring.
+telemetry sources, and the intentional deferral of dispatcher-consumer wiring.
 
 ## Artifact shape
 
@@ -117,10 +117,10 @@ Window: defaults to `last_n_slices:10`. Override via `CREW_AGENT_STATS_WINDOW=<N
 
 ## Lead consumer — intentionally NOT wired in this slice
 
-As of SLICE-85, the lead agent does **not** read `agent-stats` artifacts at
-slice-start. Operators see the embedded section in cost reports, but the lead's
+As of SLICE-85, the dispatcher agent does **not** read `agent-stats` artifacts at
+slice-start. Operators see the embedded section in cost reports, but the dispatcher's
 own dispatch logic still picks blindly. The follow-up slice
 (`autonomous_safe: false` — FEAT-159 SLICE-C) will wire the artifact into
-`agents/lead.md` Step 3 (model/agent picking) after human-in-loop review.
-This deferral avoids editing `agents/lead.md` (governed as
+`(removed v0.41)` Step 3 (model/agent picking) after human-in-loop review.
+This deferral avoids editing `(removed v0.41)` (governed as
 `autonomous_safe: false` per `CLAUDE.md`).

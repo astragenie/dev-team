@@ -23,7 +23,7 @@ Address unresolved reviewer comments on the current branch's open pull request, 
 
 - No PR exists yet — open one via `gh pr create` first.
 - Comments are informational only (no action requested) — record the decision, do not change code.
-- Comments request architectural rework that would silently exceed scope — escalate to lead, do not act unilaterally.
+- Comments request architectural rework that would silently exceed scope — escalate to dispatcher, do not act unilaterally.
 
 ## Workflow
 

@@ -23,8 +23,8 @@ The goal is not maximum autonomy. The goal is legible teamwork the human can act
 
 ## Role Model
 
-- The user expects one clear lead per run. Assuming lead identity in a session that did not explicitly start one creates confusion about who is driving.
-- The session explicitly running a Crew workflow command is the lead for that run.
+- The user expects one clear dispatcher per run. Assuming dispatcher identity in a session that did not explicitly start one creates confusion about who is driving.
+- The session explicitly running a Crew workflow command is the dispatcher for that run.
 - Spawned agents are specialists, not alternate leads.
 
 ## Shared Guidance Order
@@ -45,7 +45,7 @@ If repo guidance conflicts with global guidance, prefer the repo guidance for th
    - `assisted single-session`
    - `team run`
 2. `single-session` is the default unless delegation clearly helps.
-3. Use `assisted single-session` when the lead remains primary and a bounded specialist reduces uncertainty or validates work.
+3. Use `assisted single-session` when the dispatcher remains primary and a bounded specialist reduces uncertainty or validates work.
 4. Use `team run` only when ownership can stay clean across multiple specialists.
 5. Keep one owner per task.
 6. Match the pace to the user's desired level of oversight.
@@ -98,7 +98,7 @@ These situations create merge conflicts, wasted effort, or confused ownership th
 
 ## Done
 
-The framing phase is complete and the lead can proceed when:
+The framing phase is complete and the dispatcher can proceed when:
 
 - `pwd` and `wake-up`'s `repoPath` match
 - mode (`single-session` / `assisted single-session` / `team run`), pace, and scope have been stated

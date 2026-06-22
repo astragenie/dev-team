@@ -1,6 +1,6 @@
 # Agent capabilities schema
 
-Each agent prompt under `agents/**/*.md` may declare a `capabilities:` block in its YAML frontmatter. The lead agent reads these blocks to route work to the right specialist.
+Each agent prompt under `agents/**/*.md` may declare a `capabilities:` block in its YAML frontmatter. The dispatcher agent reads these blocks to route work to the right specialist.
 
 ## Block shape
 
@@ -25,7 +25,7 @@ Missing fields are treated as **wildcard match** (no constraint). Empty fields a
 - `validator` — runs the change against scenarios; produces evidence.
 - `deployer` — moves changes through environments.
 - `researcher` — read-only investigation, locating code, surfacing facts.
-- `orchestrator` — dispatches other agents (lead only; not routed to).
+- `orchestrator` — dispatches other agents (dispatcher only; not routed to).
 
 An agent may declare multiple roles when it genuinely fills both (e.g. `reviewer-validator` combines reviewer + validator on LOW-tier slices).
 
@@ -70,7 +70,7 @@ Guideline:
 - 8: capable but specialized (e.g. `expert-react-frontend-engineer` for React 19.2-specific features).
 - 5–7: generalist or fallback (e.g. `builder` for mixed work, `frontend-developer` for multi-framework UI).
 
-## Selection algorithm (lead-side, pseudo)
+## Selection algorithm (dispatcher-side, pseudo)
 
 ```
 matches = agents.filter(a =>
@@ -88,7 +88,7 @@ Missing capability fields on the agent side = match anything on that dimension.
 
 ## Backward compatibility
 
-Agents WITHOUT a `capabilities:` block remain dispatchable by exact-name from lead's inline routing table. The capability registry is additive — adding capabilities improves discoverability; their absence does not break lead's existing routes.
+Agents WITHOUT a `capabilities:` block remain dispatchable by exact-name from the dispatcher's inline routing table. The capability registry is additive — adding capabilities improves discoverability; their absence does not break the dispatcher.s existing routes.
 
 ## Where capabilities live
 
@@ -98,5 +98,5 @@ Agents WITHOUT a `capabilities:` block remain dispatchable by exact-name from le
 
 ## Special-case agents (no capabilities block)
 
-- `agents/lead.md` — lead is the orchestrator; never routed TO by lead.
+- `(removed v0.41)` — the dispatcher is the orchestrator; never routed TO by the dispatcher.
 - `agents/parallel-runner.md` — reserved for non-FEAT parallel orchestration. Lead dispatches via `/crew:parallel` skill, not by capability match.

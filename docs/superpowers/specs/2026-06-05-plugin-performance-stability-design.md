@@ -148,7 +148,7 @@ false positives. The pattern recurs across verb-matching logic.
   - `reviewer.md`: must contain `Test Adequacy`, `crew:reviewer`, `needs_fix`
   - `validator.md`: must contain `validation_skipped`, `crew:validator`
   - `deployer.md`: must contain `dev.readyfordev` (or current badge name), `crew:deployer`
-  - `lead.md`: must contain `crew:lead`, `mark-badge`, `write-handoff`
+  - `lead.md`: must contain `crew:build`, `mark-badge`, `write-handoff`
 - Tests read the file and assert `text.includes(keyword)` — same pattern as `architect-feature.test.mjs`
 
 **Negative test discipline for matching logic:**
@@ -180,7 +180,7 @@ Lead recovered the remaining 30% inline. No pre-dispatch estimate predicted this
 recovery protocol defined what to do when builder signals ceiling.
 
 **SLICE-15 model selection (production_readiness 0.80):** Sonnet-default guidance in
-`agents/lead.md` is a soft recommendation with no measurable enforcement. The
+`(removed v0.41)` is a soft recommendation with no measurable enforcement. The
 `modelMix` field in cost reports is the intended compliance signal but nothing surfaces
 a warning when a slice dispatches Opus for a Sonnet-appropriate task.
 
@@ -200,7 +200,7 @@ a warning when a slice dispatches Opus for a Sonnet-appropriate task.
   "If you hit 40 tool uses or 80k context tokens before completing all ACs, emit
   status `DONE_WITH_CONCERNS` with concern `context_ceiling_reached: true` and list
   completed vs remaining ACs. Do NOT attempt recovery inline."
-- `agents/lead.md` gains a matching recovery rule:
+- `(removed v0.41)` gains a matching recovery rule:
   "On `context_ceiling_reached`: split remaining ACs into a new bounded task and
   dispatch a fresh builder. Do not recover inline."
 
@@ -213,7 +213,7 @@ a warning when a slice dispatches Opus for a Sonnet-appropriate task.
 ### Acceptance criteria
 - AC-1: `node scripts/crew.mjs scope-estimate --files <list>` returns `{ tier: "light"|"standard"|"heavy", reason: string }`
 - AC-2: `agents/builder.md` contains `context_ceiling_reached` and `DONE_WITH_CONCERNS` in a `## Context ceiling` section; file stays ≤300 lines
-- AC-3: `agents/lead.md` contains the ceiling recovery rule referencing `scope-estimate`; file stays ≤300 lines
+- AC-3: `(removed v0.41)` contains the ceiling recovery rule referencing `scope-estimate`; file stays ≤300 lines
 - AC-4: `brief-me` output includes `modelCompliance` field in the cost section
 - AC-5: `scope-estimate` has ≥6 unit tests covering light/standard/heavy tier boundaries and the eslint-disable escalation rule
 - AC-6: `validate-agents.mjs` still passes (all agents ≤300 lines)

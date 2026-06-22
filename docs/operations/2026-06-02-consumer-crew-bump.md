@@ -61,7 +61,7 @@ For each consumer repo, open a Claude Code session in the repo directory and run
 
 - `validate-agents.mjs` mentioned in CI gate list (FEAT-035 marker)
 - `--validation-evidence` flag or `Validation Evidence` section visible in reviewer guidance (FEAT-030 marker)
-- `Recommended Model` or `model-selection gate` mentioned in lead workflow (FEAT-031 marker)
+- `Recommended Model` or `model-selection gate` mentioned in dispatcher workflow (FEAT-031 marker)
 
 Repos to verify (in any order):
 

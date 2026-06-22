@@ -4,7 +4,7 @@
 
 **Goal:** Cut slice wall-clock by restructuring ceremony: reviewer+validator dispatched concurrently after builder PASS, deterministic artifact scaffolds via --scaffold so agents fill only judgment fields, and a light tier for small slices with one combined review+validate dispatch.
 
-**Architecture:** Three independent levers touching different surfaces: (2a) prompt/command routing in agents/lead.md + commands/orchestrate-slice.md + workflow-state badge merge-safety in the scripts layer; (2b) a --scaffold flag on crew.ts write-* commands extending the existing stub-artifact --update machinery in scripts/lib/artifacts/write.ts; (2c) tier classification rules in the lead prompt + slice frontmatter, with the misclassification guard (needs_fix on light → full ladder on the fix bounce).
+**Architecture:** Three independent levers touching different surfaces: (2a) prompt/command routing in (removed v0.41) + commands/orchestrate-slice.md + workflow-state badge merge-safety in the scripts layer; (2b) a --scaffold flag on crew.ts write-* commands extending the existing stub-artifact --update machinery in scripts/lib/artifacts/write.ts; (2c) tier classification rules in the dispatcher prompt + slice frontmatter, with the misclassification guard (needs_fix on light → full ladder on the fix bounce).
 
 **Tech Stack:** Node 22.6+ strip-types, node:test, ESM; agent prompts are Markdown under agents/ (≤300 lines each, enforced by scripts/validate-agents.ts).
 
@@ -400,9 +400,9 @@ test("parallel-gate-scenario: reviewer and validator both complete in same turn"
 
 **Acceptance:** lead.md includes explicit rules for tier classification and concurrent dispatch handoff shape.
 
-### 4.1 Add tier classification rules to lead.md
+### 4.1 Add tier classification rules to dispatcher.md
 
-**File:** `agents/lead.md` — add new section after "Dispatch decision rule"
+**File:** `(removed v0.41)` — add new section after "Dispatch decision rule"
 
 **Insertion point:** After line ~70 ("Dispatch decision rule"), before "Pre-dispatch decomposition rule"
 
@@ -435,7 +435,7 @@ For tier classification automation, invoke `scripts/orchestrate-slice-classify.m
 
 ### 4.2 Update dispatch rules to reference tiers + concurrent pattern
 
-**File:** `agents/lead.md` — update "Dispatch decision rule" section to cross-reference tiers
+**File:** `(removed v0.41)` — update "Dispatch decision rule" section to cross-reference tiers
 
 Find the table starting ~line 69 ("When to dispatch architect vs builder") and add after:
 
@@ -458,7 +458,7 @@ See `commands/orchestrate-slice.md` Step 4–5 for exact prompts.
 
 ### 4.3 Update artifact discipline to record tier in run-brief
 
-**File:** `agents/lead.md` — update "Artifact discipline" table (~line 190) OR call out tier in run-brief fields
+**File:** `(removed v0.41)` — update "Artifact discipline" table (~line 190) OR call out tier in run-brief fields
 
 No table change needed; just ensure run-brief includes a `tier:` field. Update writeArtifact calls in crew.ts to include `tier` if computed.
 
@@ -557,7 +557,7 @@ Decision: the combined dispatch writes BOTH existing artifact kinds — a review
 If you encounter `needs_fix` but the slice was marked `tier: light`:
 - Still return your findings.
 - In your artifact, add a note: "⚠ Light-tier slice with needs_fix → fix bounce will use full ladder (separate reviewer + validator)."
-- The lead will re-dispatch builder, then use full ladder on the fix bounce.
+- The dispatcher will re-dispatch builder, then use full ladder on the fix bounce.
 
 ## Skills you consult
 
@@ -717,7 +717,7 @@ const BADGE_TABLE: Record<string, BadgeSpec> = {
 
 ### 7.2 Update lead.md to reference stale-mark + full-ladder escalation
 
-**File:** `agents/lead.md` — update "Autonomous resolution" table
+**File:** `(removed v0.41)` — update "Autonomous resolution" table
 
 Find the entry for "Review `needs_fix`" and update:
 
@@ -775,7 +775,7 @@ Expected: all tests pass, including new concurrent + scaffold + light-tier scena
 node ./scripts/validate-agents.ts 2>&1
 ```
 
-Expected: agents/lead.md, agents/reviewer.md, agents/validator.md, agents/reviewer-validator.md all pass validation (≤300 lines, required fields).
+Expected: (removed v0.41), agents/reviewer.md, agents/validator.md, agents/reviewer-validator.md all pass validation (≤300 lines, required fields).
 
 ### 8.3 Verify scaffold flag end-to-end
 

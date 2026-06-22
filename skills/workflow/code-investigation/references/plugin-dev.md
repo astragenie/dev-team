@@ -16,7 +16,7 @@ manifests, agents, skills, commands, hooks, routing. Cite file:line.
 ## 2. Agent prompt quality (when the question is "why does agent X misbehave")
 
 - Frontmatter `description:` — is it trigger-shaped (when to dispatch) or just
-  a label? Weak descriptions cause wrong/no routing by the lead.
+  a label? Weak descriptions cause wrong/no routing by the dispatcher.
 - `disallowedTools` vs the prompt's claimed constraints — a "read-only" agent
   with open Bash can still mutate; check both layers.
 - `model:` / `maxTurns:` vs the work shape — exploration on an expensive model
@@ -53,4 +53,4 @@ manifests, agents, skills, commands, hooks, routing. Cite file:line.
 
 ## Citation pattern
 
-`agents/reviewer.md:12 (verified-in-code): description lacks dispatch triggers — lead routing relies on prose match; correlates with missed-dispatch reports in .claude/artifacts/crew/runs/.`
+`agents/reviewer.md:12 (verified-in-code): description lacks dispatch triggers — dispatcher routing relies on prose match; correlates with missed-dispatch reports in .claude/artifacts/crew/runs/.`

@@ -473,7 +473,7 @@ Skills constraints (enforced by `validate-skills.ts`): frontmatter `name` + `des
 
 **Files:**
 - Create: `skills/meta/lead-efficiency/SKILL.md`
-- Modify: `agents/lead.md` (333 lines → ≤300)
+- Modify: `(removed v0.41)` (333 lines → ≤300)
 - Check: `tests/agent-prompt-content.test.ts`
 
 - [ ] **Step 1: Check which prompt tests assert on the sections being moved**
@@ -485,16 +485,16 @@ Run: `grep -n "Delegation thresholds\|Context efficiency" tests/agent-prompt-con
 ```markdown
 ---
 name: lead-efficiency
-description: Lead-only operating specifics — delegation cost thresholds and context-efficiency rules. Invoked by the lead agent at dispatch-decision time.
+description: Lead-only operating specifics — delegation cost thresholds and context-efficiency rules. Invoked by the dispatcher agent at dispatch-decision time.
 tier: meta
 ---
 
-<entire "## Delegation thresholds (cost discipline)" section moved verbatim from agents/lead.md:273-294>
+<entire "## Delegation thresholds (cost discipline)" section moved verbatim from (removed v0.41):273-294>
 
-<entire "## Context efficiency" section moved verbatim from agents/lead.md:295-323>
+<entire "## Context efficiency" section moved verbatim from (removed v0.41):295-323>
 ```
 
-- [ ] **Step 3: Replace the two sections in `agents/lead.md`** with:
+- [ ] **Step 3: Replace the two sections in `(removed v0.41)`** with:
 
 ```markdown
 ## Delegation thresholds + context efficiency
@@ -513,7 +513,7 @@ Expected: both pass; lead.md ≤300, skill ≤200 lines.
 
 - [ ] **Step 6: Routing-table row** — add a row to `docs/routing-table.md` mapping "Lead dispatch-cost decision" → `lead-efficiency` (advisory gate `validate:routing-table` should stay green).
 
-- [ ] **Step 7: Full gates, commit** — `git commit -m "refactor(wp4): move lead cost/context specifics to lead-efficiency skill (333→<300 lines)"`
+- [ ] **Step 7: Full gates, commit** — `git commit -m "refactor(wp4): move lead cost/context specifics to dispatcher-efficiency skill (333→<300 lines)"`
 
 ### Task 13: Trim reviewer.md under 300 lines
 

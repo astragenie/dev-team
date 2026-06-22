@@ -2,7 +2,7 @@
 
 ## Goal
 
-Build a local-first, inspectable orchestration layer for coding work where a lead session coordinates a small team of specialists with:
+Build a local-first, inspectable orchestration layer for coding work where a dispatcher session coordinates a small team of specialists with:
 
 - bounded ownership
 - explicit task handoffs
@@ -15,7 +15,7 @@ This v1 is not a general autonomous swarm. It is a controlled operating layer fo
 The execution model should support three clearly named modes:
 
 - `single-session`: one agent does the work directly
-- `assisted single-session`: the lead remains primary and may use bounded helpers
+- `assisted single-session`: the dispatcher remains primary and may use bounded helpers
 - `team run`: multiple coordinated agents with explicit ownership and handoffs
 
 ## Non-Goals
@@ -37,7 +37,7 @@ Core pieces:
 2. `protocol`
    Defines the required message schemas for task start, progress, blockers, completion, and review.
 3. `roles`
-   Stores durable role contracts for the lead workflow plus builder, reviewer, and researcher specialists.
+   Stores durable role contracts for the dispatcher workflow plus builder, reviewer, and researcher specialists.
 4. `policy`
    Applies constitution rules, pace settings, scope limits, and completion gates.
 5. `observability`
@@ -247,7 +247,7 @@ These should be enforced in code where possible and otherwise reflected in promp
 3. Every agent must send a structured acknowledgement before starting work.
 4. Every agent must send a structured completion report before a task can close.
 5. Reviewer approval is required for implementation tasks before `done`.
-6. The lead is responsible for synthesis, reassignment, and user-facing summaries.
+6. The dispatcher is responsible for synthesis, reassignment, and user-facing summaries.
 7. Direct intervention is allowed when a teammate drifts or blocks.
 8. Pace controls the maximum autonomous work chunk before reporting.
 
@@ -395,7 +395,7 @@ These are buildable, but they are where most v1 pain will live:
 
 1. Reliable interruption and redirection of an already-busy agent
 2. Making scope rules actually observable instead of aspirational
-3. Handling partial context between lead and teammates
+3. Handling partial context between dispatcher and teammates
 4. Preventing silent task drift
 5. Keeping the system helpful without turning it into bureaucracy
 
@@ -403,7 +403,7 @@ These are buildable, but they are where most v1 pain will live:
 
 The v1 is successful if it can do all of the following on a real code task:
 
-- split work across lead, builder, reviewer, and researcher
+- split work across dispatcher, builder, reviewer, and researcher
 - keep file ownership legible
 - require structured handoffs
 - show run state at any time

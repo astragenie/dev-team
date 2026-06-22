@@ -18,7 +18,7 @@ agent = role + universal-skills + workflow-skills + domain-skills + repo-context
 ## Topology
 
 - Hub-and-spoke. Lead routes; specialists own bounded scope.
-- Six roles stay: lead, builder, reviewer, validator, deployer, researcher.
+- Five active roles stay: dispatcher (concept), builder, reviewer, validator, deployer, researcher.
 - No specialist builders (csharpbuilder etc.). Specializations are skills.
 
 ## Skill tiers
@@ -34,7 +34,7 @@ agent = role + universal-skills + workflow-skills + domain-skills + repo-context
 Rules:
 1. One concern per skill.
 2. ≤200 lines per skill.
-3. Skills do not load other skills (lead composes).
+3. Skills do not load other skills (the dispatcher composes).
 4. Repo overrides plugin on conflict.
 5. Task skills never persist.
 
@@ -86,7 +86,7 @@ stack: <only for domain skills>  # e.g. "dotnet", "flutter"
 
 **Soft conventions** (warnings, encourage but do not enforce):
 
-- A "Trigger / When to Use" heading section so the lead can quickly
+- A "Trigger / When to Use" heading section so the dispatcher can quickly
   decide whether to suggest the skill.
 - A "Done / Acceptance / Stop when" heading so the consumer knows when
   the skill's work is complete.
@@ -94,7 +94,7 @@ stack: <only for domain skills>  # e.g. "dotnet", "flutter"
 
 ## Routing
 
-Hybrid: prescriptive heuristics in `docs/routing-table.md` + lead judgment for ambiguous cases. No LLM classifier. No pure config map.
+Hybrid: prescriptive heuristics in `docs/routing-table.md` + dispatcher judgment for ambiguous cases. No LLM classifier. No pure config map.
 
 ### Reviewer-phase skills
 
@@ -133,7 +133,7 @@ These are **review aids**, not CI gates. The hard gates remain `scripts/validate
 |---|---|---|
 | 1 | Reorganize `skills/` into `{universal,workflow,domain,meta}/` | ✓ FEAT-001 |
 | 2 | Author `docs/routing-table.md` | ✓ FEAT-002 |
-| 3 | Update `agents/lead.md` (≤300 lines per FEAT-035 cap raise) to reference routing-table + skill tier conventions | FEAT-003 (creative; human review gate) |
+| 3 | Update `(removed v0.41)` (≤300 lines per FEAT-035 cap raise) to reference routing-table + skill tier conventions | FEAT-003 (creative; human review gate) |
 | 4 | Skill quality bar + validator (`scripts/validate-skills.mjs`) | ✓ FEAT-007 |
 | 5 | `blocked` + `escalated_to_lead` workflow badges | ✓ FEAT-006 |
 | 6 | This document | ✓ FEAT-004 |
@@ -145,7 +145,7 @@ These are **review aids**, not CI gates. The hard gates remain `scripts/validate
 - Cost-advisor signal in stop-conditions (✓ shipped in `loop` v0.1.19).
 - Snapshot iteration telemetry (✓ shipped in `loop` v0.1.20).
 - Mirror crew gates in loop slice flow (✓ shipped in `loop` v0.1.21).
-- MCP integration when an external system has data the lead needs centrally.
+- MCP integration when an external system has data the dispatcher needs centrally.
 - Artifact index file when grep exceeds 2s (FEAT-009, deferred until measured).
 - Specialist agent only after 3+ observed misroutes of the same class.
 

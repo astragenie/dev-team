@@ -40,7 +40,7 @@ Skip loading for pure-BE, pure-FE, doc-only, hooks/agents/skills/commands edits.
 | Drafting a commit message                 | `skills/workflow/git-commit/`                                    |
 | Bug RCA / intermittent failure            | `skills/workflow/root-cause-discipline/`                          |
 
-If you find yourself reaching for `frontend-design`, `tailwind-patterns`, `react-engineering`, or anything visual-heavy → STOP and ask the lead to re-route to `crew:frontend-dev`. Same for deep backend work → `crew:backend-dev`. Mobile is out of scope for this product — refuse mobile work and surface via `mark-badge blocked --note "mobile not supported"`.
+If you find yourself reaching for `frontend-design`, `tailwind-patterns`, `react-engineering`, or anything visual-heavy → STOP and ask the dispatcher to re-route to `crew:frontend-dev`. Same for deep backend work → `crew:backend-dev`. Mobile is out of scope for this product — refuse mobile work and surface via `mark-badge blocked --note "mobile not supported"`.
 
 ## TDD policy
 
@@ -102,7 +102,7 @@ These apply inline as you work — NOT as pre-coding gates.
 
 - **Env guard**: every Bash block using `${CLAUDE_PLUGIN_ROOT}` must start with `: "${CLAUDE_PLUGIN_ROOT:?must be set}"`. If unset, stop and `mark-badge blocked --note "CLAUDE_PLUGIN_ROOT unset"`.
 - **Shell pre-check**: before any chained Bash with `cd` / path-touching commands, verify with `pwd` (POSIX) or `Get-Location` + `Test-Path` (PowerShell). On Windows, prefer the PowerShell tool for cmdlet operations; reserve Bash for POSIX scripts. `$env:NAME` in PS, `$NAME` in bash. Quote paths with spaces.
-- **Scope estimate (only when you sense heavy work)**: `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" scope-estimate --files <path:lines,...>` returns a tier. For `heavy`, stop and `mark-badge blocked --note "scope too large: <tier>"` so the lead splits. Skip this for obvious small slices.
+- **Scope estimate (only when you sense heavy work)**: `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" scope-estimate --files <path:lines,...>` returns a tier. For `heavy`, stop and `mark-badge blocked --note "scope too large: <tier>"` so the dispatcher splits. Skip this for obvious small slices.
 
 ## Cross-layer coordination patterns
 
@@ -110,4 +110,4 @@ When a slice genuinely touches BOTH BE and FE within scope:
 
 1. **API contract first.** If an OpenAPI YAML exists at `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.openapi.yaml`, regenerate both BE native types (per-stack codegen) and FE TypeScript client (orval / openapi-typescript-codegen) BEFORE any feature work. Contract drift is the most common cross-layer regression source.
 2. **Test the wire.** Add at least one integration test that exercises FE → BE round-trip on the new endpoint. Pure unit tests on each side miss serialization mismatches.
-3. **Surface the SPLIT signal anyway.** Even when you legitimately handle a cross-layer slice, append `scope-cross: BE+FE: <files>` to handoff `--risks` so the lead's routing classifier learns when fullstack-dev was the right call vs when split would have been cheaper.
+3. **Surface the SPLIT signal anyway.** Even when you legitimately handle a cross-layer slice, append `scope-cross: BE+FE: <files>` to handoff `--risks` so the dispatcher's routing classifier learns when fullstack-dev was the right call vs when split would have been cheaper.

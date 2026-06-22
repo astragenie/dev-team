@@ -12,7 +12,7 @@ recommend **Sonnet** unless one of three conditions holds:
 3. **Design choice required** — agent must pick between plausible
    approaches with non-obvious trade-offs.
 
-The rule does NOT govern the lead's own model. Lead stays on Opus
+The rule does NOT govern the dispatcher's own model. Lead stays on Opus
 (framing, synthesis, user communication, judgment calls).
 
 ## Why
@@ -47,7 +47,7 @@ has to make architectural decisions on the fly.
 
 ## How to surface the recommendation
 
-The lead writes the run-brief at slice start. Include the recommendation
+The dispatcher writes the run-brief at slice start. Include the recommendation
 in the run-brief body — either via a `Recommended Model: <sonnet|opus>`
 line in the summary, or via `--next "Dispatch crew:builder with
 model: <sonnet|opus>"`.
@@ -66,7 +66,7 @@ Sonnet-default already. The explicit recommendation matters because:
 ## How to override
 
 User can override the recommendation by typing the preferred model in
-the conversation before the lead dispatches, or by editing the
+the conversation before the dispatcher dispatches, or by editing the
 run-brief artifact. Lead respects the override silently.
 
 ## Measurement
@@ -85,6 +85,6 @@ be too lax.
 ## Related
 
 - `feedback_cost_discipline.md` — original rule statement.
-- `agents/lead.md` `### Model-selection gate at slice start (FEAT-031)`
+- `(removed v0.41)` `### Model-selection gate at slice start (FEAT-031)`
   subsection — the operational rule.
 - `docs/routing-table.md` — slice-open signal routes to this rule.

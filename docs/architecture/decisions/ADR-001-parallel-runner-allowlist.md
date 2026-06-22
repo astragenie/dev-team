@@ -21,7 +21,7 @@ question (FEAT-137 AC-2) required evaluating three criteria:
 
 At the time FEAT-137 was written, all three answers were "yes," raising the prospect of adding
 it to the allowlist (Path B). However, FEAT-136 (SLICE-64, DEC-015) already shipped Path A:
-rewriting the `/crew:parallel` skill to dispatch `crew:lead` per worktree directly, instead of
+rewriting the `/crew:parallel` skill to dispatch `crew:build` per worktree directly, instead of
 routing through `crew:parallel-runner`. This decision makes FEAT-137 AC-4 (allowlist decision)
 moot but still requires recording why the allowlist stays unchanged.
 
@@ -31,7 +31,7 @@ We will NOT add `crew:parallel-runner` to the guard-feat-dispatch allowlist.
 
 The allowlist remains:
 ```
-crew:builder, crew:lead, crew:reviewer, crew:validator, crew:deployer,
+crew:builder, crew:build, crew:reviewer, crew:validator, crew:deployer,
 crew:researcher, crew:architect, crew:uxdesigner, crew:copywriter,
 crew:document-writer, loop:architect, loop:document-writer, loop:pm,
 loop:researcher, Explore
@@ -42,14 +42,14 @@ loop:researcher, Explore
 ### Why NOT add it?
 
 Path A (DEC-015 / FEAT-136) removed the need. The `/crew:parallel` skill now dispatches
-`crew:lead` per worktree directly. Each worktree runs the standard slice ceremony (start →
-build → review → validate → grade → complete). Because `crew:lead` is already allowlisted,
+`crew:build` per worktree directly. Each worktree runs the standard slice ceremony (start →
+build → review → validate → grade → complete). Because `crew:build` is already allowlisted,
 the hook permits this without any change.
 
 `crew:parallel-runner` remains for non-FEAT parallel orchestration (e.g., parallel-running
 non-autonomous-safe tasks, running non-loop code orchestration jobs). The hook blocks it on
 FEAT work by design — which is correct. A FEAT-work orchestrator that itself dispatches other
-orchestrators (crew:lead) would create a two-level fan-out, diluting observability of the
+orchestrators (crew:build) would create a two-level fan-out, diluting observability of the
 leaf dispatch contexts. Tighter enforcement (narrower allowlist) is preferable to permitting
 indirect dispatch chains.
 
@@ -58,22 +58,22 @@ indirect dispatch chains.
 Even though we are not allowlisting, these criteria are satisfied:
 
 **Criterion 1: Dispatches only ceremony specialists?** ✓ Yes  
-`crew:parallel-runner` calls `crew:lead` per worktree, which is an allowlisted ceremony
-specialist. Each lead then runs the full slice ceremony.
+`crew:parallel-runner` calls `crew:build` per worktree, which is an allowlisted ceremony
+specialist. Each dispatcher then runs the full slice ceremony.
 
 **Criterion 2: Produces its own artifact trail?** ✓ Yes  
 The agent writes `.claude/artifacts/loop/dispatch/<runId>/summary.md` and per-child trace lines,
 providing full visibility into the parallel run's structure and outcomes.
 
 **Criterion 3: Can bypass review/validation gates?** ✗ No  
-Each sub-agent (crew:lead per worktree) runs the complete ceremony, including mandatory
+Each sub-agent (crew:build per worktree) runs the complete ceremony, including mandatory
 review and validation gates. No gates can be skipped.
 
 Despite all three criteria being satisfied, the allowlist decision remains NO because:
-- **Path A eliminated the pain point:** Direct dispatch of crew:lead per worktree works under
+- **Path A eliminated the pain point:** Direct dispatch of crew:build per worktree works under
   the current hook and is already observable.
 - **Narrower allowlist = tighter enforcement:** Allowing orchestrators of orchestrators
-  (parallel-runner → lead) creates indirect dispatch chains that reduce observability of
+  (parallel-runner → dispatcher) creates indirect dispatch chains that reduce observability of
   context at the leaf level. A smaller, more direct allowlist is stronger.
 - **Agent repurposed, not retired:** parallel-runner stays in the codebase for non-FEAT
   batch work, keeping the infrastructure alive for future use without loosening FEAT work
@@ -83,10 +83,10 @@ Despite all three criteria being satisfied, the allowlist decision remains NO be
 
 ### Positive
 
-- Governance remains tight: FEAT work is either direct-dispatch (crew:lead) or not permitted.
+- Governance remains tight: FEAT work is either direct-dispatch (crew:build) or not permitted.
 - No ambiguity about nested orchestrators on FEAT work.
 - Hook code stays unchanged; lower risk and easier to audit.
-- Path A (dispatching crew:lead per worktree) is the simpler, observable path forward.
+- Path A (dispatching crew:build per worktree) is the simpler, observable path forward.
 
 ### Negative
 
@@ -105,7 +105,7 @@ Despite all three criteria being satisfied, the allowlist decision remains NO be
 
 ## References
 
-- **DEC-015:** `/crew:parallel uses Path A — crew:lead per worktree; parallel-runner scoped to
+- **DEC-015:** `/crew:parallel uses Path A — crew:build per worktree; parallel-runner scoped to
   non-FEAT work`
 - **FEAT-136:** Implement `/crew:parallel` skill (SLICE-64)
 - **FEAT-137:** Should crew:parallel-runner be a FEAT-ceremony specialist? (SLICE-65)

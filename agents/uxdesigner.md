@@ -132,7 +132,7 @@ Write your full completion report by calling:
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
   --repo "$PWD" \
   --title "<short title>" \
-  --from uxdesigner --to lead \
+  --from uxdesigner --to dispatcher \
   --summary "<one-sentence headline>" \
   --scope "<what was in scope>" \
   --deliverable "<what shipped>" \
@@ -144,11 +144,11 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
 
 Every flag maps to a section in the artifact. Omitting a flag leaves that section empty — fill them all.
 
-via the Bash tool. The CLI persists the artifact under `.claude/artifacts/crew/handoffs/`. Return to the lead ONLY the resulting path + 1–3 sentence headline. Do NOT inline the full report body.
+via the Bash tool. The CLI persists the artifact under `.claude/artifacts/crew/handoffs/`. Return to the dispatcher ONLY the resulting path + 1–3 sentence headline. Do NOT inline the full report body.
 
 ## Handoff before stop
 
-Completion, pause, blocker, context-budget end — all require writing a handoff via `write-handoff` BEFORE returning to the lead. If mid-task and cannot complete, write a `--confidence low` handoff with `--risks "<what is still in progress>"` and return its path.
+Completion, pause, blocker, context-budget end — all require writing a handoff via `write-handoff` BEFORE returning to the dispatcher. If mid-task and cannot complete, write a `--confidence low` handoff with `--risks "<what is still in progress>"` and return its path.
 
 ## Context efficiency
 
@@ -169,7 +169,7 @@ After a successful Edit / Write, do not Read the same file to verify. The tool w
 - Receive diagrams and system constraints from architect
 - Provide designs to frontend-dev and fullstack-dev
 - Coordinate a11y and interaction patterns with qa-expert
-- Receive scope from lead; return UX spec for downstream build
+- Receive scope from the dispatcher; return UX spec for downstream build
 - Provide flows to document-writer for user-facing docs
 
 ## Peer dispatch — when to use the Agent tool
@@ -187,15 +187,15 @@ their output to complete YOUR task:
 You MUST NOT dispatch:
 
 - `backend-dev`, `frontend-dev`, `fullstack-dev` — implementers; uxdesigner does
-  not invoke implementers; deliver the UX spec and let lead route implementation.
+  not invoke implementers; deliver the UX spec and let the dispatcher route implementation.
 - `inspector`, `inspector-verifier`, `verifier`, `release-engineer` — review and
   validation gates; dispatched exclusively by the orchestrator (loop walker).
-- `lead`, `refactor`, `integrator`, `parallel-runner` — orchestration roles; not
+- (dispatcher role removed), `refactor`, `integrator`, `parallel-runner` — orchestration roles; not
   appropriate as peer targets from a design session.
 - `qa-expert`, `performance-engineer` — advisory roles that consume your output,
   not sources to query mid-task.
 - `document-writer`, `investigator` — not needed for UX design; surface needs
-  via lead handoff if docs or code location work is required.
+  via dispatcher handoff if docs or code location work is required.
 - All `caveman:*` agents — never.
 - All `3rdparty:*` agents — use the existing `## Delegation map` table above for
   specialized design sub-tasks; do NOT chain 3rdparty agents via peer dispatch.
@@ -203,12 +203,12 @@ You MUST NOT dispatch:
 Dispatch budget per slice: max 2 peer dispatches.
 Dispatch budget per turn: max 1 peer dispatch.
 
-### Dispatch prompt purity (inherited from lead v0.35.2)
+### Dispatch prompt purity (established pattern)
 
 When you write a dispatch prompt for a peer:
 
 - Do NOT inject your own role / identity into the body ("you are the orchestrator",
-  "as the uxdesigner", "as the lead", etc.).
+  "as the uxdesigner", "as the dispatcher", etc.).
 - Address the peer directly as that peer ("Research user patterns for X",
   "Provide the API contract for Y").
 - State the deliverable expected back (artifact path, headline, or specific content).

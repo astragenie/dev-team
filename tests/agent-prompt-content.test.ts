@@ -139,10 +139,12 @@ test("fullstack-dev.md declares Forbidden block (FEAT-170 SLICE-B)", () => {
 });
 
 test("fullstack-dev.md identity-anchor lists expanded leak phrases (FEAT-170 SLICE-B)", () => {
+  // 'you are the lead' phrase removed in v0.41 hard cut — lead agent gone,
+  // and the validator NO_LEAD_REF_REQUIRED gate would fail on its presence anyway.
   for (const phrase of [
     "you are Claude Code",
     "you are the orchestrator",
-    "you are the lead",
+    "you are the dispatcher",
     "I am Claude Code",
     "Let me re-read",
     "As the orchestrator"
@@ -329,32 +331,10 @@ test("deployer.md contains write-handoff reference", () => {
   assert.ok(deployer.includes("write-handoff"), "deployer.md missing write-handoff");
 });
 
-// ── lead ─────────────────────────────────────────────────────────────────────
-
-const lead = readAgent("lead");
-
-test("lead.md contains mark-badge instruction", () => {
-  assert.ok(lead.includes("mark-badge"), "lead.md missing mark-badge");
-});
-
-test("lead.md references the handoff artifact in the workflow", () => {
-  // Lead is orchestrator-only and does not call write-handoff directly anymore
-  // (see commit f3aadb5 — Golden Path makes lead a dispatcher). The handoff
-  // remains a first-class artifact lead reads and routes from.
-  assert.ok(lead.includes("handoff"), "lead.md missing handoff reference");
-});
-
-test("lead.md contains final-synthesis instruction", () => {
-  assert.ok(lead.includes("final-synthesis"), "lead.md missing final-synthesis");
-});
-
-test("lead.md gates on review_required", () => {
-  assert.ok(lead.includes("review_required"), "lead.md missing review_required");
-});
-
-test("lead.md references crew:fullstack-dev dispatch", () => {
-  assert.ok(lead.includes("crew:fullstack-dev"), "lead.md missing crew:fullstack-dev");
-});
+// lead.md removed in v0.41 hard cut — orchestration is now a concept (the slash
+// command + main thread), not a callable agent role. The behaviors these tests
+// guarded (mark-badge, handoff, final-synthesis, review_required, fullstack-dev
+// dispatch) moved to commands/build.md and /crew:ship workflow.
 
 // ── ## HARD OUTPUT CONTRACT — Prong A coverage ───────────────────────────────
 //
@@ -403,39 +383,7 @@ function firstTacticalIdx(content: string): number {
 // archaeology + revivable structure when a successor contract gate is written.
 describe.skip("## HARD OUTPUT CONTRACT — Prong A coverage", () => {
   // ── 6 already-compliant agents (regression guard) ──────────────────────────
-
-  describe("lead (already compliant)", () => {
-    const content = readAgent("lead");
-    test("heading present", () => {
-      assert.ok(content.includes(HARD_CONTRACT_HEADING), "lead.md missing HARD CONTRACT heading");
-    });
-    test("required preamble phrase", () => {
-      assert.ok(
-        hasPreamble(content),
-        "lead.md missing LAST action/tool call before returning preamble"
-      );
-    });
-    test("narration + violation phrases", () => {
-      assert.ok(
-        content.includes(REQUIRED_NARRATION_PHRASE) && content.includes(REQUIRED_VIOLATION_PHRASE),
-        "lead.md missing narration/contract-violation phrases"
-      );
-    });
-    test("role-specific: Agent dispatch keyword", () => {
-      assert.ok(content.includes("Agent"), "lead.md HARD CONTRACT missing Agent dispatch keyword");
-    });
-    test("FEAT-161 cite-back", () => {
-      assert.ok(content.includes(FEAT_161_CITE), "lead.md missing FEAT-161 cite-back");
-    });
-    test("placement before first tactical heading", () => {
-      const contractIdx = content.indexOf(HARD_CONTRACT_HEADING);
-      assert.ok(contractIdx !== -1, "lead.md HARD CONTRACT heading not found");
-      assert.ok(
-        contractIdx < firstTacticalIdx(content),
-        "lead.md HARD CONTRACT must appear before first tactical heading"
-      );
-    });
-  });
+  // lead.md removed in v0.41 hard cut — block removed.
 
   describe("fullstack-dev (already compliant)", () => {
     const content = readAgent("fullstack-dev");
@@ -601,12 +549,9 @@ describe.skip("## HARD OUTPUT CONTRACT — Prong A coverage", () => {
       const ids = content.match(/\b(FEAT-\d+|DEC-\d+|SLICE-\d+)\b/g);
       assert.ok(!ids || ids.length === 0, `inspector.md must not contain backlog ids; found: ${ids?.join(", ")}`);
     });
-    test("no 'lead' caller assumption (peer-dispatch: orchestrator may not be crew:lead)", () => {
-      // Strip frontmatter (between first two ---) before checking
-      const body = content.replace(/^---[\s\S]*?---\n/, "");
-      const matches = body.match(/\bthe lead\b|\bto the lead\b|\bby the lead\b/gi);
-      assert.ok(!matches || matches.length === 0, `inspector.md must not assume caller is 'lead'; found: ${matches?.join(", ")}`);
-    });
+    // Lead-agent removed in v0.41 (hard cut). Body-text gate is enforced repo-wide
+    // by NO_LEAD_REF_REQUIRED in scripts/validate-agents.ts — see the parametrized
+    // describe block "no lead refs across active agents" below.
     test("SLICE_BASE fallback — uses git merge-base, not fixed HEAD~1", () => {
       assert.ok(
         content.includes("git merge-base"),
@@ -1269,52 +1214,44 @@ describe("## Structural deviation rule — implementer coverage", () => {
   }
 });
 
-// ── ## Stub recovery routine — lead coverage ─────────────────────────────────
+// ── No lead refs across active agents (v0.41 hard cut) ──────────────────────
 //
-// SLICE-77: lead.md must contain the stub recovery routine so the orchestrator
-// knows to check for in-progress stubs before re-dispatching a specialist that
-// returned without a decision (mid-narration pause, DEC-021).
-//
-// Assertions:
-//   (a) ## Stub recovery routine heading present (section marker)
-//   (b) "--update <stub-path>" substring (the recovery CLI pattern)
-//   (c) "DEC-021" cite-back
-//   (d) "re-dispatch costs" OR "re-dispatch" substring (cost-of-re-dispatch rationale)
+// Parametrized check: every active agent body must not reference the removed
+// `lead` agent role. The same gate runs in scripts/validate-agents.ts as a CI
+// hard gate; this test surfaces the same failure at unit-test granularity.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const STUB_RECOVERY_HEADING = "## Stub recovery routine";
-const STUB_RECOVERY_UPDATE = "--update <stub-path>";
-const STUB_RECOVERY_DEC = "DEC-021";
-const STUB_RECOVERY_REDISPATCH = "re-dispatch";
+const NO_LEAD_AGENTS = [
+  "architect",
+  "fullstack-dev",
+  "backend-dev",
+  "frontend-dev",
+  "aiplugin-dev",
+  "inspector",
+  "inspector-verifier",
+  "verifier",
+  "integrator",
+  "release-engineer",
+  "document-writer",
+  "refactor",
+  "researcher",
+  "investigator",
+  "qa-expert",
+  "performance-engineer",
+  "uxdesigner",
+  "parallel-runner"
+] as const;
 
-describe("## Stub recovery routine — lead coverage", () => {
-  const content = readAgent("lead");
-
-  test("stub recovery heading present", () => {
-    assert.ok(
-      content.includes(STUB_RECOVERY_HEADING),
-      `lead.md missing "${STUB_RECOVERY_HEADING}" heading`
-    );
-  });
-
-  test("--update <stub-path> recovery pattern present", () => {
-    assert.ok(
-      content.includes(STUB_RECOVERY_UPDATE),
-      `lead.md missing "${STUB_RECOVERY_UPDATE}" recovery CLI pattern`
-    );
-  });
-
-  test("DEC-021 cite-back present", () => {
-    assert.ok(
-      content.includes(STUB_RECOVERY_DEC),
-      `lead.md missing "${STUB_RECOVERY_DEC}" cite-back`
-    );
-  });
-
-  test("re-dispatch cost rationale present", () => {
-    assert.ok(
-      content.includes(STUB_RECOVERY_REDISPATCH),
-      `lead.md missing re-dispatch cost rationale substring`
-    );
-  });
+describe("No lead refs across active agents", () => {
+  for (const name of NO_LEAD_AGENTS) {
+    test(`${name}.md has no 'lead' caller assumption`, () => {
+      const content = readAgent(name);
+      const body = content.replace(/^---[\s\S]*?---\n/, "");
+      const matches = body.match(/\bthe lead\b|\bto the lead\b|\bby the lead\b|\bcrew:lead\b/gi);
+      assert.ok(
+        !matches || matches.length === 0,
+        `${name}.md must not reference removed 'lead' agent; found: ${matches?.join(", ")}`
+      );
+    });
+  }
 });

@@ -55,7 +55,7 @@ Return a QA report with:
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
   --repo "$PWD" \
   --title "<short title>" \
-  --from qa-expert --to lead \
+  --from qa-expert --to dispatcher \
   --summary "<verdict + gap count>" \
   --scope "<what was checked>" \
   --deliverable "<QA report with scenarios>" \
@@ -67,11 +67,11 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
 
 ## Integration with Other Agents
 
-- Receive scope and slice context from lead
+- Receive scope and slice context from the dispatcher
 - Receive test IDs from backend-dev, frontend-dev, fullstack-dev
 - Receive UX flows from uxdesigner
 - Coordinate perf scenarios with performance-engineer
-- Provide gap reports back to lead and dev agents
+- Provide gap reports back to the dispatcher and dev agents
 - Hand coverage findings to inspector for review-time enforcement
 
 ## Peer dispatch — when to use the Agent tool
@@ -89,27 +89,27 @@ their output to complete YOUR task:
 You MUST NOT dispatch:
 
 - `backend-dev`, `frontend-dev`, `fullstack-dev` — implementers; qa-expert does
-  not invoke implementers; surface gaps in the report for lead to route.
+  not invoke implementers; surface gaps in the report for the dispatcher to route.
 - `inspector`, `inspector-verifier`, `verifier`, `release-engineer` — review and
   validation gates; dispatched exclusively by the orchestrator (loop walker).
-- `lead`, `refactor`, `integrator`, `parallel-runner` — orchestration roles; not
+- (dispatcher role removed), `refactor`, `integrator`, `parallel-runner` — orchestration roles; not
   appropriate as peer targets from a QA session.
 - `architect`, `uxdesigner` — upstream design roles; QA consumes their output,
   not the other way around.
 - `researcher`, `document-writer` — not needed for coverage analysis; surface
-  doc needs via lead handoff.
+  doc needs via dispatcher handoff.
 - All `caveman:*` agents — never.
 - All `3rdparty:*` agents — not applicable; QA work is done inline.
 
 Dispatch budget per slice: max 2 peer dispatches.
 Dispatch budget per turn: max 1 peer dispatch.
 
-### Dispatch prompt purity (inherited from lead v0.35.2)
+### Dispatch prompt purity (established pattern)
 
 When you write a dispatch prompt for a peer:
 
 - Do NOT inject your own role / identity into the body ("you are the orchestrator",
-  "as the qa-expert", "as the lead", etc.).
+  "as the qa-expert", "as the dispatcher", etc.).
 - Address the peer directly as that peer ("Locate the test files for X",
   "Analyse the performance profile of Y").
 - State the deliverable expected back (artifact path, headline, or specific content).

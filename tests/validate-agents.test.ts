@@ -102,29 +102,8 @@ x
   assert.ok(result.errors.some((e) => /missing required section "## Report contract"/.test(e)));
 });
 
-test("lead role is exempt from '## Report contract' requirement", async () => {
-  const leadBody = `---
-name: lead
-prompt_id: lead
-version: 1.0.0
-evals: evals/agents/lead.yaml
-description: User-facing coordinator.
-model: opus
----
-
-You are the lead for a small software team.
-
-TaskUpdate batching: never run >=3 back-to-back without intervening work.
-Coalesce Bash calls: chain related data-collection commands.
-
-## Core responsibilities
-
-- coordinate
-`;
-  const root = await makeAgentsDir({ "lead.md": leadBody });
-  const result = await validateAgents(root);
-  assert.equal(result.ok, true, `unexpected errors: ${result.errors.join("; ")}`);
-});
+// lead role removed in v0.41 hard cut — exemption test removed with it. All
+// active agents now MUST carry "## Report contract" per the validator gate.
 
 test("fails on missing identity intro statement", async () => {
   const noIdentity = `---

@@ -292,7 +292,7 @@ test("aggregates top-3 slowest + top-3 token-heaviest per runId", async () => {
   const rows = [
     { runId: "r1", agent: "crew:builder", wallMs: 5000, tokenIn: 10000, tokenOut: 2000, toolCalls: { Read: 3 }, bashDurationMs: 0, skillLoadCount: 0 },
     { runId: "r1", agent: "crew:reviewer", wallMs: 8000, tokenIn: 8000, tokenOut: 1500, toolCalls: {}, bashDurationMs: 1000, skillLoadCount: 1 },
-    { runId: "r2", agent: "crew:lead", wallMs: 12000, tokenIn: 20000, tokenOut: 5000, toolCalls: {}, bashDurationMs: 0, skillLoadCount: 0 },
+    { runId: "r2", agent: "crew:build", wallMs: 12000, tokenIn: 20000, tokenOut: 5000, toolCalls: {}, bashDurationMs: 0, skillLoadCount: 0 },
   ];
   await fs.writeFile(log, rows.map((r) => JSON.stringify(r)).join("\n"), "utf-8");
   const agg = await aggregateDispatchTiming(log, "r1");
@@ -700,7 +700,7 @@ git commit -m "feat(perf): FEAT-154 — bash hard caps in reviewer + reviewer-va
 - Create: `hooks/lib/check-task-update-burst.ts`
 - Create: `hooks/check-task-update-burst.ts` (entry shim)
 - Create: `tests/check-task-update-burst.test.ts`
-- Modify: `agents/builder.md`, `agents/lead.md`, `agents/reviewer.md`, `agents/validator.md`, `agents/architect.md`, plus doc-writer if present
+- Modify: `agents/builder.md`, `(removed v0.41)`, `agents/reviewer.md`, `agents/validator.md`, `agents/architect.md`, plus doc-writer if present
 - Modify: `scripts/validate-agents.ts` — lint for batching rule presence
 
 - [ ] **Step 8.1: Write failing test for burst-detector hook core**

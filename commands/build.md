@@ -2,9 +2,25 @@
 description: Preferred short entry point for building or extending capability in the current repo.
 ---
 
-# Build With The Lead Workflow
+# Build — Dispatcher Workflow
 
-Act as the lead for a bounded feature delivery run.
+You are the dispatcher for `/crew:build`. Pick the specialist builder by FEAT tag, dispatch via the `Agent` tool, then run the review and validate gates per the routing-table.
+
+Routing table (inline):
+
+| FEAT tag                                            | Specialist          |
+|-----------------------------------------------------|---------------------|
+| stack:typescript + surface:ui                       | crew:frontend-dev   |
+| stack:typescript + surface:backend                  | crew:backend-dev    |
+| stack:typescript + surface:cross-layer              | crew:fullstack-dev  |
+| stack:typescript + surface:plugin                   | crew:aiplugin-dev   |
+| stack:csharp                                        | crew:backend-dev    |
+| no clear tag                                        | crew:fullstack-dev  |
+
+After the builder returns PASS:
+1. Dispatch `crew:inspector` for review.
+2. If the change is runnable, dispatch `crew:verifier` for behavior validation.
+3. Run `/crew:ship` gates only on explicit user approval.
 
 For what counts as "substantial" below, see the canonical definition in `constitution.md` (`What "Substantial" Means`).
 
@@ -57,7 +73,7 @@ Workflow:
 18. If you skip review, say so explicitly and record it in workflow state with a reason:
    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge review_skipped --note "<reason>"`
 19. When a helper or teammate hands work back, write a handoff artifact if the run is substantial:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff --repo "$PWD" --title "<short title>" --from <role> --to lead --summary "<headline>" --scope "<in scope>" --deliverable "<what shipped>" --files "<changed files>" --confidence "<high|medium|low>" --risks "<risks or none>" --next "<next handoff or none>"`
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff --repo "$PWD" --title "<short title>" --from <role> --to dispatcher --summary "<headline>" --scope "<in scope>" --deliverable "<what shipped>" --files "<changed files>" --confidence "<high|medium|low>" --risks "<risks or none>" --next "<next handoff or none>"`
 20. When a reviewer materially reviews the change, write a review artifact immediately before you move on:
    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result --repo "$PWD" --title "<short title>" --decision <PASS|FAIL> --summary "<verdict>" --evidence "<files checked>" --files "<files in diff>" --test-summary "<test coverage>" --risks "<risks or none>" --next "<follow-up or none>"`
 21. If the changed behavior can be exercised meaningfully, define the validation scenario and run validation after review. When validation is expected, record that gate in workflow state:

@@ -14,7 +14,7 @@ related: []
 
 - Off-taxonomy — `3rdparty/` is not one of the four declared tiers (`universal`, `workflow`, `domain`, `meta`).
 - Breaking CI — `scripts/validate-skills.mjs` walks `skills/` recursively and fails on missing `tier` frontmatter and >200-line files. 10 of 11 skills currently fail.
-- Undiscoverable for routing — the lead consults `docs/routing-table.md` and the skill tier mental model; `3rdparty/` is invisible to both.
+- Undiscoverable for routing — the dispatcher consults `docs/routing-table.md` and the skill tier mental model; `3rdparty/` is invisible to both.
 
 The user has chosen to **distribute** the skills into the existing tier taxonomy (rather than quarantine, rename, or fork into a separate tier).
 
@@ -22,7 +22,7 @@ The user has chosen to **distribute** the skills into the existing tier taxonomy
 
 1. Eliminate the CI failure introduced by `skills/3rdparty/`.
 2. Place all 11 third-party skills as first-class crew skills in `skills/{universal,workflow,domain,meta}/`, fully compliant with `validate-skills.mjs`.
-3. Wire signals → skills in `docs/routing-table.md` so the lead can route to them.
+3. Wire signals → skills in `docs/routing-table.md` so the dispatcher can route to them.
 4. Update crew agent prompts (`lead.md`, `builder.md`, `reviewer.md`, `validator.md`, `deployer.md`, `researcher.md`) with thin "consult skill X for signal Y" lines per the user-supplied role-to-skill mapping.
 5. Add three new role stubs (`uxdesigner.md`, `architect.md`, `copywriter.md`) at `agents/` top level, each ≤300 lines with full crew frontmatter and Report contract.
 6. Preserve drift visibility against upstream `aitmpl` by recording `source:` and `source_version:` in every distributed skill's frontmatter.
@@ -107,7 +107,7 @@ Add ~12 rows to `docs/routing-table.md` to wire signals → distributed skills, 
 
 | Signal | Route to | Cite skill |
 |---|---|---|
-| Brainstorming / discovery before new feature | lead | `skills/universal/brainstorming/` |
+| Brainstorming / discovery before new feature | dispatcher | `skills/universal/brainstorming/` |
 | Diff under review (any code-bearing change) | reviewer | `skills/workflow/reviewing-code/` |
 | Authoring a git commit message | builder | `skills/workflow/git-commit/` |
 | Bug root cause / intermittent failure | validator or researcher | `skills/workflow/systematic-debugging/` |
@@ -136,7 +136,7 @@ For each of `agents/{lead,builder,reviewer,validator,deployer,researcher}.md`, a
 
 The bullet block follows the existing "External plugin skills as routed dependencies" pattern in `architecture.md` lines 41–51. No prompt rewrites. Total prompt growth ≤15 lines per agent. All six remain under the ≤300-line cap (`scripts/validate-agents.mjs`).
 
-**Note:** `agents/lead.md` is tagged `autonomous_safe: false` per CLAUDE.md (any lead-prompt edit requires human-in-loop review). The edit is small and additive but still gates on user review.
+**Note:** `(removed v0.41)` is tagged `autonomous_safe: false` per CLAUDE.md (any lead-prompt edit requires human-in-loop review). The edit is small and additive but still gates on user review.
 
 ## New role stubs
 

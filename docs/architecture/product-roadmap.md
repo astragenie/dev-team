@@ -12,8 +12,8 @@ Engineering OS is useful, but the original positioning is too broad.
 
 In live use, the system has not often used full agent teams. The common successful shape has been:
 
-- lead works directly
-- lead uses bounded subagents when useful
+- dispatcher works directly
+- dispatcher uses bounded subagents when useful
 - reviewer checks substantial changes, including substantial non-code deliverables
 - wake-up memory restores context
 - artifacts leave a durable trail
@@ -22,14 +22,14 @@ So the product should stop leading with "multi-agent team coordination."
 
 Better positioning:
 
-Crew is a lead-guided engineering workflow for Claude Code: build, fix, validate, review, remember, and ship with evidence.
+Crew is a dispatcher-guided engineering workflow for Claude Code: build, fix, validate, review, remember, and ship with evidence.
 
 The desired working rhythm is:
 
-1. user and lead decide what should happen next
-2. lead takes a substantial work chunk and runs it independently
-3. lead uses helpers, reviewer, validator, or deployer when useful
-4. lead returns with evidence, risks, and the next recommended decision
+1. user and dispatcher decide what should happen next
+2. the dispatcher  takes a substantial work chunk and runs it independently
+3. the dispatcher  uses helpers, reviewer, validator, or deployer when useful
+4. the dispatcher  returns with evidence, risks, and the next recommended decision
 
 As the plugin improves, the independent work chunk should get larger and safer.
 
@@ -37,7 +37,7 @@ The default working mode is not "single agent" versus "full team."
 
 The real center is:
 
-- lead plus bounded subagents
+- dispatcher plus bounded subagents
 - quality gates
 - evidence-based progression
 
@@ -102,7 +102,7 @@ These can exist, but they should not be the normal UX.
 
 Commands are explicit entry points and shortcuts.
 
-The lead should also infer workflow intent from ordinary user communication when the intent is clear.
+The dispatcher should also infer workflow intent from ordinary user communication when the intent is clear.
 
 Examples:
 
@@ -111,18 +111,18 @@ Examples:
 - "Can we sanity-check this?" -> review or validate
 - "Should we ship this?" -> ship
 
-And when the user does not ask directly, the lead should still notice lifecycle state and recommend `ship` when the work is ready to move into PR, dev, or production.
+And when the user does not ask directly, the dispatcher should still notice lifecycle state and recommend `ship` when the work is ready to move into PR, dev, or production.
 
 ## Agents Are Lead Tools
 
-New agents expand what the lead can do.
+New agents expand what the dispatcher can do.
 
 They should not increase the user's command burden.
 
 The model is:
 
-- user talks to the lead
-- lead chooses when to use builder, researcher, reviewer, validator, or deployer
+- user talks to the dispatcher
+- dispatcher chooses when to use builder, researcher, reviewer, validator, or deployer
 - user approves direction, risky actions, deploys, and promotion decisions
 
 The user should not have to remember:
@@ -132,21 +132,21 @@ The user should not have to remember:
 - when to invoke deployer
 - when to inspect claims or approvals
 
-The lead should surface those steps naturally:
+The dispatcher should surface those steps naturally:
 
 - "I am going to validate the behavior now."
 - "This is ready for review."
 - "Dev validation passed. Do you want to promote?"
 - "Production deployed. I recommend monitoring logs for a few minutes."
 
-This means new agents are primarily lead capabilities, not new responsibilities for the user.
+This means new agents are primarily dispatcher capabilities, not new responsibilities for the user.
 
 ## Core Workflow Modes
 
 Keep the three-mode model:
 
-- `single-session`: lead only
-- `assisted single-session`: lead plus bounded helper agents
+- `single-session`: dispatcher only
+- `assisted single-session`: dispatcher plus bounded helper agents
 - `team run`: multiple agents with explicit ownership and handoffs
 
 Based on dogfooding, `assisted single-session` is likely the default sweet spot.
@@ -155,7 +155,7 @@ Based on dogfooding, `assisted single-session` is likely the default sweet spot.
 
 Why it matters:
 
-- it saves lead context
+- it saves dispatcher context
 - it keeps subagents focused on smaller tasks
 - it reduces drift
 - it makes review and validation easier
@@ -197,7 +197,7 @@ Repos should be able to define multiple review gates, for example:
 - language-specific expectations via repo-selected skills
 - security review when relevant
 
-The lead should choose and run the appropriate review gates without making the user assemble them manually.
+The dispatcher should choose and run the appropriate review gates without making the user assemble them manually.
 
 We also need an explicit gate policy, not just a reviewer role.
 
@@ -235,7 +235,7 @@ It should own environment transitions:
 
 The deployer should not decide production promotion alone.
 
-Promotion remains a lead/user decision based on evidence.
+Promotion remains a dispatcher/user decision based on evidence.
 
 Mention deployer in plans early, but do not build it before local validation is proven.
 
@@ -290,13 +290,13 @@ Build this before dev/prod shipping automation.
 
 Target loop:
 
-1. lead frames the task
-2. lead either implements directly or dispatches bounded subagents
+1. the dispatcher  frames the task
+2. the dispatcher  either implements directly or dispatches bounded subagents
 3. tests run
 4. validator writes or follows a scenario
 5. validator runs local checks
 6. reviewer reviews the change
-7. lead asks builder to fix if needed
+7. the dispatcher  asks builder to fix if needed
 8. final synthesis records evidence and gaps
 
 This is the next likely "wow" moment:
@@ -310,28 +310,28 @@ Add after local validation is solid.
 Target dev loop:
 
 1. PR is created or updated
-2. lead asks whether to merge/deploy to dev
+2. the dispatcher  asks whether to merge/deploy to dev
 3. deployer deploys or confirms dev deployment
 4. validator runs the same scenario against dev
 5. validator pulls logs and metrics
-6. lead reports health and next step
+6. the dispatcher  reports health and next step
 
 Target prod loop:
 
-1. lead checks whether local and dev evidence are sufficient
-2. lead asks the user whether to promote
+1. the dispatcher  checks whether local and dev evidence are sufficient
+2. the dispatcher  asks the user whether to promote
 3. deployer deploys or confirms production deployment
 4. validator runs safe production checks
 5. validator pulls logs and metrics
-6. lead opens a follow-up issue or fix loop if something looks wrong
+6. the dispatcher  opens a follow-up issue or fix loop if something looks wrong
 
 ## Lead Nudges
 
-The lead should keep unfinished workflow state visible.
+The dispatcher should keep unfinished workflow state visible.
 
 The user should not have to remember which command to run next.
 
-The lead should manage the manager: notice incomplete workflow state, recommend the next responsible step, and ask for the smallest decision needed to continue.
+The dispatcher should manage the manager: notice incomplete workflow state, recommend the next responsible step, and ask for the smallest decision needed to continue.
 
 Examples:
 

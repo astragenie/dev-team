@@ -55,7 +55,7 @@ The full crew/loop workflow per slice is too slow, especially for plugin repos. 
 
 ### 2a. Parallel gates
 
-After builder PASS, lead/orchestrate-slice dispatches reviewer and validator **concurrently** instead of sequentially. Conflict rule: if reviewer returns `needs_fix`, the validation result is marked stale and the fix bounce reruns the validator. Saves one dispatch round-trip (~5–10 min/slice). Touches `agents/lead.md`, `commands/orchestrate-slice.md`, loop dispatch instructions. Workflow-state gate-badge writes must be merge-safe under concurrent writers.
+After builder PASS, lead/orchestrate-slice dispatches reviewer and validator **concurrently** instead of sequentially. Conflict rule: if reviewer returns `needs_fix`, the validation result is marked stale and the fix bounce reruns the validator. Saves one dispatch round-trip (~5–10 min/slice). Touches `(removed v0.41)`, `commands/orchestrate-slice.md`, loop dispatch instructions. Workflow-state gate-badge writes must be merge-safe under concurrent writers.
 
 ### 2b. Templated artifacts
 

@@ -1,9 +1,9 @@
 ---
-name: lead-routing
-prompt_id: lead-routing
+name: dispatcher-routing
+prompt_id: dispatcher-routing
 version: 1.0.0
 tier: workflow
-description: Agent quick reference table and specialist routing rules for the lead orchestrator — which crew agent to dispatch for each need, architect-mandatory triggers, and multi-need split rule.
+description: Agent quick reference table and specialist routing rules for the dispatcher orchestrator — which crew agent to dispatch for each need, architect-mandatory triggers, and multi-need split rule.
 owner: sergeymilashico
 last_reviewed: 2026-06-13
 triggers: ["dispatch", "route", "which agent", "agent quick reference", "specialist", "routing"]
@@ -13,7 +13,7 @@ triggers: ["dispatch", "route", "which agent", "agent quick reference", "special
 
 ## Trigger
 
-Load when the lead needs to pick an agent or decide how to split a multi-need slice.
+Load when the dispatcher needs to pick an agent or decide how to split a multi-need slice.
 
 ## Agent Quick Reference
 

@@ -13,7 +13,7 @@ triggers: ["review", "PR", "mark-badge review_required", "approval"]
 
 ## Trigger
 
-Use before declaring any code-bearing or substantial non-code deliverable done. Also use when a lead is deciding whether to skip review and needs to record that decision explicitly.
+Use before declaring any code-bearing or substantial non-code deliverable done. Also use when the dispatcher is deciding whether to skip review and needs to record that decision explicitly.
 
 ## Overview
 
@@ -25,7 +25,7 @@ Default rule:
 
 - code-bearing deliverables require independent review — unreviewed code is a quality risk the user cannot easily undo
 - substantial design, planning, or documentation deliverables should normally be reviewed before being called done
-- if review is skipped, the lead should state that explicitly and explain why — silent skips erode the user's trust in the workflow
+- if review is skipped, the dispatcher should state that explicitly and explain why — silent skips erode the user's trust in the workflow
 - repo standards and language-specific standards should be part of the review by default when they exist
 
 ## Gate 1: Task Compliance
@@ -95,7 +95,7 @@ When review materially completes, persist it with:
 
 ## Escalation Rule
 
-If the reviewer finds scope drift or a missing spec boundary, send the task back to the lead rather than silently repairing the assignment.
+If the reviewer finds scope drift or a missing spec boundary, send the task back to the dispatcher rather than silently repairing the assignment.
 
 ## Done
 

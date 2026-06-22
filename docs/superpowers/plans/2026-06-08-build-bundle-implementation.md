@@ -1576,7 +1576,7 @@ git commit -m "feat(build-bundle): inline build bundle into reviewer/validator d
 **Files:**
 - Modify: `docs/routing-table.md`
 
-The routing table is the lead's source of truth for which skill/agent handles which task.
+The routing table is the dispatcher's source of truth for which skill/agent handles which task.
 
 - [ ] **Step 1: Add the routing row**
 

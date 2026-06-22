@@ -14,7 +14,7 @@ triggers: investigate, trace, root cause, where is, what calls, impact analysis,
 # Code Investigation
 
 Methodology for read-only codebase investigation. The output of an investigation
-is a decision input — its value is measured by whether the lead, architect, or
+is a decision input — its value is measured by whether the dispatcher, architect, or
 builder can act on it without re-verifying, not by how much ground it covers.
 
 ## When to Use
@@ -118,5 +118,5 @@ Load only the reference matching the code under investigation:
 - The grid/matrix/blocks for the active mode are complete and cited.
 
 Past that point, write the handoff with `--risks` naming any residual gap. The
-lead can re-dispatch for the gap if it matters — another N turns of marginal
+the dispatcher can re-dispatch for the gap if it matters — another N turns of marginal
 detail cannot be un-spent.

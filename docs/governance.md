@@ -14,7 +14,7 @@ discipline.
 | --------------- | ----------------------------------------------------------------------------------- |
 | `owner`         | GitHub handle or team name responsible for keeping the skill correct                |
 | `last_reviewed` | ISO date; `scripts/validate-skills.mjs` warns when older than 180 days              |
-| `triggers`      | Globs, signals, or keywords used by the lead to decide whether to suggest the skill |
+| `triggers`      | Globs, signals, or keywords used by the dispatcher to decide whether to suggest the skill |
 | `stack`         | Domain skills only; e.g. `dotnet`, `flutter`, `terraform`                           |
 
 **Why:** an unowned skill rots silently. A stale `last_reviewed` is a
@@ -37,7 +37,7 @@ domain specifics into skills the agent invokes on demand.
 **How to apply:** `scripts/validate-agents.ts` is the hard CI gate
 (FEAT-035). If `agents/<role>.md` exceeds the cap, push specifics
 into a skill the agent can invoke on demand. A per-agent `maxLines:`
-frontmatter field overrides the default when justified (lead carries
+frontmatter field overrides the default when justified (the dispatcher carries
 extra routing + autonomous-resolution policy). The role prompt should
 carry identity, boundaries, escalation policy, and cross-cutting
 rules (context efficiency, shell pre-check, report contract, handoff
@@ -124,7 +124,7 @@ Agent prompt files in `agents/` are **agent identity definitions** — they gove
 
 The following agent prompt files are declared `autonomous_safe: false` and require human-in-loop review even when picked by the autonomous loop:
 
-- `agents/lead.md` — user-facing coordinator; any change affects framing + gate decisions.
+- `(removed v0.41)` — user-facing coordinator; any change affects framing + gate decisions.
 - `agents/architect.md` — design + ADR output contract; prompt changes affect what artifacts get produced.
 - `agents/uxdesigner.md` — UX flow + component spec output contract; same risk class as architect.
 - `agents/copywriter.md` — docs + release-notes output contract; same risk class as architect.
@@ -155,7 +155,7 @@ If any one of the three fails: **author a skill instead.** Specialist
 three. Use `skills/domain/<stack>/` for those.
 
 **Why:** every agent prompt is permanent context overhead and a new
-disambiguation surface for the lead. The bar is high on purpose.
+disambiguation surface for the dispatcher. The bar is high on purpose.
 
 **How to apply:** before opening a "new agent" FEAT, write a one-line
 answer to each of the three tests. If you can't justify all three,

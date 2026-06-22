@@ -15,7 +15,6 @@ const AGENTS_ROOT = path.join(repoRoot, "agents");
  * Update this list — and governance.md + README.md — when adding or removing an agent.
  */
 const EXPECTED_AGENTS = new Set([
-  "lead",
   "fullstack-dev",
   "frontend-dev",
   "backend-dev",

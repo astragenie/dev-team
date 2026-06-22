@@ -69,7 +69,7 @@ Stable role behavior and expectations.
 
 Examples:
 
-- lead rules
+- dispatcher rules
 - builder scope discipline
 - reviewer gate rules
 - researcher read-only behavior
@@ -77,7 +77,7 @@ Examples:
 This should live in:
 
 - `agents/`
-- command-loaded lead guidance
+- command-loaded dispatcher guidance
 - shared protocol/workflow guidance
 
 ### 4. Recency Memory
@@ -116,11 +116,11 @@ the agent is capable, but not currently up to date.
 
 ### Lead Wake-Up Brief
 
-Yes, the lead should have one too.
+Yes, the dispatcher should have one too.
 
-The lead is the first agent to "wake up" in a session and must reconstruct the operating picture before assigning anyone else.
+The dispatcher is the first agent to "wake up" in a session and must reconstruct the operating picture before assigning anyone else.
 
-The lead wake-up brief should include:
+The dispatcher wake-up brief should include:
 
 - active user goal
 - current repo path
@@ -132,7 +132,7 @@ The lead wake-up brief should include:
 - current claims or blockers
 - current pace, if already established
 
-The lead should use this to answer:
+The dispatcher should use this to answer:
 
 - what are we doing
 - what changed since last time
@@ -189,8 +189,8 @@ The approval queue should stay small and legible.
 
 ### Who Approves What
 
-- specialists ask the `lead` for normal scope changes and claim overrides
-- the `lead` asks the `user` for destructive, wide-scope, policy, or architecture decisions
+- specialists ask the `dispatcher` for normal scope changes and claim overrides
+- the `dispatcher` asks the `user` for destructive, wide-scope, policy, or architecture decisions
 - the `user` can also proactively approve or reject anything that feels important
 
 The point is not bureaucracy. The point is to make meaningful decisions inspectable and recoverable.
@@ -225,7 +225,7 @@ Instead, each wake-up brief should include a freshness layer:
 
 This is especially important for:
 
-- the lead at session start
+- the dispatcher at session start
 - a builder resuming paused work
 - a reviewer validating code after new edits landed
 
@@ -235,10 +235,10 @@ Every team member should know the team structure.
 
 That means each agent should know:
 
-- who the lead is
+- who the dispatcher is
 - what roles exist on this team
 - what each role is responsible for
-- when to communicate with the lead
+- when to communicate with the dispatcher
 - when specialist-to-specialist communication is appropriate
 - what message format is required
 
@@ -316,7 +316,7 @@ This is important: role definition alone is not enough, and task prompt alone is
 
 The system needs both.
 
-For the lead specifically, the lead identity should come from the active workflow command plus shared workflow guidance rather than a spawnable `agents/lead.md` file.
+For the dispatcher specifically, the dispatcher identity should come from the active workflow command plus shared workflow guidance rather than a spawnable `(removed v0.41)` file.
 
 ## Implementation Guidance
 
@@ -334,7 +334,7 @@ Crew should implement this model through:
 The next concrete steps this implies are:
 
 1. Add repo-local state and artifact templates.
-2. Add wake-up brief generation for the lead and specialists.
+2. Add wake-up brief generation for the dispatcher and specialists.
 3. Strengthen agent definitions with explicit team-structure awareness.
 4. Make task/run commands produce stronger mission briefs.
 5. Ensure logs and artifacts capture enough information to support wake-up briefs later.

@@ -13,7 +13,7 @@ triggers: ["integrator agent dispatched after builder-fe + builder-be self-verif
 
 ## When to Use
 
-You are `crew:integrator`. The lead has dispatched you because `SPLIT_BUILD = true`, both builders self-verified, and the slice has a happy-path AC that needs live wire-up proof. Run this procedure, then write the artifact.
+You are `crew:integrator`. The dispatcher has dispatched you because `SPLIT_BUILD = true`, both builders self-verified, and the slice has a happy-path AC that needs live wire-up proof. Run this procedure, then write the artifact.
 
 ## Inputs (from dispatch prompt)
 

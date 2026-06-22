@@ -38,7 +38,7 @@ For every routing-table row that names a crew agent in its "Route to" column AND
 
 1. Parser detects "Skills you consult" H3 block in each `agents/<crew-role>.md` file and extracts cited skill paths (`skills/<tier>/<name>/`).
 2. Parser extracts routing-table rows where:
-   - "Route to" cell names a crew role (`lead`, `builder`, `reviewer`, `validator`, `deployer`, `researcher`, `architect`, `uxdesigner`, `copywriter`) — extension agents included.
+   - "Route to" cell names a crew role (`dispatcher`, `builder`, `reviewer`, `validator`, `deployer`, `researcher`, `architect`, `uxdesigner`, `copywriter`) — extension agents included.
    - "Notes" cell contains a `skills/<tier>/<name>/` path.
 3. Cross-check: for each (agent, skill-path) pair in routing-table, the same path appears in that agent's "Skills you consult" block.
 4. Mismatches reported with: row content + agent + missing skill path + suggested action.

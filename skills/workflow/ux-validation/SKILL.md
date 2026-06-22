@@ -3,7 +3,7 @@ name: ux-validation
 prompt_id: ux-validation
 version: 1.0.0
 tier: workflow
-description: Auto-triggered by crew:validator when slice tags include surface:ui, concern:ux, or concern:accessibility. Drives Playwright via gstack:/qa, axe-core accessibility scan, console+404 scrape, and visual regression diff. Returns raw evidence; lead pivots per routing-table.
+description: Auto-triggered by crew:validator when slice tags include surface:ui, concern:ux, or concern:accessibility. Drives Playwright via gstack:/qa, axe-core accessibility scan, console+404 scrape, and visual regression diff. Returns raw evidence; dispatcher pivots per routing-table.
 triggers: ["surface:ui", "concern:ux", "concern:accessibility", "validation phase UI"]
 owner: validator
 last_reviewed: 2026-06-04
@@ -27,7 +27,7 @@ applies — this skill is silent.
 
 The skill orchestrates a single Playwright run via gstack `/qa` and
 returns raw evidence in four check categories. It does not interpret
-results or recommend a pivot target. The lead reads the validation
+results or recommend a pivot target. The dispatcher reads the validation
 result + `ux-evidence.json` and pivots per
 `docs/routing-table.md` rows 84, 95, 39, 45.
 
@@ -47,7 +47,7 @@ Detect at validator slice-start:
    `extractACs(sliceFileContent)` from
    `scripts/lib/ux-validation/`. If the returned array is empty,
    write `validation_skipped --note no_acceptance_criteria_in_slice`
-   and exit. Authoring bug — lead routes to slice author.
+   and exit. Authoring bug — dispatcher routes to slice author.
 
 2. **Classify + translate scenarios.** For each AC, call
    `classifyScenario(ac.text)`. ACs returning `non_ui_ac` are kept
@@ -98,7 +98,7 @@ Detect at validator slice-start:
      --evidence "<relative path to ux-evidence.json>" \
      --files "<changed UI files from slice>" \
      --risks "<residual or none>" \
-     --next "lead routes per docs/routing-table.md"
+     --next "dispatcher routes per docs/routing-table.md"
    ```
 
    The body should NOT interpret results. List counts only:
@@ -112,7 +112,7 @@ Detect at validator slice-start:
    - `failed` → `mark-badge --badge validation_failed --note
      "<short failure summary>"`.
 
-8. **Return to lead.** Hand back the validation-result artifact path
+8. **Return to dispatcher.** Hand back the validation-result artifact path
    + 1-sentence headline. Lead reads + decides pivot.
 
 ## Skip + error cases
@@ -126,7 +126,7 @@ Detect at validator slice-start:
 | `/qa` exits non-zero | `validation_failed --note qa_timeout` (or actual error) |
 | `/qa` writes no output file | `validation_failed --note qa_no_output` |
 
-## Pivot signal (lead reads, NOT skill)
+## Pivot signal (dispatcher reads, NOT skill)
 
 The skill returns raw evidence. Pivot decision lives in
 `docs/routing-table.md`. Per-category mapping:
@@ -138,15 +138,15 @@ The skill returns raw evidence. Pivot decision lives in
 | `console.errors[*]` | row 95 → `gstack:/investigate` |
 | `visual.diffs[*]` over tolerance | row 84 → `/crew:fix` + ui/react-engineering |
 | `network.failures[*]` | row 84 → `/crew:fix` |
-| Multiple categories | lead splits per Pre-dispatch decomposition rule |
+| Multiple categories | dispatcher splits per Pre-dispatch decomposition rule |
 
 ## Done
 
 Skill exits successfully when one of these terminal states is reached:
 
-- **passed:** validation-result written with `decision: passed`, badge `validation_passed` marked, control returned to lead.
-- **passed_with_notes:** validation-result written with `decision: passed_with_notes`, badge `validation_passed` marked with note count, control returned to lead.
-- **failed:** validation-result written with `decision: failed`, badge `validation_failed` marked with short failure summary, control returned to lead (who pivots per the routing-table mapping above).
-- **skipped:** any condition from the Skip + error cases table — badge `validation_skipped` marked with the documented note, control returned to lead.
+- **passed:** validation-result written with `decision: passed`, badge `validation_passed` marked, control returned to dispatcher.
+- **passed_with_notes:** validation-result written with `decision: passed_with_notes`, badge `validation_passed` marked with note count, control returned to dispatcher.
+- **failed:** validation-result written with `decision: failed`, badge `validation_failed` marked with short failure summary, control returned to dispatcher (who pivots per the routing-table mapping above).
+- **skipped:** any condition from the Skip + error cases table — badge `validation_skipped` marked with the documented note, control returned to dispatcher.
 
-The skill never amends prior validation artifacts and never recommends a pivot target. Done means evidence + verdict + badge are all written and the lead has the artifact path.
+The skill never amends prior validation artifacts and never recommends a pivot target. Done means evidence + verdict + badge are all written and the dispatcher has the artifact path.

@@ -4,7 +4,7 @@
 
 ## 1. Problem statement
 
-`crew:lead` in `C:\work\mega\loop` SLICE-97 session:
+`crew:build` in `C:\work\mega\loop` SLICE-97 session:
 
 1. Successfully dispatched builder via `Agent` tool with a HARD CONTRACT that spelled out the post-PASS sequence (bash `post-builder-fanout` helper → 3 parallel Agent calls → write-final-synthesis → slice complete/grade).
 2. Builder returned PASS.
@@ -19,7 +19,7 @@ Pattern: **lead defaults to "do it myself with Bash" whenever there's an excuse 
 
 ## 2. Why the previous fix is insufficient
 
-`e71d4a8` added a FORBIDDEN/REQUIRED text block to `agents/lead.md` HARD OUTPUT CONTRACT section. That commit is **the same intervention pattern that already failed**:
+`e71d4a8` added a FORBIDDEN/REQUIRED text block to `(removed v0.41)` HARD OUTPUT CONTRACT section. That commit is **the same intervention pattern that already failed**:
 
 - FEAT-161 SLICE-A added HARD OUTPUT CONTRACT block (commit `b31ca77`) — lead ignored it in SLICE-97.
 - FEAT-161 SLICE-B added stub-artifact pattern (commit `83fb35e`) — lead ignored it too.
@@ -33,14 +33,14 @@ The `e71d4a8` commit should remain as documentation, but it cannot be the load-b
 
 ### H1 — No programmatic enforcement (most likely)
 
-The lead has both `Agent` and `Bash` tools available. After builder PASS, both look valid. Lead chooses Bash because:
+The dispatcher has both `Agent` and `Bash` tools available. After builder PASS, both look valid. Lead chooses Bash because:
 
 - Bash is "lower friction" (no prompt-crafting overhead)
 - Bash gives immediate output (faster apparent progress)
 - The HARD CONTRACT is at the top of a long prompt; lead's working set may not include it by step 4+
 - No hook / no validator runs against lead's tool stream to catch violations
 
-**Test:** disable Bash for `lead` agent in the post-PASS phase via a `PreToolUse` hook and observe whether lead's compliance flips to 100%.
+**Test:** disable Bash for `dispatcher` agent in the post-PASS phase via a `PreToolUse` hook and observe whether lead's compliance flips to 100%.
 
 ### H2 — Missing slice state machine
 
@@ -56,7 +56,7 @@ Per memory `feedback_model_assignments_done.md`, lead is on Opus. Opus is action
 
 ### H4 — Prompt structure problem
 
-The HARD OUTPUT CONTRACT block is at the top of the prompt (290+ lines). By dispatch step 4-5, the lead has read through skill-consultation tables, agent quick reference, risk-tier rules, etc. The rule may be out of the working window.
+The HARD OUTPUT CONTRACT block is at the top of the prompt (290+ lines). By dispatch step 4-5, the dispatcher has read through skill-consultation tables, agent quick reference, risk-tier rules, etc. The rule may be out of the working window.
 
 **Test:** move HARD CONTRACT to AFTER the Golden Path so it's the last thing read before tool selection.
 
@@ -91,7 +91,7 @@ What we're looking for: count of slices where lead dispatched builder, builder p
 
 ### Step 3 — Hook trace experiment (cheap, ~30 min)
 
-Add a `PreToolUse` hook (matcher: `Bash` only when invoked by lead agent) that:
+Add a `PreToolUse` hook (matcher: `Bash` only when invoked by the dispatcher agent) that:
 
 - Logs the bash command + the most recent prior `Agent` dispatch type
 - Doesn't block — just collects evidence
@@ -199,13 +199,13 @@ This is a measurable fix — count of blocked calls tells us how often lead woul
 
 Move HARD CONTRACT to the END of lead.md (just before tool selection happens in the model's working window). Counter to current convention but may compound with I1.
 
-### I3 — Remove gate-command examples from lead.md
+### I3 — Remove gate-command examples from the dispatcher.md
 
 Lead currently has examples of `bun run lint`, `bun test`, etc. throughout the body. Remove every example that shows lead running a gate command itself. Replace with "dispatch validator". This eliminates "monkey see monkey do" — lead can't run what it never sees.
 
 ### I4 — Force `Agent` as last tool (extension of FEAT-161)
 
-Extend FEAT-161's HARD CONTRACT enforcement: a `Stop` hook that checks the session's last tool call. If `last_tool == "Bash"` AND `lead` was the active agent AND no `slice complete` ceremony ran, FAIL the session with a structured error. Forces lead to end in dispatch, not in self-action.
+Extend FEAT-161's HARD CONTRACT enforcement: a `Stop` hook that checks the session's last tool call. If `last_tool == "Bash"` AND `dispatcher` was the active agent AND no `slice complete` ceremony ran, FAIL the session with a structured error. Forces lead to end in dispatch, not in self-action.
 
 ## 7. Acceptance for the fix
 
@@ -215,7 +215,7 @@ If only A–C pass but D or E fails, the fix is partial — file a follow-up FEA
 
 ## 8. Out of scope
 
-- Changing the lead model from Opus to Sonnet (memory says model assignments done; revisit after H3 test if Sonnet visibly outperforms).
+- Changing the dispatcher model from Opus to Sonnet (memory says model assignments done; revisit after H3 test if Sonnet visibly outperforms).
 - Adding new agents for orchestration roles (would explode the ladder; addresses symptom not cause).
 - Rewriting FEAT-161 / SLICE-A,B work — that work is sound, just insufficient on its own.
 

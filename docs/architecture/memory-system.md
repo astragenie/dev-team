@@ -24,7 +24,7 @@ The real goal is:
 
 - save the right things
 - retrieve the right thing at the right moment
-- avoid forcing the lead to read a pile of old notes every time
+- avoid forcing the dispatcher to read a pile of old notes every time
 
 So the memory system needs explicit discipline in two directions:
 
@@ -72,7 +72,7 @@ It should not auto-load:
 
 The wake-up brief should be the main surface for this.
 
-During a run, the lead should be able to retrieve more memory selectively from:
+During a run, the dispatcher should be able to retrieve more memory selectively from:
 
 - recent artifacts
 - related artifacts
@@ -131,7 +131,7 @@ History that should stay searchable but almost never auto-load:
 - resolved approvals
 - stale runs
 
-This organization exists so the lead can quickly answer:
+This organization exists so the dispatcher can quickly answer:
 
 - what is active
 - what changed recently
@@ -177,7 +177,7 @@ At a minimum, substantial workflow entry points should require:
 
 If deeper historical context is needed, retrieval should happen selectively during planning or execution.
 
-The lead should not skip straight from a new request to implementation when meaningful repo memory exists.
+The dispatcher should not skip straight from a new request to implementation when meaningful repo memory exists.
 
 ## What We Record
 
@@ -226,7 +226,7 @@ For example:
 - validation completion -> validation result expected
 - meaningful run completion -> final synthesis expected
 
-The lead should follow this write discipline by default.
+The dispatcher should follow this write discipline by default.
 
 ## What Comes Later
 
@@ -298,7 +298,7 @@ Memory is working when a new session feels informed, not overloaded.
 
 More concretely, it is working when:
 
-- the lead starts substantial work from the right bounded context
-- the lead can retrieve deeper relevant context when needed
+- the dispatcher starts substantial work from the right bounded context
+- the dispatcher can retrieve deeper relevant context when needed
 - artifact writing is consistent enough that later retrieval is reliable
 - old history does not flood the prompt by default

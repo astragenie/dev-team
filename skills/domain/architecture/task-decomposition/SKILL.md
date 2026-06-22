@@ -111,7 +111,7 @@ Per major milestone:
 - Always gather requirements before decomposing
 - Prefer measurable estimates over vague ranges
 - Flag every assumption explicitly so it can be corrected before work begins
-- Parallelism map is the primary artifact the lead uses to dispatch subagents
+- Parallelism map is the primary artifact the dispatcher uses to dispatch subagents
 
 ## Done / Acceptance
 

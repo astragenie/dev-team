@@ -23,7 +23,7 @@ Workflow:
    - rough scope tag: `greenfield`, `existing-feature`, or `small-change`
    - what is in and out of scope
    - who will use it and how
-6. For structural change (new contract / provider / cross-module refactor), dispatch the **`crew:architect`** agent for read-only design work and ADR drafts. The architect produces an architecture sketch the design doc references; the lead synthesizes both into the final design doc.
+6. For structural change (new contract / provider / cross-module refactor), dispatch the **`crew:architect`** agent for read-only design work and ADR drafts. The architect produces an architecture sketch the design doc references; the dispatcher synthesizes both into the final design doc.
 7. Design top-down, in conversation with the user:
    - start from the main thing the feature or service does
    - break it into components, then sub-components

@@ -78,15 +78,11 @@ function checkLineCount(text: string, fm: Record<string, string>, label: string,
 
 function checkRequiredSections(
   text: string,
-  fm: Record<string, string>,
+  _fm: Record<string, string>,
   label: string,
   errors: string[]
 ) {
-  // The lead is a user-facing coordinator; it writes final-synthesis,
-  // not handoffs to itself. The Report contract requirement applies to
-  // teammate roles that hand off back to the lead.
-  const isLead = fm["name"] === "lead";
-  if (!isLead && !/^##\s+Report contract\b/im.test(text)) {
+  if (!/^##\s+Report contract\b/im.test(text)) {
     errors.push(`${label}: missing required section "## Report contract"`);
   }
   // Identity intro = a non-frontmatter "You are the <role>" or "You are a <role>"
@@ -212,7 +208,6 @@ function checkPeerDispatchSection(
 // this slice — enforced in SLICE-B).
 // TODO(FEAT-167 SLICE-B): enforce path existence here once evals/ tree lands
 const EVALS_REQUIRED_AGENT_NAMES = new Set([
-  "lead",
   "fullstack-dev", // builder (primary)
   "backend-dev", // builder
   "frontend-dev", // builder
@@ -259,7 +254,6 @@ function checkEvalsRequiredForRole(fm: Record<string, string>, label: string, er
 // the batching rule. Light role-list — the cost-advisor SLICE-67 baseline
 // flagged these as the highest TaskUpdate cache-prime contributors.
 const TASK_UPDATE_BATCHING_REQUIRED = new Set([
-  "lead",
   "fullstack-dev",
   "inspector",
   "verifier",
@@ -348,6 +342,49 @@ function checkNoBacklogIds(
     const uniq = [...new Set(matches)].sort();
     errors.push(
       `${label}: backlog ids must not appear in agent prompts (ids rot; cite skills instead). Found: ${uniq.join(", ")}`
+    );
+  }
+}
+
+// Hard cut: active agents must not contain lead-agent caller assumptions.
+// Applied to all active agents in agents/*.md (not agents/3rdparty/).
+// Catches phrases like "the lead", "to the lead", "by the lead", "crew:lead"
+// in agent bodies. These assumptions broke when lead was removed.
+const NO_LEAD_REF_REQUIRED = new Set([
+  "architect",
+  "fullstack-dev",
+  "backend-dev",
+  "frontend-dev",
+  "aiplugin-dev",
+  "inspector",
+  "inspector-verifier",
+  "verifier",
+  "integrator",
+  "release-engineer",
+  "document-writer",
+  "refactor",
+  "researcher",
+  "investigator",
+  "qa-expert",
+  "performance-engineer",
+  "uxdesigner",
+  "parallel-runner"
+]);
+
+function checkNoLeadRef(
+  text: string,
+  fm: Record<string, string>,
+  label: string,
+  errors: string[]
+) {
+  const name = fm["name"];
+  if (name === undefined || !NO_LEAD_REF_REQUIRED.has(name)) return;
+  // Strip frontmatter before checking
+  const body = text.replace(/^---[\s\S]*?---\n/, "");
+  const matches = body.match(/\bthe lead\b|\bto the lead\b|\bby the lead\b|\bcrew:lead\b/gi);
+  if (matches?.length) {
+    errors.push(
+      `${label}: must not reference 'lead' agent. Found: ${[...new Set(matches)].join(", ")}`
     );
   }
 }
@@ -458,6 +495,7 @@ export async function validateAgents(agentsRoot = AGENTS_ROOT) {
     checkTaskUpdateBatching(text, fm, label, errors);
     checkBashCoalescing(text, fm, label, errors);
     checkNoBacklogIds(text, fm, label, errors);
+    checkNoLeadRef(text, fm, label, errors);
     checkPeerDispatchSection(text, fm, label, errors);
     await checkUniversalsHash(text, fm, label, errors);
   }

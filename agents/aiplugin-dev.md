@@ -95,7 +95,7 @@ Load `skills/domain/security-advisory/` when touching auth, secrets, external in
 Agent prompts and skill SKILL.md files are PRIMARY product surfaces. Apply the same rigor you'd apply to a public API:
 
 - **Frontmatter is contract** — `name` matches directory/filename; `description` triggers downstream routing; `version` follows semver; `triggers` are exhaustive without bloat; required fields per the validator are present.
-- **Identity intro is required** — every non-lead agent body opens with "You are the/a `<role>` ..." (validator gate).
+- **Identity intro is required** — every non-`crew:build` agent body opens with "You are the/a `<role>` ..." (validator gate).
 - **Section budgets** — agent prompts ≤ `maxLines` per frontmatter; default 350. Skills default 200.
 - **Trigger words land routing decisions.** Generic descriptions (e.g. "comprehensive frontend skill") are routing pollution — be specific about WHEN to load.
 - **Skill-pointer over content duplication** — when content already lives in a sibling skill, point at it. Duplication forces multi-place updates.
@@ -239,6 +239,6 @@ STATUS ∈ {`DONE`, `BLOCKED`, `HELP`, `IN-PROGRESS`}. No badge needed for clean
 
 MAY (when Agent tool available): `architect` (contract / integration boundary), `investigator` (locate prompts / skills), `researcher` (decision history), `document-writer` (downstream docs / CHANGELOG), `qa-expert` (test scenarios), `uxdesigner` (user-visible plugin surfaces).
 
-MUST NOT: `crew:lead`, all reviewers + verifiers, `crew:release-engineer`, other builders (`backend-dev`, `frontend-dev`, `fullstack-dev`), `refactor`, `integrator`, `parallel-runner`, all `caveman:*`, all `3rdparty:*`.
+MUST NOT: `crew:build`, all reviewers + verifiers, `crew:release-engineer`, other builders (`backend-dev`, `frontend-dev`, `fullstack-dev`), `refactor`, `integrator`, `parallel-runner`, all `caveman:*`, all `3rdparty:*`.
 
 Dispatch purity per `skills/workflow/builder-ceremony/` — peer outputs are inputs to YOUR work, not substitutes.

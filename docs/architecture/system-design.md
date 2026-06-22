@@ -18,11 +18,11 @@ Supporting docs like [product-roadmap.md](./product-roadmap.md), [validation-loo
 
 We are not building a general autonomous swarm.
 
-We are building a lead-guided engineering workflow for Claude Code.
+We are building a dispatcher-guided engineering workflow for Claude Code.
 
-The user should mostly talk to one lead.
+The user should mostly talk to one dispatcher.
 
-The lead should:
+The dispatcher should:
 
 - understand intent from normal conversation
 - suggest the next responsible step
@@ -53,10 +53,10 @@ The system should feel:
 
 The ideal interaction pattern is:
 
-1. user and lead decide what should happen next
-2. lead takes a meaningful chunk of work
-3. lead uses helpers internally if useful
-4. lead comes back with results, evidence, risks, and the next recommended decision
+1. user and dispatcher decide what should happen next
+2. the dispatcher  takes a meaningful chunk of work
+3. the dispatcher  uses helpers internally if useful
+4. the dispatcher  comes back with results, evidence, risks, and the next recommended decision
 
 The user should not need to:
 
@@ -65,7 +65,7 @@ The user should not need to:
 - manage subagents directly
 - reconstruct project state from long chat history
 
-The lead should manage the manager.
+The dispatcher should manage the manager.
 
 ## Product Name And Command Model
 
@@ -97,16 +97,16 @@ What they mean:
 - `/crew:brief-me`
   Give the user a fixed-structure situational briefing: current objective, recent git/artifact activity, in-progress gates, blockers, reminders, and the next recommended step.
 - `/crew:build`
-  Build or extend a feature. The lead frames the task, implements directly or delegates bounded work, then runs review and validation where appropriate.
+  Build or extend a feature. The dispatcher frames the task, implements directly or delegates bounded work, then runs review and validation where appropriate.
 - `/crew:fix`
-  Investigate and fix a bug or broken behavior. The lead should investigate, implement the smallest correct fix, then review and validate the result.
+  Investigate and fix a bug or broken behavior. The dispatcher should investigate, implement the smallest correct fix, then review and validate the result.
 - `/crew:review`
-  Run the review phase on completed work. Review is deterministic for code changes, and substantial non-code deliverables should also normally enter review before being treated as done. Review may include multiple configurable gates such as correctness, regressions, scope drift, test gaps, internal coding standards, language-specific checks, or security review. The lead should explicitly state which repo-configured standards and review skills the reviewer is expected to apply.
+  Run the review phase on completed work. Review is deterministic for code changes, and substantial non-code deliverables should also normally enter review before being treated as done. Review may include multiple configurable gates such as correctness, regressions, scope drift, test gaps, internal coding standards, language-specific checks, or security review. The dispatcher should explicitly state which repo-configured standards and review skills the reviewer is expected to apply.
 - `/crew:validate`
-  Run a behavior/evidence gate. The lead should write or follow a validation scenario, run checks in the target environment, and return pass/fail evidence.
+  Run a behavior/evidence gate. The dispatcher should write or follow a validation scenario, run checks in the target environment, and return pass/fail evidence.
 - `/crew:ship`
   Move work through PR, dev, and production with evidence. This includes merge readiness, deploy/validate loops, and promotion nudges.
-  `ship` is both a user-facing entry point and a workflow phase the lead should recommend when the work is ready to move forward.
+  `ship` is both a user-facing entry point and a workflow phase the dispatcher should recommend when the work is ready to move forward.
 - `/crew:init`
   Set up a brand-new repo with the repo-local Crew harness.
 - `/crew:adopt`
@@ -114,8 +114,8 @@ What they mean:
 - `/crew:install`
   Install or update the one managed global Crew memory copy under `~/.claude/crew/`.
 
-But the lead should also infer these workflows from ordinary conversation when the intent is clear.
-In particular, the lead should notice when work is ready to move into PR, dev, or production, and nudge the user toward `ship` without waiting for the perfect command.
+But the dispatcher should also infer these workflows from ordinary conversation when the intent is clear.
+In particular, the dispatcher should notice when work is ready to move into PR, dev, or production, and nudge the user toward `ship` without waiting for the perfect command.
 
 Commands are accelerators, not prerequisites.
 
@@ -126,7 +126,7 @@ The managed global framework memory now lives under `~/.claude/crew/`, matching
 the repo-local namespace. The installer migrates legacy `~/.claude/engineering-os/`
 files and updates `CLAUDE.md` imports automatically.
 
-Some workflows are distinct enough that the lead should treat them as workflow variants, not just ordinary `build` or `ship` runs.
+Some workflows are distinct enough that the dispatcher should treat them as workflow variants, not just ordinary `build` or `ship` runs.
 
 Important examples:
 
@@ -135,7 +135,7 @@ Important examples:
 - initial deployment
   This is not the same as routine shipping. It may involve discovering or establishing the first deployment path, separating build from rollout, confirming resource naming, and creating the first post-deploy validation/monitoring loop.
 
-These should reuse the same lead-centered system and base agents where possible, but they should eventually get distinct workflow shapes.
+These should reuse the same dispatcher-centered system and base agents where possible, but they should eventually get distinct workflow shapes.
 
 ## Core Execution Model
 
@@ -143,7 +143,7 @@ The execution model has three modes:
 
 ### 1. Single-Session
 
-The lead does the work directly.
+The dispatcher does the work directly.
 
 Use this for:
 
@@ -157,13 +157,13 @@ If code was changed, the work should still go through independent review by the 
 
 ### 2. Assisted Single-Session
 
-The lead remains primary and uses bounded subagents for focused tasks.
+The dispatcher remains primary and uses bounded subagents for focused tasks.
 
 This is the default high-value mode.
 
 Why it matters:
 
-- saves lead context
+- saves dispatcher context
 - keeps subagents focused on smaller tasks
 - reduces drift
 - allows background and parallel work
@@ -185,7 +185,7 @@ This is an escalation mode, not the main promise.
 
 ## Workflow Variants
 
-Some workflows need a different phase model, even if they still use the same lead, reviewer, validator, and deployer roles.
+Some workflows need a different phase model, even if they still use the same dispatcher, reviewer, validator, and deployer roles.
 
 ### Greenfield Development
 
@@ -242,7 +242,7 @@ Responsibilities:
 
 ### 2. Subagent Layer
 
-This is how the lead chunks work.
+This is how the dispatcher chunks work.
 
 The system should ship with a predefined subagent base, not invent helper roles ad hoc during a run.
 
@@ -263,9 +263,9 @@ Current and future base roles:
 - validator
 - deployer
 
-These agents are lead tools, not user-facing responsibilities.
+These agents are dispatcher tools, not user-facing responsibilities.
 
-The lead should prefer sub-tasks that are:
+The dispatcher should prefer sub-tasks that are:
 
 - independently understandable
 - bounded in scope
@@ -286,7 +286,7 @@ This is not personality dressing.
 
 It is how the system keeps roles trustworthy and differentiated.
 
-The lead should start from these base agents and specialize them by task assignment, not by inventing new role definitions each time.
+The dispatcher should start from these base agents and specialize them by task assignment, not by inventing new role definitions each time.
 
 ### 3. Quality Gates
 
@@ -307,9 +307,9 @@ The distinction matters:
 - validator checks the behavior
 - deployer manages environment transition
 
-The lead should not improvise quality gates from scratch on every run.
+The dispatcher should not improvise quality gates from scratch on every run.
 
-The system should define a gate policy, and the lead should apply it.
+The system should define a gate policy, and the dispatcher should apply it.
 
 ### Enforcement Strategy
 
@@ -349,7 +349,7 @@ Repos should be able to add stricter gates, for example:
 - language-specific review gates
 - standards checks for teams with stronger conventions
 
-So the lead's role is:
+So the dispatcher's role is:
 
 - determine which gates apply from policy and repo rules
 - run them in the right order
@@ -379,14 +379,14 @@ Its job is:
 - recover the right context at startup
 - keep memory bounded
 - preserve useful project history
-- organize saved knowledge so the lead can find what it needs when it needs it
+- organize saved knowledge so the dispatcher can find what it needs when it needs it
 - write back durable records after meaningful workflow steps
 
 Current main surface:
 
 - wake-up brief
 
-Memory should support the lead, not overwhelm it.
+Memory should support the dispatcher, not overwhelm it.
 
 It is not just storage.
 
@@ -397,7 +397,7 @@ The system should eventually enforce both sides:
 - retrieval discipline before substantial work starts
 - write discipline after meaningful workflow steps complete
 
-The lead should not treat memory as optional note-taking.
+The dispatcher should not treat memory as optional note-taking.
 
 It is part of the workflow contract.
 
@@ -439,7 +439,7 @@ The important rule is:
 
 implementation alone is not completion.
 
-Substantial work should require the appropriate badges before the lead treats it as done.
+Substantial work should require the appropriate badges before the dispatcher treats it as done.
 
 The same principle should apply to memory:
 
@@ -448,7 +448,7 @@ The same principle should apply to memory:
 
 More strictly:
 
-if any agent changed code, including the lead, the work should enter review.
+if any agent changed code, including the dispatcher, the work should enter review.
 If a substantial non-code deliverable was produced, the work should normally enter review before being treated as done.
 
 ### 6. Repo And Global Configuration Layer
@@ -481,7 +481,7 @@ Before this is formalized, deployment understanding should progress in three ste
 1. today:
    deployer may inspect CI/CD, infra, and deployment files directly when needed
 2. next:
-   deployer or lead writes durable repo deployment guidance after discovery, for example in `.claude/crew/deployment.md`
+   the dispatcher writes durable repo deployment guidance after discovery, for example in `.claude/crew/deployment.md`
    this guidance should distinguish `repo-derived`, `partial`, and `live-verified` understanding
 3. later:
    Crew formalizes that understanding into stable repo environment configuration
@@ -536,14 +536,14 @@ The user decides:
 - risky or destructive approvals
 - deploy/promotion decisions
 
-The lead decides:
+The dispatcher decides:
 
 - how to execute
 - when to use helpers
 - how to apply the review and validation process to the current task
 - what the next recommended step is
 
-The lead also owns context synthesis:
+The dispatcher also owns context synthesis:
 
 - read the right saved memory
 - pull the right git or task-tracker context
@@ -552,7 +552,7 @@ The lead also owns context synthesis:
 
 ### Lead ↔ Subagents
 
-The lead must give:
+The dispatcher must give:
 
 - objective
 - scope
@@ -599,7 +599,7 @@ The default expectation is:
 - substantial code changes should always enter review
 - substantial non-code deliverables should normally enter review before being treated as done
 - repos can customize which review gates apply
-- the lead applies the configured review policy and repo-specific review gates to the task
+- the dispatcher applies the configured review policy and repo-specific review gates to the task
 - the user should not need to assemble the review pipeline manually
 
 ### Builder
@@ -659,7 +659,7 @@ Memory contract:
 - summarized through wake-up
 - should support decisions, not dump history
 
-The lead is the primary consumer and curator of this memory:
+The dispatcher is the primary consumer and curator of this memory:
 
 - decide what matters now
 - write back meaningful artifacts
@@ -667,7 +667,7 @@ The lead is the primary consumer and curator of this memory:
 
 ## Workflow Architecture
 
-The main workflows should all be lead-owned.
+The main workflows should all be dispatcher-owned.
 
 ### Build
 
@@ -726,7 +726,7 @@ That means:
 
 - a completed code-bearing sub-task should enter review before being treated as done
 - a substantial non-code sub-task or deliverable should normally enter review before being treated as done
-- the lead can then integrate reviewed sub-task outputs into the larger run
+- the dispatcher can then integrate reviewed sub-task outputs into the larger run
 - the final run may still need a higher-level synthesis or additional review pass
 
 Review may also include additional repo-defined gates such as:
@@ -799,20 +799,20 @@ This is the most promising next differentiator.
 ### Dev Loop
 
 1. PR created or updated
-2. lead asks whether to merge/deploy to dev
+2. the dispatcher  asks whether to merge/deploy to dev
 3. deployer deploys or confirms deployment
 4. validator runs scenario against dev
 5. validator checks logs and metrics
-6. lead recommends next step
+6. the dispatcher  recommends next step
 
 ### Prod Loop
 
-1. lead checks whether evidence is strong enough
+1. the dispatcher  checks whether evidence is strong enough
 2. user decides whether to promote
 3. deployer deploys or confirms production revision
 4. validator runs safe checks
 5. validator checks logs and metrics
-6. lead recommends monitor / fix / follow-up issue
+6. the dispatcher  recommends monitor / fix / follow-up issue
 
 ## Memory As A Subsystem
 
@@ -823,7 +823,7 @@ Its job is:
 - recover the right context at startup
 - keep prompt context bounded
 - preserve useful project history
-- organize saved knowledge so the lead can find the right thing when needed
+- organize saved knowledge so the dispatcher can find the right thing when needed
 - decide what should be written down after meaningful work
 
 Memory is not just storage.
@@ -859,7 +859,7 @@ Artifacts are one of the main ways memory gets recorded, but they are not the wh
 
 ### Memory Organization
 
-Memory should be organized in a way the lead can retrieve it intentionally.
+Memory should be organized in a way the dispatcher can retrieve it intentionally.
 
 Current model:
 
@@ -877,7 +877,7 @@ The current retrieval shape should stay simple:
 - cold memory
   - searchable history that should not auto-load
 
-This organization matters because the lead needs to answer:
+This organization matters because the dispatcher needs to answer:
 
 - what are we doing now
 - what changed recently
@@ -900,7 +900,7 @@ During a run:
 - prefer the most relevant artifact, not the biggest pile of notes
 - pull external context only when it changes the decision
 
-The lead should be able to find:
+The dispatcher should be able to find:
 
 - the latest relevant run summary
 - the latest review for the same area
@@ -914,7 +914,7 @@ without reading the entire project history every time.
 
 We also need rules for when memory is written.
 
-The lead should write or update memory when:
+The dispatcher should write or update memory when:
 
 - a substantial run starts
 - a handoff happens
@@ -936,9 +936,9 @@ Once the basic model is reliable, memory can improve through:
 - reinforcement
 - decay
 
-That should make it easier for the lead to find the right prior artifact or decision at the right moment.
+That should make it easier for the dispatcher to find the right prior artifact or decision at the right moment.
 
-Memory should help the lead recover context quickly and make better decisions.
+Memory should help the dispatcher recover context quickly and make better decisions.
 
 It should not become a transcript swamp.
 
@@ -972,15 +972,15 @@ The first implementation priority should be the product core itself, not one lat
 
 Build the main thing first:
 
-- lead infers `build`, `fix`, `review`, `validate`, and later `ship` from normal conversation when clear
-- lead frames the task well
-- lead retrieves the right bounded context before planning substantial work
-- lead chunks work into bounded sub-tasks
-- lead uses predefined base agents as internal tools
+- dispatcher infers `build`, `fix`, `review`, `validate`, and later `ship` from normal conversation when clear
+- dispatcher frames the task well
+- dispatcher retrieves the right bounded context before planning substantial work
+- dispatcher chunks work into bounded sub-tasks
+- dispatcher uses predefined base agents as internal tools
 - code-bearing work enters independent review by default
 - substantial non-code deliverables also normally enter review before done
 - meaningful workflow steps write the right artifacts by default
-- lead returns with evidence, risks, and the next recommended decision
+- dispatcher returns with evidence, risks, and the next recommended decision
 
 This is the meat of the product.
 
@@ -991,7 +991,7 @@ Without this, validator or deployer will just feel like extra parts bolted onto 
 - rename/reframe toward `crew`
 - simplify the public command surface
 - keep commands as shortcuts, not the only interface
-- make the lead interaction model legible in docs and prompts
+- make the dispatcher interaction model legible in docs and prompts
 
 ### Phase 3. Validator
 
@@ -1031,9 +1031,9 @@ We should explicitly avoid:
 
 The system is working when:
 
-- the user mostly talks to the lead
-- the lead can infer the right workflow from normal conversation
-- the lead can take substantial independent work chunks safely
+- the user mostly talks to the dispatcher
+- the dispatcher can infer the right workflow from normal conversation
+- the dispatcher can take substantial independent work chunks safely
 - reviewer and validator add real evidence, not ceremony
 - the next responsible step is usually obvious
 - project state is recoverable without reading the whole chat history

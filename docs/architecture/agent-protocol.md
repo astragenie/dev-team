@@ -10,7 +10,7 @@ Memory (how agents know things) and communication (how agents work together) are
 
 This file owns:
 
-- communication model between user, lead, and specialists
+- communication model between user, dispatcher, and specialists
 - required message shapes (start ack, progress, completion, review)
 - approval model and routing
 - team-structure awareness
@@ -28,10 +28,10 @@ If a topic touches both, treat `system-design.md` as the tie-breaker.
 
 Every team member should know the team structure. That means each agent should know:
 
-- who the lead is
+- who the dispatcher is
 - what roles exist on this team
 - what each role is responsible for
-- when to communicate with the lead
+- when to communicate with the dispatcher
 - when specialist-to-specialist communication is appropriate
 - what message format is required
 
@@ -42,7 +42,7 @@ This awareness should be present in both:
 
 Role definition alone is not enough. Task prompt alone is not enough. Crew needs both.
 
-For the lead specifically, the lead identity should come from the active workflow command plus shared workflow guidance rather than a spawnable `agents/lead.md` file.
+For the dispatcher specifically, the dispatcher identity should come from the active workflow command plus shared workflow guidance rather than a spawnable `(removed v0.41)` file.
 
 ## Communication Model
 
@@ -54,7 +54,7 @@ The communication model should be strong and explicit. It should not depend on c
 
 This is the main relationship.
 
-The user mostly talks to the lead. The lead turns requests into tasks, updates, and syntheses.
+The user mostly talks to the dispatcher. The dispatcher turns requests into tasks, updates, and syntheses.
 
 #### Lead ↔ Specialists
 
@@ -81,7 +81,7 @@ Allowed, but not the main default. Useful examples:
 
 - researcher tells builder where the bug path is
 - builder tells reviewer which files changed
-- reviewer tells lead the task should be rejected and rescoped
+- reviewer tells the dispatcher the task should be rejected and rescoped
 
 This should be dependency-driven, not chatty.
 
@@ -98,7 +98,7 @@ That way intent does not disappear into scrollback. See `./memory-system.md` for
 
 ## Required Message Shapes
 
-These shapes apply to every specialist (builder, reviewer, validator, researcher, deployer). The lead may use them too when handing off to itself between phases of a single-session run.
+These shapes apply to every specialist (builder, reviewer, validator, researcher, deployer). The dispatcher may use them too when handing off to itself between phases of a single-session run.
 
 ### Required Start Acknowledgement
 
@@ -150,8 +150,8 @@ Approvals are for decisions that should pause work briefly instead of being impr
 
 ### Who Approves What
 
-- specialists ask the `lead` for normal scope changes and claim overrides
-- the `lead` asks the `user` for destructive, wide-scope, policy, or architecture decisions
+- specialists ask the `dispatcher` for normal scope changes and claim overrides
+- the `dispatcher` asks the `user` for destructive, wide-scope, policy, or architecture decisions
 - the `user` can also proactively approve or reject anything that feels important
 
 The point is not bureaucracy. The point is to make meaningful decisions inspectable and recoverable.

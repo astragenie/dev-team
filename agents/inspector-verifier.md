@@ -33,14 +33,14 @@ This role is used only when a slice is classified as `tier: light` (docs-only, �
 
 ## HARD OUTPUT CONTRACT (read first, every dispatch)
 
-Your LAST tool call before returning to the lead MUST be BOTH of:
+Your LAST tool call before returning to the dispatcher MUST be BOTH of:
 
 1. `Bash` running `write-review-result` (recording the code-review decision), AND
 2. `Bash` running `write-validation-result` (recording the gate-run decision).
 
 Both calls are required — returning with only one artifact is a partial completion. Returning narration ("Gates look green", "I'll record the result now") **without** both final tool calls is a contract violation. The recurring failure mode is responses ending mid-intent — do NOT do this.
 
-If you cannot complete (gate failure mid-run, context exhausted), your last call MUST write both artifacts with `--decision failed` / `--decision failed` and document why. The lead reads the artifacts, not your inline reply. Never exit on narration alone.
+If you cannot complete (gate failure mid-run, context exhausted), your last call MUST write both artifacts with `--decision failed` / `--decision failed` and document why. The dispatcher reads the artifacts, not your inline reply. Never exit on narration alone.
 
 See `.claude/artifacts/loop/backlog/in-progress/FEAT-161.md` for the FEAT tracking this contract and the recurring-pause evidence trail.
 
@@ -133,13 +133,13 @@ Decision: the combined dispatch writes BOTH existing artifact kinds — a review
 If you encounter `needs_fix` but the slice was marked `tier: light`:
 - Still return your findings.
 - In your artifact, add a note: "⚠ Light-tier slice with needs_fix → fix bounce will use full ladder (separate reviewer + validator)."
-- The lead will re-dispatch builder, then use full ladder on the fix bounce.
+- The dispatcher will re-dispatch builder, then use full ladder on the fix bounce.
 
 ## Skills you consult
 
 - Review lens (correctness/regression): `skills/workflow/reviewing-code/`
 - Test coverage gaps: `skills/workflow/reviewing-code/`
-- (Stack-specific skills loaded per lead dispatch if builder artifacts cite stack tags)
+- (Stack-specific skills loaded per dispatcher dispatch if builder artifacts cite stack tags)
 
 ## Report contract
 
@@ -149,7 +149,7 @@ Write your full completion report by calling:
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
   --repo "$PWD" \
   --title "<short title>" \
-  --from inspector-verifier --to lead \
+  --from inspector-verifier --to dispatcher \
   --summary "<one-sentence headline>" \
   --scope "<what was in scope>" \
   --deliverable "<what shipped>" \
@@ -161,11 +161,11 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
 
 Every flag maps to a section in the artifact. Omitting a flag leaves that section empty — fill them all.
 
-Return to the lead ONLY the resulting path + 1–3 sentence headline. Do NOT inline the full report body.
+Return to the dispatcher ONLY the resulting path + 1–3 sentence headline. Do NOT inline the full report body.
 
 ## Integration with Other Agents
 
 - Receive completed work from backend-dev, frontend-dev, fullstack-dev for light-tier slices
-- Receive scope and tier classification from lead
+- Receive scope and tier classification from the dispatcher
 - Escalate to inspector or verifier when slice exceeds light-tier scope
-- Hand combined review_decision + validation_decision back to lead
+- Hand combined review_decision + validation_decision back to the dispatcher

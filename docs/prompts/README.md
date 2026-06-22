@@ -69,7 +69,7 @@ agent's eval definition file; path existence is not enforced in this slice
 (the eval tree lands in SLICE-B).
 
 EVALS_REQUIRED agent names:
-`lead`, `fullstack-dev`, `backend-dev`, `frontend-dev`, `refactor`,
+`dispatcher`, `fullstack-dev`, `backend-dev`, `frontend-dev`, `refactor`,
 `inspector`, `inspector-verifier`, `verifier`, `integrator`, `release-engineer`.
 
 All other agents may omit the field.

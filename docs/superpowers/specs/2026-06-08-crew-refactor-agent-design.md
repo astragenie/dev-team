@@ -73,7 +73,7 @@ Omit `--scope` and `--concerns` for full-repo sweep across all three areas.
 - Never redesigns logic — only renames, removes, aligns, trims
 - Never touches files outside detected findings (no opportunistic cleanup)
 - If a fix requires understanding intent → `needs-human` in report, skip
-- **Hard stop: >20 files affected** — writes partial report, halts, flags to lead for scope re-approval before continuing
+- **Hard stop: >20 files affected** — writes partial report, halts, flags to dispatcher for scope re-approval before continuing
 - Does not attempt CI auto-repair on failure — logs `ci-fail` and stops (builder's job)
 - Does not claim files via crew claim system (claims whatever it touches implicitly)
 
@@ -121,7 +121,7 @@ New row in `docs/routing-table.md`:
 
 ## Success Criteria
 
-1. `crew:refactor` can be dispatched by lead for a standalone quality slice
+1. `crew:refactor` can be dispatched by the dispatcher for a standalone quality slice
 2. Quality-sweep artifact written before any commits
 3. Reviewer can read artifact + diff and make a pass/fail decision
 4. `agent-topology.test.ts` passes with `refactor` in `EXPECTED_AGENTS`

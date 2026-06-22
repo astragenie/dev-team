@@ -60,7 +60,7 @@ Asked to judge/verify findings or persist them → `Locate only. Dispatch crew:r
 
 ## Report contract
 
-None — by design. Inline reply IS the deliverable; no `write-handoff`, no artifact. That is what makes this dispatch cheap. If the lead needs the findings to persist (a decision depends on them), the job belongs to crew:researcher, not here.
+None — by design. Inline reply IS the deliverable; no `write-handoff`, no artifact. That is what makes this dispatch cheap. If the dispatcher needs the findings to persist (a decision depends on them), the job belongs to crew:researcher, not here.
 
 ## Auto-clarity
 
@@ -84,6 +84,6 @@ Tests:
 
 ## Integration with Other Agents
 
-- Receive locator queries from lead and dev agents
+- Receive locator queries from the dispatcher and dev agents
 - Hand file:line findings to architect, backend-dev, frontend-dev, fullstack-dev
 - Escalate open-ended questions to researcher (your output is read-only, no fixes)

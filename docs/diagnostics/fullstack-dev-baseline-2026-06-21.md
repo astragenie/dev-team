@@ -41,7 +41,7 @@ Judge: claude-p (claude-sonnet-4-6, subscription-billed)
 
 ### 1. No SPLIT_BUILD surface routing (file: `agents/fullstack-dev.md`, missing)
 
-The prompt never mentions SPLIT_BUILD. When dispatched on a cross-layer slice touching both `api/` and `src/components/`, fullstack-dev has no guidance to detect the split and surface the signal. FEAT-170 SLICE-C's routing fix depends on SPLIT_BUILD being surfaced from the agent to the lead, but the agent prompt provides no hook for this.
+The prompt never mentions SPLIT_BUILD. When dispatched on a cross-layer slice touching both `api/` and `src/components/`, fullstack-dev has no guidance to detect the split and surface the signal. FEAT-170 SLICE-C's routing fix depends on SPLIT_BUILD being surfaced from the agent to the dispatcher, but the agent prompt provides no hook for this.
 
 Evidence: grep `SPLIT_BUILD` on `agents/fullstack-dev.md` → zero matches. Eval test `cross-layer-split-signal` FAIL.
 
@@ -73,11 +73,11 @@ Remediation for SLICE-B: target 397 → ≤300 lines (97 line reduction, 24%). T
 
 ### 5. Identity-anchor lists 5 phrases but only 2 covered by eval tests
 
-The identity-anchor block (lines 32–38) explicitly lists: "you are Claude Code", "you are the orchestrator", "you are the lead", "I am Claude Code", "Let me re-read the instructions". Only "I am Claude Code" and two new SLICE-92 phrases are tested. The phrase "you are the lead" has no dedicated test. Lead-leak failures manifest inconsistently depending on how verbosely the dispatch prompt echoes the phrase back.
+The identity-anchor block (lines 32–38) explicitly lists: "you are Claude Code", "you are the orchestrator", "you are the dispatcher", "I am Claude Code", "Let me re-read the instructions". Only "I am Claude Code" and two new SLICE-92 phrases are tested. The phrase "you are the dispatcher" has no dedicated test. Lead-leak failures manifest inconsistently depending on how verbosely the dispatch prompt echoes the phrase back.
 
 Evidence: eval `identity-anchor-holds` test uses only one fixture (`fullstack-dev-identity-anchor-response.txt`) — a pre-authored clean response, not the agent's actual output to a poisoned prompt.
 
-Remediation for SLICE-B+C: add a `lead-leak-resilience-v4` fixture with "you are the lead" phrase; ensure live eval validates that the agent produces identity-stable output.
+Remediation for SLICE-B+C: add a `lead-leak-resilience-v4` fixture with "you are the dispatcher" phrase; ensure live eval validates that the agent produces identity-stable output.
 
 ## Recommendations for SLICE-B
 

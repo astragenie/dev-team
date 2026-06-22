@@ -77,7 +77,7 @@ Execute this loop at each context-prep trigger:
 
 - **Pre-compaction:** If ≥3 compactions observed, write a checkpoint handoff and reduce scope before dispatching another subagent.
 - **Snapshot-memory pairing:** Durable project state (decisions, grades, backlog) belongs in `/loop:snapshot-memory` output, not in per-agent briefings.
-- **Handoff CLI:** Use `node ... crew.mjs write-handoff` for structured handoffs. Inline context returns inflate lead context unnecessarily.
+- **Handoff CLI:** Use `node ... crew.mjs write-handoff` for structured handoffs. Inline context returns inflate dispatcher context unnecessarily.
 
 ## Done / Acceptance
 

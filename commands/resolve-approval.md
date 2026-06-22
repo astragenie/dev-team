@@ -5,7 +5,7 @@ argument-hint: <approval-id>
 
 # Resolve Internal Approval
 
-Use this after the lead or user has made a decision on a pending approval request.
+Use this after the dispatcher or user has made a decision on a pending approval request.
 
 Workflow:
 

@@ -2,11 +2,11 @@
 
 - Date: 2026-05-28
 - Status: approved
-- Feature area: `commands/build.md`, `commands/fix.md`, `agents/lead.md`
+- Feature area: `commands/build.md`, `commands/fix.md`, `(removed v0.41)`
 
 ## Overview
 
-Extends the lead agent's role in `build` and `fix` commands from pure coordinator to active scope-and-quality enforcer via two hard procedure steps: a **scope gate** before the builder is dispatched, and a **diff gate** after the builder returns. Both gates live as explicit steps in the command procedures, making them enforceable rather than advisory. Both have defined skip paths for cases where gate cost exceeds benefit.
+Extends the dispatcher agent's role in `build` and `fix` commands from pure coordinator to active scope-and-quality enforcer via two hard procedure steps: a **scope gate** before the builder is dispatched, and a **diff gate** after the builder returns. Both gates live as explicit steps in the command procedures, making them enforceable rather than advisory. Both have defined skip paths for cases where gate cost exceeds benefit.
 
 No new files. No routing-table changes. No new scripts.
 
@@ -37,7 +37,7 @@ build/fix procedure
 
 **Step 5 — Scope gate (insert before current step 5 "Choose mode")**
 
-Before choosing single-session or team-run mode, the lead answers three questions:
+Before choosing single-session or team-run mode, the dispatcher answers three questions:
 
 1. Does the described scope match the task as framed? If not, restate and confirm with user.
 2. Should this be split into smaller, independent tasks? If yes, stop and split.
@@ -49,7 +49,7 @@ Skip path: `mark-badge scope_gate_skipped --note "<reason>"` — valid when scop
 
 **Step 14 — Diff gate (insert after current step 14 "Builder reports complete")**
 
-After the builder reports complete and before writing the `review_required` badge, the lead reads the diff:
+After the builder reports complete and before writing the `review_required` badge, the dispatcher reads the diff:
 
 ```
 git diff --stat HEAD~1..HEAD
@@ -60,7 +60,7 @@ If ≤3 files changed, also read those files' changed sections.
 Outcomes:
 - **Proceed**: diff matches stated scope, no surprises → continue to `review_required`.
 - **Route back to builder**: diff is out of scope, missing coverage, or contradicts the task → create `fix-builder` subagent with specific correction note. One retry allowed. On second fail: escalate.
-- **Fix inline**: diff has 1-2 line issue the lead can correct without re-dispatching (comment, whitespace, obvious typo) → fix inline, note in run brief.
+- **Fix inline**: diff has 1-2 line issue the dispatcher can correct without re-dispatching (comment, whitespace, obvious typo) → fix inline, note in run brief.
 - **Escalate**: diff reveals scope ambiguity that needs user input → `mark-badge escalated_to_human --note "<reason>"`, surface to user.
 
 Skip path: `mark-badge diff_gate_skipped --note "<reason>"` — valid for: non-code deliverables (docs, specs), doc-only changes, diffs under 20 lines with no logic changes.
@@ -71,9 +71,9 @@ Same scope gate at step 5 and diff gate at step 14, with fix-specific framing:
 - Scope gate question 1 becomes: "Does the described fix address root cause, or only symptoms?"
 - Diff gate inline-fix threshold stays ≤2 lines (same rule).
 
-### `agents/lead.md` — new "Quality gates" section
+### `(removed v0.41)` — new "Quality gates" section
 
-Adds a top-level section that documents both gates as judgment blocks for the lead to apply in single-session mode (where command steps may not be followed mechanically):
+Adds a top-level section that documents both gates as judgment blocks for the dispatcher to apply in single-session mode (where command steps may not be followed mechanically):
 
 ```markdown
 ## Quality Gates
@@ -86,7 +86,7 @@ Two active enforcement points in every build/fix run:
 Skip only when cost exceeds benefit — document skips with `mark-badge`.
 ```
 
-This covers single-session mode where the lead does its own implementation rather than dispatching. The gate logic is the same; the target is `self` rather than a builder subagent.
+This covers single-session mode where the dispatcher does its own implementation rather than dispatching. The gate logic is the same; the target is `self` rather than a builder subagent.
 
 ## Data Flow
 
@@ -137,7 +137,7 @@ After implementing, run `npm test` and `npm run e2e:smoke`. Gate steps are proce
 **Acceptance criteria:**
 - Scope gate appears as explicit step in `build.md` and `fix.md` between framing and mode-choice.
 - Diff gate appears as explicit step after builder-complete, before `review_required` badge.
-- `agents/lead.md` has a "Quality gates" section covering both.
+- `(removed v0.41)` has a "Quality gates" section covering both.
 - Skip paths documented with valid conditions and badge name.
 - No new files created.
 - Existing test suite green.

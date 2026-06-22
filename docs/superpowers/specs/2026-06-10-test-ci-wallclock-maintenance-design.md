@@ -11,7 +11,7 @@ The full suite (577 tests) takes ~113s. Evidence from the 2026-06-10 audit:
 - 11 test files spawn `node` / `git` subprocesses per test (expensive on Windows). `tests/cli.test.ts` alone is 1,697 lines / 33 subprocess tests.
 - The 4 per-tool hooks (`check-redundant-read`, `check-subagent-return`, `record-read-content`, `preflight-shell`) are only testable by spawning a fresh Node process — ~120 spawn-based tests today, and the pattern grows with every hook feature.
 - 9 `cost-*` / `briefing-cost-*` test files (~2,800 lines) copy-paste temp-repo + cost-report fixture setup.
-- `agents/lead.md` (333 lines) and `agents/reviewer.md` (314 lines) breach the 300-line governance cap (`docs/governance.md`, enforced advisory by `scripts/validate-agents.ts`).
+- `(removed v0.41)` (333 lines) and `agents/reviewer.md` (314 lines) breach the 300-line governance cap (`docs/governance.md`, enforced advisory by `scripts/validate-agents.ts`).
 
 ## Goals / success criteria
 
@@ -64,7 +64,7 @@ Tests import the lib functions directly. Keep 2–3 spawn-based smoke tests per 
 
 ### WP4 — Agent prompt trim
 
-Bring `agents/lead.md` (333→<300) and `agents/reviewer.md` (314→<300) under the governance cap by relocating specifics into skills, per the repo's stated pattern ("specifics live in skills the agent invokes on demand"). Prompts reference the skill; no behavior content is deleted.
+Bring `(removed v0.41)` (333→<300) and `agents/reviewer.md` (314→<300) under the governance cap by relocating specifics into skills, per the repo's stated pattern ("specifics live in skills the agent invokes on demand"). Prompts reference the skill; no behavior content is deleted.
 
 **Exit:** `validate-agents.ts` passes; prompt-content tests updated in the same change; no orphaned references (lint/validators green).
 

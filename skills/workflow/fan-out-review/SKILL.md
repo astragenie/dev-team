@@ -13,7 +13,7 @@ triggers: ["fan-out", "fan-out review", "multiple inspectors", "inspector disagr
 
 ## Trigger
 
-Load when risk is HIGH or FEAT tags include `concern:security` / `concern:performance` and the lead needs to decide inspector dispatch count and aggregation strategy.
+Load when risk is HIGH or FEAT tags include `concern:security` / `concern:performance` and the dispatcher needs to decide inspector dispatch count and aggregation strategy.
 
 ## Fan-Out Review
 

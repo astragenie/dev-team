@@ -15,7 +15,7 @@ limitation that blocks honest dynamic evaluation of the shrink.
 | Skill paths enumerated in prompt | 14 | 0 (extracted to skill) | −14 |
 | `SPLIT_BUILD` mentions | 0 | 1 | new section added |
 | `## Forbidden` block present | NO | YES (6 lines) | new |
-| Identity-anchor phrases listed | 5 | 7 (+`As the orchestrator`, +`as the lead`) | +2 |
+| Identity-anchor phrases listed | 5 | 7 (+`As the orchestrator`, +`as the dispatcher`) | +2 |
 | Soft skill cap | 3 (standard slices) | 2 (standard) / 5 (cross-layer) | tightened with carve-out |
 | `## First action (stub artifact on entry)` redundant section | present (13 lines) | removed (covered by HARD OUTPUT CONTRACT) | extracted |
 | TDD policy inline | 35 lines | 4 lines (pointer to skill) | −31 |
@@ -82,7 +82,7 @@ For tests where the assertion is structural (artifact-exists, presence of patter
 wc -l agents/fullstack-dev.md
 grep -c "SPLIT_BUILD" agents/fullstack-dev.md          # expect 1
 grep -c "## Forbidden" agents/fullstack-dev.md         # expect 1
-grep -c "you are the lead" agents/fullstack-dev.md     # expect 1
+grep -c "you are the dispatcher" agents/fullstack-dev.md     # expect 1
 grep -c "Let me re-read" agents/fullstack-dev.md       # expect 1
 grep -c "As the orchestrator" agents/fullstack-dev.md  # expect 1
 

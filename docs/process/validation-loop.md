@@ -73,7 +73,7 @@ After a real deploy or environment check, that guidance should be updated automa
 
 ## Validation Scenario
 
-Before validation, the lead or validator should write a short scenario.
+Before validation, the dispatcher or validator should write a short scenario.
 
 It should include:
 
@@ -100,7 +100,7 @@ The local loop should be:
 3. validator writes or follows a scenario
 4. validator runs the app/API locally
 5. validator reports pass/fail with evidence
-6. lead asks builder to fix if needed
+6. the dispatcher asks builder to fix if needed
 7. loop until local evidence is clean or the user stops it
 
 Example evidence:
@@ -122,7 +122,7 @@ After PR or merge when a dev deployment exists:
 5. check errors, latency, CPU, memory, restarts, outages, and relevant telemetry
 6. report evidence and risk
 
-If dev validation fails, the lead should not hand-wave it.
+If dev validation fails, the dispatcher should not hand-wave it.
 
 It should open or continue a fix loop:
 
@@ -135,7 +135,7 @@ It should open or continue a fix loop:
 
 Production promotion should require a short decision point.
 
-The lead should ask:
+The dispatcher should ask:
 
 - do we have local validation
 - do we have dev validation
@@ -152,16 +152,16 @@ After production deploy:
 
 ## Lead Nudges
 
-The lead should keep track of what is unfinished and nudge the user.
+The dispatcher should keep track of what is unfinished and nudge the user.
 
 The user should not need to remember the workflow command graph.
 
-Where possible, the lead should recommend the next responsible step and ask for the smallest useful decision.
+Where possible, the dispatcher should recommend the next responsible step and ask for the smallest useful decision.
 
 The desired loop is:
 
 1. decide the next direction together
-2. let the lead run a substantial chunk independently
+2. let the dispatcher run a substantial chunk independently
 3. return with evidence and a recommended next decision
 
 As Engineering OS improves, those independent work chunks should become longer, safer, and more complete.
@@ -218,7 +218,7 @@ Possible public commands after the rename:
 
 But the stronger product behavior is not just "user runs `/crew:ship`."
 
-The lead should notice when the work is ready to move forward and nudge the user into the shipping phase:
+The dispatcher should notice when the work is ready to move forward and nudge the user into the shipping phase:
 
 - PR ready but not merged
 - local validation complete, dev deployment still missing
