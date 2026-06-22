@@ -5,6 +5,8 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.43.0 — 2026-06-22 — Builder unification + shared posture/ceremony skills
+
 ## v0.42.2 — 2026-06-22 — dev-lite v1.2 + atomic commit rule
 
 ### Changed — dev-lite v1.1.0 → v1.2.0 (OpenAI second review pass)
