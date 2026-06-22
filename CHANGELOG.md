@@ -5,6 +5,8 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.44.1 — 2026-06-22 — investigator vs researcher routing fix
+
 ## v0.45.0 — 2026-06-22 — drop deprecated env-var metadata from features registry
 
 Cleanup pass: removes the `deprecates: [...env]` arrays from
