@@ -138,9 +138,12 @@ test("fullstack-dev.md declares Forbidden block (FEAT-170 SLICE-B)", () => {
   );
 });
 
-test("fullstack-dev.md identity-anchor lists expanded leak phrases (FEAT-170 SLICE-B)", () => {
-  // 'you are the lead' phrase removed in v0.41 hard cut — lead agent gone,
-  // and the validator NO_LEAD_REF_REQUIRED gate would fail on its presence anyway.
+test("builder-mindset skill lists expanded leak phrases (extracted from per-agent identity anchors in v0.43)", () => {
+  // 'you are the lead' phrase removed in v0.41 hard cut.
+  // Per-agent identity-anchor sections were stripped in v0.43 — leak phrases
+  // now live in skills/universal/builder-mindset/. Each builder agent loads
+  // the skill on every dispatch.
+  const skill = readFileSync(resolve(ROOT, "skills", "universal", "builder-mindset", "SKILL.md"), "utf8");
   for (const phrase of [
     "you are Claude Code",
     "you are the orchestrator",
@@ -150,10 +153,17 @@ test("fullstack-dev.md identity-anchor lists expanded leak phrases (FEAT-170 SLI
     "As the orchestrator"
   ]) {
     assert.ok(
-      builder.includes(phrase),
-      `fullstack-dev.md identity-anchor missing leak phrase "${phrase}"`
+      skill.includes(phrase),
+      `builder-mindset/SKILL.md missing leak phrase "${phrase}"`
     );
   }
+});
+
+test("fullstack-dev.md loads builder-mindset for identity anchor", () => {
+  assert.ok(
+    builder.includes("skills/universal/builder-mindset/"),
+    "fullstack-dev.md must reference skills/universal/builder-mindset/ for leak phrases"
+  );
 });
 
 test("builder.md contains TDD policy reference", () => {
@@ -1134,45 +1144,54 @@ const STRUCTURAL_DEVIATION_PREFIX = "structural-deviation:";
 const ANTI_SILENT_WORKAROUND_A = "silently drop";
 const ANTI_SILENT_WORKAROUND_B = "silent workaround";
 
-describe("## Structural deviation rule — implementer coverage", () => {
-  for (const agentName of ["backend-dev", "frontend-dev", "fullstack-dev"] as const) {
+describe("## Structural deviation rule — extracted to builder-ceremony skill in v0.43", () => {
+  const skillPath = resolve(ROOT, "skills", "workflow", "builder-ceremony", "SKILL.md");
+  const skill = readFileSync(skillPath, "utf8");
+
+  test("structural deviation heading present in skill", () => {
+    assert.ok(
+      skill.includes(STRUCTURAL_DEVIATION_HEADING),
+      `builder-ceremony/SKILL.md missing "${STRUCTURAL_DEVIATION_HEADING}" heading`
+    );
+  });
+
+  test("structural-deviation return instruction present in skill (BLOCKED form)", () => {
+    const usesBlockedFollowUp =
+      skill.includes("BLOCKED: structural-deviation") ||
+      skill.includes("BLOCKED: structural deviation");
+    assert.ok(
+      usesBlockedFollowUp,
+      `builder-ceremony/SKILL.md missing structural-deviation return instruction (BLOCKED follow-up form)`
+    );
+  });
+
+  test("structural-deviation: risks-field prefix present in skill", () => {
+    assert.ok(
+      skill.includes(STRUCTURAL_DEVIATION_PREFIX),
+      `builder-ceremony/SKILL.md missing "${STRUCTURAL_DEVIATION_PREFIX}" risks-field prefix convention`
+    );
+  });
+
+  test("anti-silent-workaround warning present in skill", () => {
+    const hasWarning =
+      skill.includes(ANTI_SILENT_WORKAROUND_A) || skill.includes(ANTI_SILENT_WORKAROUND_B);
+    assert.ok(
+      hasWarning,
+      `builder-ceremony/SKILL.md missing anti-silent-workaround warning ("silently drop" or "silent workaround")`
+    );
+  });
+
+  // Per-agent assertion: each builder must reference the ceremony skill (so the
+  // rule is loaded on every dispatch). DECISION_NEEDS_FIX still asserted to
+  // avoid breaking the FEAT-170 SLICE-D legacy-form awareness.
+  void DECISION_NEEDS_FIX;
+  for (const agentName of ["backend-dev", "frontend-dev", "fullstack-dev", "aiplugin-dev"] as const) {
     describe(agentName, () => {
       const content = readAgent(agentName);
-
-      test("structural deviation heading present", () => {
+      test("references builder-ceremony skill", () => {
         assert.ok(
-          content.includes(STRUCTURAL_DEVIATION_HEADING),
-          `${agentName}.md missing "${STRUCTURAL_DEVIATION_HEADING}" heading`
-        );
-      });
-
-      test("structural-deviation return instruction present (decision needs_fix OR BLOCKED + structural-deviation)", () => {
-        // FEAT-170 SLICE-D: fullstack-dev uses BLOCKED follow-up form instead
-        // of `--decision needs_fix` CLI flag. Either pattern satisfies the
-        // semantic intent (surface the contradiction; don't silently work around).
-        const usesLegacyDecision = content.includes(DECISION_NEEDS_FIX);
-        const usesBlockedFollowUp =
-          content.includes("BLOCKED: structural-deviation") ||
-          content.includes("BLOCKED: structural deviation");
-        assert.ok(
-          usesLegacyDecision || usesBlockedFollowUp,
-          `${agentName}.md missing structural-deviation return instruction (either "${DECISION_NEEDS_FIX}" CLI flag OR BLOCKED follow-up form)`
-        );
-      });
-
-      test("structural-deviation: risks-field prefix present", () => {
-        assert.ok(
-          content.includes(STRUCTURAL_DEVIATION_PREFIX),
-          `${agentName}.md missing "${STRUCTURAL_DEVIATION_PREFIX}" risks-field prefix convention`
-        );
-      });
-
-      test("anti-silent-workaround warning present", () => {
-        const hasWarning =
-          content.includes(ANTI_SILENT_WORKAROUND_A) || content.includes(ANTI_SILENT_WORKAROUND_B);
-        assert.ok(
-          hasWarning,
-          `${agentName}.md missing anti-silent-workaround warning ("silently drop" or "silent workaround")`
+          content.includes("skills/workflow/builder-ceremony/"),
+          `${agentName}.md must reference skills/workflow/builder-ceremony/ for structural deviation rule`
         );
       });
     });

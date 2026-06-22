@@ -1,10 +1,11 @@
 ---
 name: builder-ceremony
 prompt_id: builder-ceremony
-version: 2.2.0
+version: 2.3.0
 tier: workflow
 model_pinned: sonnet
-description: Builder slice-boundary discipline — inline task return format, workflow badges, pre-completion secret grep, scope-cross fallback, context-ceiling escalation. Loaded by backend-dev / frontend-dev / fullstack-dev so the builder prompts focus on the JOB. Inline-only: no handoff artifacts, no bundles, no stubs.
+maxLines: 250
+description: Builder slice-boundary discipline — inline task return format, workflow badges, pre-completion secret grep, scope-cross fallback, context-ceiling escalation, atomic commit rule, structural deviation rule, time budget. Loaded by backend-dev / frontend-dev / fullstack-dev / aiplugin-dev so the builder prompts focus on the JOB. Inline-only: no handoff artifacts, no bundles, no stubs.
 triggers: ["badge", "secret grep", "scope-cross", "context ceiling", "primary return contract", "inline return", "scope-cross fallback"]
 ---
 
@@ -172,6 +173,43 @@ Default: never commit without explicit user request. Use `skills/workflow/git-co
 
 Typecheck / lint / format are advisory (deferred to dispatcher's review). When in doubt, defer to the dispatcher.
 
+## Atomic commit rule (when dev.stable carve-out applies)
+
+After each completed subtask, commit immediately. Do NOT batch commits at end-of-run.
+
+A subtask = smallest logical unit that compiles + has scoped tests green in isolation. Examples by stack:
+
+| Stack | Subtask example |
+|---|---|
+| TypeScript backend | One new function + its test, one renamed export across production + test |
+| TypeScript frontend | One new component + its test, one hook refactor that compiles + passes scoped tests |
+| C# backend | One new method + its test, one migration up + down green |
+| Plugin (agents/skills/commands) | One new agent prompt validating green, one renamed skill directory with refs updated |
+
+**Why:** if the dispatch is killed (tool-use cap, context exhaustion, user interrupt), every completed subtask is already on the branch. Re-dispatch picks up from the last commit — completed work never gets redone.
+
+**Anti-pattern:** "I'll commit everything at the end after self-verify." When end-of-run never arrives (cutoff at 70% complete), 70% of work is lost. Commit incrementally and partial work survives every kill.
+
+## Structural deviation rule
+
+Slice spec contradicts repo state (DAG cycle, conflicting prior DEC-NNN, missing assumed dependency, nonexistent file path)? STOP. Emit `mark-badge blocked --note "structural-deviation: <what>"` and return `BLOCKED: structural-deviation in slice spec.` with `Risks: structural-deviation: <what contradicts>: proposed resolution: <X>` and `Next: dispatcher decides`. Never silently drop edges or invent workarounds outside scope.
+
+## Conventions (universal)
+
+- **TaskUpdate batching** — never run ≥3 back-to-back without intervening work. Hook `check-task-update-burst` logs evidence to `.claude/logs/task-update-bursts.jsonl`.
+- **Coalesce Bash calls** — chain `cmd1 && cmd2 && cmd3` for pure data-collection. Separate only when each result drives the next decision.
+- **Read once, trust** — once a file is read, don't re-Read in the same dispatch. Use `git diff` or scoped Grep to verify changes.
+- **Batch per-file edits** — multiple Edits to the same file in one turn, not spread across the run.
+
+## Time budget
+
+- **Trivial** (typo, 1-line edit): ≤5 tool uses
+- **Small** (single function + test, single component): ≤15 tool uses
+- **Standard** (bounded feature slice): ≤40 tool uses
+- **Wide** (cross-layer slice): ≤60 tool uses
+
+Approaching cap → finish current subtask, commit, surface IN-PROGRESS in Risks with remaining ACs. Don't burn the last 10% trying to wrap up everything — commit and let re-dispatch finish.
+
 ## Done / Acceptance
 
 You may return when:
@@ -181,5 +219,6 @@ You may return when:
 - Inline return follows the Primary return contract
 - No scope-cross discovered without surfacing in Risks
 - No context-ceiling without IN-PROGRESS + remaining ACs in Risks
+- Per-subtask commits made (atomic commit rule above)
 
 Contract violation: returning narration ("Done, let me explain...") instead of the STATUS/Files/Risks/Next form. The structured return is the dispatcher's signal — prose breaks routing.

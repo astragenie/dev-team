@@ -9,6 +9,37 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## v0.42.2 — 2026-06-22 — dev-lite v1.2 + atomic commit rule
 
+### Changed — builder agent unification (extract shared posture + ceremony into skills)
+
+Four builder agents (fullstack-dev, backend-dev, frontend-dev, aiplugin-dev) had ~50% duplicated prose across nine universal sections. Extracted into two skills loaded by every builder.
+
+- **NEW `skills/universal/builder-mindset/`** (~120 lines) — owns: identity anchor + leak phrases, senior engineer mindset (4 questions), Astra delivery principles (11 items), SOLID/DRY/YAGNI judgment notes, code review heuristics with size budgets, anti-pattern band-aid refusal, Architecture decisions + ADR awareness, TDD policy core, Systematic debugging pointer, default platform preferences (cross-stack), Done/Acceptance.
+- **`skills/workflow/builder-ceremony/`** (v2.2.0 → v2.3.0) — absorbed: structural deviation rule, conventions (TaskUpdate batching + Coalesce Bash), time budget. Now owns all four builder ceremony concerns end-to-end.
+- **All 4 builder agents** stripped:
+  - `agents/fullstack-dev.md` 263 → 206 lines (-22%)
+  - `agents/backend-dev.md` 318 → 266 lines (-16%)
+  - `agents/frontend-dev.md` 254 → 208 lines (-18%)
+  - `agents/aiplugin-dev.md` 248 → 217 lines (-13%)
+  - **Total: 1083 → 897 lines (-186, -17%)**
+- **Each agent retains stack-specific content**: default platform preferences (stack-bound packages), performance budgets addenda, observability span APIs, platform pattern triggers, verification ladder, role-specific anti-patterns (aiplugin eval-gaming patterns), peer dispatch whitelist.
+- **Naming normalization** (Tier 5): `Observability hierarchy` → `Observability`, `Peer dispatch (open consultation; favor velocity)` → `Peer dispatch`, `Stack router — load skills based on slice content` → `Stack router — load skills per slice content`. Identity anchor heading unified across all 4 (was 2 used "Identity + output contract").
+- **Test updates**: identity-anchor leak phrase test + structural deviation rule tests now read from extracted skill files (per-agent assertions check the skill-load reference).
+### Changed — builder agent unification (extract shared posture + ceremony into skills)
+
+Four builder agents (fullstack-dev, backend-dev, frontend-dev, aiplugin-dev) had ~50% duplicated prose across nine universal sections. Extracted into two skills loaded by every builder.
+
+- **NEW `skills/universal/builder-mindset/`** (~120 lines) — owns: identity anchor + leak phrases, senior engineer mindset (4 questions), Astra delivery principles (11 items), SOLID/DRY/YAGNI judgment notes, code review heuristics with size budgets, anti-pattern band-aid refusal, Architecture decisions + ADR awareness, TDD policy core, Systematic debugging pointer, default platform preferences (cross-stack), Done/Acceptance.
+- **`skills/workflow/builder-ceremony/`** (v2.2.0 → v2.3.0) — absorbed: structural deviation rule, conventions (TaskUpdate batching + Coalesce Bash), time budget. Now owns all four builder ceremony concerns end-to-end.
+- **All 4 builder agents** stripped:
+  - `agents/fullstack-dev.md` 263 → 206 lines (-22%)
+  - `agents/backend-dev.md` 318 → 266 lines (-16%)
+  - `agents/frontend-dev.md` 254 → 208 lines (-18%)
+  - `agents/aiplugin-dev.md` 248 → 217 lines (-13%)
+  - **Total: 1083 → 897 lines (-186, -17%)**
+- **Each agent retains stack-specific content**: default platform preferences (stack-bound packages), performance budgets addenda, observability span APIs, platform pattern triggers, verification ladder, role-specific anti-patterns (aiplugin eval-gaming patterns), peer dispatch whitelist.
+- **Naming normalization** (Tier 5): `Observability hierarchy` → `Observability`, `Peer dispatch (open consultation; favor velocity)` → `Peer dispatch`, `Stack router — load skills based on slice content` → `Stack router — load skills per slice content`. Identity anchor heading unified across all 4 (was 2 used "Identity + output contract").
+- **Test updates**: identity-anchor leak phrase test + structural deviation rule tests now read from extracted skill files (per-agent assertions check the skill-load reference).
+
 ### Changed — dev-lite v1.1.0 → v1.2.0 (OpenAI second review pass)
 
 - **PRECHECK section** added at top of agent body. Before any `Read`/`Edit`, inspect dispatch prompt + `git status` + `git diff --stat` and refuse early if scope obviously doesn't fit. Saves wasted reads/edits on mis-routed dispatches.
