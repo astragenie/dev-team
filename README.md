@@ -4,37 +4,49 @@
 [![release](https://img.shields.io/github/v/tag/astragenie/dev-team?label=release&sort=semver)](https://github.com/astragenie/dev-team/releases)
 [![license](https://img.shields.io/github/license/astragenie/dev-team)](LICENSE)
 
-A Claude Code plugin for lead-guided engineering work with bounded subagents, quality gates, and inspectable handoffs.
+A Claude Code plugin for dispatcher-guided engineering work with bounded subagents, parallel quality gates, and inspectable handoffs.
 
 ## What it does
 
-Crew gives Claude Code a lead-centered workflow model with **12 first-party agents** across 3 tiers:
+Crew gives Claude Code a dispatcher-guided workflow model with **20 first-party agents** across multiple tiers. The slash commands (`/crew:build`, `/crew:fix`, `/crew:ship`) ARE the dispatchers — they read inline routing tables and fan out specialists. There is no `lead` agent role; orchestration is a concept, not a callable subagent.
 
-**Core workflow agents:**
+**Implementation agents (FEAT-tag routed by `/crew:build`):**
 
-- **lead** — plans, delegates, synthesizes, paces
-- **builder** — implements bounded changes within assigned scope
-- **reviewer** — validates correctness, regressions, and scope drift
-- **researcher** — investigates questions without editing code
-- **validator** — checks runnable or observable behavior and returns evidence
-- **deployer** — manages environment transition evidence without deciding risky promotion alone
+- **fullstack-dev** — cross-layer TypeScript + .NET 10 implementation
+- **backend-dev** — server-side TypeScript / .NET (ASP.NET Core, EF Core)
+- **frontend-dev** — React + Vite + TypeScript UI work
+- **aiplugin-dev** — Claude Code plugin authoring (prompts, skills, hooks, MCP)
+- **dev-lite** — surgical mechanical edits (≤2 files, ≤50 LOC; typos, renames, format)
 
-**Specialist agents (new in v0.8.0):**
+**Review + validate gates:**
 
-- **architect** — ADR authoring, system design, database schema, API contracts; delegates to 3rdparty specialists
-- **uxdesigner** — UI flows, component hierarchies, accessibility specs; delegates to 3rdparty specialists
-- **copywriter** — API docs, release notes, README polish, diagram captions; delegates to 3rdparty specialists
+- **inspector** — generalist code review with FEAT-concern-tag lens
+- **inspector-lite** — fast review for light-path diffs (single dispatch with stack skill auto-load)
+- **c-sharp-reviewer** — stack-quality review for `.cs` diffs (async / EF Core / ASP.NET / null safety)
+- **verifier** — behavior validation; owned by `/crew:ship` + pre-push hook
+- **integrator** — live wire-up smoke for SPLIT_BUILD slices
+- **qa-expert** — test coverage gap analysis; dispatched from `/crew:ship`
 
-Each agent has strict ownership rules, structured start/completion reports, and explicit handoffs. A library of **34 skills** across 4 tiers (`universal/`, `workflow/`, `domain/`, `meta/`) supplies the procedural knowledge agents load on demand.
+**Specialists:**
+
+- **architect** — ADR authoring, system design, database schema, API contracts
+- **uxdesigner** — UI flows, component hierarchies, accessibility specs
+- **document-writer** — release notes, ADRs, API reference, CHANGELOG
+- **performance-engineer** — latency, throughput, Core Web Vitals
+- **release-engineer** — deployment evidence, environment transitions
+- **researcher** / **investigator** — read-only investigation
+- **refactor** — quality-sweep scans
+- **parallel-runner** — parallel-worktree batch coordination
+
+Each agent has strict ownership rules, structured start/completion reports, and explicit handoffs. A library of **69 skills** across 4 tiers (`universal/`, `workflow/`, `domain/`, `meta/`) supplies the procedural knowledge agents load on demand. The `skills/universal/builder-mindset/` skill carries the cross-builder posture (senior engineer mindset, Astra principles, code-review heuristics, TDD policy) so builder prompts stay focused on stack-specific work.
 
 In practice, the highest-value default mode is:
 
-- one lead stays user-facing
-- the lead infers workflow intent from normal conversation
-- the lead uses bounded subagents for smaller focused tasks
-- reviewer, validator, and deployer act as quality gates
+- the user runs `/crew:build` / `/crew:fix` / `/crew:ship`
+- the slash command reads FEAT tags + routing tables, picks specialists
+- builder edits → 2 parallel inspectors → push gate runs verifier → `/crew:ship` files PR with auto-fix loop
 
-The user should mostly talk to the lead, not manage a menu of agents or remember a command graph.
+The user runs slash commands and reads the resulting artifacts — no menu of agents, no command graph to memorize.
 
 The next product direction is an evidence-gated validation loop: local validation, review, PR, dev deploy validation, dev logs/metrics, production promotion, and production monitoring. See [docs/process/validation-loop.md](docs/process/validation-loop.md).
 
@@ -62,7 +74,7 @@ The companion plugins live in the same marketplace:
 /plugin install cortex@astra
 ```
 
-Verify locally with `bun run test`. Pinned release: `v0.35.1`.
+Verify locally with `bun run test`. Pinned release: `v0.43.1`.
 
 > **Runtime dependency:** Bun ≥ 1.3 is required at install time. The Crew hook entries (`hooks/check-*.ts`, `hooks/preflight-shell.ts`, `hooks/record-read-content.ts`) run under Bun for fast cold start (~40 ms vs ~180 ms on Node). The installer fails loud if Bun is missing — install from <https://bun.sh>.
 
