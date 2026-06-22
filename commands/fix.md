@@ -40,11 +40,24 @@ If not matched → standard ladder below.
 
 ## Phase order (standard ladder)
 
+### Triage step — pick the right investigation tool
+
+Before dispatching anything, triage the bug report:
+
+| Bug report state | Right dispatch |
+|---|---|
+| "Where is X called?" / "List every caller of Y" / "Map this module" — **location only, no causation reasoning** | `crew:investigator` (haiku, cheap, no handoff artifact, dies with turn) |
+| "Why does this fail?" / "What's the root cause?" / multi-file causal reasoning / need confidence + evidence trail + reproduction path in a persistent artifact | `crew:researcher` (sonnet, scopes: normal/wide, writes findings with confidence + risks) |
+| Root cause already obvious from bug report (typo, off-by-one, known regression in commit X) | **Skip both — go directly to builder** |
+| Cause known, multi-site fix scope unknown | `crew:investigator` to enumerate sites, then builder |
+
+**Common mistake:** dispatching `crew:investigator` for root cause analysis. Investigator's own prompt says: *"Refuses to suggest fixes; escalate to crew:researcher when findings must persist with confidence + risks."* The haiku model + `maxTurns: 12` + no-handoff design cannot deliver root-cause artifacts with confidence + evidence — it will die at the cap. Use researcher.
+
 ```
 workspace verify + wake-up brief
    ↓
-crew:investigator  (root cause analysis, read-only)
-   ↓ investigator returns finding artifact
+TRIAGE (table above) → investigator | researcher | skip
+   ↓ optional finding artifact (researcher only — investigator output dies with turn)
 specialist builder (FEAT tag → builder, same routing as /crew:build)
    ↓ PASS (builder writes handoff)
 parallel fan-out — single Agent-tool message with N=2 invocations:
