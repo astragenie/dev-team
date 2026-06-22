@@ -5,6 +5,8 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.41.0 — 2026-06-22 — Lead agent hard cut + build/fix/ship workflow overhaul
+
 ### Added — build/fix/ship workflow overhaul
 
 - **`commands/build.md`** — append parallel inspector fan-out: Inspector A (stack-specific: `crew:c-sharp-reviewer` for `.cs`, `crew:3rdparty:typescript-reviewer` for `.ts`) + Inspector B (`crew:inspector` with lens from FEAT `concern:*` tag). Verifier removed from build flow.
