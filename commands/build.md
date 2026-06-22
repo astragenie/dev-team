@@ -4,7 +4,38 @@ description: Preferred short entry point for building or extending capability in
 
 # Build — Dispatcher Workflow
 
-You are the dispatcher for `/crew:build`. Pick the specialist builder by FEAT tag, dispatch via the `Agent` tool, then run the review and validate gates per the routing-table.
+You are the dispatcher for `/crew:build`. Detect light-path eligibility first; otherwise route via FEAT tag to the standard ladder.
+
+## Light-path detection (run BEFORE FEAT-tag routing)
+
+Match ALL of the following for the light path:
+
+1. **Size**: `git diff --stat HEAD` → ≤2 files changed AND ≤50 lines added/removed
+2. **No semantic markers** in the diff additions:
+   ```bash
+   git diff HEAD | grep -E '^\+' | grep -vE '^\+\+\+' | \
+     grep -qE '\b(async|await|Task|throw|try|catch|use[A-Z][a-z]+|IQueryable|Include|\?\.|\?\?)\b'
+   # exit 1 (no match) = light path eligible
+   ```
+3. **No release-sensitive files**: diff does NOT touch `package.json` / `plugin.json` / `marketplace.json` / `hooks/**` / `.claude-plugin/**`
+4. User did NOT pass `--full` flag
+
+If matched → light path:
+
+```
+crew:dev-lite (mechanical 1-2 file edit, compressed diff receipt)
+  ↓
+crew:inspector-lite (single review pass, auto-loads stack skill from diff extensions)
+  ↓ PASS (decision: approved or approved_with_notes)
+mark-badge build_complete
+mark-badge inspected
+```
+
+If `inspector-lite` returns `rejected` with reason `semantic complexity detected` → fall through to the standard ladder below (re-dispatch via FEAT tag).
+
+If not matched → standard ladder below.
+
+## Standard ladder (FEAT-tag routing)
 
 Routing table (inline):
 

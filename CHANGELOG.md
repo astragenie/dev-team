@@ -5,10 +5,11 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
-### Added — light-path agents (small-feature workflow)
+### Added — light-path workflow for small features
 
+- **`commands/build.md`** — light-path detection block added BEFORE standard FEAT-tag routing. Matches when: ≤2 files changed, ≤50 lines diff, no semantic markers (`async`/`await`/`Task`/`throw`/`try`/`catch`/React hooks/`IQueryable`/null operators), no release-sensitive files. Light-path dispatch: `crew:dev-lite` → `crew:inspector-lite` → `build_complete`. Two-dispatch flow vs three-dispatch standard ladder; ~60% subagent token savings on trivial diffs. Auto-fallthrough to standard ladder if inspector-lite returns `rejected: semantic complexity detected`.
 - **`agents/dev-lite.md`** — first-party port of cavecrew-builder pattern. Surgical 1-2 file edits: typos, renames, mechanical rewrites, format-preserving tweaks. Hard refuses 3+ files. Compressed diff receipt (no full handoff). Tools: `Read`, `Edit`, `Write`, `Grep`, `Glob`.
-- **`agents/inspector-lite.md`** — renamed from `inspector-verifier.md` with validation stripped. Fast code-review for light-path diffs (≤2 files, ≤50 lines, semantically trivial). Auto-loads stack skill from diff extensions (`.cs` → csharp-conventions, `.tsx` → react-engineering, `.ts` → typescript-pro). Returns `review_decision` only — validation now owned by pre-push hook + `/crew:ship` (no double-run).
+- **`agents/inspector-lite.md`** — renamed from `inspector-verifier.md` with validation stripped. Fast code-review for light-path diffs. Auto-loads stack skill from diff extensions (`.cs` → csharp-conventions, `.tsx` → react-engineering, `.ts` → typescript-pro). Returns `review_decision` only — validation now owned by pre-push hook + `/crew:ship` (no double-run).
 
 ### Removed
 
