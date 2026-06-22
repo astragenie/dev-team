@@ -4,11 +4,41 @@ description: Preferred short entry point for investigating and fixing broken beh
 
 # Fix — Dispatcher Workflow
 
-You are the dispatcher for `/crew:fix`. Investigate first, then build and inspect per the routing table below.
+You are the dispatcher for `/crew:fix`. Detect light-path eligibility first; otherwise route via investigator → builder → parallel inspectors.
 
 For what counts as "substantial" below, see the canonical definition in `constitution.md` (`What "Substantial" Means`).
 
-## Phase order
+## Light-path detection (run BEFORE investigator dispatch)
+
+Match ALL of the following for the light path:
+
+1. **Size**: `git diff --stat HEAD` → ≤2 files changed AND ≤50 lines added/removed
+2. **No semantic markers** in the diff additions (escalates to standard ladder if matched):
+   ```bash
+   git diff HEAD | grep -E '^\+' | grep -vE '^\+\+\+' | \
+     grep -qE '\b(async|await|Task|Promise|IQueryable|Include|use[A-Z][a-z]+)\b|\btry\s*\{|\bcatch\s*\('
+   # exit 1 (no match) = light path eligible
+   ```
+3. **No release-sensitive files**: diff does NOT touch `package.json` / `plugin.json` / `marketplace.json` / `hooks/**` / `.claude-plugin/**`
+4. **Root cause is obvious from the diff** (typo / off-by-one / null check / wrong constant) — no upstream investigation needed
+5. User did NOT pass `--full` flag
+
+If matched → light path (no investigator, no parallel A+B fan-out):
+
+```
+crew:dev-lite (mechanical 1-2 file fix, compressed diff receipt)
+  ↓
+crew:inspector-lite (single review pass, auto-loads stack skill from diff extensions)
+  ↓ PASS (decision: approved or approved_with_notes)
+mark-badge fix_complete
+mark-badge inspected
+```
+
+If `inspector-lite` returns `rejected` (semantic complexity detected, MEDIUM+ finding requiring code change) → fall through to the standard ladder below (re-dispatch via investigator + FEAT tag).
+
+If not matched → standard ladder below.
+
+## Phase order (standard ladder)
 
 ```
 workspace verify + wake-up brief
@@ -24,12 +54,33 @@ parallel fan-out — single Agent-tool message with N=2 invocations:
       no stack match → SKIP A, B uses code-quality lens   concern:perf → performance
    ↓                                         concern:correctness (default)
    └──────────────────┬───────────────────────┘
-                      ↓ both review-result artifacts written
-   fix_complete (both approved / approved_with_notes)
-   if Inspector B next field names a tests-adequacy gap → dispatch crew:qa-expert
+                      ↓ aggregate both decisions
+   any rejected? ─── yes ─→ retry loop below
+   both approved / approved_with_notes:
+     mark-badge fix_complete
+     if Inspector B next field names a tests-adequacy gap → dispatch crew:qa-expert
 ```
 
 No verifier dispatch. Verifier defers to `/crew:ship`.
+
+## Auto-fix retry loop (when Inspector rejects)
+
+Symmetric with `/crew:ship`'s auto-fix loop. When either Inspector A or Inspector B returns `rejected`:
+
+1. Read both review-result artifacts for the aggregated FAIL findings.
+2. Re-dispatch the same specialist builder with the findings as fix scope.
+3. Increment retry counter.
+4. Re-run the parallel inspector fan-out.
+5. Retry < N (default 2 from `.claude/crew/deployment.md` `fix.retry_limit`)? Loop. Else halt.
+
+On N exhausted:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge fix_blocked \
+  --note "<aggregated FAIL summary>"
+```
+
+Escalate to user with both artifact paths + findings. Do not silently keep trying.
 
 ## Builder routing table
 
