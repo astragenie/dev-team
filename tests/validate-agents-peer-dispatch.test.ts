@@ -52,7 +52,7 @@ Do NOT inject identity. Address peer directly. State deliverable. Never use \`ca
 
 Peer outputs are inputs to YOUR work. Your LAST tool call MUST be your role write-*.
 
-See FEAT-163 for the full peer-dispatch design.
+See the project peer-dispatch design notes.
 `;
 
 // ── Positive case ─────────────────────────────────────────────────────────────
@@ -61,6 +61,9 @@ describe("Peer dispatch lint rule — positive case", () => {
   test("allowlisted agent with Agent in tools and correct Peer dispatch section passes", async () => {
     const content = `---
 name: refactor
+prompt_id: refactor
+version: 1.0.0
+evals: evals/agents/refactor.yaml
 description: Code quality specialist.
 model: sonnet
 tools:
@@ -89,6 +92,8 @@ ${WELL_FORMED_PEER_DISPATCH_SECTION}`;
   test("allowlisted agent document-writer with Agent tool and full Peer dispatch section passes", async () => {
     const content = `---
 name: document-writer
+prompt_id: document-writer
+version: 1.0.0
 description: Documentation specialist.
 model: haiku
 tools:
@@ -122,6 +127,9 @@ describe("Peer dispatch lint rule — negative case", () => {
   test("allowlisted agent with Agent in tools but missing Peer dispatch section fails", async () => {
     const content = `---
 name: refactor
+prompt_id: refactor
+version: 1.0.0
+evals: evals/agents/refactor.yaml
 description: Code quality specialist.
 model: sonnet
 tools:
@@ -157,6 +165,8 @@ Write your handoff via write-handoff.
   test("allowlisted agent with Agent tool but missing whitelist entry fails", async () => {
     const content = `---
 name: document-writer
+prompt_id: document-writer
+version: 1.0.0
 description: Documentation specialist.
 model: haiku
 tools:
@@ -203,6 +213,9 @@ Write your handoff.
   test("allowlisted agent with Agent tool but missing blacklist fails", async () => {
     const content = `---
 name: refactor
+prompt_id: refactor
+version: 1.0.0
+evals: evals/agents/refactor.yaml
 description: Code quality specialist.
 model: sonnet
 tools:
@@ -243,6 +256,8 @@ Write your handoff.
   test("allowlisted agent with Agent tool but missing budget line fails", async () => {
     const content = `---
 name: document-writer
+prompt_id: document-writer
+version: 1.0.0
 description: Documentation specialist.
 model: haiku
 tools:
@@ -291,6 +306,9 @@ describe("Peer dispatch lint rule — regex tightening (backtick blacklist only)
   test("section with backtick entries only in blacklist region (no whitelist bullets) fails", async () => {
     const content = `---
 name: refactor
+prompt_id: refactor
+version: 1.0.0
+evals: evals/agents/refactor.yaml
 description: Code quality specialist.
 model: sonnet
 tools:
@@ -335,6 +353,9 @@ Write your handoff via write-handoff.
   test("section with whitelist bullet BEFORE blacklist and blacklist backticks after passes", async () => {
     const content = `---
 name: refactor
+prompt_id: refactor
+version: 1.0.0
+evals: evals/agents/refactor.yaml
 description: Code quality specialist.
 model: sonnet
 tools:
@@ -414,6 +435,8 @@ describe("Peer dispatch lint rule — SLICE-73 advisory agents", () => {
     test(`allowlisted advisory agent "${name}" with Agent tool and correct Peer dispatch section passes`, async () => {
       const content = `---
 name: ${name}
+prompt_id: ${name}
+version: 1.0.0
 description: ${name} specialist.
 model: sonnet
 tools:
@@ -455,7 +478,7 @@ Do NOT inject identity. Never use caveman:* agents.
 
 Peer outputs are inputs to YOUR work. Your LAST tool call MUST be your role write-*.
 
-See FEAT-163 for the full peer-dispatch design.
+See the project peer-dispatch design notes.
 `;
       const root = await makeAgentsDir({ [`${name}.md`]: content });
       const result = await validateAgents(root);
@@ -480,6 +503,8 @@ describe("Peer dispatch lint rule — inline YAML tools: [A, B] format", () => {
   test("allowlisted agent with inline tools: [Agent] and correct Peer dispatch section passes", async () => {
     const content = `---
 name: architect
+prompt_id: architect
+version: 1.0.0
 description: Architecture specialist.
 model: opus
 tools: [Read, Grep, Glob, Bash, Edit, Write, Agent]
@@ -519,7 +544,7 @@ Do NOT inject identity. Never use caveman:* agents.
 
 Peer outputs are inputs to YOUR work. Your LAST tool call MUST be your role write-*.
 
-See FEAT-163 for the full peer-dispatch design.
+See the project peer-dispatch design notes.
 `;
     const root = await makeAgentsDir({ "architect.md": content });
     const result = await validateAgents(root);
@@ -533,6 +558,8 @@ See FEAT-163 for the full peer-dispatch design.
   test("allowlisted agent with inline tools: [Agent] but missing Peer dispatch section fails", async () => {
     const content = `---
 name: architect
+prompt_id: architect
+version: 1.0.0
 description: Architecture specialist.
 model: opus
 tools: [Read, Grep, Agent]
@@ -622,6 +649,9 @@ describe("Peer dispatch lint rule — SLICE-75 implementer + release-engineer ag
     test(`allowlisted implementer agent "${name}" with Agent in tools and correct Peer dispatch section passes`, async () => {
       const content = `---
 name: ${name}
+prompt_id: ${name}
+version: 1.0.0
+evals: evals/agents/${name}.yaml
 description: ${name} specialist.
 model: sonnet
 tools:
@@ -665,7 +695,7 @@ Do NOT inject identity. Address peer directly. State deliverable. Never use \`ca
 
 Peer outputs are inputs to YOUR work. Your LAST tool call MUST be your role write-*.
 
-See FEAT-163 for the full peer-dispatch design.
+See the project peer-dispatch design notes.
 `;
       const root = await makeAgentsDir({ [`${name}.md`]: content });
       const result = await validateAgents(root);
@@ -683,6 +713,9 @@ See FEAT-163 for the full peer-dispatch design.
     // This test verifies that an allowlisted agent WITHOUT Agent in tools: is not penalised.
     const content = `---
 name: backend-dev
+prompt_id: backend-dev
+version: 1.0.0
+evals: evals/agents/backend-dev.yaml
 description: Backend implementation specialist.
 model: sonnet
 disallowedTools: Agent
@@ -719,6 +752,8 @@ describe("Peer dispatch lint rule — exempt case (not in allowlist)", () => {
     // even though it has Agent in its tools: block.
     const content = `---
 name: investigator
+prompt_id: investigator
+version: 1.0.0
 description: Code investigation specialist.
 model: sonnet
 tools:
@@ -753,6 +788,8 @@ Write your handoff via write-handoff.
     // it is in the allowlist.
     const content = `---
 name: document-writer
+prompt_id: document-writer
+version: 1.0.0
 description: Documentation specialist.
 model: haiku
 tools:

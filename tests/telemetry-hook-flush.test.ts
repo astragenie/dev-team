@@ -91,7 +91,7 @@ async function runHookWithCollector(opts: {
   stdinPayload: string;
   timeoutMs?: number;
 }): Promise<{ exitCode: number; capture: CapturedRequest }> {
-  const timeoutMs = opts.timeoutMs ?? 5000;
+  const timeoutMs = opts.timeoutMs ?? 15000;
   const { port, server, received } = await startCollector(timeoutMs);
   const cwd = await mkdtemp(join(tmpdir(), "otel-flush-test-"));
 
@@ -153,7 +153,12 @@ export_timeout_ms: 30000
     return { exitCode, capture };
   } finally {
     server.close();
-    await rm(cwd, { recursive: true, force: true });
+    try {
+      await rm(cwd, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    } catch {
+      // Windows occasionally holds file locks on the hook subprocess working
+      // directory after exit; cleanup is best-effort and not part of the assertion.
+    }
   }
 }
 

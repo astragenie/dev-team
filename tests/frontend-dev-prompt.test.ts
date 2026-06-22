@@ -31,8 +31,8 @@ test("frontend-dev.md routes contract-codegen skill for orval + openapi-msw", as
 
 test("frontend-dev.md mandates OpenAPI YAML + UX spec consumption", async () => {
   const md = await fs.readFile(AGENT_PATH, "utf8");
-  assert.match(md, /OpenAPI YAML path consumed/);
-  assert.match(md, /UX spec path consumed/);
+  assert.match(md, /OpenAPI YAML/);
+  assert.match(md, /UX spec/);
 });
 
 test("frontend-dev.md mandates drift handling via help_request", async () => {

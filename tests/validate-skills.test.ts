@@ -19,6 +19,8 @@ async function makeSkillsDir(skills: Record<string, string>) {
 
 const WELL_FORMED = `---
 name: my-skill
+prompt_id: my-skill
+version: 1.0.0
 tier: universal
 description: Does something useful.
 owner: lead
@@ -37,6 +39,8 @@ Stop when the task is complete.
 
 const MISSING_LAST_REVIEWED = `---
 name: my-skill
+prompt_id: my-skill
+version: 1.0.0
 tier: universal
 description: Does something useful.
 owner: lead

@@ -22,11 +22,11 @@ test("backend-dev.md declares server + DB scope and forbids FE code", async () =
   assert.match(md, /UX spec files/i);
 });
 
-test("backend-dev.md routes per-stack skills via FEAT stack tag", async () => {
+test("backend-dev.md declares csharp stack capability", async () => {
   const md = await fs.readFile(AGENT_PATH, "utf8");
-  assert.match(md, /stack:csharp/);
-  assert.match(md, /stack:python/);
-  assert.match(md, /stack:node/);
+  assert.match(md, /stacks:\s*\[csharp\]/);
+  assert.match(md, /\.NET/);
+  assert.match(md, /ASP\.NET Core/);
 });
 
 test("backend-dev.md mandates OpenAPI codegen as FIRST step", async () => {
