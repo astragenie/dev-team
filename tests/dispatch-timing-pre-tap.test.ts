@@ -79,10 +79,7 @@ test("parseAgentPreInput: minimal payload with only tool_name Agent and tool_inp
 
 // ── lookupAgentModel ──────────────────────────────────────────────────────────
 
-test("lookupAgentModel: crew:lead → sonnet", async () => {
-  const model = await lookupAgentModel("crew:lead");
-  assert.equal(model, "sonnet");
-});
+// crew:lead removed in v0.41 hard cut — lookup now returns "unknown".
 
 test("lookupAgentModel: crew:fullstack-dev → sonnet", async () => {
   const model = await lookupAgentModel("crew:fullstack-dev");

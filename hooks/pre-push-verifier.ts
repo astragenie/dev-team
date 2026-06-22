@@ -103,7 +103,7 @@ async function scanValidationArtifacts(repoPath: string): Promise<ValidationScan
       return { hasPassed: true, newestArtifactPath: filePath, newestDecision: decision };
     }
     // Keep scanning — there may be an older PASS behind a recent non-pass
-    return { hasPassed: false, newestArtifactPath: filePath, newestDecision: decision };
+    continue;
   }
 
   return { hasPassed: false, newestArtifactPath: null, newestDecision: null };

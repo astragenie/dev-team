@@ -91,10 +91,12 @@ qa_decision = passed AND verifier_decision = passed
 
 1. Read the FEAT tag from the current slice context.
 2. Map tag to specialist builder using the same FEAT-tag → builder routing as `/crew:build`:
-   - `.cs` diff → `crew:c-sharp-reviewer` (then builder = `crew:backend-dev`)
-   - `.ts` diff → `crew:fullstack-dev` or `crew:backend-dev` per concern
-   - Frontend concern → `crew:frontend-dev`
-   - Plugin concern → `crew:aiplugin-dev`
+   - `.cs` diff → `crew:backend-dev`
+   - `.ts` + `surface:ui` → `crew:frontend-dev`
+   - `.ts` + `surface:backend` → `crew:backend-dev`
+   - `.ts` + `surface:cross-layer` → `crew:fullstack-dev`
+   - `.ts` + `surface:plugin` → `crew:aiplugin-dev`
+   - no clear tag → `crew:fullstack-dev`
 3. Dispatch the specialist builder with the aggregated FAIL findings as fix scope. Builder produces
    a fix + handoff artifact.
 4. Increment retry counter.
