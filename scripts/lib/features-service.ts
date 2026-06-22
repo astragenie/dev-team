@@ -18,14 +18,13 @@ export interface FeatureMeta {
 
 export const FEATURES: Readonly<Record<string, FeatureMeta>> = {
   "cost-hygiene": {
-    version: "2.0.0",
+    version: "2.1.0",
     default: true,
     description:
       "Umbrella telemetry: read/edit tracking, redundant-read warn, TaskUpdate burst detection.",
     scope: "crew",
     owner: "platform",
-    since: "0.38.0",
-    deprecates: ["CREW_COST_HYGIENE (env)"]
+    since: "0.38.0"
   },
   "redundant-read-stop": {
     version: "1.1.0",
@@ -37,23 +36,21 @@ export const FEATURES: Readonly<Record<string, FeatureMeta>> = {
     since: "0.33.0"
   },
   "shell-preflight": {
-    version: "2.0.0",
+    version: "2.1.0",
     default: true,
     description: "Pre-Bash hook: warn on $env: syntax, redirect anti-patterns, etc.",
     scope: "crew",
     owner: "safety",
-    since: "0.33.11",
-    deprecates: ["CREW_TOOL_PREFLIGHT (env)"]
+    since: "0.33.11"
   },
   "subagent-inline-warn": {
-    version: "2.0.0",
+    version: "2.1.0",
     default: true,
     description:
       "Warn when a subagent returns a large body without an artifact path. Threshold knob: features['subagent-inline-warn'].threshold (bytes, default 512).",
     scope: "crew",
     owner: "platform",
-    since: "0.33.0",
-    deprecates: ["CREW_SUBAGENT_INLINE_THRESHOLD (env)"]
+    since: "0.33.0"
   }
 } as const;
 

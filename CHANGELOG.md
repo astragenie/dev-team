@@ -5,6 +5,22 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.45.0 — 2026-06-22 — drop deprecated env-var metadata from features registry
+
+Cleanup pass: removes the `deprecates: [...env]` arrays from
+`cost-hygiene`, `shell-preflight`, and `subagent-inline-warn` feature
+metadata. The three env vars (`CREW_COST_HYGIENE`, `CREW_TOOL_PREFLIGHT`,
+`CREW_SUBAGENT_INLINE_THRESHOLD`) were deprecated in v0.38.0 / v0.33.x
+and have had zero live consumers in code or tests for multiple releases.
+Migration metadata kept for documentation was sufficient; the structural
+`deprecates` field is no longer earning its keep.
+
+Each feature's metadata `version` bumped 2.0.0 → 2.1.0 to mark the
+breaking metadata-removal (the field itself is optional, but external
+dashboards reading the registry will notice).
+
+No behavioral change. No consumer code change.
+
 ## v0.44.0 — 2026-06-22 — inspector-lite v1.1 + /crew:fix light path + retry loop
 
 ## v0.43.1 — 2026-06-22 — Fix: v0.43.0 release commit was missing refactor
