@@ -5,6 +5,8 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.42.1 — 2026-06-22 — dev-lite scope tightened (OpenAI review pass)
+
 ### Changed — dev-lite v1.0.0 → v1.1.0 (OpenAI code-review pass)
 
 - **`agents/dev-lite.md`** tightened per external review (8.5/10 → target 9.5+):
