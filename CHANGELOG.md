@@ -5,6 +5,10 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.45.1 — 2026-06-22 — investigator vs researcher routing fix (recovers broken v0.44.1)
+
+v0.44.1 release commit was made before the underlying refactor merged into main (same bash-chain exit-code masking bug that caused the v0.43.0 incident — `| tail -3` swallows non-zero exit, `## [Unreleased]## [Unreleased]` chain continued past the failed merge). v0.45.1 ships the same intended content with the actual refactor merged in via 7-file merge commit. Tag v0.44.1 remains as broken-history audit trail per HARD RULE "Never delete tags".
+
 ## v0.44.1 — 2026-06-22 — investigator vs researcher routing fix
 
 ## v0.45.0 — 2026-06-22 — drop deprecated env-var metadata from features registry
