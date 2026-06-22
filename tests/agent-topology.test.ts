@@ -30,10 +30,11 @@ const EXPECTED_AGENTS = new Set([
   "qa-expert",
   "performance-engineer",
   "investigator",
-  "inspector-verifier",
+  "inspector-lite",
   "document-writer",
   "aiplugin-dev",
-  "c-sharp-reviewer"
+  "c-sharp-reviewer",
+  "dev-lite"
 ]);
 
 /** Read `name:` from frontmatter. Returns null if absent. */

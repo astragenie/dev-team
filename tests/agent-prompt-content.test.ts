@@ -662,59 +662,39 @@ describe.skip("## HARD OUTPUT CONTRACT — Prong A coverage", () => {
     });
   });
 
-  describe("inspector-verifier (newly added)", () => {
-    const content = readAgent("inspector-verifier");
+  describe("inspector-lite (renamed from inspector-verifier, validation stripped)", () => {
+    const content = readAgent("inspector-lite");
     test("heading present", () => {
       assert.ok(
         content.includes(HARD_CONTRACT_HEADING),
-        "inspector-verifier.md missing HARD CONTRACT heading"
+        "inspector-lite.md missing HARD CONTRACT heading"
       );
     });
-    test("required preamble phrase", () => {
-      assert.ok(
-        hasPreamble(content),
-        "inspector-verifier.md missing LAST action/tool call before returning preamble"
-      );
-    });
-    test("narration + violation phrases", () => {
-      assert.ok(
-        content.includes(REQUIRED_NARRATION_PHRASE) && content.includes(REQUIRED_VIOLATION_PHRASE),
-        "inspector-verifier.md missing narration/contract-violation phrases"
-      );
-    });
-    test("role-specific: write-review-result keyword", () => {
+    test("write-review-result keyword present", () => {
       assert.ok(
         content.includes("write-review-result"),
-        "inspector-verifier.md HARD CONTRACT missing write-review-result keyword"
+        "inspector-lite.md HARD CONTRACT missing write-review-result keyword"
       );
     });
-    test("role-specific: write-validation-result keyword", () => {
+    test("no validation-result dispatch (validation moved to pre-push hook + /crew:ship)", () => {
       assert.ok(
-        content.includes("write-validation-result"),
-        "inspector-verifier.md HARD CONTRACT missing write-validation-result keyword"
+        !content.includes("write-validation-result"),
+        "inspector-lite.md must NOT call write-validation-result — validation belongs to verifier + hook"
       );
     });
-    test("FEAT-161 cite-back", () => {
-      assert.ok(
-        content.includes(FEAT_161_CITE),
-        "inspector-verifier.md missing FEAT-161 cite-back"
-      );
-    });
-    test("placement: after Custom instructions, before Workflow (tactical heading)", () => {
-      const customIdx = content.indexOf("## Custom instructions");
-      const contractIdx = content.indexOf(HARD_CONTRACT_HEADING);
-      const workflowIdx = content.indexOf("## Workflow");
-      assert.ok(contractIdx !== -1, "inspector-verifier.md HARD CONTRACT heading not found");
-      assert.ok(customIdx !== -1, "inspector-verifier.md missing Custom instructions section");
-      assert.ok(workflowIdx !== -1, "inspector-verifier.md missing Workflow heading");
-      assert.ok(
-        contractIdx > customIdx,
-        "inspector-verifier.md HARD CONTRACT must appear after Custom instructions"
-      );
-      assert.ok(
-        contractIdx < workflowIdx,
-        "inspector-verifier.md HARD CONTRACT must appear before Workflow"
-      );
+    test("no full validation gate (lint/format:check/tests/verify:all) inline", () => {
+      const validationMarkers = [
+        "bun run lint",
+        "bun run format:check",
+        "verify:all",
+        "parallel-gates.ts"
+      ];
+      for (const marker of validationMarkers) {
+        assert.ok(
+          !content.includes(marker),
+          `inspector-lite.md must NOT run validation gate inline; found "${marker}"`
+        );
+      }
     });
   });
 
@@ -994,46 +974,31 @@ describe.skip("## First action — Prong B coverage", () => {
     });
   });
 
-  describe("inspector-verifier (dual-stub)", () => {
-    const content = readAgent("inspector-verifier");
-    test("stub heading present", () => {
-      assert.ok(
-        content.includes(STUB_HEADING),
-        "inspector-verifier.md missing stub artifact heading"
-      );
-    });
+  describe("inspector-lite (single-stub — validation stripped in v0.41.x rename)", () => {
+    const content = readAgent("inspector-lite");
     test("--scaffold flag present", () => {
-      assert.ok(content.includes(SCAFFOLD_FLAG), "inspector-verifier.md missing --scaffold flag");
+      assert.ok(content.includes(SCAFFOLD_FLAG), "inspector-lite.md missing --scaffold flag");
     });
     test("--status in-progress present", () => {
       assert.ok(
         content.includes(STATUS_IN_PROGRESS),
-        "inspector-verifier.md missing --status in-progress"
+        "inspector-lite.md missing --status in-progress"
       );
     });
     test("--update flag present", () => {
-      assert.ok(content.includes(UPDATE_FLAG), "inspector-verifier.md missing --update flag");
+      assert.ok(content.includes(UPDATE_FLAG), "inspector-lite.md missing --update flag");
     });
-    test("role-specific: write-review-result command (dual)", () => {
+    test("write-review-result present", () => {
       assert.ok(
         content.includes("write-review-result"),
-        "inspector-verifier.md missing write-review-result"
+        "inspector-lite.md missing write-review-result"
       );
     });
-    test("role-specific: write-validation-result command (dual)", () => {
+    test("write-validation-result absent (validation moved to hook + ship)", () => {
       assert.ok(
-        content.includes("write-validation-result"),
-        "inspector-verifier.md missing write-validation-result"
+        !content.includes("write-validation-result"),
+        "inspector-lite.md must NOT call write-validation-result"
       );
-    });
-    test("FEAT-161 cite-back", () => {
-      assert.ok(
-        content.includes(FEAT_161_CITE),
-        "inspector-verifier.md missing FEAT-161 cite-back"
-      );
-    });
-    test("DEC-019 reference", () => {
-      assert.ok(content.includes(DEC_019), "inspector-verifier.md missing DEC-019 reference");
     });
   });
 
@@ -1228,7 +1193,7 @@ const NO_LEAD_AGENTS = [
   "frontend-dev",
   "aiplugin-dev",
   "inspector",
-  "inspector-verifier",
+  "inspector-lite",
   "verifier",
   "integrator",
   "release-engineer",
@@ -1240,7 +1205,9 @@ const NO_LEAD_AGENTS = [
   "performance-engineer",
   "uxdesigner",
   "parallel-runner",
-  "c-sharp-reviewer"
+  "c-sharp-reviewer",
+  "dev-lite",
+  "inspector-lite"
 ] as const;
 
 describe("No lead refs across active agents", () => {

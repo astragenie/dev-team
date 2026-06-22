@@ -5,6 +5,15 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+### Added — light-path agents (small-feature workflow)
+
+- **`agents/dev-lite.md`** — first-party port of cavecrew-builder pattern. Surgical 1-2 file edits: typos, renames, mechanical rewrites, format-preserving tweaks. Hard refuses 3+ files. Compressed diff receipt (no full handoff). Tools: `Read`, `Edit`, `Write`, `Grep`, `Glob`.
+- **`agents/inspector-lite.md`** — renamed from `inspector-verifier.md` with validation stripped. Fast code-review for light-path diffs (≤2 files, ≤50 lines, semantically trivial). Auto-loads stack skill from diff extensions (`.cs` → csharp-conventions, `.tsx` → react-engineering, `.ts` → typescript-pro). Returns `review_decision` only — validation now owned by pre-push hook + `/crew:ship` (no double-run).
+
+### Removed
+
+- **`agents/inspector-verifier.md`** — superseded by `inspector-lite`. The validation half belonged to the pre-v0.41.0 workflow where build ran validate inline; in v0.41.0 the verifier moved to the push gate, leaving the validation step a duplicate. Inspector-lite keeps the fast-review half only.
+
 ## v0.41.0 — 2026-06-22 — Lead agent hard cut + build/fix/ship workflow overhaul
 
 ### Added — build/fix/ship workflow overhaul
