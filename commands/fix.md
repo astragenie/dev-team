@@ -2,83 +2,93 @@
 description: Preferred short entry point for investigating and fixing broken behavior in the current repo.
 ---
 
-# Fix With The Lead Workflow
+# Fix — Dispatcher Workflow
 
-Act as the dispatcher for a debugging run with strong observability and bounded parallelism.
+You are the dispatcher for `/crew:fix`. Investigate first, then build and inspect per the routing table below.
 
 For what counts as "substantial" below, see the canonical definition in `constitution.md` (`What "Substantial" Means`).
 
-Workflow:
+## Phase order
 
-1. First verify the current workspace path:
+```
+workspace verify + wake-up brief
+   ↓
+crew:investigator  (root cause analysis, read-only)
+   ↓ investigator returns finding artifact
+specialist builder (FEAT tag → builder, same routing as /crew:build)
+   ↓ PASS (builder writes handoff)
+parallel fan-out — single Agent-tool message with N=2 invocations:
+   Inspector A (stack-specific)     Inspector B (generalist + lens)
+      diff has .cs → crew:c-sharp-reviewer   crew:inspector with lens chosen by FEAT concern:*
+      diff has .ts → crew:3rdparty:typescript-reviewer   concern:security → security
+      no stack match → SKIP A, B uses code-quality lens   concern:perf → performance
+   ↓                                         concern:correctness (default)
+   └──────────────────┬───────────────────────┘
+                      ↓ both review-result artifacts written
+   fix_complete (both approved / approved_with_notes)
+   if Inspector B next field names a tests-adequacy gap → dispatch crew:qa-expert
+```
+
+No verifier dispatch. Verifier defers to `/crew:ship`.
+
+## Builder routing table
+
+| FEAT tag                                            | Specialist          |
+|-----------------------------------------------------|---------------------|
+| stack:typescript + surface:ui                       | crew:frontend-dev   |
+| stack:typescript + surface:backend                  | crew:backend-dev    |
+| stack:typescript + surface:cross-layer              | crew:fullstack-dev  |
+| stack:typescript + surface:plugin                   | crew:aiplugin-dev   |
+| stack:csharp                                        | crew:backend-dev    |
+| no clear tag                                        | crew:fullstack-dev  |
+
+## Workflow
+
+1. Verify the current workspace path:
    - `pwd`
-2. Start by reading the repo wake-up brief:
+2. Read the repo wake-up brief:
    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" wake-up --repo "$PWD"`
-3. Explicitly confirm the returned `repoPath` matches the current working directory. If it does not, stop and correct the repo context before proceeding.
+3. Confirm the returned `repoPath` matches `$PWD`. If not, stop and correct repo context before proceeding.
    For substantial work, do not start implementation until this step is complete.
-4. Follow this phase order:
-   - frame
-   - investigate
-   - implement fix if needed
-   - review if code changed
-   - validate if the bug path or changed behavior can be exercised meaningfully
-   - synthesize
-5. Restate the bug and frame the task:
-   - current symptoms
+4. Dispatch `crew:investigator` (read-only, no file changes):
+   - Pass the bug description and any known repro path.
+   - Read the returned finding artifact in full before proceeding.
+5. Restate the root cause and frame the fix:
+   - confirmed root cause (from investigator finding)
    - expected behavior
-   - known evidence or likely repro path
-   - what is in scope
+   - fix scope (in scope / out of scope)
    - whether the work should stay whole or be split into bounded sub-tasks
-6. Choose one of:
-   - `single-session`
-   - `assisted single-session`
-   - `team run`
-7. If the investigation is substantial enough that future wake-up context will matter, immediately write a run brief with:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-run-brief --repo "$PWD" --title "<short title>" --goal "<goal>" --mode "<mode>"`
-8. If using `single-session`, do the investigation directly and do not spawn helpers.
-9. Use `assisted single-session` when a bounded helper can compare code paths, gather evidence, or validate a likely fix without becoming a communicating team.
-10. Use a `team run` only when multiple independent hypotheses or surfaces can be investigated in parallel.
-11. Typical `team run` split:
-   - researcher traces code paths and prior behavior
-   - builder attempts the smallest credible fix once the problem is clear
-   - reviewer checks the code change for regression risk and test coverage
-   - validator exercises the bug path and expected behavior when it can be run
-12. Use claims only when multiple people may touch overlapping files, and use approvals only for destructive or scope-expanding decisions.
-   - Set a `size` on each dispatched task: use `size: light` for trivial tasks (one-line fixes, typo corrections, variable renames) — a light-close skips the `write-handoff` artifact but the teammate still returns the structured completion message. Use `size: standard` (default) for anything substantive — these REQUIRE a `write-handoff` artifact. Light is for noise reduction on trivial work; do not use it to skip audit trail on substantive changes.
-13. Require every teammate or helper to report scope, deliverable, evidence, risks, confidence, and next handoff.
-   After a subagent completes, read its full report from the artifact path it returned (via `Read` on the handoff path). Do NOT treat the inline return as the full report — agents return only path + headline by contract.
-14. If the work produces a code fix, make that code-bearing change independently reviewable. Review should happen before the fix is treated as complete.
-15. Substantial non-code deliverables should normally be reviewed before being treated as done.
-16. For code fixes, independent review is the default. When code work is complete and waiting for review, record that gate in workflow state:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge review_required`
-17. If you skip review, say so explicitly and record it in workflow state with a reason:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge review_skipped --note "<reason>"`
-18. When a helper or teammate returns meaningful evidence or ownership changes, write a handoff artifact if the run is substantial:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff --repo "$PWD" --title "<short title>" --from <role> --to dispatcher --summary "<headline>" --scope "<in scope>" --deliverable "<what shipped>" --files "<changed files>" --confidence "<high|medium|low>" --risks "<risks or none>" --next "<next handoff or none>"`
-19. When review materially checks the bug fix, write a review artifact immediately before you move on:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result --repo "$PWD" --title "<short title>" --decision <PASS|FAIL> --summary "<verdict>" --evidence "<files checked>" --files "<files in diff>" --test-summary "<test coverage>" --risks "<risks or none>" --next "<follow-up or none>"`
-20. If the bug path or changed behavior can be exercised meaningfully, run validation after review. When validation is expected, record that gate in workflow state:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge validation_expected`
-21. When the scenario is substantial enough to preserve, write a validation plan:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-validation-plan --repo "$PWD" --title "<short title>" ...`
-22. If you skip validation, say so explicitly and record it in workflow state with a reason:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge validation_skipped --note "<reason>"`
-23. When a validator materially checks behavior, write a validation artifact immediately before you move on:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-validation-result --repo "$PWD" --title "<short title>" ...`
-24. End with:
-   - likely root cause
-   - evidence
-   - fix status
-   - what was reviewed
-   - what was validated
-   - residual risk
+6. If the task is substantial enough that future wake-up context will matter, write a run brief:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-run-brief --repo "$PWD" --title "<short title>" --goal "<goal>" --mode "team run"`
+7. Pick the specialist builder from the routing table above and dispatch via the `Agent` tool.
+   - Set `size: standard` for substantive changes (requires `write-handoff` artifact).
+   - Set `size: light` only for trivial one-line fixups (skips artifact, but builder still returns structured completion).
+   - If this run references a design doc, pass the design doc path to the builder.
+8. After the builder returns PASS, write a handoff artifact if the run is substantial:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff --repo "$PWD" --title "<short title>" --from builder --to dispatcher --summary "<headline>" --scope "<in scope>" --deliverable "<what shipped>" --files "<changed files>" --confidence "<high|medium|low>" --risks "<risks or none>" --next "inspector fan-out"`
+9. Fan out two inspectors in a **single Agent-tool message** (parallel dispatch):
+   - **Inspector A** — stack-specific reviewer (see phase order diagram above for routing; skip A if no stack match).
+   - **Inspector B** — `crew:inspector` with lens from FEAT concern tag (default: `correctness`).
+   - Pass the builder handoff artifact path to both inspectors.
+10. After both inspector artifacts land, write a review result for each:
+    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result --repo "$PWD" --title "<short title>" --decision <PASS|FAIL> --summary "<verdict>" --evidence "<files checked>" --files "<files in diff>" --test-summary "<test coverage>" --risks "<risks or none>" --next "<follow-up or none>"`
+11. If either inspector returns `rejected`, stop. Surface the findings to the user. Do not emit `fix_complete`.
+12. If Inspector A is skipped, `fix_complete` requires only Inspector B to approve.
+13. If both approved (or `approved_with_notes`), emit the completion badge:
+    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge fix_complete`
+14. Check Inspector B's `next` field. If it names a tests-adequacy gap, dispatch `crew:qa-expert`:
+    - Pass the finding artifact and the changed files list.
+    - Wait for `crew:qa-expert` to return before closing the run.
+15. End with a clear synthesis for the user:
+    - confirmed root cause
+    - what changed
+    - what was reviewed (Inspector A / B decisions)
+    - residual risk
+    - what happens next (e.g. `/crew:ship` when ready)
     Use this pre-done checkpoint before you call the fix complete:
     - did code change?
-    - if yes, is review resolved or explicitly skipped?
-    - if no, did a substantial non-code deliverable still get an appropriate review or explicit skip?
-    - did the bug path or changed behavior get exercised?
-    - if yes, is validation resolved or explicitly skipped?
+    - if yes, did both inspectors resolve (or A skipped + B approved)?
     - did the run leave the artifact trail it should?
-25. For substantial work, write a final synthesis artifact:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-final-synthesis --repo "$PWD" --title "<short title>" --summary "<summary>" --external-deltas "<off-repo changes required, or 'none'>"`
-   - The CLI rejects missing `--external-deltas`. Enumerate sibling-config changes the fix depends on (env var renames in deploy manifests, terraform/helm updates, sibling-repo PRs, feature flags, DB migrations, IAM). Pass `--external-deltas none` explicitly if there are none. A silent default is how renamed env vars silently fall back to old defaults in prod.
+16. For substantial work, write a final synthesis artifact:
+    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-final-synthesis --repo "$PWD" --title "<short title>" --summary "<summary>" --external-deltas "<off-repo changes required, or 'none'>"`
+    - The CLI rejects missing `--external-deltas`. Enumerate sibling-config changes the fix depends on. Pass `--external-deltas none` explicitly if there are none.

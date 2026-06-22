@@ -17,10 +17,32 @@ Routing table (inline):
 | stack:csharp                                        | crew:backend-dev    |
 | no clear tag                                        | crew:fullstack-dev  |
 
-After the builder returns PASS:
-1. Dispatch `crew:inspector` for review.
-2. If the change is runnable, dispatch `crew:verifier` for behavior validation.
-3. Run `/crew:ship` gates only on explicit user approval.
+After the builder returns PASS — parallel inspector fan-out:
+
+Dispatch Inspector A and Inspector B in a **single Agent-tool message** (two parallel invocations):
+
+**Inspector A — stack-specific reviewer:**
+- diff contains `.cs` files → `crew:c-sharp-reviewer`
+- diff contains `.ts` files (no `.cs`) → `crew:3rdparty:typescript-reviewer`
+- no stack reviewer matches → **SKIP A** (no dispatch); promote B to `code-quality` lens
+
+**Inspector B — generalist + lens:**
+Always dispatched as `crew:inspector` with lens derived from FEAT concern tag:
+- `concern:security` → `security` lens
+- `concern:perf` → `performance` lens
+- no concern tag or `concern:correctness` → `correctness` lens (default)
+- when A is skipped → `code-quality` lens
+
+After both (or only B when A skipped) return their review-result artifacts:
+- Any `rejected` decision → stop; escalate to user with the artifact path(s) and findings
+- Both `approved` or `approved_with_notes` (or only B approved when A skipped):
+  ```
+  node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge build_complete
+  node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge inspected
+  ```
+- When A was skipped, `build_complete` requires only Inspector B to approve.
+
+Run `/crew:ship` gates only on explicit user approval.
 
 For what counts as "substantial" below, see the canonical definition in `constitution.md` (`What "Substantial" Means`).
 

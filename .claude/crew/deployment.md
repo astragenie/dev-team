@@ -5,9 +5,9 @@ This plugin has no server, no container, and no hosted runtime.
 
 ## Settings
 
-- `dev.stable: true` — lead, builder, and validator MAY create local commits without per-edit user approval. Releases (tags, production promotion) remain manual and user-triggered.
+- `dev.stable: true` — the dispatcher, builder, and verifier MAY create local commits without per-edit user approval. Releases (tags, production promotion) remain manual and user-triggered.
 
-  When `dev.stable: true` is set, the lead and builder MAY create commits without asking after each edit,
+  When `dev.stable: true` is set, the dispatcher and builder MAY create commits without asking after each edit,
   provided ALL of the following hold:
   - the change came from a `/crew:build` flow, a `/crew:fix` flow, **or** the autonomous loop's `slice-build`
     flow (the `slice-build` path was a known gap per the SLICE-104 audit notes, resolved in FEAT-163 SLICE-D)
@@ -16,7 +16,7 @@ This plugin has no server, no container, and no hosted runtime.
   - no `help_request` workflow badge is open
   - the work is local commits only — not a release tag, not a force-push, not a production deploy
 
-  See `agents/deployer.md` → Deployment guidance schema for the authoritative field definition.
+  See `agents/release-engineer.md` → Deployment guidance schema for the authoritative field definition.
   Production promotion, tag pushes, and force-pushes are NEVER unlocked by `dev.stable`.
 
 ## Prerequisites
@@ -66,3 +66,5 @@ To pick up a loop release: bump that version and commit under `chore(marketplace
 - Never force-push `main`. Never delete tags. Never skip hooks.
 - Never publish a release with failing CI, even locally green.
 - No auto-publish hook; releases are user-triggered.
+
+- `ship.fix_retry_limit: <N>` — `/crew:ship` auto-fix loop retry cap. Default 2 if absent. Raises bound for repos with flaky QA / verifier dispatches. Hard cap: 5.

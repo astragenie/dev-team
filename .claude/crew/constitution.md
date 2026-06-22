@@ -14,7 +14,7 @@ This repository uses the Engineering OS harness for structured software work ins
 
 ## Team Roles
 
-- lead: planning, delegation, synthesis
+- dispatcher (concept, not agent): planning, delegation, synthesis via /crew:build · /crew:fix · /crew:ship
 - builder: bounded implementation
 - reviewer: independent change review
 - validator: behavior and scenario verification
@@ -25,7 +25,7 @@ This repository uses the Engineering OS harness for structured software work ins
 
 As of FEAT-163 (DEC-022, DEC-023), 10 agents carry the `Agent` tool and may dispatch peers within a declared whitelist. Peer dispatch is opt-in and scoped: each agent's `## Peer dispatch` section names exactly which peers it may call and which it must never call.
 
-Review and validation gates (`crew:inspector`, `crew:inspector-verifier`, `crew:verifier`) remain orchestrator-only per the hard rule in FEAT-163 line 40. No agent may dispatch its own reviewer. The loop walker (autonomous path) or the lead (interactive path) dispatches review and validation gates after the builder's handoff lands.
+Review and validation gates (`crew:inspector`, `crew:inspector-verifier`, `crew:verifier`) remain orchestrator-only per the hard rule in FEAT-163 line 40. No agent may dispatch its own reviewer. The loop walker (autonomous path) or the slash command (interactive path) dispatches review and validation gates after the builder's handoff lands.
 
 Lead-as-sole-orchestrator remains supported for the interactive `/crew:build` path. The autonomous loop uses `slice-build` dispatch (lives in `src/scripts/lib/slice-linker/dispatch.mts`) as the live orchestrator — peer dispatch reduces the orchestrator's routing burden by letting each agent fetch upstream dependencies and hand off downstream artifacts without a central relay.
 

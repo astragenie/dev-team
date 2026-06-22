@@ -6,7 +6,7 @@
 2. retrieve bounded wake-up context before substantial work
 3. choose mode: single-session, assisted single-session, or team run
 4. define task ownership and scope
-5. **architect phase** _(conditional — skip if no ADR / system design / schema / API contract is needed)_ — produces ADR or design artifact before implementation starts; lead decides at framing time
+5. **architect phase** _(conditional — skip if no ADR / system design / schema / API contract is needed)_ — produces ADR or design artifact before implementation starts; the dispatcher decides at framing time
 6. **uxdesigner phase** _(conditional — skip if no UI surface)_ — produces flow spec or component hierarchy before implementation starts
 7. implement or investigate in bounded chunks
 8. review code-bearing work before calling it done

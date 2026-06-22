@@ -5,6 +5,19 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+### Added — build/fix/ship workflow overhaul
+
+- **`commands/build.md`** — append parallel inspector fan-out: Inspector A (stack-specific: `crew:c-sharp-reviewer` for `.cs`, `crew:3rdparty:typescript-reviewer` for `.ts`) + Inspector B (`crew:inspector` with lens from FEAT `concern:*` tag). Verifier removed from build flow.
+- **`commands/fix.md`** — full rewrite to investigator-first flow: `crew:investigator` (root cause) → specialist builder (per FEAT-tag routing) → parallel inspector fan-out → `mark-badge fix_complete`. QA dispatched only if Inspector B raises a test-coverage finding. Verifier removed from fix flow.
+- **`commands/ship.md`** — full rewrite to parallel QA+verifier with auto-fix loop: dispatch `crew:qa-expert` + `crew:verifier` in single parallel Agent-tool message → aggregate → both PASS files PR via `gh pr create`; either FAIL dispatches specialist builder to fix → retry counter (bounded by `ship.fix_retry_limit` in `.claude/crew/deployment.md`, default N=2) → `ship_blocked` badge on N exhausted.
+- **`hooks/pre-push-verifier.ts`** — new hook. Registered on `PreToolUse` filtered to `Bash` commands matching `git push` / `gh pr create`. Cache hit when `.claude/artifacts/crew/validations/*.md` shows recent PASS; else blocks push with stderr message naming the failing artifact.
+- **`agents/c-sharp-reviewer.md`** — promoted from `agents/3rdparty/` to first-party. Adjusted frontmatter to crew shape (prompt_id, version, model_pinned, evals, effort, maxTurns, maxLines, color, disallowedTools). Added HARD OUTPUT CONTRACT (scaffold-on-entry + scoped LAST-action) and approval policy.
+- **New badges:** `build_complete`, `inspected`, `fix_complete`, `qa_passed`, `verifier_passed`, `pr_filed`, `ship_blocked`.
+- **`.claude/crew/deployment.md`** — added `ship.fix_retry_limit` config row (default 2, hard cap 5).
+- **`.claude/crew/lead.md`** removed (stale local override for the deleted lead agent).
+
+Per `docs/superpowers/specs/2026-06-22-build-fix-ship-overhaul-design.md`.
+
 ### Removed — lead agent (hard cut)
 
 - **`agents/lead.md` deleted** along with `agents/3rdparty/backup/lead.md` and `evals/agents/crew-lead.yaml`. There is no `lead` agent anymore. Orchestration is a concept (the slash command + main thread), not a callable role.
