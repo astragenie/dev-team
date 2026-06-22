@@ -1,6 +1,6 @@
 {
   "name": "crew",
-  "version": "0.39.0",
+  "version": "0.40.0",
   "description": "A lead-guided engineering workflow plugin for Claude Code with bounded subagents, quality gates, and inspectable handoffs.",
   "author": {
     "name": "astra"
