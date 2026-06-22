@@ -331,7 +331,8 @@ const NO_BACKLOG_IDS_REQUIRED = new Set([
   "backend-dev",
   "frontend-dev",
   "fullstack-dev",
-  "aiplugin-dev"
+  "aiplugin-dev",
+  "inspector"
 ]);
 
 function checkNoBacklogIds(

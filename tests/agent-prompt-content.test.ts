@@ -597,8 +597,21 @@ describe.skip("## HARD OUTPUT CONTRACT — Prong A coverage", () => {
         "inspector.md HARD CONTRACT missing write-review-result keyword"
       );
     });
-    test("FEAT-161 cite-back", () => {
-      assert.ok(content.includes(FEAT_161_CITE), "inspector.md missing FEAT-161 cite-back");
+    test("no backlog ids (FEAT-NNN / DEC-NNN / SLICE-NN)", () => {
+      const ids = content.match(/\b(FEAT-\d+|DEC-\d+|SLICE-\d+)\b/g);
+      assert.ok(!ids || ids.length === 0, `inspector.md must not contain backlog ids; found: ${ids?.join(", ")}`);
+    });
+    test("no 'lead' caller assumption (peer-dispatch: orchestrator may not be crew:lead)", () => {
+      // Strip frontmatter (between first two ---) before checking
+      const body = content.replace(/^---[\s\S]*?---\n/, "");
+      const matches = body.match(/\bthe lead\b|\bto the lead\b|\bby the lead\b/gi);
+      assert.ok(!matches || matches.length === 0, `inspector.md must not assume caller is 'lead'; found: ${matches?.join(", ")}`);
+    });
+    test("SLICE_BASE fallback — uses git merge-base, not fixed HEAD~1", () => {
+      assert.ok(
+        content.includes("git merge-base"),
+        "inspector.md SLICE_BASE computation must use git merge-base, not hardcoded HEAD~1"
+      );
     });
     test("placement before first tactical heading", () => {
       const contractIdx = content.indexOf(HARD_CONTRACT_HEADING);
