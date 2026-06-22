@@ -368,7 +368,8 @@ const NO_LEAD_REF_REQUIRED = new Set([
   "qa-expert",
   "performance-engineer",
   "uxdesigner",
-  "parallel-runner"
+  "parallel-runner",
+  "c-sharp-reviewer"
 ]);
 
 function checkNoLeadRef(

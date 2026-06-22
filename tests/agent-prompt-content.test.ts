@@ -1239,7 +1239,8 @@ const NO_LEAD_AGENTS = [
   "qa-expert",
   "performance-engineer",
   "uxdesigner",
-  "parallel-runner"
+  "parallel-runner",
+  "c-sharp-reviewer"
 ] as const;
 
 describe("No lead refs across active agents", () => {
