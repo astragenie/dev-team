@@ -5,6 +5,8 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.46.0 — 2026-06-22 — typescript-reviewer first-party promotion
+
 ### Changed — typescript-reviewer promoted to first-party
 
 - **`agents/3rdparty/typescript-reviewer.md` → `agents/typescript-reviewer.md`** — mirrors the c-sharp-reviewer promotion pattern (v0.41.0). Adjusted frontmatter to crew shape (prompt_id, version, model_pinned, evals, effort, maxTurns, maxLines, color, disallowedTools).
