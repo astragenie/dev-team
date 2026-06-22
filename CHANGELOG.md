@@ -5,6 +5,8 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.42.2 — 2026-06-22 — dev-lite v1.2 + atomic commit rule
+
 ### Changed — dev-lite v1.1.0 → v1.2.0 (OpenAI second review pass)
 
 - **PRECHECK section** added at top of agent body. Before any `Read`/`Edit`, inspect dispatch prompt + `git status` + `git diff --stat` and refuse early if scope obviously doesn't fit. Saves wasted reads/edits on mis-routed dispatches.
