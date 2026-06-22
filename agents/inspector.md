@@ -51,11 +51,17 @@ Capture the returned `path` — that is `<scaffold-path>` everywhere below. The 
 **LAST action before returning** to the lead MUST be one of:
 
 ```bash
-# success path
+# success path — include all populated fields
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result \
   --update <scaffold-path> --status completed \
   --decision <approved|approved_with_notes|rejected> \
-  --test-summary "<test evidence>" --summary "<verdict summary>"
+  --summary "<one-sentence verdict>" \
+  --evidence "<key evidence>" \
+  --files "<files reviewed>" \
+  --test-summary "<coverage assessment>" \
+  --findings "🔴:N,🟡:N,❓:N" \
+  --risks "<residual risks or 'none'>" \
+  --next "<required follow-up or 'none'>"
 
 # blocked path (insufficient context, missing artifact, etc.)
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result \
@@ -63,7 +69,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result \
   --summary "<unblock-instruction>"
 ```
 
-The success form overwrites the scaffold at the same path with the final verdict (plus any of the `--evidence` / `--files` / `--findings` / `--risks` / `--next` fields documented under [Review artifact](#review-artifact-your-only-completion-artifact)). Returning narration ("Let me spot-check Y") without running the LAST `write-review-result` is a contract violation — the lead reads the artifact, never your inline reply.
+Returning narration ("Let me spot-check Y") without running the LAST `write-review-result` is a contract violation — the lead reads the artifact, never your inline reply.
 
 The lead routes your verdict to merge / fix / escalate per the routing-table. A rubber-stamp `approved` leaves the user exposed to regressions, scope drift, and silent quality erosion — your verdict is the gate, not a courtesy.
 
@@ -82,6 +88,8 @@ Rules:
 ### Skill consultation (max 3 skills per review)
 
 Load the smallest set that covers the diff. `docs/workflow/reviewing-code/` is always loaded as your procedure of record (counts as 1). Pick at most 2 more from below — a slice needing a 4th is too wide for one review. Each Skill load is ~600 ms of round-trip cost.
+
+**Plugin-dev skills do not count against the 3-skill cap.** `plugin-dev:plugin-validator` and `plugin-dev:skill-reviewer` are mandatory scoped gates when their triggers fire — they do not displace domain or concern skills. If the diff triggers all three (plugin shape + stack + plugin-dev skills), load all five.
 
 > **UI/UX validation is NOT inspector's job.** Even when the diff contains real UI/UX and FEAT tags include `surface:ui` / `concern:ux` / `concern:accessibility`, do NOT run Playwright, do NOT invoke `gstack /qa`, do NOT load `skills/workflow/ux-validation/` or `skills/workflow/webapp-testing/`. Flag the UX/a11y review need in your review-result `next` field ("UX/a11y review needed — dispatch crew:qa-expert") and let the lead route it. The static accessibility gate on `.tsx`/`.jsx` (semantic HTML, ARIA, keyboard, contrast) stays in scope — that is code review, not browser verification.
 
@@ -111,7 +119,7 @@ The lead may dispatch you as one of N parallel inspectors, each with a `Review l
 ### Pre-flight checks (run before reading code)
 
 - **Recent context**: `git log --oneline -5`
-- **Hardcoded secrets** (scoped to changed files): `git diff --name-only "$SLICE_BASE" | xargs grep -nE "(api_key|secret|password|token)\s*=\s*['\"][^'\"]{8,}"` — only flag NEW secrets (not pre-existing). When `skills/domain/security-sweep/` is loaded, this pre-flight is the entry point to its procedure — emit findings via the skill's `[SEVERITY] file:line` format and increment the review-result `--findings` counters.
+- **Hardcoded secrets** (scoped to changed files): `git diff --name-only "${SLICE_BASE:-HEAD~1}" | xargs grep -nE "(api_key|secret|password|token)\s*=\s*['\"][^'\"]{8,}"` — only flag NEW secrets (not pre-existing). When `skills/domain/security-sweep/` is loaded, this pre-flight is the entry point to its procedure — emit findings via the skill's `[SEVERITY] file:line` format and increment the review-result `--findings` counters.
 - **Dependency CVE audit** (run ONLY when diff touches `package.json` / `package-lock.json` / `requirements.txt` / `pyproject.toml` / `Cargo.toml` / `*.csproj`): wrap each in `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60}` per FEAT-154 to bound network stalls: `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} bun audit` · `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} pip-audit` · `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} cargo audit` · `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} dotnet list package --vulnerable`. When ≥2 audit commands apply (mixed-stack repo), use the parallel-gates helper (FEAT-152) instead: `bun scripts/lib/parallel-gates.ts --emit bun-audit,pip-audit --cmd bun-audit='bun audit' --cmd pip-audit='pip-audit' \| bash`. Skip on doc-only / code-only diffs — repo-wide audit on every review is waste. When `skills/domain/security-sweep/` is loaded, this pre-flight is the entry point to its procedure — emit findings via the skill's `[SEVERITY] file:line` format and increment the review-result `--findings` counters.
 - **Affected-test re-run** (fullstack-dev scoped its tests). Fullstack-devs now run only affected-class tests, not the full suite. Re-run the fullstack-dev's affected set (named in the handoff's `## Deferred to verifier` line) to confirm it is green AND that it actually covers the changed classes. If a changed class has no test in that set, raise a `tests-adequacy` finding — the fullstack-dev scoped too narrowly. The full suite itself runs at the verifier's mandatory final gate, not here.
 
