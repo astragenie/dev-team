@@ -217,3 +217,27 @@ test("readCrewConfig: complex nested config → preserves structure", async () =
     await fs.rm(tmpDir, { recursive: true, force: true });
   }
 });
+
+// registry-default tests
+
+test("isEnabled: unknown feature not in registry → defaults to true", () => {
+  const result = isEnabled("test-feature", { features: {} });
+  assert.equal(result, true);
+});
+
+test("isEnabled: push-verify not in config → defaults to false (registry default)", () => {
+  const result = isEnabled("push-verify", { features: {} });
+  assert.equal(result, false);
+});
+
+test("isEnabled: push-verify explicitly enabled in config → true", () => {
+  const result = isEnabled("push-verify", {
+    features: { "push-verify": { enabled: true } }
+  });
+  assert.equal(result, true);
+});
+
+test("isEnabled: push-verify no config at all → defaults to false (registry default)", () => {
+  const result = isEnabled("push-verify", null);
+  assert.equal(result, false);
+});

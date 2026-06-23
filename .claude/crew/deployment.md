@@ -7,7 +7,7 @@ This plugin has no server, no container, and no hosted runtime.
 
 - `dev.stable: true` — the dispatcher, builder, and verifier MAY create local commits without per-edit user approval. Releases (tags, production promotion) remain manual and user-triggered.
 
-- `push.verify: false` — disables the `crew:pre-push-verifier` hook for this repo. Use in plugin source repos (hero-crew, loop) where releases go through `release-engineer` instead of `/crew:ship`, so no PASS validation artifact is written before the push.
+- `push.verify: false` — disables the `crew:pre-push-verifier` hook for this repo even when the `push-verify` feature is enabled globally via `crew.json`. Use when a repo's release path does not go through `/crew:ship` (e.g. `release-engineer` path in plugin source repos).
 
   When `dev.stable: true` is set, the dispatcher and builder MAY create commits without asking after each edit,
   provided ALL of the following hold:

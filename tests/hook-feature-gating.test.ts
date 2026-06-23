@@ -12,6 +12,7 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const CHECK_REDUNDANT_READ_PATH = path.join(__dirname, "..", "hooks", "check-redundant-read.ts");
 const CHECK_SUBAGENT_RETURN_PATH = path.join(__dirname, "..", "hooks", "check-subagent-return.ts");
 const PREFLIGHT_SHELL_PATH = path.join(__dirname, "..", "hooks", "preflight-shell.ts");
+const PRE_PUSH_VERIFIER_PATH = path.join(__dirname, "..", "hooks", "pre-push-verifier.ts");
 
 async function makeRepo() {
   return await fs.mkdtemp(path.join(os.tmpdir(), "hook-gating-test-"));
@@ -409,6 +410,139 @@ test("check-redundant-read: cost-hygiene feature disabled → no warn/no state (
     } catch (err) {
       // Expected: file does not exist
     }
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// pre-push-verifier.ts feature gating
+// ──────────────────────────────────────────────────────────────────────────
+
+test("pre-push-verifier: feature disabled (default, no crew.json) → push allowed", async () => {
+  const repo = await makeRepo();
+  try {
+    const payload = JSON.stringify({
+      session_id: "test_push_disabled",
+      tool_name: "Bash",
+      tool_input: { command: "git push origin main" },
+      cwd: repo
+    });
+    const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.stdout, "");
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+test("pre-push-verifier: feature disabled explicitly in crew.json → push allowed", async () => {
+  const repo = await makeRepo();
+  try {
+    const crewDir = path.join(repo, ".claude");
+    await fs.mkdir(crewDir, { recursive: true });
+    await fs.writeFile(
+      path.join(crewDir, "crew.json"),
+      JSON.stringify({ features: { "push-verify": { enabled: false } } }),
+      "utf8"
+    );
+    const payload = JSON.stringify({
+      session_id: "test_push_explicit_off",
+      tool_name: "Bash",
+      tool_input: { command: "git push origin main" },
+      cwd: repo
+    });
+    const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.stdout, "");
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+test("pre-push-verifier: feature enabled + no PASS artifact → push blocked", async () => {
+  const repo = await makeRepo();
+  try {
+    const crewDir = path.join(repo, ".claude");
+    await fs.mkdir(crewDir, { recursive: true });
+    await fs.writeFile(
+      path.join(crewDir, "crew.json"),
+      JSON.stringify({ features: { "push-verify": { enabled: true } } }),
+      "utf8"
+    );
+    const payload = JSON.stringify({
+      session_id: "test_push_enabled_no_artifact",
+      tool_name: "Bash",
+      tool_input: { command: "git push origin main" },
+      cwd: repo
+    });
+    const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
+    assert.equal(result.exitCode, 0);
+    assert.notEqual(result.stdout, "");
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.decision, "block");
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+test("pre-push-verifier: feature enabled + PASS artifact within 1h → push allowed", async () => {
+  const repo = await makeRepo();
+  try {
+    const crewDir = path.join(repo, ".claude");
+    await fs.mkdir(crewDir, { recursive: true });
+    await fs.writeFile(
+      path.join(crewDir, "crew.json"),
+      JSON.stringify({ features: { "push-verify": { enabled: true } } }),
+      "utf8"
+    );
+    const validationsDir = path.join(crewDir, "artifacts", "crew", "validations");
+    await fs.mkdir(validationsDir, { recursive: true });
+    await fs.writeFile(
+      path.join(validationsDir, "20991231T235959Z-pass.md"),
+      "# Validation\n\nDecision: passed\n",
+      "utf8"
+    );
+    const payload = JSON.stringify({
+      session_id: "test_push_enabled_pass",
+      tool_name: "Bash",
+      tool_input: { command: "git push origin main" },
+      cwd: repo
+    });
+    const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.stdout, "");
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+test("pre-push-verifier: feature enabled + deployment.md push.verify:false → push allowed", async () => {
+  const repo = await makeRepo();
+  try {
+    const crewDir = path.join(repo, ".claude");
+    await fs.mkdir(crewDir, { recursive: true });
+    await fs.writeFile(
+      path.join(crewDir, "crew.json"),
+      JSON.stringify({ features: { "push-verify": { enabled: true } } }),
+      "utf8"
+    );
+    const crewMdDir = path.join(crewDir, "crew");
+    await fs.mkdir(crewMdDir, { recursive: true });
+    await fs.writeFile(
+      path.join(crewMdDir, "deployment.md"),
+      "## Settings\n\n- `push.verify: false` — repo opted out\n",
+      "utf8"
+    );
+    const payload = JSON.stringify({
+      session_id: "test_push_deployment_opt_out",
+      tool_name: "Bash",
+      tool_input: { command: "git push origin main" },
+      cwd: repo
+    });
+    const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.stdout, "");
   } finally {
     await cleanup(repo);
   }

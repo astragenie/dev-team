@@ -51,6 +51,15 @@ export const FEATURES: Readonly<Record<string, FeatureMeta>> = {
     scope: "crew",
     owner: "platform",
     since: "0.33.0"
+  },
+  "push-verify": {
+    version: "1.0.0",
+    default: false,
+    description:
+      "Gate git push and gh pr create behind a PASS validation artifact written within the last hour. Opt out per-repo via deployment.md `push.verify: false`. Enable via crew.json features['push-verify'].enabled=true.",
+    scope: "crew",
+    owner: "safety",
+    since: "0.46.1"
   }
 } as const;
 
@@ -96,7 +105,7 @@ export function isEnabled(feature: string, config: unknown): boolean {
     "enabled" in config.features[feature as never] &&
     typeof (config.features[feature as never] as Record<string, unknown>).enabled === "boolean"
       ? (config.features[feature as never] as Record<string, unknown>).enabled === true
-      : true;
+      : (FEATURES[feature as FeatureName]?.default ?? true);
 
   // Emit a diagnostic line on stderr (NOT stdout) so machine-readable CLI
   // JSON output stays clean. Mirrors dispatch-trace.mts's stderr convention.

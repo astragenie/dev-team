@@ -10,11 +10,15 @@
 // the push is allowed. If none exists, it blocks. The /crew:ship command runs
 // crew:verifier before pushing, which writes the artifact this hook reads.
 //
-// Default-ON; opt out via CREW_PUSH_VERIFY=0.
+// Default-OFF; enable via crew.json features["push-verify"].enabled=true.
+// Per-repo opt-out (when globally enabled): deployment.md `push.verify: false`.
+// Emergency bypass: CREW_PUSH_VERIFY=0 in the shell that launched Claude Code,
+// or `! CREW_PUSH_VERIFY=0 git push` to run directly in the terminal.
 import fs from "node:fs/promises";
 import type { Dirent } from "node:fs";
 import path from "node:path";
 import { logHookError } from "./hook-error.ts";
+import { readCrewConfig, isEnabled } from "../scripts/lib/features-service.ts";
 
 const CACHE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
@@ -137,6 +141,9 @@ async function main(): Promise<void> {
 
   if (!isPushCommand(input.command)) return; // not a push — pass through
 
+  const config = await readCrewConfig(input.cwd);
+  if (!isEnabled("push-verify", config)) return; // feature disabled (default) — pass through
+
   if (await isVerifyDisabledInDeployment(input.cwd)) return; // repo opted out via push.verify: false
 
   const scan = await scanValidationArtifacts(input.cwd);
@@ -157,7 +164,8 @@ async function main(): Promise<void> {
     artifactHint +
     `\n  Run /crew:ship (dispatches crew:verifier + QA before pushing) or` +
     `\n  dispatch crew:verifier manually, then retry the push.` +
-    `\n  To bypass: set CREW_PUSH_VERIFY=0 in your shell.`;
+    `\n  To disable this gate: set features["push-verify"].enabled=false in .claude/crew.json` +
+    `\n  or run \`! CREW_PUSH_VERIFY=0 git push\` directly in your terminal.`;
 
   process.stderr.write(message + "\n");
   process.stdout.write(

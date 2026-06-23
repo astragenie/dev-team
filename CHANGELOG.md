@@ -5,6 +5,22 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.46.2 — 2026-06-23 — push-verify feature flag (default OFF)
+
+### Changed — pre-push-verifier wrapped in crew.json feature flag
+
+- **`scripts/lib/features-service.ts`** — `push-verify` feature registered (`default: false`, scope `safety`, since `0.46.1`). `isEnabled` fallback now consults `FEATURES[name].default` instead of hard-coding `true`, so features can declare default-OFF without requiring explicit config.
+- **`hooks/pre-push-verifier.ts`** — reads `crew.json` features gate on startup; if `push-verify` is disabled (the default), passes through immediately. Block message updated: directs users to `crew.json` or `! CREW_PUSH_VERIFY=0 git push` instead of the misleading shell env-var instruction.
+- **`.claude/crew/deployment.md`** — `push.verify: false` description generalized (not astra-only; any repo can use it to opt out when the feature is enabled globally).
+- **`tests/features-service.test.ts`** — 4 new tests covering registry-default lookup (unknown feature → true, push-verify → false, explicit enable → true, null config → false).
+- **`tests/hook-feature-gating.test.ts`** — 5 new tests for pre-push-verifier gating (disabled default, explicit off, enabled+no artifact→block, enabled+PASS artifact→allow, enabled+deployment.md opt-out→allow).
+
+To enable the gate in a consumer repo:
+```json
+// .claude/crew.json
+{ "features": { "push-verify": { "enabled": true } } }
+```
+
 ## v0.46.1 — 2026-06-23 — pre-push-verifier deployment.md opt-out
 
 ### Added
