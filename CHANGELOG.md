@@ -5,6 +5,13 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## v0.46.1 — 2026-06-23 — pre-push-verifier deployment.md opt-out
+
+### Added
+
+- **`hooks/pre-push-verifier.ts`** — `push.verify: false` flag: when present in `.claude/crew/deployment.md`, the pre-push-verifier skips the PASS-artifact check entirely. Intended for plugin source repos (hero-crew, loop) where releases go through `release-engineer` instead of `/crew:ship`. Regex handles both plain and backtick-quoted markdown forms. Opt-out via `CREW_PUSH_VERIFY=0` env var was already available; this adds a repo-level alternative that lives in the deployment schema alongside `dev.stable`.
+- **`.claude/crew/deployment.md`** — documents `push.verify: false` in the Settings section.
+
 ## v0.46.0 — 2026-06-22 — typescript-reviewer first-party promotion
 
 ### Changed — typescript-reviewer promoted to first-party
