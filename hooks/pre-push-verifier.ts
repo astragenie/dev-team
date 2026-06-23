@@ -56,6 +56,19 @@ function isPushCommand(command: string): boolean {
   );
 }
 
+async function isVerifyDisabledInDeployment(repoPath: string): Promise<boolean> {
+  try {
+    const content = await fs.readFile(
+      path.join(repoPath, ".claude", "crew", "deployment.md"),
+      "utf8"
+    );
+    // Match both plain `push.verify: false` and backtick-quoted markdown form.
+    return /push\.verify:\s*false\b/i.test(content);
+  } catch {
+    return false;
+  }
+}
+
 interface ValidationScan {
   hasPassed: boolean;
   newestArtifactPath: string | null;
@@ -123,6 +136,8 @@ async function main(): Promise<void> {
   if (input === null) return; // unrecognised payload — pass through
 
   if (!isPushCommand(input.command)) return; // not a push — pass through
+
+  if (await isVerifyDisabledInDeployment(input.cwd)) return; // repo opted out via push.verify: false
 
   const scan = await scanValidationArtifacts(input.cwd);
 
