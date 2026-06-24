@@ -181,28 +181,35 @@ test("AC-3b: injected file has exactly one BEGIN marker", async () => {
   expect(matches?.length).toBe(1);
 });
 
-test("AC-4: --check exits 1 and reports drift when stored hash is mutated", async () => {
-  const agentPath = await makeTempAgentFile(MINIMAL_AGENT);
+test(
+  "AC-4: --check exits 1 and reports drift when stored hash is mutated",
+  async () => {
+    const agentPath = await makeTempAgentFile(MINIMAL_AGENT);
 
-  // Inject first
-  runScript(["--inject", agentPath, "--sources-root", FIXTURES_DIR]);
+    // Inject first
+    runScript(["--inject", agentPath, "--sources-root", FIXTURES_DIR]);
 
-  // Mutate the hash stored in the BEGIN marker (simulates someone bumping sources without re-injecting)
-  const content = await fs.readFile(agentPath, "utf8");
-  // Replace hash in BEGIN comment with all-zeros (clearly wrong)
-  const mutated = content.replace(
-    /<!-- pre-loaded-universals:BEGIN hash=[0-9a-f]{64} -->/,
-    `<!-- pre-loaded-universals:BEGIN hash=${"0".repeat(64)} -->`
-  );
-  await fs.writeFile(agentPath, mutated, "utf8");
+    // Mutate the hash stored in the BEGIN marker (simulates someone bumping sources without re-injecting)
+    const content = await fs.readFile(agentPath, "utf8");
+    // Replace hash in BEGIN comment with all-zeros (clearly wrong)
+    const mutated = content.replace(
+      /<!-- pre-loaded-universals:BEGIN hash=[0-9a-f]{64} -->/,
+      `<!-- pre-loaded-universals:BEGIN hash=${"0".repeat(64)} -->`
+    );
+    await fs.writeFile(agentPath, mutated, "utf8");
 
-  const result = runScript(["--check", agentPath, "--sources-root", FIXTURES_DIR]);
+    const result = runScript(["--check", agentPath, "--sources-root", FIXTURES_DIR]);
 
-  expect(result.exitCode).toBe(1);
-  expect(result.stderr).toContain(`RENDER-UNIVERSALS drift: ${agentPath}`);
-  expect(result.stderr).toContain("expected=");
-  expect(result.stderr).toContain("found=");
-});
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain(`RENDER-UNIVERSALS drift: ${agentPath}`);
+    expect(result.stderr).toContain("expected=");
+    expect(result.stderr).toContain("found=");
+  },
+  // Spawns `bun run` twice (inject + check) inside an already-spawned bun:test
+  // worker. Under parallel CI load the cold-start cost stacks; the suite-level
+  // 30s timeout was flaking on GH ubuntu-latest (FEAT — flake-render-universal-skills).
+  60000
+);
 
 test("drift detection: checkUniversalsHash returns drift:true for mutated hash", async () => {
   const contents = await loadFixtureContents();
