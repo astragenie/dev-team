@@ -181,6 +181,9 @@ test("AC-3b: injected file has exactly one BEGIN marker", async () => {
   expect(matches?.length).toBe(1);
 });
 
+// AC-4 spawns `bun run` twice (inject + check) inside an already-spawned
+// bun:test worker. Under parallel CI load the cold-start cost stacks; the
+// suite-level 30s timeout flaked on GH ubuntu-latest. Per-test 60s override.
 test("AC-4: --check exits 1 and reports drift when stored hash is mutated", async () => {
   const agentPath = await makeTempAgentFile(MINIMAL_AGENT);
 
@@ -202,7 +205,7 @@ test("AC-4: --check exits 1 and reports drift when stored hash is mutated", asyn
   expect(result.stderr).toContain(`RENDER-UNIVERSALS drift: ${agentPath}`);
   expect(result.stderr).toContain("expected=");
   expect(result.stderr).toContain("found=");
-});
+}, 60000);
 
 test("drift detection: checkUniversalsHash returns drift:true for mutated hash", async () => {
   const contents = await loadFixtureContents();
