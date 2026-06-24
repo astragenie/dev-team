@@ -143,7 +143,10 @@ test("builder-mindset skill lists expanded leak phrases (extracted from per-agen
   // Per-agent identity-anchor sections were stripped in v0.43 — leak phrases
   // now live in skills/universal/builder-mindset/. Each builder agent loads
   // the skill on every dispatch.
-  const skill = readFileSync(resolve(ROOT, "skills", "universal", "builder-mindset", "SKILL.md"), "utf8");
+  const skill = readFileSync(
+    resolve(ROOT, "skills", "universal", "builder-mindset", "SKILL.md"),
+    "utf8"
+  );
   for (const phrase of [
     "you are Claude Code",
     "you are the orchestrator",
@@ -152,10 +155,7 @@ test("builder-mindset skill lists expanded leak phrases (extracted from per-agen
     "Let me re-read",
     "As the orchestrator"
   ]) {
-    assert.ok(
-      skill.includes(phrase),
-      `builder-mindset/SKILL.md missing leak phrase "${phrase}"`
-    );
+    assert.ok(skill.includes(phrase), `builder-mindset/SKILL.md missing leak phrase "${phrase}"`);
   }
 });
 
@@ -557,7 +557,10 @@ describe.skip("## HARD OUTPUT CONTRACT — Prong A coverage", () => {
     });
     test("no backlog ids (FEAT-NNN / DEC-NNN / SLICE-NN)", () => {
       const ids = content.match(/\b(FEAT-\d+|DEC-\d+|SLICE-\d+)\b/g);
-      assert.ok(!ids || ids.length === 0, `inspector.md must not contain backlog ids; found: ${ids?.join(", ")}`);
+      assert.ok(
+        !ids || ids.length === 0,
+        `inspector.md must not contain backlog ids; found: ${ids?.join(", ")}`
+      );
     });
     // Lead-agent removed in v0.41 (hard cut). Body-text gate is enforced repo-wide
     // by NO_LEAD_REF_REQUIRED in scripts/validate-agents.ts — see the parametrized
@@ -1185,7 +1188,12 @@ describe("## Structural deviation rule — extracted to builder-ceremony skill i
   // rule is loaded on every dispatch). DECISION_NEEDS_FIX still asserted to
   // avoid breaking the FEAT-170 SLICE-D legacy-form awareness.
   void DECISION_NEEDS_FIX;
-  for (const agentName of ["backend-dev", "frontend-dev", "fullstack-dev", "aiplugin-dev"] as const) {
+  for (const agentName of [
+    "backend-dev",
+    "frontend-dev",
+    "fullstack-dev",
+    "aiplugin-dev"
+  ] as const) {
     describe(agentName, () => {
       const content = readAgent(agentName);
       test("references builder-ceremony skill", () => {

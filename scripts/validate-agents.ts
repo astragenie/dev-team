@@ -375,12 +375,7 @@ const NO_LEAD_REF_REQUIRED = new Set([
   "inspector-lite"
 ]);
 
-function checkNoLeadRef(
-  text: string,
-  fm: Record<string, string>,
-  label: string,
-  errors: string[]
-) {
+function checkNoLeadRef(text: string, fm: Record<string, string>, label: string, errors: string[]) {
   const name = fm["name"];
   if (name === undefined || !NO_LEAD_REF_REQUIRED.has(name)) return;
   // Strip frontmatter before checking
