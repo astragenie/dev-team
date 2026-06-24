@@ -2,7 +2,7 @@
   { "role": "builder", "agent": "crew:fullstack-dev", "parallel": 1, "gate": "none" },
   {
     "role": "reviewer_validator",
-    "agent": "crew:inspector-verifier",
+    "agent": "crew:inspector-lite",
     "parallel": 1,
     "gate": "all_pass"
   }
