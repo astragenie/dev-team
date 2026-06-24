@@ -7,75 +7,30 @@ on:
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - run: npm ci
-      - name: bun-hook smoke (cross-platform)
-        shell: bash
-        run: |
-          echo '{}' | bun "$GITHUB_WORKSPACE/hooks/check-redundant-read.ts"
-      - run: node ./scripts/validate-manifests.ts
-      - run: node ./scripts/validate-skills.ts
-      - run: node ./scripts/validate-agents.ts
-      - run: node ./scripts/validate-dispatch-graph.ts
-      - run: node ./scripts/validate-workflows.ts
-      - run: node ./scripts/validate-slices.ts
-      - run: node ./scripts/validate-loop-state.ts
-      - run: node ./scripts/validate-bundles.ts
-      - name: Validate contracts (against committed fixtures)
-        shell: bash
-        run: |
-          for f in tests/fixtures/openapi/*.openapi.yaml; do
-            if [ "$(basename "$f")" = "broken-missing-examples.openapi.yaml" ]; then
-              # Negative fixture — expect failure
-              if node ./scripts/validate-contracts.ts "$f"; then
-                echo "ERROR: negative fixture passed lint"
-                exit 1
-              fi
-            else
-              node ./scripts/validate-contracts.ts "$f"
-            fi
-          done
-      - name: Validate UX spec fixtures
-        shell: bash
-        run: |
-          for f in tests/fixtures/ux-specs/*.md; do
-            if [ "$(basename "$f")" = "missing-operationid.md" ]; then
-              if node ./scripts/validate-ux-spec.ts "$f"; then
-                echo "ERROR: negative fixture passed"
-                exit 1
-              fi
-            else
-              node ./scripts/validate-ux-spec.ts "$f"
-            fi
-          done
-      - name: Validate synthesis artifacts (advisory)
-        continue-on-error: true
-        run: node ./scripts/validate-syntheses.ts
-      - name: Validate routing-table skill IDs (advisory — external-plugin IDs unresolvable on runner)
-        continue-on-error: true
-        env:
-          CREW_VALIDATE_ROUTING_TABLE: "1"
-        run: node ./scripts/validate-routing-table.ts
-      - run: bun run lint
-      - run: bun run format:check
-      - run: bun run typecheck
-      - name: Validate type-graph (advisory, becomes blocking in Phase 5)
-        continue-on-error: true
-        run: bun run validate:typegraph
-      - run: bun run test
-      - run: node ./scripts/e2e-smoke.ts
-      - name: e2e smoke — ux validation
-        if: matrix.os == 'ubuntu-latest'
-        run: bun run e2e:smoke:ux
+    uses: astragenie/common/.github/workflows/reusable-plugin-ci.yml@main
+    with:
+      validators: |
+        echo '{}' | bun "$GITHUB_WORKSPACE/hooks/check-redundant-read.ts"
+        node ./scripts/validate-manifests.ts
+        node ./scripts/validate-skills.ts
+        node ./scripts/validate-agents.ts
+        node ./scripts/validate-dispatch-graph.ts
+        node ./scripts/validate-workflows.ts
+        node ./scripts/validate-slices.ts
+        node ./scripts/validate-loop-state.ts
+        node ./scripts/validate-bundles.ts
+        for f in tests/fixtures/openapi/*.openapi.yaml; do if [ "$(basename "$f")" = "broken-missing-examples.openapi.yaml" ]; then if node ./scripts/validate-contracts.ts "$f"; then echo "ERROR: negative fixture passed lint"; exit 1; fi; else node ./scripts/validate-contracts.ts "$f"; fi; done
+        for f in tests/fixtures/ux-specs/*.md; do if [ "$(basename "$f")" = "missing-operationid.md" ]; then if node ./scripts/validate-ux-spec.ts "$f"; then echo "ERROR: negative fixture passed"; exit 1; fi; else node ./scripts/validate-ux-spec.ts "$f"; fi; done
+      advisory-validators: |
+        node ./scripts/validate-syntheses.ts
+        CREW_VALIDATE_ROUTING_TABLE=1 node ./scripts/validate-routing-table.ts
+      bun-commands: |
+        bun run lint
+        bun run format:check
+        bun run typecheck
+        bun run test
+      advisory-bun-commands: |
+        bun run validate:typegraph
+      linux-only-commands: |
+        node ./scripts/e2e-smoke.ts
+        bun run e2e:smoke:ux
