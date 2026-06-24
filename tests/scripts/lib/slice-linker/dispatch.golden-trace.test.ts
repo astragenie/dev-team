@@ -160,7 +160,7 @@ test("(SLICE-82) quick workflow — golden trace", async () => {
 
   expect(plan).toEqual(golden);
   expect(plan).toHaveLength(2);
-  expect(plan[1]?.agent).toBe("crew:inspector-verifier");
+  expect(plan[1]?.agent).toBe("crew:inspector-lite");
   expect(plan[1]?.parallel).toBe(1);
   expect(plan[1]?.gate).toBe("all_pass");
 });
