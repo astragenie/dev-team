@@ -15,7 +15,8 @@ This design **departs from ticket #121's monolithic "crew feature" framing**. Af
 
 - A working capture → eval → optimize loop for the 6 top crew agents in v1: `fullstack-dev`, `backend-dev`, `frontend-dev`, `verifier`, `inspector`, `architect`.
 - Library-level reusability: a second plugin needs zero library changes — only its own `gepa.config.json`, scorer wiring, and eval datasets.
-- Zero hard cross-plugin runtime deps: defaults (`fileStore` + `sequentialRunner`) work without `runner-plugin` or `memory-plugin` installed.
+- Zero hard cross-plugin runtime deps: defaults (`fileStore` + `sequentialRunner` + `ollamaJudge`) work without `runner-plugin`, `memory-plugin`, or any paid SDK installed.
+- Pluggable LLM judge: library ships built-in adapters for Ollama (local default, $0), Azure OpenAI (enterprise), and Gemini (free tier). Anthropic and other providers can land in v2 without library changes.
 - A promotion gate that distinguishes "noise" from "real gain" and refuses to auto-merge critical agents (`inspector`, `verifier`, `architect`).
 
 ## Non-goals
@@ -26,6 +27,9 @@ This design **departs from ticket #121's monolithic "crew feature" framing**. Af
 - Auto-promotion without soak phase (only after data proves soak adds no signal).
 - Changes to `astramem-local` schema (existing `fact` type + tags is sufficient).
 - Provider-switching, marketplace ownership of GEPA agents in third-party plugins.
+- `anthropicJudge` adapter (v2, only if Ollama + Azure + Gemini judge quality proves insufficient).
+- Cross-agent regression gate spanning historical eval suites (v2, needs more trial corpus before useful).
+- Champion-no-regression check against prior eval datasets of sibling agents (v2 — same reason).
 
 ## Locked decisions
 
@@ -42,6 +46,10 @@ This design **departs from ticket #121's monolithic "crew feature" framing**. Af
 | Dataset bootstrap | Hybrid: 5 hand-seeded cases per agent + auto-grow from captured runs scored ≥0.9 by LLM-judge + held-out split (20%) | Bootstraps in ~7 days vs ~3 weeks for hand-written only; held-out split detects overfit-to-eval. |
 | Sequencing | Vertical-slice approach (B): fullstack-dev end-to-end first, then horizontalize | Working loop in 2 slices, real-signal validation before scaling. Matches autonomous-loop pattern. 8 slices total, ~5 calendar weeks. |
 | Capture default | Synchronous in code, async via 2 s walltime cap; `enabled: true` when `gepa.config.json` present; runtime override `capture.enabled: false` available | Fire-and-forget keeps capture off the hot path; runtime kill-switch enables incident-response disable without code reload. |
+| Judge interface | `LLMJudge` interface (pluggable). v1 built-ins: `ollamaJudge` (default, $0 local), `azureOpenAIJudge` (enterprise), `geminiJudge` (free tier). v2: `anthropicJudge`. | `rubricScorer` takes `judge: LLMJudge` as dep; consumer plugins pick per-agent in `gepa.config.json`. Matches the rest of the spec's pluggable-adapter pattern (Scorer/TrialStore/RunnerAdapter). |
+| Default judge model | `ollamaJudge` with `llama3.2:latest` against `http://localhost:11434` | Local-first, $0 cost, privacy-friendly, no rate limits. High-volume judge calls don't burn budget. Tradeoff: ~3–5 s per case latency, requires Ollama install. |
+| Soak sample-size floor | `PromotionPolicy.minSoakTrials: 20` + soak extends until BOTH `soakDays` clock AND `minSoakTrials` sample met; hard cap `maxSoakDays: 21` | 7-day × 10 % traffic on a low-volume agent can yield n=3 — statistical theatre. Sample floor + max-clock prevents both under-sample promotion and indefinite soak. |
+| Cross-repo version pinning | `gepa-core` follows semver; consumer plugins pin via `^MAJOR.MINOR` in `package.json`; breaking changes to `CrewArtifact` or any exported interface require MAJOR bump | Without semver discipline, a `gepa-core` patch could silently break crew or sales-team. |
 
 ## Resolved concerns (from architect-reviewer + critical-thinking pushback)
 
@@ -59,6 +67,19 @@ This design **departs from ticket #121's monolithic "crew feature" framing**. Af
 | **C10.** Missing fitness functions | Library ships: `validateTrialCorpus`, `detectEvalDrift`, `captureParityGoldenTest`, capture p99 latency assert, budget SLO check, candidate prompt-size invariant. |
 | **C11.** "Measurable PASS-rate gain" has no numeric bar | `PromotionPolicy.minPassDelta: 0.05` (5 %). |
 | **C12.** Manual review queue cadence undefined | Auto-merge gate triggers for non-critical agents after soak; critical agents (`inspector`, `verifier`, `architect`) land as draft PRs for batch review. |
+| **C13.** Soak conflates clock and sample size — n=3 over 7 days is statistical theatre (crew:architect, post-spec review) | `PromotionPolicy.minSoakTrials` floor (default 20) + dual-gate rule (BOTH clock AND sample), hard cap `maxSoakDays` 21 — see Soak phase mechanics. |
+| **C14.** `CrewArtifact` referenced but never defined (crew:architect) | Promoted to first-class `CrewArtifactSchema` Zod schema with explicit `score_hint` semantics — see Types section. |
+| **C15.** `BudgetMeter` declared but never wired into top-level functions (crew:architect) | `runEvalSuite` + `runOptimization` now take `meter: BudgetMeter` as explicit dep; built-ins `dailyCapMeter` + `sharedAstramemMeter`; `RunnerAdapter.runCandidates` + `CandidateGenerator.generate` also take meter. |
+| **C16.** Missing types: `AgentRun`, `Candidate`, `GepaConfig` (crew:architect) | All added as Zod schemas in the Types section. |
+| **C17.** Concurrent eval/optimize collisions (worktree parallelism) — no lock (crew:architect) | `LockManager` interface + `fileLockManager` built-in writing to `.claude/artifacts/crew/gepa/locks/<agent>.<op>.lock` with PID + heartbeat. Top-level fns take `lock: LockManager`. |
+| **C18.** Capture parity test undertested — no SIGKILL case (crew:architect) | SIGKILL-during-`put` case added to `captureParityGoldenTest`; `fileStore` uses atomic `O_APPEND` single-syscall writes; `validateTrialCorpus` discards torn lines. |
+| **C19.** Candidate prompt ≤350-line invariant not enforced pre-scoring (crew:3rdparty:architect-reviewer revisit) | `validateCandidateSize` exposed in library; `RunnerAdapter` built-ins call it BEFORE LLM spend; oversized candidates marked `pareto_rank: null` rationale `oversized_candidate`. |
+| **C20.** Soak trial scoring path undefined — binary or rubric? (crew:3rdparty:architect-reviewer revisit) | Soak trials scored by the configured `Scorer` (rubricScorer default), preserving continuous-gradient signal into regression detection. |
+| **C21.** Branch protection presence not gated before auto-merge (crew:3rdparty:architect-reviewer revisit) | S8a checks `gh api repos/:owner/:repo/branches/main/protection` before enabling auto-merge; missing protection forces draft PR with `branch_protection_missing` label. |
+| **C22.** Champion provenance frontmatter collides with 350-line cap (crew:3rdparty:architect-reviewer revisit) | `validate-agents.ts` taught to exempt `gepa:` YAML frontmatter block from the count — see Data location summary. |
+| **C23.** `gepa-core` version-pin strategy missing (both reviewers) | Strict semver locked in Invariants section; CHANGELOG.md mandatory; consumer plugins pin `^MAJOR.MINOR`. |
+| **C24.** `freeze a champion` kill-switch missing — per-agent block on optimization (crew:architect) | Added `champion_frozen: string[]` in `GepaConfigSchema`; `/crew:gepa-thaw` cmd reverses; kill-switches list item #6. |
+| **C25.** Judge model decision deferred but unsafe to leave open (crew:architect) | Decided in this revision: pluggable `LLMJudge` with `ollamaJudge` (`llama3.2:latest`) default. v1 also ships `azureOpenAIJudge` + `geminiJudge`. |
 
 ## Architecture
 
@@ -100,9 +121,11 @@ This design **departs from ticket #121's monolithic "crew feature" framing**. Af
 ### Invariants
 
 - `gepa-core` has zero hard Claude-Code-specific deps. Pure ESM. Bun test runner.
-- `fileStore` + `sequentialRunner` defaults work with no other plugins installed.
+- `fileStore` + `sequentialRunner` + `ollamaJudge` defaults work with no other plugins or paid SDKs installed.
 - `runner-plugin` and `memory-plugin` are optional peer deps. The library imports nothing from them; consumer plugins wire adapters in their own config.
+- Cloud judge adapters (`azureOpenAIJudge`, `geminiJudge`) are optional peer deps on their respective SDKs (`@azure/openai`, `@google/generative-ai`). Library publishes them as separate entry points: `@astragenie/gepa-core/judges/azure`, `@astragenie/gepa-core/judges/gemini`. Importing them without the SDK throws a clean install-instruction error.
 - Future plugin (e.g. `sales-team`) drops in `@astragenie/gepa-core` + its own `gepa.config.json` + its own scorer agent + its own eval datasets. No library change needed.
+- `gepa-core` follows strict semver. Breaking changes to any exported interface (Scorer, TrialStore, RunnerAdapter, PromotionPolicy, LLMJudge, CrewArtifact, CandidateGenerator) bump MAJOR. Consumer plugins pin `^MAJOR.MINOR`. CHANGELOG.md is mandatory per release.
 
 ## Library API surface
 
@@ -142,6 +165,100 @@ export const ScoreResultSchema = z.object({
   latency_ms: z.number().int().nonnegative(),
   rationale: z.string().optional(),
 });
+
+// CrewArtifact — the cross-plugin contract between gepa-core and any consumer plugin.
+// Consumer plugins (crew, future sales-team, etc.) adapt their concrete artifact types into this shape.
+// Source of truth for what `gepaCapture()` accepts.
+export const CrewArtifactSchema = z.object({
+  agent: z.string(),                              // e.g. "fullstack-dev"
+  phase: z.enum(["build","review","validate","ship"]),
+  input: z.unknown(),                             // raw dispatch input
+  output: z.unknown(),                            // raw dispatch return
+  score_hint: z.object({
+    pass: z.boolean().optional(),                 // inspector / validator verdict if present
+    rubric_signal: z.record(z.string(), z.number()).optional(),
+    cost_usd: z.number().nonnegative().optional(),
+    latency_ms: z.number().int().nonnegative().optional(),
+  }).optional(),                                  // null when artifact has no scoring context
+  source_artifact_path: z.string().optional(),    // .claude/artifacts/crew/.../<file>.json for trace-back
+  dispatched_at: z.string().datetime(),
+});
+
+// AgentRun — what a Scorer receives when scoring one execution of a candidate prompt against one EvalCase.
+export const AgentRunSchema = z.object({
+  agent: z.string(),
+  candidate_prompt_path: z.string(),
+  case_id: z.string(),
+  raw_output: z.unknown(),                        // agent's actual return
+  cost_usd: z.number().nonnegative(),
+  latency_ms: z.number().int().nonnegative(),
+  finished_at: z.string().datetime(),
+});
+
+// Candidate — a prompt variant produced by CandidateGenerator.
+export const CandidateSchema = z.object({
+  id: z.string().uuid(),
+  agent: z.string(),
+  prompt_path: z.string(),                        // path on disk (e.g. tmp/gepa/candidates/<uuid>.md)
+  prompt_hash: z.string(),                        // sha256 of the file
+  prompt_size_lines: z.number().int().positive(), // for pre-scoring ≤350-line gate
+  derived_from_trials: z.array(z.string().uuid()), // failing trials that informed this candidate
+  generator_cost_usd: z.number().nonnegative(),
+  created_at: z.string().datetime(),
+});
+
+// gepa.config.json — root config consumer plugin writes.
+export const GepaConfigSchema = z.object({
+  capture: z.object({
+    enabled: z.boolean().default(true),
+    exclude: z.array(z.string()).default([]),     // per-agent disable
+    walltime_ms: z.number().int().positive().default(2000),
+  }).default({}),
+  storage: z.object({
+    backend: z.enum(["file", "astramem"]).default("file"),
+    file_root: z.string().default(".claude/artifacts/crew/gepa/trials"),
+    astramem_cli_path: z.string().optional(),
+  }).default({}),
+  runner: z.object({
+    backend: z.enum(["sequential", "wave"]).default("sequential"),
+  }).default({}),
+  judge: z.object({
+    provider: z.enum(["ollama", "azure-openai", "gemini"]).default("ollama"),
+    model: z.string().default("llama3.2:latest"),
+    endpoint: z.string().optional(),              // ollama: http://localhost:11434; azure: resource endpoint
+    deployment: z.string().optional(),            // azure: deployment name
+    api_key_env: z.string().optional(),           // env var name to read key from
+  }).default({}),
+  judge_per_agent: z.record(z.string(), z.object({
+    provider: z.enum(["ollama", "azure-openai", "gemini"]),
+    model: z.string(),
+    endpoint: z.string().optional(),
+    deployment: z.string().optional(),
+    api_key_env: z.string().optional(),
+  })).default({}),
+  budget: z.object({
+    daily_usd: z.number().nonnegative().default(50),
+    per_eval_default_usd: z.number().nonnegative().default(2),
+    per_optimize_default_usd: z.number().nonnegative().default(5),
+  }).default({}),
+  optimize: z.object({
+    paused: z.boolean().default(false),
+    k: z.number().int().positive().default(5),
+  }).default({}),
+  policy: z.object({
+    eligible_agents: z.array(z.string()).default([]),
+    min_pass_delta: z.number().min(0).max(1).default(0.05),
+    min_case_score_floor: z.number().min(0).max(1).default(0.6),
+    soak_percent: z.number().min(0).max(1).default(0.10),
+    soak_days: z.number().int().positive().default(7),
+    min_soak_trials: z.number().int().positive().default(20),
+    max_soak_days: z.number().int().positive().default(21),
+    soak_epsilon: z.number().min(0).max(1).default(0.02),
+    allow_cost_regression: z.boolean().default(false),
+    allow_latency_regression: z.boolean().default(false),
+  }).default({}),
+  champion_frozen: z.array(z.string()).default([]), // agents blocked from further optimization
+});
 ```
 
 ### Interfaces
@@ -158,8 +275,10 @@ export interface TrialStore {
   recall(filter: {
     agent?: string;
     phase?: string;
+    source?: "eval" | "captured" | "soak";   // soak monitor + audit need this
     minScore?: number;
     failuresOnly?: boolean;
+    since?: string;                            // ISO datetime
     limit?: number;
   }): Promise<Trial[]>;
   invalidate(filter: { tag?: string; trial_ids?: string[]; agent?: string; since?: string }): Promise<number>;
@@ -170,7 +289,7 @@ export interface RunnerAdapter {
     candidates: Candidate[],
     cases: EvalCase[],
     scorer: Scorer,
-    opts: { budgetUsd: number; signal?: AbortSignal }
+    opts: { meter: BudgetMeter; signal?: AbortSignal }
   ): Promise<Trial[]>;
 }
 
@@ -179,16 +298,19 @@ export interface CandidateGenerator {
     currentChampionPath: string,
     failingTrials: Trial[],
     k: number,
-    opts: { budgetUsd: number }
+    opts: { meter: BudgetMeter }
   ): Promise<Candidate[]>;
 }
 
 export interface PromotionPolicy {
   eligibleAgents: string[];
-  minPassDelta: number;        // 0.05 (5 %)
-  minCaseScoreFloor: number;   // 0.6
-  soakPercent: number;         // 0.10 (10 %)
-  soakDays: number;            // 7
+  minPassDelta: number;        // 0.05 (5 percentage points over champion)
+  minCaseScoreFloor: number;   // 0.6 — any held-out case below this blocks promotion
+  soakPercent: number;         // 0.10 (10 % of real dispatches)
+  soakDays: number;            // 7 (target clock)
+  minSoakTrials: number;       // 20 — sample-size floor; soak waits until BOTH clock + this met
+  maxSoakDays: number;         // 21 — hard cap if traffic too low to reach sample floor; revert if still under
+  soakEpsilon: number;         // 0.02 — 2 pp tolerance on `soak_pass_rate >= main_pass_rate - epsilon`
   allowCostRegression: boolean;
   allowLatencyRegression: boolean;
 }
@@ -196,6 +318,34 @@ export interface PromotionPolicy {
 export interface BudgetMeter {
   reserve(estimateUsd: number): Promise<{ ok: boolean; remainingUsd: number }>;
   record(actualUsd: number): Promise<void>;
+  spentToday(): Promise<number>;
+  dailyCap(): number;
+}
+
+// Pluggable judge interface — `rubricScorer` takes one of these as a dep.
+// Consumer plugins pick per `gepa.config.json` `judge` block.
+export interface LLMJudge {
+  evaluate(opts: {
+    candidateOutput: unknown;
+    expected: EvalCase;
+    rubric: string[];                          // criteria text shown to the judge model
+    signal?: AbortSignal;
+  }): Promise<{
+    pass: boolean;
+    score: number;                             // 0..1 weighted sum of rubric subscores
+    rubricScores: Record<string, number>;
+    rationale: string;
+    cost_usd: number;
+    latency_ms: number;
+  }>;
+  describe(): { provider: string; model: string };  // for trial provenance
+}
+
+// Lockfile coordinator — prevents concurrent `/crew:gepa-eval` or `/crew:gepa-optimize`
+// from racing on the same agent (worktree-parallel safety).
+export interface LockManager {
+  acquire(agent: string, op: "eval" | "optimize"): Promise<{ released: () => Promise<void> } | null>;
+  isLocked(agent: string): Promise<boolean>;
 }
 ```
 
@@ -210,6 +360,8 @@ export async function runEvalSuite(opts: {
   scorer: Scorer;
   runner: RunnerAdapter;
   store: TrialStore;
+  meter: BudgetMeter;
+  lock: LockManager;
   championPromptPath: string;
 }): Promise<{ aggregate: AggregateScore; trials: Trial[] }>;
 
@@ -221,17 +373,15 @@ export async function runOptimization(opts: {
   generator: CandidateGenerator;
   runner: RunnerAdapter;
   store: TrialStore;
+  meter: BudgetMeter;
+  lock: LockManager;
   policy: PromotionPolicy;
   k: number;                  // candidates per cycle
-  budgetUsd: number;          // hard cap
   signal?: AbortSignal;
 }): Promise<OptimizationResult>;
 
-// CrewArtifact is a gepa-core-defined generic shape (agent, phase, input, output, score_hint).
-// The crew plugin glue adapts its concrete artifact types into this shape before calling gepaCapture.
-// Future consumer plugins do the same adaptation from their own artifact shapes.
 export async function gepaCapture(opts: {
-  artifact: CrewArtifact;     // generic shape — plugin author adapts from their own type
+  artifact: CrewArtifact;     // see CrewArtifactSchema in Types section above
   store: TrialStore;
   walltimeMs?: number;        // default 2000, fail-silent on miss
 }): Promise<void>;
@@ -241,19 +391,64 @@ export function paretoRank(
   tiebreaker?: (a: Trial, b: Trial) => number
 ): RankedTrial[];
 
-// Validators (architect's fitness functions)
+// Exposed pure helper for property tests + custom tiebreaker authors
+export function dominates(a: Trial, b: Trial): boolean;
+
+// Validators (architect's fitness functions + revision adds)
 export function validateTrialCorpus(store: TrialStore): Promise<ValidationReport>;
 export function detectEvalDrift(trials: Trial[], heldOutPass: number): DriftReport;
 export function captureParityGoldenTest(baseline: Artifact[], withCapture: Artifact[]): boolean;
+export function validateCandidateSize(candidate: Candidate, maxLines: number): { ok: boolean; reason?: string };
+// `validateCandidateSize` is invoked by RunnerAdapter built-ins BEFORE budget spend on each candidate.
+// Default maxLines = 350, matching `scripts/validate-agents.ts` cap. Oversized candidates are rejected
+// with `pareto_rank: null` + `rationale: "oversized_candidate"`.
+
+// Built-in scorers
+export const binaryScorer: (passAgent: string) => Scorer;
+export const rubricScorer: (judge: LLMJudge) => Scorer;
+
+// Built-in TrialStores
+export const fileStore: (root: string) => TrialStore;
+export const astramemStore: (cliPath?: string) => TrialStore;
+
+// Built-in RunnerAdapters
+export const sequentialRunner: () => RunnerAdapter;
+export const waveRunner: (loopCli: string) => RunnerAdapter;   // peer-dep on runner-plugin
+
+// Built-in BudgetMeter
+export const dailyCapMeter: (capUsd: number, persistPath: string) => BudgetMeter;
+export const sharedAstramemMeter: (cliPath: string) => BudgetMeter; // shares wallet w/ astramem-local
+
+// Built-in LockManager
+export const fileLockManager: (locksDir: string) => LockManager;
+// Default: .claude/artifacts/crew/gepa/locks/<agent>.<op>.lock — atomic O_EXCL writes,
+// stale lock detection (PID + heartbeat), released() removes file.
+
+// LLMJudge built-ins — each is a separate entry point so the peer SDK isn't pulled unless wired.
+// `@astragenie/gepa-core/judges/ollama`
+export const ollamaJudge: (opts: { model: string; endpoint?: string }) => LLMJudge;
+// `@astragenie/gepa-core/judges/azure` — peer-dep `@azure/openai`
+export const azureOpenAIJudge: (opts: {
+  deployment: string;
+  endpoint: string;
+  apiKey?: string;            // either apiKey or use DefaultAzureCredential via Entra ID
+  useEntraId?: boolean;
+}) => LLMJudge;
+// `@astragenie/gepa-core/judges/gemini` — peer-dep `@google/generative-ai`
+export const geminiJudge: (opts: { model: string; apiKey: string }) => LLMJudge;
 ```
 
 ### Shape rationale
 
 - All input / output typed `z.unknown()` — library is agent-agnostic. Plugin author's scorer interprets.
-- `recall()` filters are explicit fields, not free-text — predictable, testable, no FTS5 dep for `fileStore`.
-- `runOptimization()` takes `train` + `heldOut` separately so the drift detector can compare the two distributions.
+- `recall()` filters are explicit fields, not free-text — predictable, testable, no FTS5 dep for `fileStore`. `source` field added so soak monitor can pull only `source: "soak"` trials without post-recall filtering.
+- `runOptimization()` and `runEvalSuite()` take `train` + `heldOut` (where applicable) separately so the drift detector can compare the two distributions.
 - `signal: AbortSignal` on long-running calls → architect kill-switch concern. Caller can abort mid-cycle.
 - No top-level config object — every function takes explicit deps. Easier to test, no global state.
+- `BudgetMeter` and `LockManager` are now explicit deps on `runEvalSuite` and `runOptimization`. Previously `budgetUsd: number` was a leak: it hid where the dollar accounting lived. Explicit `meter: BudgetMeter` lets the consumer plugin wire `dailyCapMeter` (standalone) or `sharedAstramemMeter` (shared wallet) without library changes.
+- `LLMJudge` is injected into `rubricScorer`, not built in. This is the load-bearing pluggability win: changing judge provider is a config switch, not a library bump.
+- Built-in factories follow `(opts) => Interface` shape so they compose like normal values. No DI container.
+- `validateCandidateSize` is exposed so the runner can pre-screen oversized candidates BEFORE scoring spend. Architect concern: a candidate that violates `validate-agents.ts` ≤350-line cap should never reach a paid LLM call.
 
 ## Data flow
 
@@ -425,11 +620,24 @@ Trial source = `"captured"`. No expected_output, no rubric — just raw input + 
 
 - After candidate selected as winner, library writes a "soak champion" pointer alongside main champion.
 - Crew's dispatcher (existing slice-build orchestrator) reads `.claude/artifacts/crew/gepa/soak.json` on each dispatch. If the agent has an active soak and `Math.random() < soakPercent`, it uses the soak champion instead of main.
-- Each soak dispatch tees a trial tagged `source: "soak"`. After `soakDays`, library computes:
-  - `soak_pass_rate` from soak trials in the window.
-  - `main_pass_rate` from same-window main trials.
-  - If `soak_pass_rate >= main_pass_rate - epsilon` (default `epsilon = 0.02`, i.e. 2 percentage-point tolerance for noise) → promote.
-  - Else → revert (delete soak pointer, retain trials for forensics).
+
+**Soak trial scoring path.** Each soak dispatch tees a trial tagged `source: "soak"` — BUT scoring differs from `source: "captured"`. Soak trials are scored by the same `Scorer` configured for that agent's eval pipeline (typically `rubricScorer` with the configured `LLMJudge`), not just the binary inspector/validator PASS/FAIL from the live dispatch artifact. Reason: continuous rubric scores are needed for noise-tolerant regression detection (architect C4 win — preserving the continuous-gradient signal into soak). The judge call is async, fire-and-forget like capture, bounded by `walltime_ms`. Cost is attributed to the soak budget line (not the live dispatch).
+
+**Promotion gate — dual clock + sample.** After every dispatch, library re-evaluates:
+- `elapsed_days = now - soak_started_at`
+- `soak_trials_count = store.recall({ agent, source: "soak", since: soak_started_at }).length`
+- `promote_eligible = elapsed_days >= soakDays AND soak_trials_count >= minSoakTrials`
+- If `elapsed_days >= maxSoakDays` (default 21) AND `soak_trials_count < minSoakTrials` → revert (agent has too little traffic for honest soak; log `soak_insufficient_traffic`).
+
+When `promote_eligible`:
+- `soak_pass_rate = mean(soak_trials.map(t => t.score))`     // continuous, not binary
+- `main_pass_rate = mean(main_trials_same_window.map(t => t.score))`
+- If `soak_pass_rate >= main_pass_rate - soakEpsilon` (default `0.02`, i.e. 2 pp continuous-score tolerance) → promote.
+- Else → revert (delete soak pointer, retain trials for forensics, log `soak_revert_regression`).
+
+**Sample-floor rationale.** Architect: a 7-day × 10 % soak on a low-volume agent (e.g. `architect`, which dispatches a handful of times per week) can yield n=3 — a 2 pp tolerance over n=3 is statistical theatre. The sample floor + clock-vs-sample logic ensures the promotion signal is honest before any auto-merge fires.
+
+**Early-revert escape.** If during soak ANY rolling-window check (1-day rolling) shows `soak_pass_rate < main_pass_rate - 0.10` (10 pp regression), revert immediately — don't wait out the clock. Logs `soak_revert_early`, writes forensics artifact at `.claude/artifacts/crew/gepa/soak/<agent>-early-revert-<ts>.json`.
 
 ### Data location summary
 
@@ -438,11 +646,17 @@ Trial source = `"captured"`. No expected_output, no rubric — just raw input + 
 | `.claude/artifacts/crew/gepa/trials/<agent>.jsonl` | `fileStore` trial log | append-forever, validators check integrity |
 | `.claude/artifacts/crew/gepa/eval/<run-id>.json` | eval run summary | committed |
 | `.claude/artifacts/crew/gepa/opt/<run-id>.json` | optimize run summary | committed |
-| `.claude/artifacts/crew/gepa/soak.json` | active soak pointers | overwritten on promote / revert |
+| `.claude/artifacts/crew/gepa/soak.json` | active soak pointers (per-agent) | overwritten on promote / revert |
+| `.claude/artifacts/crew/gepa/soak/<agent>-early-revert-<ts>.json` | soak early-revert forensics | committed |
+| `.claude/artifacts/crew/gepa/locks/<agent>.<op>.lock` | concurrent eval/optimize collision guard | ephemeral; PID + heartbeat |
+| `.claude/artifacts/crew/gepa/candidates/<cycle-id>/<uuid>.md` | tmp candidate prompt files during one optimize cycle | deleted at cycle end |
 | `agents/<name>/.gepa/eval/*.jsonl` | hand-seeded + grown eval cases | git-tracked |
+| `agents/<name>/.gepa/rubric.md` | rubric criteria for `rubricScorer` (per-agent) | git-tracked |
 | `gepa.config.json` (repo root) | plugin glue config | git-tracked |
 
-The validator script `scripts/validate-agents.ts` must be taught to skip `.gepa/` subdirs when enumerating agent files (architect concern #10 fitness function).
+The validator script `scripts/validate-agents.ts` must:
+1. Skip `.gepa/` subdirs when enumerating agent files (so eval datasets + rubric don't get counted as agents).
+2. Exempt the `gepa:` YAML frontmatter block from the ≤350-line cap on agent prompts — otherwise the champion-provenance frontmatter (5+ lines added on each promotion) eats the cap for GEPA-touched agents.
 
 ## Error handling + safety
 
@@ -453,18 +667,27 @@ The validator script `scripts/validate-agents.ts` must be taught to skip `.gepa/
 | Capture tee | `store.put()` exceeds 2 s walltime | drop trial, log `gepa_capture_drop` to `.claude/logs/events.jsonl`, dispatch continues |
 | Capture tee | `store.put()` throws | catch, log, drop trial, dispatch continues — **never propagate** |
 | Capture tee | astramem CLI absent when `astramemStore` is configured | fallback to `fileStore` if both configured; else log + drop |
+| Capture tee | SIGKILL mid-`put` (process crash during JSONL append) | fileStore must use atomic append (`O_APPEND` + single `write()` syscall under JSONL line size). On recovery, validateTrialCorpus detects torn lines and discards them. Capture parity golden test MUST include SIGKILL-during-put case. |
 | Eval | scorer throws | mark case as `pass: false, score: 0, rationale: "scorer_error: <msg>"` — keep trial, eval continues |
 | Eval | runner walltime exceeded | abort current case via `AbortSignal`, mark `pass: false, score: 0, rationale: "runner_timeout"` |
 | Eval | budget cap exceeded mid-run | halt remaining cases, write partial aggregate with `partial: true`, no promotion eligibility |
 | Optimize | candidate generation returns < k candidates | proceed with what returned, log `candidate_underflow`, no abort |
+| Optimize | candidate exceeds 350-line cap | rejected by `validateCandidateSize` BEFORE any LLM call. `pareto_rank: null`, rationale `oversized_candidate`. No budget spent. |
 | Optimize | all candidates dominated by champion | no promotion, write artifact with `no_winner: true`, exit clean |
+| Optimize | `runOptimization` for an agent returns no winner 3 cycles in a row | halt subsequent cycles for that agent, log `no_winner_streak`, require manual `/crew:gepa-resume` to retry |
 | Optimize | budget cap hit during candidate runs | halt, partial flag, no promotion |
 | Optimize | Pareto rank shows tie at #1 | tiebreaker chain: `pass > score > -cost > -latency`; if still tied → first by trial_id (deterministic) |
 | Optimize | held-out case scores reveal tail risk (any case < 0.6) | no promotion, log `tail_risk_block`, candidate retained in trials for next cycle |
+| Optimize / Eval | another op already holds lock for same agent | `LockManager.acquire()` returns null, command exits with `already_in_progress: <other-pid>`, exit code 2. No partial work. |
+| Judge | LLMJudge endpoint unreachable (e.g. Ollama not running) | retry once with 1 s backoff; if still down → eval/optimize halts with `judge_unreachable: <provider>`, partial flag, no promotion. Single-source-of-truth for judge failure mode. |
+| Judge | LLMJudge returns malformed score (NaN, out-of-range) | retry once; if still bad → mark case `pass: false, score: 0, rationale: "judge_malformed"`. |
 | Soak | soak champion file corrupt | revert to main champion, alarm, mark soak failed |
-| Soak | regression detected mid-soak (> X % delta over rolling window) | early-revert, alarm, write soak forensics artifact |
+| Soak | rolling 1-day window shows ≥10 pp continuous-score regression vs main | early-revert, alarm, write `soak/<agent>-early-revert-<ts>.json` forensics artifact |
 | Soak | dispatcher can't read `soak.json` | use main champion, log read failure once, continue |
-| Promote | auto-merge attempt | writes prompt file to working tree + commits on `gepa/<agent>/<trial-id>` branch, then `gh pr merge --auto --squash`. Branch protection still enforces CI green. Never `git push origin main` direct |
+| Soak | `maxSoakDays` (default 21) reached without hitting `minSoakTrials` floor | revert, log `soak_insufficient_traffic`, mark for manual review (agent too low-volume for auto-merge path; queue as draft PR instead) |
+| Promote | auto-merge attempt | writes prompt file to working tree + commits on `gepa/<agent>/<trial-id>` branch, then `gh pr merge --auto --squash`. Branch protection still enforces CI green. Never `git push origin main` direct. |
+| Promote | branch protection NOT configured on target repo (`gh api repos/:owner/:repo/branches/main/protection` returns 404) | refuse auto-merge — open as draft PR with `branch_protection_missing` label. Auto-merge requires required-checks to be enforced; otherwise the gate is theatre. |
+| Promote | champion is on `champion_frozen` list | block optimization start with `champion_frozen` error. Operator must `/crew:gepa-thaw <agent>` first. |
 
 ### Kill-switches
 
@@ -473,7 +696,8 @@ The validator script `scripts/validate-agents.ts` must be taught to skip `.gepa/
 3. **Trial corpus invalidation**: `/crew:gepa-invalidate --agent fullstack-dev --since 2026-06-20` → `TrialStore.invalidate({tag, agent, since})`. Records an audit row.
 4. **Optimization global pause**: `gepa.optimize.paused: true` blocks `/crew:gepa-optimize` from launching new cycles. Soak phases continue to completion (or `--force-revert`).
 5. **Soak abort**: `/crew:gepa-revert --agent fullstack-dev` → deletes soak pointer, restores main champion, alarms.
-6. **Champion provenance**: every agent prompt file gets frontmatter:
+6. **Freeze a champion**: `gepa.config.json` → `champion_frozen: ["inspector"]` blocks ALL future `/crew:gepa-optimize` cycles for that agent without disabling capture. Use during incident triage when a champion is suspect but you still want to gather trials. `/crew:gepa-thaw <agent>` removes from list. Required because `optimize.paused: true` halts ALL optimization globally; this is per-agent.
+7. **Champion provenance**: every agent prompt file gets frontmatter:
    ```yaml
    ---
    gepa:
@@ -494,13 +718,22 @@ The validator script `scripts/validate-agents.ts` must be taught to skip `.gepa/
 
 `/crew:build <slice>` with `gepa.capture.enabled = true` must produce byte-identical artifacts to `gepa.capture.enabled = false`. Test: `captureParityGoldenTest(baseline, withCapture)` runs the same dispatch twice (mocked LLM), diffs `.claude/artifacts/crew/{runs,handoffs,reviews,validations}/` excluding the `gepa/` subtree. Any difference = test fail = capture has side effects = bug.
 
-CI runs this on every PR touching the capture path. Lives in `tests/gepa/capture-parity.test.ts`.
+**Crash-during-capture parity** (architect concern). The 2 s walltime race is exactly where parity breaks. Test must include a SIGKILL case:
+1. Start a dispatch with `gepa.capture.enabled = true`.
+2. Mid-`store.put()` (during JSONL append), SIGKILL the worker.
+3. On recovery, assert:
+   - Artifact tree under `.claude/artifacts/crew/{runs,handoffs,reviews,validations}/` is byte-identical to a control run (no capture).
+   - JSONL trial file either contains the line fully or doesn't contain it at all — never a torn line. `validateTrialCorpus` should report zero torn lines.
+
+**Capture write-path latency budget.** Hard numbers (not hand-wave): `p50 ≤ 50 ms`, `p99 ≤ 200 ms`, `max ≤ walltime_ms (default 2000 ms — anything past this is dropped, never delays dispatch)`. CI asserts via dedicated micro-benchmark in `tests/gepa/capture-perf.test.ts`.
+
+CI runs both tests on every PR touching the capture path. Live in `tests/gepa/capture-parity.test.ts` and `tests/gepa/capture-perf.test.ts`.
 
 ### Observability
 
 All gepa-core operations emit structured events to `.claude/logs/events.jsonl` via the existing crew event logger:
 
-`gepa_capture_drop` · `gepa_eval_start` · `gepa_eval_complete` · `gepa_opt_cycle_start` · `gepa_opt_no_winner` · `gepa_opt_promote` · `gepa_soak_start` · `gepa_soak_promote` · `gepa_soak_revert` · `gepa_budget_exceeded` · `gepa_tail_risk_block`.
+`gepa_capture_drop` · `gepa_eval_start` · `gepa_eval_complete` · `gepa_opt_cycle_start` · `gepa_opt_no_winner` · `gepa_opt_promote` · `gepa_soak_start` · `gepa_soak_promote` · `gepa_soak_revert` · `gepa_soak_revert_early` · `gepa_soak_insufficient_traffic` · `gepa_budget_exceeded` · `gepa_tail_risk_block` · `gepa_oversized_candidate` · `gepa_judge_unreachable` · `gepa_judge_malformed` · `gepa_lock_collision` · `gepa_branch_protection_missing` · `gepa_no_winner_streak` · `gepa_champion_frozen`.
 
 Each event includes `trial_id` / `cycle_id` for correlation.
 
@@ -524,7 +757,15 @@ Each event includes `trial_id` / `cycle_id` for correlation.
 | `soakMonitor` | regression detected, early-revert path, time-window math | virtual clock |
 | `validateTrialCorpus` | detects orphan agent refs, trial_id collisions, missing metrics | crafted-bad-corpus fixtures |
 | `detectEvalDrift` | held-out vs train delta beyond threshold → alarm | synthetic distributions |
-| `captureParityGoldenTest` | byte-identical artifacts with / without capture | dual-run + diff |
+| `captureParityGoldenTest` | byte-identical artifacts with / without capture, INCLUDING SIGKILL-during-`put` torn-line case | dual-run + diff; subprocess SIGKILL in child writer |
+| `ollamaJudge` | rubric evaluation against fixture, score in 0..1, rationale captured | mock HTTP server on localhost:11434 returning fixed JSON |
+| `azureOpenAIJudge` | rubric evaluation, Entra ID auth path, error on bad deployment | mock `@azure/openai` SDK calls |
+| `geminiJudge` | rubric evaluation, free-tier quota error handled | mock `@google/generative-ai` |
+| `dailyCapMeter` | reserve respects cap, persist across process restart, day-roll-over | tmpdir + virtual clock |
+| `fileLockManager` | acquire is atomic (O_EXCL), heartbeat detection, stale lock recovery, concurrent acquire races | fork child processes; assert only one wins |
+| `validateCandidateSize` | counts lines, exempts frontmatter when configured | fixture with various sizes |
+| `GepaConfigSchema` | defaults applied, invalid configs rejected with field path | parse fixtures |
+| `CrewArtifactSchema` | round-trips through `gepaCapture`, malformed payload rejected | fixture series |
 
 ### crew integration tests (dev-team repo)
 
@@ -540,6 +781,14 @@ Each event includes `trial_id` / `cycle_id` for correlation.
 - `soak-promote-happy-path` — virtual clock 7 days, no regression → champion replaced atomically, frontmatter updated.
 - `soak-revert-on-regression` — crafted regression mid-soak → revert, alarm, forensics artifact.
 - `critical-agent-allowlist` — optimize inspector with all gates green → draft PR opened, no auto-merge.
+- `concurrent-eval-block` — two `/crew:gepa-eval fullstack-dev` invocations from sibling worktrees → second exits with `already_in_progress`, exit code 2.
+- `oversized-candidate-rejected` — generator returns a 400-line candidate → rejected before any LLM spend; pareto_rank null; rationale `oversized_candidate`.
+- `judge-unreachable-halt` — ollama endpoint dead during eval → eval halts cleanly with `judge_unreachable: ollama`, no partial trial corruption.
+- `branch-protection-missing-blocks-merge` — auto-merge attempted on unprotected target → draft PR with label, no merge.
+- `champion-frozen-blocks-cycle` — `champion_frozen: ["inspector"]` configured → `/crew:gepa-optimize inspector` exits with `champion_frozen` before generator spend.
+- `soak-sample-floor` — soak with n=10 trials but clock met → soak extends (does not promote) until minSoakTrials hit or maxSoakDays reached.
+- `soak-insufficient-traffic` — agent dispatches < minSoakTrials over maxSoakDays → revert with `soak_insufficient_traffic`, auto-merge path disabled for that agent in this cycle.
+- `frontmatter-cap-exemption` — agent with 348-line body + 8-line `gepa:` frontmatter → `validate-agents.ts` passes (would fail without exemption).
 
 ### Test fixtures + seeds
 
@@ -564,57 +813,76 @@ Each event includes `trial_id` / `cycle_id` for correlation.
 
 | Slice | Repo | Scope | Acceptance evidence | Est. days |
 |---|---|---|---|---|
-| **S1** | new repo `astragenie/gepa-core` | bootstrap pkg + Zod schemas (Trial, EvalCase, ScoreResult) + `fileStore` + `sequentialRunner` + `binaryScorer` + `paretoRank` + unit tests | `bun test` green, package publishable, validators pass | 3 |
-| **S2** | `dev-team` (crew) | `gepa.config.json` schema + `gepaCapture()` tee in artifact writers (fullstack-dev only at first) + `/crew:gepa-history` + capture-absent-parity test | golden parity test green, walltime cap honored, p50 < 50 ms added, p99 budget asserted | 2 |
-| **S3** | `dev-team` | 5 hand-seed eval cases for fullstack-dev under `agents/fullstack-dev/.gepa/eval/*.jsonl` + `/crew:gepa-eval` cmd + train / heldOut splitter | running eval produces aggregate, trials stored, `/crew:gepa-score` shows trend | 2 |
-| **S4** | `dev-team` | `/crew:gepa-optimize fullstack-dev --artifact-only` (no PR, no merge) + `CandidateGenerator` wraps aiplugin-dev + budget cap + Pareto math | full cycle on fullstack-dev produces measurable gain artifact OR clean no-winner exit. **CHECKPOINT** | 3 |
-| **S5** | `gepa-core` + `dev-team` | `rubricScorer` + `astramemStore` + `validateTrialCorpus` + `detectEvalDrift` validators + horizontalize: add backend-dev, frontend-dev, verifier seed datasets + eval runs | 4 agents have working eval, drift validator passes | 4 |
-| **S6** | `dev-team` | inspector bug-corpus mining script (extract bug-labeled diffs from PR review history) + 10-case eval set + inspector eval run using rubricScorer (LLM-judge breaks circularity) | inspector eval produces aggregate, no scorer-circular warning | 3 |
-| **S7** | `dev-team` | architect hand-labeled cases (8–10 by senior eng OR using critical-thinking agent as judge) + `soakMonitor` + `PromotionPolicy` default + `gepa.config.json` policy section | architect eval produces aggregate, soak harness works on dummy promotion | 3 |
-| **S8** | `dev-team` + `gepa-core` | auto-PR via gh CLI + auto-merge gate (5 conditions) + critical-agent allowlist + champion provenance frontmatter + `/crew:gepa-invalidate` + `/crew:gepa-revert` + observability events | one real cycle on fullstack-dev passes all gates and auto-merges; one real cycle on inspector files draft PR | 3 |
+| **S1** | new repo `astragenie/gepa-core` | bootstrap pkg + Zod schemas (Trial, EvalCase, ScoreResult, **CrewArtifact, AgentRun, Candidate, GepaConfig**) + `fileStore` + `sequentialRunner` + `binaryScorer` + `dailyCapMeter` + `fileLockManager` + `paretoRank` + `dominates` + `validateCandidateSize` + unit tests + semver + CHANGELOG | `bun test` green, package publishable, validators pass | 3 |
+| **S2** | `dev-team` (crew) | `gepa.config.json` loader (validates via `GepaConfigSchema`) + `gepaCapture()` tee in artifact writers (fullstack-dev only at first) + `/crew:gepa-history` + capture-absent-parity test + SIGKILL-during-put parity test + `tests/gepa/capture-perf.test.ts` | golden parity test green (incl. SIGKILL case), capture latency `p50 ≤ 50 ms / p99 ≤ 200 ms / max ≤ 2000 ms` asserted in CI, `validate-agents.ts` taught to skip `.gepa/` subdirs + exempt `gepa:` YAML frontmatter from 350-line cap | 2 |
+| **S3** | `dev-team` | 5 hand-seed eval cases for fullstack-dev under `agents/fullstack-dev/.gepa/eval/*.jsonl` + `/crew:gepa-eval` cmd + train / heldOut splitter + lock acquire/release on agent during eval | running eval produces aggregate, trials stored, `/crew:gepa-score` shows trend, concurrent `/crew:gepa-eval fullstack-dev` exits cleanly with `already_in_progress` | 2 |
+| **S4** | `dev-team` | `/crew:gepa-optimize fullstack-dev --artifact-only` (no PR, no merge) + `CandidateGenerator` wraps aiplugin-dev + budget cap via `dailyCapMeter` + Pareto math + 3-cycle no-winner halt | full cycle on fullstack-dev produces measurable gain artifact OR clean no-winner exit. **CHECKPOINT 1** | 3 |
+| **S5a** | `gepa-core` | `LLMJudge` interface + `ollamaJudge` built-in (separate entry point) + `rubricScorer` impl + `validateTrialCorpus` + `detectEvalDrift` validators | judge interface contract test; `rubricScorer` with `ollamaJudge` produces continuous score against fixture rubric | 2 |
+| **S5b** | `gepa-core` + `dev-team` | `azureOpenAIJudge` (peer-dep `@azure/openai`) + `geminiJudge` (peer-dep `@google/generative-ai`) + per-agent `judge_per_agent` config switch + `agents/<name>/.gepa/rubric.md` loader | each adapter has unit test against mocked SDK; per-agent override switches model correctly | 2 |
+| **S5c** | `gepa-core` + `dev-team` | `astramemStore` + `sharedAstramemMeter` (shares wallet with astramem-local) + horizontalize: backend-dev, frontend-dev, verifier seed datasets + eval runs | 4 agents have working eval (fullstack + backend + frontend + verifier), astramem trial store interchangeable with file store under same eval | 2 |
+| **S6** | `dev-team` | inspector bug-corpus mining script (extract bug-labeled diffs from PR review history) + 10-case eval set + inspector eval run using `rubricScorer` (LLM-judge breaks circularity) | inspector eval produces aggregate, no scorer-circular warning | 3 |
+| **S7** | `dev-team` | architect hand-labeled cases (8–10 by senior eng OR using critical-thinking agent as judge) + soak monitor (dual clock + sample floor + early-revert) + `PromotionPolicy` default + `gepa.config.json` policy section + champion-frozen list support | architect eval produces aggregate, soak harness detects crafted regression on dummy promotion within rolling 1-day window. **CHECKPOINT 2** | 3 |
+| **S8a** | `dev-team` + `gepa-core` | auto-PR via gh CLI on `gepa/<agent>/<trial-id>` branch + branch-protection presence check (refuses auto-merge if missing) + champion provenance frontmatter writer | one cycle on fullstack-dev writes branch + opens PR; missing branch protection forces draft + label | 2 |
+| **S8b** | `dev-team` | auto-merge gate (5 conditions: pareto-rank-1 + minPassDelta + tail-risk-floor + no-cost/latency-regression + agent-eligible-and-soak-passed) + critical-agent allowlist + `/crew:gepa-invalidate` + `/crew:gepa-revert` + `/crew:gepa-thaw` + observability events | fullstack-dev real cycle passes all gates and auto-merges; inspector real cycle files draft PR; `champion_frozen` blocks new cycles | 2 |
 
-**Total ≈ 23 working days = 5 calendar weeks.**
+**Total = 24 working days ≈ 5 calendar weeks** (S1: 3, S2: 2, S3: 2, S4: 3, S5a: 2, S5b: 2, S5c: 2, S6: 3, S7: 3, S8a: 2, S8b: 2; one slice short over original 23 because S5 + S8 each split into 3 + 2 sub-slices for review clarity).
 
 ### Slice dependencies
 
 ```
-S1 ──┬─► S2 ──► S3 ──► S4 (CHECKPOINT)
+S1 ──┬─► S2 ──► S3 ──► S4 (CHECKPOINT 1)
      │                   │
-     └─► S5 ◄────────────┘
-                │
-                ├─► S6 (inspector)
-                ├─► S7 (architect + soak)
-                └─► S8 (auto-PR + auto-merge)
+     └─► S5a ◄────────────┘
+            │
+            ▼
+         S5b ──► S5c
+            │      │
+            ▼      ▼
+           S6    S6 (parallel-able after rubricScorer lands in S5a)
+                  │
+                  ▼
+                 S7 (CHECKPOINT 2)
+                  │
+                  ▼
+                 S8a ──► S8b
 ```
+
+S5a is the gate between MVP (S1–S4 work without LLM judge) and horizontalized eval (S5b/S5c onward need it). S5b and S5c can run in parallel by different worktrees once S5a lands. S8a (auto-PR scaffolding) and S8b (auto-merge gate) are deliberately sequential — auto-merge logic must not ship before PR shape is proven.
 
 ### Risk-weighted exit gates
 
-- **After S4**: if optimizer fails to produce measurable gain on fullstack-dev, **stop**. Rescope before S5. Avoids the architect's "theatre" risk.
-- **After S7**: dry-run soak end-to-end. If the soak harness can't detect a crafted regression, **stop**. Don't ship S8.
+- **After S4 (CHECKPOINT 1)**: if `runOptimization` returns `no_winner` 3 times in a row on fullstack-dev, **stop**. Rescope before S5a. Avoids the architect's "theatre" risk. (`no_winner_streak` event is the signal.)
+- **After S7 (CHECKPOINT 2)**: dry-run soak end-to-end with a crafted regression (artificially worsen the candidate prompt and verify rolling-1-day window detects it within `minSoakTrials` dispatches). If soak harness can't detect → **stop, don't ship S8a/S8b**.
+- **Before S8a auto-merge enable**: branch-protection presence check on target repo. If not configured, S8a still ships PR scaffolding but auto-merge gate stays off until protection is wired.
 
 ### Mapping ticket #121 phases → slice plan
 
 | Ticket phase | Slices | Note |
 |---|---|---|
 | Phase 1 (Capture, 1 week) | S1 + S2 | extracted gepa-core ESM lib; capture lives in crew thin glue |
-| Phase 2 (Eval, 1 week) | S3 + S5 + S6 + part of S7 | hybrid datasets + horizontalize, not "1 week" |
-| Phase 3 (Optimize, 2 weeks) | S4 + S7 + S8 | safer promotion gate + soak |
+| Phase 2 (Eval, 1 week) | S3 + S5a + S5b + S5c + S6 | hybrid datasets + horizontalize + judge interface + per-agent judges + astramem store; honestly ~3 weeks not 1 |
+| Phase 3 (Optimize, 2 weeks) | S4 + S7 + S8a + S8b | safer promotion gate + soak; honestly ~2 weeks of optimize work plus the S5 horizontalize prereq |
 | Phase 4 (deferred) | post-v1 | unchanged |
 
 ### Cross-repo coordination
 
 | Repo | When it changes |
 |---|---|
-| `gepa-core` | S1 (bootstrap), S5 (rubricScorer + astramem store + validators), S8 (promotion policy types) |
-| `dev-team` | S2 – S4 (capture, eval, optimize MVP for fullstack-dev), S5 – S8 (horizontalize + safety) |
+| `gepa-core` | S1 (bootstrap + Zod schemas + fileStore + sequentialRunner + binaryScorer + meter + lock + validators), S5a (LLMJudge interface + ollamaJudge + rubricScorer + trial-corpus / drift validators), S5b (azureOpenAIJudge + geminiJudge entry points), S5c (astramemStore + sharedAstramemMeter), S8a (PR scaffolding helpers if any), S8b (promotion gate types if any) |
+| `dev-team` | S2 – S4 (capture, eval, optimize MVP for fullstack-dev), S5b – S8b (horizontalize + safety + auto-merge gate) |
 | `runner-plugin` | **no required changes** — `waveRunner` adapter is optional, deferred until parallel candidate runs become a bottleneck (post-v1) |
 | `memory-plugin` | **no required changes for crew** — `astramemStore` lights up automatically when astramem CLI is present; spec contract sync is opportunistic, not blocking |
+| Consumer plugins (future) | pin `^MAJOR.MINOR` on `gepa-core` in `package.json`; subscribe to `gepa-core` CHANGELOG.md for MAJOR-bump notices |
 
 ## Open product calls remaining
 
-- Should the soak phase percentage be tunable per-agent (e.g. 5 % for inspector during eval, 20 % for frontend-dev once trust earned)? Default to single global value for v1.
-- Should `rubricScorer` use a fixed model (e.g. `claude-haiku-4-5`) or follow the user's session model? Default to fixed haiku for v1 — judge cost stays predictable.
-- Should auto-grown captured cases be moved into git automatically, or held in a separate "candidate cases" pool until reviewed? Default to candidate pool; a separate `/crew:gepa-promote-cases` command for batch human review is scoped as a v2 deliverable (not in S1–S8).
+- **Per-agent soak percentage** — should `soakPercent` be tunable per-agent (e.g. 5 % for low-volume agents to avoid over-exposing real users, 20 % for high-volume ones once trust is earned)? Default for v1 is single global value via `policy.soak_percent`. Per-agent override can land in v1.1 via `policy.soak_percent_per_agent: Record<string, number>` without library changes — config shape is open.
+- **Auto-grown captured cases** — should `score ≥ 0.9` captured runs be moved into git automatically, or held in a "candidate cases" pool until human review? Default for v1: candidate pool. `/crew:gepa-promote-cases` batch-review command scoped as v2 deliverable (not in S1–S8b).
+- **Per-cycle vs per-day budget hierarchy** — current default: cycle ≤ $5, day ≤ $50. Should we add a per-week ceiling for autonomous-loop mode? Defer to v1.1 telemetry from S2 onward.
+
+### Decided in this revision (formerly open)
+
+- ✅ **Judge model** — pluggable via `LLMJudge`; default `ollamaJudge` (`llama3.2:latest`); v1 adapters: ollama + azure-openai + gemini.
 
 ## Deferred (post-v1)
 
