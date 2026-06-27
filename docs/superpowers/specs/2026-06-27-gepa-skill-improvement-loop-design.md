@@ -316,11 +316,21 @@ export interface PromotionPolicy {
 }
 
 export interface BudgetMeter {
-  reserve(estimateUsd: number): Promise<{ ok: boolean; remainingUsd: number }>;
-  record(actualUsd: number): Promise<void>;
+  reserve(estimateUsd: number, opts?: { ttlSeconds?: number }): Promise<{
+    reservationId: string;
+    ok: boolean;
+    remainingUsd: number;
+  }>;
+  record(reservationId: string, actualUsd: number): Promise<void>;
+  release(reservationId: string): Promise<void>;             // explicit cancel
   spentToday(): Promise<number>;
   dailyCap(): number;
 }
+// Reservations have a default TTL of 600 s; if the caller crashes between
+// reserve() and record()/release(), the BudgetMeter expires the reservation
+// at TTL and the held budget returns to the daily cap. Built-in `dailyCapMeter`
+// persists reservations + TTL to disk so day-roll-over and orphan-recovery
+// both work after process restart.
 
 // Pluggable judge interface — `rubricScorer` takes one of these as a dep.
 // Consumer plugins pick per `gepa.config.json` `judge` block.
@@ -449,6 +459,8 @@ export const geminiJudge: (opts: { model: string; apiKey: string }) => LLMJudge;
 - `LLMJudge` is injected into `rubricScorer`, not built in. This is the load-bearing pluggability win: changing judge provider is a config switch, not a library bump.
 - Built-in factories follow `(opts) => Interface` shape so they compose like normal values. No DI container.
 - `validateCandidateSize` is exposed so the runner can pre-screen oversized candidates BEFORE scoring spend. Architect concern: a candidate that violates `validate-agents.ts` ≤350-line cap should never reach a paid LLM call.
+- `judge_per_agent` precedence rule (explicit): when an agent name appears in `judge_per_agent`, that block fully overrides the global `judge` block — there is no field-level merge. Mental model: "global default, per-agent replace, not extend." Library helper `resolveJudge(config, agent): LLMJudge` enforces this and is the only sanctioned construction path.
+- `score_hint.pass` on a `CrewArtifact` is ADVISORY — captured trials populate it from the live dispatch's inspector/validator verdict, but a `Scorer` (especially `rubricScorer`) is always called fresh during `eval` and `soak` paths and never short-circuits on `score_hint`. Reason: capture-time PASS/FAIL is binary and may not reflect the rubric the optimizer is climbing.
 
 ## Data flow
 
@@ -684,6 +696,7 @@ The validator script `scripts/validate-agents.ts` must:
 | Soak | soak champion file corrupt | revert to main champion, alarm, mark soak failed |
 | Soak | rolling 1-day window shows ≥10 pp continuous-score regression vs main | early-revert, alarm, write `soak/<agent>-early-revert-<ts>.json` forensics artifact |
 | Soak | dispatcher can't read `soak.json` | use main champion, log read failure once, continue |
+| Soak | `soak.json` torn write — dispatcher reads file mid-promote/revert write | dispatcher reads via `tmp + rename` atomic swap pattern: writers stage to `soak.json.tmp`, fsync, then `rename(tmp, soak.json)` (POSIX atomic; on Windows uses `MoveFileEx` with `MOVEFILE_REPLACE_EXISTING`). Readers retry once on JSON parse failure before falling back to main champion. |
 | Soak | `maxSoakDays` (default 21) reached without hitting `minSoakTrials` floor | revert, log `soak_insufficient_traffic`, mark for manual review (agent too low-volume for auto-merge path; queue as draft PR instead) |
 | Promote | auto-merge attempt | writes prompt file to working tree + commits on `gepa/<agent>/<trial-id>` branch, then `gh pr merge --auto --squash`. Branch protection still enforces CI green. Never `git push origin main` direct. |
 | Promote | branch protection NOT configured on target repo (`gh api repos/:owner/:repo/branches/main/protection` returns 404) | refuse auto-merge — open as draft PR with `branch_protection_missing` label. Auto-merge requires required-checks to be enforced; otherwise the gate is theatre. |
@@ -809,6 +822,34 @@ Each event includes `trial_id` / `cycle_id` for correlation.
 - `runner-plugin` internals (covered by its own suite).
 - astramem CLI internals (covered by memory-plugin's own suite).
 
+## Implementation notes for plan-writing
+
+These are NOT new design decisions — they are clarifications surfaced during the third-pass architect review that should land as concrete behaviors during slice implementation. They're documented here so the plan writer doesn't have to re-derive them.
+
+### S1 — gepa-core bootstrap
+
+- **Lockfile directory committed vs ephemeral.** `.claude/artifacts/crew/gepa/locks/` MUST be added to the project `.gitignore` of every consumer plugin (crew and any future consumer). Stale-PID detection across sibling git worktrees that share the same lock path would otherwise produce false-positive "already in progress" errors. `LockManager` implementations should include the absolute worktree root in the lock filename (e.g. `<sha256(worktree-root)>-<agent>.<op>.lock`) as a secondary safeguard.
+- **Atomic file writes** — `fileStore.put()` uses `O_APPEND` + single `write()` syscall under the JSONL line size (Node `fs.appendFileSync` with `flag: 'a'` is sufficient on both POSIX and Windows for ≤4 KiB lines). `soak.json` writes use the `tmp + rename` atomic-swap pattern documented in the failure-modes table.
+- **Semver discipline tooling** — ship a `CHANGELOG.md` template and a `scripts/check-semver.ts` that diffs exported interfaces against the previous release and flags MAJOR-bump-required changes. Wire into release workflow.
+
+### S5b — judges
+
+- **Score normalization** is the unresolved open product call (see "Open product calls remaining"). Resolve before this slice ships if any agent in `judge_per_agent` is on the auto-merge allowlist.
+- **LLMJudge rationale field redaction** — judge `rationale` strings land in committed eval artifacts (`.claude/artifacts/crew/gepa/eval/<run-id>.json`). For agents whose inputs may contain secrets (e.g. inspector reviewing a diff that pastes an API key by accident), the rationale should pass through a basic redactor (`***`-replace common secret patterns) before write. Library exposes `redactRationale(s: string): string` with the default `astragenie/standards` secret regex set.
+
+### S7 — soak harness
+
+- **Champion-frozen vs optimize-paused UX overlap.** Both block optimization but at different scopes:
+  - `optimize.paused: true` — global block, halts ALL `/crew:gepa-optimize` runs across all agents.
+  - `champion_frozen: [<agent>]` — per-agent block on that one agent only.
+  - `/crew:gepa-thaw <agent>` removes from `champion_frozen`.
+  - `/crew:gepa-resume` (already implied for `optimize.paused`) flips global.
+  Spec MUST land both commands; help text MUST explain the precedence (`optimize.paused` is checked first, then `champion_frozen`).
+
+### S8a / S8b — auto-merge
+
+- **Dataset-authoring slack.** The 24-day total has zero buffer for dataset authoring overruns (S6 inspector bug-corpus mining + S7 architect hand-labels). Plan writer should add a 3-day contingency slot between S6 and S7 OR flag this in the run-brief as a known schedule risk.
+
 ## Slice plan
 
 | Slice | Repo | Scope | Acceptance evidence | Est. days |
@@ -879,6 +920,7 @@ S5a is the gate between MVP (S1–S4 work without LLM judge) and horizontalized 
 - **Per-agent soak percentage** — should `soakPercent` be tunable per-agent (e.g. 5 % for low-volume agents to avoid over-exposing real users, 20 % for high-volume ones once trust is earned)? Default for v1 is single global value via `policy.soak_percent`. Per-agent override can land in v1.1 via `policy.soak_percent_per_agent: Record<string, number>` without library changes — config shape is open.
 - **Auto-grown captured cases** — should `score ≥ 0.9` captured runs be moved into git automatically, or held in a "candidate cases" pool until human review? Default for v1: candidate pool. `/crew:gepa-promote-cases` batch-review command scoped as v2 deliverable (not in S1–S8b).
 - **Per-cycle vs per-day budget hierarchy** — current default: cycle ≤ $5, day ≤ $50. Should we add a per-week ceiling for autonomous-loop mode? Defer to v1.1 telemetry from S2 onward.
+- **Per-agent score normalization** — `judge_per_agent` can route different agents to different judge providers (e.g. inspector → Ollama, architect → Azure). Scores from different judges are not strictly comparable on the same 0..1 scale. Should the library expose a `JudgeCalibration` step that normalizes per-provider score distributions before Pareto rank? Default v1: no normalization (compare scores only within same judge); raise as v1.1 if cross-judge bias detected during S5b. **Decide before S5b ships** if any agent in `judge_per_agent` is also part of the auto-merge allowlist.
 
 ### Decided in this revision (formerly open)
 
