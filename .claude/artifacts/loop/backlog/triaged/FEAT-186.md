@@ -1,6 +1,6 @@
 ---
 id: FEAT-186
-status: pending
+status: triaged
 priority: P2
 category: capability
 target_release: null
@@ -8,8 +8,15 @@ created: 2026-06-28
 depends_on: [FEAT-184, FEAT-185]
 slices: []
 derived_from: null
+pm_customer_impact: 0.70
+pm_effort_estimate: 0.55
+pm_strategic_alignment: 0.70
+pm_technical_risk: 0.55
+pm_dependency_depth: 0.75
+composite_score: 0.55
 autonomous_safe: false
 tags: [evals, gepa, cost-accounting, telemetry, contract]
+triage_notes: "Triaged 2026-06-28 — spun out of FEAT-185 AC-7 per architect-reviewer (2026-06-28) because cost-aggregation is a CONTRACT DECISION not a refactor side-task. Keeping it in 185 made the snapshot-diff gate (185 AC-4) hard to interpret because two variables (provider location + cost shape) would change at once; splitting isolates the variable. Production-safety motivation (NOT hygiene): FEAT body Option 3 rejection quoted — dailyCapMeter in gepa-core (design spec line 326-333) enforces budget caps, but without a unified shape the meter sees one pipeline's costs but not the other → budget overruns become silent. Cost analog: FEAT-159 SLICE-85 ($51) for single observability append × 3-4 surfaces (dailyCapMeter, per-slice cost report renderer, brief-me, Langfuse) → effort 0.55 (pure contract definition + dual-pipeline wiring, no transport-layer changes). No grade weak dimensions (5-grade rolling avg: arch 0.86 / reliability 0.88 / observability 0.83 / prod-readiness 0.86 / security 0.86 / test-conf 0.92 / product-completeness 0.81; all >= 0.80). Composite 0.55 → P2: customer 0.70 (production-safety budget-overrun gap, stronger than typical cleanup FEAT), strategic 0.70 (cross-cuts evals + GEPA but resolves real production-safety gap), effort 0.55 (3-4 surfaces wiring, mid-band), risk 0.55 (new exported type to gepa-core = additive/MINOR, but cross-plugin contract pulls band edge), dependency_depth 0.75 (HARD chain dep on FEAT-184 AND FEAT-185 — longest blocker chain in the trio). autonomous_safe=false confirmed — adds new exported type to gepa-core (JudgeCost) = cross-plugin contract change; human-in-loop on review per CLAUDE.md autonomous-loop-hard-rules + cross-plugin contract policy. DEPENDENCY ORDERING SURFACE (raised inline per operator instruction 4): operator task tracker (#11/#12/#13) only schedules build phases for FEAT-184 + FEAT-185 — there is no Phase 7 for FEAT-186. If 186 is silently dropped, SLICE-98 ships against the dual cost-shape problem that 186 was specifically spun out of 185 to address. Recommend dispatcher add Phase 7 = build FEAT-186 task before SLICE-98 starts. Decomposition (proposed_slices block) DEFERRED per operator instruction (dispatcher will slice after triage lands). Pre-mortem (not strictly mandatory per rubric — risk 0.55 < 0.6 AND priority P2 — but key risk surfaced): dailyCapMeter integration scope is bigger than this FEAT can absorb (FEAT body itself acknowledges this); spec line 326-333 describes BudgetMeter with TTL + reserve/record/release; AC scope is cost-ingestion only, full meter integration deferred to sibling FEAT once gepa-core S5 (budget) lands."
 ---
 
 # FEAT-186: Unified cost-aggregation contract across evals + gepa pipelines

@@ -1,6 +1,6 @@
 ---
 id: FEAT-185
-status: pending
+status: triaged
 priority: P2
 category: refactor
 target_release: null
@@ -9,8 +9,15 @@ revised: 2026-06-28
 depends_on: [FEAT-184]
 slices: []
 derived_from: null
+pm_customer_impact: 0.65
+pm_effort_estimate: 0.70
+pm_strategic_alignment: 0.75
+pm_technical_risk: 0.70
+pm_dependency_depth: 0.55
+composite_score: 0.58
 autonomous_safe: false
 tags: [evals, gepa, providers, extraction, gepa-core]
+triage_notes: "Triaged 2026-06-28 — moves 6 of 7 evals/providers/* adapters into @astragenie/gepa-core as discrete entry points (ollama+generic-openai+groq+gemini+azure+bedrock); claude-p stays in dev-team because its subprocess-spawn + Windows-specific + --dangerously-skip-permissions + FEAT-173 tempdir-isolation logic is dev-team-motivated and would leak into a portable library. Architect-reviewer cycle already addressed AC-2 contradicting existing code (bedrock.ts/groq.ts/claude-p.ts read process.env directly), AC-4 unrealistic identical-scores against nondeterministic LLM judges, claude-p portability concern under-weighted, AC-7 scope creep into cost-aggregation, missing CI matrix AC for peer-dep resolution, no slice-split for rollback safety — revisions visible in FEAT body lines 115-119. 2-slice split (SLICE-A low-blast ollama+generic-openai+groq+gemini, SLICE-B SDK-heavy azure+bedrock) already specified in FEAT body. Cost analog: each slice is roughly SLICE-84-class ($457) due to cross-repo publish + AC-8 CI matrix (3 OSes × 2 SDK states × 6 providers = 36 matrix cells); effort 0.70 reflects this. No grade weak dimensions (5-grade rolling avg: arch 0.86 / reliability 0.88 / observability 0.83 / prod-readiness 0.86 / security 0.86 / test-conf 0.92 / product-completeness 0.81; all >= 0.80). Composite 0.58 → P2: customer 0.65 (indirect — required for zero-hard-cross-plugin-deps guarantee per design spec line 18), strategic 0.75 (mid; concentrates strategic value in upstream FEAT-184 unification), effort 0.70 (2 medium slices, cross-repo publish + heavy CI matrix), risk 0.70 (cross-plugin contract change + peer-dep wiring across Win/Linux/macOS = band 0.6-0.8), dependency_depth 0.55 (hard upstream dep on FEAT-184; cannot start until 184 lands). autonomous_safe=false confirmed — cross-repo publish + peer-dep wiring + CI matrix changes; human-in-loop on review per CLAUDE.md autonomous-loop-hard-rules + cross-plugin contract policy. claude-p stays in dev-team per AC-9 — explicitly called out in CHANGELOG to prevent future re-litigation. Naming alignment risk: spec line 126 says judges/ but FEAT uses providers/ because adapters serve candidate+judge roles — CHANGELOG entry must document the rename. Decomposition (proposed_slices block) DEFERRED per operator instruction (dispatcher will slice after triage lands). Pre-mortem (mandatory per risk>=0.6): (1) likely failure = AC-8 CI matrix Windows × without-SDK row trips on npm optional-peer-dep resolution quirk causing install-instruction error path to be silently untested OR SLICE-B azure/bedrock SDK dynamic require() breaks ESM-only assertion; (2) rollback cost = revert gepa-core publish (cannot un-publish vN+1 from npm) + revert dev-team evals/providers/* shim rewrites + 6 adapter relocations × 2 repos; (3) coverage gap = no test today asserts evals/providers/* contain ONLY env-resolution-and-shim code; AC-2 grep gate is new infrastructure that needs review for false-negatives. MAJOR-vs-MINOR risk on gepa-core: AC-5 says MINOR (additive entry points only) but if AC-2 hardening forces constructor signature change on EXISTING exports, retroactively becomes MAJOR."
 ---
 
 # FEAT-185: Move 6 cloud providers to gepa-core — single source of truth for LLM adapters

@@ -1,16 +1,24 @@
 ---
 id: FEAT-184
-status: pending
+status: triaged
 priority: P1
 category: refactor
 target_release: null
 created: 2026-06-28
 revised: 2026-06-28
-depends_on: [FEAT-167, FEAT-169, FEAT-183]
+depends_on: [FEAT-167, FEAT-169]
+blocks: [FEAT-183]
 slices: []
 derived_from: null
+pm_customer_impact: 0.80
+pm_effort_estimate: 0.60
+pm_strategic_alignment: 0.85
+pm_technical_risk: 0.70
+pm_dependency_depth: 0.35
+composite_score: 0.72
 autonomous_safe: false
 tags: [evals, gepa, judge, interface-alignment, pre-extraction]
+triage_notes: "Triaged 2026-06-28 — pre-S3 scope-lock that aligns evals/lib/judge.ts (dev-team) and @astragenie/gepa-core LLMJudge onto one interface BEFORE /crew:gepa-eval (SLICE-98) ships and doubles the migration cost. Architect-reviewer cycle already addressed factually-wrong interface comparison + missing ACs (5/6/9/10) + ambiguous semver decision — revisions visible in FEAT body lines 156-161. Cost analogs: SLICE-84 ($457 / multi-file new library + parallel reviewer fanout) is the closest match for cross-repo interface refactor + 7-adapter cleanup; FEAT-159's 3-slice arc averaged ~$200/slice. Estimate 2 medium slices = effort 0.6 confirmed. No grade weak dimensions (5-grade rolling avg: arch 0.86 / reliability 0.88 / observability 0.83 / prod-readiness 0.86 / security 0.86 / test-conf 0.92 / product-completeness 0.81; all >= 0.80; product_completeness is the floor at 0.81 — worth tracking but does not gate AC). Composite 0.72 → P1: customer 0.80 (GEPA-roadmap blocker per design spec line 128 strict-semver commitment), strategic 0.85 (centerpiece for GEPA + cross-plugin extraction path), effort 0.60 (2-3 days realistic per architect-reviewer revision, cross-repo paired-PR ceremony), risk 0.70 (banded — public/cross-plugin contract change + gepa-core MAJOR semver per AC-7 = band 0.6-0.8), dependency_depth 0.35 (FEAT-167+FEAT-169 shipped, FEAT-183 in flight but is downstream consumer not upstream blocker). autonomous_safe=false confirmed — touches published interface contracts in two repos; human-in-loop on review per CLAUDE.md autonomous-loop-hard-rules + cross-plugin contract policy. Decomposition (proposed_slices block) DEFERRED per operator instruction (dispatcher will slice after triage lands). Pre-mortem (mandatory per P1 + risk>=0.6): (1) likely failure = AC-4 statistical-drift band trips on borderline LLM judge because rubric string→string[] single-element wrap subtly shifts prompt token sequence on one of 2 shipped specs; (2) rollback cost = cross-repo, irreversible npm publish, requires gepa-core vN+2 revert + dev-team revert + 7 adapter describe() removals; (3) coverage gap = evals/cli.ts cost-attribution telemetry has no contract test today, silent token-shape lossage on tokens?:{in,out} would slip past every current test — slice MUST add a telemetry-consumption assertion. Dependency-direction note: depends_on includes FEAT-183 (umbrella epic still in flight) — semantically this FEAT is pre-requisite for FEAT-183/SLICE-98, not downstream of FEAT-183 completion; consider dropping FEAT-183 from depends_on or adding blocks: [FEAT-183/SLICE-98] reverse-link if schema supports it."
 ---
 
 # FEAT-184: Unify judge interface — adopt LLMJudge across evals/ + gepa-core
