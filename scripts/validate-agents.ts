@@ -15,6 +15,7 @@
 // Lines beyond the cap should push to a skill the agent invokes on demand.
 
 import fs from "node:fs/promises";
+import { readdirSync, readFileSync, type Dirent } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -32,19 +33,34 @@ function parseFrontmatter(text: string): Record<string, string> | null {
   return fm;
 }
 
-async function findAgentFiles(root: string): Promise<string[]> {
+/**
+ * Enumerate agent `.md` files directly under `agentsDir` (one level only),
+ * explicitly skipping any directory named `.gepa` so GEPA eval data placed
+ * alongside an agent prompt is never treated as an agent. Exported for testability.
+ *
+ * The one-level-only policy is intentional: `agents/3rdparty/` and per-agent
+ * subdirectories (e.g. `agents/fullstack-dev/.gepa/`) must not be crawled.
+ */
+export function enumerateAgents(agentsDir: string): string[] {
   const out: string[] = [];
+  let entries: Dirent[];
   try {
-    const entries = await fs.readdir(root, { withFileTypes: true });
-    for (const entry of entries) {
-      if (entry.isFile() && entry.name.endsWith(".md")) {
-        out.push(path.join(root, entry.name));
-      }
-    }
+    entries = readdirSync(agentsDir, { withFileTypes: true });
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    return out;
+  }
+  for (const entry of entries) {
+    if (entry.name === ".gepa") continue; // explicit skip: GEPA eval data must not be validated
+    if (entry.isFile() && entry.name.endsWith(".md")) {
+      out.push(path.join(agentsDir, entry.name));
+    }
   }
   return out;
+}
+
+async function findAgentFiles(root: string): Promise<string[]> {
+  return enumerateAgents(root);
 }
 
 function checkRequiredFields(fm: Record<string, string>, label: string, errors: string[]) {
@@ -66,6 +82,32 @@ function checkFileName(
       `${label}: file name "${baseName}.md" does not match frontmatter name "${fm["name"]}"`
     );
   }
+}
+
+/**
+ * Check whether a file's line count respects `maxLines`, with an exemption for
+ * leading `gepa:` YAML frontmatter blocks (AC-8). Only a LEADING `---…---`
+ * block whose YAML body starts with `gepa:` is subtracted — mid-document YAML
+ * blocks are never exempt (smuggle prevention). Exported for unit-testing.
+ */
+export function checkAgentLineCap(
+  filePath: string,
+  maxLines: number
+): { ok: boolean; lineCount: number } {
+  const raw = readFileSync(filePath, "utf8");
+  const lines = raw.split("\n");
+  let effectiveLines = lines.length;
+  // Only exempt a LEADING `---\ngepa:\n...\n---` block.
+  if (lines[0] === "---") {
+    const closeIdx = lines.indexOf("---", 1);
+    if (closeIdx > 0) {
+      const block = lines.slice(1, closeIdx).join("\n");
+      if (/^gepa:/m.test(block)) {
+        effectiveLines = lines.length - (closeIdx + 1);
+      }
+    }
+  }
+  return { ok: effectiveLines <= maxLines, lineCount: effectiveLines };
 }
 
 function checkLineCount(text: string, fm: Record<string, string>, label: string, errors: string[]) {

@@ -1,0 +1,42 @@
+{
+  "capture": {
+    "enabled": true,
+    "exclude": [],
+    "walltime_ms": 2000
+  },
+  "storage": {
+    "backend": "file",
+    "file_root": ".claude/artifacts/crew/gepa/trials"
+  },
+  "runner": {
+    "backend": "sequential"
+  },
+  "judge": {
+    "provider": "ollama",
+    "model": "llama3.2:latest",
+    "endpoint": "http://localhost:11434"
+  },
+  "judge_per_agent": {},
+  "budget": {
+    "daily_usd": 50,
+    "per_eval_default_usd": 2,
+    "per_optimize_default_usd": 5
+  },
+  "optimize": {
+    "paused": false,
+    "k": 5
+  },
+  "policy": {
+    "eligible_agents": [],
+    "min_pass_delta": 0.05,
+    "min_case_score_floor": 0.6,
+    "soak_percent": 0.10,
+    "soak_days": 7,
+    "min_soak_trials": 20,
+    "max_soak_days": 21,
+    "soak_epsilon": 0.02,
+    "allow_cost_regression": false,
+    "allow_latency_regression": false
+  },
+  "champion_frozen": []
+}

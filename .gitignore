@@ -14,6 +14,10 @@ node_modules/
 langfuse/data/
 evals/runs/
 
+# GEPA — transient (locks + tmp candidate prompts during one optimize cycle)
+.claude/artifacts/crew/gepa/locks/
+.claude/artifacts/crew/gepa/candidates/
+
 # crew:start
 # Crew framework local state. Generated; do not edit between markers.
 .claude/logs/
