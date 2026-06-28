@@ -16,9 +16,12 @@ import assert from "node:assert/strict";
 const LIVE = process.env["CREW_EVAL_LIVE"] === "1";
 
 function makeJudgeRequest() {
+  // FEAT-184: LLMJudge.evaluate() opts shape — rubric is string[] (single-element wrap
+  // for prose rubrics per AC-5); `expected` is required.
   return {
-    rubric: "The response must say hello",
-    candidateOutput: "Hello world! I am a candidate response."
+    rubric: ["The response must say hello"],
+    candidateOutput: "Hello world! I am a candidate response.",
+    expected: { id: "test", held_out: false }
   };
 }
 
@@ -65,13 +68,13 @@ describe("AzureOpenAIJudge (unit — mocked fetch)", () => {
       deployment: "gpt-4o",
       apiKey: "test-key-abc"
     });
-    const result = await judge.judge(makeJudgeRequest());
+    const result = await judge.evaluate(makeJudgeRequest());
 
     assert.equal(result.pass, true);
     assert.equal(result.score, 1);
     assert.ok(result.rationale.includes("greet"));
-    assert.equal(result.providerCost?.tokensIn, 120);
-    assert.equal(result.providerCost?.tokensOut, 30);
+    assert.equal(result.tokens?.in, 120);
+    assert.equal(result.tokens?.out, 30);
 
     globalThis.fetch = origFetch;
   });
@@ -86,7 +89,7 @@ describe("AzureOpenAIJudge (unit — mocked fetch)", () => {
       deployment: "gpt-4o",
       apiKey: "test-key-abc"
     });
-    const result = await judge.judge(makeJudgeRequest());
+    const result = await judge.evaluate(makeJudgeRequest());
 
     assert.equal(result.pass, false);
     assert.equal(result.score, 0);
@@ -110,7 +113,7 @@ describe("AzureOpenAIJudge (unit — mocked fetch)", () => {
       apiKey: "my-api-key",
       apiVersion: "2024-10-21"
     });
-    await judge.judge(makeJudgeRequest());
+    await judge.evaluate(makeJudgeRequest());
 
     assert.ok(
       capturedUrl.includes("/openai/deployments/my-deployment/chat/completions"),
@@ -137,7 +140,7 @@ describe("AzureOpenAIJudge (unit — mocked fetch)", () => {
     const judge = new AzureOpenAIJudge(); // no config — relies on env
 
     await assert.rejects(
-      () => judge.judge(makeJudgeRequest()),
+      () => judge.evaluate(makeJudgeRequest()),
       (err: unknown) => {
         assert.ok(err instanceof Error);
         assert.ok(
@@ -160,7 +163,7 @@ describe("AzureOpenAIJudge (unit — mocked fetch)", () => {
     const judge = new AzureOpenAIJudge({ apiKey: "some-key" });
 
     await assert.rejects(
-      () => judge.judge(makeJudgeRequest()),
+      () => judge.evaluate(makeJudgeRequest()),
       (err: unknown) => {
         assert.ok(err instanceof Error);
         assert.ok(
@@ -187,7 +190,7 @@ describe("AzureOpenAIJudge (unit — mocked fetch)", () => {
       apiKey: "bad-key"
     });
 
-    await assert.rejects(() => judge.judge(makeJudgeRequest()), /HTTP 401/);
+    await assert.rejects(() => judge.evaluate(makeJudgeRequest()), /HTTP 401/);
 
     globalThis.fetch = origFetch;
   });
@@ -199,7 +202,9 @@ describe("AzureOpenAIJudge (unit — mocked fetch)", () => {
       deployment: "gpt-4o-custom",
       apiKey: "test-key"
     });
-    assert.equal(judge.id, "azure:gpt-4o-custom");
+    const d = judge.describe();
+    assert.equal(d.provider, "azure");
+    assert.equal(d.model, "gpt-4o-custom");
   });
 
   test("handles malformed JSON response gracefully (returns pass=false)", async () => {
@@ -221,7 +226,7 @@ describe("AzureOpenAIJudge (unit — mocked fetch)", () => {
       deployment: "gpt-4o",
       apiKey: "test-key"
     });
-    const result = await judge.judge(makeJudgeRequest());
+    const result = await judge.evaluate(makeJudgeRequest());
 
     assert.equal(result.pass, false);
     assert.ok(result.rationale.includes("failed to parse"));
@@ -234,15 +239,18 @@ describe("AzureOpenAIJudge (unit — mocked fetch)", () => {
     const factory = JUDGE_REGISTRY["azure"];
     assert.ok(factory, "azure missing from JUDGE_REGISTRY");
     const judge = await factory();
-    assert.ok(judge.id.startsWith("azure:"), `Expected id starting with azure:, got: ${judge.id}`);
-    assert.equal(typeof judge.judge, "function");
+    assert.ok(
+      judge.describe().provider === "azure",
+      `Expected id starting with azure:, got: ${judge.describe().provider}`
+    );
+    assert.equal(typeof judge.evaluate, "function");
   });
 
   if (LIVE) {
     test("LIVE: AzureOpenAIJudge hits real Azure endpoint", async () => {
       const { AzureOpenAIJudge } = await import("../evals/providers/azure-openai.ts");
       const judge = new AzureOpenAIJudge();
-      const result = await judge.judge(makeJudgeRequest());
+      const result = await judge.evaluate(makeJudgeRequest());
       assert.ok(typeof result.pass === "boolean");
       assert.ok(result.score >= 0 && result.score <= 1);
     });
@@ -301,10 +309,10 @@ describe("BedrockJudge (unit — mocked SDK)", () => {
     const { BedrockJudge } = await import("../evals/providers/bedrock.ts");
     const judge = new BedrockJudge({ model: "anthropic.claude-3-5-sonnet-20241022-v2:0" });
     assert.ok(
-      judge.id.startsWith("bedrock:"),
-      `Expected id starting with bedrock:, got: ${judge.id}`
+      judge.describe().provider === "bedrock",
+      `Expected id starting with bedrock:, got: ${judge.describe().provider}`
     );
-    assert.ok(judge.id.includes("anthropic.claude"));
+    assert.ok(judge.describe().model.includes("anthropic.claude"));
 
     process.env["AWS_ACCESS_KEY_ID"] = savedKey;
   });
@@ -315,10 +323,10 @@ describe("BedrockJudge (unit — mocked SDK)", () => {
     assert.ok(factory, "bedrock missing from JUDGE_REGISTRY");
     const judge = await factory();
     assert.ok(
-      judge.id.startsWith("bedrock:"),
-      `Expected id starting with bedrock:, got: ${judge.id}`
+      judge.describe().provider === "bedrock",
+      `Expected id starting with bedrock:, got: ${judge.describe().provider}`
     );
-    assert.equal(typeof judge.judge, "function");
+    assert.equal(typeof judge.evaluate, "function");
   });
 
   test("throws clear error when AWS credentials are missing", async () => {
@@ -331,7 +339,7 @@ describe("BedrockJudge (unit — mocked SDK)", () => {
     const judge = new BedrockJudge({ model: "anthropic.claude-3-5-sonnet-20241022-v2:0" });
 
     await assert.rejects(
-      () => judge.judge(makeJudgeRequest()),
+      () => judge.evaluate(makeJudgeRequest()),
       (err: unknown) => {
         assert.ok(err instanceof Error);
         assert.ok(
@@ -395,7 +403,7 @@ describe("BedrockJudge (unit — mocked SDK)", () => {
     const { BedrockJudge } = await import("../evals/providers/bedrock.ts");
     const judge = new BedrockJudge();
     // Can't directly inspect the region, but we verify it constructs without error
-    assert.ok(judge.id.startsWith("bedrock:"));
+    assert.ok(judge.describe().provider === "bedrock");
 
     process.env["AWS_ACCESS_KEY_ID"] = savedKey;
     process.env["BEDROCK_REGION"] = savedRegion;
@@ -408,7 +416,7 @@ describe("BedrockJudge (unit — mocked SDK)", () => {
         model: "anthropic.claude-3-5-sonnet-20241022-v2:0",
         region: process.env["BEDROCK_REGION"] ?? "us-east-1"
       });
-      const result = await judge.judge(makeJudgeRequest());
+      const result = await judge.evaluate(makeJudgeRequest());
       assert.ok(typeof result.pass === "boolean");
       assert.ok(result.score >= 0 && result.score <= 1);
     });

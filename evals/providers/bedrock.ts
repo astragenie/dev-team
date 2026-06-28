@@ -1,5 +1,6 @@
 /**
  * BedrockJudge: validation-tier judge using AWS Bedrock Runtime.
+ * Implements LLMJudge (FEAT-184 unified interface).
  * Uses @aws-sdk/client-bedrock-runtime for SigV4-authenticated calls.
  * Module boundary: MUST NOT import from agents/, scripts/, src/, hooks/, commands/.
  *
@@ -13,10 +14,11 @@
  *   amazon.nova-*      → {messages, inferenceConfig}                 → output.message.content[0].text
  *
  * SLICE-90 (FEAT-169 SLICE-B3).
+ * FEAT-184: migrated from JudgeProvider to LLMJudge.
  */
 
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
-import type { JudgeProvider, JudgeRequest, JudgeResult } from "../lib/judge.ts";
+import type { LLMJudge } from "@astragenie/gepa-core";
 
 const DEFAULT_REGION = "us-east-1";
 const DEFAULT_MODEL = "anthropic.claude-3-5-sonnet-20241022-v2:0";
@@ -29,26 +31,36 @@ export interface BedrockConfig {
 }
 
 const JUDGE_SYSTEM =
-  "You are an expert evaluator. Given a rubric and candidate output, decide if the candidate " +
-  "PASSES. Reply with JSON: {\"pass\": true|false, \"score\": 0.0..1.0, \"rationale\": \"<one sentence>\"}";
+  'You are an expert evaluator. Given a rubric and candidate output, decide if the candidate ' +
+  'PASSES. Reply with JSON: {"pass": true|false, "score": 0.0..1.0, "rationale": "<one sentence>"}';
 
-function buildPrompt(req: JudgeRequest): string {
+function buildPrompt(
+  rubric: string[],
+  candidateOutput: string,
+  context?: { fixture?: string },
+): string {
+  const rubricText = rubric.join("\n");
   return (
-    `${JUDGE_SYSTEM}\n\nRubric: ${req.rubric}\n\nCandidate output:\n${req.candidateOutput}` +
-    (req.context?.fixture ? `\n\nFixture: ${req.context.fixture}` : "")
+    `${JUDGE_SYSTEM}\n\nRubric: ${rubricText}\n\nCandidate output:\n${candidateOutput}` +
+    (context?.fixture ? `\n\nFixture: ${context.fixture}` : "")
   );
 }
 
 function buildBody(model: string, prompt: string, maxTokens: number): Record<string, unknown> {
   if (model.startsWith("anthropic.claude")) {
-    return { anthropic_version: "bedrock-2023-05-31", max_tokens: maxTokens,
-      messages: [{ role: "user", content: prompt }] };
+    return {
+      anthropic_version: "bedrock-2023-05-31",
+      max_tokens: maxTokens,
+      messages: [{ role: "user", content: prompt }],
+    };
   }
   if (model.startsWith("meta.llama")) return { prompt, max_gen_len: maxTokens };
   if (model.startsWith("mistral.")) return { prompt, max_tokens: maxTokens };
   if (model.startsWith("amazon.nova")) {
-    return { messages: [{ role: "user", content: [{ text: prompt }] }],
-      inferenceConfig: { maxTokens } };
+    return {
+      messages: [{ role: "user", content: [{ text: prompt }] }],
+      inferenceConfig: { maxTokens },
+    };
   }
   return { messages: [{ role: "user", content: prompt }], max_tokens: maxTokens };
 }
@@ -64,28 +76,45 @@ function extractText(model: string, b: Record<string, unknown>): string {
     return Array.isArray(o) ? String((o[0] as Record<string, unknown>)["text"] ?? "") : "";
   }
   if (model.startsWith("amazon.nova")) {
-    const msg = ((b["output"] as Record<string, unknown>)?.["message"] as Record<string, unknown>);
+    const msg = (b["output"] as Record<string, unknown>)?.["message"] as Record<string, unknown>;
     const c = msg?.["content"];
     return Array.isArray(c) ? String((c[0] as Record<string, unknown>)["text"] ?? "") : "";
   }
   return String(b["generation"] ?? b["text"] ?? "");
 }
 
-function parseJudgeText(text: string, raw: unknown): Pick<JudgeResult, "pass" | "score" | "rationale" | "raw"> {
+function parseJudgeText(
+  text: string,
+  raw: unknown,
+): Pick<
+  Awaited<ReturnType<LLMJudge["evaluate"]>>,
+  "pass" | "score" | "rationale" | "raw"
+> {
   const m = text.match(/\{[\s\S]*\}/);
   if (m) {
     try {
       const p = JSON.parse(m[0]) as { pass?: boolean; score?: number; rationale?: string };
-      return { pass: p.pass ?? false, score: p.score ?? (p.pass ? 1 : 0), rationale: p.rationale ?? "", raw };
-    } catch { /* fall through */ }
+      return {
+        pass: p.pass ?? false,
+        score: p.score ?? (p.pass ? 1 : 0),
+        rationale: p.rationale ?? "",
+        raw,
+      };
+    } catch {
+      /* fall through */
+    }
   }
   const pass = /^yes/i.test(text.trim());
   const br = text.indexOf("\n");
-  return { pass, score: pass ? 1 : 0, rationale: br !== -1 ? text.slice(br + 1).trim() : text.trim(), raw };
+  return {
+    pass,
+    score: pass ? 1 : 0,
+    rationale: br !== -1 ? text.slice(br + 1).trim() : text.trim(),
+    raw,
+  };
 }
 
-export class BedrockJudge implements JudgeProvider {
-  readonly id: string;
+export class BedrockJudge implements LLMJudge {
   private readonly model: string;
   private readonly maxTokens: number;
   private readonly client: BedrockRuntimeClient;
@@ -94,24 +123,50 @@ export class BedrockJudge implements JudgeProvider {
     this.model = config?.model ?? process.env["BEDROCK_MODEL"] ?? DEFAULT_MODEL;
     this.maxTokens = config?.maxTokens ?? DEFAULT_MAX_TOKENS;
     const region = config?.region ?? process.env["BEDROCK_REGION"] ?? DEFAULT_REGION;
-    this.id = `bedrock:${this.model}`;
     this.client = new BedrockRuntimeClient({ region });
   }
 
-  async judge(req: JudgeRequest): Promise<JudgeResult> {
+  describe(): { provider: string; model: string } {
+    return { provider: "bedrock", model: this.model };
+  }
+
+  async evaluate(
+    opts: Parameters<LLMJudge["evaluate"]>[0],
+  ): ReturnType<LLMJudge["evaluate"]> {
     if (!process.env["AWS_ACCESS_KEY_ID"] && !process.env["AWS_PROFILE"]) {
       throw new Error(
-        "BedrockJudge: AWS credentials required. Set AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY or AWS_PROFILE."
+        "BedrockJudge: AWS credentials required. Set AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY or AWS_PROFILE.",
       );
     }
-    const body = buildBody(this.model, buildPrompt(req), this.maxTokens);
+
+    const { candidateOutput, rubric, context } = opts;
+    const candidateText =
+      typeof candidateOutput === "string" ? candidateOutput : JSON.stringify(candidateOutput);
+    const rubricText = rubric.join("\n");
+
+    const body = buildBody(this.model, buildPrompt(rubric, candidateText, context), this.maxTokens);
     const cmd = new InvokeModelCommand({
-      modelId: this.model, contentType: "application/json", accept: "application/json",
-      body: JSON.stringify(body)
+      modelId: this.model,
+      contentType: "application/json",
+      accept: "application/json",
+      body: JSON.stringify(body),
     });
+
+    const start = Date.now();
     const res = await this.client.send(cmd);
+    const latency_ms = Date.now() - start;
     const parsed = JSON.parse(new TextDecoder().decode(res.body)) as Record<string, unknown>;
-    return { ...parseJudgeText(extractText(this.model, parsed), parsed),
-      providerCost: { tokensIn: 0, tokensOut: 0 } };
+    const { pass, score, rationale, raw } = parseJudgeText(extractText(this.model, parsed), parsed);
+
+    return {
+      pass,
+      score,
+      rubricScores: { [rubricText]: score },
+      rationale,
+      cost_usd: 0,
+      latency_ms,
+      tokens: { in: 0, out: 0 },
+      raw,
+    };
   }
 }

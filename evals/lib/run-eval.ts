@@ -184,11 +184,18 @@ async function runValidateWith(
         return;
       }
 
+      const judgeId = judge.describe().provider;
       try {
-        const result = await judge.judge({ rubric, candidateOutput });
+        // FEAT-184: rubric is now string[] (AC-5 wrap-in-single-element for prose strings).
+        const wrappedRubric = Array.isArray(rubric) ? rubric : [rubric];
+        const result = await judge.evaluate({
+          candidateOutput,
+          expected: { id: "validate-with", held_out: false },
+          rubric: wrappedRubric
+        });
         const verdictStr = result.pass ? "pass" : "fail";
         entries[idx] = {
-          judge: judge.id,
+          judge: judgeId,
           verdict: verdictStr,
           rationale: result.rationale
         };
@@ -198,7 +205,7 @@ async function runValidateWith(
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         entries[idx] = {
-          judge: judge.id,
+          judge: judgeId,
           verdict: "skipped",
           rationale: `judge error: ${msg}`
         };
@@ -540,7 +547,7 @@ export async function runEval(options: {
 
   if (promptVersion) result.promptVersion = promptVersion;
   if (gitSha) result.gitSha = gitSha;
-  if (judge?.id) result.judgeId = judge.id;
+  if (judge) result.judgeId = judge.describe().provider;
 
   // Surface judge resolution errors as metadata (non-fatal if all asserts passed heuristically)
   if (judgeErrors.length > 0) {
@@ -549,7 +556,7 @@ export async function runEval(options: {
 
   // Langfuse dataset emit (skips silently if LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY absent)
   if (!dryRun) {
-    const judgeId = judge?.id ?? "unknown";
+    const judgeId = judge?.describe().provider ?? "unknown";
     await emitToLangfuse(spec.prompt_id, judgeId, testResults).catch((err: unknown) => {
       const msg = err instanceof Error ? err.message : String(err);
       process.stderr.write(`langfuse: emit failed: ${msg}\n`);

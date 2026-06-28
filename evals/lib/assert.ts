@@ -11,7 +11,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { JUDGE_REGISTRY } from "./judge.ts";
-import type { JudgeProvider } from "./judge.ts";
+import type { LLMJudge } from "@astragenie/gepa-core";
 
 export interface AssertInput {
   /** Candidate output text (handoff body / CLI stdout). */
@@ -27,9 +27,17 @@ export interface AssertInput {
    * If not provided, falls back to the groq registry entry.
    * Pass a mock in tests.
    */
-  judge?: JudgeProvider;
+  judge?: LLMJudge;
   /** Judge provider id for lazy-loading from JUDGE_REGISTRY (default: groq). */
   judgeProviderId?: string;
+  /**
+   * AC-6 (FEAT-184): context forwarded to evaluate() for Langfuse provenance.
+   */
+  context?: {
+    fixture?: string;
+    promptId?: string;
+    version?: string;
+  };
 }
 
 export interface AssertResult {
@@ -193,9 +201,22 @@ export async function assertLlmRubric(input: AssertInput, rubric: string): Promi
     }
   }
 
-  let result: Awaited<ReturnType<typeof judge.judge>>;
+  // AC-5 (FEAT-184): wrap prose rubric string in single-element array — never sentence-split.
+  // Single-element arrays are a degenerate case accepted by LLMJudge forever.
+  const wrappedRubric = [rubric];
+
+  let result: Awaited<ReturnType<LLMJudge["evaluate"]>>;
   try {
-    result = await judge.judge({ rubric, candidateOutput: input.candidateOutput });
+    // exactOptionalPropertyTypes: only pass `context` when defined.
+    const evalOpts: Parameters<LLMJudge["evaluate"]>[0] = {
+      candidateOutput: input.candidateOutput,
+      // AC-8: expected is required by LLMJudge; provide a minimal shell for assert calls
+      // where the EvalCase is not available (heuristic assert context).
+      expected: { id: "assert", input: null, held_out: false },
+      rubric: wrappedRubric
+    };
+    if (input.context) evalOpts.context = input.context;
+    result = await judge.evaluate(evalOpts);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return { pass: false, message: `llm-rubric: judge error: ${msg}` };

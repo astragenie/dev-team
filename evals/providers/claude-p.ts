@@ -1,16 +1,18 @@
 /**
  * ClaudePJudge: self-judge via `claude -p` subprocess.
+ * Implements LLMJudge (FEAT-184 unified interface).
  * Subscription-billed; no API key needed — auth inherited from claude CLI install.
  * Module boundary: MUST NOT import from agents/, scripts/, src/, hooks/, commands/.
  *
  * SLICE-89 (FEAT-169 SLICE-B2).
+ * FEAT-184: migrated from JudgeProvider to LLMJudge.
  */
 
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { JudgeProvider, JudgeRequest, JudgeResult } from "../lib/judge.ts";
+import type { LLMJudge } from "@astragenie/gepa-core";
 
 export interface ClaudePConfig {
   /** Claude model to use (default: claude-sonnet-4-6). */
@@ -74,21 +76,22 @@ function parseStreamJson(stdout: string): string {
 }
 
 /**
- * Parse the judge text (YES/NO + rationale) into a JudgeResult.
- * Expected format: "YES\nSome rationale." or "NO because reason."
+ * Parse the judge text (YES/NO + rationale) into evaluation fields.
  */
 function parseJudgeText(
   text: string,
-  raw: unknown
-): Pick<JudgeResult, "pass" | "score" | "rationale" | "raw"> {
+  raw: unknown,
+): Pick<
+  Awaited<ReturnType<LLMJudge["evaluate"]>>,
+  "pass" | "score" | "rationale" | "raw"
+> {
   const pass = /^yes/i.test(text.trim());
   const firstBreak = text.indexOf("\n");
   const rationale = firstBreak !== -1 ? text.slice(firstBreak + 1).trim() : text.trim();
   return { pass, score: pass ? 1 : 0, rationale, raw };
 }
 
-export class ClaudePJudge implements JudgeProvider {
-  readonly id = "claude-p";
+export class ClaudePJudge implements LLMJudge {
   private readonly model: string;
   private readonly timeoutMs: number;
 
@@ -97,22 +100,46 @@ export class ClaudePJudge implements JudgeProvider {
     this.timeoutMs = config?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   }
 
-  async judge(req: JudgeRequest): Promise<JudgeResult> {
+  describe(): { provider: string; model: string } {
+    return { provider: "claude-p", model: this.model };
+  }
+
+  async evaluate(
+    opts: Parameters<LLMJudge["evaluate"]>[0],
+  ): ReturnType<LLMJudge["evaluate"]> {
+    const { candidateOutput, rubric, context } = opts;
+
+    // AC-5: rubric is string[]; join for multi-criterion, single-element preserved verbatim
+    const rubricText = rubric.join("\n");
+    const candidateText =
+      typeof candidateOutput === "string" ? candidateOutput : JSON.stringify(candidateOutput);
+
     const prompt =
       `Did this response satisfy the following criterion?\n\n` +
-      `Criterion: ${req.rubric}\n\n` +
-      `Response:\n${req.candidateOutput}\n\n` +
-      `Answer with YES or NO followed by a one-sentence rationale.`;
+      `Criterion: ${rubricText}\n\n` +
+      `Response:\n${candidateText}\n\n` +
+      `Answer with YES or NO followed by a one-sentence rationale.` +
+      (context?.fixture ? `\n\nFixture context: ${context.fixture}` : "");
 
+    const start = Date.now();
     const stdout = await this.runSubprocess(prompt);
+    const latency_ms = Date.now() - start;
     const text = parseStreamJson(stdout);
 
     // If stream-json parsing yielded nothing, treat raw stdout as text
     const judgeText = text.length > 0 ? text : stdout.trim();
+    const { pass, score, rationale, raw } = parseJudgeText(judgeText, { stdout });
 
     return {
-      ...parseJudgeText(judgeText, { stdout }),
-      providerCost: { tokensIn: 0, tokensOut: 0 }
+      pass,
+      score,
+      rubricScores: { [rubricText]: score },
+      rationale,
+      cost_usd: 0,
+      latency_ms,
+      // ClaudePJudge cannot surface token counts from the subprocess
+      tokens: { in: 0, out: 0 },
+      raw,
     };
   }
 
@@ -131,13 +158,13 @@ export class ClaudePJudge implements JudgeProvider {
         "--verbose",
         "--dangerously-skip-permissions",
         "--model",
-        this.model
+        this.model,
       ];
 
       const child = spawn("claude", args, {
         cwd: tempCwd,
         stdio: ["pipe", "pipe", "pipe"],
-        windowsHide: true
+        windowsHide: true,
       });
 
       let stdout = "";
@@ -168,8 +195,8 @@ export class ClaudePJudge implements JudgeProvider {
         if (code !== 0 && stdout.trim().length === 0) {
           reject(
             new Error(
-              `ClaudePJudge: subprocess exited with code ${code ?? "null"}. stderr: ${stderr.slice(0, 300)}`
-            )
+              `ClaudePJudge: subprocess exited with code ${code ?? "null"}. stderr: ${stderr.slice(0, 300)}`,
+            ),
           );
         } else {
           resolve(stdout);

@@ -16,9 +16,12 @@ import assert from "node:assert/strict";
 const LIVE = process.env["CREW_EVAL_LIVE"] === "1";
 
 function makeJudgeRequest() {
+  // FEAT-184: LLMJudge.evaluate() opts shape — rubric is string[] (single-element wrap
+  // for prose rubrics per AC-5); `expected` is required.
   return {
-    rubric: "The response must say hello",
-    candidateOutput: "Hello world! I am a candidate response."
+    rubric: ["The response must say hello"],
+    candidateOutput: "Hello world! I am a candidate response.",
+    expected: { id: "test", held_out: false }
   };
 }
 
@@ -50,13 +53,13 @@ describe("OllamaJudge (unit — mocked fetch)", () => {
 
     const { OllamaJudge } = await import("../evals/providers/ollama.ts");
     const judge = new OllamaJudge({ model: "llama3.3" });
-    const result = await judge.judge(makeJudgeRequest());
+    const result = await judge.evaluate(makeJudgeRequest());
 
     assert.equal(result.pass, true);
     assert.equal(result.score, 1);
     assert.ok(result.rationale.length > 0);
-    assert.equal(result.providerCost?.tokensIn, 20);
-    assert.equal(result.providerCost?.tokensOut, 10);
+    assert.equal(result.tokens?.in, 20);
+    assert.equal(result.tokens?.out, 10);
 
     globalThis.fetch = origFetch;
   });
@@ -70,7 +73,7 @@ describe("OllamaJudge (unit — mocked fetch)", () => {
 
     const { OllamaJudge } = await import("../evals/providers/ollama.ts");
     const judge = new OllamaJudge({ model: "llama3.3" });
-    const result = await judge.judge(makeJudgeRequest());
+    const result = await judge.evaluate(makeJudgeRequest());
 
     assert.equal(result.pass, false);
     assert.equal(result.score, 0);
@@ -86,7 +89,7 @@ describe("OllamaJudge (unit — mocked fetch)", () => {
     const judge = new OllamaJudge({ host: "http://localhost:11434" });
 
     await assert.rejects(
-      () => judge.judge(makeJudgeRequest()),
+      () => judge.evaluate(makeJudgeRequest()),
       (err: unknown) => {
         assert.ok(err instanceof Error);
         assert.ok(
@@ -109,7 +112,7 @@ describe("OllamaJudge (unit — mocked fetch)", () => {
     const { OllamaJudge } = await import("../evals/providers/ollama.ts");
     const judge = new OllamaJudge({ model: "nonexistent" });
 
-    await assert.rejects(() => judge.judge(makeJudgeRequest()), /HTTP 404/);
+    await assert.rejects(() => judge.evaluate(makeJudgeRequest()), /HTTP 404/);
 
     globalThis.fetch = origFetch;
   });
@@ -118,7 +121,7 @@ describe("OllamaJudge (unit — mocked fetch)", () => {
     test("LIVE: OllamaJudge hits real local endpoint", async () => {
       const { OllamaJudge } = await import("../evals/providers/ollama.ts");
       const judge = new OllamaJudge();
-      const result = await judge.judge(makeJudgeRequest());
+      const result = await judge.evaluate(makeJudgeRequest());
       assert.ok(typeof result.pass === "boolean");
       assert.ok(result.score >= 0 && result.score <= 1);
     });
@@ -145,13 +148,13 @@ describe("GeminiJudge (unit — mocked fetch)", () => {
 
     const { GeminiJudge } = await import("../evals/providers/gemini.ts");
     const judge = new GeminiJudge({ apiKey: "test-key" });
-    const result = await judge.judge(makeJudgeRequest());
+    const result = await judge.evaluate(makeJudgeRequest());
 
     assert.equal(result.pass, true);
     assert.equal(result.score, 1);
     assert.ok(result.rationale.includes("hello"));
-    assert.equal(result.providerCost?.tokensIn, 50);
-    assert.equal(result.providerCost?.tokensOut, 15);
+    assert.equal(result.tokens?.in, 50);
+    assert.equal(result.tokens?.out, 15);
 
     globalThis.fetch = origFetch;
   });
@@ -165,7 +168,7 @@ describe("GeminiJudge (unit — mocked fetch)", () => {
 
     const { GeminiJudge } = await import("../evals/providers/gemini.ts");
     const judge = new GeminiJudge({ apiKey: "test-key" });
-    const result = await judge.judge(makeJudgeRequest());
+    const result = await judge.evaluate(makeJudgeRequest());
 
     assert.equal(result.pass, false);
     assert.equal(result.score, 0);
@@ -180,7 +183,7 @@ describe("GeminiJudge (unit — mocked fetch)", () => {
     const { GeminiJudge } = await import("../evals/providers/gemini.ts");
     const judge = new GeminiJudge({ apiKey: "" });
 
-    await assert.rejects(() => judge.judge(makeJudgeRequest()), /GEMINI_API_KEY/);
+    await assert.rejects(() => judge.evaluate(makeJudgeRequest()), /GEMINI_API_KEY/);
 
     process.env["GEMINI_API_KEY"] = saved;
   });
@@ -196,22 +199,24 @@ describe("GeminiJudge (unit — mocked fetch)", () => {
     const { GeminiJudge } = await import("../evals/providers/gemini.ts");
     const judge = new GeminiJudge({ apiKey: "test-key" });
 
-    await assert.rejects(() => judge.judge(makeJudgeRequest()), /HTTP 429/);
+    await assert.rejects(() => judge.evaluate(makeJudgeRequest()), /HTTP 429/);
 
     globalThis.fetch = origFetch;
   });
 
-  test("provider id includes model name", async () => {
+  test("describe() returns provider + model", async () => {
     const { GeminiJudge } = await import("../evals/providers/gemini.ts");
     const judge = new GeminiJudge({ apiKey: "test-key", model: "gemini-2.5-flash" });
-    assert.equal(judge.id, "gemini:gemini-2.5-flash");
+    const d = judge.describe();
+    assert.equal(d.provider, "gemini");
+    assert.equal(d.model, "gemini-2.5-flash");
   });
 
   if (LIVE) {
     test("LIVE: GeminiJudge hits real Gemini API", async () => {
       const { GeminiJudge } = await import("../evals/providers/gemini.ts");
       const judge = new GeminiJudge();
-      const result = await judge.judge(makeJudgeRequest());
+      const result = await judge.evaluate(makeJudgeRequest());
       assert.ok(typeof result.pass === "boolean");
     });
   }
@@ -225,7 +230,7 @@ describe("ClaudePJudge (unit)", () => {
   test("ClaudePJudge.id is always 'claude-p'", async () => {
     const { ClaudePJudge } = await import("../evals/providers/claude-p.ts");
     const judge = new ClaudePJudge();
-    assert.equal(judge.id, "claude-p");
+    assert.equal(judge.describe().provider, "claude-p");
   });
 
   test("ClaudePJudge is in JUDGE_REGISTRY", async () => {
@@ -239,22 +244,22 @@ describe("ClaudePJudge (unit)", () => {
     const factory = JUDGE_REGISTRY["claude-p"];
     assert.ok(factory, "claude-p factory missing");
     const judge = await factory();
-    assert.equal(judge.id, "claude-p");
-    assert.equal(typeof judge.judge, "function");
+    assert.equal(judge.describe().provider, "claude-p");
+    assert.equal(typeof judge.evaluate, "function");
   });
 
   test("ClaudePJudge instantiates with default model", async () => {
     const { ClaudePJudge } = await import("../evals/providers/claude-p.ts");
     const judge = new ClaudePJudge();
     // id is fixed as 'claude-p'
-    assert.equal(judge.id, "claude-p");
+    assert.equal(judge.describe().provider, "claude-p");
   });
 
   if (LIVE) {
     test("LIVE: ClaudePJudge runs real claude subprocess", async () => {
       const { ClaudePJudge } = await import("../evals/providers/claude-p.ts");
       const judge = new ClaudePJudge({ timeoutMs: 60000 });
-      const result = await judge.judge(makeJudgeRequest());
+      const result = await judge.evaluate(makeJudgeRequest());
       assert.ok(typeof result.pass === "boolean");
     });
   }
@@ -281,22 +286,22 @@ describe("JUDGE_REGISTRY (AC3)", () => {
     }
   });
 
-  test("ollama factory returns JudgeProvider with judge() method", async () => {
+  test("ollama factory returns LLMJudge with evaluate() + describe()", async () => {
     const { JUDGE_REGISTRY } = await import("../evals/lib/judge.ts");
     const factory = JUDGE_REGISTRY["ollama"];
     assert.ok(factory, "ollama factory missing");
     const judge = await factory();
-    assert.equal(typeof judge.judge, "function");
-    assert.ok(judge.id.startsWith("ollama:"));
+    assert.equal(typeof judge.evaluate, "function");
+    assert.equal(judge.describe().provider, "ollama");
   });
 
-  test("gemini factory returns JudgeProvider with judge() method", async () => {
+  test("gemini factory returns LLMJudge with evaluate() + describe()", async () => {
     const { JUDGE_REGISTRY } = await import("../evals/lib/judge.ts");
     const factory = JUDGE_REGISTRY["gemini"];
     assert.ok(factory, "gemini factory missing");
     const judge = await factory();
-    assert.equal(typeof judge.judge, "function");
-    assert.ok(judge.id.startsWith("gemini:"));
+    assert.equal(typeof judge.evaluate, "function");
+    assert.equal(judge.describe().provider, "gemini");
   });
 });
 
@@ -308,11 +313,14 @@ describe("assertLlmRubric (SLICE-B2 real implementation)", () => {
   test("passes when mock judge returns pass=true", async () => {
     const { assertLlmRubric } = await import("../evals/lib/assert.ts");
     const mockJudge = {
-      id: "mock",
-      judge: mock(async () => ({
+      describe: () => ({ provider: "mock", model: "mock" }),
+      evaluate: mock(async () => ({
         pass: true,
         score: 1,
+        rubricScores: { mock: 1 },
         rationale: "The response satisfies the criterion.",
+        cost_usd: 0,
+        latency_ms: 0,
         raw: {}
       }))
     };
@@ -330,11 +338,14 @@ describe("assertLlmRubric (SLICE-B2 real implementation)", () => {
   test("fails when mock judge returns pass=false", async () => {
     const { assertLlmRubric } = await import("../evals/lib/assert.ts");
     const mockJudge = {
-      id: "mock",
-      judge: mock(async () => ({
+      describe: () => ({ provider: "mock", model: "mock" }),
+      evaluate: mock(async () => ({
         pass: false,
         score: 0,
+        rubricScores: { mock: 0 },
         rationale: "The response does not satisfy the criterion.",
+        cost_usd: 0,
+        latency_ms: 0,
         raw: {}
       }))
     };
@@ -351,8 +362,8 @@ describe("assertLlmRubric (SLICE-B2 real implementation)", () => {
   test("fails gracefully when judge throws", async () => {
     const { assertLlmRubric } = await import("../evals/lib/assert.ts");
     const mockJudge = {
-      id: "mock",
-      judge: mock(async (): Promise<never> => {
+      describe: () => ({ provider: "mock", model: "mock" }),
+      evaluate: mock(async (): Promise<never> => {
         throw new Error("rate limit exceeded");
       })
     };
