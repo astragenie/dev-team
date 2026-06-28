@@ -24,13 +24,13 @@ describe("capture-perf", () => {
         join(root, "gepa.config.json"),
         JSON.stringify({
           capture: { enabled: true, walltime_ms: 2000 },
-          storage: { backend: "file", file_root: ".claude/artifacts/crew/gepa/trials" },
-        }),
+          storage: { backend: "file", file_root: ".claude/artifacts/crew/gepa/trials" }
+        })
       );
       const record: ArtifactRecord = {
         kind: "handoff",
         path: "/tmp/fake-handoff.md",
-        title: "perf-iter",
+        title: "perf-iter"
       };
       const samples: number[] = [];
       for (let i = 0; i < 1000; i++) {
@@ -38,7 +38,7 @@ describe("capture-perf", () => {
           title: "perf-iter",
           owner: "fullstack-dev",
           slice: "S2",
-          cost: { usd: 0.001 },
+          cost: { usd: 0.001 }
         };
         const t0 = performance.now();
         await captureTee(root, record, fields);

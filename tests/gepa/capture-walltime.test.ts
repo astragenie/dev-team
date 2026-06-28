@@ -19,7 +19,7 @@ function fullstackRecord(): ArtifactRecord {
   return {
     kind: "handoff",
     path: "/tmp/fake-handoff.md",
-    title: "walltime test handoff",
+    title: "walltime test handoff"
   };
 }
 
@@ -27,7 +27,7 @@ function fullstackFields(): ArtifactFields {
   return {
     owner: "fullstack-dev",
     slice: "S2",
-    cost: { usd: 0.01 },
+    cost: { usd: 0.01 }
   };
 }
 
@@ -50,9 +50,9 @@ describe("captureTee walltime / error drop", () => {
           capture: { enabled: true, walltime_ms: 2000 },
           storage: {
             backend: "file",
-            file_root: ".claude/artifacts/crew/gepa/trials",
-          },
-        }),
+            file_root: ".claude/artifacts/crew/gepa/trials"
+          }
+        })
       );
 
       // captureTee must complete without throwing even though fileStore throws.
@@ -68,9 +68,7 @@ describe("captureTee walltime / error drop", () => {
         .trim()
         .split("\n")
         .map((l) => JSON.parse(l));
-      const dropEvent = events.find(
-        (e: { event: string }) => e.event === "gepa_capture_drop",
-      );
+      const dropEvent = events.find((e: { event: string }) => e.event === "gepa_capture_drop");
       expect(dropEvent).toBeDefined();
       expect(typeof dropEvent.trial_id).toBe("string");
       expect(dropEvent.agent).toBe("fullstack-dev");

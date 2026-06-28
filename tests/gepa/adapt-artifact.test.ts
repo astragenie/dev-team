@@ -8,12 +8,12 @@ describe("adaptArtifact", () => {
     const record: ArtifactRecord = {
       kind: "handoff",
       path: ".claude/artifacts/crew/handoffs/2026-06-27T12-00-00Z-some-run.md",
-      title: "some-run",
+      title: "some-run"
     };
     const fields: ArtifactFields = {
       owner: "fullstack-dev",
       runTitle: "S2",
-      slice: "SLICE-97",
+      slice: "SLICE-97"
     };
     const adapted = adaptArtifact(record, fields);
     expect(adapted).not.toBeNull();
@@ -28,11 +28,11 @@ describe("adaptArtifact", () => {
     const record: ArtifactRecord = {
       kind: "review-result",
       path: ".claude/artifacts/crew/reviews/x.md",
-      title: "review",
+      title: "review"
     };
     const fields: ArtifactFields = {
       owner: "inspector",
-      cost: { usd: 0.0123 },
+      cost: { usd: 0.0123 }
     };
     const adapted = adaptArtifact(record, fields);
     expect(adapted?.score_hint?.cost_usd).toBeCloseTo(0.0123);
@@ -43,7 +43,7 @@ describe("adaptArtifact", () => {
     const record: ArtifactRecord = {
       kind: "cost-report-slice",
       path: ".claude/artifacts/crew/cost/x.md",
-      title: "cost",
+      title: "cost"
     };
     const adapted = adaptArtifact(record, {});
     expect(adapted).toBeNull();
@@ -53,7 +53,7 @@ describe("adaptArtifact", () => {
     const record: ArtifactRecord = {
       kind: "handoff",
       path: ".claude/artifacts/crew/handoffs/x.md",
-      title: "x",
+      title: "x"
     };
     const adapted = adaptArtifact(record, {});
     expect(adapted?.agent).toBe("unknown");

@@ -15,8 +15,8 @@ describe("SIGKILL-during-put parity", () => {
         join(root, "gepa.config.json"),
         JSON.stringify({
           capture: { enabled: true, walltime_ms: 2000 },
-          storage: { backend: "file", file_root: ".claude/artifacts/crew/gepa/trials" },
-        }),
+          storage: { backend: "file", file_root: ".claude/artifacts/crew/gepa/trials" }
+        })
       );
 
       const cwd = process.cwd().replace(/\\/g, "/");
@@ -35,10 +35,10 @@ describe("SIGKILL-during-put parity", () => {
               cost: { usd: 0.001 },
             });
           }
-          `,
+          `
         ],
         stdout: "pipe",
-        stderr: "pipe",
+        stderr: "pipe"
       });
       await new Promise((resolve) => setTimeout(resolve, 200));
       child.kill(9);

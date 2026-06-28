@@ -7,16 +7,13 @@ export interface HistoryResult {
   stderr: string;
 }
 
-export async function runGepaHistoryCmd(
-  repoPath: string,
-  args: string[],
-): Promise<HistoryResult> {
+export async function runGepaHistoryCmd(repoPath: string, args: string[]): Promise<HistoryResult> {
   const agent = args[0];
   if (!agent || agent.startsWith("--")) {
     return {
       exitCode: 2,
       stdout: "",
-      stderr: "usage: gepa-history <agent> [--source eval|captured|soak] [--limit N]\n",
+      stderr: "usage: gepa-history <agent> [--source eval|captured|soak] [--limit N]\n"
     };
   }
 
@@ -41,7 +38,7 @@ export async function runGepaHistoryCmd(
   const trials = await store.recall({
     agent,
     limit,
-    ...(source !== undefined ? { source } : {}),
+    ...(source !== undefined ? { source } : {})
   });
 
   const rows = trials.map((t) =>
@@ -52,8 +49,8 @@ export async function runGepaHistoryCmd(
       t.score.score.toFixed(3),
       t.score.cost_usd.toFixed(4),
       String(t.score.latency_ms),
-      t.created_at,
-    ].join(" | "),
+      t.created_at
+    ].join(" | ")
   );
 
   return { exitCode: 0, stdout: `${rows.join("\n")}\n`, stderr: "" };

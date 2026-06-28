@@ -30,7 +30,7 @@
     "eligible_agents": [],
     "min_pass_delta": 0.05,
     "min_case_score_floor": 0.6,
-    "soak_percent": 0.10,
+    "soak_percent": 0.1,
     "soak_days": 7,
     "min_soak_trials": 20,
     "max_soak_days": 21,

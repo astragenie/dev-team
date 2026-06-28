@@ -18,10 +18,7 @@ describe("loadGepaConfig", () => {
   test("returns a typed config when the file is present and valid", async () => {
     const root = mkdtempSync(join(tmpdir(), "gepa-cfg-"));
     try {
-      writeFileSync(
-        join(root, "gepa.config.json"),
-        JSON.stringify({ capture: { enabled: true } }),
-      );
+      writeFileSync(join(root, "gepa.config.json"), JSON.stringify({ capture: { enabled: true } }));
       const config = await loadGepaConfig(root);
       expect(config).not.toBeNull();
       expect(config?.capture.enabled).toBe(true);
@@ -48,7 +45,7 @@ describe("loadGepaConfig", () => {
     try {
       writeFileSync(
         join(root, "gepa.config.json"),
-        JSON.stringify({ judge: { provider: "unknown-provider", model: "x" } }),
+        JSON.stringify({ judge: { provider: "unknown-provider", model: "x" } })
       );
       const config = await loadGepaConfig(root);
       expect(config).toBeNull();

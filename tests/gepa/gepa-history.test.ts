@@ -25,8 +25,8 @@ describe("gepa-history CLI", () => {
             score: { pass: i % 2 === 0, score: 0.5, cost_usd: 0.01, latency_ms: 100 },
             source: "captured",
             pareto_rank: null,
-            created_at: new Date(now - (12 - i) * 1000).toISOString(),
-          }),
+            created_at: new Date(now - (12 - i) * 1000).toISOString()
+          })
         );
       }
       writeFileSync(join(dir, "fullstack-dev.jsonl"), `${lines.join("\n")}\n`);
@@ -58,8 +58,8 @@ describe("gepa-history CLI", () => {
           score: { pass: true, score: 1, cost_usd: 0, latency_ms: 0 },
           source: src,
           pareto_rank: null,
-          created_at: "2026-06-27T00:00:00.000Z",
-        }),
+          created_at: "2026-06-27T00:00:00.000Z"
+        })
       );
       writeFileSync(join(dir, "x.jsonl"), `${trials.join("\n")}\n`);
 

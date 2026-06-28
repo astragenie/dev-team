@@ -13,7 +13,7 @@ function sampleRecord(): ArtifactRecord {
   return {
     kind: "handoff",
     path: "/tmp/fake-handoff.md",
-    title: "test handoff",
+    title: "test handoff"
   };
 }
 
@@ -22,7 +22,7 @@ function sampleFields(overrides: Partial<ArtifactFields> = {}): ArtifactFields {
     owner: "fullstack-dev",
     slice: "S2",
     cost: { usd: 0.01 },
-    ...overrides,
+    ...overrides
   };
 }
 
@@ -30,7 +30,7 @@ function enabledConfig(extra: Record<string, unknown> = {}) {
   return JSON.stringify({
     capture: { enabled: true, walltime_ms: 2000 },
     storage: { backend: "file", file_root: ".claude/artifacts/crew/gepa/trials" },
-    ...extra,
+    ...extra
   });
 }
 
@@ -41,10 +41,7 @@ describe("captureTee", () => {
       writeFileSync(join(root, "gepa.config.json"), enabledConfig());
       await captureTee(root, sampleRecord(), sampleFields());
 
-      const trialFile = join(
-        root,
-        ".claude/artifacts/crew/gepa/trials/fullstack-dev.jsonl",
-      );
+      const trialFile = join(root, ".claude/artifacts/crew/gepa/trials/fullstack-dev.jsonl");
       const lines = readFileSync(trialFile, "utf8").trim().split("\n");
       expect(lines).toHaveLength(1);
       const trial = JSON.parse(lines[0]!);
@@ -64,7 +61,7 @@ describe("captureTee", () => {
     try {
       await captureTee(root, sampleRecord(), sampleFields());
       const exists = await Bun.file(
-        join(root, ".claude/artifacts/crew/gepa/trials/fullstack-dev.jsonl"),
+        join(root, ".claude/artifacts/crew/gepa/trials/fullstack-dev.jsonl")
       ).exists();
       expect(exists).toBe(false);
     } finally {
@@ -77,11 +74,11 @@ describe("captureTee", () => {
     try {
       writeFileSync(
         join(root, "gepa.config.json"),
-        JSON.stringify({ capture: { enabled: false } }),
+        JSON.stringify({ capture: { enabled: false } })
       );
       await captureTee(root, sampleRecord(), sampleFields());
       const exists = await Bun.file(
-        join(root, ".claude/artifacts/crew/gepa/trials/fullstack-dev.jsonl"),
+        join(root, ".claude/artifacts/crew/gepa/trials/fullstack-dev.jsonl")
       ).exists();
       expect(exists).toBe(false);
     } finally {
@@ -96,12 +93,12 @@ describe("captureTee", () => {
         join(root, "gepa.config.json"),
         JSON.stringify({
           capture: { enabled: true, exclude: ["fullstack-dev"] },
-          storage: { backend: "file", file_root: ".claude/artifacts/crew/gepa/trials" },
-        }),
+          storage: { backend: "file", file_root: ".claude/artifacts/crew/gepa/trials" }
+        })
       );
       await captureTee(root, sampleRecord(), sampleFields());
       const exists = await Bun.file(
-        join(root, ".claude/artifacts/crew/gepa/trials/fullstack-dev.jsonl"),
+        join(root, ".claude/artifacts/crew/gepa/trials/fullstack-dev.jsonl")
       ).exists();
       expect(exists).toBe(false);
     } finally {
@@ -116,7 +113,7 @@ describe("captureTee", () => {
       // Pass inspector as owner — should be filtered out by S2 allowlist
       await captureTee(root, sampleRecord(), sampleFields({ owner: "inspector" }));
       const exists = await Bun.file(
-        join(root, ".claude/artifacts/crew/gepa/trials/inspector.jsonl"),
+        join(root, ".claude/artifacts/crew/gepa/trials/inspector.jsonl")
       ).exists();
       expect(exists).toBe(false);
     } finally {

@@ -34,20 +34,17 @@ describe("capture parity", () => {
         join(on, "gepa.config.json"),
         JSON.stringify({
           capture: { enabled: true, walltime_ms: 2000 },
-          storage: { backend: "file", file_root: ".claude/artifacts/crew/gepa/trials" },
-        }),
+          storage: { backend: "file", file_root: ".claude/artifacts/crew/gepa/trials" }
+        })
       );
-      writeFileSync(
-        join(off, "gepa.config.json"),
-        JSON.stringify({ capture: { enabled: false } }),
-      );
+      writeFileSync(join(off, "gepa.config.json"), JSON.stringify({ capture: { enabled: false } }));
 
       const fields: ArtifactFields = {
         title: "parity-run",
         owner: "fullstack-dev",
         slice: "S2",
         runTitle: "parity-run",
-        cost: { usd: 0.05 },
+        cost: { usd: 0.05 }
       };
       await writeArtifact(on, "handoff", fields);
       await writeArtifact(off, "handoff", fields);

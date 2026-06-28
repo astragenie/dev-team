@@ -92,7 +92,7 @@ function checkFileName(
  */
 export function checkAgentLineCap(
   filePath: string,
-  maxLines: number,
+  maxLines: number
 ): { ok: boolean; lineCount: number } {
   const raw = readFileSync(filePath, "utf8");
   const lines = raw.split("\n");

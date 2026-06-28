@@ -35,7 +35,7 @@ function fullstackFields(): ArtifactFields {
     title: "test-run",
     owner: "fullstack-dev",
     slice: "S2",
-    cost: { usd: 0.01 },
+    cost: { usd: 0.01 }
   };
 }
 
@@ -43,9 +43,8 @@ function filterNonGepa(rels: Record<string, string>): Record<string, string> {
   return Object.fromEntries(
     Object.entries(rels).filter(
       ([rel]) =>
-        rel.includes(".claude/artifacts/crew/") &&
-        !rel.includes(".claude/artifacts/crew/gepa/"),
-    ),
+        rel.includes(".claude/artifacts/crew/") && !rel.includes(".claude/artifacts/crew/gepa/")
+    )
   );
 }
 
@@ -68,7 +67,7 @@ describe("capture-absent parity", () => {
     try {
       writeFileSync(
         join(root, "gepa.config.json"),
-        JSON.stringify({ capture: { enabled: false } }),
+        JSON.stringify({ capture: { enabled: false } })
       );
       await writeArtifact(root, "handoff", fullstackFields());
       const all = listAllFiles(root);

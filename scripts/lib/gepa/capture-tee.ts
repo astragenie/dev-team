@@ -26,19 +26,14 @@ const S2_AGENT_ALLOWLIST = new Set(["fullstack-dev"]);
 
 const EVENTS_LOG_PATH = ".claude/logs/events.jsonl";
 
-function logDropEvent(
-  repoPath: string,
-  trialId: string,
-  agent: string,
-  reason: string,
-): void {
+function logDropEvent(repoPath: string, trialId: string, agent: string, reason: string): void {
   try {
     const line = `${JSON.stringify({
       event: "gepa_capture_drop",
       ts: new Date().toISOString(),
       trial_id: trialId,
       agent,
-      reason,
+      reason
     })}\n`;
     appendFileSync(join(repoPath, EVENTS_LOG_PATH), line, { flag: "a" });
   } catch {
@@ -59,14 +54,14 @@ function computePromptHash(repoPath: string, agent: string): string {
 
 function walltimeReject(ms: number): Promise<never> {
   return new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error("walltime_exceeded")), ms),
+    setTimeout(() => reject(new Error("walltime_exceeded")), ms)
   );
 }
 
 export async function captureTee(
   repoPath: string,
   record: ArtifactRecord,
-  fields: ArtifactFields,
+  fields: ArtifactFields
 ): Promise<void> {
   // 1. Load config — no-op if absent or invalid.
   const config = await loadGepaConfig(repoPath);
@@ -110,11 +105,11 @@ export async function captureTee(
       pass,
       score: pass ? 1 : 0,
       cost_usd: costUsd,
-      latency_ms: latencyMs,
+      latency_ms: latencyMs
     },
     source: "captured",
     pareto_rank: null,
-    created_at: new Date().toISOString(),
+    created_at: new Date().toISOString()
   };
 
   // 8. Put with walltime race, drop + log on any failure.
@@ -122,16 +117,8 @@ export async function captureTee(
   const walltimeMs = config.capture.walltime_ms;
 
   try {
-    await Promise.race([
-      fileStore(storeRoot).put(trial),
-      walltimeReject(walltimeMs),
-    ]);
+    await Promise.race([fileStore(storeRoot).put(trial), walltimeReject(walltimeMs)]);
   } catch (err) {
-    logDropEvent(
-      repoPath,
-      trialId,
-      artifact.agent,
-      (err as Error).message ?? "unknown",
-    );
+    logDropEvent(repoPath, trialId, artifact.agent, (err as Error).message ?? "unknown");
   }
 }

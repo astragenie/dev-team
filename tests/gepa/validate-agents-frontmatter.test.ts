@@ -2,12 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
 import { checkAgentLineCap } from "../../scripts/validate-agents.ts";
 
-const FIX = join(
-  import.meta.dir,
-  "..",
-  "fixtures",
-  "gepa",
-);
+const FIX = join(import.meta.dir, "..", "fixtures", "gepa");
 
 describe("validate-agents gepa frontmatter exemption", () => {
   test("348 body + 8 frontmatter (356 total) PASSES the 350 cap", () => {
