@@ -12,7 +12,7 @@ import path from "node:path";
 import { parse as parseYaml } from "yaml";
 import { runAssert } from "./assert.ts";
 import { JUDGE_REGISTRY } from "./judge.ts";
-import type { JudgeProvider } from "./judge.ts";
+import type { LLMJudge } from "./judge.ts";
 import type { AssertInput, AssertSpec } from "./assert.ts";
 import { ensureDataset, recordRun, recordItem } from "./langfuse-emit.ts";
 import { dispatchCandidate } from "./candidate-dispatch.ts";
@@ -130,12 +130,12 @@ async function loadFixture(
 type ValidateWithCfg = NonNullable<EvalSpec["validate_with"]>[number];
 
 /**
- * Resolve a single validate_with judge entry into a JudgeProvider.
+ * Resolve a single validate_with judge entry into an LLMJudge.
  * Returns null + records error on failure (skipped verdict).
  */
 async function resolveValidateJudge(
   cfg: ValidateWithCfg
-): Promise<{ judge: JudgeProvider | null; error?: string }> {
+): Promise<{ judge: LLMJudge | null; error?: string }> {
   const factory = JUDGE_REGISTRY[cfg.provider];
   if (!factory) {
     return { judge: null, error: `unknown validate_with provider: ${cfg.provider}` };
@@ -238,13 +238,13 @@ interface JudgeCfg {
 }
 
 /**
- * Resolve a JudgeProvider from the spec judge config, trying the primary
+ * Resolve an LLMJudge from the spec judge config, trying the primary
  * provider first, then iterating the fallback array on error.
  * Returns { judge, errors } where errors is the chain of failures if any.
  */
 async function resolveJudge(
   judgeSpec: JudgeCfg | undefined
-): Promise<{ judge: JudgeProvider | null; errors: string[] }> {
+): Promise<{ judge: LLMJudge | null; errors: string[] }> {
   const errors: string[] = [];
   const chain: Array<{ provider: string; model?: string | undefined }> = [];
 
@@ -363,7 +363,7 @@ function makeResult(
 async function liveTest(
   test: EvalTest,
   repoRoot: string,
-  judge: JudgeProvider | null,
+  judge: LLMJudge | null,
   validateWithCfgs: NonNullable<EvalSpec["validate_with"]>,
   forceValidate: boolean,
   candidateLive: boolean,
@@ -501,7 +501,7 @@ export async function runEval(options: {
   const gitSha = await readGitSha(repoRoot);
 
   // Resolve judge for live mode (needed by llm-rubric asserts)
-  let judge: JudgeProvider | null = null;
+  let judge: LLMJudge | null = null;
   let judgeErrors: string[] = [];
   if (!dryRun) {
     const resolved = await resolveJudge(spec.judge);
