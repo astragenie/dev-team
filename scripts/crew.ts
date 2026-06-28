@@ -81,8 +81,10 @@ const FLAG_SPEC = {
   "--run": { key: "run" },
   "--run-steps": { key: "runSteps" },
   "--run-title": { key: "runTitle" },
+  "--source": { key: "gepaSource" },
   "--source-project": { key: "sourceProject" },
   "--scope": { key: "scope" },
+  "--limit": { key: "limit" },
   "--severity": { key: "severity" },
   "--slice": { key: "slice" },
   "--started-at": { key: "startedAt" },
@@ -208,7 +210,9 @@ function parseArgs(argv: string[]) {
     surface: null,
     stack: null,
     concern: null,
-    lens: null
+    lens: null,
+    gepaSource: null,
+    limit: null
   };
   const positionals = [];
 
@@ -300,7 +304,9 @@ function usage(target: string | null = null) {
     "agent-stats":
       "  node scripts/crew.ts agent-stats [--agent <name>] [--window last_n_slices:<N>] [--repo <path>]",
     "agent-route":
-      "  node scripts/crew.ts agent-route [--role <r>] [--surface <s>] [--stack <s>] [--concern <c>] [--lens <l>] [--scope <s>] [--repo <path>]"
+      "  node scripts/crew.ts agent-route [--role <r>] [--surface <s>] [--stack <s>] [--concern <c>] [--lens <l>] [--scope <s>] [--repo <path>]",
+    "gepa-history":
+      "  node scripts/crew.ts gepa-history <agent> [--source eval|captured|soak] [--limit N] [--repo <path>]"
   };
 
   const subcommandsMap = subcommands as Record<string, string | undefined>;
@@ -1037,6 +1043,19 @@ const COMMANDS = {
     if (matches.length > 20) lines.push("", `... ${matches.length - 20} more not shown`);
     process.stdout.write(lines.join("\n") + "\n");
     return { registryCount: registry.length, matchCount: matches.length };
+  },
+
+  "gepa-history": async ({ repoPath, flags, positionals }: CommandContext) => {
+    const { runGepaHistoryCmd } = await import("./lib/gepa/history.ts");
+    // Reconstruct raw-args array so history.ts can parse them uniformly.
+    const rawArgs: string[] = [...positionals];
+    if (flags.gepaSource) rawArgs.push("--source", flags.gepaSource);
+    if (flags.limit) rawArgs.push("--limit", flags.limit);
+    const result = await runGepaHistoryCmd(repoPath, rawArgs);
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+    if (result.exitCode !== 0) process.exit(result.exitCode);
+    return result.stdout.trim();
   }
 };
 

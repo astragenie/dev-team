@@ -768,6 +768,15 @@ export async function writeArtifact(
       await registerWorkflowArtifact(repoPath, artifact, fields);
     }
 
+    // GEPA capture tee — fire-and-forget per spec slice S2.
+    // captureTee is internally fail-silent; this try/catch is belt-and-suspenders.
+    try {
+      const { captureTee } = await import("../gepa/capture-tee.ts");
+      await captureTee(repoPath, artifact, fields);
+    } catch {
+      // never propagate
+    }
+
     return ok(artifact);
   } catch (e) {
     return err(e instanceof Error ? e : new Error(String(e)));
