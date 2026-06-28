@@ -1,0 +1,74 @@
+---
+findings: "🔴:0,🟡:1,❓:1"
+status: completed
+---
+# Review Result: Review Result
+
+- Created: 2026-06-28T22:11:41.380Z
+- Reviewer: inspector
+- Decision: approved_with_notes
+- Status: completed
+- Summary: Code is correct and locally green (1011 pass / 0 fail); CI is red solely because @astragenie/gepa-core is a file: local-path dep not published to npm — merge is blocked on gepa-core@0.2.0 npm publish + dep pin to ^0.2.0.
+- Evidence Checked:
+  - CI root cause confirmed: all TS2307 'Cannot find module @astragenie/gepa-core' errors cascade from npm ci unable to resolve file:../gepa-core on the runner. Locally node_modules/@astragenie/gepa-core is symlinked to sibling path and resolves cleanly. Local gates: bun run test = 1011 pass / 0 fail; bun run typecheck = clean ($ tsc --noEmit
+  - no errors); bun run lint = 74 warnings (pre-existing
+  - zero new); bun run format:check = clean; validate-manifests
+  - validate-skills
+  - validate-agents all pass. AC verification: AC-1 PASS — judge.ts line 21 exports LLMJudge from @astragenie/gepa-core
+  - gepa-core src/interfaces.ts defines the full canonical shape with rubricScores
+  - cost_usd
+  - latency_ms
+  - tokens?
+  - raw?
+  - context? on opts
+  - describe() on adapter. AC-2 PASS — JudgeProvider declared @deprecated at judge.ts line 24 as a type alias mapping to LLMJudge
+  - NOT removed. AC-3 PASS — all 7 adapters implement describe(): {provider
+  - model} (verified in generic-openai.ts:69
+  - groq.ts:54
+  - claude-p.ts:103
+  - ollama.ts:57
+  - gemini.ts:72
+  - azure-openai.ts:88
+  - bedrock.ts:129). Tests assert describe() in evals-providers.test.ts (gemini line 207
+  - claude-p line 233
+  - ollama line 293
+  - gemini line 298) and evals-cloud-providers.test.ts (azure line 198
+  - bedrock line 304). AC-5 PASS — assert.ts line 206: const wrappedRubric = [rubric] — single-element array wrap
+  - no split
+  - no string manipulation. All adapters do rubric.join(newline) for multi-element
+  - preserve single-element verbatim. AC-6 PASS — context propagated through assertLlmRubric (assert.ts line 218: if (input.context) evalOpts.context = input.context) and through run-eval.ts validate_with chain. AC-7 PASS — gepa-core v0.2.0 tagged (per package.json version). AC-9 PASS — grep for evals/lib/judge shows only in-repo callers: tests/
+  - evals/lib/assert.ts
+  - evals/lib/run-eval.ts (the worktree hits are the old gepa-s2-exec branch
+  - not production callers). Tokens end-to-end: all 7 adapters return tokens: {in
+  - out} from provider usage data; evals/cli.ts does not read tokens directly (cost attribution is through EvalRunResult serialization to JSON
+  - not inline CLI read) — the pre-mortem concern about silent lossage does not apply since cli.ts writes the full result as JSON and tokens field survives serialization. JudgeProvider deprecated alias use in production: run-eval.ts imports and uses JudgeProvider as type annotation at lines 15
+  - 138
+  - 247
+  - 366
+  - 504 — this is the deprecated alias. Since JudgeProvider = LLMJudge (type alias
+  - not interface)
+  - this is structurally correct but violates the spirit of AC-2 (alias allowed for one minor
+  - but internal usage should have been migrated). This is a MEDIUM hygiene issue
+  - not a correctness issue.
+- Files Reviewed:
+  - evals/lib/judge.ts
+  - evals/lib/assert.ts
+  - evals/lib/run-eval.ts
+  - evals/providers/generic-openai.ts
+  - evals/providers/groq.ts
+  - evals/providers/claude-p.ts
+  - evals/providers/ollama.ts
+  - evals/providers/gemini.ts
+  - evals/providers/azure-openai.ts
+  - evals/providers/bedrock.ts
+  - evals/cli.ts
+  - tests/evals-providers.test.ts
+  - tests/evals-cloud-providers.test.ts
+  - tests/evals-lib.test.ts
+  - package.json
+  - bun.lock
+  - package-lock.json
+- Test Adequacy: 1011 tests pass locally; 7 adapter describe() outputs asserted in evals-providers.test.ts + evals-cloud-providers.test.ts; tokens?.in/out asserted for OllamaJudge (line 61-62) and GeminiJudge (line 156-157) and AzureOpenAIJudge (line 76-77); mock judge shape (rubricScores, cost_usd, latency_ms, raw) verified in assertLlmRubric tests; AC-4 live tests gated behind CREW_EVAL_LIVE=1 per PR body — deferred, flagged for operator.
+- Risks: CI will stay red until gepa-core@0.2.0 is published to npm and package.json dep is pinned to ^0.2.0. The file: path is a local-dev artifact that cannot be merged to main as-is. Secondary risk: run-eval.ts continues using the JudgeProvider deprecated alias as production type annotation — functionally equivalent but will need cleanup before the MAJOR version where the alias is dropped.
+- Required Follow-up: Merge prerequisite: (1) gepa-core PR #1 merged AND gepa-core@0.2.0 published to npm registry. (2) package.json dep changed from file:../gepa-core to ^0.2.0, package-lock.json regenerated. (3) Re-run CI to confirm green. AC-4 deferred live runs: operator must run CREW_EVAL_LIVE=1 bun run test against real judge endpoints before declaring AC-4 complete. Optional cleanup: migrate run-eval.ts JudgeProvider type annotations to LLMJudge (MEDIUM hygiene).
+
