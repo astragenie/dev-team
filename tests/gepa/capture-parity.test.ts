@@ -9,6 +9,13 @@ import { join } from "node:path";
 import { writeArtifact } from "../../scripts/lib/artifacts/write.ts";
 import type { ArtifactFields } from "../../scripts/lib/artifacts/types.ts";
 
+function normalizeVolatile(content: string): string {
+  // Strip per-call volatile fields (Created timestamps embedded by writeArtifact's
+  // nowIso() calls). Two back-to-back calls cross ms boundaries on Linux but
+  // not Windows; without this filter the byte-identical assertion is flaky.
+  return content.replace(/^- Created:.*$/gm, "- Created: <NORMALIZED>");
+}
+
 function snapshot(root: string, filter: (rel: string) => boolean): Record<string, string> {
   const out: Record<string, string> = {};
   function walk(dir: string) {
@@ -17,7 +24,7 @@ function snapshot(root: string, filter: (rel: string) => boolean): Record<string
       if (name.isDirectory()) walk(full);
       else {
         const rel = full.replace(root, "");
-        if (filter(rel)) out[rel] = readFileSync(full, "utf8");
+        if (filter(rel)) out[rel] = normalizeVolatile(readFileSync(full, "utf8"));
       }
     }
   }

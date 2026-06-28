@@ -22,10 +22,17 @@ function listAllFiles(root: string): string[] {
   return out.sort();
 }
 
+function normalizeVolatile(content: string): string {
+  // Strip per-call volatile fields (Created timestamps embedded by writeArtifact's
+  // nowIso() calls). Two back-to-back calls cross ms boundaries on Linux but
+  // not Windows; without this filter the byte-identical assertion is flaky.
+  return content.replace(/^- Created:.*$/gm, "- Created: <NORMALIZED>");
+}
+
 function copyTreeContent(root: string): Record<string, string> {
   const map: Record<string, string> = {};
   for (const rel of listAllFiles(root)) {
-    map[rel] = readFileSync(join(root, rel), "utf8");
+    map[rel] = normalizeVolatile(readFileSync(join(root, rel), "utf8"));
   }
   return map;
 }
