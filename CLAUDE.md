@@ -217,7 +217,11 @@ and `docs/routing-table.md` for current routing.
   frontmatter on every new skill.
 - **Routing-table authoritative.** `docs/routing-table.md` is consulted by
   the lead at session start. `brief-me` surfaces a stale-check reminder if
-  mtime exceeds 30 days.
+  mtime exceeds 30 days. Builder routing matrix (FEAT-170 SLICE-C) at the top
+  of that file: `BE_ONLY` / `FE_ONLY` signals route tagged slices to specialists;
+  `TS_TOOLING_ONLY` (from `scripts/orchestrate-slice-classify.ts`) routes
+  untagged pure-TS-tooling slices to `backend-dev`; all other untagged slices
+  keep the `fullstack-dev` generalist path.
 - **Workflow badges.** `blocked` and `escalated_to_lead` are first-class
   workflow states with `--note` / `--blocked-by` flags. `write-final-synthesis`
   refuses to run while escalated unless `--force`.

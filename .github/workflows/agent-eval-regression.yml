@@ -23,7 +23,12 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'run-evals'))
     runs-on: ubuntu-latest
-    continue-on-error: true
+    # TODO(2026-07-13): promote to blocking after 2-week stability baseline.
+    # Remove continue-on-error when:
+    #   - 14+ consecutive PR runs PASS (check evals/runs/ history)
+    #   - OAuth-in-CI is available (FEAT-169 SLICE-91 unblocked)
+    #   - --candidate-live flag lands (FEAT-171)
+    continue-on-error: true # Advisory until 2026-07-13 stability baseline.
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2

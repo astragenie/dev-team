@@ -189,11 +189,12 @@ The classifier now exposes `FE_ONLY` and `BE_ONLY` alongside `SPLIT_BUILD`. Sing
 | `BE_ONLY = true` AND `BEHAVIOR_CHANGED = true` | `crew:backend-dev` only (no UX needed). |
 | `FE_ONLY = true` AND `BEHAVIOR_CHANGED = true` AND `NEEDS_UX = false` | `crew:frontend-dev` only. |
 | `FE_ONLY = true` AND `NEEDS_UX = true` | `crew:uxdesigner` + `crew:frontend-dev` in single parallel message. |
-| Untagged (`FE_ONLY = false` AND `BE_ONLY = false` AND `SPLIT_BUILD = false`) AND `BEHAVIOR_CHANGED = true` | `crew:fullstack-dev` only (generalist path — agent/skill/script/hook/doc edits without surface tags). |
+| Untagged (`FE_ONLY = false` AND `BE_ONLY = false` AND `SPLIT_BUILD = false`) AND `TS_TOOLING_ONLY = true` AND `BEHAVIOR_CHANGED = true` | `crew:backend-dev` only (pure-TS tooling default — all changed files are `.ts`/`scripts/`/`tests/`/`evals/`, none are `.tsx`/`.css`/`src/components/`). |
+| Untagged AND `TS_TOOLING_ONLY = false` AND `BEHAVIOR_CHANGED = true` | `crew:fullstack-dev` only (generalist path — agent/skill/script/hook/doc edits without surface tags). |
 | Untagged AND BOTH `NEEDS_UX` + `BEHAVIOR_CHANGED` true | `crew:uxdesigner` + `crew:fullstack-dev` in single parallel message. |
 | `SPLIT_BUILD = true` | Single parallel message with THREE Agent calls: `crew:uxdesigner` + `crew:frontend-dev` + `crew:backend-dev`. All consume the same FEAT-scoped OpenAPI YAML. Handoffs scoped by role: `builder-fe-<SLICE>.md` and `builder-be-<SLICE>.md`. |
 
-Rationale: `fullstack-dev` previously ate every untagged slice + every single-stack slice — generalist agent paid the cost of every dispatch including ones a specialist handles better. SLICE-C routes specialists when the FEAT declares `surface:api / surface:schema / stack:csharp / stack:node / stack:python` (→ backend-dev) or `surface:ui / stack:react` (→ frontend-dev). fullstack-dev keeps the legitimate use case: untagged slices (agent/skill/script/hook/doc/CI edits) plus explicit cross-layer slices that skip SPLIT_BUILD.
+Rationale: `fullstack-dev` previously ate every untagged slice + every single-stack slice — generalist agent paid the cost of every dispatch including ones a specialist handles better. SLICE-C routes specialists when the FEAT declares `surface:api / surface:schema / stack:csharp / stack:node / stack:python` (→ backend-dev) or `surface:ui / stack:react` (→ frontend-dev). For untagged slices, `classifyChangedFiles()` detects pure-TS-tooling work (scripts/tests/evals) and routes to backend-dev. fullstack-dev keeps the legitimate use case: untagged slices with agent/skill/hook/doc edits plus explicit cross-layer slices that skip SPLIT_BUILD.
 
 Race-safety: each parallel agent writes its own artifact at a deterministic path. No shared mutable state. UX spec stays slice-scoped. OpenAPI YAML is read-only for both builders (drift → help_request).
 
