@@ -4,7 +4,11 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { classifySlice, isShortSlice } from "../scripts/orchestrate-slice-classify.ts";
+import {
+  classifySlice,
+  classifyChangedFiles,
+  isShortSlice
+} from "../scripts/orchestrate-slice-classify.ts";
 
 const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const COMMAND_PATH = path.join(repoRoot, "commands", "orchestrate-slice.md");
@@ -185,4 +189,45 @@ test("isShortSlice: acCount = 7, changedFilesCount = 11 → false (boundary: bot
 
 test("isShortSlice: acCount = 4, changedFilesCount = 5, crossPlugin: true → false (cross-plugin override)", () => {
   assert.equal(isShortSlice({ acCount: 4, changedFilesCount: 5, crossPlugin: true }), false);
+});
+
+// FEAT-170 SLICE-C — pure-TS-tooling routing (BE-default for untagged tooling slices)
+test("classifyChangedFiles: TS_TOOLING_ONLY true for pure .ts script/test files", () => {
+  const result = classifyChangedFiles([
+    "scripts/orchestrate-slice-classify.ts",
+    "tests/orchestrate-slice.test.ts",
+    "evals/agents/crew-fullstack-dev.yaml"
+  ]);
+  assert.equal(result.TS_TOOLING_ONLY, true);
+});
+
+test("classifyChangedFiles: TS_TOOLING_ONLY false when any .tsx file present", () => {
+  const result = classifyChangedFiles(["scripts/lib/foo.ts", "src/components/Button.tsx"]);
+  assert.equal(result.TS_TOOLING_ONLY, false);
+});
+
+test("classifyChangedFiles: TS_TOOLING_ONLY false when any .css file present", () => {
+  const result = classifyChangedFiles(["tests/foo.test.ts", "src/styles/theme.css"]);
+  assert.equal(result.TS_TOOLING_ONLY, false);
+});
+
+test("classifyChangedFiles: TS_TOOLING_ONLY false for empty file list", () => {
+  const result = classifyChangedFiles([]);
+  assert.equal(result.TS_TOOLING_ONLY, false);
+});
+
+test("classifySlice: TS_TOOLING_ONLY true when changedFiles are all TS tooling", async () => {
+  const result = await classifySlice({
+    slicePath: "tests/fixtures/slices/single-stack-demo.md",
+    changedFiles: ["scripts/orchestrate-slice-classify.ts", "tests/orchestrate-slice.test.ts"]
+  });
+  assert.equal(result.TS_TOOLING_ONLY, true);
+});
+
+test("classifySlice: TS_TOOLING_ONLY false when changedFiles include .tsx (mixed BE+FE)", async () => {
+  const result = await classifySlice({
+    slicePath: "tests/fixtures/slices/split-build-demo.md",
+    changedFiles: ["src/api/things.ts", "src/components/ThingList.tsx"]
+  });
+  assert.equal(result.TS_TOOLING_ONLY, false);
 });

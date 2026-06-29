@@ -13,6 +13,14 @@ const FE_STACK = new Set(["stack:react"]);
 const BE_SURFACE = new Set(["surface:api", "surface:schema"]);
 const BE_STACK = new Set(["stack:csharp", "stack:node", "stack:python"]);
 
+// Patterns that mark a file as an FE surface (pure-TS-tooling check).
+const FE_PATH_RE =
+  /\.(tsx|css|scss|sass|less)$|\/src\/components\/|\/src\/pages\/|\/src\/app\/|\/styles\//;
+// Patterns that mark a file as pure TS tooling (scripts, tests, config, docs).
+// A slice is TS_TOOLING_ONLY when ALL changed files match this pattern and NONE
+// match the FE_PATH_RE above.
+const TS_TOOLING_PATH_RE = /\.(ts|mts|json|yaml|yml|md)$|^scripts\/|^tests\/|^evals\//;
+
 export function isShortSlice(opts: {
   acCount: number;
   changedFilesCount: number;
@@ -64,7 +72,29 @@ export function isLightTier(opts: {
   return changedLines <= maxLines;
 }
 
-export async function classifySlice(opts: { slicePath: string }) {
+/**
+ * Classify changed file paths as pure-TS-tooling (FEAT-170 SLICE-C routing).
+ *
+ * Returns `TS_TOOLING_ONLY = true` when ALL changed files are TypeScript source,
+ * scripts, tests, eval specs, or config files — and NONE touch an FE surface
+ * (*.tsx, *.css, src/components/, src/pages/, etc.). The orchestrator uses this
+ * signal to route untagged slices to `crew:backend-dev` instead of the default
+ * `crew:fullstack-dev`, matching the specialist to the actual work.
+ *
+ * `TS_TOOLING_ONLY = false` whenever:
+ *   - changedFiles is empty (no evidence to classify)
+ *   - any file matches the FE surface pattern
+ *   - any file does not match the TS tooling pattern
+ */
+export function classifyChangedFiles(changedFiles: string[]): { TS_TOOLING_ONLY: boolean } {
+  if (changedFiles.length === 0) return { TS_TOOLING_ONLY: false };
+  const hasFeSurface = changedFiles.some((f) => FE_PATH_RE.test(f));
+  if (hasFeSurface) return { TS_TOOLING_ONLY: false };
+  const allTooling = changedFiles.every((f) => TS_TOOLING_PATH_RE.test(f));
+  return { TS_TOOLING_ONLY: allTooling };
+}
+
+export async function classifySlice(opts: { slicePath: string; changedFiles?: string[] }) {
   const text = await fs.readFile(opts.slicePath, "utf8");
   const fm = parseFrontmatter(text);
   const tags = Array.isArray(fm?.tags) ? (fm.tags as string[]) : [];
@@ -84,7 +114,10 @@ export async function classifySlice(opts: { slicePath: string }) {
   const FE_ONLY = FE && !BE && !SPLIT_BUILD;
   const BE_ONLY = BE && !FE && !SPLIT_BUILD;
 
-  return { SPLIT_BUILD, FE_ONLY, BE_ONLY, NEEDS_CONTRACT, NEEDS_UX, tags, skip };
+  // File-path-based heuristic for untagged slices touching only TS tooling files.
+  const { TS_TOOLING_ONLY } = classifyChangedFiles(opts.changedFiles ?? []);
+
+  return { SPLIT_BUILD, FE_ONLY, BE_ONLY, TS_TOOLING_ONLY, NEEDS_CONTRACT, NEEDS_UX, tags, skip };
 }
 
 function tagsHaveAny(tags: string[], set: Set<string>) {
