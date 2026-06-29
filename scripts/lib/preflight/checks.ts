@@ -69,30 +69,35 @@ interface CheckResult {
   warnings: string[];
 }
 
+// Decide whether a `$NAME` regex hit should be skipped (not a real env-var
+// shape mistake). Centralizes the 5 false-positive guards so the matcher
+// loop reads top-down.
+function isFalsePositiveDollarMatch(command: string, match: RegExpExecArray): boolean {
+  const before = command.slice(0, match.index);
+  const afterDollar = command[match.index + 1];
+  // ${...} and $(...) are explicit non-env-var shapes.
+  if (afterDollar === "{" || afterDollar === "(") return true;
+  // $env:NAME literal or `env:` already present before the dollar.
+  if (match[1]!.toLowerCase().startsWith("env:")) return true;
+  if (before.endsWith("env:")) return true;
+  // Trailing letter means this is a mixed-case identifier we partially matched.
+  const charAfterMatch = command[match.index + match[0].length];
+  if (charAfterMatch !== undefined && /[A-Za-z]/.test(charAfterMatch)) return true;
+  // PowerShell automatic variable (allow-list lookup).
+  if (POWERSHELL_AUTOMATIC_VARS.has(match[1]!.toUpperCase())) return true;
+  return false;
+}
+
 export function checkEnvVarShape({ toolName, command }: EnvVarCheckInput): string[] {
-  const warnings = [];
+  const warnings: string[] = [];
 
   if (toolName === "PowerShell") {
-    // Match bare $NAME (uppercase) — heuristic for env-var-shaped identifiers — but NOT:
-    //   - $env:NAME (preceded by "env:")
-    //   - ${NAME} (next char after $ is "{")
-    //   - $(cmd) (next char after $ is "(")
-    //   - PowerShell automatic variables (deny-list above; case-insensitive lookup)
-    //   - partial matches of mixed-case identifiers like $PSVersionTable, which match
-    //     only the leading uppercase prefix; if the char immediately after the regex
-    //     match is a letter, the full identifier is mixed-case and not an env var
-    //     shape mistake
+    // Match bare $NAME (uppercase) — heuristic for env-var-shaped identifiers;
+    // false positives filtered by isFalsePositiveDollarMatch.
     const re = /\$([A-Z_][A-Z0-9_]*)/g;
     let match;
     while ((match = re.exec(command)) !== null) {
-      const before = command.slice(0, match.index);
-      const afterDollar = command[match.index + 1];
-      if (afterDollar === "{" || afterDollar === "(") continue;
-      if (match[1]!.toLowerCase().startsWith("env:")) continue;
-      if (before.endsWith("env:")) continue;
-      const charAfterMatch = command[match.index + match[0].length];
-      if (charAfterMatch !== undefined && /[A-Za-z]/.test(charAfterMatch)) continue;
-      if (POWERSHELL_AUTOMATIC_VARS.has(match[1]!.toUpperCase())) continue;
+      if (isFalsePositiveDollarMatch(command, match)) continue;
       warnings.push(`use \`$env:${match[1]!}\` in PowerShell, not \`$${match[1]!}\``);
       break;
     }
@@ -106,109 +111,108 @@ export function checkEnvVarShape({ toolName, command }: EnvVarCheckInput): strin
   return warnings;
 }
 
-export async function checkChainedCdPaths({ command, cwd }: CdPathCheckInput): Promise<string[]> {
-  const warnings = [];
+async function checkOneChainedCdPath(
+  rawPath: string,
+  cwd: string,
+  warnings: string[]
+): Promise<void> {
+  const resolved = path.isAbsolute(rawPath) ? rawPath : path.resolve(cwd, rawPath);
+  try {
+    await fs.stat(resolved);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      warnings.push(`chained cd target does not exist: ${resolved}`);
+    }
+    // Other errors (EPERM etc.) — don't warn, be conservative.
+  }
+}
 
-  // Patterns:
-  //   cd <path> &&
-  //   cd <path>;
-  //   Set-Location <path>
-  // Capture the path (may be quoted or unquoted).
-  // We handle both quoted (single or double) and unquoted paths.
+export async function checkChainedCdPaths({ command, cwd }: CdPathCheckInput): Promise<string[]> {
+  const warnings: string[] = [];
+
+  // Patterns: cd <path> && | cd <path>; | Set-Location <path>
+  // Path may be double-quoted, single-quoted, or unquoted.
   const patterns = [
-    // cd "path" && or cd 'path' &&  or  cd path &&
     /\bcd\s+(?:"([^"]+)"|'([^']+)'|(\S+))\s*(?:&&|;)/g,
-    // Set-Location "path" or Set-Location 'path' or Set-Location path (end of line or whitespace)
     /\bSet-Location\s+(?:"([^"]+)"|'([^']+)'|(\S+))(?:\s|$)/gi
   ];
 
   for (const re of patterns) {
     let match;
     while ((match = re.exec(command)) !== null) {
-      // One of the three capture groups will be set
       const rawPath = normalizeMsysPath((match[1] ?? match[2] ?? match[3])!);
       if (!rawPath) continue;
-      const resolved = path.isAbsolute(rawPath) ? rawPath : path.resolve(cwd, rawPath);
-      try {
-        await fs.stat(resolved);
-      } catch (err) {
-        if ((err as NodeJS.ErrnoException).code === "ENOENT") {
-          warnings.push(`chained cd target does not exist: ${resolved}`);
-        }
-        // Other errors (EPERM etc.) — don't warn, be conservative
-      }
+      await checkOneChainedCdPath(rawPath, cwd, warnings);
     }
   }
 
   return warnings;
 }
 
+// Odd quote count in `prefix` means the position is inside a quoted string.
+function isPrefixInsideQuotes(prefix: string): boolean {
+  const doubleQuotes = (prefix.match(/"/g) || []).length;
+  const singleQuotes = (prefix.match(/'/g) || []).length;
+  return doubleQuotes % 2 !== 0 || singleQuotes % 2 !== 0;
+}
+
+// Walk forward from `startIdx` until whitespace; return the end index.
+function findTokenEnd(command: string, startIdx: number): number {
+  let i = startIdx;
+  while (i < command.length && command[i] !== " " && command[i] !== "\t") i++;
+  return i;
+}
+
+// A bare token shaped like a path-continuation (has slash, not a flag, not
+// quoted, not an absolute Windows path on its own).
+function looksLikePathContinuation(nextToken: string): boolean {
+  if (!/[\\/]/.test(nextToken)) return false;
+  if (nextToken.startsWith("-")) return false;
+  if (nextToken.startsWith('"') || nextToken.startsWith("'")) return false;
+  if (/^[A-Za-z]:[/\\]/.test(nextToken)) return false;
+  return true;
+}
+
+// For one regex hit on a Windows-path start, decide if it represents an
+// unquoted path with an embedded space. Returns the warning text or null.
+function buildUnquotedWindowsPathWarning(command: string, match: RegExpExecArray): string | null {
+  const startIdx = match.index;
+  if (isPrefixInsideQuotes(command.slice(0, startIdx))) return null;
+
+  const tokenEnd = findTokenEnd(command, startIdx + match[0].length);
+  if (tokenEnd >= command.length) return null;
+  const charAfterToken = command[tokenEnd];
+  if (charAfterToken !== " " && charAfterToken !== "\t") return null;
+
+  const afterSpace = command.slice(tokenEnd).trimStart();
+  if (/^(&&|;|\|+|>|<)/.test(afterSpace) || afterSpace.length === 0) return null;
+
+  const nextTokenMatch = afterSpace.match(/^(\S+)/);
+  if (!nextTokenMatch) return null;
+  const nextToken = nextTokenMatch[1] ?? "";
+  if (!looksLikePathContinuation(nextToken)) return null;
+
+  const token = command.slice(startIdx, tokenEnd);
+  return `Windows path with space should be quoted: ${token} ${nextToken}`;
+}
+
 export function checkUnquotedWindowsPathSpace({ command }: CommandInput): string[] {
-  const warnings = [];
-
-  // Find all Windows-style paths (C:\ or C:/) that contain a space
-  // and are NOT enclosed in quotes.
-  //
-  // Detection strategy:
+  const warnings: string[] = [];
+  // Find all Windows-style paths (C:\ or C:/) that contain a space and are
+  // NOT enclosed in quotes. Detection strategy:
   //   1. Find a Windows path start [A-Za-z]:[\/]
-  //   2. Check if it is inside a quoted string (preceded by an unmatched quote)
-  //   3. If unquoted, walk forward collecting the path token (until whitespace)
-  //   4. If the character immediately after the token is a space and the next
-  //      portion is NOT an operator (&&, ;, |, >, <), the path likely has a
-  //      space in it and is unquoted — warn.
-
+  //   2. Skip if inside a quoted string (odd quote count in prefix)
+  //   3. Walk forward collecting the path token (until whitespace)
+  //   4. If the next token looks like a path continuation, warn.
   const winPathRe = /[A-Za-z]:[/\\]/g;
   let match;
-
   while ((match = winPathRe.exec(command)) !== null) {
-    const startIdx = match.index;
-
-    // Determine if this path is inside quotes by looking at the prefix.
-    // Check for the nearest unmatched double or single quote before startIdx.
-    const prefix = command.slice(0, startIdx);
-    const doubleQuotes = (prefix.match(/"/g) || []).length;
-    const singleQuotes = (prefix.match(/'/g) || []).length;
-    // If there is an odd number of double or single quotes before the path start,
-    // the path is inside a quoted string.
-    if (doubleQuotes % 2 !== 0 || singleQuotes % 2 !== 0) {
-      continue;
-    }
-
-    // Walk forward from startIdx to the end of the unquoted token (stops at space/tab)
-    let tokenEnd = startIdx + match[0].length;
-    while (tokenEnd < command.length && command[tokenEnd] !== " " && command[tokenEnd] !== "\t") {
-      tokenEnd++;
-    }
-
-    const token = command.slice(startIdx, tokenEnd);
-
-    // Check: is there a space right after the token, followed by content that
-    // actually looks like a continuation of the path? A real embedded-space
-    // path like `C:\Program Files\app.exe` splits into shell tokens where the
-    // second piece (`Files\app.exe`) still contains a path separator. Normal
-    // follow-on args like `git -C C:/x status` should NOT warn — `status` is
-    // clearly a separate argument.
-    if (tokenEnd < command.length && (command[tokenEnd] === " " || command[tokenEnd] === "\t")) {
-      const afterSpace = command.slice(tokenEnd).trimStart();
-      if (/^(&&|;|\|+|>|<)/.test(afterSpace) || afterSpace.length === 0) {
-        continue;
-      }
-      const nextTokenMatch = afterSpace.match(/^(\S+)/);
-      if (!nextTokenMatch) continue;
-      const nextToken = nextTokenMatch[1] ?? "";
-      const looksLikeContinuation =
-        /[\\/]/.test(nextToken) &&
-        !nextToken.startsWith("-") &&
-        !nextToken.startsWith('"') &&
-        !nextToken.startsWith("'") &&
-        !/^[A-Za-z]:[/\\]/.test(nextToken);
-      if (looksLikeContinuation) {
-        warnings.push(`Windows path with space should be quoted: ${token} ${nextToken}`);
-        break;
-      }
+    const warning = buildUnquotedWindowsPathWarning(command, match);
+    if (warning) {
+      warnings.push(warning);
+      break;
     }
   }
-
   return warnings;
 }
 

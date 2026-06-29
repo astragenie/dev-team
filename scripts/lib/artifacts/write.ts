@@ -701,6 +701,59 @@ const ARTIFACT_ROOT = [".claude", "artifacts", "crew"];
  * When fields.updatePath is provided, writes to that exact path (idempotent update).
  * Otherwise, generates a new timestamped filename (backward-compatible behavior).
  */
+function isCostReportKind(kind: string): boolean {
+  return kind === "cost-report" || kind === "cost-report-slice" || kind === "cost-report-aggregate";
+}
+
+// Resolve the destination path: `updatePath` for idempotent updates,
+// otherwise a fresh timestamped filename under the artifact directory.
+function resolveArtifactPath(
+  artifactDir: string,
+  kind: string,
+  fields: ArtifactFields,
+  config: { prefix: string }
+): string {
+  if (fields.updatePath) return fields.updatePath;
+  const title = fields.title ?? fields.summary ?? kind;
+  const fileName = `${timestampSlug()}-${config.prefix}-${slugify(title)}.md`;
+  return path.join(artifactDir, fileName);
+}
+
+// Render the frontmatter block. Cost-report kinds have no frontmatter;
+// scaffold mode forces an "in-progress" status into the frontmatter set.
+function renderArtifactFrontmatter(kind: string, fields: ArtifactFields): string {
+  if (isCostReportKind(kind)) return "";
+  if (fields.scaffold) return renderOptionalFrontmatter({ ...fields, status: "in-progress" });
+  return renderOptionalFrontmatter(fields);
+}
+
+// Render the body. Scaffold mode has per-kind scaffold renderers; non-scaffold
+// uses the kind's normal renderer.
+function renderArtifactBody(
+  kind: string,
+  fields: ArtifactFields,
+  config: { render: (f: ArtifactFields) => string }
+): string {
+  if (!fields.scaffold) return config.render(fields);
+  if (kind === "review-result") return renderReviewResultScaffold(fields);
+  if (kind === "validation-result") return renderValidationResultScaffold(fields);
+  return config.render(fields);
+}
+
+// Fire-and-forget GEPA capture tee. Never propagates errors.
+async function fireCaptureTeeSilent(
+  repoPath: string,
+  artifact: ArtifactRecord,
+  fields: ArtifactFields
+): Promise<void> {
+  try {
+    const { captureTee } = await import("../gepa/capture-tee.ts");
+    await captureTee(repoPath, artifact, fields);
+  } catch {
+    // never propagate
+  }
+}
+
 export async function writeArtifact(
   repoPath: string,
   kind: string,
@@ -711,71 +764,25 @@ export async function writeArtifact(
     const artifactDir = path.join(repoPath, ...ARTIFACT_ROOT, config.directory);
     await fs.mkdir(artifactDir, { recursive: true });
 
-    let artifactPath: string;
-    if (fields.updatePath) {
-      // Idempotent update: write to the exact path provided
-      artifactPath = fields.updatePath;
-    } else {
-      // Generate a new timestamped filename (backward-compatible)
-      const title = fields.title ?? fields.summary ?? kind;
-      const fileName = `${timestampSlug()}-${config.prefix}-${slugify(title)}.md`;
-      artifactPath = path.join(artifactDir, fileName);
-    }
-
-    const isCostReport =
-      kind === "cost-report" || kind === "cost-report-slice" || kind === "cost-report-aggregate";
-
-    // In scaffold mode, emit frontmatter with in-progress status
-    let fm = "";
-    if (!isCostReport) {
-      if (fields.scaffold) {
-        // Scaffold: emit minimal frontmatter with in-progress status
-        const scaffoldFields = { ...fields, status: "in-progress" };
-        fm = renderOptionalFrontmatter(scaffoldFields);
-      } else {
-        fm = renderOptionalFrontmatter(fields);
-      }
-    }
-
-    let body: string;
-    if (fields.scaffold) {
-      // Dispatch to scaffold renderers
-      if (kind === "review-result") {
-        body = renderReviewResultScaffold(fields);
-      } else if (kind === "validation-result") {
-        body = renderValidationResultScaffold(fields);
-      } else {
-        // For other kinds, use the normal renderer (scaffold not supported)
-        body = config.render(fields);
-      }
-    } else {
-      body = config.render(fields);
-    }
+    const artifactPath = resolveArtifactPath(artifactDir, kind, fields, config);
+    const fm = renderArtifactFrontmatter(kind, fields);
+    let body = renderArtifactBody(kind, fields, config);
 
     if (kind === "handoff" && fields.repoContext) {
       body += await buildRepoLayoutBlock(repoPath);
     }
-    const contents = `${fm}${body}\n`;
 
-    await fs.writeFile(artifactPath, contents);
+    await fs.writeFile(artifactPath, `${fm}${body}\n`);
     const artifact: ArtifactRecord = {
       kind,
       path: artifactPath,
       title: fields.title ?? "Untitled"
     };
 
-    if (!isCostReport) {
+    if (!isCostReportKind(kind)) {
       await registerWorkflowArtifact(repoPath, artifact, fields);
     }
-
-    // GEPA capture tee — fire-and-forget per spec slice S2.
-    // captureTee is internally fail-silent; this try/catch is belt-and-suspenders.
-    try {
-      const { captureTee } = await import("../gepa/capture-tee.ts");
-      await captureTee(repoPath, artifact, fields);
-    } catch {
-      // never propagate
-    }
+    await fireCaptureTeeSilent(repoPath, artifact, fields);
 
     return ok(artifact);
   } catch (e) {

@@ -351,6 +351,45 @@ export async function listClaims(
     }));
 }
 
+// Sweep all claims (no path filter): partition into owned-by-`owner` vs
+// the rest. If `owner` is null, every claim is a conflict.
+function inspectAllClaims(claims: ClaimRecord[], owner: string | null): InspectResult {
+  if (!owner) {
+    return { owner, owned: [], conflicts: claims, available: [] };
+  }
+  const owned: ClaimRecord[] = [];
+  const conflicts: ClaimRecord[] = [];
+  for (const claim of claims) {
+    if (claim.owner === owner) owned.push(claim);
+    else conflicts.push(claim);
+  }
+  return { owner, owned, conflicts, available: [] };
+}
+
+// Classify a specific list of paths against existing claims.
+function classifyRequestedPaths(
+  requested: string[],
+  claimsByPath: Map<string, ClaimRecord>,
+  owner: string | null
+): { owned: ClaimRecord[]; conflicts: ClaimRecord[]; available: Array<{ path: string }> } {
+  const owned: ClaimRecord[] = [];
+  const conflicts: ClaimRecord[] = [];
+  const available: Array<{ path: string }> = [];
+  for (const requestedPath of requested) {
+    const claim = claimsByPath.get(requestedPath);
+    if (!claim) {
+      available.push({ path: requestedPath });
+      continue;
+    }
+    if (owner && claim.owner === owner) {
+      owned.push(claim);
+      continue;
+    }
+    conflicts.push(claim);
+  }
+  return { owned, conflicts, available };
+}
+
 export async function inspectClaims(
   repoPath: string,
   filePaths: string[] = [],
@@ -358,50 +397,13 @@ export async function inspectClaims(
 ): Promise<InspectResult> {
   const owner = options.owner ?? null;
   const claims = await listClaims(repoPath);
-  const claimsByPath = new Map(claims.map((claim) => [claim.path, claim]));
 
   if (filePaths.length === 0) {
-    if (!owner) {
-      return {
-        owner,
-        owned: [],
-        conflicts: claims,
-        available: []
-      };
-    }
-
-    const owned: ClaimRecord[] = [];
-    const conflicts: ClaimRecord[] = [];
-    for (const claim of claims) {
-      if (claim.owner === owner) {
-        owned.push(claim);
-      } else {
-        conflicts.push(claim);
-      }
-    }
-
-    return { owner, owned, conflicts, available: [] };
+    return inspectAllClaims(claims, owner);
   }
 
+  const claimsByPath = new Map(claims.map((claim) => [claim.path, claim]));
   const requested = [...new Set(filePaths.map((inputPath) => toRepoRelative(repoPath, inputPath)))];
-  const owned: ClaimRecord[] = [];
-  const conflicts: ClaimRecord[] = [];
-  const available: Array<{ path: string }> = [];
-
-  for (const requestedPath of requested) {
-    const claim = claimsByPath.get(requestedPath);
-    if (!claim) {
-      available.push({ path: requestedPath });
-      continue;
-    }
-
-    if (owner && claim.owner === owner) {
-      owned.push(claim);
-      continue;
-    }
-
-    conflicts.push(claim);
-  }
-
+  const { owned, conflicts, available } = classifyRequestedPaths(requested, claimsByPath, owner);
   return { owner, owned, conflicts, available };
 }

@@ -88,25 +88,54 @@ export function emitParallelGatesBlock(gates: readonly GateSpec[]): string {
  * Each gate name is mapped to `bun run <name>` by default; pass `--cmd
  * <name>=<command>` to override.
  */
+function parseEmitNames(value: string): string[] {
+  return value
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
+// Parse a `name=command` override and store it on `overrides`. Returns false
+// if the value doesn't contain `=` (caller treats as fatal arg error).
+function applyCmdOverride(value: string, overrides: Record<string, string>): boolean {
+  const eq = value.indexOf("=");
+  if (eq === -1) return false;
+  overrides[value.slice(0, eq)] = value.slice(eq + 1);
+  return true;
+}
+
+// Parse one --emit or --cmd argument. Returns the new index and updated names,
+// or null to signal a fatal arg error.
+function handleArg(
+  argv: readonly string[],
+  index: number,
+  overrides: Record<string, string>,
+  currentNames: string[] | null
+): { nextIndex: number; names: string[] | null } | null {
+  const flag = argv[index];
+  if (flag === "--emit") {
+    const v = argv[index + 1];
+    if (v === undefined) return null;
+    return { nextIndex: index + 2, names: parseEmitNames(v) };
+  }
+  if (flag === "--cmd") {
+    const v = argv[index + 1];
+    if (v === undefined) return null;
+    if (!applyCmdOverride(v, overrides)) return null;
+    return { nextIndex: index + 2, names: currentNames };
+  }
+  return { nextIndex: index + 1, names: currentNames };
+}
+
 function parseCli(argv: readonly string[]): { gates: GateSpec[] } | null {
   let names: string[] | null = null;
   const overrides: Record<string, string> = {};
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a === "--emit") {
-      const v = argv[++i];
-      if (v === undefined) return null;
-      names = v
-        .split(",")
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0);
-    } else if (a === "--cmd") {
-      const v = argv[++i];
-      if (v === undefined) return null;
-      const eq = v.indexOf("=");
-      if (eq === -1) return null;
-      overrides[v.slice(0, eq)] = v.slice(eq + 1);
-    }
+  let i = 0;
+  while (i < argv.length) {
+    const step = handleArg(argv, i, overrides, names);
+    if (step === null) return null;
+    names = step.names;
+    i = step.nextIndex;
   }
   if (names === null || names.length === 0) return null;
   return {
