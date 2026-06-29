@@ -1,20 +1,18 @@
 ---
 id: SLICE-108
 feat: FEAT-185
-status: pending
+status: completed
 created: 2026-06-29
-title: "FEAT-185 SLICE-A — move 4 low-blast providers to gepa-core 0.3.0 + CI matrix scaffold"
+title: FEAT-185 SLICE-A — move 4 low-blast providers to gepa-core 0.3.0 + CI matrix scaffold
 autonomous_safe: false
-risk_band: 0.50
+risk_band: 0.5
 estimated_loc: 800
 estimated_files: 13
-repos:
-  - gepa-core
-  - dev-team
-depends_on:
-  - "FEAT-184 (closed via SLICE-107 2026-06-29)"
+repos: [gepa-core, dev-team]
+depends_on: [FEAT-184 (closed via SLICE-107 2026-06-29)]
+completed_at: 2026-06-29
+updated: 2026-06-29
 ---
-
 # SLICE-108: FEAT-185 SLICE-A — move 4 low-blast providers to gepa-core 0.3.0
 
 ## Intent
