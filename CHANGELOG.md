@@ -5,6 +5,13 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+### Minor — evals: provider extraction to @astragenie/gepa-core 0.3.0 (FEAT-185 SLICE-A)
+
+- **`package.json`** — `@astragenie/gepa-core` dep bumped to `^0.3.0`.
+- **`evals/providers/{ollama,generic-openai,groq,gemini}.ts`** — rewritten as thin env-reading shims. Core logic (prompt construction, HTTP calls, token mapping) relocated to `@astragenie/gepa-core/providers/{ollama,generic-openai,groq,gemini}`. Shims read env vars (`OLLAMA_HOST`, `GROQ_API_KEY`, `GEMINI_API_KEY`) and pass them as typed constructor config. All public APIs preserved; `JudgeProvider`/`JUDGE_REGISTRY` callers unaffected.
+- **`evals/providers/claude-p.ts`** — **explicitly not moved**. Stays in dev-team per AC-9 of FEAT-185 SLICE-A: subprocess-based judge, Windows-specific path handling, and FEAT-173 tempdir-isolation logic. CHANGELOG 0.3.0 in gepa-core carries this callout.
+- `bun run test` 1047 pass, 0 fail post-integration (AC-6).
+
 ### Minor — evals: adopt @astragenie/gepa-core LLMJudge; JudgeProvider deprecated
 
 - **`package.json`** — `@astragenie/gepa-core` dep bumped to `^0.2.1` (published 2026-06-29).
