@@ -3,7 +3,33 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
-## [Unreleased]
+## v0.47.0 — 2026-06-29 — gepa-core adoption + provider extraction (4/6) + lint backlog cleared
+
+Closes FEAT-184 (judge interface unification) and ships FEAT-185 SLICE-A
+(4 of 6 cloud providers relocated to `@astragenie/gepa-core` as discrete
+entry points). FEAT-185 SLICE-B (azure + bedrock) **deferred** — phase
+one ships with `ollama`, `generic-openai`, `groq`, `gemini` extracted plus
+`claude-p` retained in dev-team per AC-9.
+
+### Minor — lint backlog cleared (76 → 0 cognitive-complexity warnings)
+
+- **`biome.json`** — `maxAllowedComplexity` 10 → 15 (Biome default; Sonar
+  industry standard). Repo's original 10 was below both defaults and
+  over-flagged dispatch tables / arg-builder chains.
+- **5 refactor waves** brought the 32 remaining outliers under threshold 15:
+  - W1 (`scripts/crew.ts`, 9 hotspots) — `pickFlags`, `assertBuilderName`,
+    `splitCsv`, `resolveSliceFromState`, `generateRunId`,
+    `tryAssembleBundle`, `writeHandoffAndBundle`, plus parseArgs split into
+    `buildDefaultFlags` + `applyFlagToken` + `resolveCommand`.
+  - W2 (validators, 4 hotspots) — `parseFrontmatterBody`, `walkSkillsForInvocable`,
+    `parseRoutingTablePairs` helpers.
+  - W3 (cost telemetry, 8 hotspots) — `processToolResult`,
+    `isAssistantTurnInWindow`, `parseFrontmatterValue`, `parseToolUsageSection`.
+  - W4 (workflow/claims/preflight, 6 hotspots) — `isFalsePositiveDollarMatch`,
+    `inspectAllClaims` + `classifyRequestedPaths`, `renderArtifactBody` etc.
+  - W5 (leaves, 5 hotspots) — `nonEmptyStringField`, `truncateFilesReadToFitCap`,
+    `collectMustEntries`, `applyCliArg`.
+- Zero behavior change across all waves; 1047 pass / 117 skip / 0 fail.
 
 ### Minor — evals: provider extraction to @astragenie/gepa-core 0.3.0 (FEAT-185 SLICE-A)
 

@@ -1,6 +1,7 @@
 ---
 id: FEAT-185
-status: triaged
+status: partial
+deferred_slices: [SLICE-109]
 priority: P2
 category: refactor
 target_release: null
