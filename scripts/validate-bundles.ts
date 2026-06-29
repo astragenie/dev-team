@@ -56,12 +56,13 @@ interface Finding {
   reason: string;
 }
 
-function validateOne(filePath: string, text: string): Finding | null {
-  const match = text.match(/^---\n([\s\S]*?)\n---/);
-  if (!match) {
-    return { file: filePath, reason: "missing frontmatter delimiters" };
-  }
-  const body = match[1] ?? "";
+interface ParsedFrontmatter {
+  have: Set<string>;
+  schemaVersion: number | null;
+  builderValue: string | null;
+}
+
+function parseFrontmatterBody(body: string): ParsedFrontmatter {
   const have = new Set<string>();
   let schemaVersion: number | null = null;
   let builderValue: string | null = null;
@@ -69,17 +70,25 @@ function validateOne(filePath: string, text: string): Finding | null {
     const line = raw.trim();
     // Field names may include hyphens (e.g. `files_read_skipped`, `builder`).
     const m = line.match(/^([a-z][a-z0-9_-]*):/);
-    if (m && m[1]) have.add(m[1]);
+    if (m?.[1]) have.add(m[1]);
     const sv = line.match(/^schema_version:\s*(\d+)\s*$/);
-    if (sv && sv[1]) schemaVersion = Number(sv[1]);
+    if (sv?.[1]) schemaVersion = Number(sv[1]);
     const bv = line.match(/^builder:\s*([\w-]+)\s*$/);
-    if (bv && bv[1]) builderValue = bv[1];
+    if (bv?.[1]) builderValue = bv[1];
   }
+  return { have, schemaVersion, builderValue };
+}
+
+function checkRequiredFields(have: Set<string>, filePath: string): Finding | null {
   for (const f of REQUIRED_FIELDS) {
     if (!have.has(f)) {
       return { file: filePath, reason: `missing required field: ${f}` };
     }
   }
+  return null;
+}
+
+function checkBuilder(builderValue: string | null, filePath: string): Finding | null {
   if (builderValue === null) {
     return { file: filePath, reason: "builder value unparseable" };
   }
@@ -89,6 +98,10 @@ function validateOne(filePath: string, text: string): Finding | null {
       reason: `builder "${builderValue}" not in allowed set [${[...ALLOWED_BUILDERS].sort().join(", ")}]`
     };
   }
+  return null;
+}
+
+function checkSchemaVersion(schemaVersion: number | null, filePath: string): Finding | null {
   if (schemaVersion === null) {
     return { file: filePath, reason: "schema_version unparseable" };
   }
@@ -99,6 +112,19 @@ function validateOne(filePath: string, text: string): Finding | null {
     };
   }
   return null;
+}
+
+function validateOne(filePath: string, text: string): Finding | null {
+  const match = text.match(/^---\n([\s\S]*?)\n---/);
+  if (!match) {
+    return { file: filePath, reason: "missing frontmatter delimiters" };
+  }
+  const { have, schemaVersion, builderValue } = parseFrontmatterBody(match[1] ?? "");
+  return (
+    checkRequiredFields(have, filePath) ??
+    checkBuilder(builderValue, filePath) ??
+    checkSchemaVersion(schemaVersion, filePath)
+  );
 }
 
 async function main(): Promise<void> {

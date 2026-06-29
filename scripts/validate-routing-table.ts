@@ -59,29 +59,33 @@ async function fileExists(dir: string, name: string): Promise<boolean> {
   }
 }
 
-async function findLocalInvocable(root: string, invocableName: string): Promise<boolean> {
-  // skills/**/SKILL.md — check name: field
-  async function walkSkills(dir: string): Promise<boolean> {
-    let entries;
-    try {
-      entries = await fs.readdir(dir, { withFileTypes: true });
-    } catch {
-      return false;
-    }
-    for (const entry of entries) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (await walkSkills(full)) return true;
-      } else if (entry.isFile() && entry.name === "SKILL.md") {
-        const text = await fs.readFile(full, "utf8");
-        const m = text.match(/^---[\s\S]*?^---/m);
-        const name = m?.[0]?.match(/^name:\s*(.+)$/m)?.[1]?.trim();
-        if (name === invocableName) return true;
-      }
-    }
+async function skillFileMatches(skillMdPath: string, invocableName: string): Promise<boolean> {
+  const text = await fs.readFile(skillMdPath, "utf8");
+  const m = text.match(/^---[\s\S]*?^---/m);
+  const name = m?.[0]?.match(/^name:\s*(.+)$/m)?.[1]?.trim();
+  return name === invocableName;
+}
+
+async function walkSkillsForInvocable(dir: string, invocableName: string): Promise<boolean> {
+  let entries;
+  try {
+    entries = await fs.readdir(dir, { withFileTypes: true });
+  } catch {
     return false;
   }
-  if (await walkSkills(path.join(root, "skills"))) return true;
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (await walkSkillsForInvocable(full, invocableName)) return true;
+    } else if (entry.isFile() && entry.name === "SKILL.md") {
+      if (await skillFileMatches(full, invocableName)) return true;
+    }
+  }
+  return false;
+}
+
+async function findLocalInvocable(root: string, invocableName: string): Promise<boolean> {
+  if (await walkSkillsForInvocable(path.join(root, "skills"), invocableName)) return true;
   // commands/<name>.md (slash commands)
   if (await fileExists(path.join(root, "commands"), `${invocableName}.md`)) return true;
   // agents/<name>.md (subagents)
@@ -156,30 +160,46 @@ async function parseAgentSkillBlock(filePath: string): Promise<Set<string>> {
  * Extract (role, skillPath) pairs from routing-table lines.
  * Skips lines with routing-lint:ignore. Skips header separator rows.
  */
+function isRoutingTableDataRow(line: string): boolean {
+  if (!line.startsWith("|")) return false;
+  if (/^[|\s:-]+$/.test(line)) return false; // separator row
+  if (line.includes("<!-- routing-lint:ignore -->")) return false;
+  return true;
+}
+
+function extractRolesFromCell(routeToCell: string): string[] {
+  const roles: string[] = [];
+  CREW_ROLE_IN_CELL_RE.lastIndex = 0;
+  let rm;
+  while ((rm = CREW_ROLE_IN_CELL_RE.exec(routeToCell)) !== null) {
+    const role = (rm[1] ?? "").toLowerCase();
+    if (KNOWN_CREW_ROLES.has(role) && !roles.includes(role)) roles.push(role);
+  }
+  return roles;
+}
+
+function extractSkillPathsFromCell(notesCell: string): string[] {
+  const skills: string[] = [];
+  SKILL_PATH_IN_NOTES_RE.lastIndex = 0;
+  let sm;
+  while ((sm = SKILL_PATH_IN_NOTES_RE.exec(notesCell)) !== null) {
+    skills.push(`skills/${sm[1]}/${sm[2]}`);
+  }
+  return skills;
+}
+
 function parseRoutingTablePairs(
   lines: string[]
 ): Array<{ role: string; skillPath: string; row: string }> {
   const pairs: Array<{ role: string; skillPath: string; row: string }> = [];
   for (const line of lines) {
-    if (!line.startsWith("|")) continue;
-    if (/^[|\s:-]+$/.test(line)) continue; // separator row
-    if (line.includes("<!-- routing-lint:ignore -->")) continue;
+    if (!isRoutingTableDataRow(line)) continue;
     const cells = line.split("|").map((c) => c.trim());
     if (cells.length < 4) continue; // [0]=empty,[1]=Signal,[2]=Route-to,[3]=Notes
-    const routeTo = cells[2] ?? "";
-    const notes = cells[3] ?? "";
-    const roles: string[] = [];
-    let rm;
-    CREW_ROLE_IN_CELL_RE.lastIndex = 0;
-    while ((rm = CREW_ROLE_IN_CELL_RE.exec(routeTo)) !== null) {
-      const role = (rm[1] ?? "").toLowerCase();
-      if (KNOWN_CREW_ROLES.has(role) && !roles.includes(role)) roles.push(role);
-    }
+    const roles = extractRolesFromCell(cells[2] ?? "");
     if (roles.length === 0) continue;
-    SKILL_PATH_IN_NOTES_RE.lastIndex = 0;
-    let sm;
-    while ((sm = SKILL_PATH_IN_NOTES_RE.exec(notes)) !== null) {
-      const skillPath = `skills/${sm[1]}/${sm[2]}`;
+    const skillPaths = extractSkillPathsFromCell(cells[3] ?? "");
+    for (const skillPath of skillPaths) {
       for (const role of roles) {
         pairs.push({ role, skillPath, row: line.trim() });
       }
@@ -191,6 +211,30 @@ function parseRoutingTablePairs(
 /**
  * Run Pass 1: skill-ID resolution.
  */
+async function resolveSkillId(plugin: string, skill: string): Promise<boolean> {
+  if (plugin === "crew") return findLocalInvocable(REPO_ROOT, skill);
+  return findExternalInvocable(PLUGINS_JSON, plugin, skill);
+}
+
+async function checkIdsInLine(
+  line: string,
+  currentHeading: string,
+  errors: Array<{ row: string; id: string; reason: string }>
+): Promise<void> {
+  if (line.includes("<!-- routing-lint:ignore -->")) return;
+  SKILL_ID_RE.lastIndex = 0;
+  let match;
+  while ((match = SKILL_ID_RE.exec(line)) !== null) {
+    const plugin = match[1] ?? "";
+    const skill = match[2] ?? "";
+    if (isCarvedOut(plugin, skill)) continue;
+    const found = await resolveSkillId(plugin, skill);
+    if (!found) {
+      errors.push({ row: currentHeading, id: `${plugin}:${skill}`, reason: "not found" });
+    }
+  }
+}
+
 async function runIdResolutionPass(
   content: string
 ): Promise<Array<{ row: string; id: string; reason: string }>> {
@@ -202,20 +246,7 @@ async function runIdResolutionPass(
       currentHeading = line.trim();
       continue;
     }
-    if (line.includes("<!-- routing-lint:ignore -->")) continue;
-    let match;
-    SKILL_ID_RE.lastIndex = 0;
-    while ((match = SKILL_ID_RE.exec(line)) !== null) {
-      const plugin = match[1] ?? "";
-      const skill = match[2] ?? "";
-      if (isCarvedOut(plugin, skill)) continue;
-      const found =
-        plugin === "crew"
-          ? await findLocalInvocable(REPO_ROOT, skill)
-          : await findExternalInvocable(PLUGINS_JSON, plugin, skill);
-      if (!found)
-        errors.push({ row: currentHeading, id: `${plugin}:${skill}`, reason: "not found" });
-    }
+    await checkIdsInLine(line, currentHeading, errors);
   }
   return errors;
 }
