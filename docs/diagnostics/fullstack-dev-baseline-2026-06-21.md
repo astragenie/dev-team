@@ -89,6 +89,45 @@ Remediation for SLICE-B+C: add a `lead-leak-resilience-v4` fixture with "you are
 - **Reduce visible skill references**: 14 table rows → load-on-demand via skill file. Reduce in-prompt skill mention count from 14 to ≤3 (the resolution algorithm only).
 - **Skill cap**: keep hard cap 5 but reduce soft cap from 3 to 2 for standard slices; add explicit note that cross-layer slices may reach 3.
 
+## CI promotion plan (FEAT-170 SLICE-D)
+
+`.github/workflows/agent-eval-regression.yml` was promoted from the SLICE-92 spec at FEAT-170 SLICE-D.
+
+### Current state (advisory)
+
+- Gate: `continue-on-error: true` — failure does not block merge.
+- Mode: `--dry-run` only — heuristic asserts (no live judge or `--candidate-live`).
+- Trigger: PR label `run-evals` + `workflow_dispatch`.
+
+### Promotion criteria (target: 2026-07-13)
+
+Promote gate to blocking when ALL of the following hold:
+
+1. **Stability baseline met** — 14+ consecutive labeled PR runs PASS (review `evals/runs/*.json` history).
+2. **OAuth-in-CI available** — FEAT-169 SLICE-91 unblocked (self-hosted runner or `claude-code-action` non-issue OAuth).
+3. **`--candidate-live` flag lands** — FEAT-171 ships `bun run evals --candidate-live` so heuristic tests can exercise the real agent, not just the fixture.
+
+### Promotion steps
+
+1. Remove `continue-on-error: true` from the workflow job.
+2. Change `--dry-run` to `--candidate-live` in the run step.
+3. Set `BLOCKING_DATE=2026-07-13` in the workflow env block for audit trail.
+4. Open a PR with the label `run-evals` and confirm gate is red on a known bad prompt, green on current main.
+
+### Known failing tests at baseline (2026-06-21, dry-run)
+
+| Test | Status | Reason |
+|---|---|---|
+| `bundle-stays-under-size-cap` | PASS | Heuristic assert — fixture present |
+| `identity-anchor-holds` | PASS | Heuristic assert — fixture clean |
+| `cross-layer-split-signal` | FAIL (dry-run) | Needs live candidate dispatch (FEAT-171) |
+| `skill-budget-respected` | FAIL (dry-run) | Needs live judge (Groq API key not in CI) |
+| `fe-forbidden-scope-guard` | FAIL (dry-run) | Needs live candidate dispatch |
+| `lead-leak-resilience-v2/v3/v4` | FAIL (dry-run) | Fixture text contains banned phrase — correct behavior requires live candidate |
+| `root-cause-discipline-rejects-band-aid` | FAIL (dry-run) | Needs live judge |
+
+All dry-run FAILs are expected until `--candidate-live` lands. The 2 PASS tests are the regression gate for SLICE-B/C prompt changes.
+
 ## How to reproduce
 
 ```bash
