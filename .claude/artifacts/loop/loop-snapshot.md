@@ -1,58 +1,64 @@
 <!-- AUTO-GENERATED — do not edit by hand. Regenerate: bun src/scripts/loop.mts snapshot-memory --repo <path> -->
-# Autonomous Loop snapshot — 2026-06-21
+# Autonomous Loop snapshot — 2026-06-29
 
-_Manually refreshed during 2026-06-21 session retrospect — loop CLI lives in companion plugin, not this repo. Regenerate via `/runner:snapshot-memory` from any consumer install._
+_Manually refreshed during 2026-06-29 session retrospect — loop CLI lives in companion plugin, not this repo. The `snapshot-memory` subcommand was removed in v0.53; use `runner:status` for the structural state and edit this file by hand for the narrative._
 
 ## Backlog state
 
-- Pending: 0
-- Triaged: 1 (FEAT-170 in flight: SLICE-92/93 shipped, SLICE-94/95 pending)
+- Pending: 1 (FEAT-182)
+- Triaged: 1 FEAT (FEAT-185 in flight — SLICE-A/B pending) + GEPA cluster (SLICE-96..106 + FEAT-183, FEAT-186)
 - In-progress: 0
-- Done: 116 (incl. FEAT-167 narrowed close + FEAT-169 3/4 with SLICE-91 deferred)
+- Done: 117 (incl. SLICE-107 closed today)
 
 ## In-flight FEAT
 
-- **FEAT-170** (P1, composite 0.69) — fix fullstack-dev
-  - SLICE-92 (A) shipped — diagnostic baseline (claude-p live eval 2/7 → identified 5 failure modes)
-  - SLICE-93 (B) shipped — prompt shrink 397→313 + extract to fullstack-cross-layer skill
-  - SLICE-94 (C) pending — routing classifier fix
-  - SLICE-95 (D) pending — label-gated CI regression gate
+- **FEAT-184** (P1, composite 0.81) — unify judge interface
+  - S1 (gepa-core LLMJudge extension) shipped 2026-06-28 in gepa-core PR #1 / v0.2.1 npm publish 2026-06-29
+  - **SLICE-107 (S2, dev-team adoption) shipped 2026-06-29** — verifier passed_with_notes (AC-3 deferred; needs operator GROQ_API_KEY + `CREW_EVAL_LIVE=1 bun run evals --live`)
+  - FEAT-184 close-out pending pending operator AC-3 run
 
-## Proposed but not opened
+- **FEAT-185** (P2, composite 0.58) — move 6 providers to gepa-core
+  - SLICE-A (ollama + generic-openai + groq + gemini): pending, gepa-core 0.2.1 → 0.3.0, 2 days
+  - SLICE-B (azure + bedrock): pending, gepa-core 0.3.0 → 0.4.0, 2 days, depends on FEAT-185 S-A
 
-- **FEAT-171** — candidate dispatch in eval framework. Surfaced by SLICE-93 post-shrink diagnosis. `evals/lib/run-eval.ts` currently treats fixture as candidate output; needs `claude -p` subprocess dispatch step. ~80 LoC + `--candidate-live` flag.
+- **FEAT-186** (P2, composite 0.55) — unified cost-aggregation contract
+  - 5 proposed slices (S1 JudgeCost export → S2 dailyCapMeter ingestion → S3 cost-report renderer → S4 brief-me reader → S5 asymmetry+Langfuse), all autonomous_safe=false
+  - **Phase 7 surfaced**: dispatcher operator task tracker MUST insert FEAT-186 S1+S2+S3 before SLICE-98 (GEPA S3) — else SLICE-98 ships against dual cost-shape problem
+  - All depend on FEAT-184 (done) + FEAT-185 (in flight)
 
-## Deferred
-
-- **FEAT-169 SLICE-91** (B4) — nightly CI eval workflow. Trigger: OAuth-in-CI feasible (self-hosted runner OR claude-code-action non-issue OAuth support).
-
-## Recent ships (2026-06-21 session)
+## Recent ships (2026-06-29 session)
 
 | Tag / SHA | What |
 |---|---|
-| v0.38.0 / 34aa2c4 | Cost-config refactor (CREW_* env vars → features block) |
-| dfd5a2e | Release-gate lint + format cleanup for v0.38.0 |
-| aea1c62 | FEAT-167 close + FEAT-169 open |
-| 34e2a48 | SLICE-88 — eval framework B1 (judge interface + Generic + Groq + dry-run + 1 ref spec) |
-| 6af3d29 | SLICE-89 — eval framework B2 (ClaudeP + Ollama + Gemini + llm-rubric + 2 ref specs) |
-| 14a5f84 | SLICE-90 — eval framework B3 (Azure + Bedrock + validate_with + Langfuse emit) |
-| 73a19e4 | FEAT-169 close (3/4) + FEAT-170 open |
-| cde4f93 | SLICE-92 — fullstack-dev diagnostic baseline (5 new fixtures + claude-p live eval) |
-| 116fd6a | SLICE-93 — fullstack-dev prompt shrink 397→313 + skill extraction |
+| `7ab6592` | gepa-core .gitattributes LF pin (Biome formatter on Windows clones) |
+| `2abe974` / v0.2.1 | gepa-core npm publish — payload identical to burned v0.2.0 (unpublish 24h lockout) |
+| `705b68b` | SLICE-107 builder — 15 files, evals/ adopts gepa-core LLMJudge |
+| `1df2b38` | dev-team `.npmrc` @astragenie scope override (user-global pinned GH Packages) |
+| `23a2662` | SLICE-107 AC-5 follow-up — `runValidateWith` + 3 adapters now thread `opts.context.fixture` |
+| `bf856c1` | Inspector verdict artifact for SLICE-107 |
+| `cbaf3e6` | biome.json cognitive-complexity threshold 10 → 15 (Biome default) |
+| `f578217` | Lint wave 1 — scripts/crew.ts (9 hotspots, 322 LoC restructure) |
+| `c0ecea0` | Lint wave 2 — validate-routing-table.ts + validate-bundles.ts (4 hotspots) |
+| `a935917` | Lint wave 3 — cost telemetry cluster (8 hotspots across 5 files) |
+| `5c39214` | Lint wave 4 — workflow/claims/preflight/artifacts (6 hotspots across 4 files) |
+| `5367bcb` | Lint wave 5 — leaf utilities (5 hotspots), **biome lint = 0 warnings** |
+| `2bc41a8` | SLICE-107 close ceremony + FEAT-185 decomposition |
 
 ## Session telemetry
 
-- Subagent dispatch + inline-finish pattern: SLICE-88/89/90 all hit cutoff at tool 67–71, finished inline by main thread. SLICE-93 ran fully inline — no cutoff, no info loss. New memory: [[feedback-inline-vs-dispatch]].
-- Eval framework limitation surfaced: candidate dispatch missing in run-eval.ts; behavioral asserts blocked until FEAT-171. New memory: [[project-eval-framework-state-2026-06-21]].
-- Subscription-only eval memory loosened: free-tier judges (Groq/Gemini/Cerebras/Ollama) acceptable; paid judges (Azure/Bedrock) for validation tier only.
+- Cognitive-complexity backlog cleared (76 → 0 in single session). Threshold bump 10 → 15 cleared 44 cheap; 5 refactor waves cleared the remaining 32 genuine hotspots. New memory: [[biome-cognitive-complexity-threshold]].
+- gepa-core npm publish ceremony: hit Windows CRLF / Biome formatter trap, then 2FA token (without bypass) blocked publish, then 24h unpublish lockout on v0.2.0. v0.2.1 escapes the lockout with identical payload. New memories: [[gepa-core-v0.2.0-unpublish-lockout]] + [[npmrc-astragenie-scope-override]].
+- SLICE-107 builder dispatch hit cutoff at tool 82 / 18 min, resumed via SendMessage and finished cleanly. Builder used `isolation: worktree` mode; worktree auto-merged to main on completion.
+- Verifier ran in 104s with 19 tool calls. PM decomp ran in 133s with 9 tool calls. Both background; main thread did inline memory writes + snapshot refresh in parallel.
 
 ## Open architectural questions
 
-- When does `@astragenie/crew-eval` extract trigger? Current criteria: ≥2 external plugin authors ask, ≥5 third-party specs, interface stable 2 months. None observed yet.
-- Should the eval framework grow `--candidate-live` in FEAT-171 or stay limited to judge-live? Pro: behavioral evaluation. Con: rate-limit budget burn (~10 min per sweep).
-- Other agents (architect, lead, inspector, builders) — do they have hidden cap-pressure similar to fullstack-dev? Re-baseline campaign as separate FEAT once FEAT-170 closes.
+- AC-3 deferred for SLICE-107: when is the operator's live-judge baseline available? Without it, FEAT-185 SLICE-A can't run snapshot-diff (AC-4) — same statistical gate needs a baseline.
+- gepa-core release cadence: 0.2.1 → 0.3.0 → 0.4.0 → 0.5.0 across FEAT-185 S-A, FEAT-185 S-B, FEAT-186 S1. Each is MINOR (additive entry points / type exports). MAJOR risk only if AC-2 hardening forces a constructor-signature change on already-shipped exports.
+- 36-cell CI matrix on gepa-core (3 OSes × 2 SDK states × 6 providers) — staged: SLICE-A scaffolds 24 cells, SLICE-B extends to 36.
+- When does `@astragenie/llm-providers` extract trigger? Per Options Considered (FEAT-185 Option 3 rejected): ≥2 external consumers + interface stable 2 months. Not met yet.
 
 ## How to use this file
 
 - Referenced from `CLAUDE.md` via `@.claude/artifacts/loop/loop-snapshot.md` — picked up at session start.
-- Regenerate via `/runner:snapshot-memory` from any consumer install of the loop companion plugin.
+- The `runner:snapshot-memory` subcommand was removed in v0.53 (see `runner:status` for structural state); the narrative section is now manually maintained.
