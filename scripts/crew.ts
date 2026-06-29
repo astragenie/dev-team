@@ -119,9 +119,8 @@ type Flags = {
     : string | null;
 } & { repo: string } & { [key: string]: string | boolean | null };
 
-function parseArgs(argv: string[]) {
-  const [command, ...rest] = argv;
-  const flags: Flags = {
+function buildDefaultFlags(): Flags {
+  return {
     repo: process.cwd(),
     allowExisting: false,
     help: false,
@@ -214,36 +213,48 @@ function parseArgs(argv: string[]) {
     gepaSource: null,
     limit: null
   };
-  const positionals = [];
+}
 
-  for (let index = 0; index < rest.length; index += 1) {
-    // noUncheckedIndexedAccess: guard the index even though the loop bound guarantees it
-    const value = rest[index];
-    if (value === undefined) continue;
-    if (value === "--") {
-      for (let tail = index + 1; tail < rest.length; tail += 1) {
-        const tailVal = rest[tail];
-        if (tailVal !== undefined) positionals.push(tailVal);
-      }
-      break;
+// Apply a single token to flags/positionals. Returns the next index to read
+// (usually `index + 1` or `index + 2` for value-consuming flags) or -1 to
+// signal "stop the parse loop" (encountered `--` end-of-flags separator).
+function applyFlagToken(
+  rest: string[],
+  index: number,
+  flags: Flags,
+  positionals: string[]
+): number {
+  const value = rest[index];
+  if (value === undefined) return index + 1;
+  if (value === "--") {
+    for (let tail = index + 1; tail < rest.length; tail += 1) {
+      const tailVal = rest[tail];
+      if (tailVal !== undefined) positionals.push(tailVal);
     }
-    const spec = (FLAG_SPEC as Record<string, { key: string; boolean?: boolean }>)[value];
-    if (spec) {
-      if (spec.boolean) {
-        (flags as Record<string, string | boolean | null>)[spec.key] = true;
-      } else {
-        const nextVal = rest[index + 1] ?? null;
-        (flags as Record<string, string | boolean | null>)[spec.key] = nextVal;
-        index += 1;
-      }
-      continue;
-    }
-    if (value.startsWith("--")) {
-      throw new Error(`Unknown argument: ${value}`);
-    }
-    positionals.push(value);
+    return -1;
   }
+  const spec = (FLAG_SPEC as Record<string, { key: string; boolean?: boolean }>)[value];
+  if (spec) {
+    const flagsRecord = flags as Record<string, string | boolean | null>;
+    if (spec.boolean) {
+      flagsRecord[spec.key] = true;
+      return index + 1;
+    }
+    flagsRecord[spec.key] = rest[index + 1] ?? null;
+    return index + 2;
+  }
+  if (value.startsWith("--")) {
+    throw new Error(`Unknown argument: ${value}`);
+  }
+  positionals.push(value);
+  return index + 1;
+}
 
+function resolveCommand(
+  command: string | undefined,
+  flags: Flags,
+  positionals: string[]
+): { command: string; helpTarget: string | null; flags: Flags; positionals: string[] } {
   if (!command || command === "--help" || command === "-h") {
     return { command: "help", helpTarget: null, flags, positionals };
   }
@@ -251,6 +262,21 @@ function parseArgs(argv: string[]) {
     return { command: "help", helpTarget: command, flags, positionals };
   }
   return { command, helpTarget: null, flags, positionals };
+}
+
+function parseArgs(argv: string[]) {
+  const [command, ...rest] = argv;
+  const flags = buildDefaultFlags();
+  const positionals: string[] = [];
+
+  let index = 0;
+  while (index < rest.length) {
+    const nextIndex = applyFlagToken(rest, index, flags, positionals);
+    if (nextIndex === -1) break;
+    index = nextIndex;
+  }
+
+  return resolveCommand(command, flags, positionals);
 }
 
 function usage(target: string | null = null) {
@@ -400,6 +426,155 @@ async function emitCostAdvise(
   }
 }
 
+// Pull a subset of string flags into an args object, mapping null/missing
+// to undefined. Keeps dispatch lambdas under the biome cognitive-complexity
+// cap by hoisting the `flags.x ?? undefined` chain into a single helper.
+function pickFlags<K extends string>(
+  flags: Flags,
+  keys: readonly K[]
+): { [P in K]: string | undefined } {
+  const result = {} as { [P in K]: string | undefined };
+  const view = flags as Record<string, unknown>;
+  for (const key of keys) {
+    const value = view[key];
+    result[key] = typeof value === "string" ? value : undefined;
+  }
+  return result;
+}
+
+// Resolve a builder name from a flag value, exiting with code 2 if invalid.
+// Centralizes the validation that several write-* commands repeat.
+function assertBuilderName(
+  builder: string,
+  command: string
+): "fullstack-dev" | "backend-dev" | "frontend-dev" {
+  const validBuilders = new Set(["fullstack-dev", "backend-dev", "frontend-dev"]);
+  if (!validBuilders.has(builder)) {
+    process.stderr.write(
+      `[crew] ${command} refused: --builder must be one of ${[...validBuilders].join(", ")}.\n`
+    );
+    process.exit(2);
+  }
+  return builder as "fullstack-dev" | "backend-dev" | "frontend-dev";
+}
+
+// Split a comma-delimited flag into a trimmed, non-empty string list.
+function splitCsv(value: string | null | undefined): string[] {
+  return (value ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
+// Read currentRun.slice from workflow-state.json with a graceful fallback.
+async function resolveSliceFromState(repoPath: string, sliceFlag: string | null): Promise<string> {
+  if (sliceFlag) return sliceFlag;
+  try {
+    const fs = await import("node:fs/promises");
+    const pathMod = await import("node:path");
+    const statePath = pathMod.join(repoPath, ".claude", "state", "crew", "workflow-state.json");
+    const state = JSON.parse(await fs.readFile(statePath, "utf8"));
+    return state?.currentRun?.slice ?? "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+// Generate an ISO-like run id when --run is not supplied.
+function generateRunId(runFlag: string | null): string {
+  if (runFlag) return runFlag;
+  return new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15) + "Z";
+}
+
+// Assemble the build-bundle around a handoff, recovering gracefully if the
+// bundle write fails (handoff path still returns successfully).
+async function tryAssembleBundle(input: {
+  repoPath: string;
+  sliceId: string;
+  builderName: "fullstack-dev" | "backend-dev" | "frontend-dev";
+  runId: string;
+  feat: string | null;
+  handoffPath: string;
+  filesTouched: string[];
+  filesRead: string[];
+}): Promise<{ path: string | null; error: string | null }> {
+  try {
+    const fs = await import("node:fs/promises");
+    const { assembleBuildBundle } = await import("./lib/build-bundle/assemble.ts");
+    const handoffBody = await fs.readFile(input.handoffPath, "utf8");
+    const bundle = await assembleBuildBundle({
+      repoPath: input.repoPath,
+      sliceId: input.sliceId,
+      builderName: input.builderName,
+      runId: input.runId,
+      ...(input.feat !== null ? { feat: input.feat } : {}),
+      handoffBody,
+      filesTouched: input.filesTouched,
+      filesRead: input.filesRead
+    });
+    return { path: bundle.path, error: null };
+  } catch (e) {
+    return { path: null, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+// `write-handoff-and-bundle` body extracted from the dispatch lambda to keep
+// cognitive complexity under the biome cap. Writes a handoff via writeArtifact,
+// then assembles a build-bundle that references it (non-fatal on bundle error).
+async function writeHandoffAndBundle({ repoPath, flags, positionals }: CommandContext): Promise<{
+  kind: "handoff-and-bundle";
+  handoff: string;
+  bundle: string | null;
+  bundleError: string | null;
+}> {
+  const { writeArtifact } = await import("./lib/artifacts/write.ts");
+  const r = await writeArtifact(repoPath, "handoff", {
+    title: flags.title || positionals.join(" ") || "Task Handoff",
+    from: flags.from || flags.owner || "fullstack-dev",
+    to: flags.to ?? "lead",
+    status: flags.status !== "open" ? (flags.status ?? undefined) : undefined,
+    repoContext: flags.repoContext,
+    ...pickFlags(flags, [
+      "goal",
+      "summary",
+      "scope",
+      "outOfScope",
+      "deliverable",
+      "files",
+      "confidence",
+      "risks",
+      "next",
+      "feature",
+      "phase",
+      "updatePath"
+    ])
+  });
+  if (!r.ok) throw r.error;
+  const handoff = r.value as { path: string };
+
+  const slice = await resolveSliceFromState(repoPath, flags.slice);
+  const runId = generateRunId(flags.run);
+  const builder = assertBuilderName(flags.builder ?? "fullstack-dev", "write-handoff-and-bundle");
+
+  const bundle = await tryAssembleBundle({
+    repoPath,
+    sliceId: slice,
+    builderName: builder,
+    runId,
+    feat: flags.feat,
+    handoffPath: handoff.path,
+    filesTouched: splitCsv(flags.files),
+    filesRead: splitCsv(flags.filesRead)
+  });
+
+  return {
+    kind: "handoff-and-bundle",
+    handoff: handoff.path,
+    bundle: bundle.path,
+    bundleError: bundle.error
+  };
+}
+
 interface CommandContext {
   repoPath: string;
   flags: Flags;
@@ -540,20 +715,22 @@ const COMMANDS = {
     const r = await writeDeploymentGuidance(repoPath, {
       title: flags.title || positionals.join(" ") || "Repo Deployment Model",
       owner: flags.owner || "lead-session",
-      summary: flags.summary ?? undefined,
-      build: flags.build ?? undefined,
-      deploy: flags.deploy ?? undefined,
-      environments: flags.environments ?? undefined,
-      logs: flags.logs ?? undefined,
-      metrics: flags.metrics ?? undefined,
-      alerts: flags.alerts ?? undefined,
-      telemetry: flags.telemetry ?? undefined,
-      clues: flags.clues ?? undefined,
-      discoveryStatus: flags.discoveryStatus ?? undefined,
-      verifiedFrom: flags.verifiedFrom ?? undefined,
-      missing: flags.missing ?? undefined,
-      refreshWhen: flags.refreshWhen ?? undefined,
-      next: flags.next ?? undefined
+      ...pickFlags(flags, [
+        "summary",
+        "build",
+        "deploy",
+        "environments",
+        "logs",
+        "metrics",
+        "alerts",
+        "telemetry",
+        "clues",
+        "discoveryStatus",
+        "verifiedFrom",
+        "missing",
+        "refreshWhen",
+        "next"
+      ])
     });
     if (!r.ok) throw r.error;
     return r.value;
@@ -587,20 +764,22 @@ const COMMANDS = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fields: any = {
       title: flags.title || positionals.join(" ") || "Run Brief",
-      goal: flags.goal ?? undefined,
-      mode: flags.mode ?? undefined,
-      pace: flags.pace ?? undefined,
       owner: flags.owner || "lead-session",
       status: flags.status === "open" ? "active" : (flags.status ?? undefined),
-      summary: flags.summary ?? undefined,
-      scope: flags.scope ?? undefined,
-      outOfScope: flags.outOfScope ?? undefined,
-      files: flags.files ?? undefined,
-      next: flags.next ?? undefined,
-      feature: flags.feature ?? undefined,
-      phase: flags.phase ?? undefined
+      ...pickFlags(flags, [
+        "goal",
+        "mode",
+        "pace",
+        "summary",
+        "scope",
+        "outOfScope",
+        "files",
+        "next",
+        "feature",
+        "phase"
+      ])
     };
-    if (flags.tier && (flags.tier === "full" || flags.tier === "light")) {
+    if (flags.tier === "full" || flags.tier === "light") {
       fields.tier = flags.tier;
     }
     const r = await writeArtifact(repoPath, "run-brief", fields);
@@ -654,120 +833,34 @@ const COMMANDS = {
   },
   "write-handoff": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
-    // Only pass status if it's not the default "open" value from parseArgs
-    // (the default "open" is for issue creation, not for artifacts)
-    const statusValue = flags.status !== "open" ? (flags.status ?? undefined) : undefined;
     const r = await writeArtifact(repoPath, "handoff", {
       title: flags.title || positionals.join(" ") || "Task Handoff",
       from: flags.from || flags.owner || "lead-session",
-      to: flags.to ?? undefined,
-      goal: flags.goal ?? undefined,
-      summary: flags.summary ?? undefined,
-      status: statusValue,
-      scope: flags.scope ?? undefined,
-      outOfScope: flags.outOfScope ?? undefined,
-      deliverable: flags.deliverable ?? undefined,
-      files: flags.files ?? undefined,
-      confidence: flags.confidence ?? undefined,
-      risks: flags.risks ?? undefined,
-      next: flags.next ?? undefined,
-      feature: flags.feature ?? undefined,
-      phase: flags.phase ?? undefined,
+      // Only pass status if it's not the default "open" value from parseArgs
+      // (the default "open" is for issue creation, not for artifacts).
+      status: flags.status !== "open" ? (flags.status ?? undefined) : undefined,
       repoContext: flags.repoContext,
-      updatePath: flags.updatePath ?? undefined
+      ...pickFlags(flags, [
+        "to",
+        "goal",
+        "summary",
+        "scope",
+        "outOfScope",
+        "deliverable",
+        "files",
+        "confidence",
+        "risks",
+        "next",
+        "feature",
+        "phase",
+        "updatePath"
+      ])
     });
     if (!r.ok) throw r.error;
     return r.value;
   },
-  "write-handoff-and-bundle": async ({ repoPath, flags, positionals }: CommandContext) => {
-    // Combined one-shot for builders: write the completion handoff,
-    // then write the build bundle that references it — single CLI call
-    // so builder agents do not need to chain two bash invocations,
-    // parse JSON between them, or resolve slice id / timestamp manually.
-    const { writeArtifact } = await import("./lib/artifacts/write.ts");
-    const { assembleBuildBundle } = await import("./lib/build-bundle/assemble.ts");
-    const fs = await import("node:fs/promises");
-    const path = await import("node:path");
-
-    const statusValue = flags.status !== "open" ? (flags.status ?? undefined) : undefined;
-    const r = await writeArtifact(repoPath, "handoff", {
-      title: flags.title || positionals.join(" ") || "Task Handoff",
-      from: flags.from || flags.owner || "fullstack-dev",
-      to: flags.to ?? "lead",
-      goal: flags.goal ?? undefined,
-      summary: flags.summary ?? undefined,
-      status: statusValue,
-      scope: flags.scope ?? undefined,
-      outOfScope: flags.outOfScope ?? undefined,
-      deliverable: flags.deliverable ?? undefined,
-      files: flags.files ?? undefined,
-      confidence: flags.confidence ?? undefined,
-      risks: flags.risks ?? undefined,
-      next: flags.next ?? undefined,
-      feature: flags.feature ?? undefined,
-      phase: flags.phase ?? undefined,
-      repoContext: flags.repoContext,
-      updatePath: flags.updatePath ?? undefined
-    });
-    if (!r.ok) throw r.error;
-    const handoff = r.value as { path: string };
-
-    // Auto-resolve slice id from workflow-state.json if --slice not given.
-    let slice = flags.slice ?? "";
-    if (!slice) {
-      try {
-        const statePath = path.join(repoPath, ".claude", "state", "crew", "workflow-state.json");
-        const state = JSON.parse(await fs.readFile(statePath, "utf8"));
-        slice = state?.currentRun?.slice ?? "unknown";
-      } catch {
-        slice = "unknown";
-      }
-    }
-    // Auto-generate ISO-like run id if --run not given.
-    const runId = flags.run ?? new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15) + "Z";
-    const builder = (flags.builder ?? "fullstack-dev") as
-      | "fullstack-dev"
-      | "backend-dev"
-      | "frontend-dev";
-    const validBuilders = new Set(["fullstack-dev", "backend-dev", "frontend-dev"]);
-    if (!validBuilders.has(builder)) {
-      process.stderr.write(
-        `[crew] write-handoff-and-bundle refused: --builder must be one of ${[...validBuilders].join(", ")}.\n`
-      );
-      process.exit(2);
-    }
-
-    const filesTouched = (flags.files ?? "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-    const filesRead = (flags.filesRead ?? "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-
-    // Bundle write is non-blocking — return handoff path even if bundle errors.
-    let bundlePath: string | null = null;
-    let bundleError: string | null = null;
-    try {
-      const handoffBody = await fs.readFile(handoff.path, "utf8");
-      const bundle = await assembleBuildBundle({
-        repoPath,
-        sliceId: slice,
-        builderName: builder,
-        runId,
-        ...(flags.feat !== null && flags.feat !== undefined ? { feat: flags.feat } : {}),
-        handoffBody,
-        filesTouched,
-        filesRead
-      });
-      bundlePath = bundle.path;
-    } catch (e) {
-      bundleError = e instanceof Error ? e.message : String(e);
-    }
-
-    return { kind: "handoff-and-bundle", handoff: handoff.path, bundle: bundlePath, bundleError };
-  },
+  "write-handoff-and-bundle": async ({ repoPath, flags, positionals }: CommandContext) =>
+    writeHandoffAndBundle({ repoPath, flags, positionals }),
   "write-review-result": async ({ repoPath, flags, positionals }: CommandContext) => {
     const decision = flags.decision;
     const VALID_DECISIONS = new Set(["approved", "approved_with_notes", "rejected"]);
@@ -787,27 +880,28 @@ const COMMANDS = {
       process.exit(2);
     }
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
-    // Only pass status if it's not the default "open" value from parseArgs
-    const statusValue = flags.status !== "open" ? (flags.status ?? undefined) : undefined;
     const r = await writeArtifact(repoPath, "review-result", {
       title: flags.title || positionals.join(" ") || "Review Result",
       reviewer: flags.reviewer || flags.owner || "inspector",
       decision: decision ?? undefined,
-      status: statusValue,
-      summary: flags.summary ?? undefined,
-      evidence: flags.evidence ?? undefined,
-      files: flags.files ?? undefined,
-      risks: flags.risks ?? undefined,
-      next: flags.next ?? undefined,
-      feature: flags.feature ?? undefined,
-      phase: flags.phase ?? undefined,
-      testSummary: flags.testSummary ?? undefined,
-      testSummarySkipReason: flags.testSummarySkipReason ?? undefined,
-      validationEvidence: flags.validationEvidence ?? undefined,
+      // Only pass status if it's not the default "open" value from parseArgs.
+      status: flags.status !== "open" ? (flags.status ?? undefined) : undefined,
       nonCode: flags.nonCode ?? undefined,
       findings: flags.findings ?? null,
-      updatePath: flags.updatePath ?? undefined,
-      scaffold: flags.scaffold ?? undefined
+      scaffold: flags.scaffold ?? undefined,
+      ...pickFlags(flags, [
+        "summary",
+        "evidence",
+        "files",
+        "risks",
+        "next",
+        "feature",
+        "phase",
+        "testSummary",
+        "testSummarySkipReason",
+        "validationEvidence",
+        "updatePath"
+      ])
     });
     if (!r.ok) throw r.error;
     return r.value;
@@ -818,40 +912,43 @@ const COMMANDS = {
       title: flags.title || positionals.join(" ") || "Validation Plan",
       validator: flags.validator || flags.owner || "verifier",
       owner: flags.owner || "lead-session",
-      environment: flags.environment ?? undefined,
-      goal: flags.goal ?? undefined,
-      summary: flags.summary ?? undefined,
-      scope: flags.scope ?? undefined,
-      outOfScope: flags.outOfScope ?? undefined,
-      evidence: flags.evidence ?? undefined,
-      next: flags.next ?? undefined,
-      feature: flags.feature ?? undefined,
-      phase: flags.phase ?? undefined
+      ...pickFlags(flags, [
+        "environment",
+        "goal",
+        "summary",
+        "scope",
+        "outOfScope",
+        "evidence",
+        "next",
+        "feature",
+        "phase"
+      ])
     });
     if (!r.ok) throw r.error;
     return r.value;
   },
   "write-validation-result": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
-    // Only pass status if it's not the default "open" value from parseArgs
-    const statusValue = flags.status !== "open" ? (flags.status ?? undefined) : undefined;
     const r = await writeArtifact(repoPath, "validation-result", {
       title: flags.title || positionals.join(" ") || "Validation Result",
       validator: flags.validator || flags.owner || "verifier",
-      environment: flags.environment ?? undefined,
-      decision: flags.decision ?? undefined,
-      status: statusValue,
-      goal: flags.goal ?? undefined,
-      summary: flags.summary ?? undefined,
-      evidence: flags.evidence ?? undefined,
-      files: flags.files ?? undefined,
-      risks: flags.risks ?? undefined,
-      next: flags.next ?? undefined,
-      feature: flags.feature ?? undefined,
-      phase: flags.phase ?? undefined,
+      // Only pass status if it's not the default "open" value from parseArgs.
+      status: flags.status !== "open" ? (flags.status ?? undefined) : undefined,
       findings: flags.findings ?? null,
-      updatePath: flags.updatePath ?? undefined,
-      scaffold: flags.scaffold ?? undefined
+      scaffold: flags.scaffold ?? undefined,
+      ...pickFlags(flags, [
+        "environment",
+        "decision",
+        "goal",
+        "summary",
+        "evidence",
+        "files",
+        "risks",
+        "next",
+        "feature",
+        "phase",
+        "updatePath"
+      ])
     });
     if (!r.ok) throw r.error;
     return r.value;
@@ -861,20 +958,22 @@ const COMMANDS = {
     const r = await writeArtifact(repoPath, "deployment-check", {
       title: flags.title || positionals.join(" ") || "Deployment Check",
       deployer: flags.deployer || flags.owner || "release-engineer",
-      environment: flags.environment ?? undefined,
-      resource: flags.resource ?? undefined,
-      url: flags.url ?? undefined,
-      revision: flags.revision ?? undefined,
-      decision: flags.decision ?? undefined,
-      goal: flags.goal ?? undefined,
-      summary: flags.summary ?? undefined,
-      evidence: flags.evidence ?? undefined,
-      files: flags.files ?? undefined,
-      risks: flags.risks ?? undefined,
-      next: flags.next ?? undefined,
-      feature: flags.feature ?? undefined,
-      phase: flags.phase ?? undefined,
-      findings: flags.findings ?? null
+      findings: flags.findings ?? null,
+      ...pickFlags(flags, [
+        "environment",
+        "resource",
+        "url",
+        "revision",
+        "decision",
+        "goal",
+        "summary",
+        "evidence",
+        "files",
+        "risks",
+        "next",
+        "feature",
+        "phase"
+      ])
     });
     if (!r.ok) throw r.error;
     return r.value;
@@ -894,16 +993,18 @@ const COMMANDS = {
       title: flags.title || positionals.join(" ") || "Final Synthesis",
       owner: flags.owner || "lead-session",
       status: flags.status === "open" ? "completed" : (flags.status ?? undefined),
-      summary: flags.summary ?? undefined,
-      files: flags.files ?? undefined,
-      evidence: flags.evidence ?? undefined,
-      externalDeltas: flags.externalDeltas ?? undefined,
-      runSteps: flags.runSteps ?? undefined,
-      risks: flags.risks ?? undefined,
-      next: flags.next ?? undefined,
       force: flags.force ?? undefined,
-      feature: flags.feature ?? undefined,
-      phase: flags.phase ?? undefined
+      ...pickFlags(flags, [
+        "summary",
+        "files",
+        "evidence",
+        "externalDeltas",
+        "runSteps",
+        "risks",
+        "next",
+        "feature",
+        "phase"
+      ])
     });
     if (!synthResult.ok) throw synthResult.error;
     const synthesis = synthResult.value;
