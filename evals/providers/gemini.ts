@@ -118,9 +118,12 @@ export class GeminiJudge implements JudgeProvider {
         ? opts.candidateOutput
         : JSON.stringify(opts.candidateOutput);
 
+    // AC-5: forward opts.context.fixture into the prompt for judge grounding.
+    const fixture = opts.context?.fixture;
     const prompt =
       `Did this response satisfy the following criterion?\n\n` +
       `Criterion: ${rubric}\n\n` +
+      (fixture ? `Fixture context:\n${fixture}\n\n` : "") +
       `Response:\n${candidateStr}\n\n` +
       `Answer with YES or NO followed by a one-sentence rationale.`;
 

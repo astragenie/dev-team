@@ -165,7 +165,11 @@ async function runValidateWith(
   rubric: string,
   candidateOutput: string,
   primaryPass: boolean,
-  forceValidate: boolean
+  forceValidate: boolean,
+  // SLICE-107 (FEAT-184 S2, AC-5): forward Langfuse provenance to validate_with
+  // judges (Azure / Bedrock) — without this, validation-tier traces lack
+  // fixture + promptId. Optional so callers without context still type-check.
+  context?: { fixture?: string; promptId?: string; version?: string }
 ): Promise<{ entries: ValidationEntry[]; disagreement: boolean }> {
   // Resolve all validate_with judges in parallel
   const resolved = await Promise.all(validateWithCfgs.map((cfg) => resolveValidateJudge(cfg)));
@@ -189,7 +193,8 @@ async function runValidateWith(
         const evalResult = await judge.evaluate({
           candidateOutput,
           expected: { id: "", input: null, held_out: false },
-          rubric: [rubric]
+          rubric: [rubric],
+          ...(context !== undefined ? { context } : {})
         });
         const verdictStr = evalResult.pass ? "pass" : "fail";
         entries[idx] = {
@@ -461,7 +466,10 @@ async function liveTest(
       combinedRubric,
       candidateOutput,
       primaryPass,
-      forceValidate
+      forceValidate,
+      // AC-5: thread the same context built for primary asserts into the
+      // validate_with chain so Azure/Bedrock judges get fixture+promptId too.
+      assertContext
     );
 
     if (entries.length > 0 || forceValidate) {
