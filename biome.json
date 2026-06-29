@@ -37,7 +37,7 @@
         "noUselessEscapeInRegex": "error",
         "noExcessiveCognitiveComplexity": {
           "level": "warn",
-          "options": { "maxAllowedComplexity": 10 }
+          "options": { "maxAllowedComplexity": 15 }
         }
       },
       "correctness": {
