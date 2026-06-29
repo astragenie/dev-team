@@ -18,8 +18,10 @@ composite_score: 0.58
 autonomous_safe: false
 tags: [evals, gepa, providers, extraction, gepa-core]
 proposed_slices:
-  - id: SLICE-A
-    title: "FEAT-185 S-A — move 4 low-blast providers (ollama + generic-openai + groq + gemini) to gepa-core + establish CI matrix"
+  - id_suffix: -SLICE-108
+    title: "Move 4 low-blast providers to gepa-core 0.3.0; CI matrix scaffold"
+    points: 3
+    id: SLICE-108
     scope: "Relocate 4 OpenAI-shaped / local adapters from dev-team evals/providers/{ollama,generic-openai,groq,gemini}.ts into @astragenie/gepa-core/providers/{ollama,generic-openai,groq,gemini} as discrete entry points (AC-1). Clean process.env reads out of groq.ts line 45 during the move (AC-2 grep gate violator). dev-team shims become env-resolution-only re-exports that pass concrete config into gepa-core constructors. Cut gepa-core 0.3.0 (MINOR — additive entry points only). Bump dev-team @astragenie/gepa-core dep + run YAML compat + snapshot-diff (deterministic ollama exact-match; nondeterministic groq+gemini N>=5 statistical band per AC-4). Stand up the full {linux,windows,macos} x {with-sdk,without-sdk} CI matrix in gepa-core for these 4 providers (16 cells) so SLICE-B inherits the matrix scaffolding. Establish rollback baseline + naming-rename CHANGELOG entry (judges/ -> providers/)."
     acs_covered: ["AC-1 (4 of 6)", "AC-2 (groq.ts cleanup + grep gate scaffold)", "AC-3", "AC-4 (ollama exact + groq/gemini statistical)", "AC-5 (gepa-core 0.3.0 MINOR + CHANGELOG + peer-dep table for 4 providers)", "AC-6 (dev-team integration for 4 providers)", "AC-8 (CI matrix scaffold for 4 providers, 16 cells)", "AC-9 (claude-p stays — CHANGELOG note lands here)"]
     touches:
@@ -42,8 +44,10 @@ proposed_slices:
     depends_on: ["FEAT-184"]
     autonomous_safe: false
     risk_notes: "Cross-repo publish ceremony (npm publish gepa-core@0.3.0 cannot be un-published). Naming rename (judges/->providers/) must be documented in CHANGELOG or future architects re-litigate. CI matrix scaffold = new infrastructure; AC-2 grep gate is new gate that needs review for false-negatives (e.g. process['env'] bracket-access). gemini SDK dynamic-import behavior under without-sdk matrix cell is the highest-risk new cell — verify the install-instruction error path actually fires before claiming AC-1."
-  - id: SLICE-B
-    title: "FEAT-185 S-B — move 2 SDK-heavy providers (azure + bedrock) to gepa-core + extend CI matrix"
+  - id_suffix: -SLICE-109
+    title: "Move azure+bedrock to gepa-core 0.4.0; extend CI matrix to 36 cells"
+    points: 3
+    id: SLICE-109
     scope: "Relocate azure-openai + bedrock adapters from dev-team evals/providers/{azure-openai,bedrock}.ts into @astragenie/gepa-core/providers/{azure,bedrock}. Clean process.env reads out of bedrock.ts lines 94/96/102 (AC-2 grep gate violators). Wire @azure/openai + AWS SDK credential chain through constructor config only — env resolution stays in dev-team shims. Extend the SLICE-A CI matrix to cover azure + bedrock (12 additional cells: 3 OSes x 2 SDK states x 2 providers, bringing total to 28 cells across both slices; the remaining 8 cells for ollama+generic-openai+groq+gemini land in S-A's 16 — combined matrix = 36 cells). Cut gepa-core 0.4.0 (MINOR follow-up — still additive entry points). Bump dev-team gepa-core dep + re-run YAML compat + snapshot-diff for azure + bedrock with N>=5 statistical band. Verify AWS SDK credential chain dynamic require() does not break ESM-only assertion on without-sdk matrix cell — the highest-risk new failure mode for this slice."
     acs_covered: ["AC-1 (2 of 6 — azure + bedrock)", "AC-2 (bedrock.ts cleanup + grep gate covers azure + bedrock)", "AC-3", "AC-4 (azure + bedrock statistical N>=5)", "AC-5 (gepa-core 0.4.0 MINOR + CHANGELOG + peer-dep table extended)", "AC-6 (dev-team integration for azure + bedrock)", "AC-8 (CI matrix extension to 2 more providers, 12 more cells)"]
     touches:
