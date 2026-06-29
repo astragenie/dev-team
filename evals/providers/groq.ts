@@ -5,9 +5,12 @@
  *
  * SLICE-88 (FEAT-169 SLICE-B1): exported, not invoked by dry-run runtime.
  * Live calls happen in SLICE-B2 when --live mode is implemented.
+ * SLICE-107 (FEAT-184 S2): describe() override returns provider="groq";
+ *   evaluate() + judge() inherited from GenericOpenAIJudge.
  */
 
 import type { GenericOpenAIConfig, JudgeRequest, JudgeResult } from "../lib/judge.ts";
+import type { LLMJudge } from "@astragenie/gepa-core";
 import { GenericOpenAIJudge } from "./generic-openai.ts";
 
 const GROQ_BASE_URL = "https://api.groq.com/openai";
@@ -48,6 +51,10 @@ export class GroqJudge extends GenericOpenAIJudge {
     });
   }
 
+  override describe(): { provider: string; model: string } {
+    return { provider: "groq", model: super.describe().model };
+  }
+
   override async judge(req: JudgeRequest): Promise<JudgeResult> {
     // Groq uses the same /v1/chat/completions shape as Generic.
     // We intercept fetch to capture rate-limit headers, then delegate.
@@ -56,6 +63,15 @@ export class GroqJudge extends GenericOpenAIJudge {
     const result = await super.judge(req);
     // Rate-limit headers are on the raw response — captured via `raw` field.
     // SLICE-B2 will wire the actual fetch interception; stub the field here.
+    this.lastRateLimit = parseRateLimitHeaders(new Headers());
+    return result;
+  }
+
+  override async evaluate(
+    opts: Parameters<LLMJudge["evaluate"]>[0]
+  ): ReturnType<LLMJudge["evaluate"]> {
+    const result = await super.evaluate(opts);
+    // Rate-limit headers — see note above in judge() override.
     this.lastRateLimit = parseRateLimitHeaders(new Headers());
     return result;
   }

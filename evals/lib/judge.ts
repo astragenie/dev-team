@@ -3,9 +3,43 @@
  * Module boundary: this file MUST NOT import from agents/, scripts/, src/, hooks/, commands/.
  *
  * SLICE-88 (FEAT-169 SLICE-B1): interface + GenericOpenAI + Groq stubs.
- * Live dispatch ships in SLICE-B2.
+ * SLICE-89 (FEAT-169 SLICE-B2): live dispatch.
+ * SLICE-107 (FEAT-184 S2): adopt @astragenie/gepa-core LLMJudge as canonical interface.
+ *   - LLMJudge re-exported from gepa-core.
+ *   - JudgeProvider is a @deprecated alias for LLMJudge (removed in next MAJOR).
+ *   - JUDGE_REGISTRY factories return LLMJudge.
  */
 
+// Re-export the canonical interface from gepa-core.
+// FEAT-184: LLMJudge is now the external-author API.
+export type { LLMJudge } from "@astragenie/gepa-core";
+
+// ---------------------------------------------------------------------------
+// Legacy shim types — @deprecated, removed in next MAJOR
+// ---------------------------------------------------------------------------
+
+/**
+ * @deprecated Use `LLMJudge` from `@astragenie/gepa-core` instead.
+ * `JudgeProvider` is a compatibility alias and will be removed in the next
+ * MAJOR version. Migrate to `evaluate(opts)` + `describe()` pattern.
+ * See gepa-core CHANGELOG 0.2.0 for the migration guide.
+ *
+ * Migration: replace `JudgeProvider` with `LLMJudge` imports; replace
+ * calls to `judge(req)` with `evaluate({ candidateOutput, expected, rubric: [req.rubric], context: req.context })`.
+ */
+export type JudgeProvider = import("@astragenie/gepa-core").LLMJudge & {
+  /** @deprecated Use `describe().model` or `evaluate()` instead. Keep `id` for registry lookup only. */
+  id: string;
+  /**
+   * @deprecated Use `evaluate(opts)` instead.
+   * Shim: converts JudgeRequest → evaluate() call; maps result to JudgeResult shape.
+   */
+  judge(req: JudgeRequest): Promise<JudgeResult>;
+};
+
+/**
+ * @deprecated Use the `evaluate()` opts shape from `LLMJudge` instead.
+ */
 export interface JudgeRequest {
   rubric: string;
   candidateOutput: string;
@@ -16,21 +50,24 @@ export interface JudgeRequest {
   };
 }
 
+/**
+ * @deprecated Use the `evaluate()` return type from `LLMJudge` instead.
+ * `providerCost` is replaced by `cost_usd` + `tokens: { in, out }` in LLMJudge.
+ */
 export interface JudgeResult {
   pass: boolean;
   score: number; // 0..1
   rationale: string;
   raw: unknown;
+  /**
+   * @deprecated Use the `tokens: { in, out }` field from `LLMJudge.evaluate()` result instead.
+   * Retained for one minor version; removed in next MAJOR.
+   */
   providerCost?: {
     usd?: number;
     tokensIn: number;
     tokensOut: number;
   };
-}
-
-export interface JudgeProvider {
-  id: string;
-  judge(req: JudgeRequest): Promise<JudgeResult>;
 }
 
 /**
@@ -49,6 +86,7 @@ export interface GenericOpenAIConfig {
  * Factory function type used by JUDGE_REGISTRY entries.
  * SLICE-B1: factories return stub adapters (no live HTTP calls).
  * SLICE-B2: factories return real adapters backed by cloud endpoints.
+ * SLICE-107 (FEAT-184): factories return LLMJudge (which subsumes JudgeProvider).
  */
 export type JudgeFactory = (config?: GenericOpenAIConfig) => JudgeProvider;
 
@@ -94,8 +132,9 @@ async function loadBedrock(): Promise<{
 }
 
 /**
- * JUDGE_REGISTRY: maps provider id → async factory.
+ * JUDGE_REGISTRY: maps provider id → async factory returning JudgeProvider (LLMJudge superset).
  * AC1 (SLICE-B3): Object.keys(JUDGE_REGISTRY).length >= 7 (adds azure + bedrock).
+ * SLICE-107 (FEAT-184): factories return LLMJudge via the JudgeProvider alias.
  */
 export const JUDGE_REGISTRY: Record<
   string,

@@ -20,10 +20,7 @@ Results are written to `evals/runs/<timestamp>-<prompt-id>.json`.
 | Mode | What runs | When available |
 |---|---|---|
 | `--dry-run` | Loads fixture JSON/text; skips candidate subprocess; runs asserts against fixture | SLICE-B1 (now) |
-| live (no flag) | Dispatches `claude -p` candidate; calls judge API; records result | SLICE-B2 (pending) |
-
-Invoking without `--dry-run` currently exits with error:
-`live judge dispatch ships in SLICE-B2`.
+| live (no flag) | Dispatches `claude -p` candidate; calls judge API; records result | SLICE-B2 (now) |
 
 ## Module boundary rule
 
@@ -43,21 +40,76 @@ Reason: the `evals/` tree is designed for extraction to a standalone plugin. Lea
 internal hero-crew paths into the eval lib would make extraction impossible without
 a refactor.
 
+## Judge interface — LLMJudge (external API)
+
+As of SLICE-107 (FEAT-184), the canonical judge interface is **`LLMJudge`** from
+`@astragenie/gepa-core`. New adapters should implement `LLMJudge`, not `JudgeProvider`.
+
+```ts
+import type { LLMJudge } from "@astragenie/gepa-core";
+
+export class MyJudge implements LLMJudge {
+  describe(): { provider: string; model: string } {
+    return { provider: "my-judge", model: "my-model" };
+  }
+
+  async evaluate(opts: {
+    candidateOutput: unknown;
+    expected: import("@astragenie/gepa-core").EvalCase;
+    rubric: string[];   // single-element array when porting a prose rubric — never sentence-split
+    signal?: AbortSignal;
+    context?: { fixture?: string; promptId?: string; version?: string };
+  }): Promise<{
+    pass: boolean;
+    score: number;
+    rubricScores: Record<string, number>;
+    rationale: string;
+    cost_usd: number;
+    latency_ms: number;
+    tokens?: { in: number; out: number };  // omit if adapter cannot surface counts
+    raw?: unknown;
+  }> {
+    // call your API, return unified result shape
+  }
+}
+```
+
+Register in `JUDGE_REGISTRY` in `evals/lib/judge.ts` and reference in a spec.
+
+### Deprecation notice: JudgeProvider
+
+`JudgeProvider` (from `evals/lib/judge.ts`) is **deprecated** as of SLICE-107 and will
+be removed in the next MAJOR version. It is currently a type alias for `LLMJudge`
+plus the legacy `judge(req)` shim method.
+
+Migration:
+- Replace `import type { JudgeProvider } from "../lib/judge.ts"` with
+  `import type { LLMJudge } from "@astragenie/gepa-core"`
+- Replace `implements JudgeProvider` with `implements LLMJudge`
+- Replace `judge(req: JudgeRequest)` with `evaluate(opts)` (see shape above)
+- Replace `providerCost: { tokensIn, tokensOut }` with `tokens: { in, out }` + `cost_usd`
+
+See [gepa-core CHANGELOG 0.2.0](https://github.com/astragenie/gepa-core/blob/main/CHANGELOG.md)
+for the canonical interface definition and migration notes.
+
 ## How to add a new judge provider (3-step recipe)
 
 1. **Create the adapter file** at `evals/providers/<name>.ts`.
-   Implement the `JudgeProvider` interface from `evals/lib/judge.ts`:
+   Implement `LLMJudge` from `@astragenie/gepa-core`:
 
    ```ts
-   import type { JudgeProvider, JudgeRequest, JudgeResult } from "../lib/judge.ts";
+   import type { LLMJudge } from "@astragenie/gepa-core";
 
-   export class MyJudge implements JudgeProvider {
-     readonly id = "my-judge";
-     async judge(req: JudgeRequest): Promise<JudgeResult> {
-       // call your API, return { pass, score, rationale, raw }
+   export class MyJudge implements LLMJudge {
+     describe() { return { provider: "my-judge", model: "my-model" }; }
+     async evaluate(opts) {
+       // call your API, return { pass, score, rubricScores, rationale, cost_usd, latency_ms }
      }
    }
    ```
+
+   Also expose `readonly id: string` and a `judge()` shim if you want the adapter
+   to be usable via the deprecated `JudgeProvider` path (one minor version only).
 
 2. **Register it** in `JUDGE_REGISTRY` in `evals/lib/judge.ts`:
 
@@ -84,11 +136,11 @@ No other core changes needed. The registry is the only extension point.
 |---|---|---|---|
 | Generic OpenAI-compatible | `providers/generic-openai.ts` | Free/paid | Covers Cerebras, DeepSeek, Mistral, Together, OpenRouter, GitHub Models, xAI, SambaNova, vLLM, LM Studio |
 | Groq | `providers/groq.ts` | Free primary | Llama-3.3-70B; rate-limit header parsing |
-| ClaudeP | (SLICE-B2) | Subscription fallback | `claude -p` subprocess |
-| Ollama | (SLICE-B2) | Free / offline | Native `/api/chat` shape |
-| Gemini | (SLICE-B2) | Free alternative | Google API shape |
-| Azure OpenAI | (SLICE-B3) | Validation tier | Fires on judge disagreement or `--validate` |
-| Bedrock | (SLICE-B3) | Validation tier | AWS SigV4; `@aws-sdk/client-bedrock-runtime` |
+| ClaudeP | `providers/claude-p.ts` | Subscription fallback | `claude -p` subprocess; tokens field omitted (subprocess cannot surface counts) |
+| Ollama | `providers/ollama.ts` | Free / offline | Native `/api/chat` shape |
+| Gemini | `providers/gemini.ts` | Free alternative | Google API shape |
+| Azure OpenAI | `providers/azure-openai.ts` | Validation tier | Fires on judge disagreement or `--validate` |
+| Bedrock | `providers/bedrock.ts` | Validation tier | AWS SigV4; `@aws-sdk/client-bedrock-runtime` |
 
 ## Assert types
 
@@ -101,7 +153,7 @@ No other core changes needed. The registry is the only extension point.
 | `json-shape` | Candidate output (parsed as JSON) must have the required keys |
 | `tool-called` | Trace must include a call to the named tool |
 | `dispatched-agent` | Trace must include a dispatch to the named agent id |
-| `llm-rubric` | Free-text rubric evaluated by judge (stub returns pass=true until SLICE-B2) |
+| `llm-rubric` | Free-text rubric evaluated by judge via `LLMJudge.evaluate()` |
 
 ## Eval spec format
 

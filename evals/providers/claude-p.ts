@@ -4,6 +4,11 @@
  * Module boundary: MUST NOT import from agents/, scripts/, src/, hooks/, commands/.
  *
  * SLICE-89 (FEAT-169 SLICE-B2).
+ * SLICE-107 (FEAT-184 S2): implements LLMJudge.evaluate() + describe();
+ *   judge() retained as @deprecated shim for one minor version.
+ *   tokens field OMITTED in evaluate() result — subprocess cannot surface token counts
+ *   (claude -p stdout is streamed NDJSON without usage metadata in the result event).
+ *   Cost-attribution tests must skip the tokens assertion for claude-p.
  */
 
 import { spawn } from "node:child_process";
@@ -11,6 +16,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { JudgeProvider, JudgeRequest, JudgeResult } from "../lib/judge.ts";
+import type { LLMJudge } from "@astragenie/gepa-core";
 
 export interface ClaudePConfig {
   /** Claude model to use (default: claude-sonnet-4-6). */
@@ -74,17 +80,23 @@ function parseStreamJson(stdout: string): string {
 }
 
 /**
- * Parse the judge text (YES/NO + rationale) into a JudgeResult.
+ * Parse the judge text (YES/NO + rationale) into a pass/score/rationale triple.
  * Expected format: "YES\nSome rationale." or "NO because reason."
  */
-function parseJudgeText(
-  text: string,
-  raw: unknown
-): Pick<JudgeResult, "pass" | "score" | "rationale" | "raw"> {
+function parseJudgeText(text: string): { pass: boolean; score: number; rationale: string } {
   const pass = /^yes/i.test(text.trim());
   const firstBreak = text.indexOf("\n");
   const rationale = firstBreak !== -1 ? text.slice(firstBreak + 1).trim() : text.trim();
-  return { pass, score: pass ? 1 : 0, rationale, raw };
+  return { pass, score: pass ? 1 : 0, rationale };
+}
+
+/** @deprecated Wraps parseJudgeText into JudgeResult shape. */
+function parseJudgeTextToResult(
+  text: string,
+  raw: unknown
+): Pick<JudgeResult, "pass" | "score" | "rationale" | "raw"> {
+  const { pass, score, rationale } = parseJudgeText(text);
+  return { pass, score, rationale, raw };
 }
 
 export class ClaudePJudge implements JudgeProvider {
@@ -97,6 +109,44 @@ export class ClaudePJudge implements JudgeProvider {
     this.timeoutMs = config?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   }
 
+  describe(): { provider: string; model: string } {
+    return { provider: "claude-p", model: this.model };
+  }
+
+  async evaluate(opts: Parameters<LLMJudge["evaluate"]>[0]): ReturnType<LLMJudge["evaluate"]> {
+    const start = Date.now();
+    const rubric = opts.rubric.join("\n");
+    const candidateStr =
+      typeof opts.candidateOutput === "string"
+        ? opts.candidateOutput
+        : JSON.stringify(opts.candidateOutput);
+
+    const prompt =
+      `Did this response satisfy the following criterion?\n\n` +
+      `Criterion: ${rubric}\n\n` +
+      `Response:\n${candidateStr}\n\n` +
+      `Answer with YES or NO followed by a one-sentence rationale.`;
+
+    const stdout = await this.runSubprocess(prompt);
+    const text = parseStreamJson(stdout);
+    const judgeText = text.length > 0 ? text : stdout.trim();
+    const { pass, score, rationale } = parseJudgeText(judgeText);
+
+    // tokens omitted: claude -p subprocess cannot surface token counts from the
+    // stream-json NDJSON output. Cost-attribution paths must handle tokens?: undefined.
+    return {
+      pass,
+      score,
+      rubricScores: { default: score },
+      rationale,
+      cost_usd: 0,
+      latency_ms: Date.now() - start,
+      raw: { stdout }
+      // tokens intentionally absent — see JSDoc above
+    };
+  }
+
+  /** @deprecated Use `evaluate(opts)` instead. Shim retained for one minor version. */
   async judge(req: JudgeRequest): Promise<JudgeResult> {
     const prompt =
       `Did this response satisfy the following criterion?\n\n` +
@@ -111,7 +161,7 @@ export class ClaudePJudge implements JudgeProvider {
     const judgeText = text.length > 0 ? text : stdout.trim();
 
     return {
-      ...parseJudgeText(judgeText, { stdout }),
+      ...parseJudgeTextToResult(judgeText, { stdout }),
       providerCost: { tokensIn: 0, tokensOut: 0 }
     };
   }

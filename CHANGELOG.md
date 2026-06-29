@@ -5,6 +5,17 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+### Minor — evals: adopt @astragenie/gepa-core LLMJudge; JudgeProvider deprecated
+
+- **`package.json`** — `@astragenie/gepa-core` dep bumped to `^0.2.1` (published 2026-06-29).
+- **`evals/lib/judge.ts`** — re-exports `LLMJudge` from `@astragenie/gepa-core`; `JudgeProvider` marked `@deprecated` (alias to `LLMJudge`; removed in next MAJOR); `JudgeResult`/`JudgeRequest` deprecated in same release.
+- **`evals/providers/*.ts`** (7 adapters: generic-openai, groq, claude-p, ollama, gemini, azure-openai, bedrock) — implement `LLMJudge.evaluate(opts)` returning canonical shape (`pass`, `score`, `rubricScores`, `rationale`, `cost_usd`, `latency_ms`, `tokens?: {in, out}`, `raw?`) + `describe(): {provider, model}`; `judge()` shim retained for one minor version.
+- **`evals/lib/assert.ts`** — `assertLlmRubric` migrated to call `evaluate()` with `opts.context` forwarding (AC-5); `AssertInput.context` field added for `{fixture, promptId, version}` provenance.
+- **`evals/lib/run-eval.ts`** — validate_with flow migrated to `evaluate()`; `liveTest()` populates `AssertInput.context` from `{fixture, promptId}`.
+- **`evals/README.md`** — `LLMJudge` documented as external-author API; `JudgeProvider` deprecation timeline and migration guide; link to gepa-core CHANGELOG 0.2.0.
+- **`tests/evals-providers.test.ts`** — 7 `describe()` assertions (AC-2) + synthetic token contract test (AC-8: `tokens: {in, out}` unified field; rejects `providerCost.tokensIn`).
+- **`tests/evals-lib.test.ts`** — mock judges updated to implement `evaluate()` + `describe()`.
+
 ## v0.46.2 — 2026-06-23 — push-verify feature flag (default OFF)
 
 ### Changed — pre-push-verifier wrapped in crew.json feature flag

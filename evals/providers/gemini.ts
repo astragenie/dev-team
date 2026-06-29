@@ -4,9 +4,13 @@
  * Module boundary: MUST NOT import from agents/, scripts/, src/, hooks/, commands/.
  *
  * SLICE-89 (FEAT-169 SLICE-B2).
+ * SLICE-107 (FEAT-184 S2): implements LLMJudge.evaluate() + describe();
+ *   judge() retained as @deprecated shim for one minor version.
+ *   Maps usageMetadata.promptTokenCount/candidatesTokenCount → tokens: { in, out }.
  */
 
 import type { JudgeProvider, JudgeRequest, JudgeResult } from "../lib/judge.ts";
+import type { LLMJudge } from "@astragenie/gepa-core";
 
 export interface GeminiConfig {
   /** Gemini API key (default: GEMINI_API_KEY env var). */
@@ -39,14 +43,47 @@ interface GeminiResponse {
   };
 }
 
-function parseJudgeText(
-  text: string,
-  raw: unknown
-): Pick<JudgeResult, "pass" | "score" | "rationale" | "raw"> {
+function parseJudgeText(text: string): { pass: boolean; score: number; rationale: string } {
   const pass = /^yes/i.test(text.trim());
   const firstBreak = text.indexOf("\n");
   const rationale = firstBreak !== -1 ? text.slice(firstBreak + 1).trim() : text.trim();
-  return { pass, score: pass ? 1 : 0, rationale, raw };
+  return { pass, score: pass ? 1 : 0, rationale };
+}
+
+async function callGemini(
+  model: string,
+  apiKey: string,
+  prompt: string,
+  temperature: number,
+  maxOutputTokens: number,
+  timeoutMs: number
+): Promise<GeminiResponse> {
+  const url = `${GEMINI_BASE}/${model}:generateContent?key=${apiKey}`;
+  const body = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature, maxOutputTokens }
+  };
+
+  const signal = AbortSignal.timeout(timeoutMs);
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`GeminiJudge: fetch failed: ${msg}`);
+  }
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`GeminiJudge: HTTP ${res.status}: ${text.slice(0, 200)}`);
+  }
+
+  return (await res.json()) as GeminiResponse;
 }
 
 export class GeminiJudge implements JudgeProvider {
@@ -66,6 +103,55 @@ export class GeminiJudge implements JudgeProvider {
     this.id = `gemini:${this.model}`;
   }
 
+  describe(): { provider: string; model: string } {
+    return { provider: "gemini", model: this.model };
+  }
+
+  async evaluate(opts: Parameters<LLMJudge["evaluate"]>[0]): ReturnType<LLMJudge["evaluate"]> {
+    if (!this.apiKey) {
+      throw new Error("GeminiJudge: GEMINI_API_KEY is not set");
+    }
+    const start = Date.now();
+    const rubric = opts.rubric.join("\n");
+    const candidateStr =
+      typeof opts.candidateOutput === "string"
+        ? opts.candidateOutput
+        : JSON.stringify(opts.candidateOutput);
+
+    const prompt =
+      `Did this response satisfy the following criterion?\n\n` +
+      `Criterion: ${rubric}\n\n` +
+      `Response:\n${candidateStr}\n\n` +
+      `Answer with YES or NO followed by a one-sentence rationale.`;
+
+    const data = await callGemini(
+      this.model,
+      this.apiKey,
+      prompt,
+      this.temperature,
+      this.maxOutputTokens,
+      this.timeoutMs
+    );
+
+    const judgeText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const { pass, score, rationale } = parseJudgeText(judgeText);
+
+    return {
+      pass,
+      score,
+      rubricScores: { default: score },
+      rationale,
+      cost_usd: 0,
+      latency_ms: Date.now() - start,
+      tokens: {
+        in: data.usageMetadata?.promptTokenCount ?? 0,
+        out: data.usageMetadata?.candidatesTokenCount ?? 0
+      },
+      raw: data
+    };
+  }
+
+  /** @deprecated Use `evaluate(opts)` instead. Shim retained for one minor version. */
   async judge(req: JudgeRequest): Promise<JudgeResult> {
     if (!this.apiKey) {
       throw new Error("GeminiJudge: GEMINI_API_KEY is not set");
@@ -77,39 +163,23 @@ export class GeminiJudge implements JudgeProvider {
       `Response:\n${req.candidateOutput}\n\n` +
       `Answer with YES or NO followed by a one-sentence rationale.`;
 
-    const url = `${GEMINI_BASE}/${this.model}:generateContent?key=${this.apiKey}`;
-    const body = {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: this.temperature,
-        maxOutputTokens: this.maxOutputTokens
-      }
-    };
+    const data = await callGemini(
+      this.model,
+      this.apiKey,
+      prompt,
+      this.temperature,
+      this.maxOutputTokens,
+      this.timeoutMs
+    );
 
-    const signal = AbortSignal.timeout(this.timeoutMs);
-    let res: Response;
-    try {
-      res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-        signal
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      throw new Error(`GeminiJudge: fetch failed: ${msg}`);
-    }
-
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`GeminiJudge: HTTP ${res.status}: ${text.slice(0, 200)}`);
-    }
-
-    const data = (await res.json()) as GeminiResponse;
     const judgeText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const { pass, score, rationale } = parseJudgeText(judgeText);
 
     return {
-      ...parseJudgeText(judgeText, data),
+      pass,
+      score,
+      rationale,
+      raw: data,
       providerCost: {
         tokensIn: data.usageMetadata?.promptTokenCount ?? 0,
         tokensOut: data.usageMetadata?.candidatesTokenCount ?? 0

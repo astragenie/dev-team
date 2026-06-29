@@ -13,10 +13,15 @@
  *   amazon.nova-*      → {messages, inferenceConfig}                 → output.message.content[0].text
  *
  * SLICE-90 (FEAT-169 SLICE-B3).
+ * SLICE-107 (FEAT-184 S2): implements LLMJudge.evaluate() + describe();
+ *   judge() retained as @deprecated shim for one minor version.
+ *   tokens field: Bedrock SDK does not surface token counts in InvokeModelCommand response;
+ *   tokens: { in: 0, out: 0 } returned as placeholder.
  */
 
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
 import type { JudgeProvider, JudgeRequest, JudgeResult } from "../lib/judge.ts";
+import type { LLMJudge } from "@astragenie/gepa-core";
 
 const DEFAULT_REGION = "us-east-1";
 const DEFAULT_MODEL = "anthropic.claude-3-5-sonnet-20241022-v2:0";
@@ -32,10 +37,10 @@ const JUDGE_SYSTEM =
   "You are an expert evaluator. Given a rubric and candidate output, decide if the candidate " +
   "PASSES. Reply with JSON: {\"pass\": true|false, \"score\": 0.0..1.0, \"rationale\": \"<one sentence>\"}";
 
-function buildPrompt(req: JudgeRequest): string {
+function buildPromptStr(rubric: string, candidateOutput: string, fixture?: string): string {
   return (
-    `${JUDGE_SYSTEM}\n\nRubric: ${req.rubric}\n\nCandidate output:\n${req.candidateOutput}` +
-    (req.context?.fixture ? `\n\nFixture: ${req.context.fixture}` : "")
+    `${JUDGE_SYSTEM}\n\nRubric: ${rubric}\n\nCandidate output:\n${candidateOutput}` +
+    (fixture ? `\n\nFixture: ${fixture}` : "")
   );
 }
 
@@ -84,6 +89,19 @@ function parseJudgeText(text: string, raw: unknown): Pick<JudgeResult, "pass" | 
   return { pass, score: pass ? 1 : 0, rationale: br !== -1 ? text.slice(br + 1).trim() : text.trim(), raw };
 }
 
+function parseJudgeTextToTriple(text: string): { pass: boolean; score: number; rationale: string } {
+  const m = text.match(/\{[\s\S]*\}/);
+  if (m) {
+    try {
+      const p = JSON.parse(m[0]) as { pass?: boolean; score?: number; rationale?: string };
+      return { pass: p.pass ?? false, score: p.score ?? (p.pass ? 1 : 0), rationale: p.rationale ?? "" };
+    } catch { /* fall through */ }
+  }
+  const pass = /^yes/i.test(text.trim());
+  const br = text.indexOf("\n");
+  return { pass, score: pass ? 1 : 0, rationale: br !== -1 ? text.slice(br + 1).trim() : text.trim() };
+}
+
 export class BedrockJudge implements JudgeProvider {
   readonly id: string;
   private readonly model: string;
@@ -98,20 +116,64 @@ export class BedrockJudge implements JudgeProvider {
     this.client = new BedrockRuntimeClient({ region });
   }
 
-  async judge(req: JudgeRequest): Promise<JudgeResult> {
+  describe(): { provider: string; model: string } {
+    return { provider: "bedrock", model: this.model };
+  }
+
+  private validateCredentials(): void {
     if (!process.env["AWS_ACCESS_KEY_ID"] && !process.env["AWS_PROFILE"]) {
       throw new Error(
         "BedrockJudge: AWS credentials required. Set AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY or AWS_PROFILE."
       );
     }
-    const body = buildBody(this.model, buildPrompt(req), this.maxTokens);
+  }
+
+  private async invokeModel(prompt: string): Promise<Record<string, unknown>> {
+    const body = buildBody(this.model, prompt, this.maxTokens);
     const cmd = new InvokeModelCommand({
       modelId: this.model, contentType: "application/json", accept: "application/json",
       body: JSON.stringify(body)
     });
     const res = await this.client.send(cmd);
-    const parsed = JSON.parse(new TextDecoder().decode(res.body)) as Record<string, unknown>;
-    return { ...parseJudgeText(extractText(this.model, parsed), parsed),
-      providerCost: { tokensIn: 0, tokensOut: 0 } };
+    return JSON.parse(new TextDecoder().decode(res.body)) as Record<string, unknown>;
+  }
+
+  async evaluate(opts: Parameters<LLMJudge["evaluate"]>[0]): ReturnType<LLMJudge["evaluate"]> {
+    this.validateCredentials();
+    const start = Date.now();
+    const rubric = opts.rubric.join("\n");
+    const candidateStr =
+      typeof opts.candidateOutput === "string"
+        ? opts.candidateOutput
+        : JSON.stringify(opts.candidateOutput);
+    const fixture = opts.context?.fixture;
+
+    const prompt = buildPromptStr(rubric, candidateStr, fixture);
+    const parsed = await this.invokeModel(prompt);
+    const { pass, score, rationale } = parseJudgeTextToTriple(extractText(this.model, parsed));
+
+    // Bedrock InvokeModelCommand does not expose token counts in its response envelope.
+    // tokens: { in: 0, out: 0 } is returned as a placeholder.
+    return {
+      pass,
+      score,
+      rubricScores: { default: score },
+      rationale,
+      cost_usd: 0,
+      latency_ms: Date.now() - start,
+      tokens: { in: 0, out: 0 },
+      raw: parsed
+    };
+  }
+
+  /** @deprecated Use `evaluate(opts)` instead. Shim retained for one minor version. */
+  async judge(req: JudgeRequest): Promise<JudgeResult> {
+    this.validateCredentials();
+    const prompt = buildPromptStr(req.rubric, String(req.candidateOutput), req.context?.fixture);
+    const parsed = await this.invokeModel(prompt);
+    return {
+      ...parseJudgeText(extractText(this.model, parsed), parsed),
+      providerCost: { tokensIn: 0, tokensOut: 0 }
+    };
   }
 }

@@ -30,6 +30,16 @@ export interface AssertInput {
   judge?: JudgeProvider;
   /** Judge provider id for lazy-loading from JUDGE_REGISTRY (default: groq). */
   judgeProviderId?: string;
+  /**
+   * Langfuse / observability provenance fields (SLICE-107, AC-5).
+   * Forwarded as opts.context to LLMJudge.evaluate() so adapters can
+   * surface fixture / promptId / version in Langfuse traces.
+   */
+  context?: {
+    fixture?: string;
+    promptId?: string;
+    version?: string;
+  };
 }
 
 export interface AssertResult {
@@ -193,9 +203,19 @@ export async function assertLlmRubric(input: AssertInput, rubric: string): Promi
     }
   }
 
-  let result: Awaited<ReturnType<typeof judge.judge>>;
+  // SLICE-107 (FEAT-184 S2): call evaluate() with context forwarding (AC-5).
+  // evaluate() is the canonical LLMJudge method; judge() is a @deprecated shim.
+  let result: { pass: boolean; score: number; rationale: string };
   try {
-    result = await judge.judge({ rubric, candidateOutput: input.candidateOutput });
+    const evalOpts: Parameters<typeof judge.evaluate>[0] = {
+      candidateOutput: input.candidateOutput,
+      expected: { id: "", input: null, held_out: false },
+      rubric: [rubric]
+    };
+    // Conditionally add context to satisfy exactOptionalPropertyTypes
+    if (input.context !== undefined) evalOpts.context = input.context;
+    const evalResult = await judge.evaluate(evalOpts);
+    result = { pass: evalResult.pass, score: evalResult.score, rationale: evalResult.rationale };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return { pass: false, message: `llm-rubric: judge error: ${msg}` };

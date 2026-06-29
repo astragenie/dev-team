@@ -12,9 +12,13 @@
  * Fires only on judge disagreement or --validate flag. Default runs skip.
  *
  * SLICE-90 (FEAT-169 SLICE-B3).
+ * SLICE-107 (FEAT-184 S2): implements LLMJudge.evaluate() + describe();
+ *   judge() retained as @deprecated shim for one minor version.
+ *   Maps usage.prompt_tokens/completion_tokens → tokens: { in, out }.
  */
 
 import type { JudgeProvider, JudgeRequest, JudgeResult } from "../lib/judge.ts";
+import type { LLMJudge } from "@astragenie/gepa-core";
 
 const DEFAULT_API_VERSION = "2024-10-21";
 const DEFAULT_DEPLOYMENT = "gpt-4o";
@@ -42,7 +46,7 @@ interface ChatResponse {
   usage?: { prompt_tokens: number; completion_tokens: number };
 }
 
-function buildPrompt(req: JudgeRequest): ChatMessage[] {
+function buildPrompt(rubric: string, candidateOutput: string, fixture?: string): ChatMessage[] {
   return [
     {
       role: "system",
@@ -54,10 +58,31 @@ function buildPrompt(req: JudgeRequest): ChatMessage[] {
     {
       role: "user",
       content:
-        `Rubric: ${req.rubric}\n\nCandidate output:\n${req.candidateOutput}` +
-        (req.context?.fixture ? `\n\nFixture context: ${req.context.fixture}` : "")
+        `Rubric: ${rubric}\n\nCandidate output:\n${candidateOutput}` +
+        (fixture ? `\n\nFixture context: ${fixture}` : "")
     }
   ];
+}
+
+function parseChatResponse(
+  data: ChatResponse
+): { pass: boolean; score: number; rationale: string } {
+  const content = data.choices[0]?.message.content ?? "{}";
+  let parsed: { pass?: boolean; score?: number; rationale?: string };
+  try {
+    parsed = JSON.parse(content) as { pass?: boolean; score?: number; rationale?: string };
+  } catch {
+    parsed = {
+      pass: false,
+      score: 0,
+      rationale: `failed to parse judge response: ${content.slice(0, 100)}`
+    };
+  }
+  return {
+    pass: parsed.pass ?? false,
+    score: parsed.score ?? (parsed.pass ? 1 : 0),
+    rationale: parsed.rationale ?? ""
+  };
 }
 
 export class AzureOpenAIJudge implements JudgeProvider {
@@ -83,7 +108,18 @@ export class AzureOpenAIJudge implements JudgeProvider {
     this.id = `azure:${this.deployment}`;
   }
 
-  async judge(req: JudgeRequest): Promise<JudgeResult> {
+  describe(): { provider: string; model: string } {
+    return { provider: "azure", model: this.deployment };
+  }
+
+  private buildUrl(): string {
+    return (
+      `${this.endpoint}/openai/deployments/${this.deployment}` +
+      `/chat/completions?api-version=${this.apiVersion}`
+    );
+  }
+
+  private validateCredentials(): void {
     if (!this.apiKey) {
       throw new Error(
         "AzureOpenAIJudge: AZURE_OPENAI_API_KEY is required. Set the env var or pass apiKey in config."
@@ -94,24 +130,20 @@ export class AzureOpenAIJudge implements JudgeProvider {
         "AzureOpenAIJudge: AZURE_OPENAI_ENDPOINT is required. Set the env var or pass endpoint in config."
       );
     }
+  }
 
-    const url =
-      `${this.endpoint}/openai/deployments/${this.deployment}` +
-      `/chat/completions?api-version=${this.apiVersion}`;
-
-    const body = {
-      model: this.deployment,
-      temperature: this.temperature,
-      messages: buildPrompt(req)
-    };
-
-    const res = await fetch(url, {
+  private async callAzure(messages: ChatMessage[]): Promise<ChatResponse> {
+    const res = await fetch(this.buildUrl(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "api-key": this.apiKey
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify({
+        model: this.deployment,
+        temperature: this.temperature,
+        messages
+      })
     });
 
     if (!res.ok) {
@@ -119,24 +151,50 @@ export class AzureOpenAIJudge implements JudgeProvider {
       throw new Error(`AzureOpenAIJudge HTTP ${res.status}: ${text.slice(0, 200)}`);
     }
 
-    const data = (await res.json()) as ChatResponse;
-    const content = data.choices[0]?.message.content ?? "{}";
+    return (await res.json()) as ChatResponse;
+  }
 
-    let parsed: { pass?: boolean; score?: number; rationale?: string };
-    try {
-      parsed = JSON.parse(content) as { pass?: boolean; score?: number; rationale?: string };
-    } catch {
-      parsed = {
-        pass: false,
-        score: 0,
-        rationale: `failed to parse judge response: ${content.slice(0, 100)}`
-      };
-    }
+  async evaluate(opts: Parameters<LLMJudge["evaluate"]>[0]): ReturnType<LLMJudge["evaluate"]> {
+    this.validateCredentials();
+    const start = Date.now();
+    const rubric = opts.rubric.join("\n");
+    const candidateStr =
+      typeof opts.candidateOutput === "string"
+        ? opts.candidateOutput
+        : JSON.stringify(opts.candidateOutput);
+    const fixture = opts.context?.fixture;
+
+    const data = await this.callAzure(buildPrompt(rubric, candidateStr, fixture));
+    const parsed = parseChatResponse(data);
 
     return {
-      pass: parsed.pass ?? false,
-      score: parsed.score ?? (parsed.pass ? 1 : 0),
-      rationale: parsed.rationale ?? "",
+      pass: parsed.pass,
+      score: parsed.score,
+      rubricScores: { default: parsed.score },
+      rationale: parsed.rationale,
+      cost_usd: 0,
+      latency_ms: Date.now() - start,
+      tokens: {
+        in: data.usage?.prompt_tokens ?? 0,
+        out: data.usage?.completion_tokens ?? 0
+      },
+      raw: data
+    };
+  }
+
+  /** @deprecated Use `evaluate(opts)` instead. Shim retained for one minor version. */
+  async judge(req: JudgeRequest): Promise<JudgeResult> {
+    this.validateCredentials();
+
+    const data = await this.callAzure(
+      buildPrompt(req.rubric, String(req.candidateOutput), req.context?.fixture)
+    );
+    const parsed = parseChatResponse(data);
+
+    return {
+      pass: parsed.pass,
+      score: parsed.score,
+      rationale: parsed.rationale,
       raw: data,
       providerCost: {
         tokensIn: data.usage?.prompt_tokens ?? 0,

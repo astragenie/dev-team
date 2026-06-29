@@ -185,14 +185,19 @@ async function runValidateWith(
       }
 
       try {
-        const result = await judge.judge({ rubric, candidateOutput });
-        const verdictStr = result.pass ? "pass" : "fail";
+        // SLICE-107 (FEAT-184 S2): use evaluate() with context forwarding (AC-5).
+        const evalResult = await judge.evaluate({
+          candidateOutput,
+          expected: { id: "", input: null, held_out: false },
+          rubric: [rubric]
+        });
+        const verdictStr = evalResult.pass ? "pass" : "fail";
         entries[idx] = {
           judge: judge.id,
           verdict: verdictStr,
-          rationale: result.rationale
+          rationale: evalResult.rationale
         };
-        if (result.pass !== primaryPass) {
+        if (evalResult.pass !== primaryPass) {
           anyDisagreement = true;
         }
       } catch (err) {
@@ -410,7 +415,16 @@ async function liveTest(
     }
   }
 
-  const baseInput: AssertInput = { candidateOutput, repoRoot };
+  // SLICE-107 (FEAT-184 S2, AC-5): forward context so evaluate() opts.context
+  // carries fixture + promptId for Langfuse provenance.
+  const assertContext: AssertInput["context"] = { promptId };
+  // fixture is optional — only set when present (exactOptionalPropertyTypes)
+  if (test.fixture !== undefined) assertContext.fixture = test.fixture;
+  const baseInput: AssertInput = {
+    candidateOutput,
+    repoRoot,
+    context: assertContext
+  };
   if (judge !== null) baseInput.judge = judge;
   const input: AssertInput =
     trace !== undefined ? { ...baseInput, trace } : baseInput;

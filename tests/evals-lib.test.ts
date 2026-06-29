@@ -47,6 +47,32 @@ async function makeTempDir(): Promise<string> {
   return await fs.mkdtemp(path.join(os.tmpdir(), "evals-test-"));
 }
 
+/**
+ * Build a minimal mock JudgeProvider (SLICE-107: must include evaluate() + describe()).
+ * Tests that injected judges via AssertInput.judge or JUDGE_REGISTRY use this shape.
+ */
+function makeMockJudge(
+  id: string,
+  pass: boolean,
+  rationale = "mock"
+): import("../evals/lib/judge.ts").JudgeProvider {
+  const score = pass ? 1 : 0;
+  return {
+    id,
+    describe: () => ({ provider: "mock", model: "mock" }),
+    evaluate: async () => ({
+      pass,
+      score,
+      rubricScores: { default: score },
+      rationale,
+      cost_usd: 0,
+      latency_ms: 1,
+      raw: {}
+    }),
+    judge: async () => ({ pass, score, rationale, raw: {} })
+  };
+}
+
 // ---------------------------------------------------------------------------
 // AC4: JUDGE_REGISTRY exports both required keys
 // ---------------------------------------------------------------------------
@@ -216,10 +242,7 @@ describe("assertLlmRubric (SLICE-B2)", () => {
   });
 
   test("passes when judge injected and returns pass=true", async () => {
-    const mockJudge = {
-      id: "mock",
-      judge: async () => ({ pass: true, score: 1, rationale: "passes", raw: {} })
-    };
+    const mockJudge = makeMockJudge("mock", true, "passes");
     const r = await assertLlmRubric(makeInput("any output", { judge: mockJudge }), "some rubric");
     assert.equal(r.pass, true);
     assert.ok(r.message.includes("PASS"));
@@ -237,10 +260,7 @@ describe("runAssert dispatch", () => {
   });
 
   test("routes llm-rubric with injected mock judge", async () => {
-    const mockJudge = {
-      id: "mock",
-      judge: async () => ({ pass: true, score: 1, rationale: "ok", raw: {} })
-    };
+    const mockJudge = makeMockJudge("mock", true, "ok");
     const r = await runAssert(
       { type: "llm-rubric", rubric: "check this" },
       makeInput("output", { judge: mockJudge })
@@ -324,14 +344,8 @@ describe("findSpecByPromptId", () => {
 
 describe("validate_with disagreement flow (SLICE-91)", () => {
   test("AC1: disagreement=true when primary=FAIL and validate_with=PASS", async () => {
-    JUDGE_REGISTRY["mock-fail-91"] = async () => ({
-      id: "mock-fail-91",
-      judge: async () => ({ pass: false, score: 0, rationale: "mock fail", raw: {} })
-    });
-    JUDGE_REGISTRY["mock-pass-91"] = async () => ({
-      id: "mock-pass-91",
-      judge: async () => ({ pass: true, score: 1, rationale: "mock pass", raw: {} })
-    });
+    JUDGE_REGISTRY["mock-fail-91"] = async () => makeMockJudge("mock-fail-91", false, "mock fail");
+    JUDGE_REGISTRY["mock-pass-91"] = async () => makeMockJudge("mock-pass-91", true, "mock pass");
 
     const dir = await makeTempDir();
     try {
@@ -370,10 +384,7 @@ tests:
   });
 
   test("AC2: disagreement=false when primary and validate_with both pass (forceValidate=true)", async () => {
-    JUDGE_REGISTRY["mock-pass-91b"] = async () => ({
-      id: "mock-pass-91b",
-      judge: async () => ({ pass: true, score: 1, rationale: "mock pass", raw: {} })
-    });
+    JUDGE_REGISTRY["mock-pass-91b"] = async () => makeMockJudge("mock-pass-91b", true, "mock pass");
 
     const dir = await makeTempDir();
     try {
