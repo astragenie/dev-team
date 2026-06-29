@@ -111,12 +111,12 @@ async function loadClaudeP(): Promise<{
   return await import("../providers/claude-p.ts");
 }
 async function loadOllama(): Promise<{
-  OllamaJudge: new () => JudgeProvider;
+  OllamaJudge: new (c?: { model?: string; temperature?: number; host?: string; timeoutMs?: number }) => JudgeProvider;
 }> {
   return await import("../providers/ollama.ts");
 }
 async function loadGemini(): Promise<{
-  GeminiJudge: new () => JudgeProvider;
+  GeminiJudge: new (c?: { apiKey?: string; model?: string; temperature?: number; maxOutputTokens?: number; timeoutMs?: number }) => JudgeProvider;
 }> {
   return await import("../providers/gemini.ts");
 }
@@ -157,13 +157,20 @@ export const JUDGE_REGISTRY: Record<
     const { ClaudePJudge } = await loadClaudeP();
     return new ClaudePJudge();
   },
-  ollama: async () => {
+  ollama: async (config) => {
     const { OllamaJudge } = await loadOllama();
-    return new OllamaJudge();
+    const cfg: import("../providers/ollama.ts").OllamaConfig = {};
+    if (config?.model !== undefined) cfg.model = config.model;
+    if (config?.temperature !== undefined) cfg.temperature = config.temperature;
+    return new OllamaJudge(cfg);
   },
-  gemini: async () => {
+  gemini: async (config) => {
     const { GeminiJudge } = await loadGemini();
-    return new GeminiJudge();
+    // shim re-resolves apiKey from env; safe to pass partial-shape config
+    const cfg = {} as import("../providers/gemini.ts").GeminiConfig;
+    if (config?.model !== undefined) cfg.model = config.model;
+    if (config?.temperature !== undefined) cfg.temperature = config.temperature;
+    return new GeminiJudge(cfg);
   },
   azure: async (config) => {
     const { AzureOpenAIJudge } = await loadAzureOpenAI();

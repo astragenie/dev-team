@@ -35,7 +35,7 @@ export class GeminiJudge implements JudgeProvider {
   private readonly _resolvedApiKey: string;
   readonly id: string;
 
-  constructor(config?: GeminiConfig) {
+  constructor(config?: Partial<GeminiConfig>) {
     this._resolvedApiKey = config?.apiKey ?? process.env["GEMINI_API_KEY"] ?? "";
     const geminiConfig: GeminiConfig = {
       apiKey: this._resolvedApiKey,
