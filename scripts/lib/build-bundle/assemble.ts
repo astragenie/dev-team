@@ -221,41 +221,31 @@ export async function assembleBuildBundle(inputs: BundleInputs): Promise<BundleO
 
   let body = composeBody(inputs.handoffBody, diffBody, touched.body, read.body);
 
-  // Apply size cap: drop files_read first (LRU by ledger if available), then
-  // files_touched (alphabetical, last-named first).
   if (Buffer.byteLength(body, "utf8") > cap) {
     truncated = true;
-    const lru = inputs.ledger
-      ? [...inputs.ledger]
-          .sort((a, b) => a.last_read_at.localeCompare(b.last_read_at))
-          .map((e) => e.path)
-      : [...frontmatter.files_read];
-    const keepRead = new Set(frontmatter.files_read);
-    while (Buffer.byteLength(body, "utf8") > cap && keepRead.size > 0 && lru.length > 0) {
-      const drop = lru.shift();
-      if (drop) keepRead.delete(drop);
-      const filtered = await buildFileListSection(inputs.repoPath, [...keepRead], true);
-      frontmatter = {
-        ...frontmatter,
-        files_read: [...keepRead].sort(),
-        truncated: true,
-        truncation_reason: "size-cap"
-      };
-      body = composeBody(inputs.handoffBody, diffBody, touched.body, filtered.body);
-    }
+    const dropResult = await truncateFilesReadToFitCap({
+      inputs,
+      cap,
+      frontmatter,
+      composeBody,
+      diffBody,
+      touched,
+      body
+    });
+    frontmatter = dropResult.frontmatter;
+    body = dropResult.body;
+
     if (Buffer.byteLength(body, "utf8") > cap) {
-      const keepTouched = [...frontmatter.files_touched].sort();
-      while (Buffer.byteLength(body, "utf8") > cap && keepTouched.length > 0) {
-        keepTouched.pop();
-        const filtered = await buildFileListSection(inputs.repoPath, keepTouched, false);
-        frontmatter = {
-          ...frontmatter,
-          files_touched: keepTouched,
-          truncated: true,
-          truncation_reason: "size-cap"
-        };
-        body = composeBody(inputs.handoffBody, diffBody, filtered.body, "");
-      }
+      const touchedDropResult = await truncateFilesTouchedToFitCap({
+        inputs,
+        cap,
+        frontmatter,
+        composeBody,
+        diffBody,
+        body
+      });
+      frontmatter = touchedDropResult.frontmatter;
+      body = touchedDropResult.body;
     }
   }
 
@@ -267,4 +257,67 @@ export async function assembleBuildBundle(inputs: BundleInputs): Promise<BundleO
     truncated,
     filesReadSkipped: allSkipped
   };
+}
+
+// Drop files_read entries until the bundle fits under the size cap.
+// LRU order if a ledger is available, otherwise the natural files_read order.
+async function truncateFilesReadToFitCap(args: {
+  inputs: BundleInputs;
+  cap: number;
+  frontmatter: BundleFrontmatter;
+  composeBody: (handoff: string, diff: string, touchedBody: string, readBody: string) => string;
+  diffBody: string;
+  touched: { body: string };
+  body: string;
+}): Promise<{ frontmatter: BundleFrontmatter; body: string }> {
+  let { frontmatter, body } = args;
+  const lru = args.inputs.ledger
+    ? [...args.inputs.ledger]
+        .sort((a, b) => a.last_read_at.localeCompare(b.last_read_at))
+        .map((e) => e.path)
+    : [...frontmatter.files_read];
+  const keepRead = new Set(frontmatter.files_read);
+  while (Buffer.byteLength(body, "utf8") > args.cap && keepRead.size > 0 && lru.length > 0) {
+    const drop = lru.shift();
+    if (drop) keepRead.delete(drop);
+    const filtered = await buildFileListSection(args.inputs.repoPath, [...keepRead], true);
+    frontmatter = {
+      ...frontmatter,
+      files_read: [...keepRead].sort(),
+      truncated: true,
+      truncation_reason: "size-cap"
+    };
+    body = args.composeBody(
+      args.inputs.handoffBody,
+      args.diffBody,
+      args.touched.body,
+      filtered.body
+    );
+  }
+  return { frontmatter, body };
+}
+
+// Drop files_touched entries (alphabetical, last-named first) until under cap.
+async function truncateFilesTouchedToFitCap(args: {
+  inputs: BundleInputs;
+  cap: number;
+  frontmatter: BundleFrontmatter;
+  composeBody: (handoff: string, diff: string, touchedBody: string, readBody: string) => string;
+  diffBody: string;
+  body: string;
+}): Promise<{ frontmatter: BundleFrontmatter; body: string }> {
+  let { frontmatter, body } = args;
+  const keepTouched = [...frontmatter.files_touched].sort();
+  while (Buffer.byteLength(body, "utf8") > args.cap && keepTouched.length > 0) {
+    keepTouched.pop();
+    const filtered = await buildFileListSection(args.inputs.repoPath, keepTouched, false);
+    frontmatter = {
+      ...frontmatter,
+      files_touched: keepTouched,
+      truncated: true,
+      truncation_reason: "size-cap"
+    };
+    body = args.composeBody(args.inputs.handoffBody, args.diffBody, filtered.body, "");
+  }
+  return { frontmatter, body };
 }

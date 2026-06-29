@@ -53,23 +53,21 @@ export function parseUsageMetrics(body: string): {
   return result;
 }
 
+// Read the first non-empty string at `key` on a record, or null.
+function nonEmptyStringField(obj: Record<string, unknown>, key: string): string | null {
+  const value = obj[key];
+  if (typeof value !== "string") return null;
+  return value.length > 0 ? value : null;
+}
+
 function extractBody(toolResponse: unknown): string | null {
-  if (toolResponse === null || toolResponse === undefined) {
-    return null;
-  }
+  if (toolResponse === null || toolResponse === undefined) return null;
   if (typeof toolResponse === "string") {
     return toolResponse.length > 0 ? toolResponse : null;
   }
-  if (typeof toolResponse === "object") {
-    const obj = toolResponse as Record<string, unknown>;
-    if (typeof obj["content"] === "string") {
-      return obj["content"].length > 0 ? obj["content"] : null;
-    }
-    if (typeof obj["body"] === "string") {
-      return obj["body"].length > 0 ? obj["body"] : null;
-    }
-  }
-  return null;
+  if (typeof toolResponse !== "object") return null;
+  const obj = toolResponse as Record<string, unknown>;
+  return nonEmptyStringField(obj, "content") ?? nonEmptyStringField(obj, "body");
 }
 
 function parseInput(

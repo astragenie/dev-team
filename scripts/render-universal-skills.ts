@@ -189,47 +189,50 @@ function stripFrontmatter(content: string): string {
   return content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
 }
 
-function compressSkill(content: string, skillName: string): string[] {
-  const body = stripFrontmatter(content);
-  const rawLines = body.split(/\r?\n/);
-
-  // Collect MUST-bearing lines, prepending the preceding ## heading if present
+// Walk rawLines once, emitting MUST-bearing lines and the preceding `## `
+// heading (once per heading) as a contiguous entry.
+function collectMustEntries(rawLines: string[]): Array<{ lineNo: number; lines: string[] }> {
   const kept: Array<{ lineNo: number; lines: string[] }> = [];
   let lastHeading: string | null = null;
   let headingEmitted = false;
-
   for (let i = 0; i < rawLines.length; i++) {
     const line = rawLines[i] ?? "";
     if (HEADING_RE.test(line)) {
       lastHeading = line;
       headingEmitted = false;
-    } else if (MUST_RE.test(line)) {
-      const entry: string[] = [];
-      if (lastHeading !== null && !headingEmitted) {
-        entry.push(lastHeading);
-        headingEmitted = true;
-      }
-      entry.push(line);
-      kept.push({ lineNo: i, lines: entry });
+      continue;
     }
+    if (!MUST_RE.test(line)) continue;
+    const entry: string[] = [];
+    if (lastHeading !== null && !headingEmitted) {
+      entry.push(lastHeading);
+      headingEmitted = true;
+    }
+    entry.push(line);
+    kept.push({ lineNo: i, lines: entry });
   }
+  return kept;
+}
 
-  // Sort by source line number (stable) and cap at 12 entries/lines
-  kept.sort((a, b) => a.lineNo - b.lineNo);
-
-  // Flatten and cap at 12 output lines
+// Flatten the kept entries and cap at `max` output lines.
+function flattenAndCap(kept: Array<{ lineNo: number; lines: string[] }>, max: number): string[] {
   const flat: string[] = [];
   for (const item of kept) {
     for (const l of item.lines) {
-      if (flat.length >= 12) break;
+      if (flat.length >= max) return flat;
       flat.push(l);
     }
-    if (flat.length >= 12) break;
   }
+  return flat;
+}
 
-  // Drop blank lines
-  const result: string[] = [];
-  result.push(`### ${skillName}`);
+function compressSkill(content: string, skillName: string): string[] {
+  const body = stripFrontmatter(content);
+  const rawLines = body.split(/\r?\n/);
+  const kept = collectMustEntries(rawLines);
+  kept.sort((a, b) => a.lineNo - b.lineNo);
+  const flat = flattenAndCap(kept, 12);
+  const result = [`### ${skillName}`];
   for (const l of flat) {
     if (l.trim() !== "") result.push(l);
   }
@@ -412,44 +415,73 @@ interface CliArgs {
   obs: boolean;
 }
 
-function parseCliArgs(argv: string[]): CliArgs {
-  let mode: "check" | "inject" | "render-only" | "print-hash" = "check";
-  let glob = "agents/*.md";
-  let sourcesRoot: string | undefined;
-  let obs = false;
+// Peek at argv[i+1] and consume it as a positional value iff it exists and
+// isn't another --flag. Returns the new cursor index (advances on consume).
+function peekValueArg(
+  argv: string[],
+  i: number,
+  requireNonFlag: boolean
+): { value: string | null; nextIndex: number } {
+  const next = argv[i + 1];
+  if (!next) return { value: null, nextIndex: i };
+  if (requireNonFlag && next.startsWith("--")) return { value: null, nextIndex: i };
+  return { value: next, nextIndex: i + 1 };
+}
 
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i];
-    if (arg === "--check") {
-      mode = "check";
-      const next = argv[i + 1];
-      if (next && !next.startsWith("--")) {
-        glob = next;
-        i++;
-      }
-    } else if (arg === "--inject") {
-      mode = "inject";
-      const next = argv[i + 1];
-      if (next && !next.startsWith("--")) {
-        glob = next;
-        i++;
-      }
-    } else if (arg === "--render-only") {
-      mode = "render-only";
-    } else if (arg === "--print-hash") {
-      mode = "print-hash";
-    } else if (arg === "--sources-root") {
-      const next = argv[i + 1];
-      if (next) {
-        sourcesRoot = next;
-        i++;
-      }
-    } else if (arg === "--emit-observability") {
-      obs = true;
+interface CliState {
+  mode: "check" | "inject" | "render-only" | "print-hash";
+  glob: string;
+  sourcesRoot: string | undefined;
+  obs: boolean;
+}
+
+// Apply one CLI argument to state. Returns the new index (advances by 2 when
+// a value was consumed, otherwise by 1).
+function applyCliArg(argv: string[], i: number, state: CliState): number {
+  const arg = argv[i];
+  if (arg === "--check" || arg === "--inject") {
+    state.mode = arg === "--check" ? "check" : "inject";
+    const consumed = peekValueArg(argv, i, true);
+    if (consumed.value !== null) {
+      state.glob = consumed.value;
+      return consumed.nextIndex + 1;
     }
+    return i + 1;
   }
+  if (arg === "--render-only") {
+    state.mode = "render-only";
+    return i + 1;
+  }
+  if (arg === "--print-hash") {
+    state.mode = "print-hash";
+    return i + 1;
+  }
+  if (arg === "--sources-root") {
+    const consumed = peekValueArg(argv, i, false);
+    if (consumed.value !== null) {
+      state.sourcesRoot = consumed.value;
+      return consumed.nextIndex + 1;
+    }
+    return i + 1;
+  }
+  if (arg === "--emit-observability") {
+    state.obs = true;
+  }
+  return i + 1;
+}
 
-  return { mode, glob, sourcesRoot, obs };
+function parseCliArgs(argv: string[]): CliArgs {
+  const state: CliState = {
+    mode: "check",
+    glob: "agents/*.md",
+    sourcesRoot: undefined,
+    obs: false
+  };
+  let i = 0;
+  while (i < argv.length) {
+    i = applyCliArg(argv, i, state);
+  }
+  return state;
 }
 
 async function main(): Promise<void> {

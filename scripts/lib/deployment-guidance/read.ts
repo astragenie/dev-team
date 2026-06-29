@@ -77,43 +77,43 @@ function fileLooksLikeDeploymentClue(relativePath: string): boolean {
   return DEPLOYMENT_EXTENSIONS.has(path.extname(baseName));
 }
 
+// Process one directory entry: recurse into subdirs or add matching files.
+async function processDirEntry(
+  entry: import("node:fs").Dirent,
+  repoPath: string,
+  relativeDir: string,
+  depth: number,
+  out: Set<string>
+): Promise<void> {
+  // Normalize to forward slashes so classification + output stay platform-
+  // agnostic; path.join produces backslashes on Windows.
+  const rawRelativePath = relativeDir ? path.join(relativeDir, entry.name) : entry.name;
+  const relativePath = rawRelativePath.split(path.sep).join("/");
+  if (entry.isDirectory()) {
+    if (IGNORED_DIRS.has(entry.name)) return;
+    await collectDeploymentClues(repoPath, relativePath, depth - 1, out);
+    return;
+  }
+  if (entry.isFile() && fileLooksLikeDeploymentClue(relativePath)) {
+    out.add(relativePath);
+  }
+}
+
 async function collectDeploymentClues(
   repoPath: string,
   relativeDir: string,
   depth: number,
   out: Set<string>
 ): Promise<void> {
-  if (depth < 0 || out.size >= MAX_CLUES) {
-    return;
-  }
+  if (depth < 0 || out.size >= MAX_CLUES) return;
 
   const absoluteDir = path.join(repoPath, relativeDir);
-  if (!(await pathExists(absoluteDir))) {
-    return;
-  }
+  if (!(await pathExists(absoluteDir))) return;
 
   const entries = await fs.readdir(absoluteDir, { withFileTypes: true });
   for (const entry of entries) {
-    if (out.size >= MAX_CLUES) {
-      return;
-    }
-
-    // Normalize to forward slashes so classification and output are
-    // platform-agnostic. On Windows, path.join produces backslashes which
-    // would break the startsWith(".github/workflows/") checks.
-    const rawRelativePath = relativeDir ? path.join(relativeDir, entry.name) : entry.name;
-    const relativePath = rawRelativePath.split(path.sep).join("/");
-    if (entry.isDirectory()) {
-      if (IGNORED_DIRS.has(entry.name)) {
-        continue;
-      }
-      await collectDeploymentClues(repoPath, relativePath, depth - 1, out);
-      continue;
-    }
-
-    if (entry.isFile() && fileLooksLikeDeploymentClue(relativePath)) {
-      out.add(relativePath);
-    }
+    if (out.size >= MAX_CLUES) return;
+    await processDirEntry(entry, repoPath, relativeDir, depth, out);
   }
 }
 
