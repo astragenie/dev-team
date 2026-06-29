@@ -9,7 +9,7 @@ stack: typescript
 autonomous_safe: false
 est_days: 1
 depends_on:
-  - "gepa-core v0.2.0 published to npmjs (or file: dep interim) — gepa-core PR #1 merged 2026-06-28 (commit 2c2bab0); npm publish still pending as of 2026-06-29"
+  - "gepa-core v0.2.1 published to npmjs 2026-06-29 (v0.2.0 burned by unpublish lockout; 0.2.1 ships identical payload). Use ^0.2.1 in package.json."
 touches_files:
   - package.json
   - evals/lib/judge.ts
@@ -38,9 +38,9 @@ FEAT-184 (unify judge interface). gepa-core side (S1) shipped v0.2.0 / PR #1
 
 ## Scope
 
-1. Add `@astragenie/gepa-core` dep to `package.json` (target `^0.2.0` once
-   published; until then `file:../gepa-core` interim — flip in same PR if publish
-   lands first).
+1. Add `@astragenie/gepa-core` dep to `package.json` at `^0.2.1` (published
+   to npmjs 2026-06-29 — v0.2.0 was burned by unpublish lockout; 0.2.1 ships
+   the identical payload).
 2. Rewrite `evals/lib/judge.ts`:
    - Re-export `LLMJudge` from `@astragenie/gepa-core`.
    - Mark `JudgeProvider` as `@deprecated` alias mapping to `LLMJudge` for one
@@ -141,8 +141,8 @@ shape lossage per FEAT-184 triage pre-mortem item (3).
 
 ## Pre-flight (before starting)
 
-1. Confirm `@astragenie/gepa-core@0.2.0` resolves via `npm view` — if 404,
-   either run npm publish ceremony first (gepa-core repo) or fall back to
-   `file:../gepa-core` interim path.
+1. Confirm `@astragenie/gepa-core@0.2.1` resolves via `npm view`
+   (published 2026-06-29). v0.2.0 is permanently unusable on npmjs
+   (unpublish lockout); never target `^0.2.0`.
 2. Re-grep `evals/lib/judge.ts` consumers in dev-team to confirm only the
    files listed in `touches_files` need edits.
