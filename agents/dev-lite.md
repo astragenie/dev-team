@@ -1,7 +1,7 @@
 ---
 name: dev-lite
 prompt_id: dev-lite
-version: 1.2.0
+version: 1.3.0
 model_pinned: sonnet
 evals: evals/agents/dev-lite.yaml
 capabilities:
@@ -13,7 +13,7 @@ model: sonnet
 effort: low
 maxTurns: 20
 maxLines: 120
-tools: [Read, Edit, Write, Grep, Glob]
+tools: [Read, Edit, Write, Grep, Glob, Bash]
 color: yellow
 ---
 ## Custom instructions
