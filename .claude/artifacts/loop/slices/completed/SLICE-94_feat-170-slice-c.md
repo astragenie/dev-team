@@ -1,20 +1,17 @@
 ---
 id: SLICE-94
 feat: FEAT-170
-status: pending
+status: completed
 created: 2026-06-21
-title: "FEAT-170 SLICE-C — routing classifier surfaces FE_ONLY + BE_ONLY signals; orchestrator routes specialists"
+title: FEAT-170 SLICE-C — routing classifier surfaces FE_ONLY + BE_ONLY signals; orchestrator routes specialists
 autonomous_safe: false
 risk_band: 0.35
 estimated_loc: 250
 estimated_files: 4
-line_budgets:
-  - { path: "scripts/orchestrate-slice-classify.ts", max: "+10 (FE_ONLY/BE_ONLY signals)" }
-  - { path: "commands/orchestrate-slice.md", max: "+25 (replaced dispatch rules block)" }
-  - { path: "docs/routing-table.md", max: "+20 (builder routing matrix callout)" }
-  - { path: "tests/orchestrate-slice.test.ts", max: "+85 (4 new classifier tests)" }
+line_budgets: ["{ path: \"scripts/orchestrate-slice-classify.ts\", max: \"+10 (FE_ONLY/BE_ONLY signals)\" }", "{ path: \"commands/orchestrate-slice.md\", max: \"+25 (replaced dispatch rules block)\" }", "{ path: \"docs/routing-table.md\", max: \"+20 (builder routing matrix callout)\" }", "{ path: \"tests/orchestrate-slice.test.ts\", max: \"+85 (4 new classifier tests)\" }"]
+completed_at: 2026-06-29
+updated: 2026-06-29
 ---
-
 # SLICE-94: FEAT-170 SLICE-C — routing classifier surfaces single-stack signals
 
 ## Intent
