@@ -69,6 +69,18 @@ async function listProjectDirEntries(): Promise<string[]> {
   }
 }
 
+function isAssistantTurnInWindow(
+  obj: { type?: string; timestamp?: string; message?: { usage?: unknown } } | null | undefined,
+  startMs: number,
+  endMs: number
+): boolean {
+  if (obj?.type !== "assistant") return false;
+  if (!obj?.message?.usage) return false;
+  const tsMs = obj.timestamp ? Date.parse(obj.timestamp) : NaN;
+  if (Number.isNaN(tsMs)) return false;
+  return tsMs >= startMs && tsMs <= endMs;
+}
+
 async function countInWindowAssistantTurns(
   dir: string,
   startMs: number,
@@ -79,11 +91,7 @@ async function countInWindowAssistantTurns(
   for (const f of files) {
     const full = path.join(dir, f);
     for await (const obj of readJsonlLines(full)) {
-      if (obj?.type !== "assistant") continue;
-      const tsMs = obj.timestamp ? Date.parse(obj.timestamp) : NaN;
-      if (Number.isNaN(tsMs) || tsMs < startMs || tsMs > endMs) continue;
-      if (!obj?.message?.usage) continue;
-      count += 1;
+      if (isAssistantTurnInWindow(obj, startMs, endMs)) count += 1;
     }
   }
   return count;
@@ -141,11 +149,7 @@ async function sessionsHaveInWindowAssistantTurns(
 ): Promise<boolean> {
   for (const file of files) {
     for await (const obj of readJsonlLines(file)) {
-      if (obj?.type !== "assistant") continue;
-      const tsMs = obj.timestamp ? Date.parse(obj.timestamp) : NaN;
-      if (Number.isNaN(tsMs) || tsMs < startMs || tsMs > endMs) continue;
-      if (!obj?.message?.usage) continue;
-      return true;
+      if (isAssistantTurnInWindow(obj, startMs, endMs)) return true;
     }
   }
   return false;

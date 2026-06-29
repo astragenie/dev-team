@@ -83,6 +83,18 @@ async function listJsonlInDir(dir: string): Promise<string[]> {
   }
 }
 
+function isAssistantTurnInWindow(
+  obj: { type?: string; timestamp?: string; message?: { usage?: unknown } } | null | undefined,
+  startMs: number,
+  endMs: number
+): boolean {
+  if (obj?.type !== "assistant") return false;
+  if (!obj?.message?.usage) return false;
+  const tsMs = obj.timestamp ? Date.parse(obj.timestamp) : NaN;
+  if (Number.isNaN(tsMs)) return false;
+  return tsMs >= startMs && tsMs <= endMs;
+}
+
 // Counts assistant turns with billable usage inside [startMs, endMs] across
 // every .jsonl file in `dir`.
 async function countInWindowAssistantTurns(
@@ -95,11 +107,7 @@ async function countInWindowAssistantTurns(
   for (const f of files) {
     const full = path.join(dir, f);
     for await (const obj of readJsonlLines(full)) {
-      if (obj?.type !== "assistant") continue;
-      const tsMs = obj.timestamp ? Date.parse(obj.timestamp) : NaN;
-      if (Number.isNaN(tsMs) || tsMs < startMs || tsMs > endMs) continue;
-      if (!obj?.message?.usage) continue;
-      count += 1;
+      if (isAssistantTurnInWindow(obj, startMs, endMs)) count += 1;
     }
   }
   return count;
@@ -208,11 +216,7 @@ export async function sessionsHaveInWindowAssistantTurns(
 ): Promise<boolean> {
   for (const file of files) {
     for await (const obj of readJsonlLines(file)) {
-      if (obj?.type !== "assistant") continue;
-      const tsMs = obj.timestamp ? Date.parse(obj.timestamp) : NaN;
-      if (Number.isNaN(tsMs) || tsMs < startMs || tsMs > endMs) continue;
-      if (!obj?.message?.usage) continue;
-      return true;
+      if (isAssistantTurnInWindow(obj, startMs, endMs)) return true;
     }
   }
   return false;
@@ -253,6 +257,31 @@ export interface ScanSessionsResult {
     }
   >;
   toolCachePrime: Record<string, CachePrimeEntry>;
+}
+
+// Scan one session file. Returns true if any in-window turn touched the
+// per-source counters (so the caller can increment sessionsScanned).
+async function scanOneSession(
+  file: string,
+  fileToSlug: Map<string, string>,
+  ctx: ScanCtx,
+  startMs: number,
+  endMs: number
+): Promise<boolean> {
+  let touched = false;
+  for await (const obj of readJsonlLines(file)) {
+    const ts = obj?.timestamp;
+    const tsMs = ts ? Date.parse(ts) : NaN;
+    if (Number.isNaN(tsMs) || tsMs < startMs || tsMs > endMs) continue;
+    if (obj?.type === "assistant") {
+      touched = handleAssistantTurn(obj, file, fileToSlug, ctx) || touched;
+      continue;
+    }
+    if (obj?.type === "user") {
+      handleUserTurn(obj, ctx);
+    }
+  }
+  return touched;
 }
 
 // Scans every .jsonl session file, accumulating token usage, tool stats,
@@ -328,20 +357,7 @@ export async function scanSessions({
   };
 
   for (const file of sessions) {
-    let touched = false;
-    for await (const obj of readJsonlLines(file)) {
-      const ts = obj?.timestamp;
-      const tsMs = ts ? Date.parse(ts) : NaN;
-      if (Number.isNaN(tsMs) || tsMs < startMs || tsMs > endMs) continue;
-
-      if (obj?.type === "assistant") {
-        touched = handleAssistantTurn(obj, file, fileToSlug, ctx) || touched;
-        continue;
-      }
-      if (obj?.type === "user") {
-        handleUserTurn(obj, ctx);
-      }
-    }
+    const touched = await scanOneSession(file, fileToSlug, ctx, startMs, endMs);
     if (touched) counters.sessionsScanned += 1;
   }
 

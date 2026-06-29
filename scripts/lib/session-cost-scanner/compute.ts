@@ -272,6 +272,34 @@ export function handleAssistantTurn(
   return touched;
 }
 
+function recordCachePrimeForTool(toolName: string, resultSize: number, ctx: ScanCtx): void {
+  if (!ctx.toolCachePrime[toolName]) {
+    ctx.toolCachePrime[toolName] = {
+      calls: 0,
+      totalResultBytes: 0,
+      attributedCacheCreate: 0
+    };
+  }
+  ctx.toolCachePrime[toolName]!.calls += 1;
+  ctx.toolCachePrime[toolName]!.totalResultBytes += resultSize || 0;
+}
+
+function recordToolFailure(toolId: string, ctx: ScanCtx): void {
+  const errToolName = ctx.toolNameById.get(toolId) || "unknown";
+  ctx.toolFailureCounts[errToolName] = (ctx.toolFailureCounts[errToolName] ?? 0) + 1;
+}
+
+function processToolResult(
+  tr: { id?: string; size: number; isError?: boolean },
+  ctx: ScanCtx
+): void {
+  ctx.toolResultSizes.push(tr.size);
+  if (tr.id) ctx.cachePrimeState.pendingResultSizes[tr.id] = tr.size;
+  const toolName = tr.id ? ctx.toolNameById.get(tr.id) : null;
+  if (toolName) recordCachePrimeForTool(toolName, tr.size, ctx);
+  if (tr.isError && tr.id) recordToolFailure(tr.id, ctx);
+}
+
 // Updates ctx with tool-result sizes/failures, conversation-shape counters,
 // and compaction signals from one user turn.
 export function handleUserTurn(obj: JsonlLine, ctx: ScanCtx): void {
@@ -281,26 +309,7 @@ export function handleUserTurn(obj: JsonlLine, ctx: ScanCtx): void {
   }
   const insp = inspectContent(obj?.message?.content);
   if (insp.toolResults.length > 0) {
-    for (const tr of insp.toolResults) {
-      ctx.toolResultSizes.push(tr.size);
-      if (tr.id) ctx.cachePrimeState.pendingResultSizes[tr.id] = tr.size;
-      const toolName = tr.id ? ctx.toolNameById.get(tr.id) : null;
-      if (toolName) {
-        if (!ctx.toolCachePrime[toolName]) {
-          ctx.toolCachePrime[toolName] = {
-            calls: 0,
-            totalResultBytes: 0,
-            attributedCacheCreate: 0
-          };
-        }
-        ctx.toolCachePrime[toolName]!.calls += 1;
-        ctx.toolCachePrime[toolName]!.totalResultBytes += tr.size || 0;
-      }
-      if (tr.isError && tr.id) {
-        const errToolName = ctx.toolNameById.get(tr.id) || "unknown";
-        ctx.toolFailureCounts[errToolName] = (ctx.toolFailureCounts[errToolName] ?? 0) + 1;
-      }
-    }
+    for (const tr of insp.toolResults) processToolResult(tr, ctx);
   } else {
     ctx.counters.userMsgCount += 1;
     ctx.counters.userMsgTotalLen += insp.textLen;

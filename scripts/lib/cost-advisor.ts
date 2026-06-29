@@ -18,6 +18,20 @@ export { computeGrade } from "./cost-advisor-grades.ts";
 
 // ---- frontmatter + body parsers ----
 
+// Parse one frontmatter value: strip surrounding quotes via JSON.parse where
+// possible, coerce numeric-looking strings to numbers, otherwise return raw.
+function parseFrontmatterValue(raw: string): string | number {
+  if (raw.startsWith('"') && raw.endsWith('"')) {
+    try {
+      return JSON.parse(raw) as string;
+    } catch {
+      return raw;
+    }
+  }
+  if (/^-?\d+(?:\.\d+)?$/.test(raw)) return Number(raw);
+  return raw;
+}
+
 function parseFrontmatter(text: string): {
   fm: Record<string, string | number> | null;
   body: string;
@@ -30,18 +44,8 @@ function parseFrontmatter(text: string): {
   const fm: Record<string, string | number> = {};
   for (const line of block.split(/\r?\n/)) {
     const m = line.match(/^([\w_]+):\s*(.*)$/);
-    if (!m) continue;
-    let v: string | number = m[2]?.trim() ?? "";
-    if (typeof v === "string" && v.startsWith('"') && v.endsWith('"')) {
-      try {
-        v = JSON.parse(v) as string;
-      } catch {
-        /* keep raw string on parse failure */
-      }
-    } else if (typeof v === "string" && /^-?\d+(?:\.\d+)?$/.test(v)) {
-      v = Number(v);
-    }
-    if (m[1] != null) fm[m[1]] = v;
+    if (!m?.[1]) continue;
+    fm[m[1]] = parseFrontmatterValue(m[2]?.trim() ?? "");
   }
   return { fm, body };
 }

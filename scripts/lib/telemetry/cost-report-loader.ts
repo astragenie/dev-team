@@ -57,6 +57,24 @@ function canonicalFeatId(raw: string): string {
   return m ? `FEAT-${m[1]}` : raw;
 }
 
+// Parse `- <tool>: <count>` lines from the Tool Usage section.
+function parseToolUsageSection(text: string): Record<string, number> {
+  const out: Record<string, number> = {};
+  const section = text.split(/^##\s+/m).find((s: string) => s.startsWith("Tool Usage"));
+  if (!section) return out;
+  for (const line of section.split(/\r?\n/)) {
+    const tm = line.match(/^-\s+(\S+):\s*([\d,]+)/);
+    if (tm?.[1] && tm[2]) out[tm[1]] = Number(tm[2].replace(/,/g, ""));
+  }
+  return out;
+}
+
+// Extract a single `cache_create_*` numeric counter from the diagnostics block.
+function extractCacheCreateCount(text: string, label: string): number {
+  const m = text.match(new RegExp(`^-\\s+${label}:\\s*([\\d,]+)`, "m"));
+  return Number(m?.[1]?.replace(/,/g, "") ?? 0);
+}
+
 /** Load a single cost report. Throws AggregateReportSkipped for aggregate files. */
 export async function loadCostReport(absPath: string): Promise<CostReport> {
   const text = await fs.readFile(absPath, "utf8");
@@ -75,16 +93,6 @@ export async function loadCostReport(absPath: string): Promise<CostReport> {
     throw new Error(`Missing window start/end in cost report: ${absPath}`);
   }
 
-  // Tool usage: parse "- <tool>: <count>" lines from the Tool Usage section.
-  const toolUsage: Record<string, number> = {};
-  const toolSection = text.split(/^##\s+/m).find((s: string) => s.startsWith("Tool Usage"));
-  if (toolSection) {
-    for (const line of toolSection.split(/\r?\n/)) {
-      const tm = line.match(/^-\s+(\S+):\s*([\d,]+)/);
-      if (tm) toolUsage[tm[1]!] = Number(tm[2]!.replace(/,/g, ""));
-    }
-  }
-
   return {
     sliceFilename: path.basename(absPath),
     runId,
@@ -98,14 +106,10 @@ export async function loadCostReport(absPath: string): Promise<CostReport> {
     windowEnd: header.windowEnd,
     createdAt: fm["created_at"] ?? header.windowEnd,
     modelMix,
-    toolUsage,
+    toolUsage: parseToolUsageSection(text),
     subagentDispatches: diag.subagentDispatches,
-    cacheCreate1h: Number(
-      text.match(/^-\s+cache_create_1h:\s*([\d,]+)/m)?.[1]?.replace(/,/g, "") ?? 0
-    ),
-    cacheCreate5m: Number(
-      text.match(/^-\s+cache_create_5m:\s*([\d,]+)/m)?.[1]?.replace(/,/g, "") ?? 0
-    ),
+    cacheCreate1h: extractCacheCreateCount(text, "cache_create_1h"),
+    cacheCreate5m: extractCacheCreateCount(text, "cache_create_5m"),
     cacheRead: tokens.cacheReadTokens,
     inputTokens: tokens.inputTokens,
     outputTokens: tokens.outputTokens,
