@@ -3,6 +3,34 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [Unreleased]
+
+### Minor — FEAT-182 SLICE-A: /crew:incident dispatcher + release-recovery skill
+
+- **`commands/incident.md`** — new `/crew:incident` dispatcher.
+  Triage table routes between researcher (unknown root cause),
+  investigator (code locations), specialist builder (known cause + fix),
+  and release-engineer (rollback / broken release ceremony). Mirrors
+  `/crew:build` / `/crew:fix` / `/crew:ship` orchestration shape.
+- **`skills/workflow/release-recovery/SKILL.md`** — new workflow skill.
+  HARD RULES (never delete a published tag; never force-push main;
+  pipefail mandatory in release scripts), broken-tag fix-forward
+  recovery sequence, marketplace-drift recovery, pre-release audit
+  checklist. Codified from the 2026-06-22 v0.43.0 + v0.44.1 broken-tag
+  incidents (FEAT-182 demand evidence).
+- **`scripts/lib/workflow-state-gates.ts` + `scripts/lib/workflow-state.ts`** —
+  new `incident` gate slot in `RunGates`; new `incident_resolved` +
+  `rollback_executed` badges in `BADGE_TABLE`. GateStatus union widened
+  with `resolved` + `rolled-back` variants. `mark-badge` CLI help updated.
+- **`tests/incident-dispatcher.test.ts`** — 20 routing-table parse
+  assertions covering all 5 triage branches + badge emission +
+  production-rollback approval guard.
+- **Carve-out for SLICE-B**: `skills/workflow/incident-response/` (prod
+  RCA + log/metric reading + post-mortem template) and the
+  `incident_blocked` badge ship in SLICE-B per the FEAT-182 scope
+  challenge ("release-recovery is the proven pain; incident-response
+  is anticipatory").
+
 ## v0.47.0 — 2026-06-29 — gepa-core adoption + provider extraction (4/6) + lint backlog cleared
 
 Closes FEAT-184 (judge interface unification) and ships FEAT-185 SLICE-A

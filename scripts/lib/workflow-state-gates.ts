@@ -14,7 +14,9 @@ export type GateStatus =
   | "blocked"
   | "escalated"
   | "recommended"
-  | "stale";
+  | "stale"
+  | "resolved"
+  | "rolled-back";
 
 export interface GateEntry {
   status: GateStatus;
@@ -34,6 +36,7 @@ export interface RunGates {
   deployment: DeploymentGates;
   blocked: GateEntry | null;
   escalation: GateEntry | null;
+  incident: GateEntry | null;
 }
 
 export interface RunArtifacts {
@@ -95,7 +98,8 @@ function makeDefaultGates(): RunGates {
     validation: null,
     deployment: { dev: null, prod: null },
     blocked: null,
-    escalation: null
+    escalation: null,
+    incident: null
   };
 }
 

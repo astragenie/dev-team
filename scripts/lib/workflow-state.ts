@@ -292,6 +292,20 @@ const BADGE_TABLE: Record<string, BadgeSpec> = {
     selector: (run) => [run.gates, "escalation"],
     status: "escalated",
     custom: true
+  },
+  // FEAT-182 SLICE-A: incident-response dispatcher badges. incident_resolved
+  // marks full pass through /crew:incident triage; rollback_executed marks a
+  // release-engineer-driven rollback. incident_blocked deferred to SLICE-B
+  // alongside the incident-response skill.
+  incident_resolved: {
+    selector: (run) => [run.gates, "incident"],
+    status: "resolved",
+    custom: true
+  },
+  rollback_executed: {
+    selector: (run) => [run.gates, "incident"],
+    status: "rolled-back",
+    custom: true
   }
 };
 

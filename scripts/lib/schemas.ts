@@ -37,7 +37,8 @@ const RunGates = z.object({
   validation: GateEntry.nullable(),
   deployment: DeploymentGates,
   blocked: GateEntry.nullable(),
-  escalation: GateEntry.nullable()
+  escalation: GateEntry.nullable(),
+  incident: GateEntry.nullable().default(null)
 });
 
 const RunArtifacts = z.object({
