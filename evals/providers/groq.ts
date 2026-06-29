@@ -1,88 +1,80 @@
 /**
- * GroqJudge: free-tier primary judge.
- * Extends GenericOpenAIJudge with Groq baseUrl, model defaults, rate-limit header parsing.
- * Module boundary: MUST NOT import from agents/, scripts/, src/, hooks/, commands/.
+ * GroqJudge shim — dev-team adapter layer.
  *
- * SLICE-88 (FEAT-169 SLICE-B1): exported, not invoked by dry-run runtime.
- * Live calls happen in SLICE-B2 when --live mode is implemented.
- * SLICE-107 (FEAT-184 S2): describe() override returns provider="groq";
- *   evaluate() + judge() inherited from GenericOpenAIJudge.
+ * Reads GROQ_API_KEY from the environment (when not supplied in config) and
+ * delegates to the relocated GroqJudge implementation in
+ * @astragenie/gepa-core/providers/groq.
+ *
+ * SLICE-108 (FEAT-185 SLICE-A): core logic relocated to gepa-core 0.3.0.
+ * This file bridges the registry's `Partial<GenericOpenAIConfig>` call
+ * shape to gepa-core's `GroqConfig { apiKey, model?, temperature? }`.
+ *
+ * Module boundary: MUST NOT import from agents/, scripts/, src/, hooks/, commands/.
  */
 
-import type { GenericOpenAIConfig, JudgeRequest, JudgeResult } from "../lib/judge.ts";
+import {
+  GroqJudge as _GroqJudge,
+  GROQ_MODELS,
+  type GroqConfig,
+  type GroqRateLimit,
+} from "@astragenie/gepa-core/providers/groq";
+import type { GenericOpenAIConfig, JudgeProvider, JudgeRequest, JudgeResult } from "../lib/judge.ts";
 import type { LLMJudge } from "@astragenie/gepa-core";
-import { GenericOpenAIJudge } from "./generic-openai.ts";
 
-const GROQ_BASE_URL = "https://api.groq.com/openai";
-const GROQ_DEFAULT_MODEL = "llama-3.3-70b-versatile";
+export type { GroqConfig, GroqRateLimit };
+export type GroqModel = (typeof GROQ_MODELS)[number];
+export { GROQ_MODELS };
 
-/** Rate-limit metadata parsed from Groq response headers. */
-interface GroqRateLimit {
-  requestsRemaining: number | undefined;
-  tokensRemaining: number | undefined;
-  requestsResetMs: number | undefined;
-}
-
-function parseRateLimitHeaders(headers: Headers): GroqRateLimit {
-  const reqRem = headers.get("x-ratelimit-remaining-requests");
-  const tokRem = headers.get("x-ratelimit-remaining-tokens");
-  const reqReset = headers.get("x-ratelimit-reset-requests");
-  return {
-    requestsRemaining: reqRem !== null ? parseInt(reqRem, 10) : undefined,
-    tokensRemaining: tokRem !== null ? parseInt(tokRem, 10) : undefined,
-    requestsResetMs: reqReset !== null ? parseInt(reqReset, 10) : undefined
-  };
-}
-
-export class GroqJudge extends GenericOpenAIJudge {
-  /** Rate-limit state updated after each call. Read-only for callers. */
-  lastRateLimit: GroqRateLimit = {
-    requestsRemaining: undefined,
-    tokensRemaining: undefined,
-    requestsResetMs: undefined
-  };
+/**
+ * Shim: adapts the registry's `Partial<GenericOpenAIConfig>` constructor
+ * signature to gepa-core's `GroqConfig`. Reads GROQ_API_KEY from the
+ * environment when apiKey is not supplied in config.
+ * exactOptionalPropertyTypes: pass only fields that are defined.
+ */
+export class GroqJudge implements JudgeProvider {
+  private readonly _inner: _GroqJudge;
+  readonly id: string;
 
   constructor(config?: Partial<GenericOpenAIConfig>) {
-    super({
-      baseUrl: config?.baseUrl ?? GROQ_BASE_URL,
+    const groqConfig: GroqConfig = {
       apiKey: config?.apiKey ?? process.env["GROQ_API_KEY"] ?? "",
-      model: config?.model ?? GROQ_DEFAULT_MODEL,
-      temperature: config?.temperature ?? 0.0
-    });
+    };
+    if (config?.model !== undefined) groqConfig.model = config.model;
+    if (config?.temperature !== undefined) groqConfig.temperature = config.temperature;
+    this._inner = new _GroqJudge(groqConfig);
+    this.id = `groq:${this._inner.describe().model}`;
   }
 
-  override describe(): { provider: string; model: string } {
-    return { provider: "groq", model: super.describe().model };
+  describe(): { provider: string; model: string } {
+    return this._inner.describe();
   }
 
-  override async judge(req: JudgeRequest): Promise<JudgeResult> {
-    // Groq uses the same /v1/chat/completions shape as Generic.
-    // We intercept fetch to capture rate-limit headers, then delegate.
-    // In SLICE-B1 (dry-run only) this path is never reached; the override
-    // is a forward-compatible hook for SLICE-B2.
-    const result = await super.judge(req);
-    // Rate-limit headers are on the raw response — captured via `raw` field.
-    // SLICE-B2 will wire the actual fetch interception; stub the field here.
-    this.lastRateLimit = parseRateLimitHeaders(new Headers());
-    return result;
+  get lastRateLimit(): GroqRateLimit {
+    return this._inner.lastRateLimit;
   }
 
-  override async evaluate(
-    opts: Parameters<LLMJudge["evaluate"]>[0]
-  ): ReturnType<LLMJudge["evaluate"]> {
-    const result = await super.evaluate(opts);
-    // Rate-limit headers — see note above in judge() override.
-    this.lastRateLimit = parseRateLimitHeaders(new Headers());
-    return result;
+  async evaluate(opts: Parameters<LLMJudge["evaluate"]>[0]): ReturnType<LLMJudge["evaluate"]> {
+    return this._inner.evaluate(opts);
+  }
+
+  /** @deprecated Use `evaluate(opts)` instead. Shim retained for one minor version. */
+  async judge(req: JudgeRequest): Promise<JudgeResult> {
+    const evalOpts: Parameters<LLMJudge["evaluate"]>[0] = {
+      candidateOutput: req.candidateOutput,
+      expected: { id: "shim", input: {}, expected_output: {}, held_out: false },
+      rubric: [req.rubric],
+    };
+    if (req.context !== undefined) evalOpts.context = req.context;
+    const result = await this._inner.evaluate(evalOpts);
+    return {
+      pass: result.pass,
+      score: result.score,
+      rationale: result.rationale,
+      raw: result.raw,
+      providerCost: {
+        tokensIn: result.tokens?.in ?? 0,
+        tokensOut: result.tokens?.out ?? 0,
+      },
+    };
   }
 }
-
-// Expose the Groq model list for tooling/selection UI (SLICE-B2+).
-export const GROQ_MODELS = [
-  "llama-3.3-70b-versatile",
-  "llama-3.1-8b-instant",
-  "gemma2-9b-it",
-  "mixtral-8x7b-32768"
-] as const;
-
-export type GroqModel = (typeof GROQ_MODELS)[number];
