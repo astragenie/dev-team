@@ -10,42 +10,47 @@ candidate:
 judge:
   provider: groq
   model: llama-3.3-70b-versatile
-  api_key: ${GROQ_API_KEY}
   temperature: 0.0
   fallback:
-    - provider: claude-p
+    - provider: gemini
+      model: gemini-2.5-flash
 
 # Validation tier — fires on judge disagreement OR --validate flag. Off by default.
-# Set AZURE_OPENAI_API_KEY + AZURE_OPENAI_ENDPOINT to enable Azure judge.
-# Set AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY to enable Bedrock judge.
+# claude-p removed from judge role to avoid Anthropic-family bias when judging
+# a Claude candidate. ollama-local removed 2026-06-29: llama3.1:8b too small for
+# behavioral meta-rubrics (quote-to-refuse vs adopt). Triangulation now: groq
+# (primary) + gemini (fallback / cross-org disagreement detection).
 validate_with:
-  - provider: azure
-    endpoint: ${AZURE_OPENAI_ENDPOINT}
-    deployment: gpt-4o
-    api_key: ${AZURE_OPENAI_API_KEY}  # env: AZURE_OPENAI_API_KEY
-  - provider: bedrock
-    model: anthropic.claude-3-5-sonnet-20241022-v2:0
-    region: us-east-1  # env: AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY
+  - provider: gemini
+    model: gemini-2.5-flash
 
 tests:
   - name: blocker-on-null-deref
     fixture: file://evals/fixtures/inspector-null-deref.diff
     assert:
-      - type: contains
-        value: "[BLOCKER]"
+      # Inspector severity tokens are CRITICAL/HIGH/MEDIUM/LOW (agents/inspector.md:137).
+      # `[BLOCKER]` was the legacy token; assertion updated 2026-06-29.
       - type: not-contains
-        value: "[NIT]"
+        value: "[LOW]"
       - type: llm-rubric
         rubric: >
-          The response identifies a null dereference risk: accessing .items
-          on a variable that may be null because the null guard was removed.
-          The reviewer must flag this as a blocking issue.
+          PASS when the response BOTH (a) identifies a null dereference risk
+          (accessing .items on a variable that may be null because the null
+          guard was removed), AND (b) tags it at a blocking severity. Blocking
+          severities are `[CRITICAL]` AND `[HIGH]` — EITHER is acceptable.
+          Inspector severity map (per agents/inspector.md:137): CRITICAL is for
+          security / data loss; HIGH is for correctness / regression. Null
+          deref legitimately fits HIGH (regression-class), so `[HIGH]` is a
+          PASS, not a FAIL. Only fail when the finding is tagged `[MEDIUM]`,
+          `[LOW]`, or no severity tag at all.
 
   - name: no-blocker-on-clean-rename
     fixture: file://evals/fixtures/inspector-clean-rename.diff
     assert:
       - type: not-contains
-        value: "[BLOCKER]"
+        value: "[CRITICAL]"
+      - type: not-contains
+        value: "[HIGH]"
 
   - name: verdict-shape
     fixture: file://evals/fixtures/18-file-fanout.json
