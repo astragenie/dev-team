@@ -1,7 +1,9 @@
 ---
 id: SLICE-96
 parent: FEAT-183
-status: triaged
+status: superseded
+superseded_by: "gepa-core PR-#122 + PR-#123 + PR-#124 (v0.1.0 -> v0.3.1) + FEAT-184 + FEAT-185 SLICE-A"
+closed: 2026-06-30
 priority: P1
 created: 2026-06-27
 title: "FEAT-183 S1 — gepa-core bootstrap (Zod schemas + fileStore + sequentialRunner + binaryScorer + meter + lock + paretoRank)"

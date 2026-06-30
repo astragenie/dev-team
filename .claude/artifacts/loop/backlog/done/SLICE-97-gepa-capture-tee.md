@@ -1,7 +1,9 @@
 ---
 id: SLICE-97
 parent: FEAT-183
-status: triaged
+status: superseded
+superseded_by: "gepa-core PR-#123 + PR-#124 (v0.2.0 -> v0.3.1); see scripts/lib/gepa/ + tests/gepa/ + commands/gepa-history.md"
+closed: 2026-06-30
 priority: P1
 created: 2026-06-27
 title: "FEAT-183 S2 — gepa.config.json loader + gepaCapture() tee in fullstack-dev artifact writers + /crew:gepa-history + parity tests + capture-perf bench"
