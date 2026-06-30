@@ -8,7 +8,7 @@ A Claude Code plugin for dispatcher-guided engineering work with bounded subagen
 
 ## What it does
 
-Crew gives Claude Code a dispatcher-guided workflow model with **20 first-party agents** across multiple tiers. The slash commands (`/crew:build`, `/crew:fix`, `/crew:ship`) ARE the dispatchers — they read inline routing tables and fan out specialists. There is no `lead` agent role; orchestration is a concept, not a callable subagent.
+Crew gives Claude Code a dispatcher-guided workflow model with **23 first-party agents** across multiple tiers. The slash commands (`/crew:build`, `/crew:fix`, `/crew:ship`) ARE the dispatchers — they read inline routing tables and fan out specialists. There is no `lead` agent role; orchestration is a concept, not a callable subagent.
 
 **Implementation agents (FEAT-tag routed by `/crew:build`):**
 
@@ -296,7 +296,7 @@ Do **not** commit transient coordination state:
 
 ```
 agents/          — 12 first-party agents: lead, builder, builder-fe, builder-be, reviewer, validator, deployer, integrator, researcher, architect, uxdesigner, refactor
-agents/3rdparty/ — 21 vendored specialist agents (delegated to by architect, uxdesigner, copywriter)
+agents/3rdparty/ — vendored specialist agents (delegated to by architect, uxdesigner, copywriter)
 commands/        — small public surface plus internal/debug commands
 skills/          — 34 skills across universal/, workflow/, domain/, meta/ tiers
 hooks/           — event logging wiring

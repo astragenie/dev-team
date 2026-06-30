@@ -127,8 +127,8 @@ For slice sizing before dispatch, consult `skills/workflow/slice-sizing/` and `n
 You have `Agent` tool — restricted to **design specialists only**. You may dispatch:
 
 - `agents/3rdparty/database-architect.md`
-- `agents/3rdparty/cloud-architect.md`
-- `agents/3rdparty/architect-reviewer.md` (independent design review)
+- `agents/cloud-architect.md`
+- `agents/architect-reviewer.md` (independent design review)
 - `agents/3rdparty/critical-thinking.md` (assumption challenger pre-design)
 - `crew:researcher` (read-only investigation for evidence the design needs)
 
@@ -138,10 +138,10 @@ You **MUST NOT dispatch** `crew:fullstack-dev` (any variant), `crew:inspector`, 
 | ---------------------------------------------------- | --------------------------------------------------- |
 | Backend service architecture, API paradigm selection | handle inline — see `## Backend architecture` below |
 | Database schema, indexing strategy, data model       | `agents/3rdparty/database-architect.md`             |
-| Cloud infrastructure topology, region/AZ design      | `agents/3rdparty/cloud-architect.md`                |
+| Cloud infrastructure topology, region/AZ design      | `agents/cloud-architect.md`                         |
 | API contract definition, OpenAPI / AsyncAPI spec     | load `skills/domain/architecture/api-architecture/` inline       |
 | System diagram, component map, sequence diagram      | load `skills/domain/architecture/diagram-methodology/` inline    |
-| Independent design review (pre-implementation)       | `agents/3rdparty/architect-reviewer.md`             |
+| Independent design review (pre-implementation)       | `agents/architect-reviewer.md`                      |
 | Assumption challenge before design starts            | `agents/3rdparty/critical-thinking.md`              |
 | Repo-internal evidence for the design                | `crew:researcher` (findings-with-citations)         |
 
