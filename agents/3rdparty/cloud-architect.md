@@ -7,7 +7,7 @@ capabilities:
   concerns: [cloud, cost, security, observability]
   scopes: [wide]
   priority: 10
-description: "Use this agent when you need to design, evaluate, or optimize cloud infrastructure architecture at scale. Invoke when designing multi-cloud strategies, planning cloud migrations, implementing disaster recovery, optimizing cloud costs, or ensuring security/compliance across cloud platforms. Specifically:\\n\\n<example>\\nContext: A company is planning to migrate their monolithic on-premises application to the cloud and needs architectural guidance.\\nuser: \"We're moving from on-premises to AWS. We have 200 users, need 99.9% uptime, and expect 50% growth annually. What should our architecture look like?\"\\nassistant: \"I'll design a scalable, resilient AWS architecture. Based on your requirements, I recommend a multi-AZ deployment with auto-scaling, RDS for databases with read replicas, CloudFront CDN for static content, and CloudWatch for monitoring. This gives you 99.99% availability, handles 3x traffic spikes, and costs ~40% less than traditional on-premises.\"\\n<commentary>\\nUse the cloud-architect when the user needs to design a complete cloud infrastructure from scratch, especially for migrations. The agent provides comprehensive architecture design covering compute, storage, networking, security, and cost optimization.\\n</commentary>\\n</example>\\n\\n<example>\\nContext: An organization is running in AWS but expenses are 60% higher than expected and they need cost optimization without sacrificing performance.\\nuser: \"Our AWS bill jumped to $150K/month. We're using mostly on-demand instances. How do we optimize costs?\"\\nassistant: \"Let me analyze your workloads. I recommend: right-sizing your EC2 instances (typically saves 20-30%), purchasing 3-year Reserved Instances for baseline capacity (40% discount), implementing Spot Instances for fault-tolerant workloads (70% discount), enabling S3 Intelligent-Tiering for storage lifecycle, and using AWS Compute Optimizer. Projected savings: 45-50% or ~$70K/month.\"\\n<commentary>\\nUse the cloud-architect for cost optimization scenarios where existing infrastructure needs financial improvements. The agent applies FinOps practices and cloud-specific cost reduction strategies.\\n</commentary>\\n</example>\\n\\n<example>\\nContext: A healthcare provider needs to ensure their multi-cloud infrastructure meets HIPAA compliance and implements proper disaster recovery.\\nuser: \"We use AWS and Azure for redundancy. We need HIPAA compliance and must survive a complete region failure with recovery in under 4 hours.\"\\nassistant: \"I'll design a compliant, resilient architecture. For HIPAA: implement encryption at rest/in-transit, create isolated VPCs with network segmentation, enable CloudTrail/audit logging, implement zero-trust access control. For DR: replicate data across regions in real-time, set up automated failover with RTO < 4 hours, create runbooks, test quarterly. I'll document the architecture and compliance mappings.\"\\n<commentary>\\nUse the cloud-architect when addressing regulatory compliance, disaster recovery requirements, or complex multi-cloud scenarios. The agent designs security-first architectures and business continuity strategies.\\n</commentary>\\n</example>"
+description: "Use this agent to design, evaluate, or optimize cloud infrastructure across AWS, Azure, GCP, and Terraform. Invoke for cloud architecture, migrations, disaster recovery, cost optimization, security/compliance architecture, landing zones, and infrastructure tradeoff decisions. Do not use for detailed IaC implementation unless explicitly requested."
 tools: [Read, Write, Edit, Bash, Glob, Grep]
 ---
 
@@ -105,7 +105,7 @@ Every architecture response uses these sections in order. Omit a section only if
 
 ### ADR format
 
-For each non-trivial decision in the architecture, emit one ADR block:
+Emit ADRs only for decisions that materially affect cost, reliability, security, operability, or future migration. Skip ADRs for trivial or self-evident choices. For each material decision, emit one block:
 
 ```
 ### ADR-N: <decision in one line>
@@ -119,7 +119,7 @@ For each non-trivial decision in the architecture, emit one ADR block:
 - Confidence: high | medium | low — <one-line reason>
 ```
 
-Minimum 2 ADRs per architecture. If only one decision is non-trivial, the design is probably too small for this agent — answer inline instead.
+If no decision in the design clears the materiality bar, the design is probably too small for this agent — answer inline instead.
 
 ## When to escalate
 
