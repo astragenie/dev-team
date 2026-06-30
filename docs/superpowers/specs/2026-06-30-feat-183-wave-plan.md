@@ -103,17 +103,18 @@ Estimate: 2d (was 1.5d — matched to FEAT-185 SLICE-A precedent: 3 modules + te
 Already done (v0.3.0):
 - `GeminiJudge` in `src/providers/gemini/index.ts`.
 
-Restated scope (remaining):
-- `src/providers/azure-openai/index.ts` — AzureOpenAIJudge implementing LLMJudge. Native fetch, zero process.env reads (consumer shims). **Conflict pending operator decision — see Open Question Q2 below.** FEAT-185 SLICE-109 also lists this file. One of the two must absorb the other before WAVE 1 dispatches.
+Restated scope (remaining) — **azure dropped per operator Q2 decision** (FEAT-185 SLICE-109 owns azure):
 - `src/providers/resolve-judge.ts` — factory that takes `judge_per_agent` config + agent name + JUDGE_REGISTRY and returns the resolved LLMJudge instance. (Originally drafted under `src/judges/` per the stale slice; relocated to `src/providers/` to match 0.3.0 rename.)
 - `src/providers/redact-rationale.ts` — PII / secret scrubber for judge rationale strings before persistence.
 - `src/providers/load-rubric.ts` — loader for per-agent `evals/rubrics/<agent>.md` Markdown files into the `Rubric` type.
 - `judge_per_agent` config switch in `GepaConfigSchema`.
-- Tests for all four.
+- Tests for all three.
 
 **Naming reconciliation:** all `src/judges/*` references in the original SLICE-101 `touches_files` relocate to `src/providers/*`. See SLICE-100 above for the same rule.
 
-Estimate: 2d (unchanged). MINOR bump to gepa-core 0.5.0.
+**Azure dropped (Q2 resolution):** FEAT-185 SLICE-109 absorbs azure relocation. Per Q3, bedrock is dropped entirely from SLICE-109 until proven needed — SLICE-109 becomes azure-only.
+
+Estimate: 1.5d (was 2d — dropped 1 deliverable).
 
 ### SLICE-102 — astramemStore + sharedAstramemMeter + horizontalize seed datasets
 
@@ -129,13 +130,17 @@ Estimate: 2d. Peer-deps (astramem client) introduce npm dependency — first MIN
 
 No bug-corpus mining script. No 10-case inspector eval. Depends on SLICE-100 (rubricScorer).
 
-Estimate: 3d.
+**Bug-corpus source (Q4 resolution):** hand-curate from open GH issues. Operator picks 10 inspector-related issues; builder authors minimal repro fixture per issue. Adds ~1d.
+
+Estimate: 4d (was 3d).
 
 ### SLICE-104 — architect cases + soak monitor + PromotionPolicy + champion_frozen
 
 **Status:** UNCHANGED — full scope remains. CHECKPOINT 2.
 
 `PromotionPolicy` interface declared but no default implementations. Soak monitor (dual clock + sample floor + early-revert) missing entirely. `champion_frozen` flag missing.
+
+**Calibration (Q6 resolution):** ship with default thresholds from the design spec; do NOT block on accumulating 5 weeks of trial data. Recalibration is a follow-up FEAT after sufficient data accumulates (track as a calendar reminder for ~2026-08-15).
 
 Estimate: 3d. CHECKPOINT — human review before unlocking SLICE-105+.
 
@@ -160,9 +165,9 @@ Estimate: 2d.
 | | Original | Revised | Saved |
 | --- | ---: | ---: | ---: |
 | Slices | 11 | 9 (close 2) | 2 |
-| Total days (sequential) | 24 | 20 | 4 |
+| Total days (sequential) | 24 | 19.5 | 4.5 |
 
-(SLICE-100 bumped from 1.5d → 2d per architect-reviewer N2.)
+Net deltas vs v1: SLICE-100 +0.5d (N2), SLICE-101 -0.5d (Q2 dropped azure), SLICE-103 +1d (Q4 hand-curation), WAVE 0 trifecta +1.5d (F2 added S2+S3). Closes SLICE-96 + SLICE-97 (-5d).
 
 ## Options Considered
 
@@ -276,12 +281,12 @@ If any item red, halt before WAVE 1.
 - **Q1 — Does SLICE-98 wait for FEAT-186 S1 cost contract?** Resolved: wait. WAVE 0 inserts S1 + S2 + S3 (S2 and S3 added per architect-reviewer F2 — without all three, dailyCapMeter reads old-shape evals while gepa writes new-shape, causing silent budget overruns).
 - **Q5 — SLICE-98 only-needs-fileLockManager-from-gepa-core question:** Resolved: SLICE-98 CAN merge before SLICE-100/101 publishes (only `fileLockManager` dep, present since 0.1.0). But its cost-shape write needs WAVE-0 landed first, so it's still WAVE 1 in practice.
 
-### Pending operator decision before WAVE 0 launch
+### Resolved by operator 2026-06-30
 
-- **Q2 — F3 azure-overlap (FEAT-185 SLICE-109 vs SLICE-101).** Both list `gepa-core/src/providers/azure/index.ts`. Pick one owner. **Recommended:** absorb SLICE-101's azure scope into FEAT-185 SLICE-109 (SLICE-109 already exists in FEAT-185.md proposed_slices; SLICE-101 then drops to 3 deliverables: resolve-judge + redact-rationale + load-rubric — estimate becomes 1.5d). Wait for operator confirmation.
-- **Q3 — Bedrock (FEAT-185 SLICE-B) timing.** Out of scope for FEAT-183 wave plan. Recommend: slot in as follow-up MINOR after WAVE 6. Confirm with operator.
-- **Q4 — SLICE-103 bug-corpus mining source.** No script exists. Options: (1) scan `.claude/artifacts/crew/reviews/` for `🔴` findings, extract 10 highest-severity, build minimal repro fixture. (2) Hand-curate from open GH issues. (3) Synthetic via known bug patterns. Recommendation: (1) — repo has the history, just needs a script. ~0.5d added to SLICE-103.
-- **Q6 — SLICE-104 PromotionPolicy calibration data.** Per architect-reviewer §5: need ≥5 weeks of trial data to calibrate early-revert thresholds. Today's trial data starts 2026-06-21 (per `evals/runs/`) — that's 9 days. Wait 4 more weeks before SLICE-104 dispatches, OR ship with default thresholds + plan recalibration as follow-up.
+- **Q2 — Azure ownership:** FEAT-185 SLICE-109 owns azure relocation. SLICE-101 drops azure scope (now 3 deliverables, 1.5d).
+- **Q3 — Bedrock:** dropped entirely until proven needed. SLICE-109 becomes azure-only.
+- **Q4 — Bug-corpus source:** hand-curate from open GH issues. Operator picks 10 inspector-related issues; builder authors repro fixtures. +1d to SLICE-103 (now 4d).
+- **Q6 — SLICE-104 calibration:** ship with default thresholds; recalibrate as follow-up after data accumulates (calendar ~2026-08-15).
 
 ### Outstanding (resolve before respective wave)
 
