@@ -280,6 +280,23 @@ Per architect-reviewer N1. 30-min operator review covering:
 
 If any item red, halt before WAVE 1.
 
+## CHECKPOINT-0 status (2026-06-30 operator review)
+
+| # | Item | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 | FEAT-186 S1+S2+S3 merged + published + dep bumped | pending — WAVE 0 work | n/a |
+| 2 | Q2 azure-overlap recorded + losing slice closed | DONE | SLICE-109 created at `.claude/artifacts/loop/backlog/triaged/SLICE-109-feat-185-azure-judge-relocation.md` |
+| 3 | 2FA story confirmed | OPERATOR ACTION | `npm whoami=heroboec` works, token in `~/.npmrc`. Recommend dry-run publish on throwaway `gepa-core@0.3.2-rc.0` tag before WAVE 1 close. |
+| 4 | GROQ + Gemini API keys available | DONE | 2026-06-29 inspector eval ran successfully with both judges (`evals/runs/2026-06-29T19-07-56-053Z-inspector.json` shows `llm-rubric PASS score=1`). |
+| 5 | FEAT-184 AC-3 baseline data available | WAIVED | Operator waived for SLICE-100 (2026-06-30 Q-pass). Recalibration follow-up. |
+| 6 | SLICE-109 backlog file exists | DONE | Created 2026-06-30. |
+| 7 | 10 inspector GH issues queued for SLICE-103 | DEFERRED | Operator deferred to WAVE 4 approach time. Track for CHECKPOINT-3 (new). |
+| 8 | Q8 owner named for 2026-07-13 calendar dep | DONE | release-engineer owns. |
+
+**Verdict:** 6/8 GREEN; 1 deferred (item 7); 1 operator action remaining (item 3, npm publish dry-run). Item 1 is WAVE 0's own deliverable, naturally pending.
+
+WAVE 0 launch can begin (FEAT-186 S1+S2+S3 work). CHECKPOINT-0 final review happens between WAVE 0 close and WAVE 1 dispatch; the only blocker at that gate will be item 3 if dry-run not yet done.
+
 ## Open questions
 
 ### Resolved during architect-reviewer pass (2026-06-30)
