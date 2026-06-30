@@ -203,7 +203,7 @@ WAVE 1 — gepa-core 0.5.0/0.6.0 + dev-team plumbing
   ├─ SLICE-101 (gepa-core: azure + resolve-judge + rubric loader)  — 2d  — gepa-core repo
   └─ SLICE-98  (dev-team: /crew:gepa-eval + split + lock)  — 1d   — dev-team repo
   Drafted in parallel (3 worktrees), serialized through 2 npm publishes.
-  Merge order: SLICE-100 → publish gepa-core 0.5.0 → SLICE-101 (depends on 100 internally for resolve-judge) → publish 0.6.0 → SLICE-98 bumps dep to ^0.6.0.
+  Merge order: SLICE-100 → publish gepa-core 0.5.0 → SLICE-101 (serialized through publish ceremony, not by code dep — `resolve-judge.ts` depends on already-shipped `LLMJudge` interface from FEAT-184 / v0.2.0, not on SLICE-100 deliverables) → publish 0.6.0 → SLICE-98 bumps dep to ^0.6.0.
   Per architect-reviewer F-claim-2: SLICE-98's only gepa-core dependency is `fileLockManager` (present since 0.1.0), so SLICE-98 CAN merge before the gepa-core publishes — but the cost-shape write needs WAVE-0's FEAT-186 S1+S2+S3 landed first. SLICE-98 final dep-bump to ^0.6.0 is the final step.
   Wall time: 2d (drafting) + 2 × publish ceremony (~30-60min each w/ 2FA) + 1d (SLICE-98 dep-bump + verify) = ~3.5-4d realistic.
 
@@ -218,9 +218,10 @@ WAVE 3 — horizontalize
   Wall time: 2d.
 
 WAVE 4 — inspector eval
-  └─ SLICE-103 (inspector bug-corpus + 10 cases + rubric eval)  — 3d
+  └─ SLICE-103 (inspector bug-corpus + 10 cases + rubric eval)  — 4d
   Depends on SLICE-100, SLICE-101, SLICE-102. Sequential.
-  Wall time: 3d.
+  Includes operator hand-curation of 10 GH issues (Q4 resolution) + builder repro fixture authoring (3d).
+  Wall time: 4d.
 
 WAVE 5 — architect + soak CHECKPOINT 2
   └─ SLICE-104 (architect cases + soak monitor + PromotionPolicy + champion_frozen)  — 3d
@@ -233,8 +234,9 @@ WAVE 6 — auto-merge ladder
   Sequential within wave: SLICE-106 depends on SLICE-105's PR-creation surface.
   Wall time: 4d.
 
-TOTAL WALL TIME: 2.5d + 3d + 2d + 3d + 3d + 4d = 17.5 days (~3.5 work weeks)
-TOTAL SEQUENTIAL: 19.5 days (saved 2d via Wave 1 parallelism)
+TOTAL WALL TIME (WAVE 0 + WAVES 1-6): 2.5d + 3d + 2d + 4d + 3d + 4d = 18.5 days (~3.7 work weeks)
+  WAVE 1: 3d drafting + ~1d publish-ceremony overhead = 3-4d realistic.
+TOTAL SEQUENTIAL: 20.5 days (saved 2d via Wave 1 drafting parallelism).
 ```
 
 ## Cross-repo coordination
@@ -270,7 +272,11 @@ Per architect-reviewer N1. 30-min operator review covering:
 - FEAT-186 S1+S2+S3 merged + gepa-core published + dev-team dep bumped.
 - F3 azure-overlap decision recorded in this doc + the losing slice closed/restated.
 - 2FA story confirmed (GA Token issued OR OTP+publish path tested on a throwaway dev release).
-- API keys available for SLICE-102+ pipeline.
+- API keys available for SLICE-102+ pipeline (GROQ_API_KEY + Gemini).
+- **FEAT-184 AC-3 baseline data available** (per Q7) OR explicitly waived for SLICE-100 with operator initial. Without baseline, `detectEvalDrift` validator has no ground-truth.
+- **SLICE-109 backlog file exists** at `.claude/artifacts/loop/backlog/triaged/SLICE-109*.md` (created or renamed from FEAT-185 SLICE-B) so azure work has a real ownership artifact.
+- **Operator has 10 inspector GH issue IDs queued** for SLICE-103 hand-curation (per Q4). Pre-stage avoids WAVE 4 blocking on operator availability.
+- **Q8 owner named** for the 2026-07-13 `agent-eval-regression.yml` calendar dependency. Recommend: release-engineer.
 
 If any item red, halt before WAVE 1.
 
