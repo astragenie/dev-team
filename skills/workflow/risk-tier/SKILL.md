@@ -34,7 +34,7 @@ The `risk:` value in the slice frontmatter is the source of truth (computed by `
 | Loop                       | Max attempts | After cap                                                                  |
 | -------------------------- | ------------ | -------------------------------------------------------------------------- |
 | Fullstack-dev re-dispatch on fix | 2            | Dispatch `crew:architect` to re-scope; architect's ADR drives next fullstack-dev |
-| Inspector re-review         | 2            | Dispatch `crew:3rdparty:architect-reviewer` for independent design review  |
+| Inspector re-review         | 2            | Dispatch `crew:architect-reviewer` for independent design review  |
 | Verifier re-run after fix | 2            | Mark `blocked` with the persistent failure evidence; route to architect    |
 
 ## Confidence Aggregation
