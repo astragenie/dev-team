@@ -3,10 +3,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import {
-  parseSplitFlag,
-  splitTrainHeldout,
-} from "../../scripts/lib/gepa/split-train-heldout.ts";
+import { parseSplitFlag, splitTrainHeldout } from "../../scripts/lib/gepa/split-train-heldout.ts";
 
 function cases(n: number, prefix = "case") {
   return Array.from({ length: n }, (_, i) => ({ id: `${prefix}-${i}` }));
@@ -42,9 +39,7 @@ describe("SLICE-98 — splitTrainHeldout determinism", () => {
     const reordered = [...input].reverse();
     const direct = splitTrainHeldout(input, { train: 16, heldOut: 4 });
     const reverse = splitTrainHeldout(reordered, { train: 16, heldOut: 4 });
-    expect(direct.heldOut.map((c) => c.id).sort()).toEqual(
-      reverse.heldOut.map((c) => c.id).sort(),
-    );
+    expect(direct.heldOut.map((c) => c.id).sort()).toEqual(reverse.heldOut.map((c) => c.id).sort());
   });
 
   test("adding a case to the input preserves existing heldOut membership", () => {

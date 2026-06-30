@@ -54,7 +54,7 @@ export interface SplitResult<T extends Splittable> {
  */
 export function splitTrainHeldout<T extends Splittable>(
   cases: T[],
-  opts: SplitOpts,
+  opts: SplitOpts
 ): SplitResult<T> {
   const seed = opts.seed ?? "";
   // Sort by hash(seed + id). Stable ordering = deterministic membership.

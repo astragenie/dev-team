@@ -19,7 +19,7 @@ describe("SLICE-98 — runWithLock happy path", () => {
   test("acquires lock, runs fn, returns ok with result", async () => {
     const outcome = await runWithLock(
       { agent: "fullstack-dev", phase: "eval", lockRoot: tmpLockRoot() },
-      async () => "fn-result",
+      async () => "fn-result"
     );
     expect(outcome.status).toBe("ok");
     if (outcome.status === "ok") {
@@ -31,12 +31,12 @@ describe("SLICE-98 — runWithLock happy path", () => {
     const lockRoot = tmpLockRoot();
     const first = await runWithLock(
       { agent: "fullstack-dev", phase: "eval", lockRoot },
-      async () => "first",
+      async () => "first"
     );
     expect(first.status).toBe("ok");
     const second = await runWithLock(
       { agent: "fullstack-dev", phase: "eval", lockRoot },
-      async () => "second",
+      async () => "second"
     );
     expect(second.status).toBe("ok");
   });
@@ -49,7 +49,7 @@ describe("SLICE-98 — runWithLock error handling", () => {
       { agent: "fullstack-dev", phase: "eval", lockRoot },
       async () => {
         throw new Error("boom");
-      },
+      }
     );
     expect(outcome.status).toBe("error");
     if (outcome.status === "error") {
@@ -59,7 +59,7 @@ describe("SLICE-98 — runWithLock error handling", () => {
     // Subsequent acquire must succeed — lock was released despite throw.
     const next = await runWithLock(
       { agent: "fullstack-dev", phase: "eval", lockRoot },
-      async () => "ok",
+      async () => "ok"
     );
     expect(next.status).toBe("ok");
   });
@@ -75,12 +75,12 @@ describe("SLICE-98 — runWithLock error handling", () => {
         await new Promise((resolve) => setTimeout(resolve, 50));
         evalReleased = true;
         return "eval-done";
-      },
+      }
     );
     // Optimize uses a different lock file — should succeed in parallel.
     const optimizeOutcome = await runWithLock(
       { agent: "fullstack-dev", phase: "optimize", lockRoot },
-      async () => "optimize-done",
+      async () => "optimize-done"
     );
     expect(optimizeOutcome.status).toBe("ok");
     expect(evalReleased).toBe(false); // optimize finished BEFORE eval released

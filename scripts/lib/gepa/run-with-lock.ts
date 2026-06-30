@@ -54,7 +54,7 @@ export type RunWithLockOutcome<T> =
  */
 export async function runWithLock<T>(
   opts: RunWithLockOpts,
-  fn: () => Promise<T>,
+  fn: () => Promise<T>
 ): Promise<RunWithLockOutcome<T>> {
   const manager = fileLockManager(opts.lockRoot ?? DEFAULT_LOCK_ROOT);
   const acquired = await manager.acquire(opts.agent, opts.phase);
@@ -62,7 +62,7 @@ export async function runWithLock<T>(
     return {
       status: "lock_held",
       agent: opts.agent,
-      phase: opts.phase,
+      phase: opts.phase
     };
   }
   try {
