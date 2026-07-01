@@ -1,0 +1,23 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`renderCostReport — dual-pipeline snapshot 1`] = `
+"| pipeline | provider | usd | latency_ms | tokens (in/out) | cache |
+| --- | --- | --- | --- | --- | --- |
+| eval | anthropic | 0.0312 | 843 | 1024/256 | hit (980 saved) |
+| gepa | groq | 0.0007 | 312 | 512/128 | miss |
+| **totals** |  | **0.0319** | **1155** | 1536/384 | 1 hit / 1 miss |"
+`;
+
+exports[`renderCostReport — legacy-eval-only (pre-186 shape) snapshot 1`] = `
+"| pipeline | provider | usd | latency_ms | tokens (in/out) | cache |
+| --- | --- | --- | --- | --- | --- |
+| eval | anthropic | 3.0367 | 559106 | - | - |
+| **totals** |  | **3.0367** | **559106** | - | - |"
+`;
+
+exports[`renderCostReport — legacy-gepa-only (pre-186 shape) snapshot 1`] = `
+"| pipeline | provider | usd | latency_ms | tokens (in/out) | cache |
+| --- | --- | --- | --- | --- | --- |
+| gepa | anthropic | 1.9280 | 554179 | - | - |
+| **totals** |  | **1.9280** | **554179** | - | - |"
+`;
