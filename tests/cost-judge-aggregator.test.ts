@@ -23,7 +23,7 @@ import { tmpdir } from "node:os";
 import {
   aggregateJudgeCost,
   renderJudgeCostSection,
-  type JudgeCostAggregate,
+  type JudgeCostAggregate
 } from "../scripts/lib/cost-judge-aggregator.ts";
 
 function makeTmpRepo(): string {
@@ -33,7 +33,7 @@ function makeTmpRepo(): string {
 async function writeRunFile(
   repoRoot: string,
   filename: string,
-  body: Record<string, unknown>,
+  body: Record<string, unknown>
 ): Promise<void> {
   const dir = path.join(repoRoot, "evals", "runs");
   await fs.mkdir(dir, { recursive: true });
@@ -43,11 +43,15 @@ async function writeRunFile(
 async function writeTrialsFile(
   repoRoot: string,
   filename: string,
-  trials: Array<Record<string, unknown>>,
+  trials: Array<Record<string, unknown>>
 ): Promise<void> {
   const dir = path.join(repoRoot, ".claude", "artifacts", "crew", "gepa", "trials");
   await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(path.join(dir, filename), trials.map((t) => JSON.stringify(t)).join("\n"), "utf8");
+  await fs.writeFile(
+    path.join(dir, filename),
+    trials.map((t) => JSON.stringify(t)).join("\n"),
+    "utf8"
+  );
 }
 
 describe("FEAT-186 S3 — aggregateJudgeCost", () => {
@@ -67,8 +71,8 @@ describe("FEAT-186 S3 — aggregateJudgeCost", () => {
       judgeId: "groq:llama-3.3-70b-versatile",
       tests: [
         { name: "case1", pass: true, asserts: [] },
-        { name: "case2", pass: true, asserts: [] },
-      ],
+        { name: "case2", pass: true, asserts: [] }
+      ]
     });
     const agg = await aggregateJudgeCost({ repoRoot });
     expect(agg.rows.length).toBe(0);
@@ -85,15 +89,15 @@ describe("FEAT-186 S3 — aggregateJudgeCost", () => {
           name: "case1",
           pass: true,
           asserts: [],
-          judgeCost: { usd: 0.012, latency_ms: 487, tokens: { in: 1200, out: 380 } },
+          judgeCost: { usd: 0.012, latency_ms: 487, tokens: { in: 1200, out: 380 } }
         },
         {
           name: "case2",
           pass: true,
           asserts: [],
-          judgeCost: { usd: 0.018, latency_ms: 623, tokens: { in: 1500, out: 420 } },
-        },
-      ],
+          judgeCost: { usd: 0.018, latency_ms: 623, tokens: { in: 1500, out: 420 } }
+        }
+      ]
     });
     const agg = await aggregateJudgeCost({ repoRoot });
     expect(agg.rows.length).toBe(1);
@@ -116,14 +120,14 @@ describe("FEAT-186 S3 — aggregateJudgeCost", () => {
         trial_id: "t1",
         judge_id: "ollama:llama3.1:8b",
         created_at: "2026-06-29T12:00:00Z",
-        score: { cost_usd: 0.0, latency_ms: 91 },
+        score: { cost_usd: 0.0, latency_ms: 91 }
       },
       {
         trial_id: "t2",
         judge_id: "ollama:llama3.1:8b",
         created_at: "2026-06-29T12:01:00Z",
-        score: { cost_usd: 0.0, latency_ms: 105 },
-      },
+        score: { cost_usd: 0.0, latency_ms: 105 }
+      }
     ]);
     const agg = await aggregateJudgeCost({ repoRoot });
     expect(agg.rows.length).toBe(1);
@@ -144,17 +148,17 @@ describe("FEAT-186 S3 — aggregateJudgeCost", () => {
           name: "c1",
           pass: true,
           asserts: [],
-          judgeCost: { usd: 0.005, latency_ms: 200 },
-        },
-      ],
+          judgeCost: { usd: 0.005, latency_ms: 200 }
+        }
+      ]
     });
     await writeTrialsFile(repoRoot, "fullstack-dev.jsonl", [
       {
         trial_id: "t1",
         judge_id: "ollama:llama3.1:8b",
         created_at: "2026-06-29T10:00:00Z",
-        score: { cost_usd: 0.0, latency_ms: 92 },
-      },
+        score: { cost_usd: 0.0, latency_ms: 92 }
+      }
     ]);
     const agg = await aggregateJudgeCost({ repoRoot });
     expect(agg.rows.length).toBe(2);
@@ -167,16 +171,16 @@ describe("FEAT-186 S3 — aggregateJudgeCost", () => {
     await writeRunFile(repoRoot, "2026-06-20T10-00-00-000Z-inspector.json", {
       promptId: "inspector",
       judgeId: "groq:llama-3.3-70b-versatile",
-      tests: [{ name: "old", pass: true, asserts: [], judgeCost: { usd: 0.01, latency_ms: 100 } }],
+      tests: [{ name: "old", pass: true, asserts: [], judgeCost: { usd: 0.01, latency_ms: 100 } }]
     });
     await writeRunFile(repoRoot, "2026-06-29T10-00-00-000Z-inspector.json", {
       promptId: "inspector",
       judgeId: "groq:llama-3.3-70b-versatile",
-      tests: [{ name: "new", pass: true, asserts: [], judgeCost: { usd: 0.02, latency_ms: 200 } }],
+      tests: [{ name: "new", pass: true, asserts: [], judgeCost: { usd: 0.02, latency_ms: 200 } }]
     });
     const agg = await aggregateJudgeCost({
       repoRoot,
-      sliceWindowStart: new Date("2026-06-25T00:00:00Z"),
+      sliceWindowStart: new Date("2026-06-25T00:00:00Z")
     });
     expect(agg.rows.length).toBe(1);
     expect(agg.rows[0]!.calls).toBe(1);
@@ -199,7 +203,7 @@ describe("FEAT-186 S3 — renderJudgeCostSection", () => {
     const empty: JudgeCostAggregate = {
       rows: [],
       grandTotalUsd: 0,
-      sources: { evalsRuns: 0, gepaTrials: 0 },
+      sources: { evalsRuns: 0, gepaTrials: 0 }
     };
     expect(renderJudgeCostSection(empty)).toBe("");
   });
@@ -215,7 +219,7 @@ describe("FEAT-186 S3 — renderJudgeCostSection", () => {
           usdTotal: 0.03,
           latencyP50Ms: 555,
           tokensIn: 2700,
-          tokensOut: 800,
+          tokensOut: 800
         },
         {
           pipeline: "gepa",
@@ -223,15 +227,17 @@ describe("FEAT-186 S3 — renderJudgeCostSection", () => {
           model: "llama3.1:8b",
           calls: 5,
           usdTotal: 0,
-          latencyP50Ms: 95,
-        },
+          latencyP50Ms: 95
+        }
       ],
       grandTotalUsd: 0.03,
-      sources: { evalsRuns: 1, gepaTrials: 5 },
+      sources: { evalsRuns: 1, gepaTrials: 5 }
     };
     const md = renderJudgeCostSection(agg);
     expect(md).toContain("## Judge cost");
-    expect(md).toContain("| evals | groq | llama-3.3-70b-versatile | 2 | 0.0300 | 555ms | 2700/800 | — |");
+    expect(md).toContain(
+      "| evals | groq | llama-3.3-70b-versatile | 2 | 0.0300 | 555ms | 2700/800 | — |"
+    );
     expect(md).toContain("| gepa | ollama | llama3.1:8b | 5 | 0.0000 | 95ms | — | — |");
     expect(md).toContain("**TOTAL**");
     expect(md).toContain("**0.0300**");

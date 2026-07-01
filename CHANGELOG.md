@@ -5,6 +5,22 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+### Minor — FEAT-186 S4 (SLICE-113): brief-me cost-aggregator consumes unified CostEntry shape
+
+- **`scripts/lib/brief-me/cost-aggregator.ts`** — new module. Wraps SLICE-112's
+  `aggregateJudgeCost` with brief-me–friendly API: `aggregateBriefMeCosts()` returns
+  `BriefMeCostAggregate` with cent-precision `totalUsd` (round4 per row, round2 display).
+  `CostEntry` type alias imports from `cost-judge-aggregator.ts` — no parallel type definition.
+  `renderBriefMeJudgeCostSection()` emits single-table Markdown with no eval/gepa shadow columns.
+- **`scripts/lib/brief-me/cost-aggregator.test.ts`** — 14 tests covering AC-1..AC-4:
+  cent-precision invariant across eval-only / gepa-only / dual-pipeline fixtures; no column
+  doubling; empty-aggregate backward-compat for pre-186 repos.
+- **`tests/fixtures/brief-me/multi-slice-cost-corpus/`** — 5 fixture files:
+  `slice-eval-only.json`, `slice-gepa-only.jsonl`, `slice-dual-pipeline.json`,
+  `slice-dual-pipeline-gepa.jsonl` (synthetic, 3 pipeline shapes), plus 2 real pre-186
+  on-disk cost reports copied verbatim from `.claude/artifacts/crew/cost/` (FEAT037 SLICE17,
+  FEAT046 SLICE18) for backward-compat provenance.
+
 ### Minor — FEAT-182 SLICE-A: /crew:incident dispatcher + release-recovery skill
 
 - **`commands/incident.md`** — new `/crew:incident` dispatcher.

@@ -82,7 +82,7 @@ export async function aggregateJudgeCost(opts: {
 
   const [evalsRows, gepaRows] = await Promise.all([
     aggregateEvalsRuns(repoRoot, sliceWindowStart, sliceWindowEnd),
-    aggregateGepaTrials(repoRoot, sliceWindowStart, sliceWindowEnd),
+    aggregateGepaTrials(repoRoot, sliceWindowStart, sliceWindowEnd)
   ]);
 
   const rows = [...evalsRows.rows, ...gepaRows.rows];
@@ -92,8 +92,8 @@ export async function aggregateJudgeCost(opts: {
     grandTotalUsd,
     sources: {
       evalsRuns: evalsRows.fileCount,
-      gepaTrials: gepaRows.rowCount,
-    },
+      gepaTrials: gepaRows.rowCount
+    }
   };
 }
 
@@ -107,7 +107,7 @@ export async function aggregateJudgeCost(opts: {
 async function aggregateEvalsRuns(
   repoRoot: string,
   windowStart?: Date,
-  windowEnd?: Date,
+  windowEnd?: Date
 ): Promise<{ rows: JudgeCostRow[]; fileCount: number }> {
   const runsDir = path.join(repoRoot, "evals", "runs");
   let entries: string[];
@@ -153,7 +153,7 @@ function addTestCostToBucket(
   test: unknown,
   buckets: BucketMap,
   provider: string,
-  model: string,
+  model: string
 ): void {
   if (!test || typeof test !== "object") return;
   const cost = (test as Record<string, unknown>)["judgeCost"];
@@ -165,7 +165,7 @@ function addCostShapeToBucket(
   cost: Record<string, unknown>,
   buckets: BucketMap,
   provider: string,
-  model: string,
+  model: string
 ): void {
   const usd = typeof cost["usd"] === "number" ? cost["usd"] : undefined;
   const lat = typeof cost["latency_ms"] === "number" ? cost["latency_ms"] : undefined;
@@ -214,7 +214,7 @@ function bucketsToRows(buckets: BucketMap, pipeline: "evals" | "gepa"): JudgeCos
       model,
       calls: agg.usds.length,
       usdTotal: round4(agg.usds.reduce((s, v) => s + v, 0)),
-      latencyP50Ms: median(agg.latencies),
+      latencyP50Ms: median(agg.latencies)
     };
     if (agg.tokensIn.length > 0) {
       row.tokensIn = agg.tokensIn.reduce((s, v) => s + v, 0);
@@ -237,7 +237,7 @@ function bucketsToRows(buckets: BucketMap, pipeline: "evals" | "gepa"): JudgeCos
 async function aggregateGepaTrials(
   repoRoot: string,
   windowStart?: Date,
-  windowEnd?: Date,
+  windowEnd?: Date
 ): Promise<{ rows: JudgeCostRow[]; rowCount: number }> {
   const trialsDir = path.join(repoRoot, ".claude", "artifacts", "crew", "gepa", "trials");
   let entries: string[];
@@ -258,7 +258,7 @@ async function aggregateGepaTrials(
       path.join(trialsDir, file),
       buckets,
       windowStart,
-      windowEnd,
+      windowEnd
     );
   }
   return { rows: bucketsToRows(buckets, "gepa"), rowCount };
@@ -268,7 +268,7 @@ async function processGepaTrialFile(
   fullPath: string,
   buckets: BucketMap,
   windowStart?: Date,
-  windowEnd?: Date,
+  windowEnd?: Date
 ): Promise<number> {
   let raw: string;
   try {
@@ -301,7 +301,7 @@ function collectGepaTrialCost(trial: Record<string, unknown>, buckets: BucketMap
     { usd: score["cost_usd"], latency_ms: score["latency_ms"] },
     buckets,
     provider,
-    model,
+    model
   );
 }
 
@@ -341,9 +341,7 @@ function median(nums: number[]): number {
   if (nums.length === 0) return 0;
   const sorted = [...nums].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? Math.round((sorted[mid - 1]! + sorted[mid]!) / 2)
-    : sorted[mid]!;
+  return sorted.length % 2 === 0 ? Math.round((sorted[mid - 1]! + sorted[mid]!) / 2) : sorted[mid]!;
 }
 
 function round4(n: number): number {
@@ -362,7 +360,9 @@ export function renderJudgeCostSection(agg: JudgeCostAggregate): string {
   const lines: string[] = [];
   lines.push("## Judge cost");
   lines.push("");
-  lines.push("| Pipeline | Provider | Model | Calls | $USD | Latency p50 | Tokens in/out | Cache hit % |");
+  lines.push(
+    "| Pipeline | Provider | Model | Calls | $USD | Latency p50 | Tokens in/out | Cache hit % |"
+  );
   lines.push("| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |");
   for (const row of agg.rows) {
     const tokens =
@@ -371,7 +371,7 @@ export function renderJudgeCostSection(agg: JudgeCostAggregate): string {
         : "—";
     const cache = row.cacheHitRate !== undefined ? `${Math.round(row.cacheHitRate * 100)}%` : "—";
     lines.push(
-      `| ${row.pipeline} | ${row.provider} | ${row.model} | ${row.calls} | ${row.usdTotal.toFixed(4)} | ${row.latencyP50Ms}ms | ${tokens} | ${cache} |`,
+      `| ${row.pipeline} | ${row.provider} | ${row.model} | ${row.calls} | ${row.usdTotal.toFixed(4)} | ${row.latencyP50Ms}ms | ${tokens} | ${cache} |`
     );
   }
   lines.push(`| **TOTAL** | | | | **${agg.grandTotalUsd.toFixed(4)}** | | | |`);
