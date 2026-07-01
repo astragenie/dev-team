@@ -16,6 +16,9 @@ import type { JudgeProvider } from "./judge.ts";
 import type { AssertInput, AssertSpec } from "./assert.ts";
 import { ensureDataset, recordRun, recordItem } from "./langfuse-emit.ts";
 import { dispatchCandidate } from "./candidate-dispatch.ts";
+import type { BudgetMeter } from "@astragenie/gepa-core";
+import { withBudget } from "./with-budget.ts";
+import { passthroughMeter } from "./meter.ts";
 
 // ---------------------------------------------------------------------------
 // Eval spec types (matches evals/agents/*.yaml shape)
@@ -25,6 +28,16 @@ interface EvalTest {
   name: string;
   fixture?: string;
   assert: AssertSpec[];
+}
+
+/** Budget block from evals/agents/<agent>.yaml (SLICE-111 FEAT-186 S2). */
+export interface EvalSpecBudget {
+  /** Per-agent daily cap in USD. */
+  daily_cap_usd: number;
+  /** Persist path for the meter state file. Defaults derived from agent name in cli.ts. */
+  persist_path?: string;
+  /** Override per-provider cost ceiling estimates (USD). Merged with defaults. */
+  provider_ceilings?: Record<string, number>;
 }
 
 interface EvalSpec {
@@ -46,6 +59,8 @@ interface EvalSpec {
     api_key?: string;
     region?: string;
   }>;
+  /** SLICE-111: optional budget enforcement block. */
+  budget?: EvalSpecBudget;
   tests: EvalTest[];
 }
 
@@ -498,13 +513,26 @@ export async function runEval(options: {
    * Skipped when false (legacy SLICE-89 behavior — fixture used as candidate).
    */
   candidateLive?: boolean;
+  /**
+   * SLICE-111 (FEAT-186 S2): optional pre-constructed BudgetMeter to enforce
+   * a daily cap on judge calls. When absent, a passthrough meter is used so
+   * behavior is byte-for-byte identical to pre-SLICE-111 runs (AC-4).
+   */
+  meter?: BudgetMeter;
+  /**
+   * SLICE-111: optional provider ceiling overrides forwarded to withBudget
+   * when wrapping judges. Merged with DEFAULT_PROVIDER_CEILINGS in meter.ts.
+   */
+  providerCeilings?: Record<string, number>;
 }): Promise<EvalRunResult> {
   const {
     specFile,
     repoRoot,
     dryRun,
     validate: forceValidate = false,
-    candidateLive = false
+    candidateLive = false,
+    meter: injectedMeter,
+    providerCeilings
   } = options;
 
   const runStart = Date.now();
@@ -515,12 +543,18 @@ export async function runEval(options: {
   const promptVersion = await readPromptVersion(repoRoot, spec.prompt_id);
   const gitSha = await readGitSha(repoRoot);
 
+  // SLICE-111: use injected meter or fall back to passthrough (AC-4 no-op mode).
+  const activeMeter: BudgetMeter = injectedMeter ?? passthroughMeter();
+
   // Resolve judge for live mode (needed by llm-rubric asserts)
   let judge: JudgeProvider | null = null;
   let judgeErrors: string[] = [];
   if (!dryRun) {
     const resolved = await resolveJudge(spec.judge);
-    judge = resolved.judge;
+    // SLICE-111: wrap judge with budget enforcement (passthrough meter = no-op).
+    judge = resolved.judge !== null
+      ? (withBudget(resolved.judge, activeMeter, providerCeilings) as JudgeProvider)
+      : null;
     judgeErrors = resolved.errors;
   }
 

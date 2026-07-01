@@ -2,6 +2,17 @@ prompt_id: inspector
 versions_under_test:
   - file://agents/inspector.md
 
+# SLICE-111 (FEAT-186 S2): daily budget enforcement for live judge runs.
+# Remove or set to a large value to disable effective capping.
+# persist_path defaults to .claude/state/gepa-meter-<prompt_id>.json.
+# provider_ceilings override the per-provider reservation estimate (USD);
+# omit to use the DEFAULT_PROVIDER_CEILINGS from evals/lib/meter.ts.
+budget:
+  daily_cap_usd: 5.00
+  # persist_path: .claude/state/gepa-meter-inspector.json  # optional override
+  # provider_ceilings:
+  #   groq: 0.03
+
 candidate:
   runner: claude-p
   model: claude-sonnet-4-6

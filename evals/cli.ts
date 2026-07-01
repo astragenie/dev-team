@@ -11,8 +11,11 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
+import { parse as parseYaml } from "yaml";
 import { runEval, findSpecByPromptId } from "./lib/run-eval.ts";
-import type { EvalRunResult } from "./lib/run-eval.ts";
+import type { EvalRunResult, EvalSpecBudget } from "./lib/run-eval.ts";
+import type { BudgetMeter } from "@astragenie/gepa-core";
+import { createDailyCapMeter, passthroughMeter } from "./lib/meter.ts";
 
 // ---------------------------------------------------------------------------
 // Arg parsing
@@ -213,6 +216,80 @@ async function writeRunJson(result: EvalRunResult, repoRoot: string): Promise<st
 }
 
 // ---------------------------------------------------------------------------
+// SLICE-111 (FEAT-186 S2): budget meter resolution helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Read the budget block from a spec YAML file.
+ * Returns undefined if the file cannot be parsed or the block is absent.
+ */
+async function readBudgetBlock(specFile: string): Promise<EvalSpecBudget | undefined> {
+  try {
+    const raw = await fs.readFile(specFile, "utf8");
+    const spec = parseYaml(raw) as { budget?: EvalSpecBudget };
+    return spec.budget;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Resolve a BudgetMeter for the current eval run.
+ *
+ * Priority:
+ *   1. YAML `budget.daily_cap_usd` block in the spec file.
+ *   2. `GEPA_DAILY_CAP_USD` env var (only if YAML block absent).
+ *   3. No cap → passthrough meter (AC-4: fixture replays byte-for-byte identical).
+ */
+async function resolveMeter(
+  specFile: string,
+  promptId: string,
+  repoRoot: string
+): Promise<BudgetMeter> {
+  const budget = await readBudgetBlock(specFile);
+
+  if (budget !== undefined && typeof budget.daily_cap_usd === "number") {
+    const persistPath =
+      budget.persist_path ??
+      path.join(repoRoot, ".claude", "state", `gepa-meter-${promptId}.json`);
+    const meterOpts: Parameters<typeof createDailyCapMeter>[0] = {
+      capUsd: budget.daily_cap_usd,
+      persistPath,
+    };
+    if (budget.provider_ceilings !== undefined) {
+      meterOpts.providerCeilings = budget.provider_ceilings;
+    }
+    return createDailyCapMeter(meterOpts);
+  }
+
+  // Env var fallback — only when no YAML budget block.
+  const envCap = process.env["GEPA_DAILY_CAP_USD"];
+  if (envCap !== undefined) {
+    const capUsd = Number(envCap);
+    if (Number.isFinite(capUsd) && capUsd > 0) {
+      const envPath =
+        process.env["GEPA_METER_PERSIST_PATH"] ??
+        path.join(repoRoot, ".claude", "state", "gepa-meter.json");
+      return createDailyCapMeter({ capUsd, persistPath: envPath });
+    }
+  }
+
+  // No budget configured → passthrough (no cap).
+  return passthroughMeter();
+}
+
+/**
+ * Extract provider_ceilings from the spec YAML budget block (if present).
+ * Returns undefined when absent — withBudget will use DEFAULT_PROVIDER_CEILINGS.
+ */
+async function resolveProviderCeilingsFromSpec(
+  specFile: string
+): Promise<Record<string, number> | undefined> {
+  const budget = await readBudgetBlock(specFile);
+  return budget?.provider_ceilings;
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -259,13 +336,24 @@ async function main(): Promise<void> {
     process.env["CREW_EVAL_JUDGE_OVERRIDE"] = args.judge;
   }
 
-  const result = await runEval({
+  // SLICE-111 (FEAT-186 S2): resolve budget meter from YAML budget block or env fallback.
+  const meter = await resolveMeter(specFile, args.prompt, args.root);
+  const providerCeilings = await resolveProviderCeilingsFromSpec(specFile);
+
+  // exactOptionalPropertyTypes: only include optional fields when defined.
+  const runEvalOpts: Parameters<typeof runEval>[0] = {
     specFile,
     repoRoot: args.root,
     dryRun,
     validate: args.validate,
-    candidateLive: args.candidateLive
-  });
+    candidateLive: args.candidateLive,
+    meter,
+  };
+  if (providerCeilings !== undefined) {
+    runEvalOpts.providerCeilings = providerCeilings;
+  }
+
+  const result = await runEval(runEvalOpts);
   printResult(result);
 
   const outPath = await writeRunJson(result, args.root);
