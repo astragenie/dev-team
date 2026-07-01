@@ -16,7 +16,7 @@ import {
   createDailyCapMeter,
   passthroughMeter,
   resolveProviderCeiling,
-  DEFAULT_PROVIDER_CEILINGS,
+  DEFAULT_PROVIDER_CEILINGS
 } from "../../evals/lib/meter.ts";
 
 function tmpFile(): string {

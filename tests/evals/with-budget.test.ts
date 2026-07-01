@@ -45,9 +45,9 @@ function makeMockJudge(
         rubricScores: {},
         rationale: "ok",
         cost_usd: costUsd,
-        latency_ms: latencyMs,
+        latency_ms: latencyMs
       };
-    },
+    }
   };
 }
 
@@ -79,7 +79,7 @@ function makeSpyMeter(capUsd: number): BudgetMeter & {
     },
     dailyCap() {
       return inner.dailyCap();
-    },
+    }
   };
 }
 
@@ -101,8 +101,12 @@ describe("withBudget — happy path", () => {
 
     const opts = {
       candidateOutput: "hello",
-      expected: { id: "t1", input: null, held_out: false } as import("@astragenie/gepa-core").EvalCase,
-      rubric: ["be helpful"],
+      expected: {
+        id: "t1",
+        input: null,
+        held_out: false
+      } as import("@astragenie/gepa-core").EvalCase,
+      rubric: ["be helpful"]
     };
 
     const result = await wrapped.evaluate(opts);
@@ -118,8 +122,12 @@ describe("withBudget — happy path", () => {
 
     const opts = {
       candidateOutput: "test",
-      expected: { id: "t2", input: null, held_out: false } as import("@astragenie/gepa-core").EvalCase,
-      rubric: ["rubric"],
+      expected: {
+        id: "t2",
+        input: null,
+        held_out: false
+      } as import("@astragenie/gepa-core").EvalCase,
+      rubric: ["rubric"]
     };
 
     await wrapped.evaluate(opts);
@@ -139,8 +147,12 @@ describe("withBudget — error path", () => {
 
     const opts = {
       candidateOutput: "test",
-      expected: { id: "t3", input: null, held_out: false } as import("@astragenie/gepa-core").EvalCase,
-      rubric: ["rubric"],
+      expected: {
+        id: "t3",
+        input: null,
+        held_out: false
+      } as import("@astragenie/gepa-core").EvalCase,
+      rubric: ["rubric"]
     };
 
     await expect(wrapped.evaluate(opts)).rejects.toThrow("judge exploded");
@@ -156,7 +168,7 @@ describe("withBudget — over-budget", () => {
   test("throws BudgetExceededError when reserve() returns ok=false", async () => {
     // Configure a $0.10 cap, pre-spend $0.09 via a direct record on the inner meter
     const persistPath = tmpMeterPath();
-    const innerMeter = dailyCapMeter(0.10, persistPath);
+    const innerMeter = dailyCapMeter(0.1, persistPath);
 
     // Pre-fill 0.09 of spend
     const pre = await innerMeter.reserve(0.09);
@@ -168,8 +180,12 @@ describe("withBudget — over-budget", () => {
 
     const opts = {
       candidateOutput: "test",
-      expected: { id: "t4", input: null, held_out: false } as import("@astragenie/gepa-core").EvalCase,
-      rubric: ["rubric"],
+      expected: {
+        id: "t4",
+        input: null,
+        held_out: false
+      } as import("@astragenie/gepa-core").EvalCase,
+      rubric: ["rubric"]
     };
 
     // groq ceiling is 0.05, remaining is 0.01 — reserve(0.05) should fail
@@ -178,7 +194,7 @@ describe("withBudget — over-budget", () => {
 
   test("BudgetExceededError.remainingUsd is populated", async () => {
     const persistPath = tmpMeterPath();
-    const innerMeter = dailyCapMeter(0.10, persistPath);
+    const innerMeter = dailyCapMeter(0.1, persistPath);
     const pre = await innerMeter.reserve(0.09);
     await innerMeter.record(pre.reservationId, 0.09);
 
@@ -187,8 +203,12 @@ describe("withBudget — over-budget", () => {
 
     const opts = {
       candidateOutput: "test",
-      expected: { id: "t5", input: null, held_out: false } as import("@astragenie/gepa-core").EvalCase,
-      rubric: ["rubric"],
+      expected: {
+        id: "t5",
+        input: null,
+        held_out: false
+      } as import("@astragenie/gepa-core").EvalCase,
+      rubric: ["rubric"]
     };
 
     let caught: BudgetExceededError | null = null;
@@ -210,8 +230,12 @@ describe("withBudget — provider ceiling fallback", () => {
 
     const opts = {
       candidateOutput: "test",
-      expected: { id: "t6", input: null, held_out: false } as import("@astragenie/gepa-core").EvalCase,
-      rubric: ["rubric"],
+      expected: {
+        id: "t6",
+        input: null,
+        held_out: false
+      } as import("@astragenie/gepa-core").EvalCase,
+      rubric: ["rubric"]
     };
 
     await wrapped.evaluate(opts);
@@ -226,8 +250,12 @@ describe("withBudget — provider ceiling fallback", () => {
 
     const opts = {
       candidateOutput: "test",
-      expected: { id: "t7", input: null, held_out: false } as import("@astragenie/gepa-core").EvalCase,
-      rubric: ["rubric"],
+      expected: {
+        id: "t7",
+        input: null,
+        held_out: false
+      } as import("@astragenie/gepa-core").EvalCase,
+      rubric: ["rubric"]
     };
 
     await wrapped.evaluate(opts);
@@ -242,8 +270,12 @@ describe("withBudget — passthrough meter (AC-4 passthrough mode)", () => {
 
     const opts = {
       candidateOutput: "test",
-      expected: { id: "t8", input: null, held_out: false } as import("@astragenie/gepa-core").EvalCase,
-      rubric: ["rubric"],
+      expected: {
+        id: "t8",
+        input: null,
+        held_out: false
+      } as import("@astragenie/gepa-core").EvalCase,
+      rubric: ["rubric"]
     };
 
     const result = await wrapped.evaluate(opts);

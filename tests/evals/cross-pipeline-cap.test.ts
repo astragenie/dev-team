@@ -41,9 +41,9 @@ function makeMockJudge(provider: string, costUsd: number): LLMJudge {
         rationale: "ok",
         cost_usd: costUsd,
         latency_ms: 50,
-        tokens: { in: 100, out: 20 },
+        tokens: { in: 100, out: 20 }
       };
-    },
+    }
   };
 }
 
@@ -60,8 +60,12 @@ describe("AC-2: cross-pipeline daily cap enforcement", () => {
 
     const opts = {
       candidateOutput: "candidate response text",
-      expected: { id: "case-a", input: null, held_out: false } as import("@astragenie/gepa-core").EvalCase,
-      rubric: ["rubric criterion"],
+      expected: {
+        id: "case-a",
+        input: null,
+        held_out: false
+      } as import("@astragenie/gepa-core").EvalCase,
+      rubric: ["rubric criterion"]
     };
 
     const resultA = await wrappedJudge.evaluate(opts);
@@ -86,8 +90,12 @@ describe("AC-2: cross-pipeline daily cap enforcement", () => {
 
     const opts = {
       candidateOutput: "test output",
-      expected: { id: "ac2-a", input: null, held_out: false } as import("@astragenie/gepa-core").EvalCase,
-      rubric: ["rubric"],
+      expected: {
+        id: "ac2-a",
+        input: null,
+        held_out: false
+      } as import("@astragenie/gepa-core").EvalCase,
+      rubric: ["rubric"]
     };
 
     const resultA = await wrappedJudge.evaluate(opts);
@@ -97,11 +105,14 @@ describe("AC-2: cross-pipeline daily cap enforcement", () => {
     // Pipeline B (gepa Trial simulation): direct reserve+record, $0.30 JudgeCost shape.
     const gepReservation = await sharedMeter.reserve(0.3);
     expect(gepReservation.ok).toBe(true);
-    await sharedMeter.record(gepReservation.reservationId, toJudgeCost({
-      cost_usd: 0.3,
-      latency_ms: 180,
-      tokens: { in: 500, out: 80 },
-    }));
+    await sharedMeter.record(
+      gepReservation.reservationId,
+      toJudgeCost({
+        cost_usd: 0.3,
+        latency_ms: 180,
+        tokens: { in: 500, out: 80 }
+      })
+    );
 
     expect(await sharedMeter.spentToday()).toBeCloseTo(0.9, 5);
 
@@ -112,8 +123,12 @@ describe("AC-2: cross-pipeline daily cap enforcement", () => {
     await expect(
       thirdWrapped.evaluate({
         candidateOutput: "test output",
-        expected: { id: "ac2-c", input: null, held_out: false } as import("@astragenie/gepa-core").EvalCase,
-        rubric: ["rubric"],
+        expected: {
+          id: "ac2-c",
+          input: null,
+          held_out: false
+        } as import("@astragenie/gepa-core").EvalCase,
+        rubric: ["rubric"]
       })
     ).rejects.toThrow(BudgetExceededError);
   });
@@ -131,8 +146,12 @@ describe("AC-2: cross-pipeline daily cap enforcement", () => {
 
     await wrapped.evaluate({
       candidateOutput: "output",
-      expected: { id: "d1", input: null, held_out: false } as import("@astragenie/gepa-core").EvalCase,
-      rubric: ["r"],
+      expected: {
+        id: "d1",
+        input: null,
+        held_out: false
+      } as import("@astragenie/gepa-core").EvalCase,
+      rubric: ["r"]
     });
     expect(await sharedMeter.spentToday()).toBeCloseTo(0.6, 5);
 
@@ -154,7 +173,7 @@ describe("AC-2: cross-pipeline daily cap enforcement", () => {
     const gepaCost = toJudgeCost({
       cost_usd: 0.1,
       latency_ms: 300,
-      tokens: { in: 400, out: 60 },
+      tokens: { in: 400, out: 60 }
     });
     await sharedMeter.record(r.reservationId, gepaCost);
     expect(await sharedMeter.spentToday()).toBeCloseTo(0.1, 5);
