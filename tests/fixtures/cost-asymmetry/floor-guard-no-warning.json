@@ -1,0 +1,4 @@
+[
+  { "pipeline": "gepa", "provider": "ollama", "usd": 0.001, "latency_ms": 50 },
+  { "pipeline": "eval", "provider": "ollama", "usd": 0.012, "latency_ms": 60 }
+]

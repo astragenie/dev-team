@@ -1,0 +1,4 @@
+[
+  { "pipeline": "gepa", "provider": "anthropic", "usd": 0.1, "latency_ms": 1100 },
+  { "pipeline": "eval", "provider": "anthropic", "usd": 0.08, "latency_ms": 900 }
+]
