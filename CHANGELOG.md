@@ -5,6 +5,42 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+### Minor — FEAT-186 SLICE-114: cost asymmetry heuristic + Langfuse single-trace emission (2026-07-01)
+
+- **`scripts/lib/cost/asymmetry-detector.ts`** — new `detectAsymmetry(entries: CostEntry[]): AsymmetryFinding[]`.
+  Scans per-pipeline USD totals and returns a finding for each pair where the ratio between
+  the highest and lowest total exceeds 10× AND the absolute delta exceeds $0.10 (floor guard).
+  Warning-only contract: never throws, never calls `process.exit`, returns structured data;
+  caller decides whether to log or append to a report. Consumes `CostEntry` from
+  `scripts/lib/cost/cost-report-renderer.ts` (which extends `JudgeCost` from
+  `@astragenie/gepa-core ^0.5.0`). No duplicate cost-shape definition (AC-4).
+- **`scripts/lib/cost/asymmetry-detector.test.ts`** — 11 tests covering the three AC-1 fixture
+  cases (asymmetric-warning, symmetric-no-warning, floor-guard-no-warning), AC-2 no-throw
+  contract, and boundary cases (exact-10× threshold, exact-$0.10 floor, zero-cost low pipeline,
+  multi-entry pipeline aggregation).
+- **`tests/fixtures/cost-asymmetry/`** — three fixture files pinned LF via `.gitattributes`:
+  `asymmetric-warning.json` (gepa=$0.50, eval=$0.04 → 12.5× + $0.46 delta → warning),
+  `symmetric-no-warning.json` (gepa=$0.10, eval=$0.08 → 1.25× → no warning),
+  `floor-guard-no-warning.json` (gepa=$0.001, eval=$0.012 → 12× but $0.011 delta → no warning).
+- **`evals/lib/langfuse-emit.ts`** — three new exports for single-trace emission (SLICE-114 Part B):
+  `LangfuseTracePayload` (interface carrying pipeline, provider, model, context, pass, score,
+  latency, cost, optional tokens); `deriveTraceId(promptId, fixture, timestamp)` (deterministic
+  schema `{promptId}:{fixture}:{iso-timestamp}` for reproducible trace linkage);
+  `recordTrace(payload)` (POSTs one Langfuse trace per `LLMJudge.evaluate()` call to
+  `/api/public/traces`, gracefully skips when keys absent or `LANGFUSE_DISABLE=1`, swallows
+  HTTP errors after stderr log — never throws, never exits). Extends existing FEAT-169 emitter;
+  no new transport dependencies; Langfuse SDK version unchanged.
+- **`tests/langfuse-emit-trace.test.ts`** — 11 tests covering deriveTraceId schema (5 cases),
+  graceful-skip paths (keys absent, LANGFUSE_DISABLE=1), and AC-3 core: mock-fetch intercept
+  asserts trace count === evaluate-call count on a two-pipeline mixed fixture (eval + gepa),
+  plus schema verification, no-tokens path, and 5-call stress count.
+- **`.gitattributes`** — `tests/fixtures/cost-asymmetry/** text=lf` entry added alongside the
+  existing cost-reports pin (prevents CRLF drift on Windows contributor clones).
+
+  Note: gepa-core observability side (`packages/gepa-core/src/observability/langfuse-trace.ts`)
+  is explicitly deferred — that requires a gepa-core 0.6.0 publish cycle and is out of scope
+  for this slice per the SLICE-114 boundary.
+
 ### Minor — FEAT-186 SLICE-112: unified per-slice cost-report renderer (2026-07-01)
 
 - **`scripts/lib/cost/cost-report-renderer.ts`** — new `renderCostReport(entries: CostEntry[])`
