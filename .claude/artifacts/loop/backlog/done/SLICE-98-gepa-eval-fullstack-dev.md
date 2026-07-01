@@ -1,7 +1,9 @@
 ---
 id: SLICE-98
 parent: FEAT-183
-status: triaged
+status: done
+closed: 2026-07-01
+closed_via: PR #135 (merged 2026-07-01, squash SHA a4322c5)
 priority: P1
 created: 2026-06-27
 title: "FEAT-183 S3 — 5 hand-seed eval cases for fullstack-dev + /crew:gepa-eval cmd + train/heldOut splitter + lock acquire/release"
