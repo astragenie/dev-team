@@ -5,6 +5,25 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+### Dependency — gepa-core 0.5.0 consumption (2026-07-01)
+
+- **`package.json`** — bumps `@astragenie/gepa-core` dep from `^0.3.0` to `^0.5.0`.
+  `overrides` entry pins the git SHA `f6ea174` (branch `feat/186-s1-judge-cost`) for
+  local install during the pre-publish transition; remove the `overrides` block once
+  `@astragenie/gepa-core@0.5.0` is live on npm.
+- **`evals/providers/azure-openai.ts`** (SLICE-109 dev-team side) — rewrites the local
+  `AzureOpenAIJudge` class as a thin shim over `@astragenie/gepa-core/providers/azure-openai`.
+  Matches the shim pattern shipped for ollama / generic-openai / groq / gemini in FEAT-185
+  SLICE-A. Migrated to `implements LLMJudge` (no longer `implements JudgeProvider`);
+  `JudgeProvider`, `JudgeRequest`, `JudgeResult` imports removed. Credential validation
+  deferred to first `evaluate()` / `judge()` call to preserve pre-refactor test behavior.
+  `describe()` returns `{ provider: "azure", model }` for backward compat with JUDGE_REGISTRY
+  key and existing tests.
+
+**Pre-conditions for this branch to merge:** `@astragenie/gepa-core@0.5.0` must be published
+on npm (PR: https://github.com/astragenie/gepa-core/pull/2). After publish: remove `overrides`
+block from `package.json`, run `bun install` to update `bun.lock`, then open dev-team PR.
+
 ### Minor — FEAT-182 SLICE-A: /crew:incident dispatcher + release-recovery skill
 
 - **`commands/incident.md`** — new `/crew:incident` dispatcher.
