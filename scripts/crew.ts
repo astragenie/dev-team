@@ -20,10 +20,12 @@ const FLAG_SPEC = {
   "--force": { key: "force", boolean: true },
   "--help": { key: "help", boolean: true },
   "-h": { key: "help", boolean: true },
+  "--live": { key: "live", boolean: true },
   "--no-self": { key: "noSelf", boolean: true },
   "--non-code": { key: "nonCode", boolean: true },
   "--repo-context": { key: "repoContext", boolean: true },
   "--scaffold": { key: "scaffold", boolean: true },
+  "--validate": { key: "validate", boolean: true },
   // Value-consuming flags.
   "--agent": { key: "agent" },
   "--alerts": { key: "alerts" },
@@ -85,6 +87,8 @@ const FLAG_SPEC = {
   "--source-project": { key: "sourceProject" },
   "--scope": { key: "scope" },
   "--limit": { key: "limit" },
+  "--judge": { key: "judge" },
+  "--split": { key: "split" },
   "--severity": { key: "severity" },
   "--slice": { key: "slice" },
   "--started-at": { key: "startedAt" },
@@ -211,7 +215,11 @@ function buildDefaultFlags(): Flags {
     concern: null,
     lens: null,
     gepaSource: null,
-    limit: null
+    limit: null,
+    live: false,
+    validate: false,
+    judge: null,
+    split: null
   };
 }
 
@@ -332,7 +340,9 @@ function usage(target: string | null = null) {
     "agent-route":
       "  node scripts/crew.ts agent-route [--role <r>] [--surface <s>] [--stack <s>] [--concern <c>] [--lens <l>] [--scope <s>] [--repo <path>]",
     "gepa-history":
-      "  node scripts/crew.ts gepa-history <agent> [--source eval|captured|soak] [--limit N] [--repo <path>]"
+      "  node scripts/crew.ts gepa-history <agent> [--source eval|captured|soak] [--limit N] [--repo <path>]",
+    "gepa-eval":
+      "  node scripts/crew.ts gepa-eval <agent> [--live] [--judge <name>] [--validate] [--split N/M] [--repo <path>]"
   };
 
   const subcommandsMap = subcommands as Record<string, string | undefined>;
@@ -1153,6 +1163,20 @@ const COMMANDS = {
     if (flags.gepaSource) rawArgs.push("--source", flags.gepaSource);
     if (flags.limit) rawArgs.push("--limit", flags.limit);
     const result = await runGepaHistoryCmd(repoPath, rawArgs);
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+    if (result.exitCode !== 0) process.exit(result.exitCode);
+    return result.stdout.trim();
+  },
+
+  "gepa-eval": async ({ repoPath, flags, positionals }: CommandContext) => {
+    const { runGepaEvalCmd } = await import("./lib/gepa/eval.ts");
+    const rawArgs: string[] = [...positionals];
+    if (flags.live === true) rawArgs.push("--live");
+    if (flags.validate === true) rawArgs.push("--validate");
+    if (typeof flags.judge === "string" && flags.judge) rawArgs.push("--judge", flags.judge);
+    if (typeof flags.split === "string" && flags.split) rawArgs.push("--split", flags.split);
+    const result = await runGepaEvalCmd(repoPath, rawArgs);
     if (result.stdout) process.stdout.write(result.stdout);
     if (result.stderr) process.stderr.write(result.stderr);
     if (result.exitCode !== 0) process.exit(result.exitCode);

@@ -5,11 +5,11 @@
     "": {
       "name": "crew-plugin",
       "dependencies": {
+        "@astragenie/gepa-core": "^0.5.0",
         "@aws-sdk/client-bedrock-runtime": "^3",
         "@opentelemetry/api": "^1.9.0",
         "@opentelemetry/exporter-trace-otlp-http": "^0.53.0",
         "@opentelemetry/sdk-node": "^0.53.0",
-        "@astragenie/gepa-core": "github:astragenie/gepa-core#8c190ee",
       },
       "devDependencies": {
         "@biomejs/biome": "^2.5.0",
@@ -24,7 +24,7 @@
     },
   },
   "packages": {
-    "@astragenie/gepa-core": ["@astragenie/gepa-core@github:astragenie/gepa-core#8c190ee", { "dependencies": { "zod": "^3.23.0" }, "peerDependencies": { "@azure/openai": "*", "@google/generative-ai": "*" }, "optionalPeers": ["@azure/openai", "@google/generative-ai"] }, "astragenie-gepa-core-8c190ee", "sha512-lEII2GxkO0KgcWE8NctGTyKclukLtvi/04gGUU9ckY3N0StR6v1MiggieCXSy0htCGzreC/RpBamqHy/O0veHg=="],
+    "@astragenie/gepa-core": ["@astragenie/gepa-core@0.5.0", "", { "dependencies": { "zod": "^3.23.0" }, "peerDependencies": { "@azure/openai": "*", "@google/generative-ai": "*" }, "optionalPeers": ["@azure/openai", "@google/generative-ai"] }, "sha512-yzsfcIzBktwF/Bbj6OvfUG3St5lthKsnU5JFtp8TZVgrBNzsVYeKVvQrkJVQDhUhahMftV3W2+exzwh57KF84w=="],
 
     "@aws-crypto/crc32": ["@aws-crypto/crc32@5.2.0", "", { "dependencies": { "@aws-crypto/util": "^5.2.0", "@aws-sdk/types": "^3.222.0", "tslib": "^2.6.2" } }, "sha512-nLbCWqQNgUiwwtFsen1AdzAtvuLRsQS8rYgMuxCrdKf9kOssamGLuPwyTY9wyYblNr9+1XM8v6zoDTPPSIeANg=="],
 
