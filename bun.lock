@@ -23,11 +23,8 @@
       },
     },
   },
-  "overrides": {
-    "@astragenie/gepa-core": "github:astragenie/gepa-core#f6ea174",
-  },
   "packages": {
-    "@astragenie/gepa-core": ["@astragenie/gepa-core@github:astragenie/gepa-core#f6ea174", { "dependencies": { "zod": "^3.23.0" }, "peerDependencies": { "@azure/openai": "*", "@google/generative-ai": "*" }, "optionalPeers": ["@azure/openai", "@google/generative-ai"] }, "astragenie-gepa-core-f6ea174", "sha512-BJH1Vc6sgGzrKw5Q3i/OI9RG+fnE6zwOTPQxa+Sd692K4vS/yeel3UEP7q3A2FxAOEC78l1+fNkdmpwb7xA0BQ=="],
+    "@astragenie/gepa-core": ["@astragenie/gepa-core@0.5.0", "", { "dependencies": { "zod": "^3.23.0" }, "peerDependencies": { "@azure/openai": "*", "@google/generative-ai": "*" }, "optionalPeers": ["@azure/openai", "@google/generative-ai"] }, "sha512-yzsfcIzBktwF/Bbj6OvfUG3St5lthKsnU5JFtp8TZVgrBNzsVYeKVvQrkJVQDhUhahMftV3W2+exzwh57KF84w=="],
 
     "@aws-crypto/crc32": ["@aws-crypto/crc32@5.2.0", "", { "dependencies": { "@aws-crypto/util": "^5.2.0", "@aws-sdk/types": "^3.222.0", "tslib": "^2.6.2" } }, "sha512-nLbCWqQNgUiwwtFsen1AdzAtvuLRsQS8rYgMuxCrdKf9kOssamGLuPwyTY9wyYblNr9+1XM8v6zoDTPPSIeANg=="],
 
