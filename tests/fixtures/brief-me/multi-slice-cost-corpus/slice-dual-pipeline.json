@@ -1,0 +1,28 @@
+{
+  "promptId": "crew-inspector",
+  "judgeId": "groq:llama-3.3-70b-versatile",
+  "tests": [
+    {
+      "name": "dual-pipeline-case-1",
+      "pass": true,
+      "asserts": [],
+      "judgeCost": {
+        "usd": 0.0015,
+        "latency_ms": 445,
+        "tokens": { "in": 1600, "out": 95 },
+        "cache": { "hit": true, "tokens_saved": 1400 }
+      }
+    },
+    {
+      "name": "dual-pipeline-case-2",
+      "pass": true,
+      "asserts": [],
+      "judgeCost": {
+        "usd": 0.0013,
+        "latency_ms": 422,
+        "tokens": { "in": 1520, "out": 90 },
+        "cache": { "hit": true, "tokens_saved": 1300 }
+      }
+    }
+  ]
+}
