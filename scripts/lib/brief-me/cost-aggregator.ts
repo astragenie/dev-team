@@ -10,10 +10,11 @@
  *      from `../cost-judge-aggregator.ts`.
  *
  *   2. Cent-precision total arithmetic — AC-2.
- *      Rule: each per-row `usdTotal` is rounded to 4 decimal places (banker's
- *      rounding via round4) before summing. The final display total is rounded
- *      to 2 decimal places. This matches the FEAT-159 SLICE-85 convention
- *      and prevents cascading floating-point drift on large corpora.
+ *      Rule: each per-row `usdTotal` is rounded to 4 decimal places using
+ *      symmetric half-up rounding via `round4` (NOT IEEE 754 banker's / round-
+ *      half-to-even) before summing. The final display total is rounded to 2
+ *      decimal places. This matches the FEAT-159 SLICE-85 convention and
+ *      prevents cascading floating-point drift on large corpora.
  *
  *   3. No per-pipeline column doubling — AC-3.
  *      Output is keyed on `(pipeline, provider)` pairs exactly as produced by

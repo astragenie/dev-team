@@ -46,6 +46,18 @@ export interface LangfuseItemPayload {
 const DEFAULT_HOST = "https://cloud.langfuse.com";
 let warnedMissingKeys = false;
 
+/**
+ * Test-only: reset the one-shot warn latch so subsequent `getAuth()` calls in
+ * the keys-absent path emit the stderr warning again. Necessary when parallel
+ * or ordering-sensitive test workers share this module — the latch is module-
+ * level state and would otherwise leak across tests in the same worker.
+ *
+ * Do NOT call from production code paths.
+ */
+export function _resetWarnFlag(): void {
+  warnedMissingKeys = false;
+}
+
 function getAuth(): { publicKey: string; secretKey: string } | null {
   const pub = process.env["LANGFUSE_PUBLIC_KEY"] ?? "";
   const sec = process.env["LANGFUSE_SECRET_KEY"] ?? "";
