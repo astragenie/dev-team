@@ -7,6 +7,14 @@
  *   2. POST /api/public/dataset-runs      (one run per eval invocation)
  *   3. POST /api/public/dataset-items     (one item per test)
  *
+ * SLICE-114 (FEAT-186 S5) adds single-trace emission:
+ *   4. POST /api/public/traces            (one trace per LLMJudge.evaluate() call)
+ *   `recordTrace` — call immediately after each evaluate() call, from either
+ *   pipeline (eval or gepa). Emits a Langfuse trace with a consistent
+ *   trace_id schema: `{promptId}:{fixture|"_"}:{iso-timestamp}`.
+ *   Consumer decides whether to await or fire-and-forget; this function
+ *   swallows errors after a stderr log (matches recordItem behaviour).
+ *
  * Auth: HTTP Basic with LANGFUSE_PUBLIC_KEY:LANGFUSE_SECRET_KEY
  * Host: LANGFUSE_HOST env (default https://cloud.langfuse.com)
  * Graceful skip: if either key absent, logs one stderr warning, all functions return null/void.
@@ -127,5 +135,120 @@ export async function recordItem(item: LangfuseItemPayload): Promise<void> {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     process.stderr.write(`langfuse: recordItem failed for "${item.testName}": ${msg}\n`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SLICE-114 (FEAT-186 S5) — single-trace emission per LLMJudge.evaluate() call
+// ---------------------------------------------------------------------------
+
+/**
+ * Payload for one `LLMJudge.evaluate()` trace.
+ *
+ * `pipeline` identifies which pipeline triggered the evaluate call
+ * (e.g. "eval" for the dev-team evals pipeline, "gepa" for the GEPA runner).
+ * Both pipelines feed the same `JudgeCost`-compatible shape.
+ */
+export interface LangfuseTracePayload {
+  /** Logical pipeline: "eval" | "gepa" | any custom string. */
+  pipeline: string;
+  /** Judge provider + model from `LLMJudge.describe()`. */
+  provider: string;
+  model: string;
+  /** Langfuse provenance forwarded from `evaluate()` opts.context. */
+  context?: {
+    fixture?: string;
+    promptId?: string;
+    version?: string;
+  };
+  /** pass/fail from evaluate() result. */
+  pass: boolean;
+  /** 0..1 weighted score from evaluate() result. */
+  score: number;
+  /** Wall-clock latency from evaluate() result. */
+  latency_ms: number;
+  /** USD cost from evaluate() result. */
+  cost_usd: number;
+  /** Optional token counts from evaluate() result. */
+  tokens?: { in: number; out: number };
+}
+
+/**
+ * Derive a consistent trace ID from provenance fields.
+ *
+ * Schema: `{promptId}:{fixture|"_"}:{iso-timestamp}`
+ *
+ * Using promptId + fixture makes traces linkable to their eval source.
+ * The timestamp prevents ID collision when the same spec runs twice in rapid
+ * succession. All three segments are safe for HTTP headers / URL paths.
+ *
+ * Exported for tests that assert the schema.
+ */
+export function deriveTraceId(
+  promptId: string | undefined,
+  fixture: string | undefined,
+  timestamp: string
+): string {
+  const safePid = (promptId ?? "unknown").replace(/[^a-zA-Z0-9_-]/g, "_");
+  const safeFix = (fixture ?? "_").replace(/[^a-zA-Z0-9_.-]/g, "_");
+  return `${safePid}:${safeFix}:${timestamp}`;
+}
+
+/**
+ * Emit one Langfuse trace per `LLMJudge.evaluate()` call.
+ *
+ * One trace = one evaluate call, regardless of which pipeline triggered it.
+ * The trace captures cost, latency, pass/fail, and provenance so Langfuse
+ * dashboards can aggregate across both pipelines with a uniform shape.
+ *
+ * Graceful skip: if keys absent or disabled, returns null without logging
+ * again (the first absent-key warning comes from `getAuth`). Errors after
+ * auth are swallowed with a stderr log — never throws, never calls
+ * `process.exit`.
+ *
+ * @returns The emitted trace ID, or null when skipped.
+ */
+export async function recordTrace(payload: LangfuseTracePayload): Promise<string | null> {
+  if (isDisabled()) return null;
+  const auth = getAuth();
+  if (!auth) return null;
+
+  const timestamp = new Date().toISOString();
+  const traceId = deriveTraceId(payload.context?.promptId, payload.context?.fixture, timestamp);
+
+  const body: Record<string, unknown> = {
+    id: traceId,
+    name: `judge-evaluate`,
+    timestamp,
+    input: {
+      pipeline: payload.pipeline,
+      promptId: payload.context?.promptId,
+      fixture: payload.context?.fixture,
+      version: payload.context?.version
+    },
+    output: {
+      pass: payload.pass,
+      score: payload.score
+    },
+    metadata: {
+      pipeline: payload.pipeline,
+      provider: payload.provider,
+      model: payload.model,
+      latency_ms: payload.latency_ms,
+      cost_usd: payload.cost_usd
+    }
+  };
+
+  if (payload.tokens !== undefined) {
+    (body["metadata"] as Record<string, unknown>)["tokens"] = payload.tokens;
+  }
+
+  try {
+    await post(getHost(), auth.publicKey, auth.secretKey, "/api/public/traces", body);
+    return traceId;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`langfuse: recordTrace failed (pipeline=${payload.pipeline}): ${msg}\n`);
+    return null;
   }
 }
