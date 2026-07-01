@@ -49,9 +49,7 @@ test(`hook cold start (${RUNTIME}): median + p95 over ${RUNS} cold spawns`, {
       // ceilings, but the GitHub Actions Windows runner adds shared-VM overhead
       // (observed p95 ~700ms 2026-07-01). Linux/CI is the gating environment
       // for the tight spec target — Windows uses runner-tolerant thresholds.
-      console.log(
-        "(Windows: p50 target <=250ms, p95 <=900ms; Linux/CI asserts <=60ms / <=120ms)"
-      );
+      console.log("(Windows: p50 target <=250ms, p95 <=900ms; Linux/CI asserts <=60ms / <=120ms)");
       assert.ok(p50 <= 250, `Windows p50 ${p50.toFixed(1)}ms should be <= 250ms`);
       assert.ok(p95 <= 900, `Windows p95 ${p95.toFixed(1)}ms should be <= 900ms`);
     } else {
