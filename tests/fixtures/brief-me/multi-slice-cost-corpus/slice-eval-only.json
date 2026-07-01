@@ -1,0 +1,39 @@
+{
+  "promptId": "crew-inspector",
+  "judgeId": "groq:llama-3.3-70b-versatile",
+  "tests": [
+    {
+      "name": "clean-rename-happy-path",
+      "pass": true,
+      "asserts": [],
+      "judgeCost": {
+        "usd": 0.0012,
+        "latency_ms": 412,
+        "tokens": { "in": 1400, "out": 88 },
+        "cache": { "hit": true, "tokens_saved": 1200 }
+      }
+    },
+    {
+      "name": "builder-no-test-coverage",
+      "pass": false,
+      "asserts": [],
+      "judgeCost": {
+        "usd": 0.0009,
+        "latency_ms": 389,
+        "tokens": { "in": 1350, "out": 72 },
+        "cache": { "hit": true, "tokens_saved": 1100 }
+      }
+    },
+    {
+      "name": "review-needs-fix-verdict",
+      "pass": true,
+      "asserts": [],
+      "judgeCost": {
+        "usd": 0.0011,
+        "latency_ms": 401,
+        "tokens": { "in": 1380, "out": 81 },
+        "cache": { "hit": false }
+      }
+    }
+  ]
+}
