@@ -1,0 +1,8 @@
+[
+  {
+    "pipeline": "gepa",
+    "provider": "anthropic",
+    "usd": 1.928,
+    "latency_ms": 554179
+  }
+]

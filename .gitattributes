@@ -3,6 +3,10 @@
 # across platforms.
 * text=auto eol=lf
 
+# Snapshot fixtures — hard LF pin prevents CRLF drift on Windows contributor
+# clones from silently flipping snapshot output (see gepa-core LF-pin session).
+tests/fixtures/cost-reports/** text=lf
+
 # Windows-only files keep CRLF.
 *.cmd  text eol=crlf
 *.bat  text eol=crlf

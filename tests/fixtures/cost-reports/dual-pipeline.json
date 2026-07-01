@@ -1,0 +1,18 @@
+[
+  {
+    "pipeline": "eval",
+    "provider": "anthropic",
+    "usd": 0.0312,
+    "latency_ms": 843,
+    "tokens": { "in": 1024, "out": 256 },
+    "cache": { "hit": true, "tokens_saved": 980 }
+  },
+  {
+    "pipeline": "gepa",
+    "provider": "groq",
+    "usd": 0.0007,
+    "latency_ms": 312,
+    "tokens": { "in": 512, "out": 128 },
+    "cache": { "hit": false }
+  }
+]

@@ -1,0 +1,8 @@
+[
+  {
+    "pipeline": "eval",
+    "provider": "anthropic",
+    "usd": 3.0367,
+    "latency_ms": 559106
+  }
+]

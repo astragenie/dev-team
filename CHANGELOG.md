@@ -5,6 +5,25 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+### Minor — FEAT-186 SLICE-112: unified per-slice cost-report renderer (2026-07-01)
+
+- **`scripts/lib/cost/cost-report-renderer.ts`** — new `renderCostReport(entries: CostEntry[])`
+  function. Produces a markdown table with one row per `(pipeline, provider)` tuple and a
+  totals row at the bottom. `CostEntry` extends `JudgeCost` (from `@astragenie/gepa-core ^0.5.0`)
+  with `pipeline` and `provider` fields. `tokens` and `cache` columns are optional; totals show
+  `-` if any entry omits them (backward-compat for pre-186 single-pipeline shapes). Extracts row
+  and totals building into named helpers to keep cognitive-complexity under the Biome 15 threshold.
+- **`scripts/lib/cost/cost-report-renderer.test.ts`** — 26 snapshot + assertion tests covering
+  dual-pipeline, single-row degenerate, and legacy pre-186 fixtures. AC-4 LF assertion fires on
+  fixture load to catch CRLF drift before it silently flips snapshots.
+- **`tests/fixtures/cost-reports/`** — three fixture files: `dual-pipeline.json` (synthetic
+  dual-pipeline), `legacy-eval-only.json` (real values from FEAT100 SLICE16 artifact —
+  `usd: 3.0367, latency_ms: 559106`), `legacy-gepa-only.json` (real values from FEAT037 SLICE17
+  artifact — `usd: 1.928, latency_ms: 554179`). Both legacy fixtures omit `tokens` and `cache`
+  to exercise the pre-186 degenerate path.
+- **`.gitattributes`** — `tests/fixtures/cost-reports/** text=lf` entry pins fixture line endings
+  to LF on Windows contributor clones (AC-4; mirrors gepa-core LF-pin from 2026-06-29).
+
 ### Dependency — gepa-core 0.5.0 consumption (2026-07-01)
 
 - **`package.json`** — bumps `@astragenie/gepa-core` dep from `^0.3.0` to `^0.5.0`.
