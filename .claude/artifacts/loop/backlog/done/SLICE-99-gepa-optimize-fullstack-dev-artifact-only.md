@@ -1,7 +1,7 @@
 ---
 id: SLICE-99
 parent: FEAT-183
-status: triaged
+status: done
 priority: P1
 created: 2026-06-27
 title: "FEAT-183 S4 — /crew:gepa-optimize fullstack-dev --artifact-only + CandidateGenerator wraps aiplugin-dev + budget cap + Pareto math + 3-cycle no-winner halt — CHECKPOINT 1"
