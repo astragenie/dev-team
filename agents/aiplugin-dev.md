@@ -40,7 +40,7 @@ aiplugin-specific Astra additions: multi-plugin namespace + identity discipline 
 
 ## HARD OUTPUT CONTRACT (read first, every dispatch)
 
-Ported from the FEAT-161 builder contract after production telemetry
+Ported from the crew builder hard-output contract (see skills/workflow/builder-ceremony/) after production telemetry
 (2026-07-02: 10 of 12 aiplugin-dev dispatches paused mid-run; agents
 carrying this block: zero). Your deliverable is COMMITS on the branch.
 
