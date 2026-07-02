@@ -28,6 +28,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runAutoPr, printManualCommands, GhAuthError, type AutoPrResult } from "./auto-pr.ts";
 import { GhAbsentError } from "./branch-protection-check.ts";
+import { evaluateAutoMergeGate, type AutoMergePolicy } from "./auto-merge-gate.ts";
 import {
   dailyCapMeter,
   fileLockManager,
@@ -149,6 +150,30 @@ export interface RunOptimizeOpts {
    * Optional repo override (owner/name) for the branch-protection check.
    */
   repo?: string;
+  /**
+   * Optional auto-merge policy. When provided (and artifactOnly=false),
+   * `evaluateAutoMergeGate` is called after a successful auto-PR to decide
+   * whether to invoke `gh pr merge --auto --squash`.
+   *
+   * When omitted, the auto-merge gate is skipped (PR stays as draft).
+   */
+  autoMergePolicy?: AutoMergePolicy;
+  /**
+   * Whether the soak phase has passed for the winning candidate.
+   * Passed to `evaluateAutoMergeGate` as the `soakPassed` condition.
+   * Defaults to false (soak not yet complete — no auto-merge).
+   */
+  soakPassed?: boolean;
+  /**
+   * Whether branch protection is enforced on `main`.
+   * Passed to `evaluateAutoMergeGate`. Defaults to false.
+   */
+  branchProtectionPresent?: boolean;
+  /**
+   * Champion metrics for the min_pass_delta gate.
+   * Defaults to { held_out_pass: 0 } (conservative).
+   */
+  championHeldOutPass?: number;
 }
 
 // ── Default paths ───────────────────────────────────────────────────────────
@@ -248,19 +273,50 @@ function writeArtifact(repoPath: string, runId: string, result: OptimizationResu
   return artifactPath;
 }
 
+function maybeRunAutoMergeGate(
+  opts: RunOptimizeOpts,
+  result: OptimizationResult,
+  prUrl: string
+): void {
+  if (!opts.autoMergePolicy) return;
+  evaluateAutoMergeGate({
+    repoPath: opts.repoPath,
+    agent: opts.agent,
+    result,
+    soakPassed: opts.soakPassed ?? false,
+    branchProtectionPresent: opts.branchProtectionPresent ?? false,
+    policy: opts.autoMergePolicy,
+    prUrl,
+    championMetrics: { held_out_pass: opts.championHeldOutPass ?? 0 },
+    ...(opts.ghPath !== undefined ? { ghPath: opts.ghPath } : {})
+  });
+}
+
+function runAutoPrAndGate(
+  opts: RunOptimizeOpts,
+  result: OptimizationResult,
+  artifactPath: string
+): void {
+  const prResult = runAutoPr({
+    repoPath: opts.repoPath,
+    agent: opts.agent,
+    result,
+    ...(opts.ghPath !== undefined ? { ghPath: opts.ghPath } : {}),
+    ...(opts.gitPath !== undefined ? { gitPath: opts.gitPath } : {}),
+    ...(opts.repo !== undefined ? { repo: opts.repo } : {})
+  });
+  result.auto_pr = prResult;
+  if (prResult.no_op_promotion) result.no_op_promotion = true;
+  writeFileSync(artifactPath, JSON.stringify(result, null, 2), "utf8");
+  // Auto-merge gate: called AFTER auto-pr creates the PR.
+  if (prResult.pr_opened && prResult.pr_url) {
+    maybeRunAutoMergeGate(opts, result, prResult.pr_url);
+  }
+}
+
 function tryAutoPr(opts: RunOptimizeOpts, result: OptimizationResult, artifactPath: string): void {
   try {
-    const prResult = runAutoPr({
-      repoPath: opts.repoPath,
-      agent: opts.agent,
-      result,
-      ...(opts.ghPath !== undefined ? { ghPath: opts.ghPath } : {}),
-      ...(opts.gitPath !== undefined ? { gitPath: opts.gitPath } : {}),
-      ...(opts.repo !== undefined ? { repo: opts.repo } : {})
-    });
-    result.auto_pr = prResult;
-    if (prResult.no_op_promotion) result.no_op_promotion = true;
-    writeFileSync(artifactPath, JSON.stringify(result, null, 2), "utf8");
+    runAutoPrAndGate(opts, result, artifactPath);
   } catch (err) {
     if (err instanceof GhAbsentError || err instanceof GhAuthError) {
       // gh absent or not authenticated — print manual commands, non-fatal to
