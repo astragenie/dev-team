@@ -319,7 +319,12 @@ export async function runOptimize(opts: RunOptimizeOpts): Promise<OptimizationRe
     const artifactPath = writeArtifact(repoPath, runId, result);
 
     const artifactOnly = opts.artifactOnly ?? true;
-    if (!artifactOnly && result.winner !== null && !result.partial) {
+    // Auto-PR guard MUST include !no_winner: determineWinner may return a
+    // non-null winner object AND noWinner=true when the top rank-1 candidate
+    // has pass=false (dominated on other axes but never actually passed the
+    // eval). Opening a promotion PR for a failing candidate would silently
+    // ship a regression. All three flags must clear before promotion.
+    if (!artifactOnly && result.winner !== null && !result.no_winner && !result.partial) {
       tryAutoPr(opts, result, artifactPath);
     }
 
