@@ -16,7 +16,23 @@
     "model": "llama3.2:latest",
     "endpoint": "http://localhost:11434"
   },
-  "judge_per_agent": {},
+  "judge_per_agent": {
+    "fullstack-dev": {
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "api_key_env": "GEMINI_API_KEY"
+    },
+    "inspector": {
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "api_key_env": "GEMINI_API_KEY"
+    },
+    "architect": {
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "api_key_env": "GEMINI_API_KEY"
+    }
+  },
   "budget": {
     "daily_usd": 50,
     "per_eval_default_usd": 2,

@@ -1,11 +1,18 @@
 // capture-tee.ts — wraps fileStore.put() with walltime race + fail-silent drop.
-// S2 scope: only fullstack-dev is captured. Other agents wait for S5c horizontalize.
+// S2 scope: fullstack-dev only. FEAT-210 adds frontend-dev as a second,
+// low-stakes capture canary (still ahead of the full S5c horizontalize in
+// SLICE-102, which brings backend-dev + frontend-dev + verifier together
+// with the astramemStore backend). frontend-dev capture here uses the
+// existing file-backed TrialStore (gepa.config.json storage.backend:
+// "file") — it does NOT require the astramem CLI. Remaining S5c scope
+// (backend-dev, verifier, astramemStore, sharedAstramemMeter) is
+// unaffected by this change.
 //
 // Behavior contract:
 //   1. loadGepaConfig → null → return (no-op)
 //   2. config.capture.enabled === false → return
 //   3. adaptArtifact(record, fields) → null (non-dispatch kind) → return
-//   4. artifact.agent NOT in S2_AGENT_ALLOWLIST → return
+//   4. artifact.agent NOT in CAPTURE_AGENT_ALLOWLIST → return
 //   5. config.capture.exclude includes agent → return
 //   6. compute candidate_prompt_hash from agents/<agent>.md (or "unknown")
 //   7. construct Trial + Promise.race([put, walltimeReject])
@@ -21,8 +28,9 @@ import { adaptArtifact } from "./adapt-artifact.ts";
 import type { ArtifactRecord } from "../artifacts/write.ts";
 import type { ArtifactFields } from "../artifacts/types.ts";
 
-// S2 scope: capture only fullstack-dev.
-const S2_AGENT_ALLOWLIST = new Set(["fullstack-dev"]);
+// FEAT-210: fullstack-dev (S2) + frontend-dev (canary, low-stakes second agent).
+// Remaining S5c agents (backend-dev, verifier) land with SLICE-102.
+const CAPTURE_AGENT_ALLOWLIST = new Set(["fullstack-dev", "frontend-dev"]);
 
 const EVENTS_LOG_PATH = ".claude/logs/events.jsonl";
 
@@ -74,8 +82,8 @@ export async function captureTee(
   const artifact = adaptArtifact(record, fields);
   if (!artifact) return;
 
-  // 4. S2 scope: only fullstack-dev.
-  if (!S2_AGENT_ALLOWLIST.has(artifact.agent)) return;
+  // 4. Capture allowlist (FEAT-210: fullstack-dev + frontend-dev canary).
+  if (!CAPTURE_AGENT_ALLOWLIST.has(artifact.agent)) return;
 
   // 5. Per-agent exclude list.
   if (config.capture.exclude.includes(artifact.agent)) return;
