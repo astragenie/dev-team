@@ -66,6 +66,7 @@ const FLAG_SPEC = {
   "--next": { key: "next" },
   "--note": { key: "note" },
   "--out-of-scope": { key: "outOfScope" },
+  "--out": { key: "out" },
   "--owner": { key: "owner" },
   "--pace": { key: "pace" },
   "--phase": { key: "phase" },
@@ -107,6 +108,7 @@ const FLAG_SPEC = {
   "--validator": { key: "validator" },
   "--verdict": { key: "decision" }, // alias of --decision
   "--verified-from": { key: "verifiedFrom" },
+  "--weeks": { key: "weeks" },
   "--window": { key: "window" },
   "--role": { key: "role" },
   "--surface": { key: "surface" },
@@ -219,7 +221,9 @@ function buildDefaultFlags(): Flags {
     live: false,
     validate: false,
     judge: null,
-    split: null
+    split: null,
+    out: null,
+    weeks: null
   };
 }
 
@@ -342,7 +346,9 @@ function usage(target: string | null = null) {
     "gepa-history":
       "  node scripts/crew.ts gepa-history <agent> [--source eval|captured|soak] [--limit N] [--repo <path>]",
     "gepa-eval":
-      "  node scripts/crew.ts gepa-eval <agent> [--live] [--judge <name>] [--validate] [--split N/M] [--repo <path>]"
+      "  node scripts/crew.ts gepa-eval <agent> [--live] [--judge <name>] [--validate] [--split N/M] [--repo <path>]",
+    "gepa-mine-inspector":
+      "  node scripts/crew.ts gepa-mine-inspector [--weeks N] [--out <dir>] [--repo <path>]"
   };
 
   const subcommandsMap = subcommands as Record<string, string | undefined>;
@@ -1177,6 +1183,19 @@ const COMMANDS = {
     if (typeof flags.judge === "string" && flags.judge) rawArgs.push("--judge", flags.judge);
     if (typeof flags.split === "string" && flags.split) rawArgs.push("--split", flags.split);
     const result = await runGepaEvalCmd(repoPath, rawArgs);
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+    if (result.exitCode !== 0) process.exit(result.exitCode);
+    return result.stdout.trim();
+  },
+
+  "gepa-mine-inspector": async ({ repoPath, flags, positionals }: CommandContext) => {
+    const { runMineInspectorBugCorpus } = await import("./lib/gepa/mine-inspector-bug-corpus.ts");
+    // Reconstruct raw-args for the mining module's own parser.
+    const rawArgs: string[] = [...positionals];
+    if (typeof flags.weeks === "string" && flags.weeks) rawArgs.push("--weeks", flags.weeks);
+    if (typeof flags.out === "string" && flags.out) rawArgs.push("--out", flags.out);
+    const result = await runMineInspectorBugCorpus(repoPath, rawArgs);
     if (result.stdout) process.stdout.write(result.stdout);
     if (result.stderr) process.stderr.write(result.stderr);
     if (result.exitCode !== 0) process.exit(result.exitCode);
