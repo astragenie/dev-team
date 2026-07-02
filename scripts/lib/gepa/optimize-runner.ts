@@ -34,6 +34,7 @@ import {
   type BudgetMeter,
   type CandidateGenerator,
   type Candidate,
+  type EvalCase,
   type Trial
 } from "@astragenie/gepa-core";
 import type { Scorer } from "@astragenie/gepa-core";
@@ -112,6 +113,13 @@ export interface RunOptimizeOpts {
    * Optional lock root override (for tests).
    */
   lockRoot?: string;
+  /**
+   * Optional eval cases to score candidates against.
+   * When omitted (artifact-only mode), no LLM scoring runs and `partial` stays
+   * false. When provided, `partial: true` is set if the run halted before
+   * completing candidates.length * cases.length trials (budget or signal).
+   */
+  cases?: EvalCase[];
 }
 
 // ── Default paths ───────────────────────────────────────────────────────────
@@ -191,19 +199,21 @@ export async function runOptimize(opts: RunOptimizeOpts): Promise<OptimizationRe
     const runner = sequentialRunner();
     // In artifact-only mode we pass an empty cases array — no LLM scoring.
     // The sequentialRunner will still validate candidate sizes internally.
+    const cases = opts.cases ?? [];
     let trials: Trial[] = [];
     let partial = false;
 
     if (candidates.length > 0) {
       // Use AbortController to detect if budget halted the run.
       const controller = new AbortController();
-      trials = await runner.runCandidates(candidates, [], scorer, {
+      trials = await runner.runCandidates(candidates, cases, scorer, {
         meter,
         signal: controller.signal
       });
-      // If fewer trials than candidates * cases were produced, the run was
-      // halted (by budget or signal).
-      partial = trials.length < candidates.length * 1; // 0 cases = 0 trials always
+      // partial = true ONLY when eval cases were requested but not all trials
+      // completed (budget cap or signal halt). Empty-cases artifact-only mode
+      // is NOT partial — the run reached its intended zero-scoring end state.
+      partial = cases.length > 0 && trials.length < candidates.length * cases.length;
     }
 
     // 3. Pareto rank.

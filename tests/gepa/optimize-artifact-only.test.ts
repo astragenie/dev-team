@@ -129,6 +129,11 @@ describe("SLICE-99 AC-1 — optimize cycle writes candidates + artifact", () => 
       artifact.no_winner === true ||
       (artifact.winner !== null && artifact.winner.pareto_rank === 1);
     expect(hasValidOutcome).toBe(true);
+    // partial MUST be false in artifact-only mode — no eval cases were requested,
+    // so reaching the zero-scoring end state is a successful full run, not a
+    // partial one. Regression guard for the CHECKPOINT-1 → CHECKPOINT-2 transition
+    // where a wrong `partial` formula silently suppressed winner promotion.
+    expect(artifact.partial).toBe(false);
   });
 });
 
