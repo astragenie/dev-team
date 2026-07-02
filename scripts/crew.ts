@@ -361,7 +361,10 @@ function usage(target: string | null = null) {
       "  node scripts/crew.ts gepa-mine-inspector [--weeks N] [--out <dir>] [--repo <path>]",
     "gepa-optimize":
       "  node scripts/crew.ts gepa-optimize <agent> --budget <usd> [--k <int>] [--artifact-only] [--repo <path>]",
-    "gepa-resume": "  node scripts/crew.ts gepa-resume [<agent>] [--repo <path>]",
+    "gepa-resume":
+      "  node scripts/crew.ts gepa-resume [<agent>] [--repo <path>]\n" +
+      "    With <agent>: clears the no-winner streak counter for that agent.\n" +
+      "    Without <agent>: clears the global optimize.paused flag in gepa.config.json.",
     "gepa-invalidate":
       "  node scripts/crew.ts gepa-invalidate --agent <name> [--since <iso>] [--tag <tag>] [--repo <path>]",
     "gepa-revert": "  node scripts/crew.ts gepa-revert --agent <name> [--repo <path>]",
