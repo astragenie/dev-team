@@ -17,6 +17,7 @@ const FLAG_SPEC = {
   // Boolean flags (no value).
   "--aggregate-all": { key: "aggregateAll", boolean: true },
   "--allow-existing": { key: "allowExisting", boolean: true },
+  "--artifact-only": { key: "artifactOnly", boolean: true },
   "--force": { key: "force", boolean: true },
   "--help": { key: "help", boolean: true },
   "-h": { key: "help", boolean: true },
@@ -29,6 +30,7 @@ const FLAG_SPEC = {
   // Value-consuming flags.
   "--agent": { key: "agent" },
   "--alerts": { key: "alerts" },
+  "--budget": { key: "budget" },
   "--approver": { key: "approver" },
   "--badge": { key: "badge" },
   "--blocked-by": { key: "blockedBy" },
@@ -58,6 +60,7 @@ const FLAG_SPEC = {
   "--goal": { key: "goal" },
   "--handoff": { key: "handoff" },
   "--id": { key: "id" },
+  "--k": { key: "gepaK" },
   "--kind": { key: "kind" },
   "--logs": { key: "logs" },
   "--metrics": { key: "metrics" },
@@ -223,7 +226,10 @@ function buildDefaultFlags(): Flags {
     judge: null,
     split: null,
     out: null,
-    weeks: null
+    weeks: null,
+    artifactOnly: false,
+    budget: null,
+    gepaK: null
   };
 }
 
@@ -348,7 +354,10 @@ function usage(target: string | null = null) {
     "gepa-eval":
       "  node scripts/crew.ts gepa-eval <agent> [--live] [--judge <name>] [--validate] [--split N/M] [--repo <path>]",
     "gepa-mine-inspector":
-      "  node scripts/crew.ts gepa-mine-inspector [--weeks N] [--out <dir>] [--repo <path>]"
+      "  node scripts/crew.ts gepa-mine-inspector [--weeks N] [--out <dir>] [--repo <path>]",
+    "gepa-optimize":
+      "  node scripts/crew.ts gepa-optimize <agent> --budget <usd> [--k <int>] [--artifact-only] [--repo <path>]",
+    "gepa-resume": "  node scripts/crew.ts gepa-resume <agent> [--repo <path>]"
   };
 
   const subcommandsMap = subcommands as Record<string, string | undefined>;
@@ -1196,6 +1205,28 @@ const COMMANDS = {
     if (typeof flags.weeks === "string" && flags.weeks) rawArgs.push("--weeks", flags.weeks);
     if (typeof flags.out === "string" && flags.out) rawArgs.push("--out", flags.out);
     const result = await runMineInspectorBugCorpus(repoPath, rawArgs);
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+    if (result.exitCode !== 0) process.exit(result.exitCode);
+    return result.stdout.trim();
+  },
+
+  "gepa-optimize": async ({ repoPath, flags, positionals }: CommandContext) => {
+    const { runGepaOptimizeCmd } = await import("./lib/gepa/gepa-optimize-cmd.ts");
+    const rawArgs: string[] = [...positionals];
+    if (typeof flags.budget === "string" && flags.budget) rawArgs.push("--budget", flags.budget);
+    if (typeof flags.gepaK === "string" && flags.gepaK) rawArgs.push("--k", flags.gepaK);
+    if (flags.artifactOnly === true) rawArgs.push("--artifact-only");
+    const result = await runGepaOptimizeCmd(repoPath, rawArgs);
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+    if (result.exitCode !== 0) process.exit(result.exitCode);
+    return result.stdout.trim();
+  },
+
+  "gepa-resume": async ({ repoPath, positionals }: CommandContext) => {
+    const { runGepaResumeCmd } = await import("./lib/gepa/gepa-optimize-cmd.ts");
+    const result = await runGepaResumeCmd(repoPath, positionals);
     if (result.stdout) process.stdout.write(result.stdout);
     if (result.stderr) process.stderr.write(result.stderr);
     if (result.exitCode !== 0) process.exit(result.exitCode);
