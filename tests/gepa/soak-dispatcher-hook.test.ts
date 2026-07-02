@@ -3,18 +3,15 @@
  *
  * Unit tests for evaluateSoakHook() — I/O boundary paths.
  *
- * Coverage (all paths that don't require the soak verdict to be "passed"):
+ * Coverage:
  *   - no_soak: soak.json absent → falls back to main champion
  *   - no_soak: agent not in soak.json → falls back to main champion
  *   - no_soak: malformed soak.json → readSoakMap returns null → no_soak
  *   - soak_skip: random() >= soakPercent → use main champion (AC-10)
  *   - soak_use:  random() < soakPercent → use soak champion path (AC-10)
  *   - early_revert: 0.50 vs 0.80 pass rate → gepa_soak_revert_early (AC-4)
- *
- * Verdict "passed" (soak_promoted) and "reverted" (insufficient_traffic)
- * are pure algorithm paths fully covered by
- * gepa-core/tests/algorithms/soak-monitor.test.ts. The integration paths
- * in dev-team will be added after operator publishes gepa-core 0.6.0.
+ *   - soak_promoted: both clocks cleared → gepa_soak_promote_eligible + champion_path
+ *   - insufficient_traffic: maxSoakDays reached with <minSoakTrials → gepa_soak_insufficient_traffic
  *
  * Note: requires gepa-core 0.6.0 exports at runtime (evaluateSoak).
  * These tests will fail with ImportError until the operator publishes 0.6.0
@@ -250,6 +247,94 @@ describe("evaluateSoakHook — early-revert (AC-4)", () => {
       expect(result.status).toBe("early_revert");
       expect(result.events).toContain("gepa_soak_revert_early");
       expect(result.reason).toContain("early-revert");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+});
+
+// ── Soak-promoted path (both clocks cleared) ─────────────────────────────────
+
+describe("evaluateSoakHook — soak_promoted (verdict: passed)", () => {
+  // day 8 elapsed (>= soakDays=7), 25 trials (>= minSoakTrials=20),
+  // all passing → no early-revert. Both clocks cleared.
+  const STARTED = "2026-07-01T00:00:00.000Z";
+  const NOW = "2026-07-09T00:00:00.000Z"; // 8 days later
+
+  it("elapsed=8d, samples=25, all passing → soak_promoted + gepa_soak_promote_eligible", () => {
+    const repoRoot = makeTmpRepo();
+    try {
+      const trials = Array.from({ length: 25 }, () => ({
+        created_at: NOW,
+        pass: true,
+        score: 0.9,
+        source: "soak" as const
+      }));
+      writeSoakJson(repoRoot, {
+        "fullstack-dev": {
+          agent: "fullstack-dev",
+          started_at: STARTED,
+          champion_path: "/tmp/champion-prompt.md",
+          trials,
+          main_pass_rate: 0.85
+        }
+      });
+      const result = evaluateSoakHook({
+        repoRoot,
+        agent: "fullstack-dev",
+        policy: BASE_POLICY,
+        nowIso: NOW,
+        // Random value irrelevant when verdict is terminal (passed) — the
+        // routing branch is only taken for verdict.status === "running".
+        randomValue: 0.99
+      });
+      expect(result.status).toBe("soak_promoted");
+      expect(result.events).toContain("gepa_soak_promote_eligible");
+      expect(result.champion_path).toBe("/tmp/champion-prompt.md");
+      expect(result.reason).toContain("soak_promote_eligible");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+});
+
+// ── Insufficient-traffic path (verdict: reverted) ────────────────────────────
+
+describe("evaluateSoakHook — insufficient_traffic (verdict: reverted)", () => {
+  // day 22 elapsed (>= maxSoakDays=21), only 5 trials (< minSoakTrials=20).
+  const STARTED = "2026-07-01T00:00:00.000Z";
+  const NOW = "2026-07-23T00:00:00.000Z"; // 22 days later
+
+  it("elapsed=22d (past maxSoakDays), samples=5 (below floor) → insufficient_traffic + event", () => {
+    const repoRoot = makeTmpRepo();
+    try {
+      const trials = Array.from({ length: 5 }, () => ({
+        created_at: NOW,
+        pass: true,
+        score: 0.9,
+        source: "soak" as const
+      }));
+      writeSoakJson(repoRoot, {
+        "fullstack-dev": {
+          agent: "fullstack-dev",
+          started_at: STARTED,
+          champion_path: "/tmp/champion-prompt.md",
+          trials,
+          main_pass_rate: 0.85
+        }
+      });
+      const result = evaluateSoakHook({
+        repoRoot,
+        agent: "fullstack-dev",
+        policy: BASE_POLICY,
+        nowIso: NOW,
+        randomValue: 0.05
+      });
+      expect(result.status).toBe("insufficient_traffic");
+      expect(result.events).toContain("gepa_soak_insufficient_traffic");
+      expect(result.reason).toContain("gepa_soak_insufficient_traffic");
+      // Terminal verdict overrides the random-routing branch — no champion_path.
+      expect(result.champion_path).toBeUndefined();
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
     }
