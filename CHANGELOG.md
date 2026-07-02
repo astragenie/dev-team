@@ -5,6 +5,34 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+### Minor — FEAT-183 SLICE-103: inspector bug-corpus mining + 10-case eval set + rubricScorer anti-circularity (2026-07-01)
+
+- **`scripts/lib/gepa/mine-inspector-bug-corpus.ts`** — CLI helper that walks
+  `.claude/artifacts/crew/reviews/` for rejected review artifacts with CRITICAL/HIGH findings,
+  extracts bug seeds, and emits candidate EvalCase JSONL stubs. All extracted strings pass through
+  `redactRationale()` from gepa-core before write. CLI: `node scripts/crew.ts gepa-mine-inspector
+  [--weeks N] [--out <dir>]`. AC-5: `--weeks 0` → exit 0, no files, helpful operator message.
+- **`scripts/crew.ts`** — `gepa-mine-inspector` subcommand wired. `--weeks` and `--out` flags
+  added to `FLAG_SPEC` and `buildDefaultFlags`.
+- **`agents/inspector/.gepa/eval/bug-001.jsonl` through `bug-010.jsonl`** — 10 hand-curated
+  inspector eval cases spanning 10 distinct bug classes: logic-error (×2), integration-failure,
+  data-corruption (×2), timeout, resource-exhaustion, security, clean-rename (negative case), and
+  one with a held-out split. 4 cases mined from real review artifacts; 6 hand-seeded. 2 are
+  `held_out: true` (bug-006, bug-009).
+- **`agents/inspector/.gepa/rubric.md`** — 6-criterion rubric for inspector eval loaded by
+  gepa-core `loadRubric`. Criteria: `verdict-accuracy`, `evidence-citation-correctness`,
+  `risk-class-named`, `rationale-actionability`, `escalation-appropriateness`,
+  `false-positive-rate`. Each criterion has concrete 0–3 anchors judgeable by any LLM.
+- **`tests/gepa/mine-inspector-bug-corpus.test.ts`** — CLI contract tests: arg parsing, AC-5
+  (--weeks 0), approved-review skip, rejected-CRITICAL seed generation, EvalCaseSchema
+  compliance, corpus held-out count, and bug-class coverage assertions.
+- **`tests/gepa/eval-inspector-no-circularity.test.ts`** — AC-4 anti-circularity assertions:
+  `rubricScorer` from gepa-core, judge id != `crew:inspector`, eval spec provider check, no
+  `scorer_circular` in spec, rubric criteria completeness, `loadRubric` smoke.
+- **`docs/superpowers/specs/2026-06-27-gepa-inspector-bug-mining-notes.md`** — design notes on
+  bug-class taxonomy, corpus provenance table, mining heuristics, rubric structure, baseline
+  run-id placeholder, and scorer-circularity rationale.
+
 ### Minor — FEAT-186 SLICE-114: cost asymmetry heuristic + Langfuse single-trace emission (2026-07-01)
 
 - **`scripts/lib/cost/asymmetry-detector.ts`** — new `detectAsymmetry(entries: CostEntry[]): AsymmetryFinding[]`.
