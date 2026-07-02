@@ -1,7 +1,7 @@
 ---
 id: SLICE-105
 parent: FEAT-183
-status: triaged
+status: done
 priority: P1
 created: 2026-06-27
 title: "FEAT-183 S8a — auto-PR via gh CLI on gepa/<agent>/<trial-id> branch + branch-protection presence check + champion provenance frontmatter writer"

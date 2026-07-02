@@ -117,7 +117,9 @@ const FLAG_SPEC = {
   "--surface": { key: "surface" },
   "--stack": { key: "stack" },
   "--concern": { key: "concern" },
-  "--lens": { key: "lens" }
+  "--lens": { key: "lens" },
+  "--since": { key: "since" },
+  "--tag": { key: "tag" }
 } as const;
 
 type FlagSpecValues = (typeof FLAG_SPEC)[keyof typeof FLAG_SPEC];
@@ -229,7 +231,9 @@ function buildDefaultFlags(): Flags {
     weeks: null,
     artifactOnly: false,
     budget: null,
-    gepaK: null
+    gepaK: null,
+    since: null,
+    tag: null
   };
 }
 
@@ -357,7 +361,11 @@ function usage(target: string | null = null) {
       "  node scripts/crew.ts gepa-mine-inspector [--weeks N] [--out <dir>] [--repo <path>]",
     "gepa-optimize":
       "  node scripts/crew.ts gepa-optimize <agent> --budget <usd> [--k <int>] [--artifact-only] [--repo <path>]",
-    "gepa-resume": "  node scripts/crew.ts gepa-resume <agent> [--repo <path>]"
+    "gepa-resume": "  node scripts/crew.ts gepa-resume [<agent>] [--repo <path>]",
+    "gepa-invalidate":
+      "  node scripts/crew.ts gepa-invalidate --agent <name> [--since <iso>] [--tag <tag>] [--repo <path>]",
+    "gepa-revert": "  node scripts/crew.ts gepa-revert --agent <name> [--repo <path>]",
+    "gepa-thaw": "  node scripts/crew.ts gepa-thaw <agent> [--repo <path>]"
   };
 
   const subcommandsMap = subcommands as Record<string, string | undefined>;
@@ -1225,8 +1233,41 @@ const COMMANDS = {
   },
 
   "gepa-resume": async ({ repoPath, positionals }: CommandContext) => {
-    const { runGepaResumeCmd } = await import("./lib/gepa/gepa-optimize-cmd.ts");
-    const result = await runGepaResumeCmd(repoPath, positionals);
+    const { runGepaResumeCmdExtended } = await import("./lib/gepa/gepa-killswitch-cmds.ts");
+    const result = await runGepaResumeCmdExtended(repoPath, positionals);
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+    if (result.exitCode !== 0) process.exit(result.exitCode);
+    return result.stdout.trim();
+  },
+
+  "gepa-invalidate": async ({ repoPath, flags, positionals }: CommandContext) => {
+    const { runGepaInvalidateCmd } = await import("./lib/gepa/gepa-killswitch-cmds.ts");
+    const rawArgs: string[] = [...positionals];
+    if (typeof flags.agent === "string" && flags.agent) rawArgs.push("--agent", flags.agent);
+    if (typeof flags.since === "string" && flags.since) rawArgs.push("--since", flags.since);
+    if (typeof flags.tag === "string" && flags.tag) rawArgs.push("--tag", flags.tag);
+    const result = await runGepaInvalidateCmd(repoPath, rawArgs);
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+    if (result.exitCode !== 0) process.exit(result.exitCode);
+    return result.stdout.trim();
+  },
+
+  "gepa-revert": async ({ repoPath, flags, positionals }: CommandContext) => {
+    const { runGepaRevertCmd } = await import("./lib/gepa/gepa-killswitch-cmds.ts");
+    const rawArgs: string[] = [...positionals];
+    if (typeof flags.agent === "string" && flags.agent) rawArgs.push("--agent", flags.agent);
+    const result = await runGepaRevertCmd(repoPath, rawArgs);
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+    if (result.exitCode !== 0) process.exit(result.exitCode);
+    return result.stdout.trim();
+  },
+
+  "gepa-thaw": async ({ repoPath, positionals }: CommandContext) => {
+    const { runGepaThawCmd } = await import("./lib/gepa/gepa-killswitch-cmds.ts");
+    const result = await runGepaThawCmd(repoPath, positionals);
     if (result.stdout) process.stdout.write(result.stdout);
     if (result.stderr) process.stderr.write(result.stderr);
     if (result.exitCode !== 0) process.exit(result.exitCode);
