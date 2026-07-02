@@ -1,7 +1,7 @@
 ---
 id: SLICE-103
 parent: FEAT-183
-status: triaged
+status: done
 priority: P1
 created: 2026-06-27
 title: "FEAT-183 S6 — inspector bug-corpus mining + 10-case eval set + inspector eval run using rubricScorer (breaks scorer-circularity)"

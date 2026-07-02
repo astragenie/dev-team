@@ -1,7 +1,7 @@
 ---
 id: SLICE-104
 parent: FEAT-183
-status: triaged
+status: done
 priority: P1
 created: 2026-06-27
 title: "FEAT-183 S7 — architect hand-labeled cases + soak monitor (dual clock + sample floor + early-revert) + PromotionPolicy defaults + champion_frozen — CHECKPOINT 2"
