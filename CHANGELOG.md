@@ -5,6 +5,45 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+### Minor — FEAT-183 SLICE-104: architect eval dataset + soak dispatcher hook (2026-07-01)
+
+**Dependency note:** `scripts/lib/gepa/soak-dispatcher-hook.ts` imports
+`evaluateSoak` + `SoakState`/`SoakPolicy`/`SoakTrial` from
+`@astragenie/gepa-core`. These exports land in gepa-core 0.6.0 on branch
+`feat/soak-monitor-promotion-gate` (commit `db2c9f3`). The `package.json`
+`overrides` block pins `@astragenie/gepa-core` to that branch SHA until
+the operator publishes 0.6.0 and removes the override. The PR for this slice
+**must not merge** until gepa-core 0.6.0 is published and the override is
+removed.
+
+- **`agents/architect/.gepa/eval/seed-{001..008}.jsonl`** — 8 hand-labeled
+  EvalCase records for the architect agent covering: greenfield_design (001),
+  cross_plugin_refactor (002), spec_to_plan (003), risk_premortem (004),
+  tradeoff_matrix (005), adr_draft (006, held_out), open_question_surfacing
+  (007, held_out), and spike_scope_decision (008). Seeds 006 and 007 are
+  `held_out: true`. Provenance: seeds 001–005 mined from real ADRs and
+  reviews; seeds 006–008 hand-seeded from ADR-001, FEAT-185 Options
+  Considered, and SLICE-104 CHECKPOINT-2 design respectively.
+- **`agents/architect/.gepa/rubric.md`** — LLM-neutral scoring rubric with
+  6 criteria: `non_goals_explicit`, `failure_modes_named`, `dependencies_graphed`,
+  `interfaces_typed`, `test_strategy_present`, `tradeoffs_articulated`. Each
+  criterion scored 0–3 with concrete per-level anchors; pass threshold
+  normalized >= 0.60. Any scoring model can apply this rubric without
+  Claude-specific knowledge.
+- **`scripts/lib/gepa/soak-dispatcher-hook.ts`** — crew-side soak dispatch
+  hook. Reads `.claude/artifacts/crew/gepa/soak.json`; applies
+  `evaluateSoak()` (pure algorithm from gepa-core 0.6.0); routes to soak
+  champion path when `random() < soakPercent`. Returns `SoakHookResult`
+  with status enum (`no_soak`, `soak_skip`, `soak_use`, `early_revert`,
+  `insufficient_traffic`, `soak_promoted`, `error`) and event keys for
+  `.claude/logs/events.jsonl`. Fully guarded by try/catch — malformed
+  soak.json falls back to main champion silently. Writes forensics artifact
+  at `.claude/artifacts/crew/gepa/soak/<agent>-early-revert-<ts>.json` on
+  early-revert. All I/O bounded; no async paths; hook latency < 5ms p50.
+- **`scripts/lib/slice-linker/dispatch.mts`** — re-exports `evaluateSoakHook`
+  and related types so the loop orchestrator can import the soak hook from
+  the same module as the dispatch plan. Zero behavior change to `planDispatch`.
+
 ### Minor — FEAT-183 SLICE-103: inspector bug-corpus mining + 10-case eval set + rubricScorer anti-circularity (2026-07-01)
 
 - **`scripts/lib/gepa/mine-inspector-bug-corpus.ts`** — CLI helper that walks

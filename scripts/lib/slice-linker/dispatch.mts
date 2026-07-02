@@ -41,6 +41,28 @@ import {
   type WorkflowPhase
 } from "../workflow-config.ts";
 
+// ── Soak dispatcher hook (FEAT-183 S7 / SLICE-104) ────────────────────────────
+//
+// Re-exported so the loop orchestrator can import the soak hook from the same
+// module that produces the dispatch plan. The loop orchestrator calls
+// evaluateSoakHook(opts) BEFORE invoking the builder subagent for a slice phase.
+// If the result is "early_revert" or "insufficient_traffic", the orchestrator
+// deletes the soak pointer and falls back to the main champion path.
+// If the result is "soak_use", the orchestrator steers the builder's
+// --prompt flag to champion_path.
+//
+// The hook is intentionally synchronous (no async I/O) so it adds <1ms to
+// the hot dispatch path. File reads are bounded to a single readFileSync on
+// soak.json; malformed files fall back to { status: "error" } silently.
+export {
+  evaluateSoakHook,
+  type SoakDispatchOpts,
+  type SoakHookResult,
+  type SoakHookStatus,
+  type SoakEntry,
+  type SoakMap
+} from "../gepa/soak-dispatcher-hook.ts";
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 export type GatePolicy = "all_pass" | "blocking" | "advisory" | "none" | "skipped";
