@@ -26,6 +26,8 @@
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { runAutoPr, printManualCommands, GhAuthError, type AutoPrResult } from "./auto-pr.ts";
+import { GhAbsentError } from "./branch-protection-check.ts";
 import {
   dailyCapMeter,
   fileLockManager,
@@ -75,12 +77,22 @@ export interface OptimizationResult {
     latency_ms: number;
     prompt_path: string;
   } | null;
+  /**
+   * True when the winner's prompt content is identical to the current champion
+   * (defensive no-op guard). No PR is opened in this case.
+   */
+  no_op_promotion?: boolean;
   /** All trial results, with pareto_rank assigned. */
   trials: (Trial & { pareto_rank: number | null })[];
   /** ISO timestamp of run start. */
   started_at: string;
   /** ISO timestamp of run end. */
   finished_at: string;
+  /**
+   * Auto-PR result when promotion was attempted.
+   * undefined when artifact-only mode was active or no winner found.
+   */
+  auto_pr?: AutoPrResult;
 }
 
 export interface RunOptimizeOpts {
@@ -120,6 +132,23 @@ export interface RunOptimizeOpts {
    * completing candidates.length * cases.length trials (budget or signal).
    */
   cases?: EvalCase[];
+  /**
+   * When true (default false), skip the auto-PR step even when a winner is found.
+   * Use for dry-run cycles or when the caller will handle promotion separately.
+   */
+  artifactOnly?: boolean;
+  /**
+   * Optional override for the `gh` binary path (useful for tests).
+   */
+  ghPath?: string;
+  /**
+   * Optional override for the `git` binary path (useful for tests).
+   */
+  gitPath?: string;
+  /**
+   * Optional repo override (owner/name) for the branch-protection check.
+   */
+  repo?: string;
 }
 
 // ── Default paths ───────────────────────────────────────────────────────────
@@ -168,26 +197,95 @@ export function noopScorer(): Scorer {
  *
  * Returns null if the lock is held by another process.
  */
+async function scoreCandidates(
+  candidates: Candidate[],
+  cases: EvalCase[],
+  scorer: Scorer,
+  meter: BudgetMeter
+): Promise<{ trials: Trial[]; partial: boolean }> {
+  if (candidates.length === 0) return { trials: [], partial: false };
+  const runner = sequentialRunner();
+  const controller = new AbortController();
+  const trials = await runner.runCandidates(candidates, cases, scorer, {
+    meter,
+    signal: controller.signal
+  });
+  // partial = true ONLY when eval cases were requested but not all trials
+  // completed (budget cap or signal halt). Empty-cases artifact-only mode
+  // is NOT partial — the run reached its intended zero-scoring end state.
+  const partial = cases.length > 0 && trials.length < candidates.length * cases.length;
+  return { trials, partial };
+}
+
+function determineWinner(
+  ranked: (Trial & { pareto_rank: number | null })[],
+  candidates: Candidate[],
+  partial: boolean
+): { winner: OptimizationResult["winner"]; noWinner: boolean } {
+  if (partial) return { winner: null, noWinner: true };
+  const rank1 = ranked.filter((t) => t.pareto_rank === 1);
+  const best = rank1[0];
+  if (!best) return { winner: null, noWinner: true };
+
+  const matchingCandidate = candidates.find((c) => c.prompt_hash === best.candidate_prompt_hash);
+  const winner: OptimizationResult["winner"] = {
+    candidate_id: best.id,
+    pareto_rank: best.pareto_rank ?? 1,
+    score: best.score.score,
+    pass: best.score.pass,
+    cost_usd: best.score.cost_usd,
+    latency_ms: best.score.latency_ms,
+    prompt_path: matchingCandidate?.prompt_path ?? best.candidate_prompt_path ?? ""
+  };
+  return { winner, noWinner: !best.score.pass };
+}
+
+function writeArtifact(repoPath: string, runId: string, result: OptimizationResult): string {
+  const artifactPath = optArtifactPath(repoPath, runId);
+  const artifactDir = join(repoPath, ".claude", "artifacts", "crew", "gepa", "opt");
+  if (!existsSync(artifactDir)) mkdirSync(artifactDir, { recursive: true });
+  writeFileSync(artifactPath, JSON.stringify(result, null, 2), "utf8");
+  return artifactPath;
+}
+
+function tryAutoPr(opts: RunOptimizeOpts, result: OptimizationResult, artifactPath: string): void {
+  try {
+    const prResult = runAutoPr({
+      repoPath: opts.repoPath,
+      agent: opts.agent,
+      result,
+      ...(opts.ghPath !== undefined ? { ghPath: opts.ghPath } : {}),
+      ...(opts.gitPath !== undefined ? { gitPath: opts.gitPath } : {}),
+      ...(opts.repo !== undefined ? { repo: opts.repo } : {})
+    });
+    result.auto_pr = prResult;
+    if (prResult.no_op_promotion) result.no_op_promotion = true;
+    writeFileSync(artifactPath, JSON.stringify(result, null, 2), "utf8");
+  } catch (err) {
+    if (err instanceof GhAbsentError || err instanceof GhAuthError) {
+      // gh absent or not authenticated — print manual commands, non-fatal to
+      // the optimization result (artifact is still written).
+      printManualCommands({ agent: opts.agent, result, reason: err.message });
+    } else {
+      throw err;
+    }
+  }
+}
+
 export async function runOptimize(opts: RunOptimizeOpts): Promise<OptimizationResult | null> {
   const { repoPath, agent, k, budgetUsd, failingTrials, generator, scorer } = opts;
 
   const runId = crypto.randomUUID();
-  const cycleId = runId;
   const startedAt = new Date().toISOString();
 
-  // Lock manager — prevents concurrent optimize runs on the same agent.
   const lockRoot = opts.lockRoot ?? defaultLockRoot(repoPath);
-  const lockMgr = fileLockManager(lockRoot);
-  const lock = await lockMgr.acquire(agent, "optimize");
-  if (lock === null) {
-    return null; // Another process holds the lock.
-  }
+  const lock = await fileLockManager(lockRoot).acquire(agent, "optimize");
+  if (lock === null) return null; // Another process holds the lock.
 
   try {
-    // Budget meter — shared daily cap, persisted to disk.
     const meter = opts.meter ?? dailyCapMeter(budgetUsd, defaultBudgetPath(repoPath));
+    const cases = opts.cases ?? [];
 
-    // 1. Generate candidates.
     const candidates: Candidate[] = await generator.generate(
       championPath(repoPath, agent),
       failingTrials,
@@ -195,67 +293,18 @@ export async function runOptimize(opts: RunOptimizeOpts): Promise<OptimizationRe
       { meter }
     );
 
-    // 2. Run candidates against eval cases (artifact-only: empty cases array).
-    const runner = sequentialRunner();
-    // In artifact-only mode we pass an empty cases array — no LLM scoring.
-    // The sequentialRunner will still validate candidate sizes internally.
-    const cases = opts.cases ?? [];
-    let trials: Trial[] = [];
-    let partial = false;
-
-    if (candidates.length > 0) {
-      // Use AbortController to detect if budget halted the run.
-      const controller = new AbortController();
-      trials = await runner.runCandidates(candidates, cases, scorer, {
-        meter,
-        signal: controller.signal
-      });
-      // partial = true ONLY when eval cases were requested but not all trials
-      // completed (budget cap or signal halt). Empty-cases artifact-only mode
-      // is NOT partial — the run reached its intended zero-scoring end state.
-      partial = cases.length > 0 && trials.length < candidates.length * cases.length;
-    }
-
-    // 3. Pareto rank.
+    const { trials, partial } = await scoreCandidates(candidates, cases, scorer, meter);
     const ranked = trials.length > 0 ? paretoRank(trials) : [];
+    const { winner, noWinner } = determineWinner(ranked, candidates, partial);
 
-    // 4. Determine winner.
-    const rank1 = ranked.filter((t) => t.pareto_rank === 1);
-    let winner: OptimizationResult["winner"] = null;
-    let noWinner = true;
-
-    if (rank1.length > 0 && !partial) {
-      const best = rank1[0];
-      if (best) {
-        // Find the matching candidate for prompt_path.
-        const matchingCandidate = candidates.find(
-          (c) => c.prompt_hash === best.candidate_prompt_hash
-        );
-        winner = {
-          candidate_id: best.id,
-          pareto_rank: best.pareto_rank,
-          score: best.score.score,
-          pass: best.score.pass,
-          cost_usd: best.score.cost_usd,
-          latency_ms: best.score.latency_ms,
-          prompt_path: matchingCandidate?.prompt_path ?? best.candidate_prompt_path ?? ""
-        };
-        noWinner = !best.score.pass; // Must pass to be a winner
-      }
-    }
-
-    // Build trial results with nullable pareto_rank.
     const trialResults: (Trial & { pareto_rank: number | null })[] = ranked.map((t) => ({
       ...t,
       pareto_rank: t.pareto_rank
     }));
 
-    // Add unranked trials (e.g. empty case runs produce 0 trials).
-    const finishedAt = new Date().toISOString();
-
     const result: OptimizationResult = {
       run_id: runId,
-      cycle_id: cycleId,
+      cycle_id: runId,
       agent,
       k,
       candidates_evaluated: candidates.length,
@@ -264,14 +313,20 @@ export async function runOptimize(opts: RunOptimizeOpts): Promise<OptimizationRe
       winner: partial ? null : winner,
       trials: trialResults,
       started_at: startedAt,
-      finished_at: finishedAt
+      finished_at: new Date().toISOString()
     };
 
-    // 5. Write artifact.
-    const artifactPath = optArtifactPath(repoPath, runId);
-    const artifactDir = join(repoPath, ".claude", "artifacts", "crew", "gepa", "opt");
-    if (!existsSync(artifactDir)) mkdirSync(artifactDir, { recursive: true });
-    writeFileSync(artifactPath, JSON.stringify(result, null, 2), "utf8");
+    const artifactPath = writeArtifact(repoPath, runId, result);
+
+    const artifactOnly = opts.artifactOnly ?? true;
+    // Auto-PR guard MUST include !no_winner: determineWinner may return a
+    // non-null winner object AND noWinner=true when the top rank-1 candidate
+    // has pass=false (dominated on other axes but never actually passed the
+    // eval). Opening a promotion PR for a failing candidate would silently
+    // ship a regression. All three flags must clear before promotion.
+    if (!artifactOnly && result.winner !== null && !result.no_winner && !result.partial) {
+      tryAutoPr(opts, result, artifactPath);
+    }
 
     return result;
   } finally {
