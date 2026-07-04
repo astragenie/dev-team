@@ -1,6 +1,6 @@
 ---
 id: FEAT-187
-status: pending
+status: done
 priority: P2
 category: capability
 target_release: null

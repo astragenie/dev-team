@@ -1,7 +1,7 @@
 ---
 id: SLICE-191
 parent: FEAT-189
-status: triaged
+status: done
 priority: P1
 created: 2026-07-04
 title: "FEAT-189 S2 — backend-dev + frontend-dev eval specs + fixtures (highest dispatch volume)"

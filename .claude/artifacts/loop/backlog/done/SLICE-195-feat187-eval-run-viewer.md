@@ -1,7 +1,7 @@
 ---
 id: SLICE-195
 parent: FEAT-187
-status: triaged
+status: done
 priority: P2
 created: 2026-07-04
 title: "FEAT-187 — local eval-run viewer (static HTML/TS panel over evals/runs/)"

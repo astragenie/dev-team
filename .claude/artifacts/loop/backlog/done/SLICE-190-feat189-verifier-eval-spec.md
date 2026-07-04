@@ -1,7 +1,7 @@
 ---
 id: SLICE-190
 parent: FEAT-189
-status: triaged
+status: done
 priority: P1
 created: 2026-07-04
 title: "FEAT-189 S1 — verifier eval spec + 5 fixtures (critical-allowlist agent, n=0 today)"

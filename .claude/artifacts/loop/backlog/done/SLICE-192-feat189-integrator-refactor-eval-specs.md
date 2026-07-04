@@ -1,7 +1,7 @@
 ---
 id: SLICE-192
 parent: FEAT-189
-status: triaged
+status: done
 priority: P1
 created: 2026-07-04
 title: "FEAT-189 S3 — integrator + refactor eval specs + fixtures"

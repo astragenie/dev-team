@@ -1,7 +1,7 @@
 ---
 id: SLICE-193
 parent: FEAT-189
-status: triaged
+status: done
 priority: P1
 created: 2026-07-04
 title: "FEAT-189 S4 — release-engineer eval spec + fixtures + coverage closure (0 planned warnings)"

@@ -1,6 +1,6 @@
 ---
 id: FEAT-189
-status: pending
+status: done
 priority: P1
 category: quality
 target_release: null

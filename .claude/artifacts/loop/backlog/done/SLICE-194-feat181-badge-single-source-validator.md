@@ -1,7 +1,7 @@
 ---
 id: SLICE-194
 parent: FEAT-181
-status: triaged
+status: done
 priority: P2
 created: 2026-07-04
 title: "FEAT-181 — badge single-source-of-truth validator + catalog doc + CI gate"
