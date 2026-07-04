@@ -5,6 +5,109 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+### Minor — P1.3 enum verdict frontmatter + fail-open badge fix (2026-07-04)
+
+Part of the architecture-hardening plan (`.claude/artifacts/loop/plans/20260704T083000Z-plan-architecture-v2-hardening.md`,
+§P1.3). Real bug fixed: `handleReviewResult`/`handleValidationResult` in
+`scripts/lib/workflow-state.ts` used a two-way ternary (`decision === X ? failed
+: passed`) — any unrecognized or typo'd decision value silently fell through to
+the *_passed badge. `write-validation-result` had zero decision enum
+validation at all.
+
+- **`scripts/lib/schemas.ts`** — implements `ReviewArtifactSchema` and
+  `ValidationArtifactSchema` (named in the module docblock since Phase 0, never
+  defined until now). Canonical enums: review = `approved | approved_with_notes
+  | rejected`; validation = `pass | fail | skipped` (`skip_reason` required when
+  `skipped`, enforced via `superRefine`). `needs_fix` is a write-time alias for
+  `rejected`, not a fourth review state (D7). `normalizeReviewDecision` /
+  `normalizeValidationDecision` also accept the legacy values real callers
+  already emit (`passed`, `passed_with_notes`, `failed`, `skip`) and map them to
+  canonical rather than breaking `agents/verifier.md`, `agents/release-engineer.md`,
+  `commands/ship.md`.
+- **`scripts/crew.ts`** — `write-review-result` now accepts `needs_fix` as an
+  input alongside the existing `approved`/`approved_with_notes`/`rejected` set.
+  `write-validation-result` gains enum validation (previously none) plus a new
+  `--skip-reason` flag, required when `--decision skipped`. Both writers run
+  the raw `--decision` value through the normalize* helpers, then through the
+  Zod schema, before writing; invalid input exits 2 with an explanatory message,
+  matching the existing `write-review-result` refusal pattern.
+- **Two verdict fields, not one:** the pre-existing `decision` frontmatter/body
+  field stays raw (back-compat — existing tests assert literal strings like
+  `Decision: passed_with_notes`). A new `verdict` field (frontmatter `decision:`
+  key) carries the canonical, normalized enum and is what `workflow-state.ts`'s
+  `ARTIFACT_HANDLERS` and the Zod schemas key off. `skip_reason:` is written
+  alongside it when present.
+- **`scripts/lib/workflow-state.ts`** — `handleReviewResult` /
+  `handleValidationResult` replaced with exhaustive switches over `verdict`
+  that throw on an unrecognized value instead of defaulting to passed.
+  `verdict === undefined` (pre-P1.3 / legacy artifacts, or callers that never
+  set `--decision`) preserves the historical default-approve behavior
+  unchanged — only artifacts that DO carry a verdict get the strict gate.
+  `skipped` maps to the pre-existing `validation_skipped` badge (no new badge
+  needed); the skip reason is folded into the gate note.
+- **`hooks/pre-push-verifier.ts`** — `scanValidationArtifacts` now parses the
+  frontmatter block first and trusts the canonical `decision:` enum when
+  present (only `pass` counts as a pass); falls back to the legacy body-prose
+  `Decision: passed|approved` regex only for artifacts with no frontmatter
+  decision field.
+- **Tests:** `tests/enum-verdicts.test.ts` — writer rejects invalid enum,
+  `needs_fix` normalizes to `rejected`, `skipped` without `--skip-reason`
+  throws, `approved_with_notes` maps to `review_passed`, unrecognized verdict
+  throws at the handler (not just the CLI), legacy artifact (`verdict`
+  undefined) keeps the old default-pass behavior, and the Zod schemas
+  round-trip real writer output.
+- **Back-compat:** no migration of the ~220 existing review/validation
+  artifacts — they have no `decision:`/frontmatter verdict field and are
+  treated as legacy (D3 grandfather cutoff 2026-07-04).
+
+### Minor — P1.0 feature-flag envelope: 5 new registered features + hook gating (2026-07-04)
+
+Part of the architecture-hardening plan (`.claude/artifacts/loop/plans/20260704T083000Z-plan-architecture-v2-hardening.md`,
+§P1.0): every toggleable gate/hook/route becomes a feature flag. Guardrail:
+enforcement flags may only soften block→warn, never block→silent.
+
+- **`scripts/lib/features-service.ts`** — registered 5 new entries in `FEATURES`:
+  - `git-gate-block` (default `false`/warn, scope `shared`) — enforcement level
+    of the repo-side commit/PR gate hook; flips to block after a 1-week bake.
+    Registry entry only — no consumer wired yet (lands with P1.5).
+  - `otel-telemetry` (default `true`, scope `crew`) — wraps
+    `otel-post-tool-use.ts` / `otel-stop.ts` / `otel-subagent-stop.ts`.
+  - `bash-gate-telemetry` (default `true`, scope `crew`) — wraps
+    `pre-tool-use-bash-gate.ts` / `post-tool-use-bash-gate.ts` recording.
+  - `task-update-burst-warn` (default `true`, scope `crew`) — wraps
+    `check-task-update-burst.ts`.
+  - `event-emit` (default `true`, scope `shared`) — future P2.2 artifact-event
+    emission at `ARTIFACT_HANDLERS`. Registry entry only — no consumer wired
+    yet.
+- **Hook wiring (no behavior change at defaults):**
+  - `hooks/otel-post-tool-use.ts`, `hooks/otel-stop.ts`,
+    `hooks/otel-subagent-stop.ts` — schema-parse the payload first (`null` →
+    exit 0, matching the pre-tool-use-bash-gate.ts / check-task-update-burst.ts
+    convention), then run an `otel-telemetry` check off the parsed `payload.cwd`
+    ahead of the existing `bridgeEnabled` two-key opt-in gate. The check reads
+    the new `scripts/lib/telemetry/feature-flag-lite.ts` (a minimal,
+    dependency-free duplicate of `isEnabled()`'s resolution rule for this one
+    flag) instead of importing `features-service.ts` directly — a static
+    import reaching outside `hooks/` + `scripts/lib/telemetry/` throws
+    `MODULE_NOT_FOUND` under `tests/telemetry-plugin-cache-smoke.test.ts`'s
+    simulated partial-tree install, which the original wiring regressed.
+    `feature-flag-lite.ts`'s `HOOK_FLAG_DEFAULTS` has a parity test in
+    `tests/features-service.test.ts` asserting it never drifts from the
+    registry default it duplicates. Mirrors runner-plugin's
+    `hooks/feature-flag-lite.mjs` pattern.
+  - `hooks/pre-tool-use-bash-gate.ts`, `hooks/post-tool-use-bash-gate.ts` —
+    added a `bash-gate-telemetry` check alongside the existing
+    `CREW_BASH_GATE_LOG=0` escape hatch. `hooks/lib/bash-gate-timer-tap.ts`
+    parsers now also return `cwd`.
+  - `hooks/lib/check-task-update-burst.ts` — added a `task-update-burst-warn`
+    check alongside the existing `cost-hygiene` umbrella check.
+- **Tests:** extended `tests/features-service.test.ts` (registry shape,
+  defaults, crew.json override flips) and `tests/hook-feature-gating.test.ts`
+  (spawn-level gating tests for the 3 wired hooks, mirroring the existing
+  `check-redundant-read` / `preflight-shell` pattern).
+- `git-gate-block` and `event-emit` are registry-only in this change — their
+  consumers land in P1.5 (git-gate hook) and P2.2 (event spine) respectively.
+
 ### Minor — FEAT-183 SLICE-104: architect eval dataset + soak dispatcher hook (2026-07-01)
 
 **Dependency note:** `scripts/lib/gepa/soak-dispatcher-hook.ts` imports

@@ -42,7 +42,9 @@ export function recordGateEnd(sessionId: string, command: string, exitCode: numb
 }
 
 /** Parse PreToolUse Bash payload. */
-export function parsePreInput(raw: string): { sessionId: string; command: string } | null {
+export function parsePreInput(
+  raw: string
+): { sessionId: string; command: string; cwd: string | undefined } | null {
   try {
     const obj = JSON.parse(raw) as Record<string, unknown>;
     if (
@@ -53,7 +55,8 @@ export function parsePreInput(raw: string): { sessionId: string; command: string
     ) {
       return {
         sessionId: obj["session_id"] as string,
-        command: (obj["tool_input"] as Record<string, unknown>)["command"] as string
+        command: (obj["tool_input"] as Record<string, unknown>)["command"] as string,
+        cwd: typeof obj["cwd"] === "string" ? (obj["cwd"] as string) : undefined
       };
     }
     return null;
@@ -65,7 +68,7 @@ export function parsePreInput(raw: string): { sessionId: string; command: string
 /** Parse PostToolUse Bash payload. Extracts exit code from tool_response. */
 export function parsePostInput(
   raw: string
-): { sessionId: string; command: string; exitCode: number } | null {
+): { sessionId: string; command: string; exitCode: number; cwd: string | undefined } | null {
   try {
     const obj = JSON.parse(raw) as Record<string, unknown>;
     if (
@@ -78,6 +81,7 @@ export function parsePostInput(
     }
     const sessionId = obj["session_id"] as string;
     const command = (obj["tool_input"] as Record<string, unknown>)["command"] as string;
+    const cwd = typeof obj["cwd"] === "string" ? (obj["cwd"] as string) : undefined;
     // tool_response may carry exitCode directly or nested in an object
     let exitCode = 0;
     const resp = obj["tool_response"];
@@ -87,7 +91,7 @@ export function parsePostInput(
     } else if (typeof resp === "number") {
       exitCode = resp;
     }
-    return { sessionId, command, exitCode };
+    return { sessionId, command, exitCode, cwd };
   } catch {
     return null;
   }

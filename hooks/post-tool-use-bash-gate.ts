@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // PostToolUse hook on Bash. Records gate end time and writes JSONL row (FEAT-150).
-// Default-ON; opt out via CREW_BASH_GATE_LOG=0. Always exits 0 — never blocks.
+// Default-ON; opt out via CREW_BASH_GATE_LOG=0 or crew.json features["bash-gate-telemetry"].enabled=false.
+// Always exits 0 — never blocks.
 import { parsePostInput, recordGateEnd } from "./lib/bash-gate-timer-tap.ts";
 import { logHookError } from "./hook-error.ts";
+import { isEnabled, readCrewConfig } from "../scripts/lib/features-service.ts";
 
 async function readStdin(): Promise<string> {
   const chunks: Buffer[] = [];
@@ -17,9 +19,10 @@ async function main(): Promise<void> {
   }
   const raw = await readStdin();
   const input = parsePostInput(raw);
-  if (input !== null) {
-    recordGateEnd(input.sessionId, input.command, input.exitCode);
-  }
+  if (input === null) return;
+  const config = await readCrewConfig(input.cwd ?? process.cwd());
+  if (!isEnabled("bash-gate-telemetry", config)) return;
+  recordGateEnd(input.sessionId, input.command, input.exitCode);
   // PostToolUse: no output needed
 }
 

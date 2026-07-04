@@ -67,6 +67,12 @@ export interface ArtifactRef {
 type RegisterFields = RunFields &
   BadgeOptions & {
     decision?: string | undefined;
+    // P1.3: canonical enum verdict (approved|approved_with_notes|rejected for
+    // review, pass|fail|skipped for validation). Distinct from `decision`,
+    // which stays the raw legacy value. Absent = legacy pre-P1.3 artifact —
+    // handlers preserve today's default-approve behavior rather than throwing.
+    verdict?: string | undefined;
+    skipReason?: string | undefined;
     environment?: string | undefined;
     status?: string | undefined;
   };
@@ -385,13 +391,33 @@ function handleHandoff(run: WorkflowRun, artifact: ArtifactRef): void {
   run.artifacts.handoffs = [...(run.artifacts.handoffs || []), artifact.path].slice(-10);
 }
 
+// P1.3: exhaustive switch over the canonical verdict — replaces the fail-open
+// ternary (`decision === "rejected" ? failed : passed`) that silently mapped
+// any unrecognized/typo'd value to review_passed. `fields.verdict` is absent
+// only for pre-P1.3 (legacy) artifacts / callers that never set --decision;
+// that path preserves the historical default-approve behavior unchanged. Once
+// a verdict IS present, it must be a recognized canonical value or this throws
+// — never falls through to passed.
 function handleReviewResult(run: WorkflowRun, artifact: ArtifactRef, fields: RegisterFields): void {
   run.artifacts.reviewResult = artifact.path;
-  applyBadge(
-    run,
-    fields.decision === "rejected" ? "review_failed" : "review_passed",
-    fields.summary || ""
-  );
+  const verdict = fields.verdict;
+  if (verdict === undefined) {
+    applyBadge(run, "review_passed", fields.summary || "");
+    return;
+  }
+  switch (verdict) {
+    case "approved":
+    case "approved_with_notes":
+      applyBadge(run, "review_passed", fields.summary || "");
+      break;
+    case "rejected":
+      applyBadge(run, "review_failed", fields.summary || "");
+      break;
+    default:
+      throw new Error(
+        `handleReviewResult: unrecognized review verdict "${verdict}" — refusing to fail open to review_passed.`
+      );
+  }
 }
 
 function handleValidationPlan(
@@ -403,17 +429,40 @@ function handleValidationPlan(
   applyBadge(run, "validation_expected", fields.summary || fields.goal || "");
 }
 
+// P1.3: same exhaustive-switch treatment as handleReviewResult. `skipped` maps
+// to the pre-existing `validation_skipped` badge (BADGE_TABLE already has a
+// slot for it); skip_reason is folded into the gate note since GateEntry has
+// no dedicated field for it.
 function handleValidationResult(
   run: WorkflowRun,
   artifact: ArtifactRef,
   fields: RegisterFields
 ): void {
   run.artifacts.validationResult = artifact.path;
-  applyBadge(
-    run,
-    fields.decision === "failed" ? "validation_failed" : "validation_passed",
-    fields.summary || fields.goal || ""
-  );
+  const verdict = fields.verdict;
+  if (verdict === undefined) {
+    applyBadge(run, "validation_passed", fields.summary || fields.goal || "");
+    return;
+  }
+  switch (verdict) {
+    case "pass":
+      applyBadge(run, "validation_passed", fields.summary || fields.goal || "");
+      break;
+    case "fail":
+      applyBadge(run, "validation_failed", fields.summary || fields.goal || "");
+      break;
+    case "skipped": {
+      const note = fields.skipReason
+        ? `skipped: ${fields.skipReason}`
+        : fields.summary || fields.goal || "";
+      applyBadge(run, "validation_skipped", note);
+      break;
+    }
+    default:
+      throw new Error(
+        `handleValidationResult: unrecognized validation verdict "${verdict}" — refusing to fail open to validation_passed.`
+      );
+  }
 }
 
 function handleDeploymentCheck(

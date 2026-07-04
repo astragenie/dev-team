@@ -4,7 +4,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { isEnabled, readCrewConfig } from "../scripts/lib/features-service.ts";
+import { isEnabled, readCrewConfig, FEATURES, getFeatureMeta } from "../scripts/lib/features-service.ts";
+import { HOOK_FLAG_DEFAULTS } from "../scripts/lib/telemetry/feature-flag-lite.ts";
 
 test("isEnabled: no config → true", () => {
   const result = isEnabled("test-feature", null);
@@ -240,4 +241,88 @@ test("isEnabled: push-verify explicitly enabled in config → true", () => {
 test("isEnabled: push-verify no config at all → defaults to false (registry default)", () => {
   const result = isEnabled("push-verify", null);
   assert.equal(result, false);
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// P1.0 feature-flag envelope — 5 new registry entries
+// ──────────────────────────────────────────────────────────────────────────
+
+test("registry: P1.0 features are present with expected shape", () => {
+  const expected: Record<string, { default: boolean; scope: "crew" | "shared" }> = {
+    "git-gate-block": { default: false, scope: "shared" },
+    "otel-telemetry": { default: true, scope: "crew" },
+    "bash-gate-telemetry": { default: true, scope: "crew" },
+    "task-update-burst-warn": { default: true, scope: "crew" },
+    "event-emit": { default: true, scope: "shared" }
+  };
+
+  for (const [name, expectation] of Object.entries(expected)) {
+    const meta = getFeatureMeta(name);
+    assert.ok(meta, `expected ${name} to be registered in FEATURES`);
+    assert.equal(meta!.default, expectation.default, `${name}.default`);
+    assert.equal(meta!.scope, expectation.scope, `${name}.scope`);
+    assert.equal(typeof meta!.version, "string", `${name}.version`);
+    assert.equal(typeof meta!.description, "string", `${name}.description`);
+    assert.equal(typeof meta!.since, "string", `${name}.since`);
+  }
+
+  // Also present in the raw FEATURES record (not just via getFeatureMeta).
+  for (const name of Object.keys(expected)) {
+    assert.ok(name in FEATURES, `expected ${name} key in FEATURES record`);
+  }
+});
+
+test("isEnabled: git-gate-block defaults to false (warn) with no config", () => {
+  assert.equal(isEnabled("git-gate-block", null), false);
+  assert.equal(isEnabled("git-gate-block", { features: {} }), false);
+});
+
+test("isEnabled: git-gate-block explicitly enabled in config → true", () => {
+  const result = isEnabled("git-gate-block", {
+    features: { "git-gate-block": { enabled: true } }
+  });
+  assert.equal(result, true);
+});
+
+test("isEnabled: otel-telemetry / bash-gate-telemetry / task-update-burst-warn / event-emit default to true with no config", () => {
+  for (const name of [
+    "otel-telemetry",
+    "bash-gate-telemetry",
+    "task-update-burst-warn",
+    "event-emit"
+  ]) {
+    assert.equal(isEnabled(name, null), true, `${name} should default true`);
+    assert.equal(isEnabled(name, { features: {} }), true, `${name} should default true`);
+  }
+});
+
+test("isEnabled: otel-telemetry / bash-gate-telemetry / task-update-burst-warn / event-emit flip off via crew.json override", () => {
+  for (const name of [
+    "otel-telemetry",
+    "bash-gate-telemetry",
+    "task-update-burst-warn",
+    "event-emit"
+  ]) {
+    const config = { features: { [name]: { enabled: false } } };
+    assert.equal(isEnabled(name, config), false, `${name} should flip to false when disabled`);
+  }
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// scripts/lib/telemetry/feature-flag-lite.ts parity — the otel hooks read
+// this dependency-free copy (not the full registry) so they survive the
+// plugin-cache smoke test's narrower static-import tree. It must not drift
+// from the registry default it duplicates.
+// ──────────────────────────────────────────────────────────────────────────
+
+test("feature-flag-lite: HOOK_FLAG_DEFAULTS matches the registry default for every flag it duplicates", () => {
+  for (const [name, liteDefault] of Object.entries(HOOK_FLAG_DEFAULTS)) {
+    const registryMeta = getFeatureMeta(name);
+    assert.ok(registryMeta, `${name} in HOOK_FLAG_DEFAULTS must also be registered in FEATURES`);
+    assert.equal(
+      liteDefault,
+      registryMeta!.default,
+      `feature-flag-lite default for ${name} (${liteDefault}) must match registry default (${registryMeta!.default})`
+    );
+  }
 });

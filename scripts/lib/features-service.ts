@@ -60,6 +60,51 @@ export const FEATURES: Readonly<Record<string, FeatureMeta>> = {
     scope: "crew",
     owner: "safety",
     since: "0.46.1"
+  },
+  "git-gate-block": {
+    version: "1.0.0",
+    default: false,
+    description:
+      "Enforcement level of the repo-side commit/PR gate hook (check_git_gate.sh). Default false = warn (advisory systemMessage on pending badges); flips to block (decision:block) after a 1-week bake. Guardrail: this flag may only soften block→warn, never silence the gate.",
+    scope: "shared",
+    owner: "safety",
+    since: "0.48.0"
+  },
+  "otel-telemetry": {
+    version: "1.0.0",
+    default: true,
+    description:
+      "Wraps the otel-post-tool-use / otel-stop / otel-subagent-stop hooks. Independent of the existing telemetry-config opt-in gate (cfg.enabled + CREW_OTEL_ENABLED) — both must pass for a span to emit.",
+    scope: "crew",
+    owner: "platform",
+    since: "0.48.0"
+  },
+  "bash-gate-telemetry": {
+    version: "1.0.0",
+    default: true,
+    description:
+      "Wraps pre-tool-use-bash-gate / post-tool-use-bash-gate recording. Independent of the existing CREW_BASH_GATE_LOG=0 escape hatch — either one disables recording.",
+    scope: "crew",
+    owner: "platform",
+    since: "0.48.0"
+  },
+  "task-update-burst-warn": {
+    version: "1.0.0",
+    default: true,
+    description:
+      "Wraps the check-task-update-burst hook. Sits alongside the cost-hygiene umbrella check — both must be enabled for burst detection to record.",
+    scope: "crew",
+    owner: "platform",
+    since: "0.48.0"
+  },
+  "event-emit": {
+    version: "1.0.0",
+    default: true,
+    description:
+      "Future P2.2 artifact-event emission at ARTIFACT_HANDLERS (unify-event-stream). Registry entry only — no consumer wired yet.",
+    scope: "shared",
+    owner: "platform",
+    since: "0.48.0"
   }
 } as const;
 

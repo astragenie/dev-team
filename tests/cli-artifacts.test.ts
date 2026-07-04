@@ -220,7 +220,10 @@ test("write-* commands embed --feature and --phase in frontmatter", async () => 
   assert.match(briefBody, /^---\nphase: "3"\nfeature: FEAT-021\nstatus: \w+\n---\n/);
   assert.match(briefBody, /# Run Brief: Tagged brief/);
 
-  // review-result without feature/phase emits no frontmatter (backward-compat)
+  // review-result without feature/phase: P1.3 (2026-07-04) now always emits a
+  // canonical `decision:` frontmatter line when --decision is set, so "no
+  // frontmatter" is no longer the bare case — the canonical verdict enum is
+  // exactly the field P1.3 intentionally moved out of body-prose-only.
   const reviewResult = await runCrew([
     "write-review-result",
     "--repo",
@@ -234,9 +237,10 @@ test("write-* commands embed --feature and --phase in frontmatter", async () => 
   assert.equal(reviewResult.code, 0, "write-review-result should exit with code 0");
   const reviewPath = JSON.parse(reviewResult.output).path;
   const reviewBody = await fs.readFile(reviewPath, "utf8");
-  assert.ok(
-    !reviewBody.startsWith("---"),
-    "bare review-result has no frontmatter when feature/phase absent"
+  assert.match(
+    reviewBody,
+    /^---\ndecision: approved\n---\n/,
+    "review-result with feature/phase absent still carries the canonical decision frontmatter (P1.3)"
   );
 
   // review-result with only feature emits frontmatter without phase line
@@ -259,7 +263,7 @@ test("write-* commands embed --feature and --phase in frontmatter", async () => 
   );
   const reviewFeatPath = JSON.parse(reviewFeatResult.output).path;
   const reviewFeatBody = await fs.readFile(reviewFeatPath, "utf8");
-  assert.match(reviewFeatBody, /^---\nfeature: FEAT-007\n---\n/);
+  assert.match(reviewFeatBody, /^---\nfeature: FEAT-007\ndecision: approved\n---\n/);
   assert.ok(!reviewFeatBody.includes("phase:"), "no phase key when phase omitted");
 });
 
