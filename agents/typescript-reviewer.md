@@ -3,7 +3,6 @@ name: typescript-reviewer
 prompt_id: typescript-reviewer
 version: 1.0.0
 model_pinned: sonnet
-evals: evals/agents/typescript-reviewer.yaml
 capabilities:
   role: [reviewer]
   stacks: [typescript]

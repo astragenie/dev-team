@@ -97,14 +97,7 @@ Escalate to user with both artifact paths + findings. Do not silently keep tryin
 
 ## Builder routing table
 
-| FEAT tag                                            | Specialist          |
-|-----------------------------------------------------|---------------------|
-| stack:typescript + surface:ui                       | crew:frontend-dev   |
-| stack:typescript + surface:backend                  | crew:backend-dev    |
-| stack:typescript + surface:cross-layer              | crew:fullstack-dev  |
-| stack:typescript + surface:plugin                   | crew:aiplugin-dev   |
-| stack:csharp                                        | crew:backend-dev    |
-| no clear tag                                        | crew:fullstack-dev  |
+See `docs/routing-table.md` → "Builder routing matrix" (generated from `docs/routing-table.yaml` — the authoritative source; do not hand-copy the table here, edit the yaml and re-run `node scripts/render-routing-table.ts` instead). `commands/orchestrate-slice.md` "Builder routing" carries the full signal-level decision detail (`FE_ONLY`/`BE_ONLY`/`SPLIT_BUILD`/`TS_TOOLING_ONLY`) this matrix summarizes.
 
 ## Workflow
 

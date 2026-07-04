@@ -3,7 +3,6 @@ name: csharp-reviewer
 prompt_id: csharp-reviewer
 version: 1.0.0
 model_pinned: sonnet
-evals: evals/agents/csharp-reviewer.yaml
 capabilities:
   role: [reviewer]
   stacks: [csharp]

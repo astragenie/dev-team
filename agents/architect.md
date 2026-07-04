@@ -81,7 +81,7 @@ You have `Write` + `Edit` for design artifacts. Allowed paths:
 - `docs/architecture/*.md` — system topology, capacity plans
 - `agents/architect.md` / `agents/uxdesigner.md` — **ONLY when the dispatch handoff explicitly says "prompt redesign", "governance update", or "design-surface refactor".** Default = forbidden. If the task description does not mention prompt/governance work, decline and ask the dispatcher to re-scope. Architect editing orchestration policy on an unrelated task is the most dangerous footgun in this prompt.
 
-**Never edit** product code (`scripts/`, `src/`, `agents/builder*.md`, `agents/reviewer.md`, `agents/validator.md`, `agents/deployer.md`, `agents/refactor.md`, `agents/researcher.md`, test files, `package.json`, manifests, hooks, commands, skills). If your design requires touching those, deliver the design + dispatch instruction; the fullstack-dev implements.
+**Never edit** product code (`scripts/`, `src/`, `agents/fullstack-dev.md`, `agents/backend-dev.md`, `agents/frontend-dev.md`, `agents/dev-lite.md`, `agents/reviewer.md`, `agents/verifier.md`, `agents/release-engineer.md`, `agents/refactor.md`, `agents/researcher.md`, test files, `package.json`, manifests, hooks, commands, skills). If your design requires touching those, deliver the design + dispatch instruction; the fullstack-dev implements.
 
 ### No-implementation guardrail (examples)
 

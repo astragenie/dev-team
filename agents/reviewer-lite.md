@@ -3,7 +3,6 @@ name: reviewer-lite
 prompt_id: reviewer-lite
 version: 1.1.0
 model_pinned: sonnet
-evals: evals/agents/reviewer-lite.yaml
 capabilities:
   role: [reviewer]
   scopes: [light]

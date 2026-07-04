@@ -36,7 +36,9 @@ Workflow:
      to spawn worktrees and emit the Agent batch.
    - In one message, invoke **N parallel Agent calls** with `subagent_type: crew:build`, each with the
      per-worktree slice ceremony prompt embedded (see below).
-   - Each `crew:build` executes: `slice start` → dispatch `crew:builder` → wait for PASS → dispatch `crew:reviewer`
+   - Each `crew:build` executes: `slice start` → dispatch the routed specialist builder (`crew:fullstack-dev` /
+     `crew:backend-dev` / `crew:frontend-dev` / `crew:dev-lite` per the builder routing matrix in
+     `docs/routing-table.md`) → wait for PASS → dispatch `crew:reviewer` (+ stack reviewer fan-out if applicable)
      → wait for PASS → `slice complete` → `slice grade` → return result marker.
    - After all agents return, call `node <loop-cli> dispatch finalize --run-id <runId> --plan <plan-json> --repo "$PWD"`
      to merge DONE children to main and aggregate results.

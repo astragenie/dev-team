@@ -39,16 +39,7 @@ If not matched → standard ladder below.
 
 ## Standard ladder (FEAT-tag routing)
 
-Routing table (inline):
-
-| FEAT tag                                            | Specialist          |
-|-----------------------------------------------------|---------------------|
-| stack:typescript + surface:ui                       | crew:frontend-dev   |
-| stack:typescript + surface:backend                  | crew:backend-dev    |
-| stack:typescript + surface:cross-layer              | crew:fullstack-dev  |
-| stack:typescript + surface:plugin                   | crew:aiplugin-dev   |
-| stack:csharp                                        | crew:backend-dev    |
-| no clear tag                                        | crew:fullstack-dev  |
+Builder routing: see `docs/routing-table.md` → "Builder routing matrix" (generated from `docs/routing-table.yaml` — the authoritative source; do not hand-copy the table here, edit the yaml and re-run `node scripts/render-routing-table.ts` instead). `commands/orchestrate-slice.md` "Builder routing" carries the full signal-level decision detail (`FE_ONLY`/`BE_ONLY`/`SPLIT_BUILD`/`TS_TOOLING_ONLY`) this matrix summarizes.
 
 After the builder returns PASS — parallel reviewer fan-out:
 
@@ -139,7 +130,7 @@ Workflow:
    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge validation_skipped --note "<reason>"`
 24. When a validator materially checks behavior, write a validation artifact immediately before you move on:
    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-validation-result --repo "$PWD" --title "<short title>" ...`
-24a. **Auto-continue to dev ship (opt-in).** After review and validation are both resolved, check `.claude/crew/deployment.md` for a `dev.stable: true` setting. If present AND all build gates are green (review PASS or `review_skipped` with reason, validation PASS or `validation_skipped` with reason, no open `help_request`) AND the target environment is dev (not production), continue into the `/crew:ship` flow in this same session — do not return to the user at the review boundary. Production promotion still requires explicit user approval per `agents/deployer.md` rule 11. If `dev.stable: true` is absent or any gate is not green, stop at synthesis (step 25) as today and surface the unresolved gate.
+24a. **Auto-continue to dev ship (opt-in).** After review and validation are both resolved, check `.claude/crew/deployment.md` for a `dev.stable: true` setting. If present AND all build gates are green (review PASS or `review_skipped` with reason, validation PASS or `validation_skipped` with reason, no open `help_request`) AND the target environment is dev (not production), continue into the `/crew:ship` flow in this same session — do not return to the user at the review boundary. Production promotion still requires explicit user approval per `agents/release-engineer.md` rule 11. If `dev.stable: true` is absent or any gate is not green, stop at synthesis (step 25) as today and surface the unresolved gate.
 25. End with a clear synthesis for the user:
    - what changed
    - what was reviewed

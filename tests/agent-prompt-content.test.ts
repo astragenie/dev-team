@@ -974,10 +974,7 @@ describe.skip("## First action — Prong B coverage", () => {
       assert.ok(content.includes(UPDATE_FLAG), "reviewer.md missing --update flag");
     });
     test("role-specific: write-review-result command", () => {
-      assert.ok(
-        content.includes("write-review-result"),
-        "reviewer.md missing write-review-result"
-      );
+      assert.ok(content.includes("write-review-result"), "reviewer.md missing write-review-result");
     });
     test("FEAT-161 cite-back", () => {
       assert.ok(content.includes(FEAT_161_CITE), "reviewer.md missing FEAT-161 cite-back");
@@ -1231,7 +1228,6 @@ const NO_LEAD_AGENTS = [
   "qa-expert",
   "performance-engineer",
   "uxdesigner",
-  "parallel-runner",
   "csharp-reviewer",
   "typescript-reviewer",
   "dev-lite",

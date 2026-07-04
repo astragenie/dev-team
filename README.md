@@ -36,7 +36,6 @@ Crew gives Claude Code a dispatcher-guided workflow model with **23 first-party 
 - **release-engineer** — deployment evidence, environment transitions
 - **researcher** / **investigator** — read-only investigation
 - **refactor** — quality-sweep scans
-- **parallel-runner** — parallel-worktree batch coordination
 
 Each agent has strict ownership rules, structured start/completion reports, and explicit handoffs. A library of **69 skills** across 4 tiers (`universal/`, `workflow/`, `domain/`, `meta/`) supplies the procedural knowledge agents load on demand. The `skills/universal/builder-mindset/` skill carries the cross-builder posture (senior engineer mindset, Astra principles, code-review heuristics, TDD policy) so builder prompts stay focused on stack-specific work.
 

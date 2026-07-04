@@ -8,7 +8,7 @@ Compose Claude Code primitives; do not build a parallel framework.
 agent = role + universal-skills + workflow-skills + domain-skills + repo-context + task-context
 ```
 
-- **role** ≤300 lines: identity, boundaries, escalation policy, cross-cutting rules (context efficiency, shell pre-check, report contract). FEAT-035 raised this from ≤200 and enforces via `scripts/validate-agents.mjs`.
+- **role** ≤350 lines: identity, boundaries, escalation policy, cross-cutting rules (context efficiency, shell pre-check, report contract). FEAT-035 raised this from ≤200 to ≤300, then to ≤350 per `docs/governance.md`'s cap history; enforced via `scripts/validate-agents.ts`.
 - **universal-skills**: always discoverable.
 - **workflow-skills**: invoked per phase.
 - **domain-skills**: invoked per detected stack.
@@ -17,9 +17,9 @@ agent = role + universal-skills + workflow-skills + domain-skills + repo-context
 
 ## Topology
 
-- Hub-and-spoke. Lead routes; specialists own bounded scope.
-- Five active roles stay: dispatcher (concept), builder, reviewer, validator, deployer, researcher.
-- No specialist builders (csharpbuilder etc.). Specializations are skills.
+- Hub-and-spoke. The dispatcher (a concept realized by `/crew:build` · `/crew:fix` · `/crew:ship`, not a standing agent) routes; specialists own bounded scope.
+- The role taxonomy stays small — builder, reviewer, validator, deployer, researcher — but each role now has more than one concrete agent behind it as the roster grew: 22 core agents (`agents/*.md`) plus 10 vendored third-party agents (`agents/3rdparty/*.md`, lighter validation bar). Builders split by stack (`fullstack-dev`, `backend-dev`, `frontend-dev`, `dev-lite`); reviewers split by lens (`reviewer`, `reviewer-lite`, `csharp-reviewer`, `typescript-reviewer`, `architect-reviewer`); validators, specialists (`architect`, `uxdesigner`, `performance-engineer`, `qa-expert`, `refactor`, `document-writer`, `integrator`, `researcher`, `investigator`, `cloud-architect`, `aiplugin-dev`), and the deployer (`release-engineer`) round out the roster. See `docs/routing-table.md` for current dispatch rows.
+- Specialist builders exist where a stack genuinely diverges (e.g. `backend-dev` for .NET); anything narrower than that stays a skill, not a new agent.
 
 ## Skill tiers
 
@@ -48,7 +48,7 @@ Skills from upstream plugins (`context7`, `microsoft-docs:*`, `plugin-dev:*`, `t
 
 - **Route by signal.** Each row's "Signal" column names the observable condition (file glob, task type, error string) that should trigger the skill.
 - **Name skill by exact ID.** `plugin-namespace:skill-name` for plugin skills, `crew:skill-name` for skills in this plugin's own `skills/` tree, `context7` for the MCP server. Agent prompts cite the routing-table row heading, not the bare skill ID, so an upstream rename is a one-line table edit.
-- **No inlining.** Skill bodies stay external. Agent prompts get a 3–8 line bullet block citing the row + condition, not the skill text itself. Keeps agent prompts under the ≤300-line cap (FEAT-035 raised from ≤200; enforced by `scripts/validate-agents.mjs`; cap is HARD).
+- **No inlining.** Skill bodies stay external. Agent prompts get a 3–8 line bullet block citing the row + condition, not the skill text itself. Keeps agent prompts under the ≤350-line cap (FEAT-035 raised from ≤200 to ≤300, then to ≤350; enforced by `scripts/validate-agents.ts`; cap is HARD).
 - **Single point of rename.** When an upstream skill renames, only the routing-table row's "Route to" column changes. Agent prompts continue to work because they reference the row heading, not the skill ID.
 - **Stack-narrowing decisions documented inline.** When a routing decision narrows the surface (e.g. `azure:azure-deploy` demoted for terraform-using consumers, fallback row preserved), the row's Notes column records *why* so future maintainers do not re-litigate. See `docs/routing-table.md` for current narrowing decisions.
 
@@ -133,7 +133,7 @@ These are **review aids**, not CI gates. The hard gates remain `scripts/validate
 |---|---|---|
 | 1 | Reorganize `skills/` into `{universal,workflow,domain,meta}/` | ✓ FEAT-001 |
 | 2 | Author `docs/routing-table.md` | ✓ FEAT-002 |
-| 3 | Update `(removed v0.41)` (≤300 lines per FEAT-035 cap raise) to reference routing-table + skill tier conventions | FEAT-003 (creative; human review gate) |
+| 3 | Update `(removed v0.41)` (≤350 lines per FEAT-035 cap raises) to reference routing-table + skill tier conventions | FEAT-003 (creative; human review gate) |
 | 4 | Skill quality bar + validator (`scripts/validate-skills.mjs`) | ✓ FEAT-007 |
 | 5 | `blocked` + `escalated_to_lead` workflow badges | ✓ FEAT-006 |
 | 6 | This document | ✓ FEAT-004 |
@@ -161,15 +161,27 @@ against a newer `crew` will silently miss the new gate signals.
 
 ## Tooling gates
 
-Every CI run on both plugin repos enforces:
+Node runs dependency install (`npm ci`) and every `./scripts/*.ts` CLI/validator (the
+consumer runtime, per ADR-002 — Bun for the dev/CI test suite, Node for consumer-facing
+scripts); Bun runs the test/lint/format/typecheck package scripts. Current CI
+(`.github/workflows/test.yml`) enforces, in order:
 
-1. `node ./scripts/validate-manifests.mjs`
-2. `node ./scripts/validate-skills.mjs` (crew only; FEAT-007)
-3. `npm run lint` — ESLint flat config, zero warnings
-4. `npm run format:check` — Prettier
-5. `npm run typecheck` — `tsc --noEmit` over `scripts/**/*.mjs` (JSDoc-driven; `checkJs: true` on crew, on loop as of v0.1.20)
-6. `node --test`
-7. `node ./scripts/e2e-smoke.mjs` (crew only)
+1. `npm ci`
+2. `node ./scripts/validate-manifests.ts`
+3. `node ./scripts/validate-skills.ts`
+4. `node ./scripts/validate-agents.ts`
+5. `node ./scripts/validate-agent-refs.ts` (phantom `crew:<name>` dispatch-reference sweep)
+6. `node ./scripts/validate-dispatch-graph.ts`
+7. `node ./scripts/validate-slices.ts`
+8. `CREW_VALIDATE_ROUTING_TABLE=1 node ./scripts/validate-routing-table.ts` (advisory)
+9. `bun run lint` — Biome, zero warnings
+10. `bun run format:check` — Biome
+11. `bun run typecheck` — `tsc --noEmit`
+12. `bun run test` — Bun test runner (`bun test --parallel`)
+13. `node ./scripts/e2e-smoke.ts`
+
+See `CLAUDE.md`'s "CI gates" section for the authoritative, currently-maintained list —
+this section summarizes it; do not let the two drift.
 
 ## Backlog
 

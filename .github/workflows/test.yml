@@ -15,23 +15,24 @@ jobs:
         node ./scripts/validate-manifests.ts
         node ./scripts/validate-skills.ts
         node ./scripts/validate-agents.ts
+        node ./scripts/validate-agent-refs.ts
         node ./scripts/validate-dispatch-graph.ts
         node ./scripts/validate-workflows.ts
         node ./scripts/validate-slices.ts
         node ./scripts/validate-loop-state.ts
         node ./scripts/validate-bundles.ts
+        node ./scripts/validate-configs.ts
         for f in tests/fixtures/openapi/*.openapi.yaml; do if [ "$(basename "$f")" = "broken-missing-examples.openapi.yaml" ]; then if node ./scripts/validate-contracts.ts "$f"; then echo "ERROR: negative fixture passed lint"; exit 1; fi; else node ./scripts/validate-contracts.ts "$f"; fi; done
         for f in tests/fixtures/ux-specs/*.md; do if [ "$(basename "$f")" = "missing-operationid.md" ]; then if node ./scripts/validate-ux-spec.ts "$f"; then echo "ERROR: negative fixture passed"; exit 1; fi; else node ./scripts/validate-ux-spec.ts "$f"; fi; done
       advisory-validators: |
         node ./scripts/validate-syntheses.ts
         CREW_VALIDATE_ROUTING_TABLE=1 node ./scripts/validate-routing-table.ts
+        node ./scripts/validate-adr-template.ts --strict
       bun-commands: |
         bun run lint
         bun run format:check
         bun run typecheck
         bun run test
-      advisory-bun-commands: |
-        bun run validate:typegraph
       linux-only-commands: |
         node ./scripts/e2e-smoke.ts
         bun run e2e:smoke:ux

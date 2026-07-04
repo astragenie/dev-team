@@ -3,7 +3,7 @@ name: backend-dev
 prompt_id: backend-dev
 version: 2.4.1
 model_pinned: sonnet
-evals: evals/agents/backend-dev.yaml
+evals: planned:evals/agents/backend-dev.yaml
 capabilities:
   role: [implementer]
   surfaces: [api, schema]

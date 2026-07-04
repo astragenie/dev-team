@@ -63,7 +63,7 @@ describe("Peer dispatch lint rule — positive case", () => {
 name: refactor
 prompt_id: refactor
 version: 1.0.0
-evals: evals/agents/refactor.yaml
+evals: planned:evals/agents/refactor.yaml
 description: Code quality specialist.
 model: sonnet
 tools:
@@ -129,7 +129,7 @@ describe("Peer dispatch lint rule — negative case", () => {
 name: refactor
 prompt_id: refactor
 version: 1.0.0
-evals: evals/agents/refactor.yaml
+evals: planned:evals/agents/refactor.yaml
 description: Code quality specialist.
 model: sonnet
 tools:
@@ -215,7 +215,7 @@ Write your handoff.
 name: refactor
 prompt_id: refactor
 version: 1.0.0
-evals: evals/agents/refactor.yaml
+evals: planned:evals/agents/refactor.yaml
 description: Code quality specialist.
 model: sonnet
 tools:
@@ -308,7 +308,7 @@ describe("Peer dispatch lint rule — regex tightening (backtick blacklist only)
 name: refactor
 prompt_id: refactor
 version: 1.0.0
-evals: evals/agents/refactor.yaml
+evals: planned:evals/agents/refactor.yaml
 description: Code quality specialist.
 model: sonnet
 tools:
@@ -355,7 +355,7 @@ Write your handoff via write-handoff.
 name: refactor
 prompt_id: refactor
 version: 1.0.0
-evals: evals/agents/refactor.yaml
+evals: planned:evals/agents/refactor.yaml
 description: Code quality specialist.
 model: sonnet
 tools:
@@ -651,7 +651,7 @@ describe("Peer dispatch lint rule — SLICE-75 implementer + release-engineer ag
 name: ${name}
 prompt_id: ${name}
 version: 1.0.0
-evals: evals/agents/${name}.yaml
+evals: planned:evals/agents/${name}.yaml
 description: ${name} specialist.
 model: sonnet
 tools:
@@ -715,7 +715,7 @@ See the project peer-dispatch design notes.
 name: backend-dev
 prompt_id: backend-dev
 version: 1.0.0
-evals: evals/agents/backend-dev.yaml
+evals: planned:evals/agents/backend-dev.yaml
 description: Backend implementation specialist.
 model: sonnet
 disallowedTools: Agent

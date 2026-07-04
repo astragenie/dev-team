@@ -180,7 +180,7 @@ in Step 3 / 3a / 3b prepend the block when non-empty, omit it otherwise.
 
 **Builder routing (FEAT-170 SLICE-C — single-stack specialization):**
 
-The classifier now exposes `FE_ONLY` and `BE_ONLY` alongside `SPLIT_BUILD`. Single-stack slices route to specialist builders; `crew:fullstack-dev` reserved for legitimately cross-cutting or untagged slices.
+The classifier now exposes `FE_ONLY` and `BE_ONLY` alongside `SPLIT_BUILD`. Single-stack slices route to specialist builders; `crew:fullstack-dev` reserved for legitimately cross-cutting or untagged slices. This is the authoritative signal-level implementation of the policy summarized in `docs/routing-table.md`'s "Builder routing matrix" (generated from `docs/routing-table.yaml`) — keep both in sync when adding a new signal here.
 
 | Signals | Builder dispatch |
 |---|---|

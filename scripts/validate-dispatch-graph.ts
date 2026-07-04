@@ -17,34 +17,19 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  PEER_DISPATCH_ALLOWLIST,
+  BIDIRECTIONAL_ALLOWED
+} from "./lib/dispatch/peer-dispatch-allowlist.ts";
 
 const AGENTS_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "agents");
 
-// Agents whose Peer dispatch whitelists are parsed for graph construction.
-// Must be kept in sync with PEER_DISPATCH_ALLOWLIST in validate-agents.ts.
-// SLICE-75 extended to 10 agents: added backend-dev, frontend-dev, fullstack-dev,
-// release-engineer. Note: backend-dev and frontend-dev use disallowedTools: Agent
-// (not tools:) so the lint rule does not fire for them at runtime — but their
-// whitelist declarations are still included in the graph for DAG validation.
-const PEER_DISPATCH_ALLOWLIST = new Set([
-  "document-writer",
-  "refactor",
-  "architect",
-  "uxdesigner",
-  "qa-expert",
-  "performance-engineer",
-  "backend-dev",
-  "frontend-dev",
-  "fullstack-dev",
-  "release-engineer"
-]);
-
-// Documented bidirectional pairs that are intentional and MUST NOT trigger
-// the cycle detector. Format: [agentA, agentB] — order within the pair is
-// irrelevant (both directions are covered).
-export const BIDIRECTIONAL_ALLOWED: Array<[string, string]> = [
-  ["qa-expert", "performance-engineer"]
-];
+// Agents whose Peer dispatch whitelists are parsed for graph construction, and
+// the documented bidirectional cycle-detector exception, now both live in
+// ./lib/dispatch/peer-dispatch-allowlist.ts — a single source shared with
+// validate-agents.ts (previously two independently hand-maintained copies with
+// only a "must be kept in sync" comment enforcing parity).
+export { BIDIRECTIONAL_ALLOWED };
 
 /**
  * Returns true when the edge (from → to) is covered by an allowlisted

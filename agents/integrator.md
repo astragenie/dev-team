@@ -3,7 +3,7 @@ name: integrator
 prompt_id: integrator
 version: 1.0.0
 model_pinned: sonnet
-evals: evals/agents/integrator.yaml
+evals: planned:evals/agents/integrator.yaml
 capabilities:
   role: [verifier]
   surfaces: [api, ui]

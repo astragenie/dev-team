@@ -6,14 +6,14 @@ tier: domain
 description: Per-stack codegen recipes for FE clients/mocks and BE stubs/types from a FEAT's OpenAPI YAML. Run as the first step before any feature work.
 owner: hero-crew
 last_reviewed: 2026-06-06
-triggers: ["builder-fe consumes a new or revised contracts.openapi.yaml", "builder-be consumes a new or revised contracts.openapi.yaml"]
+triggers: ["frontend-dev consumes a new or revised contracts.openapi.yaml", "backend-dev consumes a new or revised contracts.openapi.yaml"]
 ---
 
 # Contract codegen (per-stack recipes)
 
 ## When to Use
 
-You are `crew:builder-fe` or `crew:builder-be` and the slice has a FEAT-scoped `contracts.openapi.yaml`. Run codegen as your FIRST step. Treat the YAML as read-only.
+You are `crew:frontend-dev` or `crew:backend-dev` and the slice has a FEAT-scoped `contracts.openapi.yaml`. Run codegen as your FIRST step. Treat the YAML as read-only.
 
 ## FE recipes
 

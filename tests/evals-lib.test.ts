@@ -219,10 +219,7 @@ describe("assertDispatchedAgent", () => {
   });
 
   test("fails when agent was not dispatched", () => {
-    const r = assertDispatchedAgent(
-      makeInput("output", { trace: { dispatches: [] } }),
-      "reviewer"
-    );
+    const r = assertDispatchedAgent(makeInput("output", { trace: { dispatches: [] } }), "reviewer");
     assert.equal(r.pass, false);
   });
 });

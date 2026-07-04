@@ -15,9 +15,10 @@
 // Lines beyond the cap should push to a skill the agent invokes on demand.
 
 import fs from "node:fs/promises";
-import { readdirSync, readFileSync, type Dirent } from "node:fs";
+import { existsSync, readdirSync, readFileSync, type Dirent } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { PEER_DISPATCH_ALLOWLIST } from "./lib/dispatch/peer-dispatch-allowlist.ts";
 
 const AGENTS_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "agents");
 const MAX_LINES = 350;
@@ -156,18 +157,10 @@ function checkRequiredSections(
 // Note: backend-dev and frontend-dev carry `disallowedTools: Agent` (not `tools:`)
 // so the rule correctly does not fire for them at runtime. Their Peer dispatch
 // sections are forward-looking documentation for when the restriction is lifted.
-const PEER_DISPATCH_ALLOWLIST = new Set([
-  "document-writer",
-  "refactor",
-  "architect",
-  "uxdesigner",
-  "qa-expert",
-  "performance-engineer",
-  "backend-dev",
-  "frontend-dev",
-  "fullstack-dev",
-  "release-engineer"
-]);
+//
+// PEER_DISPATCH_ALLOWLIST itself now lives in ./lib/dispatch/peer-dispatch-allowlist.ts
+// (single source shared with validate-dispatch-graph.ts) — see that module for
+// the membership list and history.
 
 function parseFrontmatterTools(text: string): string[] {
   const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
@@ -279,15 +272,44 @@ function checkPromptIdAndVersion(fm: Record<string, string>, label: string, erro
   }
 }
 
-// FEAT-167 SLICE-A: validate evals field for EVALS_REQUIRED agents.
-// TODO(FEAT-167 SLICE-B): enforce path existence here once evals/ tree lands
-function checkEvalsRequiredForRole(fm: Record<string, string>, label: string, errors: string[]) {
+// FEAT-167 SLICE-A/B: validate evals field for EVALS_REQUIRED agents, and
+// (SLICE-B) verify any declared evals: path actually resolves on disk.
+// A `planned:<path>` value documents an agent that is required to eventually
+// carry a real spec but does not have one authored yet — it is reported as a
+// WARN (visible, non-blocking) instead of a hard CI failure. Any other
+// dangling pointer (no file at the declared path, no `planned:` prefix) is a
+// hard error — the whole point of this check is that a bare frontmatter
+// pointer with no backing file is a silent lie about eval coverage.
+const PLANNED_EVALS_PREFIX = "planned:";
+
+function checkEvalsRequiredForRole(
+  fm: Record<string, string>,
+  label: string,
+  errors: string[],
+  warnings: string[],
+  repoRoot: string
+) {
   const name = fm["name"];
-  if (name === undefined || !EVALS_REQUIRED_AGENT_NAMES.has(name)) return;
   const evals = fm["evals"];
+  const isRequired = name !== undefined && EVALS_REQUIRED_AGENT_NAMES.has(name);
   if (!evals || evals.trim() === "") {
+    if (isRequired) {
+      errors.push(
+        `${label}: agent name "${name}" requires "evals" frontmatter field (FEAT-167 SLICE-A)`
+      );
+    }
+    return;
+  }
+  if (evals.startsWith(PLANNED_EVALS_PREFIX)) {
+    const plannedPath = evals.slice(PLANNED_EVALS_PREFIX.length);
+    warnings.push(`${label}: eval spec not yet authored — planned at "${plannedPath}"`);
+    return;
+  }
+  const resolved = path.join(repoRoot, evals);
+  if (!existsSync(resolved)) {
     errors.push(
-      `${label}: agent name "${name}" requires "evals" frontmatter field (FEAT-167 SLICE-A — path existence enforced in SLICE-B)`
+      `${label}: "evals" frontmatter points at "${evals}", which does not exist on disk (FEAT-167 SLICE-B). ` +
+        `Author the spec, or mark it "planned:${evals}" if it is intentionally not built yet.`
     );
   }
 }
@@ -410,7 +432,6 @@ const NO_LEAD_REF_REQUIRED = new Set([
   "qa-expert",
   "performance-engineer",
   "uxdesigner",
-  "parallel-runner",
   "csharp-reviewer",
   "typescript-reviewer",
   "dev-lite",
@@ -508,9 +529,78 @@ function checkDuplicateNames(
   }
 }
 
+// Light validation bar for agents/3rdparty/*.md — these are vendored
+// community agents, not held to the full core quality bar (no line cap, no
+// Report-contract requirement, no prompt_id/version requirement). Only
+// three structural checks apply: frontmatter parses, file name matches
+// frontmatter `name`, and the `tools:` list contains no non-Claude-Code
+// tool names (e.g. VS Code Copilot Chat tool names dropped in verbatim
+// from a foreign agent pack, which would make the agent silently unable
+// to read/write/execute anything when dispatched).
+const KNOWN_INVALID_TOOL_NAMES = new Set([
+  "changes",
+  "codebase",
+  "editFiles",
+  "extensions",
+  "fetch",
+  "findTestFiles",
+  "githubRepo",
+  "new",
+  "openSimpleBrowser",
+  "problems",
+  "runCommands",
+  "runTasks",
+  "runTests",
+  "search",
+  "searchResults",
+  "terminalLastCommand",
+  "terminalSelection",
+  "testFailure",
+  "usages",
+  "vscodeAPI",
+  "microsoft.docs.mcp"
+]);
+
+async function validateThirdPartyAgents(thirdPartyRoot: string) {
+  const errors: string[] = [];
+  let entries: Dirent[];
+  try {
+    entries = readdirSync(thirdPartyRoot, { withFileTypes: true });
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    return { errors, count: 0 };
+  }
+  const files = entries
+    .filter((e) => e.isFile() && e.name.endsWith(".md"))
+    .map((e) => path.join(thirdPartyRoot, e.name));
+
+  for (const filePath of files) {
+    const label = `3rdparty/${path.basename(filePath)}`;
+    const text = await fs.readFile(filePath, "utf8");
+    const fm = parseFrontmatter(text);
+    if (!fm) {
+      errors.push(`${label}: missing or malformed frontmatter block`);
+      continue;
+    }
+    checkFileName(filePath, fm, label, errors);
+    const tools = parseFrontmatterTools(text);
+    const invalid = tools.filter((t) => KNOWN_INVALID_TOOL_NAMES.has(t));
+    if (invalid.length > 0) {
+      errors.push(
+        `${label}: "tools:" contains non-Claude-Code tool name(s): ${invalid.join(", ")} — ` +
+          "these look like VS Code Copilot Chat tool names, not Claude Code tools " +
+          "(Read, Write, Edit, Bash, Glob, Grep, WebFetch, ...)"
+      );
+    }
+  }
+  return { errors, count: files.length };
+}
+
 export async function validateAgents(agentsRoot = AGENTS_ROOT) {
+  const repoRoot = path.dirname(agentsRoot);
   const files = await findAgentFiles(agentsRoot);
   const errors: string[] = [];
+  const warnings: string[] = [];
   const agents: Array<{
     label: string;
     filePath: string;
@@ -529,7 +619,7 @@ export async function validateAgents(agentsRoot = AGENTS_ROOT) {
     agents.push({ label, filePath, fm, text });
     checkRequiredFields(fm, label, errors);
     checkPromptIdAndVersion(fm, label, errors);
-    checkEvalsRequiredForRole(fm, label, errors);
+    checkEvalsRequiredForRole(fm, label, errors, warnings, repoRoot);
     checkFileName(filePath, fm, label, errors);
     checkLineCount(text, fm, label, errors);
     checkRequiredSections(text, fm, label, errors);
@@ -541,7 +631,15 @@ export async function validateAgents(agentsRoot = AGENTS_ROOT) {
     await checkUniversalsHash(text, fm, label, errors);
   }
   checkDuplicateNames(agents, errors);
-  return { ok: errors.length === 0, errors, agentCount: agents.length };
+  const thirdPartyResult = await validateThirdPartyAgents(path.join(agentsRoot, "3rdparty"));
+  errors.push(...thirdPartyResult.errors);
+  return {
+    ok: errors.length === 0,
+    errors,
+    warnings,
+    agentCount: agents.length,
+    thirdPartyCount: thirdPartyResult.count
+  };
 }
 
 function isMainEntry() {
@@ -551,11 +649,17 @@ function isMainEntry() {
 
 if (isMainEntry()) {
   const result = await validateAgents();
+  if (result.warnings.length > 0) {
+    console.warn(`Agent validation: ${result.warnings.length} warning(s) (non-blocking)`);
+    for (const w of result.warnings) console.warn(`  - ${w}`);
+  }
   if (!result.ok) {
     console.error(`Agent validation failed: ${result.errors.length} error(s)`);
     for (const e of result.errors) console.error(`  - ${e}`);
     process.exitCode = 1;
   } else {
-    console.log(`Agents OK: ${result.agentCount} agent(s) checked.`);
+    console.log(
+      `Agents OK: ${result.agentCount} agent(s) checked, ${result.thirdPartyCount} 3rdparty agent(s) checked.`
+    );
   }
 }
