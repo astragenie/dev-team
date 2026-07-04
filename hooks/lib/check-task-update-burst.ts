@@ -101,6 +101,7 @@ export async function runCheckTaskUpdateBurstHook(raw: string): Promise<string |
   const { session_id, cwd } = input;
   const config = await readCrewConfig(cwd);
   if (!isEnabled("cost-hygiene", config)) return null;
+  if (!isEnabled("task-update-burst-warn", config)) return null;
   const nowIso = new Date().toISOString();
   const state = await loadBurstState(cwd, session_id, nowIso);
   const elapsed = Date.parse(nowIso) - Date.parse(state.last_call_at);

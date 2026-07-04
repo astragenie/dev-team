@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // PreToolUse hook on TaskUpdate. Default-on; opt out via
-// crew.json features["cost-hygiene"].enabled=false. Always exits 0.
+// crew.json features["cost-hygiene"].enabled=false or
+// features["task-update-burst-warn"].enabled=false. Always exits 0.
 // Non-blocking telemetry only — agent prompt rule does the actual gating (FEAT-155).
 import { runCheckTaskUpdateBurstHook } from "./lib/check-task-update-burst.ts";
 import { logHookError } from "./hook-error.ts";

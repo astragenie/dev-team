@@ -19,6 +19,15 @@ export interface ArtifactFields {
   confidence?: string | undefined;
   risks?: string | undefined;
   decision?: string | undefined;
+  /**
+   * Canonical enum verdict for review-result / validation-result (P1.3).
+   * `decision` stays the raw legacy value (back-compat body prose); `verdict`
+   * is the normalized enum written to frontmatter and consumed by
+   * workflow-state's ARTIFACT_HANDLERS gate mapping. Absent = legacy artifact.
+   */
+  verdict?: string | undefined;
+  /** Required (enforced by ValidationArtifactSchema) when `verdict` is "skipped". */
+  skipReason?: string | undefined;
   evidence?: string | undefined;
   testSummary?: string | undefined;
   testSummarySkipReason?: string | undefined;

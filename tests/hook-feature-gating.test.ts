@@ -13,6 +13,25 @@ const CHECK_REDUNDANT_READ_PATH = path.join(__dirname, "..", "hooks", "check-red
 const CHECK_SUBAGENT_RETURN_PATH = path.join(__dirname, "..", "hooks", "check-subagent-return.ts");
 const PREFLIGHT_SHELL_PATH = path.join(__dirname, "..", "hooks", "preflight-shell.ts");
 const PRE_PUSH_VERIFIER_PATH = path.join(__dirname, "..", "hooks", "pre-push-verifier.ts");
+const CHECK_TASK_UPDATE_BURST_PATH = path.join(
+  __dirname,
+  "..",
+  "hooks",
+  "check-task-update-burst.ts"
+);
+const PRE_TOOL_USE_BASH_GATE_PATH = path.join(
+  __dirname,
+  "..",
+  "hooks",
+  "pre-tool-use-bash-gate.ts"
+);
+const POST_TOOL_USE_BASH_GATE_PATH = path.join(
+  __dirname,
+  "..",
+  "hooks",
+  "post-tool-use-bash-gate.ts"
+);
+const OTEL_POST_TOOL_USE_PATH = path.join(__dirname, "..", "hooks", "otel-post-tool-use.ts");
 
 async function makeRepo() {
   return await fs.mkdtemp(path.join(os.tmpdir(), "hook-gating-test-"));
@@ -543,6 +562,177 @@ test("pre-push-verifier: feature enabled + deployment.md push.verify:false → p
     const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
     assert.equal(result.exitCode, 0);
     assert.equal(result.stdout, "");
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// P1.0 feature-flag envelope — check-task-update-burst.ts (task-update-burst-warn)
+// ──────────────────────────────────────────────────────────────────────────
+
+test("check-task-update-burst: task-update-burst-warn disabled → no burst rows even after 3 calls", async () => {
+  const repo = await makeRepo();
+  try {
+    const crewDir = path.join(repo, ".claude");
+    await fs.mkdir(crewDir, { recursive: true });
+    await fs.writeFile(
+      path.join(crewDir, "crew.json"),
+      JSON.stringify({ features: { "task-update-burst-warn": { enabled: false } } }),
+      "utf8"
+    );
+
+    const payload = (sid: string) =>
+      JSON.stringify({
+        session_id: sid,
+        cwd: repo,
+        tool_input: { taskId: "1", status: "in_progress" }
+      });
+
+    for (let i = 0; i < 3; i++) {
+      const result = await runHook(CHECK_TASK_UPDATE_BURST_PATH, payload("burst-off"));
+      assert.equal(result.exitCode, 0);
+    }
+
+    const burstLog = path.join(repo, ".claude", "logs", "task-update-bursts.jsonl");
+    await assert.rejects(fs.access(burstLog), "burst log should not exist when flag disabled");
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+test("check-task-update-burst: missing crew.json → task-update-burst-warn defaults enabled, fires on 3rd call", async () => {
+  const repo = await makeRepo();
+  try {
+    const payload = (sid: string) =>
+      JSON.stringify({
+        session_id: sid,
+        cwd: repo,
+        tool_input: { taskId: "1", status: "in_progress" }
+      });
+
+    for (let i = 0; i < 3; i++) {
+      const result = await runHook(CHECK_TASK_UPDATE_BURST_PATH, payload("burst-on"));
+      assert.equal(result.exitCode, 0);
+    }
+
+    const burstLog = path.join(repo, ".claude", "logs", "task-update-bursts.jsonl");
+    const raw = await fs.readFile(burstLog, "utf8");
+    assert.match(raw, /"consecutive_count":3/);
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// P1.0 feature-flag envelope — bash-gate hooks (bash-gate-telemetry)
+// ──────────────────────────────────────────────────────────────────────────
+
+test("pre-tool-use-bash-gate: bash-gate-telemetry disabled → stderr diagnostic reports disabled, exit 0", async () => {
+  const repo = await makeRepo();
+  try {
+    const crewDir = path.join(repo, ".claude");
+    await fs.mkdir(crewDir, { recursive: true });
+    await fs.writeFile(
+      path.join(crewDir, "crew.json"),
+      JSON.stringify({ features: { "bash-gate-telemetry": { enabled: false } } }),
+      "utf8"
+    );
+    const payload = JSON.stringify({
+      session_id: "s1",
+      cwd: repo,
+      tool_input: { command: "bun run lint" }
+    });
+    const result = await runHook(PRE_TOOL_USE_BASH_GATE_PATH, payload);
+    assert.equal(result.exitCode, 0);
+    assert.match(result.stderr, /\[features\] bash-gate-telemetry: disabled/);
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+test("pre-tool-use-bash-gate: missing crew.json → bash-gate-telemetry defaults enabled", async () => {
+  const repo = await makeRepo();
+  try {
+    const payload = JSON.stringify({
+      session_id: "s1",
+      cwd: repo,
+      tool_input: { command: "bun run lint" }
+    });
+    const result = await runHook(PRE_TOOL_USE_BASH_GATE_PATH, payload);
+    assert.equal(result.exitCode, 0);
+    assert.match(result.stderr, /\[features\] bash-gate-telemetry: enabled/);
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+test("post-tool-use-bash-gate: bash-gate-telemetry disabled → stderr diagnostic reports disabled, exit 0", async () => {
+  const repo = await makeRepo();
+  try {
+    const crewDir = path.join(repo, ".claude");
+    await fs.mkdir(crewDir, { recursive: true });
+    await fs.writeFile(
+      path.join(crewDir, "crew.json"),
+      JSON.stringify({ features: { "bash-gate-telemetry": { enabled: false } } }),
+      "utf8"
+    );
+    const payload = JSON.stringify({
+      session_id: "s1",
+      cwd: repo,
+      tool_input: { command: "bun run lint" },
+      tool_response: { exitCode: 0 }
+    });
+    const result = await runHook(POST_TOOL_USE_BASH_GATE_PATH, payload);
+    assert.equal(result.exitCode, 0);
+    assert.match(result.stderr, /\[features\] bash-gate-telemetry: disabled/);
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// P1.0 feature-flag envelope — otel-post-tool-use.ts (otel-telemetry)
+// ──────────────────────────────────────────────────────────────────────────
+
+test("otel-post-tool-use: otel-telemetry disabled → stderr diagnostic reports disabled, exit 0, no span attempt", async () => {
+  const repo = await makeRepo();
+  try {
+    const crewDir = path.join(repo, ".claude");
+    await fs.mkdir(crewDir, { recursive: true });
+    await fs.writeFile(
+      path.join(crewDir, "crew.json"),
+      JSON.stringify({ features: { "otel-telemetry": { enabled: false } } }),
+      "utf8"
+    );
+    const payload = JSON.stringify({
+      session_id: "s1",
+      cwd: repo,
+      tool_name: "Read",
+      tool_input: { file_path: "x.ts" }
+    });
+    const result = await runHook(OTEL_POST_TOOL_USE_PATH, payload, {
+      CREW_OTEL_ENABLED: "1"
+    });
+    assert.equal(result.exitCode, 0);
+    assert.match(result.stderr, /\[features\] otel-telemetry: disabled/);
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+test("otel-post-tool-use: missing crew.json → otel-telemetry defaults enabled (diagnostic fires before the CREW_OTEL_ENABLED gate)", async () => {
+  const repo = await makeRepo();
+  try {
+    const payload = JSON.stringify({
+      session_id: "s1",
+      cwd: repo,
+      tool_name: "Read",
+      tool_input: { file_path: "x.ts" }
+    });
+    const result = await runHook(OTEL_POST_TOOL_USE_PATH, payload);
+    assert.equal(result.exitCode, 0);
+    assert.match(result.stderr, /\[features\] otel-telemetry: enabled/);
   } finally {
     await cleanup(repo);
   }

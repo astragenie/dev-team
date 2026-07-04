@@ -19,6 +19,7 @@ import type { Dirent } from "node:fs";
 import path from "node:path";
 import { logHookError } from "./hook-error.ts";
 import { readCrewConfig, isEnabled } from "../scripts/lib/features-service.ts";
+import { parseFrontmatterBlock } from "../scripts/lib/briefing/collect-cost-parser.ts";
 
 const CACHE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
@@ -79,6 +80,25 @@ interface ValidationScan {
   newestDecision: string | null;
 }
 
+// P1.3: prefer the canonical frontmatter `decision:` enum (pass|fail|skipped)
+// when present — only "pass" counts as a pass. Fall back to the body-prose
+// "Decision: passed"/"Decision: approved" regex for pre-P1.3 (legacy)
+// artifacts that have no frontmatter decision field at all. Hoisted out of
+// scanValidationArtifacts to stay under the cognitive-complexity cap.
+function resolveDecisionFromArtifactContent(content: string): {
+  decision: string | null;
+  isPass: boolean;
+} {
+  const fm = parseFrontmatterBlock(content);
+  if (fm["decision"]) {
+    const decision = fm["decision"].toLowerCase();
+    return { decision, isPass: decision === "pass" };
+  }
+  const decisionMatch = content.match(/^[-\s]*Decision:\s*(\w+)/im);
+  const decision = (decisionMatch?.[1] ?? "").toLowerCase() || null;
+  return { decision, isPass: decision === "passed" || decision === "approved" };
+}
+
 async function scanValidationArtifacts(repoPath: string): Promise<ValidationScan> {
   const validationsDir = path.join(repoPath, ".claude", "artifacts", "crew", "validations");
   const cutoffMs = Date.now() - CACHE_WINDOW_MS;
@@ -115,11 +135,8 @@ async function scanValidationArtifacts(repoPath: string): Promise<ValidationScan
       continue;
     }
 
-    // Match "Decision: passed" or "Decision: approved" (case-insensitive, leading whitespace ok)
-    const decisionMatch = content.match(/^[-\s]*Decision:\s*(\w+)/im);
-    const decision = (decisionMatch?.[1] ?? "").toLowerCase() || null;
-
-    if (decision === "passed" || decision === "approved") {
+    const { decision, isPass } = resolveDecisionFromArtifactContent(content);
+    if (isPass) {
       return { hasPassed: true, newestArtifactPath: filePath, newestDecision: decision };
     }
     // Keep scanning — there may be an older PASS behind a recent non-pass

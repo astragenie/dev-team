@@ -6,6 +6,12 @@ import { maybeEmitCostReport } from "./lib/cost-hygiene/emit-cost-report.ts";
 import { costSliceHandler } from "./lib/cost-hygiene/cost-slice-handler.ts";
 import { normalizeMsysPath } from "./lib/fs-utils.ts";
 import { assertBunPresent } from "./lib/installer/bun-preflight.ts";
+import {
+  normalizeReviewDecision,
+  normalizeValidationDecision,
+  ReviewArtifactSchema,
+  ValidationArtifactSchema
+} from "./lib/schemas.ts";
 
 // Flag schema. Each entry maps a CLI flag to the flags-object key and the
 // arity (whether it consumes a value). Aliases (e.g. `--verdict` → `decision`)
@@ -94,6 +100,7 @@ const FLAG_SPEC = {
   "--judge": { key: "judge" },
   "--split": { key: "split" },
   "--severity": { key: "severity" },
+  "--skip-reason": { key: "skipReason" },
   "--slice": { key: "slice" },
   "--started-at": { key: "startedAt" },
   "--status": { key: "status" },
@@ -233,7 +240,8 @@ function buildDefaultFlags(): Flags {
     budget: null,
     gepaK: null,
     since: null,
-    tag: null
+    tag: null,
+    skipReason: null
   };
 }
 
@@ -337,11 +345,11 @@ function usage(target: string | null = null) {
     "write-handoff":
       "  node scripts/crew.mjs write-handoff --repo <path> --title <text> [--from <role>] [--to <role>] [--files <a,b>]",
     "write-review-result":
-      "  node scripts/crew.mjs write-review-result --repo <path> --title <text> [--reviewer <role>] [--decision <decision>] [--verdict <decision>]",
+      "  node scripts/crew.mjs write-review-result --repo <path> --title <text> [--reviewer <role>] [--decision approved|approved_with_notes|rejected|needs_fix] [--verdict <decision>]",
     "write-validation-plan":
       "  node scripts/crew.mjs write-validation-plan --repo <path> --title <text> [--validator <role>] [--environment <name>]",
     "write-validation-result":
-      "  node scripts/crew.mjs write-validation-result --repo <path> --title <text> [--validator <role>] [--environment <name>] [--decision <decision>]",
+      "  node scripts/crew.mjs write-validation-result --repo <path> --title <text> [--validator <role>] [--environment <name>] [--decision pass|fail|skipped] [--skip-reason <text>]",
     "write-deployment-check":
       "  node scripts/crew.mjs write-deployment-check --repo <path> --title <text> [--deployer <role>] [--environment dev|prod] [--resource <name>] [--url <service-url>] [--revision <id>] [--decision <decision>]",
     "write-final-synthesis":
@@ -492,6 +500,64 @@ function assertBuilderName(
     process.exit(2);
   }
   return builder as "fullstack-dev" | "backend-dev" | "frontend-dev";
+}
+
+// Resolve --decision into the canonical review verdict enum, exiting with
+// code 2 on an unrecognized value (needs_fix is accepted as a rejected alias
+// — P1.3 D7). Hoisted out of write-review-result to stay under the
+// cognitive-complexity cap, mirroring assertBuilderName above.
+function resolveReviewVerdict(rawDecision: string | null): string | undefined {
+  if (!rawDecision) return undefined;
+  const normalized = normalizeReviewDecision(rawDecision);
+  if (!normalized) {
+    process.stderr.write(
+      `[crew] write-review-result refused: unknown decision "${rawDecision}". Valid values: approved, approved_with_notes, rejected (needs_fix accepted as an alias for rejected).\n`
+    );
+    process.exit(2);
+  }
+  return normalized.canonical;
+}
+
+// Resolve --decision into the canonical validation verdict enum, exiting with
+// code 2 on an unrecognized value. Legacy values real callers already emit
+// (passed, passed_with_notes, failed) normalize rather than refuse (P1.3).
+function resolveValidationVerdict(rawDecision: string | null): string | undefined {
+  if (!rawDecision) return undefined;
+  const normalized = normalizeValidationDecision(rawDecision);
+  if (!normalized) {
+    process.stderr.write(
+      `[crew] write-validation-result refused: unknown decision "${rawDecision}". Valid values: pass, fail, skipped (passed, passed_with_notes, failed accepted as legacy aliases).\n`
+    );
+    process.exit(2);
+  }
+  return normalized.canonical;
+}
+
+// Refuses (exit 2) an approved/approved_with_notes review of a code-bearing
+// diff that carries neither --test-summary nor --test-summary-skip-reason.
+// Hoisted out of write-review-result to stay under the complexity cap.
+function refuseIfTestAdequacyMissing(verdict: string | undefined, flags: Flags): void {
+  const isApproved = verdict === "approved" || verdict === "approved_with_notes";
+  const isCodeBearing = !flags.nonCode;
+  if (!isApproved || !isCodeBearing || flags.testSummary || flags.testSummarySkipReason) return;
+  process.stderr.write(
+    "[crew] write-review-result refused: --test-summary or --test-summary-skip-reason is required for approved code-bearing reviews. " +
+      "Pass --non-code if the diff is doc-only.\n"
+  );
+  process.exit(2);
+}
+
+// Shared refusal path for ReviewArtifactSchema / ValidationArtifactSchema
+// safeParse results (P1.3). Structural rather than importing zod's
+// SafeParseReturnType — same shape either schema's safeParse returns.
+function refuseIfSchemaInvalid(
+  command: string,
+  result: { success: boolean; error?: { issues: Array<{ message: string }> } }
+): void {
+  if (result.success) return;
+  const messages = result.error?.issues.map((i) => i.message).join("; ") ?? "unknown error";
+  process.stderr.write(`[crew] ${command} refused: schema validation failed: ${messages}\n`);
+  process.exit(2);
 }
 
 // Split a comma-delimited flag into a trimmed, non-empty string list.
@@ -898,30 +964,31 @@ const COMMANDS = {
   "write-handoff-and-bundle": async ({ repoPath, flags, positionals }: CommandContext) =>
     writeHandoffAndBundle({ repoPath, flags, positionals }),
   "write-review-result": async ({ repoPath, flags, positionals }: CommandContext) => {
-    const decision = flags.decision;
-    const VALID_DECISIONS = new Set(["approved", "approved_with_notes", "rejected"]);
-    if (decision && !VALID_DECISIONS.has(decision)) {
-      process.stderr.write(
-        `[crew] write-review-result refused: unknown decision "${decision}". Valid values: approved, approved_with_notes, rejected.\n`
-      );
-      process.exit(2);
-    }
-    const isApproved = decision === "approved" || decision === "approved_with_notes";
-    const isCodeBearing = !flags.nonCode;
-    if (isApproved && isCodeBearing && !flags.testSummary && !flags.testSummarySkipReason) {
-      process.stderr.write(
-        "[crew] write-review-result refused: --test-summary or --test-summary-skip-reason is required for approved code-bearing reviews. " +
-          "Pass --non-code if the diff is doc-only.\n"
-      );
-      process.exit(2);
-    }
+    const rawDecision = flags.decision;
+    // verdict is the canonical enum written to frontmatter; `decision` (below)
+    // stays the raw value for body-prose back-compat.
+    const verdict = resolveReviewVerdict(rawDecision);
+    refuseIfTestAdequacyMissing(verdict, flags);
+    const status = flags.status !== "open" ? (flags.status ?? undefined) : undefined;
+    refuseIfSchemaInvalid(
+      "write-review-result",
+      ReviewArtifactSchema.safeParse({
+        decision: verdict,
+        phase: flags.phase ?? undefined,
+        feature: flags.feature ?? undefined,
+        slice: flags.slice ?? undefined,
+        findings: flags.findings ?? undefined,
+        status
+      })
+    );
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
     const r = await writeArtifact(repoPath, "review-result", {
       title: flags.title || positionals.join(" ") || "Review Result",
       reviewer: flags.reviewer || flags.owner || "reviewer",
-      decision: decision ?? undefined,
+      decision: rawDecision ?? undefined,
+      verdict,
       // Only pass status if it's not the default "open" value from parseArgs.
-      status: flags.status !== "open" ? (flags.status ?? undefined) : undefined,
+      status,
       nonCode: flags.nonCode ?? undefined,
       findings: flags.findings ?? null,
       scaffold: flags.scaffold ?? undefined,
@@ -964,17 +1031,37 @@ const COMMANDS = {
     return r.value;
   },
   "write-validation-result": async ({ repoPath, flags, positionals }: CommandContext) => {
+    const rawDecision = flags.decision;
+    // verdict is the canonical enum written to frontmatter; `decision` (below)
+    // stays the raw value for body-prose back-compat.
+    const verdict = resolveValidationVerdict(rawDecision);
+    const status = flags.status !== "open" ? (flags.status ?? undefined) : undefined;
+    refuseIfSchemaInvalid(
+      "write-validation-result",
+      ValidationArtifactSchema.safeParse({
+        decision: verdict,
+        skip_reason: flags.skipReason ?? undefined,
+        phase: flags.phase ?? undefined,
+        feature: flags.feature ?? undefined,
+        slice: flags.slice ?? undefined,
+        findings: flags.findings ?? undefined,
+        status,
+        validation_evidence: flags.validationEvidence ?? undefined
+      })
+    );
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
     const r = await writeArtifact(repoPath, "validation-result", {
       title: flags.title || positionals.join(" ") || "Validation Result",
       validator: flags.validator || flags.owner || "verifier",
+      decision: rawDecision ?? undefined,
+      verdict,
+      skipReason: flags.skipReason ?? undefined,
       // Only pass status if it's not the default "open" value from parseArgs.
-      status: flags.status !== "open" ? (flags.status ?? undefined) : undefined,
+      status,
       findings: flags.findings ?? null,
       scaffold: flags.scaffold ?? undefined,
       ...pickFlags(flags, [
         "environment",
-        "decision",
         "goal",
         "summary",
         "evidence",

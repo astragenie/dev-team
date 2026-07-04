@@ -103,6 +103,14 @@ function renderOptionalFrontmatter(fields: ArtifactFields): string {
   if (fields.status) {
     lines.push(`status: ${fields.status}`);
   }
+  // P1.3: canonical review/validation verdict enum, distinct from the legacy
+  // free-form `decision` body-prose field (see ArtifactFields.verdict).
+  if (fields.verdict) {
+    lines.push(`decision: ${fields.verdict}`);
+  }
+  if (fields.skipReason) {
+    lines.push(`skip_reason: ${JSON.stringify(fields.skipReason)}`);
+  }
   if (lines.length === 0) {
     return "";
   }
