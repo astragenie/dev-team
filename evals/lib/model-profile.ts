@@ -78,9 +78,21 @@ export function validateModelsConfig(data: unknown): ModelsConfig {
   };
 }
 
+const configCache = new Map<string, ModelsConfig>();
+
 export async function loadModelsConfig(repoRoot: string): Promise<ModelsConfig> {
+  const key = path.resolve(repoRoot);
+  const cached = configCache.get(key);
+  if (cached) return cached;
   const raw = await fs.readFile(path.join(repoRoot, "models.yaml"), "utf8");
-  return validateModelsConfig(parseYaml(raw));
+  const config = validateModelsConfig(parseYaml(raw));
+  configCache.set(key, config);
+  return config;
+}
+
+/** Test seam: drops memoized models.yaml parses (config is immutable per run otherwise). */
+export function clearModelsConfigCache(): void {
+  configCache.clear();
 }
 
 /** Resolves a single tier value for a named profile. Throws ModelProfileError on an unknown profile name. */
@@ -97,19 +109,24 @@ export function resolveProfileTier(config: ModelsConfig, profileName: string, ti
 /**
  * Resolves the model string for a live candidate dispatch.
  *
- * - `CREW_MODEL_PROFILE` unset: identical to the pre-Decision-4 behavior —
- *   `candidateCfg.model ?? DEFAULT_CANDIDATE_MODEL`. models.yaml is never
- *   read in this path.
- * - `CREW_MODEL_PROFILE` set: loads models.yaml and resolves that profile's
- *   "standard" tier, OVERRIDING any `candidate.model` in the eval spec — the
- *   point of the env var is swapping every candidate's model from one place
- *   for cross-provider / profile testing without hand-editing every yaml.
+ * Resolution order (highest wins):
+ * 1. `CREW_CANDIDATE_MODEL` — direct model override, no models.yaml read.
+ * 2. `CREW_MODEL_PROFILE` — loads models.yaml (memoized) and resolves that
+ *    profile's "standard" tier, OVERRIDING any `candidate.model` in the eval
+ *    spec — the point of the env var is swapping every candidate's model from
+ *    one place for cross-provider / profile testing without hand-editing
+ *    every yaml.
+ * 3. Neither set: identical to the pre-Decision-4 behavior —
+ *    `candidateCfg.model ?? DEFAULT_CANDIDATE_MODEL`. models.yaml is never
+ *    read in this path.
  */
 export async function resolveCandidateModel(
   repoRoot: string,
   candidateCfg: { model?: string } | undefined,
   env: NodeJS.ProcessEnv = process.env
 ): Promise<string> {
+  const directOverride = env["CREW_CANDIDATE_MODEL"];
+  if (directOverride) return directOverride;
   const profileName = env["CREW_MODEL_PROFILE"];
   if (!profileName) {
     return candidateCfg?.model ?? DEFAULT_CANDIDATE_MODEL;

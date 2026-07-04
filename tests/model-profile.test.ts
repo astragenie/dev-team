@@ -13,6 +13,7 @@ import path from "node:path";
 import {
   validateModelsConfig,
   loadModelsConfig,
+  clearModelsConfigCache,
   resolveProfileTier,
   resolveCandidateModel,
   ModelProfileError,
@@ -89,6 +90,19 @@ describe("loadModelsConfig", () => {
     const config = await loadModelsConfig(root);
     assert.equal(config.default_profile, "claude");
   });
+
+  test("memoizes per repo root — a second call does not re-read the file", async () => {
+    clearModelsConfigCache();
+    const root = await makeTmpRepo(
+      'version: "1.0.0"\ndefault_profile: claude\nprofiles:\n  claude:\n    reasoning: opus\n    standard: sonnet\n    light: haiku\n'
+    );
+    const first = await loadModelsConfig(root);
+    await fs.rm(path.join(root, "models.yaml")); // file gone — cached parse must still serve
+    const second = await loadModelsConfig(root);
+    assert.equal(second, first);
+    clearModelsConfigCache();
+    await assert.rejects(() => loadModelsConfig(root)); // cache cleared -> real read fails
+  });
 });
 
 describe("resolveCandidateModel — no behavior change when profile absent", () => {
@@ -119,6 +133,15 @@ describe("resolveCandidateModel — profile override", () => {
       { CREW_MODEL_PROFILE: "claude" }
     );
     assert.equal(model, "sonnet");
+  });
+
+  test("CREW_CANDIDATE_MODEL wins over profile and yaml, without reading models.yaml", async () => {
+    const model = await resolveCandidateModel(
+      "/definitely/does/not/exist", // direct override must not touch disk
+      { model: "claude-opus-4-8" },
+      { CREW_CANDIDATE_MODEL: "gpt-x-test", CREW_MODEL_PROFILE: "claude" }
+    );
+    assert.equal(model, "gpt-x-test");
   });
 
   test("throws a ModelProfileError for an unknown CREW_MODEL_PROFILE value", async () => {
