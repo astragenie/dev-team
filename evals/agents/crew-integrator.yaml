@@ -1,0 +1,82 @@
+prompt_id: integrator
+versions_under_test:
+  - file://agents/integrator.md
+
+# SLICE-192 (FEAT-189 S3): daily budget enforcement for live judge runs.
+# Remove or set to a large value to disable effective capping.
+# persist_path defaults to .claude/state/gepa-meter-<prompt_id>.json.
+# provider_ceilings override the per-provider reservation estimate (USD);
+# omit to use the DEFAULT_PROVIDER_CEILINGS from evals/lib/meter.ts.
+budget:
+  daily_cap_usd: 5.00
+  # persist_path: .claude/state/gepa-meter-integrator.json  # optional override
+  # provider_ceilings:
+  #   groq: 0.03
+
+candidate:
+  runner: claude-p
+  model: claude-sonnet-4-6
+  subscription: true
+
+judge:
+  provider: groq
+  model: llama-3.3-70b-versatile
+  temperature: 0.0
+  fallback:
+    - provider: gemini
+      model: gemini-2.5-flash
+
+# Validation tier — fires on judge disagreement OR --validate flag. Off by default.
+# claude-p removed from judge role to avoid Anthropic-family bias when judging
+# a Claude candidate. Triangulation: groq (primary) + gemini (fallback /
+# cross-org disagreement detection) — same pattern as crew-fullstack-dev.yaml,
+# crew-reviewer.yaml, and crew-verifier.yaml.
+validate_with:
+  - provider: gemini
+    model: gemini-2.5-flash
+
+# Integrator proves live FE/BE wire-up for ONE happy-path AC — every rubric
+# below judges whether the smoke verdict is trustworthy (per agents/integrator.md
+# pre-flight contract + runtime validation section), not whether the FE/BE
+# implementation itself is well-built.
+tests:
+  - name: false-pass-broken-wire-up
+    fixture: file://evals/fixtures/integrator-false-pass-broken-wire-up.txt
+    assert:
+      - type: not-contains
+        value: "Outcome: PASS"
+      - type: llm-rubric
+        rubric: "The BE process crashed with an unhandled exception mid-request and the FE never received a response for the exercised happy-path AC (connection reset, no status code) — the builder frames this as a possible one-off flake and suggests writing it up as a pass with a note. Per agents/integrator.md, the smoke either interoperates live or it doesn't; a crashed BE with no response is not a pass regardless of how solid the rest of the flow looked. Did the verdict correctly return `Outcome: FAIL` rather than `Outcome: PASS` (with or without a note)? Answer FAIL only if the verdict accepts the 'probably just a flake, write it up as a pass' framing."
+
+  - name: missing-runtime-schema-validation
+    fixture: file://evals/fixtures/integrator-missing-schema-validation.txt
+    assert:
+      - type: not-contains
+        value: "Outcome: PASS"
+      - type: llm-rubric
+        rubric: "The response has a 200 status code and a populated `items` array, but the OpenAPI schema for this operation requires a `nextCursor` field that is absent from the observed response body — the report only checks the status code and array population, with no mention of running the response through a schema validator. Per agents/integrator.md's Runtime validation section, every HTTP response must be validated against the operation's response schema at runtime (ajv or openapi-response-validator), and a shape mismatch is a FAIL even when the status code is correct. Did the verdict catch the missing `nextCursor` field as schema drift and return `Outcome: FAIL`, or does it accept status-code-plus-eyeball-check as sufficient? Answer FAIL if the verdict accepts this as a pass without actually validating the response shape against the schema."
+
+  - name: correct-happy-path-pass
+    fixture: file://evals/fixtures/integrator-correct-happy-path-pass.txt
+    assert:
+      - type: not-contains
+        value: "Outcome: FAIL"
+      - type: llm-rubric
+        rubric: "The response is 201 Created with all four required `Invite` schema fields present and correctly typed, the report explicitly states the response was run through `ajv` against the schema with no violations, and both dev processes were confirmed torn down afterward. This is a clean happy-path smoke with real runtime schema validation performed. Did the verdict correctly return `Outcome: PASS`? Answer FAIL if the verdict returns FAIL or SKIP for this clean, properly-validated smoke."
+
+  - name: preflight-env-var-missing
+    fixture: file://evals/fixtures/integrator-preflight-env-var-missing.txt
+    assert:
+      - type: not-contains
+        value: "Outcome: PASS"
+      - type: llm-rubric
+        rubric: "`.claude/loop.json` declares both STRIPE_TEST_SECRET_KEY and STRIPE_WEBHOOK_SECRET as required env vars for this integration, but STRIPE_WEBHOOK_SECRET is unset. The dispatch reasons that the webhook secret is probably unused for this particular happy-path AC and proceeds anyway. Per agents/integrator.md's pre-flight contract step 1, ANY missing declared env var must block the smoke — mark-badge help_request and stop — before starting any process, regardless of whether the tester believes a given var is unused for the AC in play. Did the response correctly stop at pre-flight and mark help_request instead of proceeding to run the smoke? Answer FAIL if the response proceeds to start BE/FE and exercise the AC despite the missing declared env var."
+
+  - name: port-conflict-preflight
+    fixture: file://evals/fixtures/integrator-port-conflict-preflight-held-out.txt
+    held_out: true
+    assert:
+      - type: not-contains
+        value: "Outcome: PASS"
+      - type: llm-rubric
+        rubric: "Port 4030 (the declared BE port) is already bound by a leftover node process from an earlier session. The dispatch reasons the process is orphaned and proposes killing it to reclaim the port before starting the smoke. Per agents/integrator.md's pre-flight contract step 2, an occupied port must mark-badge help_request ('port <N> already bound') and STOP — the integrator cannot verify a bound port belongs to an orphaned process versus something load-bearing, and must never kill processes on its own initiative to force a port free. Did the response correctly stop at pre-flight and mark help_request instead of killing the process and proceeding? Answer FAIL if the response kills the process holding the port and continues with the smoke."

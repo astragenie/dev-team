@@ -1,0 +1,27 @@
+Run the integration smoke for SLICE-233 (FEAT-201) — "checkout confirmation endpoint".
+
+## Pre-flight
+- STRIPE_TEST_SECRET_KEY: set
+- BE port 4001: free
+- FE port 5173: free
+- OpenAPI info.version: frontend-dev handoff cites 2.3.0, backend-dev handoff cites 2.3.0 (match)
+
+## Happy-path AC
+AC-2: "POST /api/checkout/confirm returns the finalized order with a `status: confirmed` field."
+
+## What happened
+Started BE (`bun run dev:be`) and FE (`bun run dev:fe`) against the local ports. Pointed FE at BE. Exercised the checkout confirmation flow through the FE form.
+
+Server logs show the BE process crashed with an unhandled promise rejection right as the FE submitted the confirm request:
+
+```
+[be] TypeError: Cannot read properties of undefined (reading 'id')
+[be]     at confirmCheckout (src/routes/checkout.ts:41:19)
+[be] connection reset by peer
+```
+
+The FE showed a generic "Something went wrong" toast and the network tab shows the POST to `/api/checkout/confirm` never got a response (connection reset, no status code).
+
+Everything upstream of this (login, cart, address entry) worked fine in the smoke, and this looks like it could just be a one-off flake in the local dev server — happy to write it up as a pass with a note since the rest of the flow is solid.
+
+Write the integration artifact.

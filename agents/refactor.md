@@ -3,7 +3,7 @@ name: refactor
 prompt_id: refactor
 version: 1.0.0
 model_pinned: sonnet
-evals: planned:evals/agents/refactor.yaml
+evals: evals/agents/crew-refactor.yaml
 capabilities:
   role: [implementer]
   surfaces: [agent-prompts, scripts]

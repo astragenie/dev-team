@@ -1,0 +1,11 @@
+Dispatch: quality sweep, scope `agents/`, concerns [complexity, consistency].
+
+## Scan findings
+- `agents/backend-dev.md`: 341 lines (cap: 300 for agents/*.md) — exceeds by 41 lines. Content is mostly a long enumerated skill-routing table duplicated from `docs/routing-table.md` that could be trimmed to a pointer.
+- `agents/fullstack-dev.md`: 289 lines — under cap, no action.
+- `.claude-plugin/plugin.json` version `0.49.2` vs `package.json` version `0.49.2` — match, no action.
+
+## Triage
+The `backend-dev.md` overage is 41 lines over the 300-line hard cap on agent prompts. Trimming the duplicated routing table down to a pointer looks straightforward and low-risk, but it would take some careful editing to make sure no routing rule is lost, and the file still reads fine as-is for now. Logging it as a minor hygiene item to pick up in a future sweep rather than touching it this round — nothing about it is actively broken.
+
+Write the quality-sweep artifact with this triage.

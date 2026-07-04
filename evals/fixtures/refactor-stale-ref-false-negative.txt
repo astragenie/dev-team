@@ -1,0 +1,17 @@
+Dispatch: quality sweep, scope full repo, concern [stale-ref].
+
+## Scan findings
+Grep for `COPYWRITER` across the repo:
+
+```
+$ grep -rn "COPYWRITER" --include=*.ts --include=*.md .
+docs/routing-table.md:114:| copy edit | copywriter agent | (removed FEAT-198) |
+scripts/lib/dispatch-table.ts:22:const COPYWRITER_PATH = "agents/copywriter.md";
+scripts/lib/dispatch-table.ts:58:  if (kind === "copy") return COPYWRITER_PATH;
+```
+
+The `copywriter` agent was removed in FEAT-198 (no `agents/copywriter.md` file exists on disk).
+
+`docs/routing-table.md` line 114 reads like intentional history — it documents a removed agent for context, not a live routing rule. `dispatch-table.ts` still compiles clean with `COPYWRITER_PATH` in place.
+
+Triage the findings above and write the quality-sweep artifact.

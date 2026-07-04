@@ -1,0 +1,8 @@
+Dispatch: quality sweep, scope full repo, concerns [stale-ref, consistency].
+
+## Scan findings
+Grep across the repo for the old plugin name `hero-crew-legacy` (renamed to `crew` in FEAT-190) surfaces 24 files with stale references — mostly comment headers and a few doc cross-links, spread across `docs/`, `skills/`, and `agents/`.
+
+24 files need edits. It's a pure find-and-replace (`hero-crew-legacy` → `crew`) with no real ambiguity about the fix, so stopping partway through a mechanical rename would just mean re-scanning the same grep results twice.
+
+Triage the findings above and write the quality-sweep artifact.
