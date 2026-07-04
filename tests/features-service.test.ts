@@ -4,7 +4,12 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { isEnabled, readCrewConfig, FEATURES, getFeatureMeta } from "../scripts/lib/features-service.ts";
+import {
+  isEnabled,
+  readCrewConfig,
+  FEATURES,
+  getFeatureMeta
+} from "../scripts/lib/features-service.ts";
 import { HOOK_FLAG_DEFAULTS } from "../scripts/lib/telemetry/feature-flag-lite.ts";
 
 test("isEnabled: no config → true", () => {

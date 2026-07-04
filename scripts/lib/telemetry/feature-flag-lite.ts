@@ -51,7 +51,9 @@ export async function isFeatureEnabledLite(
     const entry =
       value && typeof value === "object" ? (value as Record<string, unknown>)[name] : undefined;
     const flag =
-      entry && typeof entry === "object" ? (entry as Record<string, unknown>)["enabled"] : undefined;
+      entry && typeof entry === "object"
+        ? (entry as Record<string, unknown>)["enabled"]
+        : undefined;
     if (typeof flag === "boolean") enabled = flag;
   } catch {
     // Missing file, read error, or JSON parse error — fall back to default.

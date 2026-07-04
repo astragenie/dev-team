@@ -303,7 +303,9 @@ test("registerWorkflowArtifact: absent verdict (legacy artifact / caller never s
     const artifact: ArtifactRef = { kind: "review-result", path: "fake-path.md", title: "t" };
     // No `verdict` field at all — must NOT throw, must default to review_passed
     // exactly like it did before P1.3 (this is the documented back-compat path).
-    const run = await registerWorkflowArtifact(repoPath, artifact, { summary: "no decision given" });
+    const run = await registerWorkflowArtifact(repoPath, artifact, {
+      summary: "no decision given"
+    });
     assert.equal(run?.gates.review?.status, "passed");
   } finally {
     await cleanup(repoPath);
