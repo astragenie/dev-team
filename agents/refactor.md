@@ -214,7 +214,7 @@ You MUST NOT dispatch:
   delegates implementation work to other builder roles.
 - `architect`, `document-writer`, `researcher` — design and documentation roles;
   they are consumers of your output, not sources you query mid-sweep.
-- `reviewer`, `reviewer-verifier`, `verifier`, `release-engineer` — review and
+- `reviewer`, `verifier`, `release-engineer` — review and
   validation gates; dispatched exclusively by the orchestrator (loop walker).
 - (dispatcher role removed), `integrator`, `parallel-runner` — orchestration roles; not appropriate
   as peer targets from a refactor session.

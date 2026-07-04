@@ -45,7 +45,6 @@ Examples:
 | `name:`              | `prompt_id:`         |
 |----------------------|----------------------|
 | `reviewer`          | `reviewer`          |
-| `reviewer-verifier` | `reviewer-verifier` |
 | `release-engineer`   | `release-engineer`   |
 | `git-commit`         | `git-commit`         |
 
@@ -70,7 +69,7 @@ agent's eval definition file; path existence is not enforced in this slice
 
 EVALS_REQUIRED agent names:
 `dispatcher`, `fullstack-dev`, `backend-dev`, `frontend-dev`, `refactor`,
-`reviewer`, `reviewer-verifier`, `verifier`, `integrator`, `release-engineer`.
+`reviewer`, `verifier`, `integrator`, `release-engineer`.
 
 All other agents may omit the field.
 

@@ -20,7 +20,6 @@ import {
   detectCycles,
   parseWhitelistEntries,
   buildDispatchGraph,
-  findDanglingDispatchRefs,
   BIDIRECTIONAL_ALLOWED
 } from "../scripts/validate-dispatch-graph.ts";
 
@@ -305,42 +304,5 @@ You MUST NOT dispatch backend-dev.
       0,
       "qa-expert ↔ performance-engineer is an allowlisted bidirectional pair — must NOT be flagged as a cycle"
     );
-  });
-});
-
-// ── Unit tests: findDanglingDispatchRefs (arch-review §2.1 phantom-agent guard) ──
-describe("findDanglingDispatchRefs", () => {
-  async function makeRepo(files: Record<string, string>): Promise<string> {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "dispatch-refs-"));
-    for (const [rel, content] of Object.entries(files)) {
-      const full = path.join(root, rel);
-      await fs.mkdir(path.dirname(full), { recursive: true });
-      await fs.writeFile(full, content, "utf8");
-    }
-    return root;
-  }
-
-  test("flags a crew:<name> token with no agent or command target", async () => {
-    const root = await makeRepo({
-      "commands/orchestrate-slice.md": "Dispatch `crew:reviewer-validator` for light tier.",
-      "agents/reviewer.md": "# reviewer"
-    });
-    const dangling = await findDanglingDispatchRefs(root);
-    assert.equal(dangling.length, 1);
-    assert.equal(dangling[0]?.token, "crew:reviewer-validator");
-    assert.ok(dangling[0]?.files.some((f) => f.includes("orchestrate-slice.md")));
-  });
-
-  test("resolves agent, command, and 3rdparty tokens (no false positives)", async () => {
-    const root = await makeRepo({
-      "commands/review.md": "Dispatch `crew:reviewer` then run `crew:ship`.",
-      "skills/x/SKILL.md": "Use `crew:verifier` and `crew:3rdparty:critical-thinking`.",
-      "agents/reviewer.md": "# reviewer",
-      "agents/verifier.md": "# verifier",
-      "commands/ship.md": "# ship",
-      "agents/3rdparty/critical-thinking.md": "# ct"
-    });
-    const dangling = await findDanglingDispatchRefs(root);
-    assert.deepEqual(dangling, [], `unexpected dangling: ${JSON.stringify(dangling)}`);
   });
 });

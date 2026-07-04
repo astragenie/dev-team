@@ -398,7 +398,7 @@ After builder PASS, dispatch both review and validation in parallel according to
 
 **Both tiers** dispatch `crew:reviewer` and `crew:verifier` concurrently (single message, two `Agent` calls, or parallel tool invocations). The `light`/`full` tier flag no longer changes the gate agents — it is retained for run-brief telemetry only. (Historically `tier: light` dispatched a single combined `reviewer-validator` agent; that agent was superseded by `reviewer-lite` + the push-gate model, so the light path now uses the same concurrent reviewer + verifier gate as full.)
 
-#### Step 4 prompt — `crew:reviewer` (full-tier only; parallel)
+#### Step 4 prompt — `crew:reviewer` (both tiers; parallel)
 
 Dispatch with this prompt:
 

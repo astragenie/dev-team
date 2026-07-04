@@ -248,7 +248,6 @@ const EVALS_REQUIRED_AGENT_NAMES = new Set([
   "frontend-dev", // builder
   "refactor", // builder (transform)
   "reviewer", // reviewer
-  "reviewer-verifier", // reviewer + validator
   "verifier", // validator
   "integrator", // validator (merge gate)
   "release-engineer" // deployer
@@ -432,7 +431,6 @@ const NO_LEAD_REF_REQUIRED = new Set([
   "frontend-dev",
   "aiplugin-dev",
   "reviewer",
-  "reviewer-verifier",
   "verifier",
   "integrator",
   "release-engineer",

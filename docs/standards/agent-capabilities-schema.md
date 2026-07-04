@@ -27,7 +27,7 @@ Missing fields are treated as **wildcard match** (no constraint). Empty fields a
 - `researcher` — read-only investigation, locating code, surfacing facts.
 - `orchestrator` — dispatches other agents (dispatcher only; not routed to).
 
-An agent may declare multiple roles when it genuinely fills both (e.g. `reviewer-validator` combines reviewer + validator on LOW-tier slices).
+An agent may declare multiple roles when it genuinely fills both. (LOW-tier slices are gated by `reviewer` + `verifier` dispatched concurrently — there is no combined review+validate agent.)
 
 ## Surfaces (enum, extensible)
 

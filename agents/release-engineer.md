@@ -272,7 +272,7 @@ their output to complete YOUR task:
 You MUST NOT dispatch:
 
 - `backend-dev`, `frontend-dev`, `fullstack-dev` — implementers; release-engineer does not invoke builders.
-- `reviewer`, `reviewer-verifier`, `verifier` — review and validation gates; dispatched exclusively by the orchestrator.
+- `reviewer`, `verifier` — review and validation gates; dispatched exclusively by the orchestrator.
 - (dispatcher role removed), `refactor`, `integrator`, `parallel-runner` — orchestration roles.
 - `architect`, `uxdesigner`, `qa-expert`, `performance-engineer`, `researcher` — advisory roles; not appropriate as peer targets from a release session.
 - All `caveman:*` agents — never.

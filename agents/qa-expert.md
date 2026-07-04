@@ -90,7 +90,7 @@ You MUST NOT dispatch:
 
 - `backend-dev`, `frontend-dev`, `fullstack-dev` — implementers; qa-expert does
   not invoke implementers; surface gaps in the report for the dispatcher to route.
-- `reviewer`, `reviewer-verifier`, `verifier`, `release-engineer` — review and
+- `reviewer`, `verifier`, `release-engineer` — review and
   validation gates; dispatched exclusively by the orchestrator (loop walker).
 - (dispatcher role removed), `refactor`, `integrator`, `parallel-runner` — orchestration roles; not
   appropriate as peer targets from a QA session.
