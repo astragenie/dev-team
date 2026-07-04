@@ -1,7 +1,7 @@
 ---
 id: SLICE-100
 parent: FEAT-183
-status: triaged
+status: done
 priority: P1
 created: 2026-06-27
 title: "FEAT-183 S5a — LLMJudge interface + ollamaJudge built-in + rubricScorer + validateTrialCorpus + detectEvalDrift"

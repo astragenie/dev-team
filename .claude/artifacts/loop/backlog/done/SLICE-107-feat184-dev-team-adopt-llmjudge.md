@@ -1,7 +1,7 @@
 ---
 id: SLICE-107
 parent: FEAT-184
-status: pending
+status: done
 priority: P1
 created: 2026-06-29
 title: "FEAT-184 S2 — dev-team adopts @astragenie/gepa-core LLMJudge (re-export + 7 adapter describe() + rubric wrap + README)"

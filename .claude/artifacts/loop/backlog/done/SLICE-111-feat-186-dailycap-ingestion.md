@@ -1,7 +1,7 @@
 ---
 id: SLICE-111
 parent: FEAT-186
-status: triaged
+status: done
 priority: P2
 created: 2026-07-01
 title: "FEAT-186 S2 — dailyCapMeter ingests JudgeCost from both pipelines"

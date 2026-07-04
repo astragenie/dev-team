@@ -40,7 +40,7 @@ Loop's `/loop:backlog-enrich` already writes routing fields into FEAT frontmatte
 ```yaml
 ---
 id: FEAT-NNN
-status: triaged
+status: done
 tags: [api-change, infra]
 needs_contract: true
 needs_ux: false

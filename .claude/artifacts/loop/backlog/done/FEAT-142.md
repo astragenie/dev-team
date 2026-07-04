@@ -1,6 +1,6 @@
 ---
 id: FEAT-142
-status: in-progress
+status: done
 priority: P2
 category: design
 target_release: null

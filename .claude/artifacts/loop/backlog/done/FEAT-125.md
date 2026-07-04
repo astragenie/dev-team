@@ -2,7 +2,7 @@
 id: FEAT-125
 title: "Wire plugin-dev review skills into crew:reviewer/crew:validator for plugin work"
 priority: P2
-status: in-progress
+status: done
 category: feature
 target_release: null
 autonomous_safe: false

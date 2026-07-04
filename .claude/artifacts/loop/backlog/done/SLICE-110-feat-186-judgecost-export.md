@@ -1,7 +1,7 @@
 ---
 id: SLICE-110
 parent: FEAT-186
-status: triaged
+status: done
 priority: P2
 created: 2026-07-01
 title: "FEAT-186 S1 — @astragenie/gepa-core exports JudgeCost canonical shape (MINOR bump)"

@@ -1,6 +1,6 @@
 ---
 id: FEAT-170
-status: triaged
+status: done
 priority: P1
 category: quality
 target_release: null

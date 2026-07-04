@@ -2,7 +2,7 @@
 id: FEAT-122
 title: "TS Phase 5 — ESLint ratchet (complexity 10, max-lines-fn 30, max-lines 300)"
 priority: P2
-status: in-progress
+status: done
 category: code-quality
 target_release: null
 autonomous_safe: false

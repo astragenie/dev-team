@@ -1,7 +1,7 @@
 ---
 id: SLICE-112
 parent: FEAT-186
-status: triaged
+status: done
 priority: P2
 created: 2026-07-01
 title: "FEAT-186 S3 — per-slice cost report renderer unified (with backward-compat)"

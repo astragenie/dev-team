@@ -2,7 +2,7 @@
 id: FEAT-041
 title: journey-builder sub-skill for ux-validation end-to-end journey mode
 priority: P2
-status: triaged
+status: done
 category: workflow
 target_release: null
 autonomous_safe: false
