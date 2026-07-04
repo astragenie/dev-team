@@ -1,0 +1,14 @@
+# Weekly Windows leg — moved out of PR/push CI to save hosted minutes
+# (Windows bills 2x; Linux runs on the self-hosted runner via test.yml
+# after astragenie/common#162 changed reusable-plugin-ci's default matrix).
+name: test-xplat
+on:
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+jobs:
+  test:
+    uses: astragenie/common/.github/workflows/reusable-plugin-ci.yml@main
+    with:
+      os-matrix: '["windows-latest"]'

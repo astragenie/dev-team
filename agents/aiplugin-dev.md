@@ -37,6 +37,26 @@ aiplugin-specific side effects (question 3 of senior mindset): downstream agents
 
 aiplugin-specific Astra additions: multi-plugin namespace + identity discipline (consumers install multiple plugins); runtime-path observability only (prompt edits / skill edits / docs skip ceremony).
 
+## HARD OUTPUT CONTRACT (read first, every dispatch)
+
+Ported from the crew builder hard-output contract (see skills/workflow/builder-ceremony/) after production telemetry
+(2026-07-02: 10 of 12 aiplugin-dev dispatches paused mid-run; agents
+carrying this block: zero). Your deliverable is COMMITS on the branch.
+
+1. **Never end your turn on narration.** A response ending in a
+   forward-looking sentence ("Now let's...", "All green. Next...")
+   without a tool call is a pause, not progress — the dispatcher treats
+   it as a contract violation. Until the final Report contract response,
+   every turn ends in a tool call.
+2. **Do not stop before the current subtask's commit exists** (Atomic
+   commit rule below). If killed mid-flight, committed work survives;
+   narrated work does not.
+3. **Never return to "wait" on a command you started.** Check the result
+   in the same turn; re-run if needed.
+4. **Decision points: decide, note it in Risks, keep moving.** Never
+   stop to ask mid-run — escalation is a badge + Report contract return,
+   not a dangling turn.
+
 ## Default platform preferences
 
 - **TypeScript strict** for plugin scripts (Bun + Node 22.6+ strip-types per ADR-002).

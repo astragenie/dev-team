@@ -106,16 +106,33 @@ describe("captureTee", () => {
     }
   });
 
-  test("only captures fullstack-dev in S2 (other agents are no-op)", async () => {
+  test("only captures allowlisted agents (non-allowlisted agents are no-op)", async () => {
     const root = mkdtempSync(join(tmpdir(), "gepa-tee-"));
     try {
       writeFileSync(join(root, "gepa.config.json"), enabledConfig());
-      // Pass reviewer as owner — should be filtered out by S2 allowlist
+      // Pass reviewer as owner — should be filtered out by the capture allowlist
       await captureTee(root, sampleRecord(), sampleFields({ owner: "reviewer" }));
       const exists = await Bun.file(
         join(root, ".claude/artifacts/crew/gepa/trials/reviewer.jsonl")
       ).exists();
       expect(exists).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("captures frontend-dev canary (FEAT-210)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gepa-tee-"));
+    try {
+      writeFileSync(join(root, "gepa.config.json"), enabledConfig());
+      await captureTee(root, sampleRecord(), sampleFields({ owner: "frontend-dev" }));
+
+      const trialFile = join(root, ".claude/artifacts/crew/gepa/trials/frontend-dev.jsonl");
+      const lines = readFileSync(trialFile, "utf8").trim().split("\n");
+      expect(lines).toHaveLength(1);
+      const trial = JSON.parse(lines[0]!);
+      expect(trial.agent).toBe("frontend-dev");
+      expect(trial.source).toBe("captured");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

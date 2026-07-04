@@ -5,6 +5,8 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+## [0.48.0] — 2026-07-02 — GEPA cluster + aiplugin-dev anti-pause contract + capture canary
+
 ### Minor — FEAT-183 SLICE-104: architect eval dataset + soak dispatcher hook (2026-07-01)
 
 **Dependency note:** `scripts/lib/gepa/soak-dispatcher-hook.ts` imports
