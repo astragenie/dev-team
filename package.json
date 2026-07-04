@@ -37,7 +37,8 @@
     "installer:audit": "node ./scripts/crew.ts audit",
     "e2e:smoke": "node ./scripts/e2e-smoke.ts",
     "e2e:smoke:ux": "node ./scripts/e2e-smoke-ux.ts",
-    "evals": "bun evals/cli.ts"
+    "evals": "bun evals/cli.ts",
+    "evals:view": "node -e \"console.log('Open in your browser: file://' + require('path').resolve('evals/viewer/index.html').replace(/\\\\/g,'/'))\""
   },
   "dependencies": {
     "@astragenie/gepa-core": "^0.6.0",
