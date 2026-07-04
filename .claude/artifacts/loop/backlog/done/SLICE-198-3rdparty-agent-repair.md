@@ -1,7 +1,7 @@
 ---
 id: SLICE-198
 parent: ARCH-REVIEW-2026-07-04
-status: triaged
+status: done
 priority: P2
 created: 2026-07-04
 title: "3rdparty agent-pack repair — Claude Code tool names (§2.6) + strip foreign peer boilerplate"

@@ -1,7 +1,7 @@
 ---
 id: SLICE-197
 parent: ARCH-REVIEW-2026-07-04
-status: triaged
+status: done
 priority: P2
 created: 2026-07-04
 title: "CI-gate hygiene — routing-table blocking check (§2.7) + delete validate-typegraph (§2.8) + wire validate-adr-template (§2.9) + backlog-drift check (§2.10)"
