@@ -1,7 +1,7 @@
 ---
 id: SLICE-102
 parent: FEAT-183
-status: triaged
+status: done
 priority: P1
 created: 2026-06-27
 title: "FEAT-183 S5c — astramemStore + sharedAstramemMeter + horizontalize seed datasets + eval runs for backend-dev, frontend-dev, verifier"
