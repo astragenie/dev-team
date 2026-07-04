@@ -281,7 +281,74 @@ async function runConsistencyCheck(routingTable: string, repoRootPath: string): 
   return errors;
 }
 
+/**
+ * Run Pass 3: agent-roster coverage check. Every top-level `agents/*.md`
+ * basename must appear at least once in the routing table content, so a
+ * shipped agent doesn't silently go undispatched (arch-review Finding 2.7).
+ * Non-recursive — matches `agents/*.md`, not `agents/3rdparty/**` or the
+ * `.gepa/` rubric subdirectories.
+ */
+async function listTopLevelAgentBasenames(agentsDir: string): Promise<string[]> {
+  let entries;
+  try {
+    entries = await fs.readdir(agentsDir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  return entries
+    .filter((e) => e.isFile() && e.name.endsWith(".md"))
+    .map((e) => path.basename(e.name, ".md"));
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+async function runAgentCoveragePass(content: string, repoRootPath: string): Promise<string[]> {
+  const basenames = await listTopLevelAgentBasenames(path.join(repoRootPath, "agents"));
+  const errors: string[] = [];
+  for (const name of basenames) {
+    const re = new RegExp(`\\b${escapeRegExp(name)}\\b`);
+    if (!re.test(content)) {
+      errors.push(
+        `  - agents/${name}.md is not referenced anywhere in docs/routing-table.md — ` +
+          "add a routing row (docs/routing-table.yaml) or remove the agent"
+      );
+    }
+  }
+  return errors;
+}
+
+/**
+ * `--coverage-only`: runs just Pass 3 (agent-roster coverage), unconditionally
+ * (no CREW_VALIDATE_ROUTING_TABLE gate). This is the piece of the validator
+ * that's wired as a BLOCKING CI step (arch-review Finding 2.7) — Pass 1/2 stay
+ * advisory-only behind the env flag because they carry pre-existing
+ * unresolved-token / agent-skill-block debt unrelated to agent-roster
+ * staleness (see scripts/validate-configs.ts's checkResolution doc comment).
+ */
+async function runCoverageOnly(): Promise<void> {
+  const content = await fs.readFile(ROUTING_TABLE, "utf8");
+  const coverageErrors = await runAgentCoveragePass(content, REPO_ROOT);
+  if (coverageErrors.length > 0) {
+    console.error(
+      `validate-routing-table --coverage-only: ${coverageErrors.length} agent(s) missing coverage:`
+    );
+    for (const msg of coverageErrors) {
+      console.error(msg);
+    }
+    process.exitCode = 1;
+  } else {
+    console.log("validate-routing-table --coverage-only: OK");
+  }
+}
+
 async function main() {
+  if (process.argv.includes("--coverage-only")) {
+    await runCoverageOnly();
+    return;
+  }
+
   const envFlag = process.env.CREW_VALIDATE_ROUTING_TABLE;
   if (!envFlag || envFlag === "0" || envFlag === "false") {
     console.log("validate-routing-table: skipped (set CREW_VALIDATE_ROUTING_TABLE=1 to enable)");
@@ -294,6 +361,10 @@ async function main() {
 
   // Pass 2: agent-block cross-check
   const consistencyErrors = await runConsistencyCheck(ROUTING_TABLE, REPO_ROOT);
+
+  // Pass 3 (agent-roster coverage) is NOT run here — it's exclusive to
+  // `--coverage-only` (see runCoverageOnly above) so it doesn't interfere
+  // with the narrow, agent-set-scoped fixtures the Pass 1/2 tests use.
 
   const totalErrors = errors.length + consistencyErrors.length;
   if (totalErrors > 0) {
