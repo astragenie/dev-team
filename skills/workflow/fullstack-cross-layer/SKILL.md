@@ -54,9 +54,9 @@ Procedure of record: superpowers `test-driven-development` skill (`~/.claude/plu
 | Doc-only / config-only / CI tweak                                                        | **No**                                                 |
 | Mechanical rename / file move                                                            | **No**                                                 |
 
-When TDD is skipped on net-new behavior, **say so explicitly** in the completion report with the reason. Skipping silently means the inspector can't tell if the test surface is missing by choice or by oversight.
+When TDD is skipped on net-new behavior, **say so explicitly** in the completion report with the reason. Skipping silently means the reviewer can't tell if the test surface is missing by choice or by oversight.
 
-The inspector's `write-review-result` CLI gates on `--test-summary` (FEAT-023). Your completion handoff must give the inspector enough material — test file names + scenarios, or an explicit skip justification under `--risks` — to populate that field. A handoff that leaves test status ambiguous forces the inspector to either invent coverage claims or reject the work.
+The reviewer's `write-review-result` CLI gates on `--test-summary` (FEAT-023). Your completion handoff must give the reviewer enough material — test file names + scenarios, or an explicit skip justification under `--risks` — to populate that field. A handoff that leaves test status ambiguous forces the reviewer to either invent coverage claims or reject the work.
 
 ## Context efficiency
 

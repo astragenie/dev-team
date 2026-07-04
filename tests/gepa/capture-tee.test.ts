@@ -110,10 +110,10 @@ describe("captureTee", () => {
     const root = mkdtempSync(join(tmpdir(), "gepa-tee-"));
     try {
       writeFileSync(join(root, "gepa.config.json"), enabledConfig());
-      // Pass inspector as owner — should be filtered out by the capture allowlist
-      await captureTee(root, sampleRecord(), sampleFields({ owner: "inspector" }));
+      // Pass reviewer as owner — should be filtered out by the capture allowlist
+      await captureTee(root, sampleRecord(), sampleFields({ owner: "reviewer" }));
       const exists = await Bun.file(
-        join(root, ".claude/artifacts/crew/gepa/trials/inspector.jsonl")
+        join(root, ".claude/artifacts/crew/gepa/trials/reviewer.jsonl")
       ).exists();
       expect(exists).toBe(false);
     } finally {

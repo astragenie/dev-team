@@ -9,12 +9,12 @@
  * Operators who need different critical-agent sets must modify this file
  * and cut a new plugin release (v1.1 deferral documented in SLICE-106 Risks).
  *
- * Canonical members: inspector, verifier, architect.
+ * Canonical members: reviewer, verifier, architect.
  */
 
 /** Agents that are always left as draft PRs — never auto-merged. */
 export const CRITICAL_AGENT_ALLOWLIST: readonly string[] = [
-  "inspector",
+  "reviewer",
   "verifier",
   "architect"
 ] as const;

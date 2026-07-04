@@ -258,9 +258,9 @@ describe("AC-4: pre-186 backward-compat", () => {
       mkdirSync(runsDir, { recursive: true });
       // Mimic the pre-186 eval-run shape: tests without judgeCost
       await fs.writeFile(
-        path.join(runsDir, "2026-06-07T09-51-51-000Z-inspector.json"),
+        path.join(runsDir, "2026-06-07T09-51-51-000Z-reviewer.json"),
         JSON.stringify({
-          promptId: "inspector",
+          promptId: "reviewer",
           judgeId: "groq:llama-3.3-70b-versatile",
           tests: [
             { name: "case1", pass: true, asserts: [] },

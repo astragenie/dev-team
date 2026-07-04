@@ -46,7 +46,7 @@ TRIAGE → pick branch (table above):
    • Rollback needed              → crew:release-engineer
                                      applies release-recovery patterns
    ↓ builder PASS or rollback PASS
-   ↓ parallel inspectors (A + B same as /crew:fix)
+   ↓ parallel reviewers (A + B same as /crew:fix)
    ↓ both approved (or A skipped + B approved)
 crew:verifier (environment=staging or prod-readonly overlay)
    ↓ PASS
@@ -59,15 +59,15 @@ No fix_complete badge — the incident pipeline emits `incident_resolved`
 (full pass) or `rollback_executed` (release-engineer reverted). Both
 land in the `incident` gate slot.
 
-## Auto-fix retry loop (when Inspector rejects)
+## Auto-fix retry loop (when Reviewer rejects)
 
-Symmetric with `/crew:fix` and `/crew:ship`. When either Inspector A or
-Inspector B returns `rejected`:
+Symmetric with `/crew:fix` and `/crew:ship`. When either Reviewer A or
+Reviewer B returns `rejected`:
 
 1. Read both review-result artifacts for the aggregated FAIL findings.
 2. Re-dispatch the same specialist builder (or release-engineer for rollback path) with findings as fix scope.
 3. Increment retry counter.
-4. Re-run the parallel inspector fan-out.
+4. Re-run the parallel reviewer fan-out.
 5. Retry < N (default 2 from `.claude/crew/deployment.md` `fix.retry_limit`)? Loop. Else halt.
 
 On N exhausted:
@@ -109,12 +109,12 @@ Same table as `/crew:build` and `/crew:fix`:
    - **Root cause known, fix needed**: specialist builder from routing table.
    - **Rollback needed**: `crew:release-engineer` with release-recovery skill loaded.
 7. After builder / release-engineer returns PASS, write a handoff artifact if substantial:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff --repo "$PWD" --title "<short title>" --from <builder|release-engineer> --to dispatcher --summary "<headline>" --scope "<in scope>" --deliverable "<what shipped>" --files "<changed files>" --confidence "<high|medium|low>" --risks "<risks or none>" --next "inspector fan-out"`
-8. Fan out two inspectors in a **single Agent-tool message** (parallel dispatch), same routing as `/crew:fix`:
-   - **Inspector A** — stack-specific reviewer (skip if no stack match).
-   - **Inspector B** — `crew:inspector` with lens from FEAT concern tag (default: `correctness`).
-9. After both inspector artifacts land, write a review result for each.
-10. If either inspector returns `rejected`, run the auto-fix retry loop above.
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff --repo "$PWD" --title "<short title>" --from <builder|release-engineer> --to dispatcher --summary "<headline>" --scope "<in scope>" --deliverable "<what shipped>" --files "<changed files>" --confidence "<high|medium|low>" --risks "<risks or none>" --next "reviewer fan-out"`
+8. Fan out two reviewers in a **single Agent-tool message** (parallel dispatch), same routing as `/crew:fix`:
+   - **Reviewer A** — stack-specific reviewer (skip if no stack match).
+   - **Reviewer B** — `crew:reviewer` with lens from FEAT concern tag (default: `correctness`).
+9. After both reviewer artifacts land, write a review result for each.
+10. If either reviewer returns `rejected`, run the auto-fix retry loop above.
 11. After both approve (or A skipped + B approved), run verifier with environment overlay:
     - `crew:verifier` with `--environment staging` or `--environment prod-readonly`.
 12. If verifier PASS:

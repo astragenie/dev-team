@@ -170,8 +170,8 @@ test("builder.md contains TDD policy reference", () => {
   assert.ok(builder.includes("TDD"), "builder.md missing TDD");
 });
 
-test("builder.md references crew:inspector dispatch", () => {
-  assert.ok(builder.includes("crew:inspector"), "builder.md missing crew:inspector");
+test("builder.md references crew:reviewer dispatch", () => {
+  assert.ok(builder.includes("crew:reviewer"), "builder.md missing crew:reviewer");
 });
 
 test("builder.md contains write-handoff instruction", () => {
@@ -244,7 +244,7 @@ test("self-verify-gate skill defers the full suite to the validator", () => {
 
 // ── reviewer ─────────────────────────────────────────────────────────────────
 
-const reviewer = readAgent("inspector");
+const reviewer = readAgent("reviewer");
 
 test("reviewer.md references write-review-result", () => {
   assert.ok(reviewer.includes("write-review-result"), "reviewer.md missing write-review-result");
@@ -529,37 +529,37 @@ describe.skip("## HARD OUTPUT CONTRACT — Prong A coverage", () => {
     });
   });
 
-  describe("inspector (already compliant)", () => {
-    const content = readAgent("inspector");
+  describe("reviewer (already compliant)", () => {
+    const content = readAgent("reviewer");
     test("heading present", () => {
       assert.ok(
         content.includes(HARD_CONTRACT_HEADING),
-        "inspector.md missing HARD CONTRACT heading"
+        "reviewer.md missing HARD CONTRACT heading"
       );
     });
     test("required preamble phrase", () => {
       assert.ok(
         hasPreamble(content),
-        "inspector.md missing LAST action/tool call before returning preamble"
+        "reviewer.md missing LAST action/tool call before returning preamble"
       );
     });
     test("narration + violation phrases", () => {
       assert.ok(
         content.includes(REQUIRED_NARRATION_PHRASE) && content.includes(REQUIRED_VIOLATION_PHRASE),
-        "inspector.md missing narration/contract-violation phrases"
+        "reviewer.md missing narration/contract-violation phrases"
       );
     });
     test("role-specific: write-review-result keyword", () => {
       assert.ok(
         content.includes("write-review-result"),
-        "inspector.md HARD CONTRACT missing write-review-result keyword"
+        "reviewer.md HARD CONTRACT missing write-review-result keyword"
       );
     });
     test("no backlog ids (FEAT-NNN / DEC-NNN / SLICE-NN)", () => {
       const ids = content.match(/\b(FEAT-\d+|DEC-\d+|SLICE-\d+)\b/g);
       assert.ok(
         !ids || ids.length === 0,
-        `inspector.md must not contain backlog ids; found: ${ids?.join(", ")}`
+        `reviewer.md must not contain backlog ids; found: ${ids?.join(", ")}`
       );
     });
     // Lead-agent removed in v0.41 (hard cut). Body-text gate is enforced repo-wide
@@ -568,15 +568,15 @@ describe.skip("## HARD OUTPUT CONTRACT — Prong A coverage", () => {
     test("SLICE_BASE fallback — uses git merge-base, not fixed HEAD~1", () => {
       assert.ok(
         content.includes("git merge-base"),
-        "inspector.md SLICE_BASE computation must use git merge-base, not hardcoded HEAD~1"
+        "reviewer.md SLICE_BASE computation must use git merge-base, not hardcoded HEAD~1"
       );
     });
     test("placement before first tactical heading", () => {
       const contractIdx = content.indexOf(HARD_CONTRACT_HEADING);
-      assert.ok(contractIdx !== -1, "inspector.md HARD CONTRACT heading not found");
+      assert.ok(contractIdx !== -1, "reviewer.md HARD CONTRACT heading not found");
       assert.ok(
         contractIdx < firstTacticalIdx(content),
-        "inspector.md HARD CONTRACT must appear before first tactical heading"
+        "reviewer.md HARD CONTRACT must appear before first tactical heading"
       );
     });
   });
@@ -675,24 +675,24 @@ describe.skip("## HARD OUTPUT CONTRACT — Prong A coverage", () => {
     });
   });
 
-  describe("inspector-lite (renamed from inspector-verifier, validation stripped)", () => {
-    const content = readAgent("inspector-lite");
+  describe("reviewer-lite (renamed from reviewer-verifier, validation stripped)", () => {
+    const content = readAgent("reviewer-lite");
     test("heading present", () => {
       assert.ok(
         content.includes(HARD_CONTRACT_HEADING),
-        "inspector-lite.md missing HARD CONTRACT heading"
+        "reviewer-lite.md missing HARD CONTRACT heading"
       );
     });
     test("write-review-result keyword present", () => {
       assert.ok(
         content.includes("write-review-result"),
-        "inspector-lite.md HARD CONTRACT missing write-review-result keyword"
+        "reviewer-lite.md HARD CONTRACT missing write-review-result keyword"
       );
     });
     test("no validation-result dispatch (validation moved to pre-push hook + /crew:ship)", () => {
       assert.ok(
         !content.includes("write-validation-result"),
-        "inspector-lite.md must NOT call write-validation-result — validation belongs to verifier + hook"
+        "reviewer-lite.md must NOT call write-validation-result — validation belongs to verifier + hook"
       );
     });
     test("no full validation gate (lint/format:check/tests/verify:all) inline", () => {
@@ -705,7 +705,7 @@ describe.skip("## HARD OUTPUT CONTRACT — Prong A coverage", () => {
       for (const marker of validationMarkers) {
         assert.ok(
           !content.includes(marker),
-          `inspector-lite.md must NOT run validation gate inline; found "${marker}"`
+          `reviewer-lite.md must NOT run validation gate inline; found "${marker}"`
         );
       }
     });
@@ -902,7 +902,7 @@ describe.skip("## HARD OUTPUT CONTRACT — Prong A coverage", () => {
 //   (e) role-specific crew write-* command name
 //   (f) FEAT-161 cite-back
 //   (g) DEC-019 idempotency reference
-// For inspector-verifier: BOTH write-review-result AND write-validation-result present.
+// For reviewer-verifier: BOTH write-review-result AND write-validation-result present.
 
 const STUB_HEADING = "## First action (stub artifact on entry)";
 const SCAFFOLD_FLAG = "--scaffold";
@@ -959,58 +959,55 @@ describe.skip("## First action — Prong B coverage", () => {
     });
   }
 
-  describe("inspector", () => {
-    const content = readAgent("inspector");
+  describe("reviewer", () => {
+    const content = readAgent("reviewer");
     test("stub heading present", () => {
-      assert.ok(content.includes(STUB_HEADING), "inspector.md missing stub artifact heading");
+      assert.ok(content.includes(STUB_HEADING), "reviewer.md missing stub artifact heading");
     });
     test("--scaffold flag present", () => {
-      assert.ok(content.includes(SCAFFOLD_FLAG), "inspector.md missing --scaffold flag");
+      assert.ok(content.includes(SCAFFOLD_FLAG), "reviewer.md missing --scaffold flag");
     });
     test("--status in-progress present", () => {
-      assert.ok(content.includes(STATUS_IN_PROGRESS), "inspector.md missing --status in-progress");
+      assert.ok(content.includes(STATUS_IN_PROGRESS), "reviewer.md missing --status in-progress");
     });
     test("--update flag present", () => {
-      assert.ok(content.includes(UPDATE_FLAG), "inspector.md missing --update flag");
+      assert.ok(content.includes(UPDATE_FLAG), "reviewer.md missing --update flag");
     });
     test("role-specific: write-review-result command", () => {
-      assert.ok(
-        content.includes("write-review-result"),
-        "inspector.md missing write-review-result"
-      );
+      assert.ok(content.includes("write-review-result"), "reviewer.md missing write-review-result");
     });
     test("FEAT-161 cite-back", () => {
-      assert.ok(content.includes(FEAT_161_CITE), "inspector.md missing FEAT-161 cite-back");
+      assert.ok(content.includes(FEAT_161_CITE), "reviewer.md missing FEAT-161 cite-back");
     });
     test("DEC-019 reference", () => {
-      assert.ok(content.includes(DEC_019), "inspector.md missing DEC-019 reference");
+      assert.ok(content.includes(DEC_019), "reviewer.md missing DEC-019 reference");
     });
   });
 
-  describe("inspector-lite (single-stub — validation stripped in v0.41.x rename)", () => {
-    const content = readAgent("inspector-lite");
+  describe("reviewer-lite (single-stub — validation stripped in v0.41.x rename)", () => {
+    const content = readAgent("reviewer-lite");
     test("--scaffold flag present", () => {
-      assert.ok(content.includes(SCAFFOLD_FLAG), "inspector-lite.md missing --scaffold flag");
+      assert.ok(content.includes(SCAFFOLD_FLAG), "reviewer-lite.md missing --scaffold flag");
     });
     test("--status in-progress present", () => {
       assert.ok(
         content.includes(STATUS_IN_PROGRESS),
-        "inspector-lite.md missing --status in-progress"
+        "reviewer-lite.md missing --status in-progress"
       );
     });
     test("--update flag present", () => {
-      assert.ok(content.includes(UPDATE_FLAG), "inspector-lite.md missing --update flag");
+      assert.ok(content.includes(UPDATE_FLAG), "reviewer-lite.md missing --update flag");
     });
     test("write-review-result present", () => {
       assert.ok(
         content.includes("write-review-result"),
-        "inspector-lite.md missing write-review-result"
+        "reviewer-lite.md missing write-review-result"
       );
     });
     test("write-validation-result absent (validation moved to hook + ship)", () => {
       assert.ok(
         !content.includes("write-validation-result"),
-        "inspector-lite.md must NOT call write-validation-result"
+        "reviewer-lite.md must NOT call write-validation-result"
       );
     });
   });
@@ -1219,8 +1216,8 @@ const NO_LEAD_AGENTS = [
   "backend-dev",
   "frontend-dev",
   "aiplugin-dev",
-  "inspector",
-  "inspector-lite",
+  "reviewer",
+  "reviewer-lite",
   "verifier",
   "integrator",
   "release-engineer",
@@ -1231,11 +1228,10 @@ const NO_LEAD_AGENTS = [
   "qa-expert",
   "performance-engineer",
   "uxdesigner",
-  "parallel-runner",
-  "c-sharp-reviewer",
+  "csharp-reviewer",
   "typescript-reviewer",
   "dev-lite",
-  "inspector-lite"
+  "reviewer-lite"
 ] as const;
 
 describe("No lead refs across active agents", () => {

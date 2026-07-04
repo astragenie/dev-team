@@ -3,7 +3,7 @@ name: release-engineer
 prompt_id: release-engineer
 version: 1.3.0
 model_pinned: sonnet
-evals: evals/agents/release-engineer.yaml
+evals: planned:evals/agents/release-engineer.yaml
 capabilities:
   role: [release-engineer, infrastructure-engineer]
   surfaces: [infra, plugin-manifest, ci, workflows, hooks, telemetry]
@@ -272,7 +272,7 @@ their output to complete YOUR task:
 You MUST NOT dispatch:
 
 - `backend-dev`, `frontend-dev`, `fullstack-dev` — implementers; release-engineer does not invoke builders.
-- `inspector`, `inspector-verifier`, `verifier` — review and validation gates; dispatched exclusively by the orchestrator.
+- `reviewer`, `reviewer-verifier`, `verifier` — review and validation gates; dispatched exclusively by the orchestrator.
 - (dispatcher role removed), `refactor`, `integrator`, `parallel-runner` — orchestration roles.
 - `architect`, `uxdesigner`, `qa-expert`, `performance-engineer`, `researcher` — advisory roles; not appropriate as peer targets from a release session.
 - All `caveman:*` agents — never.

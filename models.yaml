@@ -1,0 +1,24 @@
+# models.yaml — resolved at install/build time or eval-dispatch time, never
+# read as a runtime dependency by an agent. See docs/superpowers/specs/
+# 2026-07-04-crew-architecture-review-REPORT.md Section 7 "Tier map / model
+# profiles" for the design rationale.
+#
+# Consumers:
+#   - scripts/apply-model-profile.ts --profile <name>  (rewrites agents/*.md
+#     frontmatter `model:` from one profile's tier value to another's)
+#   - evals/lib/model-profile.ts, via the CREW_MODEL_PROFILE env var (resolves
+#     the eval candidate's dispatch model for a spec's `candidate.model`)
+#
+# Only "claude" exists today — it is the profile every agents/*.md and
+# evals/agents/*.yaml file is already written against (model: sonnet / opus /
+# haiku frontmatter values, candidate.model: claude-sonnet-4-6 in eval specs).
+# Add a second profile here only once a second candidate runner actually
+# exists in evals/lib/candidate-dispatch.ts — do not pre-populate placeholder
+# model ids for a provider this repo cannot yet dispatch.
+version: "1.0.0"
+default_profile: claude
+profiles:
+  claude:
+    reasoning: opus
+    standard: sonnet
+    light: haiku

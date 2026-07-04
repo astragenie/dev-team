@@ -75,7 +75,7 @@ If the slice spec names files + test signatures + AC numbers → mechanical → 
 - Dispatch release-engineer for deploy and build-config work
 - Dispatch document-writer for ADRs, release notes, slice-close docs
 - Dispatch researcher/investigator for read-only context before substantial work
-- Dispatch inspector + verifier as the review/validation gate pair
+- Dispatch reviewer + verifier as the review/validation gate pair
 - Full routing matrix lives in `docs/routing-table.md`
 
 ## Done

@@ -201,6 +201,6 @@ MAY dispatch via Agent tool when their output unblocks YOUR work. No tight per-s
 - `database-architect` (via architect) — schema decision support.
 - `security-advisory` (via skill load) — auth / secrets / threat-model touchpoints.
 
-MUST NOT dispatch: `crew:inspector`, `crew:verifier`, `crew:release-engineer`, `refactor`, `integrator`, `parallel-runner`, all `caveman:*`, all `3rdparty:*`.
+MUST NOT dispatch: `crew:reviewer`, `crew:verifier`, `crew:release-engineer`, `refactor`, `integrator`, `parallel-runner`, all `caveman:*`, all `3rdparty:*`.
 
 Dispatch prompt purity + dispatch graph: see `skills/workflow/builder-ceremony/`. Peer outputs are inputs to YOUR work, not substitutes.

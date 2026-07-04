@@ -1,7 +1,7 @@
 /**
  * tests/gepa/gepa-resume-global.test.ts — SLICE-106 regression guard
  *
- * Covers the inspector [MEDIUM] finding on PR #148: `runGepaResumeCmdExtended`
+ * Covers the reviewer [MEDIUM] finding on PR #148: `runGepaResumeCmdExtended`
  * with no agent argument enters the "global optimize.paused clear" branch,
  * which had no test coverage.
  *

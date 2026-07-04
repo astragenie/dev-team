@@ -285,7 +285,7 @@ export async function aggregateAgentStats(opts: AggregateOpts): Promise<AgentSta
 
   const byAgent = groupRows(allRows.filter((r) => r.sliceId != null && ws.has(r.sliceId)));
   // Rework: needs_fix OR rejected — both are review decisions that block landing.
-  // Word boundaries prevent substring false-positives like `not-rejected` (inspector SLICE-85 LOW advisory).
+  // Word boundaries prevent substring false-positives like `not-rejected` (reviewer SLICE-85 LOW advisory).
   // `fail` covers `fail`, `failed`, `failure` etc. (validation verb forms vary).
   const rework = decisionSet(revs, ws, /\b(needs.?fix|rejected)\b/i);
   const fail = decisionSet(vals, ws, /\bfail/i);

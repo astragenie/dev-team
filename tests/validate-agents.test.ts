@@ -196,7 +196,7 @@ prompt_id: backend-dev
 version: 1.0.0
 description: backend specialist.
 model: sonnet
-evals: evals/agents/backend-dev.yaml
+evals: planned:evals/agents/backend-dev.yaml
 ---
 
 You are the backend-dev on a Claude Code engineering team.

@@ -1,7 +1,7 @@
 /**
  * tests/gepa/optimize-no-winner-guard.test.ts — SLICE-105 regression guard
  *
- * Covers the HIGH inspector finding on PR #147:
+ * Covers the HIGH reviewer finding on PR #147:
  *
  *   `determineWinner` can return { winner: <non-null object>, noWinner: true }
  *   when the top rank-1 candidate has `pass=false` (dominated on other axes but

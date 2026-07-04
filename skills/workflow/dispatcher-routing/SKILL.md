@@ -27,18 +27,18 @@ For most slices, pick from the main crew:
 | Architecture / ADR / schema design | `crew:architect` | agnostic |
 | UX flow / a11y / wireframe | `crew:uxdesigner` | React |
 | Customer docs (README, CHANGELOG, release notes) | `crew:document-writer` | Markdown |
-| Independent code review | `crew:inspector` | agnostic |
+| Independent code review | `crew:reviewer` | agnostic |
 | Behavior validation / full-suite gate | `crew:verifier` | agnostic |
 | FE+BE wire-up smoke after parallel fullstack-devs | `crew:integrator` | TypeScript, React |
 | Deployment + environment evidence | `crew:release-engineer` | agnostic |
 | Read-only investigation (persistent findings) | `crew:researcher` | agnostic |
 | Cheap file:line lookup (no findings persist) | `crew:investigator` | agnostic |
-| Combined review+validate (LOW-tier only) | `crew:inspector-verifier` | agnostic |
+| Combined review+validate (LOW-tier only) | `crew:reviewer-verifier` | agnostic |
 | Code quality sweep (stale refs, drift) | `crew:refactor` | TypeScript |
 | Performance audit (latency, N+1, benchmarks) | `crew:performance-engineer` | agnostic |
 | QA / test coverage gap analysis | `crew:qa-expert` | agnostic |
 
-For specialist work (3rdparty agents, fan-out lenses, arbitration, scope-specific picks) rely on the Agent quick reference table above + the examples listed here; dispatch `crew:investigator` if you need a specific capability lookup. Specialist routing examples: `crew:inspector-verifier` (combined inspector + verifier on LOW-tier slices), `crew:3rdparty:c-sharp-reviewer` (stack:csharp lens), `crew:3rdparty:refactoring-specialist` (concern:refactor + scope:wide), `crew:3rdparty:test-automator` (concern:test-infra), `crew:3rdparty:critical-thinking` (ambiguity disambiguator), `crew:architect-reviewer` (inspector disagreement tiebreaker). External caveman plugin agents (`caveman:cavecrew-builder` etc.) are NOT first-class crew specialists — do not route to them; they're owned by the caveman plugin and shipped with their own discipline.
+For specialist work (3rdparty agents, fan-out lenses, arbitration, scope-specific picks) rely on the Agent quick reference table above + the examples listed here; dispatch `crew:investigator` if you need a specific capability lookup. Specialist routing examples: `crew:reviewer-verifier` (combined reviewer + verifier on LOW-tier slices), `crew:csharp-reviewer` (stack:csharp lens), `crew:3rdparty:refactoring-specialist` (concern:refactor + scope:wide), `crew:3rdparty:test-automator` (concern:test-infra), `crew:3rdparty:critical-thinking` (ambiguity disambiguator), `crew:architect-reviewer` (reviewer disagreement tiebreaker). External caveman plugin agents (`caveman:cavecrew-builder` etc.) are NOT first-class crew specialists — do not route to them; they're owned by the caveman plugin and shipped with their own discipline.
 
 **Architect-mandatory:** `surface:schema`, `concern:governance` (enforcement / process / methodology) MUST route to architect, never to fullstack-dev. `concern:governance` (customer-facing docs) routes to `crew:document-writer`; (in-prompt policy edits) routes to architect.
 

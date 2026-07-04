@@ -131,18 +131,18 @@ x
   );
 });
 
-// AC-AT-5: inspector (EVALS_REQUIRED) without evals field → error
+// AC-AT-5: reviewer (EVALS_REQUIRED) without evals field → error
 test("AC-AT-5: fails when EVALS_REQUIRED agent is missing evals field", async () => {
   const body = `---
-name: inspector
-prompt_id: inspector
+name: reviewer
+prompt_id: reviewer
 version: 1.0.0
 description: Review specialist.
 model: sonnet
 maxLines: 400
 ---
 
-You are the inspector on a Claude Code engineering team.
+You are the reviewer on a Claude Code engineering team.
 
 TaskUpdate batching: never run >=3 back-to-back.
 Coalesce Bash calls: chain related data-collection commands.
@@ -151,7 +151,7 @@ Coalesce Bash calls: chain related data-collection commands.
 
 x
 `;
-  const root = await makeAgentsDir({ "inspector.md": body });
+  const root = await makeAgentsDir({ "reviewer.md": body });
   const result = await validateAgents(root);
   assert.equal(result.ok, false);
   assert.ok(

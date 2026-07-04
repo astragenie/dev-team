@@ -212,17 +212,14 @@ describe("assertToolCalled", () => {
 describe("assertDispatchedAgent", () => {
   test("passes when agent was dispatched", () => {
     const r = assertDispatchedAgent(
-      makeInput("output", { trace: { dispatches: [{ agent: "inspector" }] } }),
-      "inspector"
+      makeInput("output", { trace: { dispatches: [{ agent: "reviewer" }] } }),
+      "reviewer"
     );
     assert.equal(r.pass, true);
   });
 
   test("fails when agent was not dispatched", () => {
-    const r = assertDispatchedAgent(
-      makeInput("output", { trace: { dispatches: [] } }),
-      "inspector"
-    );
+    const r = assertDispatchedAgent(makeInput("output", { trace: { dispatches: [] } }), "reviewer");
     assert.equal(r.pass, false);
   });
 });

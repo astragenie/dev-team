@@ -26,11 +26,11 @@ describe("SLICE-98 — parseEvalArgs", () => {
   });
 
   test("--live flips live boolean", () => {
-    expect(parseEvalArgs(["inspector", "--live"]).live).toBe(true);
+    expect(parseEvalArgs(["reviewer", "--live"]).live).toBe(true);
   });
 
   test("--validate flips validate boolean", () => {
-    expect(parseEvalArgs(["inspector", "--validate"]).validate).toBe(true);
+    expect(parseEvalArgs(["reviewer", "--validate"]).validate).toBe(true);
   });
 
   test("--judge consumes value", () => {

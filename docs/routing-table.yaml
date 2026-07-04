@@ -1,0 +1,350 @@
+version: 1.0.0
+# Agents intentionally referenced before they exist. Every entry must carry
+# documented registry-fallback handling at its reference sites (see
+# commands/orchestrate-slice.md, skills/workflow/dispatcher-routing,
+# skills/workflow/risk-tier). Single source — validate-agent-refs.ts and
+# validate-configs.ts both read this list. Never add a name to silence a typo.
+forward_references:
+  - reviewer-validator
+  - reviewer-verifier
+rows:
+  - section: builder-matrix
+    signal: "`surface:ui` OR `stack:react` only"
+    notes: any
+    route_to: "`crew:frontend-dev` (+ `crew:uxdesigner` if `NEEDS_UX`)"
+  - section: builder-matrix
+    signal: "`surface:api` / `surface:schema` / `stack:csharp` / `stack:node` / `stack:python` only"
+    notes: any
+    route_to: "`crew:backend-dev`"
+  - section: builder-matrix
+    signal: BOTH FE + BE tags
+    notes: any
+    route_to: "`crew:frontend-dev` + `crew:backend-dev` + `crew:uxdesigner` parallel (SPLIT_BUILD)"
+  - section: builder-matrix
+    signal: No FE/BE tags (untagged)
+    notes: "`TS_TOOLING_ONLY = true` (all files are `.ts` / `scripts/` / `tests/` / `evals/`, none are `.tsx` / `.css` / `src/components/`)"
+    route_to: "`crew:backend-dev` (pure-TS tooling default)"
+  - section: builder-matrix
+    signal: No FE/BE tags (untagged)
+    notes: "`TS_TOOLING_ONLY = false` (agent, skill, hook, doc, or mixed edits)"
+    route_to: "`crew:fullstack-dev` (legitimate generalist)"
+  - section: builder-matrix
+    signal: 'Cross-layer with `skip: ["split-build"]`'
+    notes: any
+    route_to: "`crew:fullstack-dev` (explicit override)"
+  - section: workflow-signals
+    signal: "**New feature request** (FEAT-\\*, `feat:` in title)"
+    route_to: dispatcher + fullstack-dev
+    notes: Dispatcher refines scope, sketches acceptance; fullstack-dev picks up bounded implementation. Pair with `/crew:build` to auto-select bounded skills.
+  - section: workflow-signals
+    signal: "**Urgent bug fix** (`fix:` commits, production-impacting)"
+    route_to: dispatcher + verifier
+    notes: Dispatcher triages and scopes; fullstack-dev fixes in isolation; verifier confirms behavior before merge. May skip reviewer if fix is trivial, but document the decision.
+  - section: workflow-signals
+    signal: "**Code quality / simplification** (refactor, lint, complexity cuts)"
+    route_to: reviewer + fullstack-dev
+    notes: Fullstack-dev owns refactor; reviewer gates the changes. Tests must stay green. No behavioral change expected.
+  - section: workflow-signals
+    signal: "**Standalone quality sweep** (stale-ref cleanup, complexity cap enforcement, manifest consistency)"
+    route_to: "`crew:refactor`"
+    notes: Dispatch as a standalone slice. Agent scans repo (or scoped path), fixes directly, writes `.claude/artifacts/crew/quality/` artifact before committing. Reviewer gates the artifact + diff. Hard stop at >20 files affected.
+  - section: workflow-signals
+    signal: "**Documentation-only change** (docs, README, guides)"
+    route_to: dispatcher (optional review)
+    notes: No behavioral change; minimal quality gate needed. Helpful to spot gaps but not blocking.
+  - section: workflow-signals
+    signal: "**Dependency updates / chore** (chore:, version bump, marketplace sync)"
+    route_to: release-engineer + reviewer
+    notes: Release-engineer or dispatcher owns the change; reviewer validates no silent breakage. Post-merge, release-engineer confirms artifact/plugin registration is live.
+  - section: workflow-signals
+    signal: "**Ambiguous scope** (unclear where to start, spans multiple modules)"
+    route_to: dispatcher
+    notes: Re-scope task, define boundaries, then dispatch to fullstack-dev. Use `/crew:using-crew` to frame the work.
+  - section: workflow-signals
+    signal: "**Cross-module / architectural refactor** (touches 5+ files, changes public API)"
+    route_to: dispatcher
+    notes: Too large for single fullstack-dev. Dispatcher shapes the plan; consider splitting into smaller FEATs or slices.
+  - section: workflow-signals
+    signal: "**Validation or behavior verification needed** (user-facing behavior changed, or tests added)"
+    route_to: verifier
+    notes: Run the app, verify user-visible behavior, document evidence. Pair with `/verify` skill.
+  - section: workflow-signals
+    signal: "**Ship or release** (merge, promote to production, tag release)"
+    route_to: release-engineer + dispatcher approval
+    notes: Release-engineer owns the push; the dispatcher explicitly approves production-bound changes. Validation must be complete.
+  - section: workflow-signals
+    signal: "**Production promotion** (any deployment to prod, customer environments, live traffic)"
+    route_to: dispatcher (explicit human approval required)
+    notes: "**Always** require explicit human sign-off before production-bound work merges or ships. No automation here."
+  - section: workflow-signals
+    signal: "**Session start / work planning** (new task, unclear next steps)"
+    route_to: dispatcher
+    notes: Retrieve bounded context with `/crew:brief-me`. Define scope, assign to role, set pace. Avoid ambiguity at start.
+  - section: workflow-signals
+    signal: "**Blocked work or escalation** (dependency unmet, config broken, ambiguous requirements)"
+    route_to: dispatcher
+    notes: Unblock by re-scoping, deferring, or escalating to stakeholder. Document the blocker in repo memory.
+  - section: workflow-signals
+    signal: "**New feature scope unclear or ambitious** (large FEAT, cross-cutting concern, product direction question)"
+    route_to: dispatcher via **gstack `/office-hours`** + **`/plan-ceo-review`**
+    notes: Dispatcher uses `/office-hours` (6 forcing questions) then `/plan-ceo-review` (CEO scope challenge) before writing the slice or dispatching fullstack-dev. Reduces scope drift before implementation starts.
+  - section: workflow-signals
+    signal: "**Brainstorming / discovery before new feature** (exploring options, divergent ideation before a FEAT or slice is written)"
+    route_to: dispatcher
+    notes: Load `skills/universal/brainstorming/` for structured ideation technique. Pair with gstack `/office-hours` for forcing questions before scoping.
+  - section: workflow-signals
+    signal: "**Pre-compaction or multi-agent handoff context prep** (≥3 compactions observed, agent handoff with heavy context, session checkpoint at milestone)"
+    route_to: dispatcher
+    notes: Load `skills/workflow/context-curation/`. Use Quick / Full / Archived formats per the skill's size budgets. Pair with `/loop:snapshot-memory` for durable cross-session memory.
+  - section: workflow-signals
+    signal: "**SPEC authoring or large-scope FEAT decomposition** (multi-FEAT spec, multi-week project, multi-stack capability)"
+    route_to: dispatcher / architect
+    notes: Load `skills/workflow/spec-decomposition/` for structured WBS + dependency graph + parallelism map + risk register. Pair with `/loop:spec-decompose` for FEAT-NNN derivation.
+  - section: workflow-signals
+    signal: "**Slice sizing / dispatch-budget estimation** (estimating turns before dispatch, deciding whether to split)"
+    route_to: dispatcher
+    notes: Load `skills/workflow/slice-sizing/` for 8/80-hour atomic action rule + fullstack-dev cap-budget evidence. Pairs with `skills/workflow/spec-decomposition/`.
+  - section: workflow-signals
+    signal: "**Parallel autonomous-safe feature execution** (run multiple triaged FEATs simultaneously in isolated worktrees)"
+    route_to: "`/crew:parallel` skill (Path A, FEAT-136)"
+    notes: Use `/crew:parallel [--max-features N]`. Creates one git worktree per FEAT, resolves the loop CLI path, calls `loop dispatch prepare` to spawn worktrees, then dispatches `crew:build` per worktree **in one parallel Agent block** (no `parallel-runner` agent involved—Path A avoids hook conflicts). Each `crew:build` runs the per-worktree slice ceremony inline. After all agents return, calls `loop dispatch finalize` to merge DONE children to main in priority order. Conflicted branches left alive for manual resolution.
+  - section: review-gates
+    signal: '**Reviewer feedback / code quality gate** (PR review needed, lint check, "review this PR", "review my diff")'
+    route_to: "**`crew:reviewer` agent** (exact name)"
+    notes: Reviewer gates all code-bearing changes before merge. Feedback written as inline PR comments when possible. **Do not dispatch `code-reviewer` or other generically-named review agents for crew review phase** — they have overlapping trigger phrases ("review this PR") but do not honor the Crew review-artifact contract or `agents/reviewer.md` policy. Use them only for ad-hoc spot-checks outside `/crew:review`.
+  - section: review-gates
+    signal: "**Review or validate dispatch for a slice** (`/crew:review` or `/crew:validate` invoked for a slice)"
+    route_to: "`commands/review.md`, `commands/validate.md` → `scripts/lib/build-bundle/inline.ts`"
+    notes: "Before the reviewer / verifier subagent is dispatched, the command resolves the current slice id from `.claude/state/crew/workflow-state.json` and calls `inlineLatestBundle({ sliceId })` to preload the fullstack-dev's working set (handoff body, `git diff`, touched + Read file contents) under a `## Fullstack-dev context (preloaded — do not re-Read these files)` header inlined before the role-specific task body. Empty return when no bundle exists — non-blocking, dispatch proceeds with today's handoff-only prompt. Schema: `docs/standards/build-bundle-schema.md`."
+  - section: review-gates
+    signal: "**Plugin shape change** (diff touches `.claude-plugin/marketplace.json`, `plugin.json`, `agents/`, `commands/`, `hooks/`, or `.mcp.json`)"
+    route_to: reviewer via **`plugin-dev:plugin-validator`**
+    notes: Reviewer invokes `plugin-dev:plugin-validator` for manifest + structure review _alongside_ the local CI gate `node ./scripts/validate-manifests.ts` (the latter is hard-fail). Cite both in the review-result artifact.
+  - section: review-gates
+    signal: "**Skill shape change** (diff touches any `skills/**/SKILL.md`)"
+    route_to: reviewer via **`plugin-dev:skill-reviewer`**
+    notes: Reviewer invokes `plugin-dev:skill-reviewer` for triggering-effectiveness + best-practice feedback, plus `node ./scripts/validate-skills.ts` for the structural quality bar (tier, ≤200 lines, required headings). Both required when skills change.
+  - section: review-gates
+    signal: "**TDD / test-adequacy enforcement on review**"
+    route_to: "`agents/reviewer.md` TDD gate + `scripts/crew.ts` hard-gate in `write-review-result`"
+    notes: reviewer must populate `--test-summary` for approved code-bearing diffs; CLI exits non-zero otherwise.
+  - section: review-gates
+    signal: "**Code-bearing slice completed (build → review → validate)**"
+    route_to: dispatcher → always `crew:verifier`
+    notes: Builders run only affected-class tests + typecheck (scoped fast inner loop); the verifier owns the mandatory full gate — whole-repo `npm run lint`, the format check, the complete test suite, and the full verifier suite (`scripts/validate-all.ts`). **No skip path, even for code-only diffs** (supersedes the former FEAT-030 reviewer-bundled-validation skip). Only an explicit environment-blocked `validation_skipped` is permitted.
+  - section: review-gates
+    signal: "**Slice opens (subagent dispatch ahead)**"
+    route_to: dispatcher
+    notes: apply model-selection gate per `docs/standards/model-selection.md` — recommend Sonnet for spec-framed mechanical slices, Opus only for ambiguous architecture / hard refactor / design choice; surface recommendation in run-brief; track via `cost-report.modelMix` (FEAT-031)
+  - section: review-gates
+    signal: "**Security-sensitive change** (auth, crypto, input handling, secrets, RBAC, token management)"
+    route_to: reviewer via **gstack `/cso`**
+    notes: "Reviewer invokes `/cso` (OWASP + STRIDE audit) alongside normal review for security-bearing diffs. Complements crew review artifacts with security-specific findings. Co-cite: `skills/domain/security-advisory/` for subject-area discipline guide."
+  - section: review-gates
+    signal: "**Dependency / lockfile change** (diff touches `package.json`, `bun.lock`, `requirements.txt`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `*.csproj`)"
+    route_to: reviewer via **`skills/domain/security-sweep/`**
+    notes: Reviewer loads security-sweep alongside the existing per-language reviewer. Pre-flight CVE audit (reviewer.md lines 103-104) is replaced by the structured procedure in the skill — same commands, but findings emitted as severity-tagged path+line blocks and counted in the review-result `--findings` count.
+  - section: review-gates
+    signal: "**Auth-touching diff** (diff touches files matching `(auth|login|signin|signup|jwt|oauth|session|token|password|crypto|secret|credential)`, or path under `*/auth/*`, `*/security/*`)"
+    route_to: "reviewer via **`skills/domain/security-sweep/`** + **`skills/domain/security-advisory/`**"
+    notes: Co-load with security-advisory for OWASP / threat-model context. Secrets-scan pattern set in security-sweep runs severity-tagged path+line emission on the diff; security-advisory handles OWASP-shape questions. Replaces the implicit "remember to invoke /cso" path with an auto-trigger.
+  - section: review-gates
+    signal: "**Diff under review (any code-bearing change)** (reviewing a PR, diff, or completed implementation)"
+    route_to: reviewer
+    notes: Load `skills/workflow/reviewing-code/` for review procedure — correctness, regressions, scope drift, test-gap checks. Pairs with `plugin-dev:plugin-validator` and `plugin-dev:skill-reviewer` when the diff touches plugin shape or skills.
+  - section: review-gates
+    signal: "**Test suite quality questioned** (coverage looks adequate but `test_confidence` grade < 0.80 across recent slices, or reviewer suspects flaky / anti-pattern / weak-assertion tests)"
+    route_to: "`qa-expert` via **`skills/workflow/test-quality/`**"
+    notes: Loads the test-quality lens — flaky-test regex set (timer/sleep/wall-clock/non-seed-random/shared-state), anti-pattern scan (assertion-free, tautological assert, over-mocking), and mutation-testing advisory for critical-path modules. Findings emitted as `[SEVERITY] file:line` blocks parallel to security-sweep. Advisory tier — does NOT auto-block merge; qa-expert applies judgment via the `quality_concerns` verdict.
+  - section: code-language
+    signal: "**Building / editing Microsoft SDK code** (Azure SDKs, .NET libs, M365 APIs, anything namespaced `Microsoft.*` / `Azure.*`)"
+    route_to: fullstack-dev via **`microsoft-docs:microsoft-code-reference`**
+    notes: Verify method signatures + parameter shapes against official MS docs before committing. Catches hallucinated APIs that pass type-check but fail at runtime. Reviewer cross-checks on the way in.
+  - section: code-language
+    signal: "**Backend code change** (server-side logic, API handlers, data layer, service orchestration)"
+    route_to: fullstack-dev
+    notes: Load `skills/domain/architecture/backend-advisory/` for backend patterns and quality bar.
+  - section: code-language
+    signal: "**Frontend code change** (UI components, client-side logic, CSS, browser-rendered output)"
+    route_to: fullstack-dev
+    notes: Load `skills/domain/ui/react-engineering/` for frontend patterns and quality bar.
+  - section: code-language
+    signal: "**Full-stack change spanning both frontend and backend** (shared data shape, API + UI wired end-to-end)"
+    route_to: fullstack-dev
+    notes: Load `skills/domain/architecture/fullstack-advisory/` for cross-layer coherence checks. Pairs with backend and frontend advisory rows when the diff touches both surfaces separately.
+  - section: code-language
+    signal: "`tags include surface:ui or stack:react AND (tags include surface:api/schema OR stack:csharp/node/python)`"
+    route_to: dispatch `crew:frontend-dev` for FE diff + `crew:backend-dev` for BE diff in parallel (orchestrate-slice Step 2+3); integrator gates afterward
+    notes: <!-- routing-lint:ignore -->
+  - section: code-language
+    signal: "`tags include surface:ui or stack:react AND NOT (any backend stack tag)`"
+    route_to: dispatch `crew:frontend-dev` only
+    notes: <!-- routing-lint:ignore -->
+  - section: code-language
+    signal: "`tags include (surface:api or surface:schema or any backend stack:*) AND NOT (surface:ui or stack:react)`"
+    route_to: dispatch `crew:backend-dev` only
+    notes: <!-- routing-lint:ignore -->
+  - section: code-language
+    signal: "**Python code change** (`*.py` file edit, FastAPI/Django/Flask service, data pipeline)"
+    route_to: fullstack-dev
+    notes: Load `skills/domain/python-pro/` for type-safe, async, Pythonic patterns and quality bar.
+  - section: code-language
+    signal: "**TypeScript / TSX code change** (`*.ts` / `*.tsx` file edit, any framework or runtime)"
+    route_to: fullstack-dev
+    notes: Load `skills/domain/typescript-pro/` for advanced type system patterns, full-stack type safety, and build tooling guidance.
+  - section: code-language
+    signal: "**AI app / LLM SDK code** (Anthropic / OpenAI SDK imports, prompt engineering infra, agent frameworks, model training or inference code)"
+    route_to: fullstack-dev
+    notes: Load `skills/domain/ai-engineering/` for end-to-end AI system guidance. Co-cite `skills/domain/prompt-engineering/` for prompt-authoring concerns.
+  - section: code-language
+    signal: "**React-specific code** (hooks, state management, Server Components, Suspense, concurrent rendering, performance, React Testing Library, Next.js App Router)"
+    route_to: fullstack-dev
+    notes: Load `skills/domain/ui/react-engineering/`. Co-cite `skills/domain/ui/react-engineering/` for general frontend concerns. Co-cite `skills/domain/typescript-pro/` for `*.tsx` type patterns.
+  - section: code-language
+    signal: "**Tailwind CSS change** (utility-class styling, responsive variants, `tailwind.config.*`, dark-mode tokens, plugin authoring)"
+    route_to: fullstack-dev
+    notes: Load `skills/domain/ui/tailwind-patterns/` for utility-first patterns, responsive design, and anti-patterns. Co-cite `skills/domain/frontend-design/` for visual layout context.
+  - section: code-language
+    signal: "**Frontend visual / creative design** (CSS layout, color systems, typography, visual hierarchy, design-to-code)"
+    route_to: fullstack-dev / uxdesigner
+    notes: Load `skills/domain/frontend-design/` for visual design patterns and CSS best practices — `references/structural-dna.md` for page structure, `references/style-selection.md` for direction/palette/fonts per product type. Co-cite `skills/domain/ui/tailwind-patterns/` when stack uses Tailwind.
+  - section: code-language
+    signal: '**UI design quality complaint** ("looks generic", "AI slop", low visual polish, template feel)'
+    route_to: uxdesigner
+    notes: "Load `skills/domain/frontend-design/` end-to-end: run the reference-research + structural-DNA process, produce a UX spec with explicit `## Visual direction`, and gate the rebuild against `references/react-ui-quality.md`."
+  - section: code-language
+    signal: "**Mobile app code change** (React Native, Flutter, iOS Swift, Android Kotlin, mobile-specific APIs)"
+    route_to: fullstack-dev via `agents/3rdparty/mobile-developer.md`
+    notes: Delegate implementation to `mobile-developer`. Co-cite `skills/domain/mobile/mobile-design/` for mobile UX constraints.
+  - section: code-language
+    signal: "**MCP server authoring or debugging** (Model Context Protocol server, tool definitions, resource handlers, Claude extension)"
+    route_to: fullstack-dev
+    notes: Load `skills/domain/mcp-integration/` for config format, security, and integration patterns.
+  - section: architecture
+    signal: "**Architecture sketch / system design** (ADR drafting, system design, capacity or topology decisions)"
+    route_to: "`agents/architect.md` stub"
+    notes: Load `skills/domain/architecture/architecture-advisory/`. Architect handles backend service architecture inline (see `## Backend architecture` section). Delegates to `agents/cloud-architect.md` and `agents/3rdparty/database-architect.md` via Agent tool for DB/cloud concerns. For API contract work load `skills/domain/architecture/api-architecture/` inline; for diagrams load `skills/domain/architecture/diagram-methodology/` inline.
+  - section: architecture
+    signal: "**Schema design / migration planning / database performance tuning** (ER modeling, schema evolution, index strategy, technology selection, multi-tenancy, sharding, CQRS, event sourcing)"
+    route_to: architect / fullstack-dev
+    notes: Load `skills/domain/backend/database-architecture/`. For PostgreSQL-specific query tuning, hand off to `agents/3rdparty/database-architect.md`.
+  - section: architecture
+    signal: "**Cloud infra design** (multi-region, landing zone, IAM, network topology, multi-cloud, disaster recovery, cost optimization, FinOps)"
+    route_to: architect / release-engineer
+    notes: Load `skills/domain/infra/cloud-architecture/`. For IaC specifics, co-cite `skills/domain/infra/devops-engineering/references/iac.md`.
+  - section: infra-ops
+    signal: "**CI/CD pipeline change** (`.github/workflows/*.yml`, `azure-pipelines.yml`, `Jenkinsfile`, `*.gitlab-ci.yml`, build-system config)"
+    route_to: release-engineer
+    notes: Load `skills/domain/infra/devops-engineering/` + `references/ci-cd.md` for pipeline-specific patterns (stages, artifact management, deployment strategies, anti-patterns).
+  - section: infra-ops
+    signal: "**IaC change** (Terraform, Bicep, Helm, Ansible)"
+    route_to: release-engineer + fullstack-dev
+    notes: "Co-cite alongside the Terraform HCL row: load `skills/domain/infra/devops-engineering/references/iac.md` for module patterns, state management, and multi-env variable isolation. For provisioner timing, multi-env drift, and TLS/ACME failures, also load `skills/domain/infra/terraform-ops-traps/`."
+  - section: infra-ops
+    signal: "**Terraform operational issue** (state drift, multi-env config drift, container `Restarting` after `apply`, TLS/ACME failure, fresh-instance bootstrap)"
+    route_to: researcher + fullstack-dev via **`crew:terraform-ops-traps`** ops-traps body + `references/{provisioner-traps,multi-env-isolation,zero-to-deploy}.md`
+    notes: Operator-incident patterns with copy-paste fixes. Load `references/*.md` on demand for full HCL examples — the main skill body stays ≤200 lines.
+  - section: infra-ops
+    signal: "**Incident response / production troubleshooting** (deployment failure, CrashLoopBackOff, service 503, postmortem)"
+    route_to: release-engineer + verifier
+    notes: Load `skills/domain/infra/devops-engineering/references/troubleshooting.md` for structured gather-facts → diagnose → fix → verify → postmortem procedure. Pairs with `skills/workflow/root-cause-discipline/` for root-cause tracing.
+  - section: infra-ops
+    signal: "**Rollback-readiness assessment / rollback-vs-forward-fix call under active incident**"
+    route_to: release-engineer
+    notes: Load `skills/domain/infra/deployment-patterns/` → `## Rollback decision matrix`. Match severity × data impact × time-to-fix; cite the matched matrix cell + applicable tie-breaker in `--evidence`. Default to rollback when blast radius is growing or diagnosis confidence < 70%.
+  - section: infra-ops
+    signal: "**Silent-failure risk on runnable change** (server / worker / hook / CLI entry / scheduled job)"
+    route_to: reviewer
+    notes: Load `skills/workflow/review-gates/` → `### Silent-failure hunt`. Scan for swallowed errors, catch-then-continue without telemetry, dropped promise rejections, inadequate fallbacks, missing health-check tiers (liveness / readiness / startup), and `process.exit()` from library functions.
+  - section: infra-ops
+    signal: "**Performance-sensitive change shipped** (latency-critical path, throughput regression risk, bundle size impact)"
+    route_to: release-engineer / verifier via **gstack `/benchmark`**
+    notes: Gather perf evidence alongside deployment evidence. Run before and after to produce delta metrics.
+  - section: infra-ops
+    signal: "**Web UI behavior changed** (frontend components, user-visible flows, browser-rendered output)"
+    route_to: "verifier (local browser harness only — **gstack `/qa` DISABLED**: Playwright path was unstable + could exit current repo context)"
+    notes: "Verifier runs `bun test --parallel <ui-test.test.ts>` locally and records `gstack: unavailable — fell back to local harness` in `--evidence`. Do NOT invoke `/qa`. Re-enable only after the cross-repo stability issue is resolved."
+  - section: infra-ops
+    signal: "**Web app E2E / integration testing** (end-to-end browser tests, integration smoke, API contract validation at runtime)"
+    route_to: verifier / integrator
+    notes: Load `skills/workflow/webapp-testing/` for structured test scenario design and evidence requirements. **gstack `/qa` DISABLED** (Playwright path unstable across repos) — use local browser harness; screenshot evidence will be missing.
+  - section: infra-ops
+    signal: "**Docker containerization** (Dockerfile authoring, multi-stage builds, docker-compose, image optimization, registry management)"
+    route_to: fullstack-dev / release-engineer
+    notes: Load `skills/domain/infra/docker-expert/` for container patterns, security hardening, and optimization. Co-cite `skills/domain/infra/devops-engineering/` for pipeline integration.
+  - section: research
+    signal: '**Library / API uncertainty** ("is method X still supported?", "current docs for Y", touching unfamiliar npm package, unsure of signature)'
+    route_to: researcher / fullstack-dev / reviewer via **context7 MCP**
+    notes: Call `context7.resolve-library-id` then `context7.get-library-docs` before recommending or editing. Reviewer also consults context7 when verifying API claims in the diff under review. If context7 has no coverage for the library, fall back to general web docs rather than retrying. Pairs with `microsoft-docs:microsoft-code-reference` for MS-tech. Server pinned in `.mcp.json`.
+  - section: research
+    signal: '**Microsoft tech concept question** ("how does Cosmos partitioning work?", limits, quotas, configs, capabilities)'
+    route_to: researcher via **`microsoft-docs:microsoft-docs`**
+    notes: Authoritative MS lookup before web search. Use for understanding ("what is X") rather than code ("how do I call X" — that's microsoft-code-reference).
+  - section: research
+    signal: "**Bug root cause unclear after initial triage** (intermittent failure, multi-layer interaction, repro-resistant)"
+    route_to: researcher via **gstack `/investigate`**
+    notes: Escalation path when `/crew:fix` hits a wall. gstack's `/investigate` applies structured debugging methodology.
+  - section: research
+    signal: "**Bug root cause / intermittent failure** (root cause not clear after first triage, multi-layer interaction, repro-resistant)"
+    route_to: verifier or researcher
+    notes: Load `skills/workflow/root-cause-discipline/` for structured root-cause tracing. Complements gstack `/investigate` as an escalation path.
+  - section: research
+    signal: "**Multi-source research / synthesis** (claim verification across sources, contradictory sources, primary vs secondary source analysis, multi-domain research coordination)"
+    route_to: researcher
+    notes: Load `skills/workflow/research-coordination/` for complexity assessment, specialist allocation, iteration strategy, and source quality heuristics.
+  - section: research
+    signal: '**Codebase investigation** (tracing behavior/dependencies in C#/.NET, TypeScript/React, or plugin internals; "where is X", "what calls Y", impact or option analysis)'
+    route_to: researcher
+    notes: "Load `skills/workflow/code-investigation/` for the clarity gate, evidence ladder, and per-mode output formats; pull the matching `references/{csharp,typescript-react,plugin-dev}.md` for stack first-checks. Boundary: Explore/crew:investigator = cheap locate, no artifact; researcher = findings that must persist as a handoff with confidence + risks."
+  - section: research
+    signal: "**Spec pre-flight research** (`/crew:architect-feature` step 1 — findings feeding a contracts artifact)"
+    route_to: researcher
+    notes: Load `skills/workflow/code-investigation/` → `references/spec-driven.md`. Output FINDING / CONSTRAINT / EDGE CASE / DEPENDENCY / NFR blocks with citations and real identifiers so the architect can write contracts directly from them.
+  - section: docs-comms
+    signal: "**API documentation authoring** (OpenAPI specs, SDK reference guides, integration guides, error documentation, versioning, deprecation notices)"
+    route_to: "`crew:document-writer`"
+    notes: Load `skills/workflow/api-documentation/`. Co-cite `skills/domain/architecture/backend-advisory/` for API design concerns.
+  - section: docs-comms
+    signal: "**Diagram authoring** (architecture diagrams, flowcharts, sequence diagrams, ERDs, state machines, dependency graphs, Mermaid / PlantUML / Draw.io / ADR diagrams)"
+    route_to: "`crew:document-writer` + `loop:architect`"
+    notes: Document-writer owns Markdown authoring; architect selects diagram type via auto-pick decision tree. Both consult `skills/domain/architecture/diagram-methodology/` (format selection, auto-pick, templates) and `skills/workflow/diagram-review/` (post-authoring lint).
+  - section: docs-comms
+    signal: "**Authoring a git commit message** (after a code change is complete and staged)"
+    route_to: fullstack-dev
+    notes: Load `skills/workflow/git-commit/` for commit-message format, conventional-commit style, and co-author footers.
+  - section: docs-comms
+    signal: "**Subagent completion report** (any role finishing a delegated task)"
+    route_to: role via `write-handoff` CLI
+    notes: Agent calls `node ... crew.ts write-handoff` via Bash; returns path + 1–3 sentence headline. The dispatcher reads the full report from the path on demand. Inline returns re-inflate dispatcher context.
+  - section: docs-comms
+    signal: "**Fullstack-dev completion — build bundle** (fullstack-dev or frontend-dev / backend-dev finishes a slice and writes handoff)"
+    route_to: fullstack-dev via `scripts/crew.ts write-build-bundle`
+    notes: "After `write-handoff`, fullstack-dev calls `node scripts/crew.ts write-build-bundle --slice <id> --builder <name> --run <runId> --handoff <path> --files <a,b> --files-read <c,d>` to persist a structured bundle (handoff body, `git diff`, full contents of touched + Read files) under `.claude/artifacts/crew/bundles/{slice}/`. Non-blocking on failure — log the error and continue. Applies to `crew:fullstack-dev`, `crew:backend-dev`, `crew:frontend-dev`. Schema: `docs/standards/build-bundle-schema.md`."
+  - section: ux
+    signal: "**UX / UI design** (layout decisions, user flows, interaction design, component wireframes)"
+    route_to: "`agents/uxdesigner.md` stub"
+    notes: Load `skills/domain/ui/react-engineering/`. UXDesigner stub delegates to `agents/3rdparty/{ui-ux-designer,expert-react-frontend-engineer,frontend-developer}.md` via Agent tool.
+  - section: ux
+    signal: "**UX research / persona work / interaction design / accessibility audit** (user interviews, persona modeling, IA, heuristic evaluation, WCAG compliance, AI interface patterns)"
+    route_to: uxdesigner
+    notes: Load `skills/domain/ui/ux-methodology/`. For research synthesis, co-cite `skills/workflow/research-coordination/`. For implementation, co-cite `skills/domain/ui/react-engineering/` or `skills/domain/ui/react-engineering/`.
+  - section: ux
+    signal: "**Mobile app design** (iOS/Android UX, React Native layouts, Flutter widgets, mobile interaction patterns, touch targets, platform conventions)"
+    route_to: uxdesigner / fullstack-dev
+    notes: Load `skills/domain/mobile/mobile-design/`. For implementation, delegate to `agents/3rdparty/mobile-developer.md`.
+  - section: crew-internals
+    signal: "**Cost analysis or optimization** (expensive operations, token burn investigation)"
+    route_to: researcher (read-only) + dispatcher decision
+    notes: Researcher investigates and reports; the dispatcher decides on action (optimize, accept, defer).
+  - section: crew-internals
+    signal: "**Editing this plugin's own `agents/*.md`** (any change to dispatcher/builder/reviewer/validator/deployer/researcher prompts)"
+    route_to: fullstack-dev via **`plugin-dev:agent-development`**
+    notes: "Catches frontmatter weakness, tool over-scope, weak `description:` triggers. Downstream reviewer gate: see existing **Plugin shape change** row — do **not** skip the reviewer step. Co-cite: `skills/domain/prompt-engineering/` for prompt-authoring discipline."
+  - section: crew-internals
+    signal: "**Editing this plugin's own `skills/**/SKILL.md`\\*\\* (authoring new skills or modifying existing ones)"
+    route_to: fullstack-dev via **`plugin-dev:skill-development`**
+    notes: "Builder-side complement to FEAT-017's reviewer-side wiring. Pairs with `scripts/validate-skills.ts` (CI gate, hard-fail) + downstream reviewer via **Skill shape change** row — do **not** skip the reviewer step. Co-cite: `skills/meta/skill-creator/` for skill-authoring methodology."
+  - section: crew-internals
+    signal: "**Specialist-agent prompt edit** (any change to `agents/{architect,uxdesigner}.md`)"
+    route_to: fullstack-dev + human-in-loop review
+    notes: "All three are `autonomous_safe: false` — changes require human-in-loop review before merging. See `docs/governance.md` autonomous_safe policy section."

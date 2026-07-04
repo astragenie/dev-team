@@ -26,7 +26,7 @@
  *       parallel: 1,
  *       gate: "all_pass",
  *       parallel_dispatch: {
- *         group: ["crew:inspector", "crew:inspector", "crew:verifier"],
+ *         group: ["crew:reviewer", "crew:reviewer", "crew:verifier"],
  *         policy: "wait_for_all",
  *         halt_on: "any_FAIL"
  *       },

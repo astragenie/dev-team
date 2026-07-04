@@ -1,0 +1,38 @@
+# Task Handoff: GEPA evals/ coverage, judge registry, kill-switches, trial-corpus size, FEAT-185/186 state
+
+- Created: 2026-07-04T09:14:14.342Z
+- From: researcher
+- To: dispatcher
+- Objective: evals/agents/ has only 2 specs (fullstack-dev, inspector) of 6 GEPA v1 targets; deprecated JudgeProvider shim confirmed with removal plan; candidate model is hardcoded claude-sonnet-4-6 with no override; GEPA trial corpus is only 8 (architect) + 10 (inspector) hand-seed records at 1 line each, well below the design's own minSoakTrials=20 floor; SLICE-111 (FEAT-186 S2) is already shipped in code despite backlog metadata still saying triaged.
+- Allowed Scope:
+  - Read-only audit of evals/ in full
+  - GEPA design doc (docs/superpowers/specs/2026-06-27-gepa-skill-improvement-loop-design.md)
+  - GEPA trial corpus sizes
+  - agent/eval coverage parity across agents/*.md + agents/3rdparty/*.md
+  - kill-switch + auto-merge-gate implementation (SLICE-105/106)
+  - and FEAT-185/FEAT-186 backlog reconciliation
+- Forbidden Scope: -
+- Deliverable: 10-section evidence-heavy findings report (inline, not written to disk) covering: eval spec structure + coverage matrix, JUDGE_REGISTRY (7 providers) + deprecated JudgeProvider shim quotes, candidate hardcoding proof + CREW_MODEL_PROFILE non-existence, budget meter/with-budget mechanics, fixture inventory, GEPA design doc verbatim promotion-policy/kill-switch/provenance quotes, exact trial corpus line counts (8 architect + 10 inspector, no other agent has .gepa/), auto-merge-gate.ts + critical-agent-allowlist.ts + observability-events.ts verbatim gate logic, FEAT-185/186 status reconciliation (SLICE-111 already shipped despite triaged status), TODO/FIXME/deprecated sweep
+- Changed Files:
+  - evals/agents/crew-fullstack-dev.yaml
+  - evals/agents/crew-inspector.yaml
+  - evals/lib/judge.ts
+  - evals/lib/candidate-dispatch.ts
+  - evals/providers/claude-p.ts
+  - evals/lib/meter.ts
+  - evals/lib/with-budget.ts
+  - evals/lib/run-eval.ts
+  - docs/superpowers/specs/2026-06-27-gepa-skill-improvement-loop-design.md
+  - scripts/lib/gepa/auto-merge-gate.ts
+  - scripts/lib/gepa/critical-agent-allowlist.ts
+  - scripts/lib/gepa/observability-events.ts
+  - agents/architect/.gepa/eval
+  - agents/inspector/.gepa/eval
+  - .claude/artifacts/loop/backlog/triaged/FEAT-185.md
+  - .claude/artifacts/loop/backlog/triaged/FEAT-186.md
+  - .claude/artifacts/loop/backlog/triaged/SLICE-110-feat-186-judgecost-export.md
+  - .claude/artifacts/loop/backlog/triaged/SLICE-111-feat-186-dailycap-ingestion.md
+- Confidence: high
+- Risks: SLICE-112/113/114 (FEAT-186 S3-S5) implementation status not exhaustively verified — no shipped-code trace found in scripts/lib/cost/ during this pass but not a full search; .claude/artifacts/crew/gepa/trials/ path (live captured trial store) does not appear to exist yet in this worktree, meaning the design's auto-grow dataset mechanism has not accumulated any data beyond the 8+10 hand-seed records; backlog frontmatter for SLICE-110/111 is stale relative to git history and should not be trusted at face value for planning
+- Suggested Next Handoff: Reviewer should (1) do the statistical power calc using n=8 (architect) / n=10 (inspector) eval corpus and minSoakTrials=20 soak floor against the +5pp promotion threshold, (2) decide whether FEAT-186 S1/S2 need re-verification-only (not re-build) given SLICE-111 is already shipped, (3) flag the 2 orphaned fixtures (lead-dispatch-prompt.txt, lead-leak-prompt.txt) for cleanup or reattachment
+

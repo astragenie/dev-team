@@ -31,7 +31,7 @@ Written to `.claude/artifacts/crew/agent-stats/<ISO8601Z>-agent-stats-<window-sl
 
 | Field | Type | Meaning |
 |---|---|---|
-| `agent` | string | Agent role name (e.g. `crew:builder`, `crew:inspector`) |
+| `agent` | string | Agent role name (e.g. `crew:builder`, `crew:reviewer`) |
 | `window` | string | Window slug, e.g. `last_n_slices_10` |
 | `sample_count` | number | Dispatch rows matched inside the window |
 | `pass_rate` | 0..1 | Fraction of agent's slices whose avg grade score ≥ 0.7 |

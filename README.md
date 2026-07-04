@@ -20,9 +20,9 @@ Crew gives Claude Code a dispatcher-guided workflow model with **23 first-party 
 
 **Review + validate gates:**
 
-- **inspector** — generalist code review with FEAT-concern-tag lens
-- **inspector-lite** — fast review for light-path diffs (single dispatch with stack skill auto-load)
-- **c-sharp-reviewer** — stack-quality review for `.cs` diffs (async / EF Core / ASP.NET / null safety)
+- **reviewer** — generalist code review with FEAT-concern-tag lens
+- **reviewer-lite** — fast review for light-path diffs (single dispatch with stack skill auto-load)
+- **csharp-reviewer** — stack-quality review for `.cs` diffs (async / EF Core / ASP.NET / null safety)
 - **verifier** — behavior validation; owned by `/crew:ship` + pre-push hook
 - **integrator** — live wire-up smoke for SPLIT_BUILD slices
 - **qa-expert** — test coverage gap analysis; dispatched from `/crew:ship`
@@ -36,7 +36,6 @@ Crew gives Claude Code a dispatcher-guided workflow model with **23 first-party 
 - **release-engineer** — deployment evidence, environment transitions
 - **researcher** / **investigator** — read-only investigation
 - **refactor** — quality-sweep scans
-- **parallel-runner** — parallel-worktree batch coordination
 
 Each agent has strict ownership rules, structured start/completion reports, and explicit handoffs. A library of **69 skills** across 4 tiers (`universal/`, `workflow/`, `domain/`, `meta/`) supplies the procedural knowledge agents load on demand. The `skills/universal/builder-mindset/` skill carries the cross-builder posture (senior engineer mindset, Astra principles, code-review heuristics, TDD policy) so builder prompts stay focused on stack-specific work.
 
@@ -44,7 +43,7 @@ In practice, the highest-value default mode is:
 
 - the user runs `/crew:build` / `/crew:fix` / `/crew:ship`
 - the slash command reads FEAT tags + routing tables, picks specialists
-- builder edits → 2 parallel inspectors → push gate runs verifier → `/crew:ship` files PR with auto-fix loop
+- builder edits → 2 parallel reviewers → push gate runs verifier → `/crew:ship` files PR with auto-fix loop
 
 The user runs slash commands and reads the resulting artifacts — no menu of agents, no command graph to memorize.
 

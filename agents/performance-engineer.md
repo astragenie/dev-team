@@ -4,7 +4,7 @@ prompt_id: performance-engineer
 version: 1.0.0
 model_pinned: sonnet
 capabilities:
-  role: [inspector]
+  role: [reviewer]
   surfaces: [api, ui, infra]
   concerns: [performance]
   scopes: [normal, wide]
@@ -90,7 +90,7 @@ You MUST NOT dispatch:
 
 - `backend-dev`, `frontend-dev`, `fullstack-dev` — implementers; performance-engineer
   does not invoke implementers; surface risks in the report for the dispatcher to route.
-- `inspector`, `inspector-verifier`, `verifier`, `release-engineer` — review and
+- `reviewer`, `reviewer-verifier`, `verifier`, `release-engineer` — review and
   validation gates; dispatched exclusively by the orchestrator (loop walker).
 - (dispatcher role removed), `refactor`, `integrator`, `parallel-runner` — orchestration roles; not
   appropriate as peer targets from a performance session.

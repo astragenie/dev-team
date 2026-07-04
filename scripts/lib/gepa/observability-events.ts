@@ -300,7 +300,7 @@ export function emitChampionFrozenEvent(
 
 /**
  * SLICE-106: Critical-agent left as draft PR — never auto-merged.
- * Emitted when inspector / verifier / architect wins the gate but is routed
+ * Emitted when reviewer / verifier / architect wins the gate but is routed
  * to the draft-PR human-review queue instead.
  */
 export function emitCriticalAgentDraftPrEvent(

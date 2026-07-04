@@ -2,7 +2,7 @@
  * tests/gepa/auto-merge-gate-five-conditions.test.ts — SLICE-106
  *
  * Covers AC-10 (32 truth-table combos for the 5 gate conditions) and
- * AC-2 (critical-agent allowlist — inspector/verifier/architect forced draft).
+ * AC-2 (critical-agent allowlist — reviewer/verifier/architect forced draft).
  *
  * The 5 boolean gates tested:
  *   G1: pareto_rank === 1
@@ -215,7 +215,7 @@ describe("auto-merge gate — 5-condition truth table (32 combos)", () => {
 // ── Critical-agent tests (AC-2) ───────────────────────────────────────────────
 
 describe("auto-merge gate — critical-agent allowlist (AC-2)", () => {
-  for (const criticalAgent of ["inspector", "verifier", "architect"] as const) {
+  for (const criticalAgent of ["reviewer", "verifier", "architect"] as const) {
     it(`${criticalAgent}: critical-agent check fires FIRST, PR left as draft, gh pr merge NEVER called`, () => {
       const result = makeResult({
         g1ParetoRank1: true,

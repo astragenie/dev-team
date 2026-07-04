@@ -4,7 +4,7 @@ prompt_id: qa-expert
 version: 1.0.0
 model_pinned: sonnet
 capabilities:
-  role: [inspector]
+  role: [reviewer]
   concerns: [test-coverage]
   scopes: [normal, wide]
   lens: [test-coverage]
@@ -72,7 +72,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
 - Receive UX flows from uxdesigner
 - Coordinate perf scenarios with performance-engineer
 - Provide gap reports back to the dispatcher and dev agents
-- Hand coverage findings to inspector for review-time enforcement
+- Hand coverage findings to reviewer for review-time enforcement
 
 ## Peer dispatch — when to use the Agent tool
 
@@ -90,7 +90,7 @@ You MUST NOT dispatch:
 
 - `backend-dev`, `frontend-dev`, `fullstack-dev` — implementers; qa-expert does
   not invoke implementers; surface gaps in the report for the dispatcher to route.
-- `inspector`, `inspector-verifier`, `verifier`, `release-engineer` — review and
+- `reviewer`, `reviewer-verifier`, `verifier`, `release-engineer` — review and
   validation gates; dispatched exclusively by the orchestrator (loop walker).
 - (dispatcher role removed), `refactor`, `integrator`, `parallel-runner` — orchestration roles; not
   appropriate as peer targets from a QA session.

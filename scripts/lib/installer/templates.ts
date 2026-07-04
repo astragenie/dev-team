@@ -101,9 +101,9 @@ Exception — \`dev.stable\` opt-in:
   - the work is local commits only — not a release tag, not a force-push, not a production deploy
 - If any gate is missing or red, fall back to baseline (ask first).
 - The user may override the flag at any time by saying "do not commit" or equivalent during the session. Session-level instruction always beats the repo flag.
-- Production promotion, tag pushes, and force-pushes are NEVER unlocked by \`dev.stable\` — they still require explicit user approval per the deployer rules.
+- Production promotion, tag pushes, and force-pushes are NEVER unlocked by \`dev.stable\` — they still require explicit user approval per the release-engineer rules.
 
-See \`agents/deployer.md\` → Deployment guidance schema for the field definition.
+See \`agents/release-engineer.md\` → Deployment guidance schema for the field definition.
 `;
 
 export const WORKFLOW_TEMPLATE = `# Engineering OS Workflow

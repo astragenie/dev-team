@@ -13,7 +13,7 @@
  *   5. backend tag → crew:backend-dev (tag routing)
  *   6. parallel-fe-be tag → parallel_dispatch group [frontend-dev, backend-dev]
  *   7. no-tag / default → crew:fullstack-dev (routing default)
- *   8. (SLICE-82) quick workflow → golden trace (length 2, inspector-verifier combined)
+ *   8. (SLICE-82) quick workflow → golden trace (length 2, reviewer-verifier combined)
  *   9. (SLICE-82) spike workflow → golden trace (length 1, builder only, no gate)
  *  10. (SLICE-82) release workflow → golden trace (length 4, deployer has require_user_approval)
  *  11. (SLICE-82) SLICE-78 regression — regular.golden.json unchanged
@@ -160,7 +160,7 @@ test("(SLICE-82) quick workflow — golden trace", async () => {
 
   expect(plan).toEqual(golden);
   expect(plan).toHaveLength(2);
-  expect(plan[1]?.agent).toBe("crew:inspector-lite");
+  expect(plan[1]?.agent).toBe("crew:reviewer-lite");
   expect(plan[1]?.parallel).toBe(1);
   expect(plan[1]?.gate).toBe("all_pass");
 });

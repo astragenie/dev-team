@@ -119,8 +119,8 @@ Example:
 ## Cross-references
 
 - `commands/orchestrate-slice.md` L308 — hard-gates on this section.
-- `agents/validator.md` — re-runs the same gates whole-repo at the final gate.
-- `agents/builder.md`, `agents/builder-fe.md`, `agents/builder-be.md` — call this skill.
+- `agents/verifier.md` — re-runs the same gates whole-repo at the final gate.
+- `agents/fullstack-dev.md`, `agents/backend-dev.md`, `agents/frontend-dev.md`, `agents/dev-lite.md` — call this skill.
 
 ## Done when
 

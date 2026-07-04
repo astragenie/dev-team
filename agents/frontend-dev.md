@@ -3,7 +3,7 @@ name: frontend-dev
 prompt_id: frontend-dev
 version: 2.1.1
 model_pinned: sonnet
-evals: evals/agents/frontend-dev.yaml
+evals: planned:evals/agents/frontend-dev.yaml
 capabilities:
   role: [implementer]
   surfaces: [ui]
@@ -154,7 +154,7 @@ Net-new component without an edge-case test = half-done.
 
 ### Test naming
 
-Vitest + Testing Library: `describe('<subject>', () => { it('should <behavior> when <condition>', ...) })`. Inspector's `--test-summary` extraction depends on readable names.
+Vitest + Testing Library: `describe('<subject>', () => { it('should <behavior> when <condition>', ...) })`. Reviewer's `--test-summary` extraction depends on readable names.
 
 ## Report contract
 
@@ -201,7 +201,7 @@ MAY dispatch via Agent tool when their output unblocks YOUR work (and Agent tool
 - `qa-expert` — test scenario or coverage clarification mid-build.
 - `security-advisory` (via skill load) — auth / XSS / CSP touchpoints.
 
-MUST NOT dispatch: `crew:inspector`, `crew:inspector-verifier`, `crew:verifier`, `crew:release-engineer`, `backend-dev`, `fullstack-dev`, `refactor`, `integrator`, `parallel-runner`, all `caveman:*`, all `3rdparty:*`.
+MUST NOT dispatch: `crew:reviewer`, `crew:reviewer-verifier`, `crew:verifier`, `crew:release-engineer`, `backend-dev`, `fullstack-dev`, `refactor`, `integrator`, `parallel-runner`, all `caveman:*`, all `3rdparty:*`.
 
 Dispatch prompt purity: address the peer as that peer ("Clarify the UX pattern for X"); never inject your own role; state deliverable + scope rails + budget cap. Peer outputs are inputs to YOUR work, not substitutes.
 
