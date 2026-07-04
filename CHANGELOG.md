@@ -3,7 +3,7 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
-## [Unreleased]
+## [0.50.0] — 2026-07-04 — P1 enforcement hardening (verdict enums + fail-open fix + feature flags)
 
 ### Minor — P1.3 enum verdict frontmatter + fail-open badge fix (2026-07-04)
 
