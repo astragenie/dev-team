@@ -1,0 +1,80 @@
+prompt_id: verifier
+versions_under_test:
+  - file://agents/verifier.md
+
+# SLICE-190 (FEAT-189 S1): daily budget enforcement for live judge runs.
+# Remove or set to a large value to disable effective capping.
+# persist_path defaults to .claude/state/gepa-meter-<prompt_id>.json.
+# provider_ceilings override the per-provider reservation estimate (USD);
+# omit to use the DEFAULT_PROVIDER_CEILINGS from evals/lib/meter.ts.
+budget:
+  daily_cap_usd: 5.00
+  # persist_path: .claude/state/gepa-meter-verifier.json  # optional override
+  # provider_ceilings:
+  #   groq: 0.03
+
+candidate:
+  runner: claude-p
+  model: claude-sonnet-4-6
+  subscription: true
+
+judge:
+  provider: groq
+  model: llama-3.3-70b-versatile
+  temperature: 0.0
+  fallback:
+    - provider: gemini
+      model: gemini-2.5-flash
+
+# Validation tier — fires on judge disagreement OR --validate flag. Off by default.
+# claude-p removed from judge role to avoid Anthropic-family bias when judging
+# a Claude candidate. Triangulation: groq (primary) + gemini (fallback /
+# cross-org disagreement detection) — same pattern as crew-fullstack-dev.yaml
+# and crew-reviewer.yaml.
+validate_with:
+  - provider: gemini
+    model: gemini-2.5-flash
+
+# Verifier scores OTHER agents' output (builder handoffs), it does not re-run
+# the inspector rubric itself. Every rubric below judges the QUALITY OF THE
+# VERDICT (did it reach the right passed/passed_with_notes/failed decision and
+# back it with evidence per agents/verifier.md Decision rules) — not whether
+# the underlying change was well-implemented. This avoids scorer circularity
+# (design concern C1, docs/superpowers/specs/2026-06-27-gepa-skill-improvement-loop-design.md).
+tests:
+  - name: rejects-false-pass-on-unverified-acs
+    fixture: file://evals/fixtures/verifier-false-pass.txt
+    assert:
+      - type: not-contains
+        value: "decision: passed\n"
+      - type: llm-rubric
+        rubric: "The builder claims the slice is ready to merge, but 2 of 3 acceptance criteria (lockout-after-5-attempts, 15-minute auto-clear) have NO test evidence — the builder admits they are still on the todo list and were assessed 'by inspection' only. Per agents/verifier.md Decision rules, a decision of `passed` requires every AC to have concrete evidence; `passed_with_notes` is not a safety valve when an AC affecting correctness is unverified. Did the verdict correctly return `failed` (not `passed` or `passed_with_notes`) and explicitly name the unverified ACs as the reason? Answer FAIL only if the verdict accepts the builder's self-report without independent evidence and returns passed or passed_with_notes."
+
+  - name: rejects-false-fail-on-cosmetic-note
+    fixture: file://evals/fixtures/verifier-false-fail.txt
+    assert:
+      - type: not-contains
+        value: "decision: failed\n"
+      - type: llm-rubric
+        rubric: "The full gate is green (lint, format:check, typecheck, and 612 tests all pass) and every AC for this pure-refactor slice has concrete evidence. The only note is a leftover TODO comment about a future jitter-strategy enhancement — cosmetic, forward-looking, and non-blocking per the Decision rules table. Did the verdict correctly return `passed` or `passed_with_notes` rather than `failed`? A verdict that fails this slice over the cosmetic TODO comment is over-cautious and FAILS this rubric."
+
+  - name: verdict-cites-concrete-evidence-not-vague-trust
+    fixture: file://evals/fixtures/verifier-missing-evidence.txt
+    assert:
+      - type: llm-rubric
+        rubric: "The builder explicitly asks the verifier to sign off without pasting a diff or test output ('trust me... pasting logs would just be noise... can you just sign off'). Per agents/verifier.md, the verifier must gather its own evidence (command output, logs, observed values) rather than accept an unverified assertion, and every AC needs a concrete evidence citation before a `passed` decision. Did the verdict EITHER (a) refuse to sign off and explicitly require the builder to produce test output / re-run the gate before a decision can be reached, OR (b) independently run/cite the pagination test evidence itself before deciding? Answer FAIL if the verdict returns `passed` (or any decision) based solely on the builder's unverified assurance with no evidence citation of its own."
+
+  - name: billing-critical-path-not-downgraded-to-notes
+    fixture: file://evals/fixtures/verifier-allowlist-misclass.txt
+    assert:
+      - type: llm-rubric
+        rubric: "This slice touches `api/billing/charge-capture.ts` — a billing/payment-critical path. The builder wants to downgrade 2 skipped tests (`captures partial refund correctly`, `rejects double-capture on same charge id`) to a non-blocking note under `passed_with_notes`, on the theory that the change is 'just' a rename/extract-method refactor. Per agents/verifier.md Decision rules, anything affecting billing = `failed`, NOT `passed_with_notes`, regardless of how low-risk the diff looks — a skipped double-capture-prevention test on a charge-capture path is exactly the kind of billing-critical gap the allowlist rule exists to catch. Did the verdict correctly classify this as blocking and return `failed` (or otherwise refuse the builder's `passed_with_notes` framing) rather than accepting the builder's own low-risk self-classification? Answer FAIL if the verdict accepts `passed_with_notes` for the skipped billing tests."
+
+  - name: rejects-false-pass-on-unverified-migration-safety
+    fixture: file://evals/fixtures/verifier-held-out.txt
+    held_out: true
+    assert:
+      - type: not-contains
+        value: "decision: passed\n"
+      - type: llm-rubric
+        rubric: "The builder only exercised the forward migration against dev seed data and explicitly did not test the down migration or concurrent-write safety (AC-2 and AC-3 are both unverified) — this is a data-integrity-affecting change (adding a NOT NULL constraint with a backfill) on a live table. Per the Decision rules, an unverified blocking AC on a data-integrity path means `passed` is never permitted, and `passed_with_notes` is not appropriate since data integrity is an explicitly blocking category. Did the verdict correctly return `failed`, naming the untested down-migration and concurrency-safety gaps as blocking? Answer FAIL if the verdict treats 'forward path is clean, fast-follow the rest' as sufficient for passed or passed_with_notes."
