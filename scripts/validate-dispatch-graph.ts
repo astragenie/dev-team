@@ -144,6 +144,87 @@ export function detectCycles(graph: Map<string, string[]>): string[][] {
   return cycles;
 }
 
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const COMMANDS_ROOT = path.join(REPO_ROOT, "commands");
+
+// `crew:<name>` tokens that legitimately resolve to something other than an
+// agent or command file (hooks, external references). Keep this list tiny and
+// justified — every entry is a dispatch token that has no `agents/<name>.md`
+// or `commands/<name>.md` on purpose.
+const ALLOWED_NONFILE_TOKENS = new Set<string>([]);
+
+/**
+ * Recursively collect `.md` files under a directory.
+ */
+async function collectMarkdown(dir: string): Promise<string[]> {
+  const out: string[] = [];
+  let entries: import("node:fs").Dirent[];
+  try {
+    entries = await fs.readdir(dir, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+  for (const e of entries) {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) out.push(...(await collectMarkdown(full)));
+    else if (e.name.endsWith(".md")) out.push(full);
+  }
+  return out;
+}
+
+/**
+ * Scan commands/ + skills/ for `crew:<name>` (and `crew:3rdparty:<name>`)
+ * dispatch tokens and return the ones that resolve to no real target — i.e.
+ * neither `agents/<name>.md`, `agents/3rdparty/<name>.md`, `commands/<name>.md`,
+ * nor an ALLOWED_NONFILE_TOKENS entry. This catches phantom-agent references
+ * (arch-review §2.1) before they reach a live dispatch path.
+ */
+export async function findDanglingDispatchRefs(
+  repoRoot: string = REPO_ROOT
+): Promise<{ token: string; files: string[] }[]> {
+  const scanRoots = [path.join(repoRoot, "commands"), path.join(repoRoot, "skills")];
+  const files: string[] = [];
+  for (const root of scanRoots) files.push(...(await collectMarkdown(root)));
+
+  const tokenPattern = /crew:(?:3rdparty:)?[a-z][a-z0-9-]+/g;
+  const hits = new Map<string, Set<string>>();
+
+  for (const file of files) {
+    const text = await fs.readFile(file, "utf8");
+    for (const m of text.matchAll(tokenPattern)) {
+      const token = m[0];
+      if (!hits.has(token)) hits.set(token, new Set());
+      hits.get(token)!.add(path.relative(repoRoot, file));
+    }
+  }
+
+  const dangling: { token: string; files: string[] }[] = [];
+  for (const [token, fileSet] of hits) {
+    if (ALLOWED_NONFILE_TOKENS.has(token)) continue;
+    const rest = token.slice("crew:".length);
+    let resolved = false;
+    if (rest.startsWith("3rdparty:")) {
+      const name = rest.slice("3rdparty:".length);
+      resolved = await exists(path.join(AGENTS_ROOT, "3rdparty", `${name}.md`));
+    } else {
+      resolved =
+        (await exists(path.join(AGENTS_ROOT, `${rest}.md`))) ||
+        (await exists(path.join(COMMANDS_ROOT, `${rest}.md`)));
+    }
+    if (!resolved) dangling.push({ token, files: [...fileSet].sort() });
+  }
+  return dangling.sort((a, b) => a.token.localeCompare(b.token));
+}
+
+async function exists(p: string): Promise<boolean> {
+  try {
+    await fs.access(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function isMainEntry() {
   if (!process.argv[1]) return false;
   return path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
@@ -173,5 +254,25 @@ if (isMainEntry()) {
     process.exitCode = 1;
   } else {
     console.log("\nDispatch graph OK: no cycles detected (clean DAG).");
+  }
+
+  // Phantom-agent resolver check (arch-review §2.1): every crew:<name> dispatch
+  // token in commands/ + skills/ must resolve to a real agent or command file.
+  const dangling = await findDanglingDispatchRefs();
+  if (dangling.length > 0) {
+    console.error(
+      `\nDispatch-ref validation FAILED: ${dangling.length} phantom dispatch token(s).`
+    );
+    for (const { token, files } of dangling) {
+      console.error(`  ${token} — no agents/ or commands/ target. Referenced in: ${files.join(", ")}`);
+    }
+    console.error(
+      "\nA crew:<name> token must resolve to agents/<name>.md, agents/3rdparty/<name>.md, " +
+        "or commands/<name>.md. Fix the reference to a real target, rename the agent, " +
+        "or (for a deliberate non-file token) add it to ALLOWED_NONFILE_TOKENS."
+    );
+    process.exitCode = 1;
+  } else {
+    console.log("Dispatch-ref OK: all crew:<name> tokens in commands/ + skills/ resolve.");
   }
 }

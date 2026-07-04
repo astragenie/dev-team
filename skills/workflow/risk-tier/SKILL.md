@@ -21,13 +21,11 @@ The `risk:` value in the slice frontmatter is the source of truth (computed by `
 
 | Risk   | Dispatch budget | Artifacts                                                                                                  | Gate ladder                                                                |
 | ------ | --------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| LOW    | 1–2             | run brief + handoff                                                                                        | `crew:reviewer-verifier` combined (single dispatch)                       |
+| LOW    | 1–2             | run brief + handoff                                                                                        | `crew:reviewer` + `crew:verifier` concurrent                              |
 | MEDIUM | 2–4             | run brief + handoff + review-result + validation-result                                                    | fullstack-dev → reviewer + verifier concurrent                                  |
 | HIGH   | 4–7             | full set: run brief + handoff + review-result + validation plan/result + deployment-check + final-synthesis | architect → fullstack-dev → fan-out review (2+ lenses) → verifier → release-engineer |
 
 **Hard cap: 7 dispatches per slice.** A slice exceeding 7 = too wide; dispatch `crew:document-writer` with `escalated_to_parent: scope exceeds dispatch budget` so a human re-scopes.
-
-**Registry fallback:** if `crew:reviewer-verifier` is unregistered on a LOW-risk slice ("Agent type not found" — stale registry after plugin upgrade): fall back to MEDIUM gate ladder (concurrent reviewer + verifier), never skip gates, and name the fallback in your next document-writer dispatch prompt under `notes:`.
 
 ## SLA Caps (prevent infinite loops)
 
