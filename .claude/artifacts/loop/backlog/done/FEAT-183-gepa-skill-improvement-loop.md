@@ -1,6 +1,6 @@
 ---
 id: FEAT-183
-status: triaged
+status: done
 priority: P1
 category: capability
 target_release: null

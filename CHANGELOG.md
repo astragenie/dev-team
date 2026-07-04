@@ -108,6 +108,24 @@ enforcement flags may only soften block→warn, never block→silent.
 - `git-gate-block` and `event-emit` are registry-only in this change — their
   consumers land in P1.5 (git-gate hook) and P2.2 (event spine) respectively.
 
+### Minor — test-automator promoted to main agent roster at v2.0.0 (2026-07-04)
+
+- **`agents/test-automator.md`** — promoted from `agents/3rdparty/` and rewritten
+  to main-crew standards: full frontmatter (prompt_id, version 2.0.0, model_pinned
+  sonnet, effort/turn/time/line caps), identity anchor, HARD forbidden scope
+  (never modifies product source to green a test; explicit orchestrator-approved
+  test-double exception), skills router (`react-engineering`, `backend-advisory`,
+  `test-quality` — shared lens with qa-expert), extended anti-flakiness rules
+  (diagnosable bounded polling, zero residue incl. failure paths, deterministic
+  timestamps, claimed port ranges), evidence-first self-verify (pasted runner
+  output, before/after proof for refactors, back-to-back rerun), AC-id →
+  test-file:line traceability in handoff, final-tool-call invariant, explicit
+  no-peer-dispatch.
+- **`agents/3rdparty/test-automator.md`** — removed (superseded; duplicate
+  `name: test-automator` would collide in the capability router).
+- Follow-up: seed `evals/agents/crew-test-automator.yaml` GEPA eval suite —
+  frontmatter `evals:` key intentionally omitted until the suite exists.>>>>>>> origin/main
+
 ## [0.49.0] — 2026-07-04 — reviewer rename + routing externalization + model profiles (architecture review execution)
 
 ### Breaking

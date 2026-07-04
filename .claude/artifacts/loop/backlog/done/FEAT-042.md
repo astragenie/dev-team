@@ -2,7 +2,7 @@
 id: FEAT-042
 title: "/crew:architect-feature — feature-level researcher+architect pipeline"
 priority: P1
-status: triaged
+status: done
 category: workflow
 target_release: null
 autonomous_safe: false

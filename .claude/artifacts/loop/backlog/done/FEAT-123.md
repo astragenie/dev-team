@@ -2,7 +2,7 @@
 id: FEAT-123
 title: Diagram authoring POC for architect — auto-pick + templates + lint
 priority: P2
-status: in-progress
+status: done
 category: feature
 target_release: null
 autonomous_safe: false

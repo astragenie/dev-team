@@ -1,7 +1,7 @@
 ---
 id: SLICE-114
 parent: FEAT-186
-status: triaged
+status: done
 priority: P2
 created: 2026-07-01
 title: "FEAT-186 S5 — asymmetry heuristic + Langfuse single-trace emission (dev-team scope)"

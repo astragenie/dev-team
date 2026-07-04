@@ -1,7 +1,7 @@
 ---
 id: SLICE-109
 parent: FEAT-185
-status: triaged
+status: done
 priority: P2
 created: 2026-06-30
 title: "FEAT-185 SLICE-B (revised) — relocate AzureOpenAIJudge to gepa-core 0.5.0; CI matrix extends to 30 cells"

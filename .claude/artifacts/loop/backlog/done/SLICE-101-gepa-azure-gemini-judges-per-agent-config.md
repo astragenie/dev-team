@@ -1,7 +1,7 @@
 ---
 id: SLICE-101
 parent: FEAT-183
-status: triaged
+status: done
 priority: P1
 created: 2026-06-27
 title: "FEAT-183 S5b — azureOpenAIJudge + geminiJudge + per-agent judge_per_agent config switch + per-agent rubric.md loader"

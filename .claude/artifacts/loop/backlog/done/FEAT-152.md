@@ -1,6 +1,6 @@
 ---
 id: FEAT-152
-status: triaged
+status: done
 priority: P2
 category: perf
 target_release: null
