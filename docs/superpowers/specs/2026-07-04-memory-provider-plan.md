@@ -100,6 +100,9 @@ Config block (in `.claude/loop.json` or `crew.json`, follow cost-config preceden
   slice grade contains non-empty lessons/surprises fields.
 - Hook review-FAIL and validation-FAIL artifact writes to auto-append a `failure` entry
   (agent, severity from finding, summary from verdict).
+- Also capture: incident-close (`/crew:incident`), `runner:pr-fix` circuit-breaker trips
+  (categorized unfixed issues are exactly the "recent failures" recall wants), and
+  retrospective decisions (`runner:retrospective` output).
 - Enforce grade completeness: extend `validate-syntheses.ts`'s existing placeholder
   rejection to grade files (fixes two consumers at once — the future MemoryProvider AND
   the already-shipping `runner:lessons-recent` digest, which today returns 2/5
@@ -120,10 +123,18 @@ Config block (in `.claude/loop.json` or `crew.json`, follow cost-config preceden
   chain resolution; absent config = zero behavior change (golden test on dispatch output).
 
 ### S3 — Recall injection at dispatch
-- Runner `dispatch.mts` + crew `/crew:build` prepend a bounded block to the dispatch
-  instruction: `## Recent lessons (top-K)` with one line per entry
+- One injection helper, called from EVERY dispatch assembly point — full site matrix:
+  1. runner `src/scripts/lib/slice-linker/dispatch.mts` (autonomous slice-build)
+  2. `/crew:build` (interactive single-slice)
+  3. `/crew:fix` (highest value — fix loops repeat known failure classes)
+  4. `/crew:ship` retry dispatches (specialist builder on FAIL)
+  5. `commands/orchestrate-slice.md` step-3 builder prompts + reviewer/verifier gate prompts
+  6. runner wave runner (parallel worktree dispatches)
+- Injected block: `## Recent lessons (top-K)`, one line per entry
   (`[severity] summary — source`).
 - Hard token cap; entries scoped by agent + slice tags when available.
+- Completeness fitness function: a test greps the dispatch-assembly modules for the
+  injection-helper call so a new dispatch path cannot silently skip memory.
 - AC: golden dispatch-trace test with and without memory context; cap never exceeded;
   noop provider produces byte-identical dispatch instruction to today.
 
