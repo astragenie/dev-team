@@ -32,7 +32,7 @@ const CARVEOUT_EXT = /\.(tf|mjs|md|js|ts|json|yaml|yml|sh)$/;
 const KNOWN_CREW_ROLES = new Set([
   "lead",
   "fullstack-dev",
-  "inspector",
+  "reviewer",
   "verifier",
   "release-engineer",
   "researcher",
@@ -42,7 +42,7 @@ const KNOWN_CREW_ROLES = new Set([
 ]);
 /** Matches any crew role token in the Route-to column. */
 const CREW_ROLE_IN_CELL_RE =
-  /\b(lead|fullstack-dev|backend-dev|frontend-dev|inspector|verifier|release-engineer|researcher|architect|uxdesigner|copywriter)\b/gi;
+  /\b(lead|fullstack-dev|backend-dev|frontend-dev|reviewer|verifier|release-engineer|researcher|architect|uxdesigner|copywriter)\b/gi;
 /** Matches skills/<tier>/<name> paths in the Notes column. */
 const SKILL_PATH_IN_NOTES_RE = /skills\/(universal|workflow|domain|meta)\/([a-z0-9-]+)\/?/g;
 

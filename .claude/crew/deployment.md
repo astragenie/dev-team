@@ -71,4 +71,4 @@ To pick up a loop release: bump that version and commit under `chore(marketplace
 
 - `ship.fix_retry_limit: <N>` — `/crew:ship` auto-fix loop retry cap. Default 2 if absent. Raises bound for repos with flaky QA / verifier dispatches. Hard cap: 5.
 
-- `fix.retry_limit: <N>` — `/crew:fix` auto-fix retry cap when Inspector rejects. Default 2 if absent. Hard cap: 5. Symmetric with `ship.fix_retry_limit`.
+- `fix.retry_limit: <N>` — `/crew:fix` auto-fix retry cap when Reviewer rejects. Default 2 if absent. Hard cap: 5. Symmetric with `ship.fix_retry_limit`.

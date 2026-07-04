@@ -80,15 +80,15 @@ test("AC-T1: 3 agents × 5 dispatches each, window last_5_slices", async () => {
   assert.equal(rows.length, 3, "should return 3 agents");
 
   const builder = rows.find((r) => r.agent === "crew:builder");
-  const inspector = rows.find((r) => r.agent === "crew:inspector");
+  const reviewer = rows.find((r) => r.agent === "crew:reviewer");
   const verifier = rows.find((r) => r.agent === "crew:verifier");
   assert.ok(builder, "builder row must be present");
-  assert.ok(inspector, "inspector row must be present");
+  assert.ok(reviewer, "reviewer row must be present");
   assert.ok(verifier, "verifier row must be present");
 
   // sample_count: 5 dispatches per agent across 5 slices.
   assert.equal(builder.sample_count, 5, "builder sample_count == 5");
-  assert.equal(inspector.sample_count, 5);
+  assert.equal(reviewer.sample_count, 5);
   assert.equal(verifier.sample_count, 5);
 
   // mean_wall_ms: builder = (40000+55000+35000+60000+48000)/5 = 47600
@@ -148,7 +148,7 @@ test("AC-T3: review_rework_rate counts needs_fix artifacts for the agent's slice
   const reviewContent = `---
 kind: review-result
 slice: SLICE-S02
-reviewer: crew:inspector
+reviewer: crew:reviewer
 verdict: NEEDS_FIX
 ---
 # Review
@@ -170,11 +170,11 @@ Needs fix.
   // 1 of 5 builder slices had a needs_fix → 0.2
   assert.equal(builder.review_rework_rate, 0.2, "builder rework_rate = 1/5");
 
-  // inspector and verifier are on the same slices but rework_rate tracks
+  // reviewer and verifier are on the same slices but rework_rate tracks
   // the slice-level needs_fix (all agents who worked on SLICE-S02 share the flag).
-  const inspector = rows.find((r) => r.agent === "crew:inspector");
-  assert.ok(inspector);
-  assert.equal(inspector.review_rework_rate, 0.2, "inspector rework_rate = 1/5");
+  const reviewer = rows.find((r) => r.agent === "crew:reviewer");
+  assert.ok(reviewer);
+  assert.equal(reviewer.review_rework_rate, 0.2, "reviewer rework_rate = 1/5");
 
   await fs.rm(repo, { recursive: true, force: true });
 });

@@ -21,7 +21,7 @@ workflows:
         emit: handoff
       - role: reviewer
         parallel_dispatch:
-          group: [crew:inspector, crew:inspector, crew:verifier]
+          group: [crew:reviewer, crew:reviewer, crew:verifier]
           policy: wait_for_all
           halt_on: any_FAIL
         aggregation:
@@ -36,13 +36,13 @@ workflows:
         skip_when: changed_files matches "^docs/"
 
   quick:
-    description: Light slice — single combined inspector+verifier, no fanout
+    description: Light slice — single combined reviewer+verifier, no fanout
     phases:
       - role: builder
         agent: crew:fullstack-dev
         emit: handoff
       - role: reviewer_validator
-        agent: crew:inspector-lite
+        agent: crew:reviewer-lite
         parallel: 1
         trigger:
           on: handoff_written
@@ -66,7 +66,7 @@ workflows:
         emit: handoff
       - role: reviewer
         parallel_dispatch:
-          group: [crew:inspector, crew:inspector, crew:verifier]
+          group: [crew:reviewer, crew:reviewer, crew:verifier]
           policy: wait_for_all
           halt_on: any_FAIL
         aggregation:

@@ -108,6 +108,59 @@ enforcement flags may only soften block→warn, never block→silent.
 - `git-gate-block` and `event-emit` are registry-only in this change — their
   consumers land in P1.5 (git-gate hook) and P2.2 (event spine) respectively.
 
+## [0.49.0] — 2026-07-04 — reviewer rename + routing externalization + model profiles (architecture review execution)
+
+### Breaking
+
+- **Slash commands renamed:** `crew:inspector` → `crew:reviewer`,
+  `crew:inspector-lite` → `crew:reviewer-lite`,
+  `crew:c-sharp-reviewer` → `crew:csharp-reviewer`. `inspector-verifier`
+  references → `reviewer-verifier`. Update any external scripts invoking the
+  old names. No prompt-content change. **Companion `runner-plugin` still
+  dispatches the old names** — its paired rename sync ships next release;
+  hold runner-plugin upgrades until then.
+
+### Minor
+
+- **Machine-readable routing** (arch-review decision 2): `docs/routing-table.yaml`
+  is the authoritative Zod-typed source; `docs/routing-table.md` is generated
+  (`scripts/render-routing-table.ts`). New hard CI gate `scripts/validate-configs.ts`:
+  schema + drift + crew:-token resolution + builder-matrix↔orchestrate-slice
+  consistency. Peer-dispatch whitelist single-sourced in
+  `scripts/lib/dispatch/peer-dispatch-allowlist.ts`; forward-reference allowlist
+  moved to routing-table.yaml `forward_references:`.
+- **Model profiles** (decision 4, dormant): `models.yaml` tier map
+  (`reasoning`/`standard`/`light`), `scripts/apply-model-profile.ts`,
+  `CREW_CANDIDATE_MODEL` / `CREW_MODEL_PROFILE` env overrides for the eval
+  candidate runner (`evals/lib/model-profile.ts`). Zero behavior change when unset.
+- **New CI gates:** `scripts/validate-agent-refs.ts` (phantom `crew:` dispatch
+  references), ADR template validation (rewritten to match real ADR convention),
+  evals-pointer existence check with `planned:` sentinel, light validation bar
+  for `agents/3rdparty/` (frontmatter, name, tool-name sanity).
+- **GEPA statistical honesty** (decision 3): `docs/standards/gepa-statistical-bar.md`
+  — n=20 soak floor detects ~12-15pp PASS delta, not 5pp; corpus sizes documented.
+
+### Patch
+
+- `/crew:review` fixed — dispatched nonexistent `crew:reviewer` before the rename
+  landed; 10 phantom agent references fixed across commands/skills/agents.
+- Deleted: `scripts/validate-typegraph.ts` (always-exit-0),
+  `agents/3rdparty/c-sharp-pro.md` (unreferenced duplicate),
+  `agents/parallel-runner.md` (orphaned).
+- `agents/3rdparty/expert-react-frontend-engineer.md` tools: fixed from VS Code
+  Copilot names to Claude Code tools.
+- Backlog hygiene: 10 verified-shipped items moved to done/; SLICE-102 kept in
+  triaged (deliverables verified missing despite FEAT-183 closure).
+- `docs/architecture/architecture.md` refreshed (350-line cap, real roster,
+  Biome/Bun/Node gates).
+
+### Docs
+
+- Architecture review report (16 sections), reusable review prompt v2, and
+  MemoryProvider capture/recall plan under `docs/superpowers/specs/2026-07-04-*`.
+
+## [0.48.0] — 2026-07-02 — GEPA cluster + aiplugin-dev anti-pause contract + capture canary
+
 ### Minor — FEAT-183 SLICE-104: architect eval dataset + soak dispatcher hook (2026-07-01)
 
 **Dependency note:** `scripts/lib/gepa/soak-dispatcher-hook.ts` imports

@@ -31,7 +31,7 @@ describe("adaptArtifact", () => {
       title: "review"
     };
     const fields: ArtifactFields = {
-      owner: "inspector",
+      owner: "reviewer",
       cost: { usd: 0.0123 }
     };
     const adapted = adaptArtifact(record, fields);

@@ -3,7 +3,7 @@ name: verifier
 prompt_id: verifier
 version: 1.0.0
 model_pinned: sonnet
-evals: evals/agents/verifier.yaml
+evals: planned:evals/agents/verifier.yaml
 capabilities:
   role: [verifier]
   scopes: [normal, wide]
@@ -333,7 +333,7 @@ When the dispatch prompt provides an `Integration artifact:` path AND its `Outco
 - If the slice's Acceptance Criteria are all covered by the happy-path AC the integrator exercised, you MAY mark validation `PASS` by reference. Record this decision in your validation artifact under `## Short-circuit` with one line: `referenced integrator artifact <path>; no additional scenarios needed`.
 - If any AC requires multi-scenario coverage NOT exercised by the integrator (auth failure modes, pagination, rate-limit behavior, error envelope shapes beyond the happy path), do NOT short-circuit — run the full scenario set.
 
-The short-circuit decision is auditable in the validation artifact; inspector can verify it later. Default to running the full set when in doubt.
+The short-circuit decision is auditable in the validation artifact; reviewer can verify it later. Default to running the full set when in doubt.
 
 ## Integration with Other Agents
 

@@ -80,7 +80,7 @@ All fields mirror the Zod schema exported from `scripts/lib/workflow-config.ts`.
 | Name | Use case | Phase shape |
 |---|---|---|
 | `regular` | Standard slice — tag-routed builder + parallel reviewer+validator fanout | builder (tag-routed) → reviewer (3-way parallel_dispatch) |
-| `quick` | Light slice — single combined inspector+verifier, no fanout | builder → reviewer_validator (1 agent) |
+| `quick` | Light slice — single combined reviewer+verifier, no fanout | builder → reviewer_validator (1 agent) |
 | `spike` | Throwaway exploration — no review/validate gates | builder only |
 | `release` | Release slice — full quality chain + deployer with user approval | builder → reviewer (3-way) → validator → deployer (require_user_approval) |
 

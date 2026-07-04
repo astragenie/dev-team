@@ -8,7 +8,7 @@ capabilities:
   scopes: [normal, wide]
   priority: 8
 description: Expert React 19.2 frontend engineer specializing in modern hooks, Server Components, Actions, TypeScript, and performance optimization
-tools: [changes, codebase, edit/editFiles, extensions, fetch, findTestFiles, githubRepo, new, openSimpleBrowser, problems, runCommands, runTasks, runTests, search, searchResults, terminalLastCommand, terminalSelection, testFailure, usages, vscodeAPI, microsoft.docs.mcp]
+tools: [Read, Write, Edit, Bash, Glob, Grep, WebFetch]
 ---
 
 # Expert React Frontend Engineer

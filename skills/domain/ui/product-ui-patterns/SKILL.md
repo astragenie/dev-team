@@ -118,7 +118,7 @@ Skip for: marketing pages, landing pages, brand surfaces — those route to `fro
 
 ## IDE-inspired layouts
 
-- Three-column shell: left rail (navigation) · main (work) · right panel (inspector/details).
+- Three-column shell: left rail (navigation) · main (work) · right panel (reviewer/details).
 - Resizable splits with persistence (localStorage).
 - Status bar at bottom: environment · build state · keyboard hint · user.
 - Command palette IS the search bar — never two separate things.

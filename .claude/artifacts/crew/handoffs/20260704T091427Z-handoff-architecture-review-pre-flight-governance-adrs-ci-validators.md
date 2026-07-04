@@ -1,0 +1,48 @@
+# Task Handoff: Architecture review pre-flight — governance, ADRs, CI, validators, backlog, marketplace
+
+- Created: 2026-07-04T09:14:27.250Z
+- From: researcher
+- To: dispatcher
+- Objective: Repo has 2 real ADRs (001, 002) both accepted with full Options-Considered sections; CI's 11-step CLAUDE.md description doesn't match the reusable-workflow validator/advisory/bun-command grouping in test.yml; validate-adr-template.ts is not wired into CI at all; no marketplace.json exists in this repo (lives externally in astra-marketplace per HARD RULE section) — plugin.json only carries name+version+description.
+- Allowed Scope:
+  - docs/governance.md
+  - ADR docs
+  - docs/architecture/architecture.md
+  - .github/workflows/test.yml
+  - all scripts/validate-*.ts (15 files)
+  - full backlog state (pending/triaged/in-progress/done counts + frontmatter)
+  - .claude-plugin manifests
+  - dead-code greps
+  - package.json/biome.json/tsconfig.json
+  - repo size stats (agents/skills/commands/routing-table line counts)
+- Forbidden Scope: -
+- Deliverable: Full findings returned inline in the researcher's final chat message per explicit task instruction (dispatcher asked for exhaustive inline dataset, not a file); this handoff artifact records the run for repo memory.
+- Changed Files:
+  - docs/governance.md
+  - docs/architecture/architecture.md
+  - docs/architecture/decisions/ADR-001-parallel-runner-allowlist.md
+  - docs/architecture/decisions/ADR-002-bun-runtime-no-go.md
+  - .github/workflows/test.yml
+  - scripts/validate-adr-template.ts
+  - scripts/validate-agents.ts
+  - scripts/validate-all.ts
+  - scripts/validate-bundles.ts
+  - scripts/validate-contracts.ts
+  - scripts/validate-dispatch-graph.ts
+  - scripts/validate-loop-state.ts
+  - scripts/validate-manifests.ts
+  - scripts/validate-routing-table.ts
+  - scripts/validate-skills.ts
+  - scripts/validate-slices.ts
+  - scripts/validate-syntheses.ts
+  - scripts/validate-typegraph.ts
+  - scripts/validate-ux-spec.ts
+  - scripts/validate-workflows.ts
+  - package.json
+  - biome.json
+  - tsconfig.json
+  - .claude-plugin/plugin.json
+- Confidence: high
+- Risks: marketplace.json search was scoped to this worktree + filesystem-visible paths; if a sibling astra-marketplace repo clone exists locally it was not located/read. validate-* invariant-vs-CI cross-check is based on test.yml's validators/advisory-validators/bun-commands lists — did not execute CI locally to confirm runtime behavior. Backlog pending/triaged frontmatter read via head -20 only (composite scores captured; full ACs not read).
+- Suggested Next Handoff: Architect/dispatcher can use this to scope the arch-review report; suggest a follow-up researcher pass only if the review needs the actual astra-marketplace.json content (would require a separate session/repo per the HARD RULE cross-repo constraint).
+

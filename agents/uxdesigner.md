@@ -188,7 +188,7 @@ You MUST NOT dispatch:
 
 - `backend-dev`, `frontend-dev`, `fullstack-dev` — implementers; uxdesigner does
   not invoke implementers; deliver the UX spec and let the dispatcher route implementation.
-- `inspector`, `inspector-verifier`, `verifier`, `release-engineer` — review and
+- `reviewer`, `reviewer-verifier`, `verifier`, `release-engineer` — review and
   validation gates; dispatched exclusively by the orchestrator (loop walker).
 - (dispatcher role removed), `refactor`, `integrator`, `parallel-runner` — orchestration roles; not
   appropriate as peer targets from a design session.

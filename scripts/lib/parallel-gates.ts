@@ -10,7 +10,7 @@
 // path.
 //
 // Helper exports both the bash emitter (used by validator / reviewer /
-// inspector-verifier prompts) and the JS-side aggregator (so tests can
+// reviewer-verifier prompts) and the JS-side aggregator (so tests can
 // validate the exit-code reduction without spawning bash).
 
 export interface GateSpec {

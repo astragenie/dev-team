@@ -27,40 +27,31 @@ If matched → light path:
 ```
 crew:dev-lite (mechanical 1-2 file edit, compressed diff receipt)
   ↓
-crew:inspector-lite (single review pass, auto-loads stack skill from diff extensions)
+crew:reviewer-lite (single review pass, auto-loads stack skill from diff extensions)
   ↓ PASS (decision: approved or approved_with_notes)
 mark-badge build_complete
 mark-badge inspected
 ```
 
-If `inspector-lite` returns `rejected` with reason `semantic complexity detected` → fall through to the standard ladder below (re-dispatch via FEAT tag).
+If `reviewer-lite` returns `rejected` with reason `semantic complexity detected` → fall through to the standard ladder below (re-dispatch via FEAT tag).
 
 If not matched → standard ladder below.
 
 ## Standard ladder (FEAT-tag routing)
 
-Routing table (inline):
+Builder routing: see `docs/routing-table.md` → "Builder routing matrix" (generated from `docs/routing-table.yaml` — the authoritative source; do not hand-copy the table here, edit the yaml and re-run `node scripts/render-routing-table.ts` instead). `commands/orchestrate-slice.md` "Builder routing" carries the full signal-level decision detail (`FE_ONLY`/`BE_ONLY`/`SPLIT_BUILD`/`TS_TOOLING_ONLY`) this matrix summarizes.
 
-| FEAT tag                                            | Specialist          |
-|-----------------------------------------------------|---------------------|
-| stack:typescript + surface:ui                       | crew:frontend-dev   |
-| stack:typescript + surface:backend                  | crew:backend-dev    |
-| stack:typescript + surface:cross-layer              | crew:fullstack-dev  |
-| stack:typescript + surface:plugin                   | crew:aiplugin-dev   |
-| stack:csharp                                        | crew:backend-dev    |
-| no clear tag                                        | crew:fullstack-dev  |
+After the builder returns PASS — parallel reviewer fan-out:
 
-After the builder returns PASS — parallel inspector fan-out:
+Dispatch Reviewer A and Reviewer B in a **single Agent-tool message** (two parallel invocations):
 
-Dispatch Inspector A and Inspector B in a **single Agent-tool message** (two parallel invocations):
-
-**Inspector A — stack-specific reviewer:**
-- diff contains `.cs` files → `crew:c-sharp-reviewer`
+**Reviewer A — stack-specific reviewer:**
+- diff contains `.cs` files → `crew:csharp-reviewer`
 - diff contains `.ts` files (no `.cs`) → `crew:typescript-reviewer`
 - no stack reviewer matches → **SKIP A** (no dispatch); promote B to `code-quality` lens
 
-**Inspector B — generalist + lens:**
-Always dispatched as `crew:inspector` with lens derived from FEAT concern tag:
+**Reviewer B — generalist + lens:**
+Always dispatched as `crew:reviewer` with lens derived from FEAT concern tag:
 - `concern:security` → `security` lens
 - `concern:perf` → `performance` lens
 - no concern tag or `concern:correctness` → `correctness` lens (default)
@@ -73,7 +64,7 @@ After both (or only B when A skipped) return their review-result artifacts:
   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge build_complete
   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge inspected
   ```
-- When A was skipped, `build_complete` requires only Inspector B to approve.
+- When A was skipped, `build_complete` requires only Reviewer B to approve.
 
 Run `/crew:ship` gates only on explicit user approval.
 
@@ -139,7 +130,7 @@ Workflow:
    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge validation_skipped --note "<reason>"`
 24. When a validator materially checks behavior, write a validation artifact immediately before you move on:
    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-validation-result --repo "$PWD" --title "<short title>" ...`
-24a. **Auto-continue to dev ship (opt-in).** After review and validation are both resolved, check `.claude/crew/deployment.md` for a `dev.stable: true` setting. If present AND all build gates are green (review PASS or `review_skipped` with reason, validation PASS or `validation_skipped` with reason, no open `help_request`) AND the target environment is dev (not production), continue into the `/crew:ship` flow in this same session — do not return to the user at the review boundary. Production promotion still requires explicit user approval per `agents/deployer.md` rule 11. If `dev.stable: true` is absent or any gate is not green, stop at synthesis (step 25) as today and surface the unresolved gate.
+24a. **Auto-continue to dev ship (opt-in).** After review and validation are both resolved, check `.claude/crew/deployment.md` for a `dev.stable: true` setting. If present AND all build gates are green (review PASS or `review_skipped` with reason, validation PASS or `validation_skipped` with reason, no open `help_request`) AND the target environment is dev (not production), continue into the `/crew:ship` flow in this same session — do not return to the user at the review boundary. Production promotion still requires explicit user approval per `agents/release-engineer.md` rule 11. If `dev.stable: true` is absent or any gate is not green, stop at synthesis (step 25) as today and surface the unresolved gate.
 25. End with a clear synthesis for the user:
    - what changed
    - what was reviewed

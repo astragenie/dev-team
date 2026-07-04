@@ -10,7 +10,7 @@ capabilities:
   scopes: [wide]
   lens: [architecture, design]
   priority: 10
-description: "Architecture design review specialist. Use when an ADR, design proposal, or system topology needs independent evaluation before builders start — assesses service boundaries, scalability, technical debt, integration patterns, and modernization risks. Distinct from crew:inspector (code-change review) and crew:architect (design authoring)."
+description: "Architecture design review specialist. Use when an ADR, design proposal, or system topology needs independent evaluation before builders start — assesses service boundaries, scalability, technical debt, integration patterns, and modernization risks. Distinct from crew:reviewer (code-change review) and crew:architect (design authoring)."
 model: opus
 effort: high
 maxTurns: 15

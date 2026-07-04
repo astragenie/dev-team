@@ -174,7 +174,7 @@ function buildPrBody(result: OptimizationResult, runArtifactPath: string): strin
     `- winner_candidate_id: ${w.candidate_id}`,
     ``,
     `---`,
-    `_Opened automatically by \`/crew:gepa-optimize\`. Do not merge without inspector review._`
+    `_Opened automatically by \`/crew:gepa-optimize\`. Do not merge without reviewer review._`
   ].join("\n");
 }
 

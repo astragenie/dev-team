@@ -3,9 +3,9 @@ name: ux-validation
 prompt_id: ux-validation
 version: 1.0.0
 tier: workflow
-description: Auto-triggered by crew:validator when slice tags include surface:ui, concern:ux, or concern:accessibility. Drives Playwright via gstack:/qa, axe-core accessibility scan, console+404 scrape, and visual regression diff. Returns raw evidence; dispatcher pivots per routing-table.
+description: Auto-triggered by crew:verifier when slice tags include surface:ui, concern:ux, or concern:accessibility. Drives Playwright via gstack:/qa, axe-core accessibility scan, console+404 scrape, and visual regression diff. Returns raw evidence; dispatcher pivots per routing-table.
 triggers: ["surface:ui", "concern:ux", "concern:accessibility", "validation phase UI"]
-owner: validator
+owner: verifier
 last_reviewed: 2026-06-04
 ---
 
@@ -20,7 +20,7 @@ last_reviewed: 2026-06-04
 > `--evidence`. Screenshot/axe/console/network evidence will be missing
 > until the cross-repo stability issue is resolved.
 
-Use when crew:validator is dispatched on a slice whose FEAT
+Use when crew:verifier is dispatched on a slice whose FEAT
 frontmatter `tags:` array intersects with `{surface:ui, concern:ux,
 concern:accessibility}`. Otherwise the standard validator flow
 applies — this skill is silent.

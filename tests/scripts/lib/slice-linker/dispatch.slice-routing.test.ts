@@ -39,7 +39,7 @@ test("slice frontmatter workflow: quick → quick dispatch plan", async () => {
   expect(plan[0]?.agent).toBe("crew:fullstack-dev");
   expect(plan[0]?.gate).toBe("none");
   expect(plan[1]?.role).toBe("reviewer_validator");
-  expect(plan[1]?.agent).toBe("crew:inspector-lite");
+  expect(plan[1]?.agent).toBe("crew:reviewer-lite");
   expect(plan[1]?.parallel).toBe(1);
   expect(plan[1]?.gate).toBe("all_pass");
 });

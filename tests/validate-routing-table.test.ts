@@ -227,7 +227,7 @@ test("consistency-multi-role: multi-role row fails if any role missing skill exi
   );
   const output = result.stdout + result.stderr;
   assert.match(output, /typescript-pro/, "Error should name the missing skill");
-  assert.match(output, /inspector/, "Error should name the reviewer agent");
+  assert.match(output, /reviewer/, "Error should name the reviewer agent");
 });
 
 test("consistency-missing-agent: agent file absent exits 1 with actionable error", () => {

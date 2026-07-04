@@ -365,8 +365,8 @@ function usage(target: string | null = null) {
       "  node scripts/crew.ts gepa-history <agent> [--source eval|captured|soak] [--limit N] [--repo <path>]",
     "gepa-eval":
       "  node scripts/crew.ts gepa-eval <agent> [--live] [--judge <name>] [--validate] [--split N/M] [--repo <path>]",
-    "gepa-mine-inspector":
-      "  node scripts/crew.ts gepa-mine-inspector [--weeks N] [--out <dir>] [--repo <path>]",
+    "gepa-mine-reviewer":
+      "  node scripts/crew.ts gepa-mine-reviewer [--weeks N] [--out <dir>] [--repo <path>]",
     "gepa-optimize":
       "  node scripts/crew.ts gepa-optimize <agent> --budget <usd> [--k <int>] [--artifact-only] [--repo <path>]",
     "gepa-resume":
@@ -984,7 +984,7 @@ const COMMANDS = {
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
     const r = await writeArtifact(repoPath, "review-result", {
       title: flags.title || positionals.join(" ") || "Review Result",
-      reviewer: flags.reviewer || flags.owner || "inspector",
+      reviewer: flags.reviewer || flags.owner || "reviewer",
       decision: rawDecision ?? undefined,
       verdict,
       // Only pass status if it's not the default "open" value from parseArgs.
@@ -1296,13 +1296,13 @@ const COMMANDS = {
     return result.stdout.trim();
   },
 
-  "gepa-mine-inspector": async ({ repoPath, flags, positionals }: CommandContext) => {
-    const { runMineInspectorBugCorpus } = await import("./lib/gepa/mine-inspector-bug-corpus.ts");
+  "gepa-mine-reviewer": async ({ repoPath, flags, positionals }: CommandContext) => {
+    const { runMineReviewerBugCorpus } = await import("./lib/gepa/mine-reviewer-bug-corpus.ts");
     // Reconstruct raw-args for the mining module's own parser.
     const rawArgs: string[] = [...positionals];
     if (typeof flags.weeks === "string" && flags.weeks) rawArgs.push("--weeks", flags.weeks);
     if (typeof flags.out === "string" && flags.out) rawArgs.push("--out", flags.out);
-    const result = await runMineInspectorBugCorpus(repoPath, rawArgs);
+    const result = await runMineReviewerBugCorpus(repoPath, rawArgs);
     if (result.stdout) process.stdout.write(result.stdout);
     if (result.stderr) process.stderr.write(result.stderr);
     if (result.exitCode !== 0) process.exit(result.exitCode);

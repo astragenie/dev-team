@@ -38,43 +38,43 @@ afterEach(() => {
 
 describe("gepa-thaw — AC-7 basic thaw", () => {
   it("exits 2 with usage message when no agent provided", async () => {
-    writeConfig({ champion_frozen: ["inspector"] });
+    writeConfig({ champion_frozen: ["reviewer"] });
     const result = await runGepaThawCmd(tmpDir, []);
     expect(result.exitCode).toBe(2);
     expect(result.stderr).toContain("usage:");
   });
 
   it("exits 1 when gepa.config.json does not exist", async () => {
-    const result = await runGepaThawCmd(tmpDir, ["inspector"]);
+    const result = await runGepaThawCmd(tmpDir, ["reviewer"]);
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("not found");
   });
 
   it("exits 0 with no-op message when agent not in frozen list", async () => {
     writeConfig({ champion_frozen: ["architect"] });
-    const result = await runGepaThawCmd(tmpDir, ["inspector"]);
+    const result = await runGepaThawCmd(tmpDir, ["reviewer"]);
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("nothing to do");
   });
 
-  it("AC-7 core: removes inspector from [inspector, architect] → [architect]", async () => {
-    writeConfig({ champion_frozen: ["inspector", "architect"] });
+  it("AC-7 core: removes reviewer from [reviewer, architect] → [architect]", async () => {
+    writeConfig({ champion_frozen: ["reviewer", "architect"] });
 
-    const result = await runGepaThawCmd(tmpDir, ["inspector"]);
+    const result = await runGepaThawCmd(tmpDir, ["reviewer"]);
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("removed inspector");
-    expect(result.stdout).toContain("inspector");
+    expect(result.stdout).toContain("removed reviewer");
+    expect(result.stdout).toContain("reviewer");
 
     const config = readConfig();
     const frozen = config.champion_frozen as string[];
-    expect(frozen).not.toContain("inspector");
+    expect(frozen).not.toContain("reviewer");
     expect(frozen).toContain("architect");
     expect(frozen).toHaveLength(1);
   });
 
-  it("removes verifier from [inspector, verifier, architect] → [inspector, architect]", async () => {
-    writeConfig({ champion_frozen: ["inspector", "verifier", "architect"] });
+  it("removes verifier from [reviewer, verifier, architect] → [reviewer, architect]", async () => {
+    writeConfig({ champion_frozen: ["reviewer", "verifier", "architect"] });
 
     const result = await runGepaThawCmd(tmpDir, ["verifier"]);
 
@@ -83,15 +83,15 @@ describe("gepa-thaw — AC-7 basic thaw", () => {
     const config = readConfig();
     const frozen = config.champion_frozen as string[];
     expect(frozen).not.toContain("verifier");
-    expect(frozen).toContain("inspector");
+    expect(frozen).toContain("reviewer");
     expect(frozen).toContain("architect");
     expect(frozen).toHaveLength(2);
   });
 
-  it("removes single-element list: [inspector] → []", async () => {
-    writeConfig({ champion_frozen: ["inspector"] });
+  it("removes single-element list: [reviewer] → []", async () => {
+    writeConfig({ champion_frozen: ["reviewer"] });
 
-    const result = await runGepaThawCmd(tmpDir, ["inspector"]);
+    const result = await runGepaThawCmd(tmpDir, ["reviewer"]);
 
     expect(result.exitCode).toBe(0);
 
@@ -102,12 +102,12 @@ describe("gepa-thaw — AC-7 basic thaw", () => {
 
   it("preserves all other config keys", async () => {
     writeConfig({
-      champion_frozen: ["inspector"],
+      champion_frozen: ["reviewer"],
       optimize: { paused: false, k: 5 },
       policy: { eligible_agents: ["fullstack-dev"] }
     });
 
-    await runGepaThawCmd(tmpDir, ["inspector"]);
+    await runGepaThawCmd(tmpDir, ["reviewer"]);
 
     const config = readConfig();
     expect((config.optimize as { k: number }).k).toBe(5);
@@ -117,9 +117,9 @@ describe("gepa-thaw — AC-7 basic thaw", () => {
   });
 
   it("atomic write: output file is valid JSON immediately after thaw", async () => {
-    writeConfig({ champion_frozen: ["inspector", "architect"] });
+    writeConfig({ champion_frozen: ["reviewer", "architect"] });
 
-    await runGepaThawCmd(tmpDir, ["inspector"]);
+    await runGepaThawCmd(tmpDir, ["reviewer"]);
 
     // Read raw file and verify it's valid JSON.
     const raw = readFileSync(join(tmpDir, "gepa.config.json"), "utf8");
@@ -129,9 +129,9 @@ describe("gepa-thaw — AC-7 basic thaw", () => {
   it("emits gepa_thaw event to events.jsonl", async () => {
     const logsDir = join(tmpDir, ".claude", "logs");
     mkdirSync(logsDir, { recursive: true });
-    writeConfig({ champion_frozen: ["inspector"] });
+    writeConfig({ champion_frozen: ["reviewer"] });
 
-    await runGepaThawCmd(tmpDir, ["inspector"]);
+    await runGepaThawCmd(tmpDir, ["reviewer"]);
 
     const eventsPath = join(logsDir, "events.jsonl");
     const raw = readFileSync(eventsPath, "utf8");
@@ -141,7 +141,7 @@ describe("gepa-thaw — AC-7 basic thaw", () => {
       .map((l) => JSON.parse(l));
     const thawEvent = events.find((e: Record<string, unknown>) => e.event === "gepa_thaw");
     expect(thawEvent).toBeDefined();
-    expect(thawEvent.agent).toBe("inspector");
+    expect(thawEvent.agent).toBe("reviewer");
     expect(Array.isArray(thawEvent.champion_frozen_before)).toBe(true);
     expect(Array.isArray(thawEvent.champion_frozen_after)).toBe(true);
   });

@@ -3,7 +3,6 @@ name: dev-lite
 prompt_id: dev-lite
 version: 1.3.0
 model_pinned: sonnet
-evals: evals/agents/dev-lite.yaml
 capabilities:
   role: [builder]
   scopes: [light]

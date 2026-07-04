@@ -1,0 +1,52 @@
+# Task Handoff: Agent scorecard dataset — full agents/ + agents/3rdparty/ inventory
+
+- Created: 2026-07-04T09:12:56.273Z
+- From: researcher
+- To: dispatcher
+- Objective: Read all 34 agent prompt files + validate-agents.ts; produced structured dataset (frontmatter, peer-dispatch, skill/command/agent refs, overlap quotes, dead-code grep evidence) for scorecard build; returned inline in chat, not as file.
+- Allowed Scope:
+  - agents/*.md (23 files) + agents/3rdparty/*.md (11 files) + scripts/validate-agents.ts; grep-based reference audit against commands/
+  - skills/
+  - docs/routing-table.md
+- Forbidden Scope: -
+- Deliverable: Full structured findings returned inline to dispatcher (no artifact file written per no-write instruction); covers frontmatter/tools/model per agent, peer-dispatch whitelists/blacklists, overlap quotes for reviewer/builder/architect/researcher/validator clusters, validate-agents.ts rule summary, dead-code candidates (c-sharp-pro, flutter-ui-developer, playwright-tester, parallel-runner) with grep evidence, and correction of a stale test-automator delete/add signal in the initial git-status snapshot
+- Changed Files:
+  - agents/aiplugin-dev.md
+  - agents/architect-reviewer.md
+  - agents/architect.md
+  - agents/backend-dev.md
+  - agents/c-sharp-reviewer.md
+  - agents/cloud-architect.md
+  - agents/dev-lite.md
+  - agents/document-writer.md
+  - agents/frontend-dev.md
+  - agents/fullstack-dev.md
+  - agents/inspector-lite.md
+  - agents/inspector.md
+  - agents/integrator.md
+  - agents/investigator.md
+  - agents/parallel-runner.md
+  - agents/performance-engineer.md
+  - agents/qa-expert.md
+  - agents/refactor.md
+  - agents/release-engineer.md
+  - agents/researcher.md
+  - agents/typescript-reviewer.md
+  - agents/uxdesigner.md
+  - agents/verifier.md
+  - agents/3rdparty/c-sharp-pro.md
+  - agents/3rdparty/critical-thinking.md
+  - agents/3rdparty/database-architect.md
+  - agents/3rdparty/expert-react-frontend-engineer.md
+  - agents/3rdparty/flutter-ui-developer.md
+  - agents/3rdparty/frontend-developer.md
+  - agents/3rdparty/mobile-developer.md
+  - agents/3rdparty/playwright-tester.md
+  - agents/3rdparty/refactoring-specialist.md
+  - agents/3rdparty/test-automator.md
+  - agents/3rdparty/ui-ux-designer.md
+  - scripts/validate-agents.ts
+- Confidence: high
+- Risks: expert-react-frontend-engineer.md tools: frontmatter uses VS Code Copilot tool names (changes, codebase, edit/editFiles, ...) not Claude Code tool names — likely non-functional if dispatched directly, flag for architect review. The gitStatus snapshot shown at conversation start (D agents/3rdparty/test-automator.md, ?? agents/test-automator.md) does NOT match current repo state — git status is clean except one untracked docs file; no agents/test-automator.md exists on disk. Treat that snapshot as stale.
+- Suggested Next Handoff: Hand this dataset to whichever agent builds the scorecard/overlap-analysis artifact (likely architect or document-writer).
+

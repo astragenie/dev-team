@@ -32,8 +32,8 @@ test("loadAgentRegistry: parses capabilities frontmatter from each agent file", 
       `---\ncapabilities:\n  role: [implementer]\n  surfaces: [api, schema]\n  stacks: [typescript, python]\n  priority: 10\n---\n# backend-dev\n`
     );
     await write(
-      path.join(repo, "agents", "inspector.md"),
-      `---\ncapabilities:\n  role: [inspector]\n  concerns: [security, refactor]\n  lens: [correctness, regressions]\n  priority: 8\n---\n# inspector\n`
+      path.join(repo, "agents", "reviewer.md"),
+      `---\ncapabilities:\n  role: [reviewer]\n  concerns: [security, refactor]\n  lens: [correctness, regressions]\n  priority: 8\n---\n# reviewer\n`
     );
     const reg = await loadAgentRegistry(repo);
     assert.equal(reg.length, 2, "should load 2 agents");
@@ -43,7 +43,7 @@ test("loadAgentRegistry: parses capabilities frontmatter from each agent file", 
     assert.deepEqual(be.capabilities.surfaces, ["api", "schema"]);
     assert.deepEqual(be.capabilities.stacks, ["typescript", "python"]);
     assert.equal(be.priority, 10);
-    const ins = reg.find((e) => e.name === "inspector");
+    const ins = reg.find((e) => e.name === "reviewer");
     assert.ok(ins);
     assert.deepEqual(ins.capabilities.concerns, ["security", "refactor"]);
   } finally {

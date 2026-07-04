@@ -2,7 +2,7 @@
  * tests/gepa/critical-agent-allowlist.test.ts — SLICE-106
  *
  * Covers AC-10 (allowlist membership) and design spec line 44
- * (list is NOT configurable in v1; always inspector + verifier + architect).
+ * (list is NOT configurable in v1; always reviewer + verifier + architect).
  */
 
 import { describe, expect, it } from "bun:test";
@@ -16,8 +16,8 @@ describe("CRITICAL_AGENT_ALLOWLIST — membership", () => {
     expect(CRITICAL_AGENT_ALLOWLIST.length).toBe(3);
   });
 
-  it("contains inspector", () => {
-    expect(CRITICAL_AGENT_ALLOWLIST).toContain("inspector");
+  it("contains reviewer", () => {
+    expect(CRITICAL_AGENT_ALLOWLIST).toContain("reviewer");
   });
 
   it("contains verifier", () => {
@@ -28,8 +28,8 @@ describe("CRITICAL_AGENT_ALLOWLIST — membership", () => {
     expect(CRITICAL_AGENT_ALLOWLIST).toContain("architect");
   });
 
-  it("is ordered: inspector first, verifier second, architect third", () => {
-    expect(CRITICAL_AGENT_ALLOWLIST[0]).toBe("inspector");
+  it("is ordered: reviewer first, verifier second, architect third", () => {
+    expect(CRITICAL_AGENT_ALLOWLIST[0]).toBe("reviewer");
     expect(CRITICAL_AGENT_ALLOWLIST[1]).toBe("verifier");
     expect(CRITICAL_AGENT_ALLOWLIST[2]).toBe("architect");
   });
@@ -48,8 +48,8 @@ describe("CRITICAL_AGENT_ALLOWLIST — membership", () => {
 });
 
 describe("isCriticalAgent — membership predicate", () => {
-  it("returns true for inspector", () => {
-    expect(isCriticalAgent("inspector")).toBe(true);
+  it("returns true for reviewer", () => {
+    expect(isCriticalAgent("reviewer")).toBe(true);
   });
 
   it("returns true for verifier", () => {
@@ -80,12 +80,12 @@ describe("isCriticalAgent — membership predicate", () => {
     expect(isCriticalAgent("my-custom-agent")).toBe(false);
   });
 
-  it("is case-sensitive — INSPECTOR is not a match", () => {
-    expect(isCriticalAgent("INSPECTOR")).toBe(false);
+  it("is case-sensitive — REVIEWER is not a match", () => {
+    expect(isCriticalAgent("REVIEWER")).toBe(false);
   });
 
-  it("is case-sensitive — Inspector is not a match", () => {
-    expect(isCriticalAgent("Inspector")).toBe(false);
+  it("is case-sensitive — Reviewer is not a match", () => {
+    expect(isCriticalAgent("Reviewer")).toBe(false);
   });
 });
 
@@ -97,6 +97,6 @@ describe("CRITICAL_AGENT_ALLOWLIST — not configurable (v1 constraint)", () => 
     expect(Array.isArray(CRITICAL_AGENT_ALLOWLIST)).toBe(true);
     // The list values must not change between imports.
     const snapshot = [...CRITICAL_AGENT_ALLOWLIST];
-    expect(snapshot).toEqual(["inspector", "verifier", "architect"]);
+    expect(snapshot).toEqual(["reviewer", "verifier", "architect"]);
   });
 });

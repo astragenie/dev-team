@@ -1,6 +1,6 @@
 {
   "name": "crew-plugin",
-  "version": "0.47.0",
+  "version": "0.49.0",
   "private": true,
   "type": "module",
   "devDependencies": {
@@ -28,7 +28,6 @@
     "verify:all": "node --experimental-strip-types scripts/validate-all.ts",
     "validate:all": "node --experimental-strip-types scripts/validate-all.ts",
     "validate:bundles": "node --experimental-strip-types ./scripts/validate-bundles.ts",
-    "validate:typegraph": "node ./scripts/validate-typegraph.ts",
     "validate:ux-spec": "node ./scripts/validate-ux-spec.ts",
     "format": "biome format --write scripts/ tests/",
     "format:check": "biome format scripts/ tests/",

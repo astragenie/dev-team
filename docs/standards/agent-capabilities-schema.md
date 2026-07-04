@@ -66,7 +66,7 @@ Review/validation perspective. Common: `correctness`, `regressions`, `security`,
 Tie-breaker when ≥2 agents match equally on capabilities. Higher wins.
 
 Guideline:
-- 10: canonical specialist for its niche (e.g. `c-sharp-reviewer` for `stack:csharp` review).
+- 10: canonical specialist for its niche (e.g. `csharp-reviewer` for `stack:csharp` review).
 - 8: capable but specialized (e.g. `expert-react-frontend-engineer` for React 19.2-specific features).
 - 5–7: generalist or fallback (e.g. `builder` for mixed work, `frontend-developer` for multi-framework UI).
 

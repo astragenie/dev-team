@@ -22,7 +22,7 @@ jobs:
     if: |
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'run-evals'))
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, astragenie, aws]
     # TODO(2026-07-13): promote to blocking after 2-week stability baseline.
     # Remove continue-on-error when:
     #   - 14+ consecutive PR runs PASS (check evals/runs/ history)
@@ -31,9 +31,7 @@ jobs:
     continue-on-error: true # Advisory until 2026-07-13 stability baseline.
     steps:
       - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
+      # Bun baked into runner image (devops#64) — no setup-bun, no ETXTBSY race.
       - run: bun install --frozen-lockfile
       - name: Eval prompt (dry-run heuristic asserts)
         env:
