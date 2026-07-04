@@ -1,4 +1,12 @@
 version: 1.0.0
+# Agents intentionally referenced before they exist. Every entry must carry
+# documented registry-fallback handling at its reference sites (see
+# commands/orchestrate-slice.md, skills/workflow/dispatcher-routing,
+# skills/workflow/risk-tier). Single source — validate-agent-refs.ts and
+# validate-configs.ts both read this list. Never add a name to silence a typo.
+forward_references:
+  - reviewer-validator
+  - reviewer-verifier
 rows:
   - section: builder-matrix
     signal: "`surface:ui` OR `stack:react` only"

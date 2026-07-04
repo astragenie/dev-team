@@ -50,12 +50,33 @@ test("fails on a phantom 3rdparty reference", async () => {
   assert.ok(result.findings.some((f) => f.token === "crew:3rdparty:nonexistent-agent"));
 });
 
-test("allows documented forward references (reviewer-validator, reviewer-verifier)", async () => {
+test("allows forward references declared in docs/routing-table.yaml", async () => {
   const root = await makeRepoRoot({
     "agents/reviewer.md": "---\nname: reviewer\n---\nbody",
+    "docs/routing-table.yaml":
+      'version: "1.0.0"\nforward_references:\n  - reviewer-validator\n  - reviewer-verifier\n' +
+      "rows:\n  - section: workflow-signals\n    signal: x\n    route_to: y\n",
     "commands/orchestrate-slice.md":
       "---\n---\nDispatch single `crew:reviewer-validator` (combined agent).\n" +
       "Registry fallback: if `crew:reviewer-verifier` is unregistered, fall back to the full ladder.\n"
+  });
+  const result = await validateAgentRefs(root);
+  assert.equal(result.ok, true, `unexpected findings: ${JSON.stringify(result.findings)}`);
+});
+
+test("forward references NOT in routing-table.yaml are findings (allowlist is data, not code)", async () => {
+  const root = await makeRepoRoot({
+    "commands/foo.md": "---\n---\nDispatch `crew:reviewer-validator`.\n"
+  });
+  const result = await validateAgentRefs(root);
+  assert.equal(result.ok, false);
+  assert.ok(result.findings.some((f) => f.token === "crew:reviewer-validator"));
+});
+
+test("resolves crew: tokens that name a skill directory", async () => {
+  const root = await makeRepoRoot({
+    "skills/workflow/risk-tier/SKILL.md": "tier skill",
+    "commands/foo.md": "---\n---\nConsult `crew:risk-tier` guidance.\n"
   });
   const result = await validateAgentRefs(root);
   assert.equal(result.ok, true, `unexpected findings: ${JSON.stringify(result.findings)}`);

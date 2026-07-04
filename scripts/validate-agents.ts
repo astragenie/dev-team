@@ -305,6 +305,17 @@ function checkEvalsRequiredForRole(
     warnings.push(`${label}: eval spec not yet authored — planned at "${plannedPath}"`);
     return;
   }
+  // A prefix-shaped value that is not exactly "planned:" is a typo of the
+  // sentinel (Planned:, planed:, plan:) — fail loudly instead of letting it
+  // fall through to the missing-file branch with a misleading message.
+  const prefixLike = /^([A-Za-z][A-Za-z-]*):(?![\\/])/.exec(evals);
+  if (prefixLike) {
+    errors.push(
+      `${label}: "evals" frontmatter has unknown prefix "${prefixLike[1]}:" — the only supported ` +
+        `sentinel is "planned:<path>" (exact spelling, lowercase)`
+    );
+    return;
+  }
   const resolved = path.join(repoRoot, evals);
   if (!existsSync(resolved)) {
     errors.push(

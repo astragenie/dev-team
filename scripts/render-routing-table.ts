@@ -126,17 +126,10 @@ const FOOTER = `
 - **Humans stay in control of production** — no automation for live-customer promotions.
 `;
 
-const SECTION_ORDER: Array<Exclude<RoutingSection, "builder-matrix">> = [
-  "workflow-signals",
-  "review-gates",
-  "code-language",
-  "architecture",
-  "infra-ops",
-  "research",
-  "docs-comms",
-  "ux",
-  "crew-internals"
-];
+// Render order derives from SECTION_META's key order — the compiler already
+// forces every non-builder-matrix section enum member into SECTION_META, so
+// deriving here means a new section cannot silently drop out of the render.
+const SECTION_ORDER = Object.keys(SECTION_META) as Array<Exclude<RoutingSection, "builder-matrix">>;
 
 function rowsFor(rows: RoutingRow[], section: RoutingSection): RoutingRow[] {
   return rows.filter((r) => r.section === section);

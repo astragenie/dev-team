@@ -46,6 +46,14 @@ export const RoutingTableSchema = z.object({
   /** Semver. Bump MAJOR on breaking row-shape changes (new required field, section removed, etc.). */
   version: z.string().regex(/^\d+\.\d+\.\d+$/, "version must be MAJOR.MINOR.PATCH"),
   generated_at: z.string().datetime().optional(),
+  /**
+   * Agents intentionally referenced before they exist (e.g. a planned combined
+   * agent). Every entry must have documented registry-fallback handling at its
+   * reference sites. Consumed by validate-agent-refs.ts and validate-configs.ts
+   * via scripts/lib/dispatch/resolve-token.ts — this is the single allowlist;
+   * do not add a name to silence a real typo.
+   */
+  forward_references: z.array(z.string().min(1)).default([]),
   rows: z.array(RoutingRowSchema).min(1)
 });
 export type RoutingTable = z.infer<typeof RoutingTableSchema>;

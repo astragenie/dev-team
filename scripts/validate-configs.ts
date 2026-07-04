@@ -37,6 +37,7 @@ import { parse as parseYaml } from "yaml";
 import { parseRoutingTable, type RoutingRow } from "./lib/routing/schema.ts";
 import { render } from "./render-routing-table.ts";
 import { ModelsConfigSchema, type ModelsConfig } from "./lib/models/schema.ts";
+import { createTokenResolver } from "./lib/dispatch/resolve-token.ts";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_YAML_PATH = path.join(REPO_ROOT, "docs", "routing-table.yaml");
@@ -45,38 +46,15 @@ const DEFAULT_MODELS_YAML_PATH = path.join(REPO_ROOT, "models.yaml");
 
 const CREW_TOKEN_RE = /\bcrew:([a-z0-9-]+)\b/g;
 
-async function fileExists(p: string): Promise<boolean> {
-  try {
-    await fs.access(p);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function walkForSkill(dir: string, name: string): Promise<boolean> {
-  let entries;
-  try {
-    entries = await fs.readdir(dir, { withFileTypes: true });
-  } catch {
-    return false;
-  }
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name === name && (await fileExists(path.join(full, "SKILL.md")))) return true;
-      if (await walkForSkill(full, name)) return true;
-    }
-  }
-  return false;
-}
-
-/** Resolves a first-party `crew:<name>` token to an agent, command, or skill. */
+/**
+ * Resolves a first-party `crew:<name>` token to an agent, command, skill, or
+ * documented forward reference. Shared semantics with validate-agent-refs.ts
+ * via scripts/lib/dispatch/resolve-token.ts. Builds a fresh resolver per call —
+ * use checkResolution (one resolver for all rows) on hot paths.
+ */
 export async function resolveCrewToken(name: string, repoRoot = REPO_ROOT): Promise<boolean> {
-  if (await fileExists(path.join(repoRoot, "agents", `${name}.md`))) return true;
-  if (await fileExists(path.join(repoRoot, "commands", `${name}.md`))) return true;
-  if (await walkForSkill(path.join(repoRoot, "skills"), name)) return true;
-  return false;
+  const resolver = await createTokenResolver(repoRoot);
+  return resolver.resolves(name);
 }
 
 export function extractCrewTokens(row: RoutingRow): string[] {
@@ -131,22 +109,56 @@ export async function checkDrift(rows: RoutingRow[], mdPath = DEFAULT_MD_PATH): 
   return [];
 }
 
-export async function checkResolution(rows: RoutingRow[]): Promise<string[]> {
+export async function checkResolution(rows: RoutingRow[], repoRoot = REPO_ROOT): Promise<string[]> {
   const errors: string[] = [];
-  const cache = new Map<string, boolean>();
+  const resolver = await createTokenResolver(repoRoot);
   for (const row of rows) {
     for (const token of extractCrewTokens(row)) {
-      let ok = cache.get(token);
-      if (ok === undefined) {
-        ok = await resolveCrewToken(token);
-        cache.set(token, ok);
-      }
-      if (!ok) {
+      if (!resolver.resolves(token)) {
         errors.push(
           `crew:${token} (row: "${row.signal}", section: ${row.section}) does not resolve to ` +
-            `agents/${token}.md, commands/${token}.md, or a skills/**/${token}/SKILL.md`
+            `agents/${token}.md, commands/${token}.md, a skills/**/${token}/SKILL.md, ` +
+            `or a documented forward_references entry in docs/routing-table.yaml`
         );
       }
+    }
+  }
+  return errors;
+}
+
+/**
+ * Consistency guard between the yaml builder-matrix and its signal-level
+ * implementation in commands/orchestrate-slice.md (the third historical copy
+ * of the routing policy — richer composite-boolean table, kept hand-authored
+ * on purpose). One-directional invariant: every `crew:<name>` token the yaml
+ * builder-matrix routes to MUST appear somewhere in orchestrate-slice.md,
+ * otherwise the yaml routes to a builder the implementation never dispatches.
+ */
+export async function checkOrchestrateConsistency(
+  rows: RoutingRow[],
+  repoRoot = REPO_ROOT
+): Promise<string[]> {
+  const matrixTokens = new Set<string>();
+  for (const row of rows.filter((r) => r.section === "builder-matrix")) {
+    for (const token of extractCrewTokens(row)) matrixTokens.add(token);
+  }
+  if (matrixTokens.size === 0) return [];
+  let orchestrate: string;
+  try {
+    orchestrate = await fs.readFile(
+      path.join(repoRoot, "commands", "orchestrate-slice.md"),
+      "utf8"
+    );
+  } catch {
+    return []; // synthetic roots without the command file skip this check
+  }
+  const errors: string[] = [];
+  for (const token of matrixTokens) {
+    if (!orchestrate.includes(`crew:${token}`)) {
+      errors.push(
+        `builder-matrix routes to crew:${token} but commands/orchestrate-slice.md never dispatches it — ` +
+          "update the orchestrate-slice dispatch table or fix the yaml row"
+      );
     }
   }
   return errors;
@@ -184,10 +196,12 @@ async function main() {
 
   const driftErrors = await checkDrift(structural.table.rows);
   const resolutionErrors = await checkResolution(structural.table.rows);
+  const orchestrateErrors = await checkOrchestrateConsistency(structural.table.rows);
   const allErrors = [
     ...structural.errors,
     ...driftErrors,
     ...resolutionErrors,
+    ...orchestrateErrors,
     ...modelsResult.errors
   ];
 

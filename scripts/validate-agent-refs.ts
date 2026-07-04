@@ -10,23 +10,19 @@
 // leaves behind a dispatch instruction that resolves to nothing, and nothing
 // in CI notices until a live dispatch fails with "Agent type not found".
 //
-// FORWARD_REFERENCE_ALLOWLIST covers agents that are intentionally referenced
-// before they exist — each such reference in the source docs carries its own
-// documented "registry fallback" handling (see commands/orchestrate-slice.md
-// and skills/workflow/dispatcher-routing/SKILL.md, skills/workflow/risk-tier/SKILL.md).
-// Do not add a name here to silence a real typo — only for a genuinely
-// planned, not-yet-shipped combined agent with fallback logic already written.
+// Forward references (agents intentionally referenced before they exist, each
+// with documented registry-fallback handling at its reference sites) live in
+// docs/routing-table.yaml `forward_references:` — the single allowlist shared
+// with validate-configs.ts via scripts/lib/dispatch/resolve-token.ts.
+// Resolution semantics are also shared: agents/, commands/, skills/**/SKILL.md,
+// then the forward-reference allowlist.
 import fs from "node:fs/promises";
 import { readdirSync, type Dirent } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createTokenResolver, type TokenResolver } from "./lib/dispatch/resolve-token.ts";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-
-const FORWARD_REFERENCE_ALLOWLIST = new Set([
-  "reviewer-validator", // commands/orchestrate-slice.md light-tier combined agent, documented registry fallback
-  "reviewer-verifier" // skills/workflow/dispatcher-routing + risk-tier, documented registry fallback
-]);
 
 export interface AgentRefFinding {
   file: string;
@@ -70,13 +66,12 @@ async function walkMarkdown(dir: string): Promise<string[]> {
 const TOKEN_RE = /\bcrew:(?:(3rdparty):)?([a-zA-Z][\w-]*)\b/g;
 
 interface KnownNames {
-  agentNames: Set<string>;
-  commandNames: Set<string>;
+  resolver: TokenResolver;
   agentNames3rdparty: Set<string>;
   commandNames3rdparty: Set<string>;
 }
 
-/** Resolve a single `crew:...` token against the known-name sets. Returns a finding, or null if it resolves. */
+/** Resolve a single `crew:...` token. Returns a finding, or null if it resolves. */
 function resolveToken(
   label: string,
   is3rdparty: boolean,
@@ -91,17 +86,13 @@ function resolveToken(
       detail: `no agents/3rdparty/${name}.md or commands/3rdparty/${name}.md on disk`
     };
   }
-  if (
-    known.agentNames.has(name) ||
-    known.commandNames.has(name) ||
-    FORWARD_REFERENCE_ALLOWLIST.has(name)
-  ) {
-    return null;
-  }
+  if (known.resolver.resolves(name)) return null;
   return {
     file: label,
     token: `crew:${name}`,
-    detail: `no agents/${name}.md or commands/${name}.md on disk`
+    detail:
+      `no agents/${name}.md, commands/${name}.md, or skills/**/${name}/SKILL.md on disk, ` +
+      "and not a documented forward_references entry in docs/routing-table.yaml"
   };
 }
 
@@ -118,9 +109,8 @@ function scanFileForFindings(label: string, text: string, known: KnownNames): Ag
 
 export async function validateAgentRefs(repoRoot = REPO_ROOT) {
   const known: KnownNames = {
-    commandNames: listMdBasenames(path.join(repoRoot, "commands")),
+    resolver: await createTokenResolver(repoRoot),
     commandNames3rdparty: listMdBasenames(path.join(repoRoot, "commands", "3rdparty")),
-    agentNames: listMdBasenames(path.join(repoRoot, "agents")),
     agentNames3rdparty: listMdBasenames(path.join(repoRoot, "agents", "3rdparty"))
   };
 

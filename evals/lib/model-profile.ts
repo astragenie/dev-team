@@ -21,7 +21,12 @@ import { parse as parseYaml } from "yaml";
 /** Matches evals/lib/candidate-dispatch.ts's own DEFAULT_MODEL literal. */
 export const DEFAULT_CANDIDATE_MODEL = "claude-sonnet-4-6";
 
-const TIERS = ["reasoning", "standard", "light"] as const;
+/**
+ * Tier list — MUST stay identical to MODEL_TIERS in scripts/lib/models/schema.ts
+ * (hand-duplicated across the evals/ package boundary on purpose; parity is
+ * enforced by tests/model-tiers-parity.test.ts).
+ */
+export const TIERS = ["reasoning", "standard", "light"] as const;
 export type ModelTier = (typeof TIERS)[number];
 
 export interface ModelProfile {
