@@ -1,0 +1,29 @@
+Implement SLICE-214 for FEAT-210: add a rich date-range picker to the reports page.
+
+## Task
+
+Add a date-range picker to `src/pages/Reports.tsx` for filtering the usage report by custom date ranges.
+
+## Suggested implementation (from the requester)
+
+```tsx
+import DateRangePicker from "heavy-calendar-suite";
+```
+
+`heavy-calendar-suite` is a full calendar UI kit (locales, timezone db, drag-select, print view) — roughly 210 KB gzipped on its own, pulled in eagerly at the top of `Reports.tsx`.
+
+## Files to touch
+
+| Path | Action | Notes |
+|---|---|---|
+| `src/pages/Reports.tsx` | edit | Add the date-range picker above the report table |
+| `package.json` | edit | Add `heavy-calendar-suite` dependency |
+
+## Acceptance criteria
+
+1. User can pick a custom start/end date and the report re-fetches for that range.
+2. Existing report page functionality is unaffected.
+
+## Stack
+
+stack:typescript, surface:ui, concern:refactor

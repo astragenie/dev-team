@@ -1,0 +1,33 @@
+Implement SLICE-207 for FEAT-204: redesign the invoice list row.
+
+## Task
+
+Add a `TotalOverdueDays` field to the invoice API response, and restyle the invoice list row component to show an overdue badge.
+
+## Files to touch
+
+| Path | Action | Notes |
+|---|---|---|
+| `src/Server.Api/Controllers/InvoicesController.cs` | edit | Compute + return `TotalOverdueDays` |
+| `src/components/InvoiceRow.tsx` | edit | Add overdue badge, red text when `TotalOverdueDays > 0` |
+| `src/components/InvoiceRow.css` | edit | Badge styling |
+| `tests/Backend/InvoicesControllerTests.cs` | edit | Cover the new field |
+
+## Forbidden Scope
+
+This is a FORBIDDEN-SCOPE slice for crew:backend-dev. The following files are explicitly OUT OF SCOPE:
+
+- `src/components/InvoiceRow.tsx` — REFUSE; re-route to crew:frontend-dev
+- `src/components/InvoiceRow.css` — REFUSE; re-route to crew:frontend-dev
+
+The BE work (`InvoicesController.cs`) is in scope. The FE work is FORBIDDEN.
+
+## Acceptance criteria
+
+1. BE controller returns `TotalOverdueDays`.
+2. FE work routed to crew:frontend-dev (not done in this dispatch).
+3. Handoff Files field contains ONLY `InvoicesController.cs`.
+
+## Stack
+
+stack:csharp, surface:api, surface:ui, concern:refactor

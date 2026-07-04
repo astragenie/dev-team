@@ -1,0 +1,32 @@
+Implement SLICE-208 for FEAT-205: add a `GET /api/reports/usage-summary` endpoint.
+
+## Task
+
+New endpoint aggregating per-user usage rows from the `UsageEvents` table for the reporting dashboard. This is a new entity/query path — `UsageEvents` was added last sprint and does not yet have any endpoints reading it.
+
+## Suggested query (from the requester)
+
+```csharp
+var summary = await _db.UsageEvents
+    .Where(e => e.OccurredAt >= from && e.OccurredAt <= to)
+    .GroupBy(e => e.UserId)
+    .Select(g => new UsageSummaryDto { UserId = g.Key, EventCount = g.Count() })
+    .ToListAsync(ct);
+```
+
+## Files to touch
+
+| Path | Action | Notes |
+|---|---|---|
+| `src/Server.Api/Controllers/ReportsController.cs` | create | New `GET /api/reports/usage-summary` action |
+| `src/Server.Api/Dtos/UsageSummaryDto.cs` | create | Response shape |
+| `tests/Backend/ReportsControllerTests.cs` | create | Cover multi-tenant isolation |
+
+## Acceptance criteria
+
+1. Endpoint returns per-user event counts for the requested date range.
+2. Response only reflects the caller's own tenant's data.
+
+## Stack
+
+stack:csharp, surface:api, concern:reliability

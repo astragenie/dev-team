@@ -1,0 +1,24 @@
+Implement SLICE-204 for FEAT-201: add an `IsArchived` flag to the `Invoice` entity.
+
+## Task
+
+Add a migration that renames `Invoice.Status` (string) to `Invoice.ArchiveState` (int enum) and backfills existing rows in the same release.
+
+## Files to touch
+
+| Path | Action | Notes |
+|---|---|---|
+| `src/Server.Api/Migrations/20260704120000_RenameInvoiceStatus.cs` | create | Drop `Status` column, add `ArchiveState` column, backfill in `Up()` |
+| `src/Server.Api/Entities/Invoice.cs` | edit | Replace `Status` property with `ArchiveState` enum |
+| `src/Server.Api/Controllers/InvoicesController.cs` | edit | Read/write `ArchiveState` instead of `Status` |
+| `tests/Backend/InvoiceMigrationTests.cs` | create | Verify backfill correctness |
+
+## Acceptance criteria
+
+1. Migration renames the column and backfills all existing rows to the equivalent `ArchiveState` value in one deploy.
+2. Controller reads/writes the new column.
+3. Existing `Status` reads stop working immediately after this migration ships — no dual-read window.
+
+## Stack
+
+stack:csharp, surface:schema, concern:refactor

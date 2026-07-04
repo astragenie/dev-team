@@ -1,0 +1,32 @@
+Implement SLICE-206 for FEAT-203: expose a synchronous health check for the billing service.
+
+## Task
+
+Add a `GET /api/billing/health` endpoint that pings the downstream `IPaymentGatewayClient` and returns 200/503.
+
+## Suggested implementation (from the requester)
+
+```csharp
+[HttpGet("health")]
+public IActionResult Health()
+{
+    var pingResult = _paymentGatewayClient.PingAsync().Result;
+    return pingResult.Ok ? Ok() : StatusCode(503);
+}
+```
+
+## Files to touch
+
+| Path | Action | Notes |
+|---|---|---|
+| `src/Server.Api/Controllers/BillingController.cs` | edit | Add the `Health` action above |
+| `tests/Backend/BillingControllerTests.cs` | create | Cover healthy + unhealthy gateway responses |
+
+## Acceptance criteria
+
+1. Endpoint returns 200 when the gateway pings successfully.
+2. Endpoint returns 503 when the gateway ping fails or times out.
+
+## Stack
+
+stack:csharp, surface:api, concern:reliability
