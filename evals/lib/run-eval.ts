@@ -19,6 +19,7 @@ import { dispatchCandidate } from "./candidate-dispatch.ts";
 import type { BudgetMeter } from "@astragenie/gepa-core";
 import { withBudget } from "./with-budget.ts";
 import { passthroughMeter } from "./meter.ts";
+import { resolveCandidateModel } from "./model-profile.ts";
 
 // ---------------------------------------------------------------------------
 // Eval spec types (matches evals/agents/*.yaml shape)
@@ -412,10 +413,13 @@ async function liveTest(
   if (candidateLive && candidateCfg?.runner === "claude-p" && fixtureText.length > 0) {
     const agentPromptPath = path.join(repoRoot, "agents", `${promptId}.md`);
     try {
+      // Decision 4: CREW_MODEL_PROFILE, when set, overrides candidateCfg.model
+      // via models.yaml; unset is byte-identical to the pre-Decision-4 fallback.
+      const model = await resolveCandidateModel(repoRoot, candidateCfg);
       const dispatch = await dispatchCandidate({
         agentPromptPath,
         fixtureContent: fixtureText,
-        model: candidateCfg.model ?? "claude-sonnet-4-6"
+        model
       });
       candidateOutput = dispatch.candidateOutput;
       trace = undefined; // live dispatch overrides any structured trace

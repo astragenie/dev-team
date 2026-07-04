@@ -8,6 +8,7 @@ import {
   checkStructure,
   checkDrift,
   checkResolution,
+  checkModelsConfig,
   resolveCrewToken,
   extractCrewTokens
 } from "../scripts/validate-configs.ts";
@@ -150,4 +151,44 @@ test("checkResolution passes for a token that resolves to a real agent", async (
   };
   const errors = await checkResolution([row]);
   assert.equal(errors.length, 0);
+});
+
+// ── checkModelsConfig (Decision 4) ──────────────────────────────────────────
+
+test("checkModelsConfig accepts a well-formed models.yaml", async () => {
+  const yamlPath = await writeTmp(
+    "models.yaml",
+    'version: "1.0.0"\ndefault_profile: claude\nprofiles:\n  claude:\n    reasoning: opus\n    standard: sonnet\n    light: haiku\n'
+  );
+  const { config, errors } = await checkModelsConfig(yamlPath);
+  assert.equal(errors.length, 0);
+  assert.ok(config);
+  assert.equal(config?.default_profile, "claude");
+});
+
+test("checkModelsConfig rejects a profile missing a tier", async () => {
+  const yamlPath = await writeTmp(
+    "models.yaml",
+    'version: "1.0.0"\ndefault_profile: claude\nprofiles:\n  claude:\n    reasoning: opus\n    standard: sonnet\n'
+  );
+  const { config, errors } = await checkModelsConfig(yamlPath);
+  assert.equal(config, null);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0] ?? "", /schema validation/);
+});
+
+test("checkModelsConfig rejects an unknown default_profile", async () => {
+  const yamlPath = await writeTmp(
+    "models.yaml",
+    'version: "1.0.0"\ndefault_profile: codex\nprofiles:\n  claude:\n    reasoning: opus\n    standard: sonnet\n    light: haiku\n'
+  );
+  const { config, errors } = await checkModelsConfig(yamlPath);
+  assert.equal(config, null);
+  assert.equal(errors.length, 1);
+});
+
+test("checkModelsConfig reports a missing file", async () => {
+  const { config, errors } = await checkModelsConfig("/definitely/does/not/exist/models.yaml");
+  assert.equal(config, null);
+  assert.match(errors[0] ?? "", /does not exist/);
 });
