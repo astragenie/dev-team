@@ -1,7 +1,7 @@
 ---
 id: SLICE-106
 parent: FEAT-183
-status: triaged
+status: done
 priority: P1
 created: 2026-06-27
 title: "FEAT-183 S8b — auto-merge gate (5 conditions) + critical-agent allowlist + /crew:gepa-invalidate + /crew:gepa-revert + /crew:gepa-thaw + observability events"
