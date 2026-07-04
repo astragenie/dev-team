@@ -19,6 +19,7 @@ jobs:
         node ./scripts/validate-dispatch-graph.ts
         node ./scripts/validate-workflows.ts
         node ./scripts/validate-slices.ts
+        node ./scripts/validate-badges.ts
         node ./scripts/validate-loop-state.ts
         node ./scripts/validate-bundles.ts
         node ./scripts/validate-configs.ts
