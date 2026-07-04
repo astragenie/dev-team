@@ -40,7 +40,7 @@ test("CLI artifact writers create markdown artifacts", async () => {
     "--decision",
     "approved",
     "--reviewer",
-    "inspector",
+    "reviewer",
     "--files",
     "app/templates/create.html",
     "--non-code"

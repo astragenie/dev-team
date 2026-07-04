@@ -1,6 +1,6 @@
 ---
-name: inspector
-description: Independent change inspector
+name: reviewer
+description: Independent change reviewer
 ---
 
 # Reviewer

@@ -377,7 +377,7 @@ node -e "
 
 **Classify tier:**
 
-- `tier: full` — long slices, cross-plugin, >10 changed files AND ≥7 ACs. Dispatch separate `crew:inspector` and `crew:verifier` in parallel.
+- `tier: full` — long slices, cross-plugin, >10 changed files AND ≥7 ACs. Dispatch separate `crew:reviewer` and `crew:verifier` in parallel.
 - `tier: light` — short slices with `SHORT_SLICE = true` AND `BEHAVIOR_CHANGED = true`. Dispatch single `crew:reviewer-validator` (combined concurrent agent).
 
 Tier is recorded in the slice-progress tracking via `write-run-brief --tier <light|full>` (invoked by loop's internal machinery; may be logged for reference).
@@ -396,13 +396,13 @@ After builder PASS, dispatch both review and validation in parallel according to
 
 #### Dispatch selection
 
-**When `tier: full`:** Dispatch both `crew:inspector` and `crew:verifier` simultaneously (single message, two `Agent` calls, or parallel tool invocations).
+**When `tier: full`:** Dispatch both `crew:reviewer` and `crew:verifier` simultaneously (single message, two `Agent` calls, or parallel tool invocations).
 
 **When `tier: light`:** Dispatch single `crew:reviewer-validator` (combined agent) instead.
 
-**Registry fallback:** If the dispatch fails with "Agent type 'crew:reviewer-validator' not found" (session started before the plugin version that ships the agent, or registry not yet refreshed), do NOT retry the same dispatch and do NOT skip gates — fall back to the full ladder: dispatch `crew:inspector` and `crew:verifier` concurrently exactly as for `tier: full`, and note `tier: light (fallback: full ladder — reviewer-validator unregistered)` in the run brief.
+**Registry fallback:** If the dispatch fails with "Agent type 'crew:reviewer-validator' not found" (session started before the plugin version that ships the agent, or registry not yet refreshed), do NOT retry the same dispatch and do NOT skip gates — fall back to the full ladder: dispatch `crew:reviewer` and `crew:verifier` concurrently exactly as for `tier: full`, and note `tier: light (fallback: full ladder — reviewer-validator unregistered)` in the run brief.
 
-#### Step 4 prompt — `crew:inspector` (full-tier only; parallel)
+#### Step 4 prompt — `crew:reviewer` (full-tier only; parallel)
 
 Dispatch with this prompt:
 
@@ -483,12 +483,12 @@ Store returned paths as `REVIEW_RESULT_PATH` and `VALIDATION_PATH`.
 
 #### Conflict rule: reviewer needs_fix invalidates validation
 
-If reviewer returns `needs_fix` (on either full-tier `crew:inspector` or light-tier combined agent):
+If reviewer returns `needs_fix` (on either full-tier `crew:reviewer` or light-tier combined agent):
 
 1. Mark validation result stale: `node scripts/crew.ts mark-badge --repo "$PWD" --badge validation_stale --note "invalidated by review needs_fix"`.
 2. Re-dispatch builder with review findings (run `/crew:fix` flow).
 3. After builder PASS on the fix bounce:
-   - If original tier was `light`: escalate to full ladder — dispatch separate `crew:inspector` and `crew:verifier` in parallel (per full-tier dispatch sections above), regardless of the SHORT_SLICE computation.
+   - If original tier was `light`: escalate to full ladder — dispatch separate `crew:reviewer` and `crew:verifier` in parallel (per full-tier dispatch sections above), regardless of the SHORT_SLICE computation.
    - If original tier was `full`: use standard concurrent dispatch (both in parallel).
 4. Proceed to Step 6 after both gates PASS.
 

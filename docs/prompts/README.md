@@ -21,8 +21,8 @@ CI gates on both validators. A missing or malformed field fails the build.
 
 ```yaml
 model_pinned: <model-string>   # mirrors existing model: value; explicit pin for eval harness
-evals: <path-string>           # e.g. evals/agents/inspector.yaml — required for EVALS_REQUIRED agents
-changelog: <path-string>       # e.g. docs/prompts/CHANGELOG-inspector.md — created lazily
+evals: <path-string>           # e.g. evals/agents/reviewer.yaml — required for EVALS_REQUIRED agents
+changelog: <path-string>       # e.g. docs/prompts/CHANGELOG-reviewer.md — created lazily
 ```
 
 Skills do not carry `model_pinned`, `evals`, or `changelog` in this slice.
@@ -32,7 +32,7 @@ Skills do not carry `model_pinned`, `evals`, or `changelog` in this slice.
 Source: the frontmatter `name:` field value.
 
 1. Lowercase everything.
-2. Replace `:` with `-` (e.g. `crew:inspector` → `crew-inspector`).
+2. Replace `:` with `-` (e.g. `crew:reviewer` → `crew-reviewer`).
 3. Replace any character outside `[a-z0-9-]` with `-`.
 4. Collapse consecutive `-` to a single `-`.
 5. Trim leading and trailing `-`.
@@ -44,8 +44,8 @@ Examples:
 
 | `name:`              | `prompt_id:`         |
 |----------------------|----------------------|
-| `inspector`          | `inspector`          |
-| `inspector-verifier` | `inspector-verifier` |
+| `reviewer`          | `reviewer`          |
+| `reviewer-verifier` | `reviewer-verifier` |
 | `release-engineer`   | `release-engineer`   |
 | `git-commit`         | `git-commit`         |
 
@@ -70,7 +70,7 @@ agent's eval definition file; path existence is not enforced in this slice
 
 EVALS_REQUIRED agent names:
 `dispatcher`, `fullstack-dev`, `backend-dev`, `frontend-dev`, `refactor`,
-`inspector`, `inspector-verifier`, `verifier`, `integrator`, `release-engineer`.
+`reviewer`, `reviewer-verifier`, `verifier`, `integrator`, `release-engineer`.
 
 All other agents may omit the field.
 

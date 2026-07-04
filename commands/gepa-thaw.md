@@ -14,7 +14,7 @@ Remove an agent from the `champion_frozen` list in `gepa.config.json`. After tha
 ```
 
 Arguments:
-- `<agent>` — required. Agent name to remove from `champion_frozen` (e.g. `inspector`).
+- `<agent>` — required. Agent name to remove from `champion_frozen` (e.g. `reviewer`).
 
 ## Behavior
 
@@ -33,10 +33,10 @@ Arguments:
 ## Example
 
 ```bash
-# gepa.config.json has champion_frozen: ["inspector", "architect"]
-node scripts/crew.ts gepa-thaw inspector
+# gepa.config.json has champion_frozen: ["reviewer", "architect"]
+node scripts/crew.ts gepa-thaw reviewer
 # → champion_frozen becomes ["architect"]
-# → subsequent /crew:gepa-optimize inspector proceeds normally
+# → subsequent /crew:gepa-optimize reviewer proceeds normally
 ```
 
 ## See also

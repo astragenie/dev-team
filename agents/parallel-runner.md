@@ -103,8 +103,8 @@ The sub-agent must execute these steps in its worktree cwd (assigned by
    derived from the feature's acceptance criteria.
 3. `node <loop-cli> slice start --id <SLICE_ID> --repo "$PWD"`
 4. Dispatch a `crew:fullstack-dev` sub-agent with the returned `dispatchInstruction`.
-5. After fullstack-dev PASS: dispatch `crew:inspector`.
-6. After inspector PASS: `node <loop-cli> slice complete --id <SLICE_ID> --repo "$PWD"`
+5. After fullstack-dev PASS: dispatch `crew:reviewer`.
+6. After reviewer PASS: `node <loop-cli> slice complete --id <SLICE_ID> --repo "$PWD"`
    (set `requires_validation: false` in the slice frontmatter before calling this
    if the FEAT is a pure refactor or structural change with no runtime behavior).
 7. `node <loop-cli> slice grade --id <SLICE_ID> --repo "$PWD"`

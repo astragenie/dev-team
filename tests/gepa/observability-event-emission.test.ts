@@ -360,8 +360,8 @@ describe("emitNoWinnerStreakEvent", () => {
 describe("emitChampionFrozenEvent", () => {
   it("fires gepa_champion_frozen once with required fields", () => {
     emitChampionFrozenEvent(repoPath, {
-      agent: "inspector",
-      frozen_list: ["inspector", "architect"]
+      agent: "reviewer",
+      frozen_list: ["reviewer", "architect"]
     });
     expect(countEventsByName("gepa_champion_frozen")).toBe(1);
     const e = lastEventByName("gepa_champion_frozen")!;
@@ -372,7 +372,7 @@ describe("emitChampionFrozenEvent", () => {
 describe("emitCriticalAgentDraftPrEvent — SLICE-106 new event", () => {
   it("fires gepa_critical_agent_draft_pr once with required fields", () => {
     emitCriticalAgentDraftPrEvent(repoPath, {
-      agent: "inspector",
+      agent: "reviewer",
       cycle_id: "cccc-dddd",
       trial_id: "tttt-0005",
       pr_url: "https://github.com/test/repo/pull/3",
@@ -380,7 +380,7 @@ describe("emitCriticalAgentDraftPrEvent — SLICE-106 new event", () => {
     });
     expect(countEventsByName("gepa_critical_agent_draft_pr")).toBe(1);
     const e = lastEventByName("gepa_critical_agent_draft_pr")!;
-    expect(e.agent).toBe("inspector");
+    expect(e.agent).toBe("reviewer");
     expect(e.pr_draft).toBe(true);
     expect(e.pr_url).toContain("/pull/3");
   });
@@ -471,7 +471,7 @@ describe("observability — full event set emission test (AC-9)", () => {
     emitBranchProtectionMissingEvent(repoPath, { agent: "a", branch: "gepa/a/t" });
     emitNoWinnerStreakEvent(repoPath, { agent: "a", streak: 3 });
     emitChampionFrozenEvent(repoPath, { agent: "a", frozen_list: ["a"] });
-    emitCriticalAgentDraftPrEvent(repoPath, { agent: "inspector", pr_draft: true });
+    emitCriticalAgentDraftPrEvent(repoPath, { agent: "reviewer", pr_draft: true });
 
     const canonicalEvents = [
       "gepa_capture_drop",

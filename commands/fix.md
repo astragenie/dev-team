@@ -4,7 +4,7 @@ description: Preferred short entry point for investigating and fixing broken beh
 
 # Fix — Dispatcher Workflow
 
-You are the dispatcher for `/crew:fix`. Detect light-path eligibility first; otherwise route via investigator → builder → parallel inspectors.
+You are the dispatcher for `/crew:fix`. Detect light-path eligibility first; otherwise route via investigator → builder → parallel reviewers.
 
 For what counts as "substantial" below, see the canonical definition in `constitution.md` (`What "Substantial" Means`).
 
@@ -28,13 +28,13 @@ If matched → light path (no investigator, no parallel A+B fan-out):
 ```
 crew:dev-lite (mechanical 1-2 file fix, compressed diff receipt)
   ↓
-crew:inspector-lite (single review pass, auto-loads stack skill from diff extensions)
+crew:reviewer-lite (single review pass, auto-loads stack skill from diff extensions)
   ↓ PASS (decision: approved or approved_with_notes)
 mark-badge fix_complete
 mark-badge inspected
 ```
 
-If `inspector-lite` returns `rejected` (semantic complexity detected, MEDIUM+ finding requiring code change) → fall through to the standard ladder below (re-dispatch via investigator + FEAT tag).
+If `reviewer-lite` returns `rejected` (semantic complexity detected, MEDIUM+ finding requiring code change) → fall through to the standard ladder below (re-dispatch via investigator + FEAT tag).
 
 If not matched → standard ladder below.
 
@@ -61,8 +61,8 @@ TRIAGE (table above) → investigator | researcher | skip
 specialist builder (FEAT tag → builder, same routing as /crew:build)
    ↓ PASS (builder writes handoff)
 parallel fan-out — single Agent-tool message with N=2 invocations:
-   Inspector A (stack-specific)     Inspector B (generalist + lens)
-      diff has .cs → crew:c-sharp-reviewer   crew:inspector with lens chosen by FEAT concern:*
+   Reviewer A (stack-specific)     Reviewer B (generalist + lens)
+      diff has .cs → crew:csharp-reviewer   crew:reviewer with lens chosen by FEAT concern:*
       diff has .ts → crew:typescript-reviewer   concern:security → security
       no stack match → SKIP A, B uses code-quality lens   concern:perf → performance
    ↓                                         concern:correctness (default)
@@ -71,19 +71,19 @@ parallel fan-out — single Agent-tool message with N=2 invocations:
    any rejected? ─── yes ─→ retry loop below
    both approved / approved_with_notes:
      mark-badge fix_complete
-     if Inspector B next field names a tests-adequacy gap → dispatch crew:qa-expert
+     if Reviewer B next field names a tests-adequacy gap → dispatch crew:qa-expert
 ```
 
 No verifier dispatch. Verifier defers to `/crew:ship`.
 
-## Auto-fix retry loop (when Inspector rejects)
+## Auto-fix retry loop (when Reviewer rejects)
 
-Symmetric with `/crew:ship`'s auto-fix loop. When either Inspector A or Inspector B returns `rejected`:
+Symmetric with `/crew:ship`'s auto-fix loop. When either Reviewer A or Reviewer B returns `rejected`:
 
 1. Read both review-result artifacts for the aggregated FAIL findings.
 2. Re-dispatch the same specialist builder with the findings as fix scope.
 3. Increment retry counter.
-4. Re-run the parallel inspector fan-out.
+4. Re-run the parallel reviewer fan-out.
 5. Retry < N (default 2 from `.claude/crew/deployment.md` `fix.retry_limit`)? Loop. Else halt.
 
 On N exhausted:
@@ -129,29 +129,29 @@ Escalate to user with both artifact paths + findings. Do not silently keep tryin
    - Set `size: light` only for trivial one-line fixups (skips artifact, but builder still returns structured completion).
    - If this run references a design doc, pass the design doc path to the builder.
 8. After the builder returns PASS, write a handoff artifact if the run is substantial:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff --repo "$PWD" --title "<short title>" --from builder --to dispatcher --summary "<headline>" --scope "<in scope>" --deliverable "<what shipped>" --files "<changed files>" --confidence "<high|medium|low>" --risks "<risks or none>" --next "inspector fan-out"`
-9. Fan out two inspectors in a **single Agent-tool message** (parallel dispatch):
-   - **Inspector A** — stack-specific reviewer (see phase order diagram above for routing; skip A if no stack match).
-   - **Inspector B** — `crew:inspector` with lens from FEAT concern tag (default: `correctness`).
-   - Pass the builder handoff artifact path to both inspectors.
-10. After both inspector artifacts land, write a review result for each:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff --repo "$PWD" --title "<short title>" --from builder --to dispatcher --summary "<headline>" --scope "<in scope>" --deliverable "<what shipped>" --files "<changed files>" --confidence "<high|medium|low>" --risks "<risks or none>" --next "reviewer fan-out"`
+9. Fan out two reviewers in a **single Agent-tool message** (parallel dispatch):
+   - **Reviewer A** — stack-specific reviewer (see phase order diagram above for routing; skip A if no stack match).
+   - **Reviewer B** — `crew:reviewer` with lens from FEAT concern tag (default: `correctness`).
+   - Pass the builder handoff artifact path to both reviewers.
+10. After both reviewer artifacts land, write a review result for each:
     - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result --repo "$PWD" --title "<short title>" --decision <PASS|FAIL> --summary "<verdict>" --evidence "<files checked>" --files "<files in diff>" --test-summary "<test coverage>" --risks "<risks or none>" --next "<follow-up or none>"`
-11. If either inspector returns `rejected`, stop. Surface the findings to the user. Do not emit `fix_complete`.
-12. If Inspector A is skipped, `fix_complete` requires only Inspector B to approve.
+11. If either reviewer returns `rejected`, stop. Surface the findings to the user. Do not emit `fix_complete`.
+12. If Reviewer A is skipped, `fix_complete` requires only Reviewer B to approve.
 13. If both approved (or `approved_with_notes`), emit the completion badge:
     - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge fix_complete`
-14. Check Inspector B's `next` field. If it names a tests-adequacy gap, dispatch `crew:qa-expert`:
+14. Check Reviewer B's `next` field. If it names a tests-adequacy gap, dispatch `crew:qa-expert`:
     - Pass the finding artifact and the changed files list.
     - Wait for `crew:qa-expert` to return before closing the run.
 15. End with a clear synthesis for the user:
     - confirmed root cause
     - what changed
-    - what was reviewed (Inspector A / B decisions)
+    - what was reviewed (Reviewer A / B decisions)
     - residual risk
     - what happens next (e.g. `/crew:ship` when ready)
     Use this pre-done checkpoint before you call the fix complete:
     - did code change?
-    - if yes, did both inspectors resolve (or A skipped + B approved)?
+    - if yes, did both reviewers resolve (or A skipped + B approved)?
     - did the run leave the artifact trail it should?
 16. For substantial work, write a final synthesis artifact:
     - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-final-synthesis --repo "$PWD" --title "<short title>" --summary "<summary>" --external-deltas "<off-repo changes required, or 'none'>"`

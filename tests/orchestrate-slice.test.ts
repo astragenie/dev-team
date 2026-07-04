@@ -38,7 +38,7 @@ test("orchestrate-slice command references all required specialist agents", asyn
     "crew:architect",
     "crew:uxdesigner",
     "crew:fullstack-dev",
-    "crew:inspector",
+    "crew:reviewer",
     "crew:verifier"
   ];
   for (const agent of required) {

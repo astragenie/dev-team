@@ -1,12 +1,12 @@
 /**
- * scripts/lib/gepa/mine-inspector-bug-corpus.ts — SLICE-103
+ * scripts/lib/gepa/mine-reviewer-bug-corpus.ts — SLICE-103
  *
  * CLI helper that walks `.claude/artifacts/crew/reviews/` for review artifacts
  * containing CRITICAL or HIGH findings, extracts structured bug cases, and
  * emits candidate EvalCase JSONL seeds under a configurable output directory.
  *
  * CLI:
- *   node scripts/crew.ts gepa-mine-inspector --weeks 8 --out agents/inspector/.gepa/eval/
+ *   node scripts/crew.ts gepa-mine-reviewer --weeks 8 --out agents/reviewer/.gepa/eval/
  *
  * AC-5: --weeks 0 → exit 0, no files written, helpful message.
  * AC-9: Progress logged to stderr (one line per review artifact processed).
@@ -20,18 +20,18 @@ import { join } from "node:path";
 import { redactRationale } from "@astragenie/gepa-core";
 
 // ---------------------------------------------------------------------------
-// Schema types (matches EvalCaseSchema in gepa-core with inspector extensions)
+// Schema types (matches EvalCaseSchema in gepa-core with reviewer extensions)
 // ---------------------------------------------------------------------------
 
 /** Structured notes embedded in each EvalCase as a JSON string (matches EvalCaseSchema.notes: string). */
-export interface InspectorEvalCaseNotes {
+export interface ReviewerEvalCaseNotes {
   bug_class: string | null;
   severity_expected: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | null;
   provenance: string;
   verdict_expected: string;
 }
 
-export interface InspectorEvalCase {
+export interface ReviewerEvalCase {
   id: string;
   input: {
     diff: string;
@@ -44,7 +44,7 @@ export interface InspectorEvalCase {
   };
   rubric: string[];
   held_out: boolean;
-  /** JSON-serialized InspectorEvalCaseNotes — matches EvalCaseSchema.notes: string. */
+  /** JSON-serialized ReviewerEvalCaseNotes — matches EvalCaseSchema.notes: string. */
   notes: string;
 }
 
@@ -102,7 +102,7 @@ function parseOutFlag(args: string[], i: number): { out: string; invalid?: strin
 
 export function parseMineArgs(args: string[], repoPath: string): MineArgs {
   let weeks = 8;
-  let out = join(repoPath, "agents", "inspector", ".gepa", "eval");
+  let out = join(repoPath, "agents", "reviewer", ".gepa", "eval");
 
   let i = 0;
   while (i < args.length) {
@@ -226,8 +226,8 @@ async function mineReviewArtifact(filePath: string): Promise<MinedSeed | null> {
 }
 
 /** Convert a MinedSeed to a stub EvalCase (caller fills diff/context). */
-function seedToStub(seed: MinedSeed, index: number): InspectorEvalCase {
-  const id = `inspector-bug-mined-${String(index + 1).padStart(3, "0")}`;
+function seedToStub(seed: MinedSeed, index: number): ReviewerEvalCase {
+  const id = `reviewer-bug-mined-${String(index + 1).padStart(3, "0")}`;
   const verdict =
     seed.severity === "CRITICAL" || seed.severity === "HIGH"
       ? ("request_changes" as const)
@@ -275,7 +275,7 @@ export interface MineResult {
   written: string[];
 }
 
-export async function runMineInspectorBugCorpus(
+export async function runMineReviewerBugCorpus(
   repoPath: string,
   args: string[]
 ): Promise<MineResult> {
@@ -285,7 +285,7 @@ export async function runMineInspectorBugCorpus(
     return {
       exitCode: 1,
       stdout: "",
-      stderr: `gepa-mine-inspector: ${parsed.invalid}\n`,
+      stderr: `gepa-mine-reviewer: ${parsed.invalid}\n`,
       mined: 0,
       written: []
     };
@@ -296,9 +296,9 @@ export async function runMineInspectorBugCorpus(
     return {
       exitCode: 0,
       stdout:
-        "gepa-mine-inspector: --weeks 0 produces no results.\n" +
+        "gepa-mine-reviewer: --weeks 0 produces no results.\n" +
         "Set --weeks to a positive integer (e.g., --weeks 8) to mine recent review artifacts.\n" +
-        "Alternatively, hand-author eval cases directly under agents/inspector/.gepa/eval/.\n",
+        "Alternatively, hand-author eval cases directly under agents/reviewer/.gepa/eval/.\n",
       stderr: "",
       mined: 0,
       written: []
@@ -313,8 +313,8 @@ export async function runMineInspectorBugCorpus(
     return {
       exitCode: 0,
       stdout:
-        `gepa-mine-inspector: reviews directory not found at ${reviewsDir}.\n` +
-        "No seeds mined. Hand-author eval cases under agents/inspector/.gepa/eval/.\n",
+        `gepa-mine-reviewer: reviews directory not found at ${reviewsDir}.\n` +
+        "No seeds mined. Hand-author eval cases under agents/reviewer/.gepa/eval/.\n",
       stderr: "",
       mined: 0,
       written: []
@@ -332,7 +332,7 @@ export async function runMineInspectorBugCorpus(
     // Filter by week window
     if (!(await isWithinWeeks(abs, parsed.weeks))) continue;
 
-    stderr.push(`gepa-mine-inspector: processing ${f}\n`);
+    stderr.push(`gepa-mine-reviewer: processing ${f}\n`);
     const seed = await mineReviewArtifact(abs);
     if (seed) {
       seeds.push(seed);
@@ -343,8 +343,8 @@ export async function runMineInspectorBugCorpus(
     return {
       exitCode: 0,
       stdout:
-        `gepa-mine-inspector: no CRITICAL/HIGH rejected reviews found in the past ${parsed.weeks} weeks.\n` +
-        "Hand-author eval cases under agents/inspector/.gepa/eval/.\n",
+        `gepa-mine-reviewer: no CRITICAL/HIGH rejected reviews found in the past ${parsed.weeks} weeks.\n` +
+        "Hand-author eval cases under agents/reviewer/.gepa/eval/.\n",
       stderr: stderr.join(""),
       mined: 0,
       written: []
@@ -366,7 +366,7 @@ export async function runMineInspectorBugCorpus(
   }
 
   const stdout =
-    `gepa-mine-inspector: mined ${seeds.length} seed(s) from the past ${parsed.weeks} weeks.\n` +
+    `gepa-mine-reviewer: mined ${seeds.length} seed(s) from the past ${parsed.weeks} weeks.\n` +
     `Written to: ${parsed.out}\n` +
     `Files: ${written.map((w) => w.split(/[\\/]/).pop()).join(", ")}\n` +
     `\nNOTE: Seeds contain PLACEHOLDER diffs — operator must review and replace\n` +

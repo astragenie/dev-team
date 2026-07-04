@@ -27,13 +27,13 @@ If matched → light path:
 ```
 crew:dev-lite (mechanical 1-2 file edit, compressed diff receipt)
   ↓
-crew:inspector-lite (single review pass, auto-loads stack skill from diff extensions)
+crew:reviewer-lite (single review pass, auto-loads stack skill from diff extensions)
   ↓ PASS (decision: approved or approved_with_notes)
 mark-badge build_complete
 mark-badge inspected
 ```
 
-If `inspector-lite` returns `rejected` with reason `semantic complexity detected` → fall through to the standard ladder below (re-dispatch via FEAT tag).
+If `reviewer-lite` returns `rejected` with reason `semantic complexity detected` → fall through to the standard ladder below (re-dispatch via FEAT tag).
 
 If not matched → standard ladder below.
 
@@ -50,17 +50,17 @@ Routing table (inline):
 | stack:csharp                                        | crew:backend-dev    |
 | no clear tag                                        | crew:fullstack-dev  |
 
-After the builder returns PASS — parallel inspector fan-out:
+After the builder returns PASS — parallel reviewer fan-out:
 
-Dispatch Inspector A and Inspector B in a **single Agent-tool message** (two parallel invocations):
+Dispatch Reviewer A and Reviewer B in a **single Agent-tool message** (two parallel invocations):
 
-**Inspector A — stack-specific reviewer:**
-- diff contains `.cs` files → `crew:c-sharp-reviewer`
+**Reviewer A — stack-specific reviewer:**
+- diff contains `.cs` files → `crew:csharp-reviewer`
 - diff contains `.ts` files (no `.cs`) → `crew:typescript-reviewer`
 - no stack reviewer matches → **SKIP A** (no dispatch); promote B to `code-quality` lens
 
-**Inspector B — generalist + lens:**
-Always dispatched as `crew:inspector` with lens derived from FEAT concern tag:
+**Reviewer B — generalist + lens:**
+Always dispatched as `crew:reviewer` with lens derived from FEAT concern tag:
 - `concern:security` → `security` lens
 - `concern:perf` → `performance` lens
 - no concern tag or `concern:correctness` → `correctness` lens (default)
@@ -73,7 +73,7 @@ After both (or only B when A skipped) return their review-result artifacts:
   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge build_complete
   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge inspected
   ```
-- When A was skipped, `build_complete` requires only Inspector B to approve.
+- When A was skipped, `build_complete` requires only Reviewer B to approve.
 
 Run `/crew:ship` gates only on explicit user approval.
 

@@ -1,5 +1,5 @@
 /**
- * tests/gepa/mine-inspector-bug-corpus.test.ts — SLICE-103
+ * tests/gepa/mine-reviewer-bug-corpus.test.ts — SLICE-103
  *
  * Verifies the mining script CLI contract:
  *   - arg parsing (valid + invalid)
@@ -15,17 +15,17 @@ import { tmpdir } from "node:os";
 import { EvalCaseSchema } from "@astragenie/gepa-core";
 import {
   parseMineArgs,
-  runMineInspectorBugCorpus,
-  type InspectorEvalCase,
-  type InspectorEvalCaseNotes
-} from "../../scripts/lib/gepa/mine-inspector-bug-corpus.ts";
+  runMineReviewerBugCorpus,
+  type ReviewerEvalCase,
+  type ReviewerEvalCaseNotes
+} from "../../scripts/lib/gepa/mine-reviewer-bug-corpus.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 function tmpRepo(): string {
-  return mkdtempSync(join(tmpdir(), "mine-inspector-corpus-"));
+  return mkdtempSync(join(tmpdir(), "mine-reviewer-corpus-"));
 }
 
 /** Write a fake review artifact with a CRITICAL finding and rejected decision. */
@@ -59,11 +59,11 @@ const APPROVED_REVIEW = `
 // ---------------------------------------------------------------------------
 
 describe("SLICE-103 parseMineArgs", () => {
-  test("defaults: weeks=8, out=agents/inspector/.gepa/eval", () => {
+  test("defaults: weeks=8, out=agents/reviewer/.gepa/eval", () => {
     const repoPath = tmpRepo();
     const result = parseMineArgs([], repoPath);
     expect(result.weeks).toBe(8);
-    expect(result.out).toContain("inspector");
+    expect(result.out).toContain("reviewer");
     expect(result.out).toContain(".gepa");
     expect(result.out).toContain("eval");
     expect(result.invalid).toBeUndefined();
@@ -105,10 +105,10 @@ describe("SLICE-103 parseMineArgs", () => {
 // AC-5: --weeks 0 → exit 0, no files written, helpful message
 // ---------------------------------------------------------------------------
 
-describe("SLICE-103 runMineInspectorBugCorpus AC-5 (--weeks 0)", () => {
+describe("SLICE-103 runMineReviewerBugCorpus AC-5 (--weeks 0)", () => {
   test("exit 0 with helpful message, no files written", async () => {
     const repoPath = tmpRepo();
-    const result = await runMineInspectorBugCorpus(repoPath, ["--weeks", "0"]);
+    const result = await runMineReviewerBugCorpus(repoPath, ["--weeks", "0"]);
     expect(result.exitCode).toBe(0);
     expect(result.mined).toBe(0);
     expect(result.written).toHaveLength(0);
@@ -121,11 +121,11 @@ describe("SLICE-103 runMineInspectorBugCorpus AC-5 (--weeks 0)", () => {
 // Mining from review artifacts
 // ---------------------------------------------------------------------------
 
-describe("SLICE-103 runMineInspectorBugCorpus — mining", () => {
+describe("SLICE-103 runMineReviewerBugCorpus — mining", () => {
   test("missing reviews dir → exit 0 with helpful message, no seeds", async () => {
     const repoPath = tmpRepo();
     // No .claude/artifacts/crew/reviews/ directory
-    const result = await runMineInspectorBugCorpus(repoPath, ["--weeks", "8"]);
+    const result = await runMineReviewerBugCorpus(repoPath, ["--weeks", "8"]);
     expect(result.exitCode).toBe(0);
     expect(result.mined).toBe(0);
     expect(result.written).toHaveLength(0);
@@ -139,7 +139,7 @@ describe("SLICE-103 runMineInspectorBugCorpus — mining", () => {
 
     // --weeks 52 to ensure the file's mtime is within range
     const outDir = join(repoPath, "out");
-    const result = await runMineInspectorBugCorpus(repoPath, ["--weeks", "52", "--out", outDir]);
+    const result = await runMineReviewerBugCorpus(repoPath, ["--weeks", "52", "--out", outDir]);
     expect(result.exitCode).toBe(0);
     expect(result.mined).toBe(0);
   });
@@ -150,7 +150,7 @@ describe("SLICE-103 runMineInspectorBugCorpus — mining", () => {
     seedReviewArtifact(reviewsDir, "20260630T120000Z-review-critical.md", REJECTED_CRITICAL_REVIEW);
 
     const outDir = join(repoPath, "out-seeds");
-    const result = await runMineInspectorBugCorpus(repoPath, ["--weeks", "52", "--out", outDir]);
+    const result = await runMineReviewerBugCorpus(repoPath, ["--weeks", "52", "--out", outDir]);
 
     expect(result.exitCode).toBe(0);
     expect(result.mined).toBeGreaterThan(0);
@@ -161,11 +161,11 @@ describe("SLICE-103 runMineInspectorBugCorpus — mining", () => {
     for (const filePath of result.written) {
       const raw = readFileSync(filePath, "utf8").trim();
       // Each seed is a single JSONL line
-      const parsed = JSON.parse(raw) as InspectorEvalCase;
+      const parsed = JSON.parse(raw) as ReviewerEvalCase;
       // Minimal EvalCaseSchema compliance: id + input fields present
       const schemaCheck = EvalCaseSchema.safeParse(parsed);
       expect(schemaCheck.success).toBe(true);
-      // Inspector-specific: input must have diff and context
+      // Reviewer-specific: input must have diff and context
       expect(typeof parsed.input.diff).toBe("string");
       expect(typeof parsed.input.context).toBe("string");
       expect(parsed.input.diff.length).toBeGreaterThan(0);
@@ -174,7 +174,7 @@ describe("SLICE-103 runMineInspectorBugCorpus — mining", () => {
 
   test("invalid args → exit 1 with error message", async () => {
     const repoPath = tmpRepo();
-    const result = await runMineInspectorBugCorpus(repoPath, ["--weeks"]);
+    const result = await runMineReviewerBugCorpus(repoPath, ["--weeks"]);
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toMatch(/--weeks requires/i);
   });
@@ -185,7 +185,7 @@ describe("SLICE-103 runMineInspectorBugCorpus — mining", () => {
 // ---------------------------------------------------------------------------
 
 describe("SLICE-103 — hand-seeded corpus EvalCaseSchema validation", () => {
-  const evalDir = join(import.meta.dir, "../../agents/inspector/.gepa/eval");
+  const evalDir = join(import.meta.dir, "../../agents/reviewer/.gepa/eval");
 
   // The 10 canonical bug cases
   const expectedCases = [
@@ -206,7 +206,7 @@ describe("SLICE-103 — hand-seeded corpus EvalCaseSchema validation", () => {
       const { readFileSync } = await import("node:fs");
       const filePath = join(evalDir, filename);
       const raw = readFileSync(filePath, "utf8").trim();
-      const parsed = JSON.parse(raw) as InspectorEvalCase;
+      const parsed = JSON.parse(raw) as ReviewerEvalCase;
 
       // EvalCaseSchema compliance
       const schemaCheck = EvalCaseSchema.safeParse(parsed);
@@ -233,7 +233,7 @@ describe("SLICE-103 — hand-seeded corpus EvalCaseSchema validation", () => {
 
       // notes is a JSON string — parse it and check provenance
       expect(typeof parsed.notes).toBe("string");
-      const notes = JSON.parse(parsed.notes) as InspectorEvalCaseNotes;
+      const notes = JSON.parse(parsed.notes) as ReviewerEvalCaseNotes;
       expect(typeof notes.provenance).toBe("string");
       expect(notes.provenance.length).toBeGreaterThan(0);
     });
@@ -244,7 +244,7 @@ describe("SLICE-103 — hand-seeded corpus EvalCaseSchema validation", () => {
     let heldOutCount = 0;
     for (const filename of expectedCases) {
       const filePath = join(evalDir, filename);
-      const parsed = JSON.parse(readFileSync(filePath, "utf8").trim()) as InspectorEvalCase;
+      const parsed = JSON.parse(readFileSync(filePath, "utf8").trim()) as ReviewerEvalCase;
       if (parsed.held_out) heldOutCount++;
     }
     expect(heldOutCount).toBe(2);
@@ -255,8 +255,8 @@ describe("SLICE-103 — hand-seeded corpus EvalCaseSchema validation", () => {
     const classes = new Set<string | null>();
     for (const filename of expectedCases) {
       const filePath = join(evalDir, filename);
-      const parsed = JSON.parse(readFileSync(filePath, "utf8").trim()) as InspectorEvalCase;
-      const notes = JSON.parse(parsed.notes) as InspectorEvalCaseNotes;
+      const parsed = JSON.parse(readFileSync(filePath, "utf8").trim()) as ReviewerEvalCase;
+      const notes = JSON.parse(parsed.notes) as ReviewerEvalCaseNotes;
       classes.add(notes.bug_class);
     }
     // Corpus covers: logic-error, integration-failure, data-corruption,

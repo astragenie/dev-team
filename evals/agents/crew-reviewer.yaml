@@ -1,6 +1,6 @@
-prompt_id: inspector
+prompt_id: reviewer
 versions_under_test:
-  - file://agents/inspector.md
+  - file://agents/reviewer.md
 
 # SLICE-111 (FEAT-186 S2): daily budget enforcement for live judge runs.
 # Remove or set to a large value to disable effective capping.
@@ -9,7 +9,7 @@ versions_under_test:
 # omit to use the DEFAULT_PROVIDER_CEILINGS from evals/lib/meter.ts.
 budget:
   daily_cap_usd: 5.00
-  # persist_path: .claude/state/gepa-meter-inspector.json  # optional override
+  # persist_path: .claude/state/gepa-meter-reviewer.json  # optional override
   # provider_ceilings:
   #   groq: 0.03
 
@@ -37,9 +37,9 @@ validate_with:
 
 tests:
   - name: blocker-on-null-deref
-    fixture: file://evals/fixtures/inspector-null-deref.diff
+    fixture: file://evals/fixtures/reviewer-null-deref.diff
     assert:
-      # Inspector severity tokens are CRITICAL/HIGH/MEDIUM/LOW (agents/inspector.md:137).
+      # Reviewer severity tokens are CRITICAL/HIGH/MEDIUM/LOW (agents/reviewer.md:137).
       # `[BLOCKER]` was the legacy token; assertion updated 2026-06-29.
       - type: not-contains
         value: "[LOW]"
@@ -49,14 +49,14 @@ tests:
           (accessing .items on a variable that may be null because the null
           guard was removed), AND (b) tags it at a blocking severity. Blocking
           severities are `[CRITICAL]` AND `[HIGH]` — EITHER is acceptable.
-          Inspector severity map (per agents/inspector.md:137): CRITICAL is for
+          Reviewer severity map (per agents/reviewer.md:137): CRITICAL is for
           security / data loss; HIGH is for correctness / regression. Null
           deref legitimately fits HIGH (regression-class), so `[HIGH]` is a
           PASS, not a FAIL. Only fail when the finding is tagged `[MEDIUM]`,
           `[LOW]`, or no severity tag at all.
 
   - name: no-blocker-on-clean-rename
-    fixture: file://evals/fixtures/inspector-clean-rename.diff
+    fixture: file://evals/fixtures/reviewer-clean-rename.diff
     assert:
       - type: not-contains
         value: "[CRITICAL]"

@@ -183,4 +183,4 @@ Related skills (consult on demand):
 
 - `superpowers:test-driven-development` — for creating the failing test case (Phase 4 Step 1).
 - `superpowers:verification-before-completion` — verify fix worked before claiming success.
-- `agents/inspector.md` — review lens for band-aid detection rules.
+- `agents/reviewer.md` — review lens for band-aid detection rules.

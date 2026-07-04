@@ -34,7 +34,7 @@ Builders do NOT write handoff artifacts. Return shape (before final response, ev
 
 Load `skills/universal/builder-mindset/` for senior engineer mindset (4 questions), Astra delivery principles, SOLID/DRY/YAGNI judgment, code-review heuristics, anti-pattern refusal, Architecture decisions + ADR awareness, TDD policy, Systematic debugging. Stack-specific aiplugin addenda below.
 
-aiplugin-specific side effects (question 3 of senior mindset): downstream agents loading skills + delegating to peers; validator gates (`validate-agents.ts` / `validate-skills.ts` / `validate-manifests.ts`); inspector lens behavior; routing-table consistency.
+aiplugin-specific side effects (question 3 of senior mindset): downstream agents loading skills + delegating to peers; validator gates (`validate-agents.ts` / `validate-skills.ts` / `validate-manifests.ts`); reviewer lens behavior; routing-table consistency.
 
 aiplugin-specific Astra additions: multi-plugin namespace + identity discipline (consumers install multiple plugins); runtime-path observability only (prompt edits / skill edits / docs skip ceremony).
 

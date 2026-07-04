@@ -161,7 +161,7 @@ describe("workflow-config loader", () => {
     const result = WorkflowPhaseSchema.safeParse({
       role: "reviewer",
       parallel_dispatch: {
-        group: ["crew:inspector", "crew:inspector", "crew:verifier"],
+        group: ["crew:reviewer", "crew:reviewer", "crew:verifier"],
         policy: "wait_for_all",
         halt_on: "any_FAIL"
       },

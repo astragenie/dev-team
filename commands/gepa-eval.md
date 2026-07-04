@@ -14,7 +14,7 @@ Run the eval suite for a single agent under a `fileLockManager` lock (from `@ast
 ```
 
 Flags:
-- `<agent>` — required. Agent name (e.g. `fullstack-dev`, `inspector`, `verifier`).
+- `<agent>` — required. Agent name (e.g. `fullstack-dev`, `reviewer`, `verifier`).
 - `--live` — actually call the judge (vs. dry-run mode). Default: dry-run.
 - `--judge <name>` — override the judge configured in `evals/agents/<agent>.yaml`.
 - `--validate` — fire validate_with chain (cross-judge disagreement detection).

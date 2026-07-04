@@ -1,14 +1,14 @@
 /**
- * tests/gepa/eval-inspector-no-circularity.test.ts — SLICE-103
+ * tests/gepa/eval-reviewer-no-circularity.test.ts — SLICE-103
  *
- * AC-4: Asserts that the inspector eval pipeline uses rubricScorer (gepa-core)
+ * AC-4: Asserts that the reviewer eval pipeline uses rubricScorer (gepa-core)
  * and NOT a self-grading circular judge. Specifically:
  *
  *   1. rubricScorer is imported from @astragenie/gepa-core (not a local scorer).
- *   2. The scoring path does NOT call crew:inspector to evaluate inspector output.
- *   3. No "scorer_circular" or "inspector_grades_inspector" warning is emitted.
+ *   2. The scoring path does NOT call crew:reviewer to evaluate reviewer output.
+ *   3. No "scorer_circular" or "reviewer_grades_reviewer" warning is emitted.
  *   4. The rubric file parses to ≥6 criteria (loadRubric works).
- *   5. The eval spec judge provenance is NOT "crew:inspector".
+ *   5. The eval spec judge provenance is NOT "crew:reviewer".
  */
 
 import { describe, expect, test } from "bun:test";
@@ -23,8 +23,8 @@ import {
 import type { AgentRun } from "@astragenie/gepa-core";
 
 const REPO_ROOT = join(import.meta.dir, "../..");
-const RUBRIC_PATH = join(REPO_ROOT, "agents", "inspector", ".gepa", "rubric.md");
-const INSPECTOR_SPEC_PATH = join(REPO_ROOT, "evals", "agents", "crew-inspector.yaml");
+const RUBRIC_PATH = join(REPO_ROOT, "agents", "reviewer", ".gepa", "rubric.md");
+const REVIEWER_SPEC_PATH = join(REPO_ROOT, "evals", "agents", "crew-reviewer.yaml");
 
 // ---------------------------------------------------------------------------
 // Minimal LLMJudge mock factory (satisfies the full interface)
@@ -52,9 +52,9 @@ function makeMockJudge(opts: {
 /** Minimal valid AgentRun for scoring tests. */
 function makeAgentRun(rawOutput: string): AgentRun {
   return {
-    agent: "inspector",
-    candidate_prompt_path: "agents/inspector.md",
-    case_id: "inspector-bug-001",
+    agent: "reviewer",
+    candidate_prompt_path: "agents/reviewer.md",
+    case_id: "reviewer-bug-001",
     raw_output: rawOutput,
     cost_usd: 0,
     latency_ms: 100,
@@ -78,11 +78,11 @@ describe("SLICE-103 AC-4 — scorer circularity prevention", () => {
     expect(typeof scorer.score).toBe("function");
   });
 
-  test("judge describe() for a forbidden self-grading id returns crew:inspector", () => {
+  test("judge describe() for a forbidden self-grading id returns crew:reviewer", () => {
     // This test verifies the mock-judge shape works with rubricScorer.
     // The actual anti-circularity gate is enforced by the spec file check below.
-    const selfJudge = makeMockJudge({ id: "crew:inspector" });
-    expect(selfJudge.describe().provider).toBe("crew:inspector");
+    const selfJudge = makeMockJudge({ id: "crew:reviewer" });
+    expect(selfJudge.describe().provider).toBe("crew:reviewer");
     // rubricScorer accepts any LLMJudge — circularity is a configuration concern,
     // not a runtime panic. The spec file test below guards the real pipeline.
     const scorer = rubricScorer(selfJudge);
@@ -90,15 +90,15 @@ describe("SLICE-103 AC-4 — scorer circularity prevention", () => {
     expect(typeof scorer.score).toBe("function");
   });
 
-  test("eval spec judge provider is NOT 'crew:inspector'", async () => {
+  test("eval spec judge provider is NOT 'crew:reviewer'", async () => {
     const { parse: parseYaml } = await import("yaml");
     let specContent: string;
     try {
-      specContent = readFileSync(INSPECTOR_SPEC_PATH, "utf8");
+      specContent = readFileSync(REVIEWER_SPEC_PATH, "utf8");
     } catch {
       // Spec file must exist — fail test if missing
       throw new Error(
-        `Inspector eval spec not found at ${INSPECTOR_SPEC_PATH}. ` +
+        `Reviewer eval spec not found at ${REVIEWER_SPEC_PATH}. ` +
           "Run the eval scaffold to create it."
       );
     }
@@ -107,28 +107,28 @@ describe("SLICE-103 AC-4 — scorer circularity prevention", () => {
       validate_with?: Array<{ provider: string }>;
     };
 
-    // Primary judge must NOT be crew:inspector
+    // Primary judge must NOT be crew:reviewer
     const primaryProvider = spec.judge?.provider ?? "";
-    expect(primaryProvider).not.toBe("crew:inspector");
-    expect(primaryProvider).not.toContain("inspector");
+    expect(primaryProvider).not.toBe("crew:reviewer");
+    expect(primaryProvider).not.toContain("reviewer");
 
-    // validate_with chain must NOT contain crew:inspector
+    // validate_with chain must NOT contain crew:reviewer
     for (const v of spec.validate_with ?? []) {
-      expect(v.provider).not.toBe("crew:inspector");
-      expect(v.provider).not.toContain("inspector_grades");
+      expect(v.provider).not.toBe("crew:reviewer");
+      expect(v.provider).not.toContain("reviewer_grades");
     }
   });
 
   test("no 'scorer_circular' substring in eval spec", () => {
     let specContent: string;
     try {
-      specContent = readFileSync(INSPECTOR_SPEC_PATH, "utf8");
+      specContent = readFileSync(REVIEWER_SPEC_PATH, "utf8");
     } catch {
       // Missing spec is a separate failure; skip this assertion
       return;
     }
     expect(specContent).not.toContain("scorer_circular");
-    expect(specContent).not.toContain("inspector_grades_inspector");
+    expect(specContent).not.toContain("reviewer_grades_reviewer");
   });
 });
 
@@ -184,7 +184,7 @@ describe("SLICE-103 — rubric.md structure", () => {
 // ---------------------------------------------------------------------------
 
 describe("SLICE-103 — circularity detection simulation", () => {
-  test("rubricScorer score() invokes judge.evaluate(), not a recursive inspector call", async () => {
+  test("rubricScorer score() invokes judge.evaluate(), not a recursive reviewer call", async () => {
     const judgeCallLog: string[] = [];
     const mockJudge: LLMJudge = {
       evaluate: async (_evalOpts) => {
@@ -215,7 +215,7 @@ describe("SLICE-103 — circularity detection simulation", () => {
     );
 
     const expected = {
-      id: "inspector-bug-001",
+      id: "reviewer-bug-001",
       input: null as unknown,
       held_out: false,
       rubric: [
@@ -229,7 +229,7 @@ describe("SLICE-103 — circularity detection simulation", () => {
 
     const result = await scorer.score(run, expected);
 
-    // Judge was called (not crew:inspector)
+    // Judge was called (not crew:reviewer)
     expect(judgeCallLog).toContain("judge.evaluate called");
     expect(judgeCallLog.length).toBe(1);
 
@@ -239,13 +239,13 @@ describe("SLICE-103 — circularity detection simulation", () => {
 
     // No circular warning in rationale
     expect(result.rationale).not.toContain("scorer_circular");
-    expect(result.rationale).not.toContain("inspector_grades_inspector");
+    expect(result.rationale).not.toContain("reviewer_grades_reviewer");
   });
 
-  test("describe() on a non-circular judge returns a non-inspector provider", () => {
+  test("describe() on a non-circular judge returns a non-reviewer provider", () => {
     const judge = makeMockJudge({ id: "groq:llama-3.3-70b" });
     const { provider } = judge.describe();
-    expect(provider).not.toContain("inspector");
-    expect(provider).not.toBe("crew:inspector");
+    expect(provider).not.toContain("reviewer");
+    expect(provider).not.toBe("crew:reviewer");
   });
 });

@@ -66,8 +66,8 @@ describe("FEAT-186 S3 — aggregateJudgeCost", () => {
 
   test("today's pre-S2 eval-run shape (no judgeCost) returns empty rows but counts files", async () => {
     const repoRoot = makeTmpRepo();
-    await writeRunFile(repoRoot, "2026-06-29T19-07-56-053Z-inspector.json", {
-      promptId: "inspector",
+    await writeRunFile(repoRoot, "2026-06-29T19-07-56-053Z-reviewer.json", {
+      promptId: "reviewer",
       judgeId: "groq:llama-3.3-70b-versatile",
       tests: [
         { name: "case1", pass: true, asserts: [] },
@@ -81,8 +81,8 @@ describe("FEAT-186 S3 — aggregateJudgeCost", () => {
 
   test("post-S2 eval-run shape (judgeCost per test) aggregates correctly", async () => {
     const repoRoot = makeTmpRepo();
-    await writeRunFile(repoRoot, "2026-06-29T19-07-56-053Z-inspector.json", {
-      promptId: "inspector",
+    await writeRunFile(repoRoot, "2026-06-29T19-07-56-053Z-reviewer.json", {
+      promptId: "reviewer",
       judgeId: "groq:llama-3.3-70b-versatile",
       tests: [
         {
@@ -115,7 +115,7 @@ describe("FEAT-186 S3 — aggregateJudgeCost", () => {
 
   test("gepa trials aggregated by judge_id", async () => {
     const repoRoot = makeTmpRepo();
-    await writeTrialsFile(repoRoot, "inspector.jsonl", [
+    await writeTrialsFile(repoRoot, "reviewer.jsonl", [
       {
         trial_id: "t1",
         judge_id: "ollama:llama3.1:8b",
@@ -168,13 +168,13 @@ describe("FEAT-186 S3 — aggregateJudgeCost", () => {
 
   test("slice window filters runs by filename timestamp", async () => {
     const repoRoot = makeTmpRepo();
-    await writeRunFile(repoRoot, "2026-06-20T10-00-00-000Z-inspector.json", {
-      promptId: "inspector",
+    await writeRunFile(repoRoot, "2026-06-20T10-00-00-000Z-reviewer.json", {
+      promptId: "reviewer",
       judgeId: "groq:llama-3.3-70b-versatile",
       tests: [{ name: "old", pass: true, asserts: [], judgeCost: { usd: 0.01, latency_ms: 100 } }]
     });
-    await writeRunFile(repoRoot, "2026-06-29T10-00-00-000Z-inspector.json", {
-      promptId: "inspector",
+    await writeRunFile(repoRoot, "2026-06-29T10-00-00-000Z-reviewer.json", {
+      promptId: "reviewer",
       judgeId: "groq:llama-3.3-70b-versatile",
       tests: [{ name: "new", pass: true, asserts: [], judgeCost: { usd: 0.02, latency_ms: 200 } }]
     });

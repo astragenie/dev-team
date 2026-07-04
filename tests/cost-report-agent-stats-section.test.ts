@@ -44,7 +44,7 @@ test("AC-T2: 7 agents → table shows top-5 by sample_count desc with header + s
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "cost-report-stats-"));
   const rows: AgentStatsRow[] = [
     mkRow("crew:fullstack-dev", 12),
-    mkRow("crew:inspector", 8),
+    mkRow("crew:reviewer", 8),
     mkRow("crew:verifier", 7),
     mkRow("crew:backend-dev", 4),
     mkRow("crew:frontend-dev", 2),
@@ -65,10 +65,10 @@ test("AC-T2: 7 agents → table shows top-5 by sample_count desc with header + s
   assert.ok(md.includes("| Agent | N |"), "table header present");
   assert.ok(md.includes("|---|---:|"), "alignment row present");
 
-  // Top 5 by sample_count desc: 12, 9, 8, 7, 4 → fullstack-dev, document-writer, inspector, verifier, backend-dev
+  // Top 5 by sample_count desc: 12, 9, 8, 7, 4 → fullstack-dev, document-writer, reviewer, verifier, backend-dev
   assert.ok(md.includes("| crew:fullstack-dev | 12 |"), "rank 1");
   assert.ok(md.includes("| crew:document-writer | 9 |"), "rank 2");
-  assert.ok(md.includes("| crew:inspector | 8 |"), "rank 3");
+  assert.ok(md.includes("| crew:reviewer | 8 |"), "rank 3");
   assert.ok(md.includes("| crew:verifier | 7 |"), "rank 4");
   assert.ok(md.includes("| crew:backend-dev | 4 |"), "rank 5");
 
@@ -111,7 +111,7 @@ test("AC-T4: regex extension — `rejected` review decision counts toward rework
   await fs.mkdir(reviewsDir, { recursive: true });
   await fs.writeFile(
     path.join(reviewsDir, "review-slice-z01.md"),
-    `---\nkind: review-result\nslice: SLICE-Z01\nreviewer: crew:inspector\nverdict: REJECTED\n---\n# Review\nRejected.\n`
+    `---\nkind: review-result\nslice: SLICE-Z01\nreviewer: crew:reviewer\nverdict: REJECTED\n---\n# Review\nRejected.\n`
   );
   const dispatchSeed = path.join(tmp, "dispatch.jsonl");
   await fs.writeFile(

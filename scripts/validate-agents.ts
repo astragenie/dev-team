@@ -212,7 +212,7 @@ function checkPeerDispatchSection(
     return; // no point checking sub-structure if heading absent
   }
   // Must have at least one whitelist entry (a bullet under the heading).
-  // Tightened (FEAT-163 SLICE-73 inspector MEDIUM): split `afterPeerDispatch`
+  // Tightened (FEAT-163 SLICE-73 reviewer MEDIUM): split `afterPeerDispatch`
   // at the "MUST NOT dispatch" boundary so that backtick-formatted blacklist
   // entries do NOT satisfy the whitelist-entry check. Only the content BEFORE
   // the blacklist region is tested for "- `peer`" bullets.
@@ -254,8 +254,8 @@ const EVALS_REQUIRED_AGENT_NAMES = new Set([
   "backend-dev", // builder
   "frontend-dev", // builder
   "refactor", // builder (transform)
-  "inspector", // reviewer
-  "inspector-verifier", // reviewer + validator
+  "reviewer", // reviewer
+  "reviewer-verifier", // reviewer + validator
   "verifier", // validator
   "integrator", // validator (merge gate)
   "release-engineer" // deployer
@@ -297,7 +297,7 @@ function checkEvalsRequiredForRole(fm: Record<string, string>, label: string, er
 // flagged these as the highest TaskUpdate cache-prime contributors.
 const TASK_UPDATE_BATCHING_REQUIRED = new Set([
   "fullstack-dev",
-  "inspector",
+  "reviewer",
   "verifier",
   "architect"
 ]);
@@ -329,7 +329,7 @@ const BASH_COALESCING_REQUIRED = new Set([
   "fullstack-dev",
   "backend-dev",
   "frontend-dev",
-  "inspector",
+  "reviewer",
   "verifier",
   "architect",
   "release-engineer",
@@ -368,7 +368,7 @@ const NO_BACKLOG_IDS_REQUIRED = new Set([
   "frontend-dev",
   "fullstack-dev",
   "aiplugin-dev",
-  "inspector"
+  "reviewer"
 ]);
 
 function checkNoBacklogIds(
@@ -398,8 +398,8 @@ const NO_LEAD_REF_REQUIRED = new Set([
   "backend-dev",
   "frontend-dev",
   "aiplugin-dev",
-  "inspector",
-  "inspector-verifier",
+  "reviewer",
+  "reviewer-verifier",
   "verifier",
   "integrator",
   "release-engineer",
@@ -411,10 +411,10 @@ const NO_LEAD_REF_REQUIRED = new Set([
   "performance-engineer",
   "uxdesigner",
   "parallel-runner",
-  "c-sharp-reviewer",
+  "csharp-reviewer",
   "typescript-reviewer",
   "dev-lite",
-  "inspector-lite"
+  "reviewer-lite"
 ]);
 
 function checkNoLeadRef(text: string, fm: Record<string, string>, label: string, errors: string[]) {

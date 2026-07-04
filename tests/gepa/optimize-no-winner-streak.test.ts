@@ -76,10 +76,10 @@ describe("SLICE-99 AC-7 — streak tracker unit", () => {
     incrementStreak("fullstack-dev", { repoPath, streakPath });
     incrementStreak("fullstack-dev", { repoPath, streakPath });
     incrementStreak("fullstack-dev", { repoPath, streakPath });
-    // Inspector is unaffected.
-    const inspectorCheck = checkStreakHalt("inspector", { repoPath, streakPath });
-    expect(inspectorCheck.halted).toBe(false);
-    expect(inspectorCheck.streak).toBe(0);
+    // Reviewer is unaffected.
+    const reviewerCheck = checkStreakHalt("reviewer", { repoPath, streakPath });
+    expect(reviewerCheck.halted).toBe(false);
+    expect(reviewerCheck.streak).toBe(0);
   });
 });
 

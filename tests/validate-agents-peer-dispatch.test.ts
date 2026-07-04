@@ -143,7 +143,7 @@ You are a refactor agent on a Claude Code engineering team.
 
 ## Integration with Other Agents
 
-- Receive sweep scope from inspector.
+- Receive sweep scope from reviewer.
 
 ## Report contract
 
@@ -295,7 +295,7 @@ Write your handoff.
   });
 });
 
-// ── Regex tightening regression case (FEAT-163 SLICE-73 inspector MEDIUM) ────
+// ── Regex tightening regression case (FEAT-163 SLICE-73 reviewer MEDIUM) ────
 //
 // Prior regex matched backtick bullets ANYWHERE in the post-heading content,
 // including in the blacklist region. This test verifies the tightened split:
@@ -681,7 +681,7 @@ ${whitelist}
 
 You MUST NOT dispatch:
 
-- \`inspector\`, \`inspector-verifier\`, \`verifier\` — review and validation gates; orchestrator-only.
+- \`reviewer\`, \`reviewer-verifier\`, \`verifier\` — review and validation gates; orchestrator-only.
 - \`lead\`, \`refactor\`, \`integrator\`, \`parallel-runner\` — orchestration roles.
 
 Dispatch budget per slice: max 2 peer dispatches.

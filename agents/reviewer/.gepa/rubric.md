@@ -1,6 +1,6 @@
-# Inspector Eval Rubric
+# Reviewer Eval Rubric
 
-Loaded by `loadRubric("agents/inspector/.gepa/rubric.md")` in gepa-core.
+Loaded by `loadRubric("agents/reviewer/.gepa/rubric.md")` in gepa-core.
 Each section is a scoring criterion used by `rubricScorer`.
 Anchors are written so any LLM (not just Claude) can apply them — they
 reference observable output properties, not subjective style preferences.
@@ -9,18 +9,18 @@ reference observable output properties, not subjective style preferences.
 
 ## verdict-accuracy
 
-Measures whether the inspector's verdict (approve / approve_with_notes / reject)
+Measures whether the reviewer's verdict (approve / approve_with_notes / reject)
 matches the expected verdict for the input diff.
 
-- **3**: Verdict exactly matches expected AND the inspector's stated rationale
+- **3**: Verdict exactly matches expected AND the reviewer's stated rationale
   is consistent with the verdict (no contradictory hedging that would reverse
   a reasonable reader's interpretation).
 - **2**: Verdict matches expected but rationale is thin, generic, or partially
   inconsistent — the right call was made but for a weak reason.
-- **1**: Verdict does not match expected but the inspector identified the
+- **1**: Verdict does not match expected but the reviewer identified the
   correct class of concern (e.g., flagged a real bug but only as "LOW" when
   expected verdict was "reject" for a CRITICAL bug).
-- **0**: Verdict contradicts expected AND the inspector either missed the bug
+- **0**: Verdict contradicts expected AND the reviewer either missed the bug
   entirely or mis-classified it in a way that would let a dangerous change
   through (false negative on a rejection-class bug).
 
@@ -28,7 +28,7 @@ matches the expected verdict for the input diff.
 
 ## evidence-citation-correctness
 
-Measures whether the inspector cited concrete, accurate evidence from the
+Measures whether the reviewer cited concrete, accurate evidence from the
 diff to support its findings (e.g., file name, line reference, code snippet).
 
 - **3**: All major findings reference specific lines, function names, or code
@@ -36,16 +36,16 @@ diff to support its findings (e.g., file name, line reference, code snippet).
   fabricated references.
 - **2**: Most findings have specific citations; one finding is vague or uses
   a generic description ("somewhere in the code") without a line reference.
-- **1**: Findings present but most lack specific citations; the inspector
+- **1**: Findings present but most lack specific citations; the reviewer
   describes symptoms without tying them to observable diff locations.
-- **0**: No concrete citations, or the inspector invents evidence not present
+- **0**: No concrete citations, or the reviewer invents evidence not present
   in the diff (hallucinated file names, fabricated line numbers).
 
 ---
 
 ## risk-class-named
 
-Measures whether the inspector names the correct risk category for each
+Measures whether the reviewer names the correct risk category for each
 finding. Risk classes: logic-error, integration-failure, data-corruption,
 timeout, permission, resource-exhaustion, external-dep, security, perf, race.
 
@@ -63,7 +63,7 @@ timeout, permission, resource-exhaustion, external-dep, security, perf, race.
 
 ## rationale-actionability
 
-Measures whether the inspector's rationale gives the author enough information
+Measures whether the reviewer's rationale gives the author enough information
 to fix the issue — not just that something is wrong, but what to do.
 
 - **3**: Rationale names the fix (e.g., "restore the null guard removed at
@@ -82,11 +82,11 @@ to fix the issue — not just that something is wrong, but what to do.
 
 ## escalation-appropriateness
 
-Measures whether the inspector's severity tag matches the risk profile of
+Measures whether the reviewer's severity tag matches the risk profile of
 the finding. Severity tags: [CRITICAL], [HIGH], [MEDIUM], [LOW].
 
 - **3**: Severity tag matches the expected severity in the eval case
-  exactly, OR the inspector uses a tag within one tier of the expected
+  exactly, OR the reviewer uses a tag within one tier of the expected
   severity AND the rationale justifies the choice.
 - **2**: Severity is one tier off from expected in a non-dangerous direction
   (e.g., tagged [MEDIUM] when [HIGH] was expected — conservative but not
@@ -100,7 +100,7 @@ the finding. Severity tags: [CRITICAL], [HIGH], [MEDIUM], [LOW].
 
 ## false-positive-rate
 
-Measures whether the inspector avoids raising findings on safe changes
+Measures whether the reviewer avoids raising findings on safe changes
 (clean refactors, renames, doc-only edits). Only meaningful on "clean"
 eval cases where the expected verdict is approve or approve_with_notes.
 
@@ -111,5 +111,5 @@ eval cases where the expected verdict is approve or approve_with_notes.
   justified either.
 - **1**: One HIGH finding raised on a clean change (false positive at
   blocking severity — incorrect escalation).
-- **0**: CRITICAL finding raised on a clean change, OR inspector rejects
+- **0**: CRITICAL finding raised on a clean change, OR reviewer rejects
   a diff that should have been approved, with no substantive rationale.

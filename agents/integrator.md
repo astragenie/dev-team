@@ -143,5 +143,5 @@ Skill is your procedure — read it once; do not re-read between steps. Don't Re
 
 - Receive PASS handoffs from backend-dev and frontend-dev
 - Consume API contract from backend-dev; consume FE client from frontend-dev
-- Hand E2E artifact to verifier and inspector for downstream gates
+- Hand E2E artifact to verifier and reviewer for downstream gates
 - Coordinate wire-up perf measurements with performance-engineer
