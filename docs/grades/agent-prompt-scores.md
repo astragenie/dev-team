@@ -37,12 +37,19 @@ Sorted ascending = attack order.
 | typescript-reviewer | 1.0.0 | 10 | 9 | 9 | 10 | 9 | 7 | 7 | 9 | **9.0** | twin of csharp-reviewer, same duplication + Peer-dispatch-section gaps |
 | refactor | 3.0.0 | 10 | 10 | 10 | 10 | 9 | 9 | 9 | 6 | **9.2** | maxTurns 30, no maxMinutes, no rationale vs fleet baseline; "~90% confidence" trigger is soft |
 
+## Pass 1 — 2026-07-05, cross-fleet mechanical reds (fixed)
+
+- Systemic #1 stale-ref "(dispatcher role removed)" removed from qa-expert 1.0.1, document-writer 1.0.1, uxdesigner 1.0.1, release-engineer 1.3.1.
+- Systemic #2 CLI canonicalized (`${CLAUDE_PLUGIN_ROOT}` + `--repo "$PWD"`): integrator 1.0.1 stub, release-engineer 1.3.1 stub, verifier 1.0.1 (also resolved verifier's dual FIRST-call contradiction — HARD OUTPUT CONTRACT now sole owner of the scaffold command; verifier's ⚠cap lifts on regrade).
+- Systemic #4 reviewer-verifier: escalated needs-human (see below), NOT swept.
+- validate-agents: PASS fleet-wide after pass.
+
 ## Cross-fleet systemic findings (fix once, propagate)
 
 1. **stale-ref "(dispatcher role removed),"** — qa-expert:95, document-writer:175, release-engineer:276, uxdesigner:193 (architect + refactor + performance-engineer already cleaned). One search-replace pass.
 2. **CLI style split** — stub-on-entry calls use relative `node scripts/crew.ts` without `--repo` in integrator:51, release-engineer:47, verifier:78 (verifier also uses undefined `$REPO`). Canonical: `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" ... --repo "$PWD"`.
 3. **Peer-dispatch boilerplate** (dispatch purity + final-tool-call invariant, ~20 lines) duplicated near-verbatim across ≥8 agents — extract to shared skill (governance decision: which skill owns it).
-4. **`reviewer-verifier` ghost** — named in performance-engineer:137 + skills/workflow/dispatcher-routing/SKILL.md:41 but agent doesn't exist post-v0.49 rename.
+4. **`reviewer-verifier` ghost** — named in 9 agent files + skills/workflow/dispatcher-routing/SKILL.md but no such agent exists. **needs-human**: commit 0c07e69 (v0.49 rename) deliberately mapped `inspector-verifier` refs → `reviewer-verifier` per "approved open question 3" — either a future combined agent is planned (keep refs) or the intent was reviewer-lite (sweep + fix dispatcher-routing's "combined review+validate" row, which reviewer-lite does NOT satisfy). Governance decision, not mechanical.
 5. **Agent tool granted without `## Peer dispatch` section** — researcher (worst: discusses delegating), csharp-reviewer, typescript-reviewer.
 6. **Budget-field inconsistency** — document-writer has none; integrator/researcher/refactor/dev-lite lack maxMinutes; release-engineer 380 + reviewer 360 exceed 350 default without inline justification.
 7. **Light-tier trigger taxonomy** defined independently in dev-lite + reviewer-lite — already drifting.

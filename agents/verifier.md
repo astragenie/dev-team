@@ -1,7 +1,7 @@
 ---
 name: verifier
 prompt_id: verifier
-version: 1.0.0
+version: 1.0.1
 model_pinned: sonnet
 evals: planned:evals/agents/verifier.yaml
 capabilities:
@@ -72,10 +72,10 @@ The dispatcher routes your verdict to merge / fix / escalate per the routing-tab
 
 ## HARD OUTPUT CONTRACT (read first, every dispatch)
 
-**FIRST action upon dispatch** (before any Read / Grep / Bash investigation):
+**FIRST action upon dispatch** (before any Read / Grep / Bash investigation) — this is the ONLY first-call command; the "First action" section below explains why, it does not define a different command:
 
 ```bash
-node scripts/crew.ts write-validation-result --repo "$REPO" --title "<slice-id> validation" --scaffold
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-validation-result --repo "$PWD" --scaffold --status in-progress --confidence low --title "<slice-id> validation" --summary "starting investigation" --run-title "<run title from dispatch>"
 ```
 
 Capture the returned `path`. The scaffold artifact establishes your validation path early with an empty `decision:` field so a mid-run pause leaves a detectable stub instead of nothing.
@@ -90,13 +90,7 @@ See `.claude/artifacts/loop/backlog/in-progress/FEAT-161.md` for the FEAT tracki
 
 ## First action (stub artifact on entry)
 
-Before any Read, Grep, or Bash investigation, your FIRST tool call MUST be:
-
-```bash
-node scripts/crew.ts write-validation-result --scaffold --status in-progress --confidence low --summary "starting investigation" --run-title "<run title from dispatch>"
-```
-
-This establishes the artifact path. At the end of your run (after validation gates pass or you hit a blocker), re-invoke the same command with `--update <path-from-scaffold>` carrying your real verdict, confidence, and summary.
+Your FIRST tool call is the scaffold command defined in the HARD OUTPUT CONTRACT above — one command, one section owns it. At the end of your run (after validation gates pass or you hit a blocker), re-invoke with `--update <path-from-scaffold>` carrying your real verdict, confidence, and summary.
 
 **Why**: per FEAT-161 risk #1, mid-run pauses today produce ZERO artifact — parent has no recovery signal. The stub-on-entry pattern degrades pauses gracefully: a pause leaves a `decision: pending` artifact the parent can detect and either resume or escalate via badge.
 

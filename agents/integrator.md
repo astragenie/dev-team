@@ -1,7 +1,7 @@
 ---
 name: integrator
 prompt_id: integrator
-version: 1.0.0
+version: 1.0.1
 model_pinned: sonnet
 evals: planned:evals/agents/integrator.yaml
 capabilities:
@@ -48,7 +48,7 @@ See `.claude/artifacts/loop/backlog/in-progress/FEAT-161.md` for the FEAT tracki
 Before any Read, Grep, or Bash investigation, your FIRST tool call MUST be:
 
 ```bash
-node scripts/crew.ts write-handoff --scaffold --status in-progress --confidence low --summary "starting investigation" --run-title "<run title from dispatch>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff --repo "$PWD" --scaffold --status in-progress --confidence low --summary "starting investigation" --run-title "<run title from dispatch>"
 ```
 
 This establishes the artifact path. At the end of your run (after smoke gate passes or you hit a blocker), re-invoke the same command with `--update <path-from-scaffold>` carrying your real verdict, confidence, and summary.

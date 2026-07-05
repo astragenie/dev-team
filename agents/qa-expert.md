@@ -1,7 +1,7 @@
 ---
 name: qa-expert
 prompt_id: qa-expert
-version: 1.0.0
+version: 1.0.1
 model_pinned: sonnet
 capabilities:
   role: [reviewer]
@@ -92,7 +92,7 @@ You MUST NOT dispatch:
   not invoke implementers; surface gaps in the report for the dispatcher to route.
 - `reviewer`, `reviewer-verifier`, `verifier`, `release-engineer` — review and
   validation gates; dispatched exclusively by the orchestrator (loop walker).
-- (dispatcher role removed), `refactor`, `integrator`, `parallel-runner` — orchestration roles; not
+- `refactor`, `integrator`, `parallel-runner` — orchestration/implementation roles; not
   appropriate as peer targets from a QA session.
 - `architect`, `uxdesigner` — upstream design roles; QA consumes their output,
   not the other way around.
