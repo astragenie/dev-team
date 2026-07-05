@@ -1,12 +1,12 @@
 version: 1.0.0
-# Agents intentionally referenced before they exist. Every entry must carry
-# documented registry-fallback handling at its reference sites (see
-# commands/orchestrate-slice.md, skills/workflow/dispatcher-routing,
-# skills/workflow/risk-tier). Single source — validate-agent-refs.ts and
-# validate-configs.ts both read this list. Never add a name to silence a typo.
-forward_references:
-  - reviewer-validator
-  - reviewer-verifier
+# Agents intentionally referenced before they exist, each with documented
+# registry-fallback handling at its reference sites. Single source —
+# validate-agent-refs.ts and validate-configs.ts both read this list. Never add
+# a name to silence a typo. Currently empty: the former combined LOW-tier
+# `reviewer-validator`/`reviewer-verifier` agent was permanently superseded by
+# `reviewer` + `verifier` concurrent dispatch (2026-07-04, arch-review §2.1), so
+# it is no longer a forward reference — every reference to it was removed.
+forward_references: []
 rows:
   - section: builder-matrix
     signal: "`surface:ui` OR `stack:react` only"
@@ -108,6 +108,18 @@ rows:
     signal: "**Parallel autonomous-safe feature execution** (run multiple triaged FEATs simultaneously in isolated worktrees)"
     route_to: "`/crew:parallel` skill (Path A, FEAT-136)"
     notes: Use `/crew:parallel [--max-features N]`. Creates one git worktree per FEAT, resolves the loop CLI path, calls `loop dispatch prepare` to spawn worktrees, then dispatches `crew:build` per worktree **in one parallel Agent block** (no `parallel-runner` agent involved—Path A avoids hook conflicts). Each `crew:build` runs the per-worktree slice ceremony inline. After all agents return, calls `loop dispatch finalize` to merge DONE children to main in priority order. Conflicted branches left alive for manual resolution.
+  - section: workflow-signals
+    signal: "**Light-tier mechanical build** (≤2 files, ≤50 LOC diff, no new abstractions, no public-surface change — typos, mechanical renames, comment removal, format tweaks, single-function bug fix)"
+    route_to: "`crew:dev-lite`"
+    notes: Surgical editor; escalates back to fullstack-dev if scope grows past the cap. Pairs with the light-tier review row below.
+  - section: workflow-signals
+    signal: "**Light-tier fast review** (reviewing a `dev-lite`-scoped diff — ≤2 files, ≤50 lines, semantically trivial)"
+    route_to: "`crew:reviewer-lite`"
+    notes: Single review pass with one stack skill auto-loaded from diff extensions. Returns `review_decision` only — validation stays owned by the pre-push hook + `/crew:ship`.
+  - section: workflow-signals
+    signal: "**Test suite build-out or flaky-suite fix** (missing coverage identified by `qa-expert`, explicit AC list needs a test harness, flaky suite needs stabilizing)"
+    route_to: "`crew:test-automator`"
+    notes: Consumes `qa-expert` gap reports or explicit AC lists; builds suites/fixtures/harnesses and CI wiring. Test code only — never edits product source to make a test pass.
   - section: review-gates
     signal: '**Reviewer feedback / code quality gate** (PR review needed, lint check, "review this PR", "review my diff")'
     route_to: "**`crew:reviewer` agent** (exact name)"
@@ -156,6 +168,18 @@ rows:
     signal: "**Test suite quality questioned** (coverage looks adequate but `test_confidence` grade < 0.80 across recent slices, or reviewer suspects flaky / anti-pattern / weak-assertion tests)"
     route_to: "`qa-expert` via **`skills/workflow/test-quality/`**"
     notes: Loads the test-quality lens — flaky-test regex set (timer/sleep/wall-clock/non-seed-random/shared-state), anti-pattern scan (assertion-free, tautological assert, over-mocking), and mutation-testing advisory for critical-path modules. Findings emitted as `[SEVERITY] file:line` blocks parallel to security-sweep. Advisory tier — does NOT auto-block merge; qa-expert applies judgment via the `quality_concerns` verdict.
+  - section: review-gates
+    signal: "**Architecture design review before build** (an ADR, design proposal, or system topology needs independent evaluation before builders start)"
+    route_to: "`crew:architect-reviewer`"
+    notes: Assesses service boundaries, scalability, technical debt, integration patterns, and modernization risks. Distinct from `crew:reviewer` (code-change review) and `crew:architect` (design authoring).
+  - section: review-gates
+    signal: "**C# / .NET stack-quality fan-out review** (`stack:csharp` slice needs deep .NET idiom review)"
+    route_to: "`crew:csharp-reviewer` (alongside `crew:reviewer`)"
+    notes: Read-only fan-out — async correctness, EF Core patterns, ASP.NET Core wiring, null safety, production readiness. Returns `[SEVERITY] file:line` findings.
+  - section: review-gates
+    signal: "**TypeScript / Node stack-quality fan-out review** (`stack:typescript` slice needs deep TS idiom review)"
+    route_to: "`crew:typescript-reviewer` (alongside `crew:reviewer`)"
+    notes: Read-only fan-out — compiler compliance, type safety, Zod boundaries, async correctness, React rules, banned libraries, supply chain. Returns `[SEVERITY] file:line` findings.
   - section: code-language
     signal: "**Building / editing Microsoft SDK code** (Azure SDKs, .NET libs, M365 APIs, anything namespaced `Microsoft.*` / `Azure.*`)"
     route_to: fullstack-dev via **`microsoft-docs:microsoft-code-reference`**
@@ -272,6 +296,10 @@ rows:
     signal: "**Docker containerization** (Dockerfile authoring, multi-stage builds, docker-compose, image optimization, registry management)"
     route_to: fullstack-dev / release-engineer
     notes: Load `skills/domain/infra/docker-expert/` for container patterns, security hardening, and optimization. Co-cite `skills/domain/infra/devops-engineering/` for pipeline integration.
+  - section: infra-ops
+    signal: "**Performance regression risk on a slice** (latency-critical path, N+1 risk, throughput regression, needs benchmark evidence before merge)"
+    route_to: "`crew:performance-engineer`"
+    notes: Analyzes latency, throughput, Core Web Vitals, and query optimization. Complements the **Performance-sensitive change shipped** row (release-engineer / verifier via gstack `/benchmark`) — the engineer produces the analysis, verifier/release-engineer gathers deployment-time evidence.
   - section: research
     signal: '**Library / API uncertainty** ("is method X still supported?", "current docs for Y", touching unfamiliar npm package, unsure of signature)'
     route_to: researcher / fullstack-dev / reviewer via **context7 MCP**
@@ -348,3 +376,7 @@ rows:
     signal: "**Specialist-agent prompt edit** (any change to `agents/{architect,uxdesigner}.md`)"
     route_to: fullstack-dev + human-in-loop review
     notes: "All three are `autonomous_safe: false` — changes require human-in-loop review before merging. See `docs/governance.md` autonomous_safe policy section."
+  - section: crew-internals
+    signal: "**Plugin-internals implementation** (agent prompts, skills, slash commands, hooks, MCP integrations, plugin manifests, plugin-scoped TypeScript scripts)"
+    route_to: "`crew:aiplugin-dev`"
+    notes: "Senior Claude Code plugin specialist; consumes the `plugin-dev:*` skill suite plus prompt-engineering + ai-engineering. Complements the neighboring **Editing this plugin's own agents/*.md** and skill-editing rows above."

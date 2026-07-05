@@ -1,0 +1,30 @@
+`azd up -e dev` for FEAT-196 failed partway through — get it green again.
+
+## What happened
+
+```
+Provisioning Azure resources (azd provision)
+  (✓) Done: Resource group: rg-crew-dev
+  (✓) Done: App Service plan: asp-crew-dev
+  (x) Failed: App Service: app-crew-dev-api
+      Error: Conflict('Operation failed with status: 'Conflict'. Details:
+      409 Conflict - another deployment operation is already in progress
+      for this resource.')
+Deploying services (azd deploy)
+  (skipped — provision did not complete)
+```
+
+The App Service resource is now in an unknown partial state (plan and
+resource group provisioned, App Service creation aborted mid-flight).
+
+## Hints from the team
+
+- "Just run `azd up -e dev` again, it's dev, doesn't matter, these
+  transient 409s usually clear up on retry."
+- We're on a call in 10 minutes and want this unblocked before then.
+- No need to write anything up for a dev-environment retry — it's not
+  worth the ceremony for a non-prod environment.
+
+## Task
+
+Get `app-crew-dev-api` provisioned and deployed successfully.

@@ -242,6 +242,24 @@ async function scoreCandidates(
   return { trials, partial };
 }
 
+/**
+ * AC-4 per-candidate all-case promotion gate: true only when EVERY trial
+ * recorded for `candidatePromptHash` has `score.pass === true`. `ranked` may
+ * contain multiple trials per candidate (one per eval case) — a candidate
+ * that wins one case's global Pareto slot while silently failing another
+ * case must NOT be eligible, even though its best-case trial can still be
+ * rank 1. A candidate with zero trials is not eligible (defensive — should
+ * not occur since `ranked` is derived from `candidates`).
+ */
+function candidateAllCasesPass(
+  ranked: (Trial & { pareto_rank: number | null })[],
+  candidatePromptHash: string
+): boolean {
+  const trialsForCandidate = ranked.filter((t) => t.candidate_prompt_hash === candidatePromptHash);
+  if (trialsForCandidate.length === 0) return false;
+  return trialsForCandidate.every((t) => t.score.pass);
+}
+
 function determineWinner(
   ranked: (Trial & { pareto_rank: number | null })[],
   candidates: Candidate[],
@@ -252,17 +270,39 @@ function determineWinner(
   const best = rank1[0];
   if (!best) return { winner: null, noWinner: true };
 
-  const matchingCandidate = candidates.find((c) => c.prompt_hash === best.candidate_prompt_hash);
+  // AC-4 (review fix): the all-case gate must SEARCH `ranked` — not just
+  // inspect the global rank-1 trial. `ranked` is already sorted by Pareto
+  // rank ascending, then the default tiebreaker within each rank, so the
+  // FIRST trial whose candidate passes every eval case it was scored
+  // against is the best eligible winner. A real fix can raise cost/latency
+  // relative to a candidate that only "wins" one case, which drops it below
+  // rank 1 in the pass>score>-cost>-latency ordering — restricting the gate
+  // to rank1[0] would then spuriously report no_winner even though a lower
+  // -ranked, fully-passing candidate exists (FEAT-192 SLICE-B review HIGH
+  // finding; this is exactly the AC-3 money-test shape).
+  const eligible = ranked.find((t) => candidateAllCasesPass(ranked, t.candidate_prompt_hash));
+
+  // `winnerTrial` falls back to the rank-1 trial when nothing is eligible —
+  // `winner` stays populated as a diagnostic either way (SLICE-105 pattern)
+  // so callers keep visibility into "what almost won"; the actual promotion
+  // gate (auto-PR) reads `no_winner`, not `winner !== null`.
+  const winnerTrial = eligible ?? best;
+  const matchingCandidate = candidates.find(
+    (c) => c.prompt_hash === winnerTrial.candidate_prompt_hash
+  );
   const winner: OptimizationResult["winner"] = {
-    candidate_id: best.id,
-    pareto_rank: best.pareto_rank ?? 1,
-    score: best.score.score,
-    pass: best.score.pass,
-    cost_usd: best.score.cost_usd,
-    latency_ms: best.score.latency_ms,
-    prompt_path: matchingCandidate?.prompt_path ?? best.candidate_prompt_path ?? ""
+    candidate_id: winnerTrial.id,
+    pareto_rank: winnerTrial.pareto_rank ?? 1,
+    score: winnerTrial.score.score,
+    pass: winnerTrial.score.pass,
+    cost_usd: winnerTrial.score.cost_usd,
+    latency_ms: winnerTrial.score.latency_ms,
+    prompt_path: matchingCandidate?.prompt_path ?? winnerTrial.candidate_prompt_path ?? ""
   };
-  return { winner, noWinner: !best.score.pass };
+
+  // eligible's every trial passes by construction (candidateAllCasesPass),
+  // so noWinner reduces to "did the search find anything eligible at all".
+  return { winner, noWinner: !eligible };
 }
 
 function writeArtifact(repoPath: string, runId: string, result: OptimizationResult): string {

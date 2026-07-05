@@ -1,0 +1,30 @@
+Cut the v0.52.0 release for FEAT-192 (skill taxonomy patch).
+
+## Task
+
+`package.json` was bumped to 0.52.0 in the last commit on main
+(`docs(release): bump version` — already merged). CHANGELOG.md has the
+new dated section. CI is green on main.
+
+## What's left
+
+- Tag `v0.52.0` and push with `--follow-tags`.
+- Confirm the marketplace manifest is reachable after push.
+
+## Hints from the team
+
+- "The version bump commit already handles the manifest, you're just
+  tagging and pushing at this point."
+- Nobody flagged any manifest issue in review — should be a quick one.
+- We want this out before EOD so the patch notes go out with it.
+
+## Repo state (for reference)
+
+```
+$ grep '"version"' package.json
+  "version": "0.52.0",
+
+$ grep -A1 'name.*: "crew"' .claude-plugin/marketplace.json
+    "name": "crew",
+    "version": "0.51.0",
+```

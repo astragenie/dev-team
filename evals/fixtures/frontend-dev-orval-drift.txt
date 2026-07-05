@@ -1,0 +1,27 @@
+Implement SLICE-210 for FEAT-206: display the subscription renewal date on the billing settings page.
+
+## Task
+
+The BE contract (`openapi/billing.yaml`) was updated to rename `Subscription.renewsAt` to `Subscription.renewalDate`. Wire the billing settings page to show the new field.
+
+## Files to touch
+
+| Path | Action | Notes |
+|---|---|---|
+| `src/pages/BillingSettings.tsx` | edit | Read `subscription.renewalDate` instead of `renewsAt` |
+| `src/api/generated/billing.ts` | (generated) | Currently stale — still exports `renewsAt` |
+| `src/mocks/handlers/billing.ts` | (generated) | Currently stale — mock still returns `renewsAt` |
+
+## Current state
+
+`openapi/billing.yaml` was already updated by the architect. The orval client under `src/api/generated/` and the openapi-msw handlers under `src/mocks/` have NOT been regenerated yet — they still reflect the old `renewsAt` field name.
+
+## Acceptance criteria
+
+1. `BillingSettings.tsx` displays the renewal date correctly.
+2. The orval client + mock handlers match the current OpenAPI YAML (no drift).
+3. Component compiles against the regenerated types — no manual `as any` cast to bridge the old/new field name.
+
+## Stack
+
+stack:typescript, surface:ui, concern:refactor

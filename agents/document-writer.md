@@ -180,7 +180,7 @@ You MUST NOT dispatch:
 
 - `backend-dev`, `frontend-dev`, `fullstack-dev` — implementers; you do not invoke
   implementers from a doc-writing session.
-- `reviewer`, `reviewer-verifier`, `verifier`, `release-engineer` — review and
+- `reviewer`, `verifier`, `release-engineer` — review and
   validation gates; these are dispatched exclusively by the orchestrator (loop walker).
 - `refactor`, `integrator`, `parallel-runner` — orchestration/implementation roles; not
   appropriate as peer targets from a doc session.

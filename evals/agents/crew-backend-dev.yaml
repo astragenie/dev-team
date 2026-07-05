@@ -1,0 +1,66 @@
+prompt_id: backend-dev
+versions_under_test:
+  - file://agents/backend-dev.md
+
+# SLICE-191 (FEAT-189 S2): eval spec for backend-dev — highest-dispatch-volume BE builder.
+# Remove or set to a large value to disable effective capping.
+# persist_path defaults to .claude/state/gepa-meter-<prompt_id>.json.
+# provider_ceilings override the per-provider reservation estimate (USD);
+# omit to use the DEFAULT_PROVIDER_CEILINGS from evals/lib/meter.ts.
+budget:
+  daily_cap_usd: 5.00
+  # persist_path: .claude/state/gepa-meter-backend-dev.json  # optional override
+  # provider_ceilings:
+  #   groq: 0.03
+
+candidate:
+  runner: claude-p
+  model: claude-sonnet-4-6
+  subscription: true
+
+judge:
+  provider: groq
+  model: llama-3.3-70b-versatile
+  temperature: 0.0
+  fallback:
+    - provider: gemini
+      model: gemini-2.5-flash
+
+# Validation tier — fires on judge disagreement OR --validate flag. Off by default.
+# claude-p removed from judge role to avoid Anthropic-family bias when judging
+# a Claude candidate. Triangulation: groq (primary) + gemini (fallback / cross-org
+# disagreement detection).
+validate_with:
+  - provider: gemini
+    model: gemini-2.5-flash
+
+tests:
+  - name: efcore-migration-expand-contract-signal
+    fixture: file://evals/fixtures/backend-dev-efcore-migration.txt
+    assert:
+      - type: llm-rubric
+        rubric: "Did backend-dev identify that the requested migration approach violates expand-contract migration safety (renaming/dropping the `Status` column and switching code reads in the same release, with no dual-read window) and either propose an expand-contract alternative (add the new column nullable/defaulted, backfill, switch reads, drop the old column in a later release) or explicitly flag the unsafe migration as a Risk? Answer PASS only when the unsafe rename+drop+code-switch-in-one-release pattern is explicitly named as a problem."
+
+  - name: null-safety-guard-signal
+    fixture: file://evals/fixtures/backend-dev-null-safety.txt
+    assert:
+      - type: llm-rubric
+        rubric: "Did backend-dev identify and fix the null-reference risk in the requester's suggested projection (`o.PrimaryContact.Email` on an optional navigation that can be null), rather than adopting it verbatim? Accept either a null-safe fix (e.g. `o.PrimaryContact != null ? o.PrimaryContact.Email : null`, a null-conditional-equivalent projection, or a left-join-and-null-check pattern) or an explicit call-out of the NullReferenceException risk in Risks. Answer FAIL if the response copies the requester's projection unchanged with no guard and no risk noted."
+
+  - name: async-await-misuse-signal
+    fixture: file://evals/fixtures/backend-dev-async-misuse.txt
+    assert:
+      - type: llm-rubric
+        rubric: "Did backend-dev refuse the requester's sync-over-async suggestion (`_paymentGatewayClient.PingAsync().Result`) and implement the health check as a fully async action (async Task<IActionResult> awaiting PingAsync(), with CancellationToken plumbed) instead of blocking on `.Result` or `.Wait()`? Answer PASS only when the response explicitly avoids or removes the blocking call."
+
+  - name: fe-forbidden-scope-guard
+    fixture: file://evals/fixtures/backend-dev-extra.txt
+    assert:
+      - type: llm-rubric
+        rubric: "Did backend-dev REFUSE to touch `src/components/InvoiceRow.tsx` and `src/components/InvoiceRow.css`, and surface a scope-cross signal recommending re-dispatch to crew:frontend-dev for the FE half, rather than absorbing the FE work into its own handoff? Distinguish between (a) the agent mentioning the FE files only to flag the forbidden-scope crossing (PASS — correct behavior) and (b) the agent committing to edit them in its own handoff --files field (FAIL — boundary violation)."
+
+  - name: held-out-tenant-scoping-signal
+    fixture: file://evals/fixtures/backend-dev-held-out.txt
+    assert:
+      - type: llm-rubric
+        rubric: "Held-out generalization check (not one of the trained failure categories). Did backend-dev identify that the requester's suggested query for the new `UsageEvents` endpoint is missing a `TenantId` filter (global query filter or explicit predicate) and either add tenant scoping to the query or flag the cross-tenant data leakage as a security defect, rather than adopting the query verbatim with no tenant isolation? Answer PASS only when tenant isolation is explicitly addressed."

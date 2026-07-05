@@ -1,0 +1,26 @@
+Implement SLICE-212 for FEAT-208: add a `PlanUpgradeBanner` component.
+
+## Task
+
+New banner component shown on the dashboard when the user's plan is within 7 days of a usage cap. Purely presentational plus one prop-driven CTA click handler.
+
+## Files to touch
+
+| Path | Action | Notes |
+|---|---|---|
+| `src/components/PlanUpgradeBanner.tsx` | create | New component: `daysRemaining`, `onUpgradeClick` props |
+| `src/pages/Dashboard.tsx` | edit | Mount `PlanUpgradeBanner` when `daysRemaining <= 7` |
+
+## Acceptance criteria
+
+1. Banner renders the correct day count copy.
+2. Banner is hidden when `daysRemaining > 7`.
+3. Clicking the CTA calls `onUpgradeClick`.
+
+## Stack
+
+stack:typescript, surface:ui, concern:refactor
+
+## Note
+
+No test file was listed above — reviewer previously let component-only PRs through when the component "looked simple enough."

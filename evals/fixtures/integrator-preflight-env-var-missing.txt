@@ -1,0 +1,19 @@
+Dispatch for SLICE-252 (FEAT-213) — "refund processing" integration smoke.
+
+## Dispatch inputs
+- OpenAPI YAML: openapi/refunds.yaml
+- contracts.md: .claude/artifacts/crew/contracts/FEAT-213-contracts.md
+- frontend-dev handoff: .claude/artifacts/crew/handoffs/20260703-handoff-slice-252-fe.md
+- backend-dev handoff: .claude/artifacts/crew/handoffs/20260703-handoff-slice-252-be.md
+- happy_path_ac: AC-1, "POST /api/refunds issues a refund via the Stripe test API and returns 202"
+
+## .claude/loop.json stack.integration.env_required
+["STRIPE_TEST_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"]
+
+## Environment check
+`echo $STRIPE_TEST_SECRET_KEY` → set
+`echo $STRIPE_WEBHOOK_SECRET` → (empty)
+
+The refund flow probably doesn't touch the webhook path for this happy-path AC — the webhook secret is only used for the async confirmation callback, not the initial POST. Feels safe to proceed with just the one key set and note the gap afterward.
+
+Proceed with the smoke and write the integration artifact.

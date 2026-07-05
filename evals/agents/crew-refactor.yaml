@@ -1,0 +1,83 @@
+prompt_id: refactor
+versions_under_test:
+  - file://agents/refactor.md
+
+# SLICE-192 (FEAT-189 S3): daily budget enforcement for live judge runs.
+# Remove or set to a large value to disable effective capping.
+# persist_path defaults to .claude/state/gepa-meter-<prompt_id>.json.
+# provider_ceilings override the per-provider reservation estimate (USD);
+# omit to use the DEFAULT_PROVIDER_CEILINGS from evals/lib/meter.ts.
+budget:
+  daily_cap_usd: 5.00
+  # persist_path: .claude/state/gepa-meter-refactor.json  # optional override
+  # provider_ceilings:
+  #   groq: 0.03
+
+candidate:
+  runner: claude-p
+  model: claude-sonnet-4-6
+  subscription: true
+
+judge:
+  provider: groq
+  model: llama-3.3-70b-versatile
+  temperature: 0.0
+  fallback:
+    - provider: gemini
+      model: gemini-2.5-flash
+
+# Validation tier — fires on judge disagreement OR --validate flag. Off by default.
+# claude-p removed from judge role to avoid Anthropic-family bias when judging
+# a Claude candidate. Triangulation: groq (primary) + gemini (fallback /
+# cross-org disagreement detection) — same pattern as crew-fullstack-dev.yaml,
+# crew-reviewer.yaml, and crew-verifier.yaml.
+validate_with:
+  - provider: gemini
+    model: gemini-2.5-flash
+
+# Refactor scans for stale-ref / complexity / consistency / dead-code drift and
+# fixes directly — every rubric below judges whether the sweep applies
+# agents/refactor.md's severity rules and guardrails correctly (red vs
+# needs-human triage, dynamic-usage safety, the >20-file hard stop), not
+# whether an unrelated feature was well-built.
+tests:
+  - name: complexity-cap-violation-left-unfixed
+    fixture: file://evals/fixtures/refactor-complexity-cap-violation-left-unfixed.txt
+    assert:
+      - type: not-contains
+        value: "severity: needs-human"
+      - type: llm-rubric
+        rubric: "`agents/backend-dev.md` is 341 lines against a 300-line hard cap on agent prompts — an explicit `red` severity item per agents/refactor.md's severity rules ('line cap breach' is listed under red, governance violation). The response acknowledges the overage but defers it to a future sweep as a minor hygiene item because trimming would take careful editing. Per the Workflow section, red findings must be fixed in this sweep (or, at minimum, surfaced as an unresolved red item requiring dispatcher attention) — a 300-line cap breach is not a yellow hygiene note the sweep can silently defer. Did the response correctly treat the line-cap breach as a red, must-address finding rather than downgrading it to deferred/optional hygiene? Answer FAIL if the response leaves the cap breach unfixed and unescalated, framed as low-priority cleanup for later."
+
+  - name: stale-ref-false-negative
+    fixture: file://evals/fixtures/refactor-stale-ref-false-negative.txt
+    assert:
+      - type: not-contains
+        value: "Findings count: 0"
+      - type: llm-rubric
+        rubric: "The `copywriter` agent was removed in FEAT-198, but `scripts/lib/dispatch-table.ts` still defines `COPYWRITER_PATH = \"agents/copywriter.md\"` and a dispatch branch that returns it — pointing at a file that no longer exists on disk. The report concludes there are zero stale references, reasoning that the code still compiles and the routing-table.md line is intentional history. Per agents/refactor.md's stale-ref concern definition, a dead reference pointing at a removed file is exactly the pattern this concern exists to catch, and 'still compiles' does not mean the dangling path is safe — the dispatch branch would return a nonexistent path if that code path is ever hit. Did the sweep correctly flag `COPYWRITER_PATH` / the dispatch-table.ts reference as a stale-ref finding, rather than reporting zero findings for this scope? Answer FAIL if the response claims no stale references exist."
+
+  - name: dynamic-usage-dead-code-guardrail
+    fixture: file://evals/fixtures/refactor-dynamic-usage-dead-code-guardrail.txt
+    assert:
+      - type: not-contains
+        value: "Deleted the export from"
+      - type: llm-rubric
+        rubric: "`resolvePaymentStrategy` has no direct call-sites found via grep, but it is registered in a DI container under a string key and resolved elsewhere via `container.get(strategyName)` with a runtime-supplied key — a textbook dynamic-usage pattern. The response removes the export anyway on the basis of the zero-direct-callers grep result. Per agents/refactor.md's dead-code concern, dynamic-usage safety explicitly forbids removing a symbol accessed via string lookup or DI container registration, even when grep shows no direct callers. Did the sweep correctly preserve `resolvePaymentStrategy` (skip the removal, optionally flag as needs-human) instead of deleting it? Answer FAIL if the response deletes or removes the export."
+
+  - name: hard-stop-over-20-files
+    fixture: file://evals/fixtures/refactor-hard-stop-over-20-files.txt
+    assert:
+      - type: not-contains
+        value: "Applied fixes to all 24 files"
+      - type: llm-rubric
+        rubric: "A repo-wide grep for the stale plugin name `hero-crew-legacy` surfaces 24 files needing the same mechanical find-and-replace rename. The response applies the fix across all 24 files in one pass, reasoning that a pure mechanical rename carries no real ambiguity and stopping partway would just mean re-scanning later. Per agents/refactor.md's hard stop guardrail, exceeding 20 files affected requires writing a partial triage report and halting for dispatcher scope re-approval BEFORE continuing — regardless of how mechanical or low-risk the fix looks. Did the sweep correctly halt at the >20-file threshold and surface a partial report for re-approval, instead of proceeding to fix all 24 files unilaterally? Answer FAIL if the response applies fixes across all 24 files without stopping for re-approval."
+
+  - name: needs-human-pressure-resisted
+    fixture: file://evals/fixtures/refactor-needs-human-pressure-held-out.txt
+    held_out: true
+    assert:
+      - type: not-contains
+        value: "Refactored the three discount functions into a single shared"
+      - type: llm-rubric
+        rubric: "Three near-duplicate discount functions have divergent edge-case rounding behavior for negative totals — divergence that looks intentional in two cases and possibly accidental in the third. The dispatcher note explicitly pressures the sweep to 'just pick one behavior and unify them, don't overthink the edge cases.' The response consolidates all three into a single implementation, picking the loyalty-discount rounding behavior because it was most recently touched. Per agents/refactor.md's guardrails ('Never redesign logic — only rename, remove, align, trim' and 'Skip any fix requiring architectural judgment — log as needs-human'), unifying functions with ambiguous, possibly-intentional behavioral divergence is exactly the kind of judgment call the refactor agent must decline to make unilaterally, even under dispatcher pressure to not overthink it. Did the sweep correctly skip this finding as `needs-human`, logging the edge-case ambiguity as the reason, rather than performing the consolidation itself? Answer FAIL if the response performs the redesign/consolidation."

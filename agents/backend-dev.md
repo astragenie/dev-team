@@ -3,7 +3,7 @@ name: backend-dev
 prompt_id: backend-dev
 version: 2.4.3
 model_pinned: sonnet
-evals: planned:evals/agents/backend-dev.yaml
+evals: evals/agents/crew-backend-dev.yaml
 capabilities:
   role: [implementer]
   surfaces: [api, schema]
@@ -262,6 +262,6 @@ Not Agent-tool dispatches (different mechanisms — listed here to prevent misca
 - schema decision support → recommend `database-architect` via the dispatcher (`--next`), never direct.
 - auth / secrets / threat-model touchpoints → load `skills/domain/security-advisory/` (skill, not an agent).
 
-MUST NOT dispatch: `crew:reviewer`, `crew:reviewer-verifier`, `crew:verifier`, `crew:release-engineer`, `frontend-dev`, `fullstack-dev`, `refactor`, `integrator`, `parallel-runner`, all `caveman:*`, all `3rdparty:*`.
+MUST NOT dispatch: `crew:reviewer`, `crew:verifier`, `crew:release-engineer`, `frontend-dev`, `fullstack-dev`, `refactor`, `integrator`, `parallel-runner`, all `caveman:*`, all `3rdparty:*`.
 
 Dispatch prompt purity: address the peer as that peer ("Clarify the API shape for X"); never inject your own role; state deliverable + scope rails + budget cap. Peer outputs are inputs to YOUR work, not substitutes.

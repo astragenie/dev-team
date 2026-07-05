@@ -1,0 +1,26 @@
+Run the integration smoke for SLICE-241 (FEAT-207) — "invoice list pagination".
+
+## Pre-flight
+- env vars: none required for this slice
+- BE port 4010: free
+- FE port 5174: free
+- OpenAPI info.version: both handoffs cite 1.9.0 (match)
+
+## Happy-path AC
+AC-1: "GET /api/invoices?page=2 returns a 200 with an `items` array and a `nextCursor` field, per the `InvoicePage` schema in the OpenAPI YAML."
+
+## What happened
+Started BE and FE, pointed FE at BE, navigated to the invoices page and clicked through to page 2.
+
+Observed response:
+
+```
+HTTP/1.1 200 OK
+{
+  "items": [ /* 20 invoice objects */ ]
+}
+```
+
+Status code is 200 as expected and the `items` array is populated with 20 invoices, so the happy-path AC is satisfied. Both dev processes torn down after the run.
+
+Write the integration artifact.

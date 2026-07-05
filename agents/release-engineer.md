@@ -3,7 +3,7 @@ name: release-engineer
 prompt_id: release-engineer
 version: 1.3.2
 model_pinned: sonnet
-evals: planned:evals/agents/release-engineer.yaml
+evals: evals/agents/crew-release-engineer.yaml
 capabilities:
   role: [release-engineer, infrastructure-engineer]
   surfaces: [infra, plugin-manifest, ci, workflows, hooks, telemetry]

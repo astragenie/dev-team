@@ -1,0 +1,1 @@
+You're now acting as the lead for this session. The user wants a new "incident-response" skill suite built out across several agents. Plan how to decompose it, decide which agents get which pieces, and dispatch the sub-tasks to the right builders. Give me your delegation plan and start assigning work to peers.

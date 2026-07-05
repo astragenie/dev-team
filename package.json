@@ -37,10 +37,11 @@
     "installer:audit": "node ./scripts/crew.ts audit",
     "e2e:smoke": "node ./scripts/e2e-smoke.ts",
     "e2e:smoke:ux": "node ./scripts/e2e-smoke-ux.ts",
-    "evals": "bun evals/cli.ts"
+    "evals": "bun evals/cli.ts",
+    "evals:view": "node -e \"console.log('Open in your browser: file://' + require('path').resolve('evals/viewer/index.html').replace(/\\\\/g,'/'))\""
   },
   "dependencies": {
-    "@astragenie/gepa-core": "^0.6.0",
+    "@astragenie/gepa-core": "0.7.0",
     "@aws-sdk/client-bedrock-runtime": "^3",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.53.0",

@@ -378,7 +378,7 @@ node -e "
 **Classify tier:**
 
 - `tier: full` — long slices, cross-plugin, >10 changed files AND ≥7 ACs. Dispatch separate `crew:reviewer` and `crew:verifier` in parallel.
-- `tier: light` — short slices with `SHORT_SLICE = true` AND `BEHAVIOR_CHANGED = true`. Dispatch single `crew:reviewer-validator` (combined concurrent agent).
+- `tier: light` — short slices with `SHORT_SLICE = true` AND `BEHAVIOR_CHANGED = true`. Dispatch `crew:reviewer` and `crew:verifier` in parallel (same gate as full tier; the tier flag is retained for run-brief/telemetry only).
 
 Tier is recorded in the slice-progress tracking via `write-run-brief --tier <light|full>` (invoked by loop's internal machinery; may be logged for reference).
 
@@ -396,13 +396,9 @@ After builder PASS, dispatch both review and validation in parallel according to
 
 #### Dispatch selection
 
-**When `tier: full`:** Dispatch both `crew:reviewer` and `crew:verifier` simultaneously (single message, two `Agent` calls, or parallel tool invocations).
+**Both tiers** dispatch `crew:reviewer` and `crew:verifier` concurrently (single message, two `Agent` calls, or parallel tool invocations). The `light`/`full` tier flag no longer changes the gate agents — it is retained for run-brief telemetry only. (Historically `tier: light` dispatched a single combined `reviewer-validator` agent; that agent was superseded by `reviewer-lite` + the push-gate model, so the light path now uses the same concurrent reviewer + verifier gate as full.)
 
-**When `tier: light`:** Dispatch single `crew:reviewer-validator` (combined agent) instead.
-
-**Registry fallback:** If the dispatch fails with "Agent type 'crew:reviewer-validator' not found" (session started before the plugin version that ships the agent, or registry not yet refreshed), do NOT retry the same dispatch and do NOT skip gates — fall back to the full ladder: dispatch `crew:reviewer` and `crew:verifier` concurrently exactly as for `tier: full`, and note `tier: light (fallback: full ladder — reviewer-validator unregistered)` in the run brief.
-
-#### Step 4 prompt — `crew:reviewer` (full-tier only; parallel)
+#### Step 4 prompt — `crew:reviewer` (both tiers; parallel)
 
 Dispatch with this prompt:
 
@@ -456,40 +452,15 @@ Return the validation artifact path.
 
 Store the returned path as `VALIDATION_PATH`.
 
-#### Step 4–5 prompt — `crew:reviewer-validator` (light-tier only; combined)
-
-When `tier: light`, dispatch single combined agent:
-
-```
-Slice: <SLICE-NN title>
-Slice file: <absolute path>
-OpenAPI YAML: <CONTRACT_YAML_PATH or "none">
-UX spec: <UX_SPEC_PATH or "none">
-Integration artifact: <INTEGRATION_PATH or "none">
-
-When SPLIT_BUILD=true:
-  Builder-fe handoff: <BUILDER_FE_HANDOFF_PATH>
-  Builder-be handoff: <BUILDER_BE_HANDOFF_PATH>
-When SPLIT_BUILD=false:
-  Builder handoff: <BUILDER_HANDOFF_PATH>
-
-Run the mandatory full gate FIRST (lint, format:check, full test suite, verify:all).
-Then review the implementation for correctness and test coverage, and validate acceptance criteria.
-
-Return BOTH the review-result artifact path AND the validation-result artifact path (one per line).
-```
-
-Store returned paths as `REVIEW_RESULT_PATH` and `VALIDATION_PATH`.
+> **Light tier uses the same two prompts above.** The former combined `reviewer-validator` light-tier prompt was removed — light slices dispatch the Step 4 `crew:reviewer` prompt and the Step 5 `crew:verifier` prompt concurrently, exactly as full tier.
 
 #### Conflict rule: reviewer needs_fix invalidates validation
 
-If reviewer returns `needs_fix` (on either full-tier `crew:reviewer` or light-tier combined agent):
+If reviewer returns `needs_fix`:
 
 1. Mark validation result stale: `node scripts/crew.ts mark-badge --repo "$PWD" --badge validation_stale --note "invalidated by review needs_fix"`.
 2. Re-dispatch builder with review findings (run `/crew:fix` flow).
-3. After builder PASS on the fix bounce:
-   - If original tier was `light`: escalate to full ladder — dispatch separate `crew:reviewer` and `crew:verifier` in parallel (per full-tier dispatch sections above), regardless of the SHORT_SLICE computation.
-   - If original tier was `full`: use standard concurrent dispatch (both in parallel).
+3. After builder PASS on the fix bounce: re-dispatch `crew:reviewer` and `crew:verifier` concurrently (both tiers use the same gate).
 4. Proceed to Step 6 after both gates PASS.
 
 If both return PASS (or approved_with_notes / passed_with_notes): proceed to Step 6.

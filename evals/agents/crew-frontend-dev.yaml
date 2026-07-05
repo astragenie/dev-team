@@ -1,0 +1,66 @@
+prompt_id: frontend-dev
+versions_under_test:
+  - file://agents/frontend-dev.md
+
+# SLICE-191 (FEAT-189 S2): eval spec for frontend-dev — highest-dispatch-volume FE builder.
+# Remove or set to a large value to disable effective capping.
+# persist_path defaults to .claude/state/gepa-meter-<prompt_id>.json.
+# provider_ceilings override the per-provider reservation estimate (USD);
+# omit to use the DEFAULT_PROVIDER_CEILINGS from evals/lib/meter.ts.
+budget:
+  daily_cap_usd: 5.00
+  # persist_path: .claude/state/gepa-meter-frontend-dev.json  # optional override
+  # provider_ceilings:
+  #   groq: 0.03
+
+candidate:
+  runner: claude-p
+  model: claude-sonnet-4-6
+  subscription: true
+
+judge:
+  provider: groq
+  model: llama-3.3-70b-versatile
+  temperature: 0.0
+  fallback:
+    - provider: gemini
+      model: gemini-2.5-flash
+
+# Validation tier — fires on judge disagreement OR --validate flag. Off by default.
+# claude-p removed from judge role to avoid Anthropic-family bias when judging
+# a Claude candidate. Triangulation: groq (primary) + gemini (fallback / cross-org
+# disagreement detection).
+validate_with:
+  - provider: gemini
+    model: gemini-2.5-flash
+
+tests:
+  - name: orval-client-drift-signal
+    fixture: file://evals/fixtures/frontend-dev-orval-drift.txt
+    assert:
+      - type: llm-rubric
+        rubric: "Did frontend-dev recognize that the orval client (`src/api/generated/billing.ts`) and openapi-msw handlers (`src/mocks/handlers/billing.ts`) are stale relative to the updated OpenAPI YAML (`renewsAt` → `renewalDate`) and regenerate them — or explicitly call out the required regen step — BEFORE or WHILE wiring `BillingSettings.tsx` to the new field name? Answer FAIL if the response reads/writes the stale `renewsAt` field, bridges the drift with a manual `as any` cast, or never mentions the generated client/mocks needing to be regenerated."
+
+  - name: a11y-regression-guard-signal
+    fixture: file://evals/fixtures/frontend-dev-a11y-regression.txt
+    assert:
+      - type: llm-rubric
+        rubric: "Did frontend-dev REFUSE or fix the requester's div-based `onClick` trigger (a `<div onClick>` with no keyboard access, no accessible name, no focus indicator) and keep or restore a real accessible control — a `<button>`, or `role=\"button\"` + `tabIndex={0}` + a keyboard handler (Enter/Space) + `aria-label` — so the notification bell stays keyboard-operable and screen-reader-announced? Answer PASS only when the response explicitly preserves or restores accessible interaction, not merely matching the visual design."
+
+  - name: missing-test-coverage-signal
+    fixture: file://evals/fixtures/frontend-dev-missing-tests.txt
+    assert:
+      - type: llm-rubric
+        rubric: "Did frontend-dev add test coverage (e.g. `PlanUpgradeBanner.test.tsx`) for the new component's render, hidden-when-`daysRemaining > 7`, and CTA-click behavior, rather than treating the dispatch's absence of a listed test file as acceptable because the component 'looks simple'? Answer PASS only when the response includes or explicitly commits to new test coverage for the net-new component."
+
+  - name: be-forbidden-scope-guard
+    fixture: file://evals/fixtures/frontend-dev-extra.txt
+    assert:
+      - type: llm-rubric
+        rubric: "Did frontend-dev REFUSE to touch `api/handlers/invoice-pdf.ts` and `db/migrations/2026070401_add_pdf_cache.sql`, and surface a scope-cross signal recommending re-dispatch to crew:backend-dev for the BE half, rather than absorbing the BE work into its own handoff? Distinguish between (a) the agent mentioning the BE files only to flag the forbidden-scope crossing (PASS — correct behavior) and (b) the agent committing to edit them in its own handoff --files field (FAIL — boundary violation)."
+
+  - name: held-out-bundle-budget-signal
+    fixture: file://evals/fixtures/frontend-dev-held-out.txt
+    assert:
+      - type: llm-rubric
+        rubric: "Held-out generalization check (not one of the trained failure categories). Did frontend-dev flag the bundle-size risk of eagerly importing a ~210 KB gzipped dependency (`heavy-calendar-suite`) for a single date-range picker — exceeding the documented ≤30 KB gzipped per-slice guidance — and either propose a lighter-weight alternative, lazy-load the component, or explicitly document the bundle delta in Risks, rather than adding the heavy eager import with no comment on bundle impact? Answer PASS only when the bundle/CWV budget concern is explicitly addressed."

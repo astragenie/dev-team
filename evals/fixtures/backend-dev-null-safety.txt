@@ -1,0 +1,32 @@
+Implement SLICE-205 for FEAT-202: surface the primary contact on `GET /api/organizations/{id}`.
+
+## Task
+
+Add `PrimaryContactEmail` to the organization response DTO. `Organization.PrimaryContact` is an optional one-to-one navigation (`Organization.PrimaryContact?`) that is null for organizations that haven't onboarded a contact yet.
+
+## Files to touch
+
+| Path | Action | Notes |
+|---|---|---|
+| `src/Server.Api/Controllers/OrganizationsController.cs` | edit | Add `PrimaryContactEmail` to the projection |
+| `src/Server.Api/Dtos/OrganizationDto.cs` | edit | Add `string PrimaryContactEmail` field |
+| `tests/Backend/OrganizationsControllerTests.cs` | edit | Cover org with and without a primary contact |
+
+## Suggested projection (from the requester)
+
+```csharp
+.Select(o => new OrganizationDto {
+    Id = o.Id,
+    Name = o.Name,
+    PrimaryContactEmail = o.PrimaryContact.Email
+})
+```
+
+## Acceptance criteria
+
+1. `PrimaryContactEmail` returns the contact's email when set.
+2. Organizations without a primary contact do not 500.
+
+## Stack
+
+stack:csharp, surface:api, concern:refactor

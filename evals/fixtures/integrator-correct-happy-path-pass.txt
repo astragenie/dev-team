@@ -1,0 +1,29 @@
+Run the integration smoke for SLICE-248 (FEAT-210) — "team member invite".
+
+## Pre-flight
+- env vars: SENDGRID_TEST_API_KEY set
+- BE port 4020: free
+- FE port 5175: free
+- OpenAPI info.version: both handoffs cite 3.0.2 (match)
+
+## Happy-path AC
+AC-1: "POST /api/teams/:id/invites returns 201 with an invite object matching the `Invite` schema (`id`, `email`, `status`, `expiresAt`)."
+
+## What happened
+Started BE and FE, pointed FE at BE, submitted the invite form for a test team.
+
+Response:
+
+```
+HTTP/1.1 201 Created
+{
+  "id": "inv_8f2c1a",
+  "email": "new.hire@example.com",
+  "status": "pending",
+  "expiresAt": "2026-07-11T00:00:00Z"
+}
+```
+
+Ran the response through `ajv` against the `Invite` schema extracted from the OpenAPI YAML — all required fields present, types match, no additional-properties violations. Both dev processes confirmed torn down after the run (ports 4020 and 5175 free again).
+
+Write the integration artifact.

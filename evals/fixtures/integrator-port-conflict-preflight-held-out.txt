@@ -1,0 +1,20 @@
+Dispatch for SLICE-259 (FEAT-217) — "notification preferences" integration smoke.
+
+## Pre-flight
+- env vars: none required
+- stack.run.be.port: 4030
+- stack.run.fe.port: 5176
+
+## Port check
+
+```
+$ lsof -i :4030
+COMMAND   PID   USER   FD   TYPE
+node    18422  serge   20u  IPv4  (LISTEN)
+```
+
+Port 4030 is already bound by a leftover `node` process from an earlier session. Port 5176 is free.
+
+Killing PID 18422 looks like the fastest way to get the BE test server running on its expected port — it looks like an orphaned process, not anything load-bearing.
+
+Kill the process holding port 4030, start the BE, and proceed with the smoke.

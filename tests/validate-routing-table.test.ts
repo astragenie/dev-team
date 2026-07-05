@@ -65,7 +65,8 @@ async function makeFixture(
 function runScript(
   tmpDir: string,
   pluginsJsonPath: string,
-  envOverrides: Record<string, string> = {}
+  envOverrides: Record<string, string> = {},
+  extraArgs: string[] = []
 ) {
   const env = {
     ...process.env,
@@ -74,7 +75,10 @@ function runScript(
     CREW_VALIDATE_ROUTING_TABLE_PLUGINS_JSON: pluginsJsonPath,
     ...envOverrides
   };
-  return spawnSync("node", ["--experimental-strip-types", scriptPath], { env, encoding: "utf8" });
+  return spawnSync("node", ["--experimental-strip-types", scriptPath, ...extraArgs], {
+    env,
+    encoding: "utf8"
+  });
 }
 
 test("resolve-pass: all skill IDs found exits 0", async () => {
@@ -120,6 +124,42 @@ test("env-skip: no env var set exits 0 with skip message", async () => {
   });
   assert.equal(result.status, 0, `Expected exit 0 when env not set, got ${result.status}`);
   assert.match(result.stdout, /skipped/, "Should print skip message");
+});
+
+// --coverage-only tests (Pass 3: agent-roster coverage, arch-review Finding 2.7).
+// Runs unconditionally — no CREW_VALIDATE_ROUTING_TABLE gate needed.
+
+test("coverage-only: every agents/*.md basename referenced in the table exits 0", async () => {
+  const tmpDir = await makeTempDir("vrt-cov-pass-");
+  const routingContent = `# Routing Table\n\n| Signal | Route to |\n|---|---|\n| **Feature** | crew:foo and crew:bar |\n`;
+  const { pluginsJsonPath } = await makeFixture(tmpDir, routingContent);
+  const agentsDir = path.join(tmpDir, "agents");
+  await fs.mkdir(agentsDir, { recursive: true });
+  await fs.writeFile(path.join(agentsDir, "foo.md"), "---\nname: foo\n---\n");
+  await fs.writeFile(path.join(agentsDir, "bar.md"), "---\nname: bar\n---\n");
+  const result = runScript(tmpDir, pluginsJsonPath, {}, ["--coverage-only"]);
+  assert.equal(result.status, 0, `Expected exit 0, got ${result.status}. stderr: ${result.stderr}`);
+});
+
+test("coverage-only: an agent missing from the table exits 1 and names it", async () => {
+  const tmpDir = await makeTempDir("vrt-cov-fail-");
+  const routingContent = `# Routing Table\n\n| Signal | Route to |\n|---|---|\n| **Feature** | crew:foo |\n`;
+  const { pluginsJsonPath } = await makeFixture(tmpDir, routingContent);
+  const agentsDir = path.join(tmpDir, "agents");
+  await fs.mkdir(agentsDir, { recursive: true });
+  await fs.writeFile(path.join(agentsDir, "foo.md"), "---\nname: foo\n---\n");
+  await fs.writeFile(path.join(agentsDir, "orphan-agent.md"), "---\nname: orphan-agent\n---\n");
+  const result = runScript(tmpDir, pluginsJsonPath, {}, ["--coverage-only"]);
+  assert.equal(result.status, 1, `Expected exit 1, got ${result.status}`);
+  assert.match(result.stderr, /orphan-agent/, "Error should name the uncovered agent");
+});
+
+test("coverage-only: no agents/ directory at all exits 0 (nothing to check)", async () => {
+  const tmpDir = await makeTempDir("vrt-cov-noagents-");
+  const routingContent = `# Routing Table\n\n| Signal | Route to |\n|---|---|\n| **Feature** | crew:foo |\n`;
+  const { pluginsJsonPath } = await makeFixture(tmpDir, routingContent);
+  const result = runScript(tmpDir, pluginsJsonPath, {}, ["--coverage-only"]);
+  assert.equal(result.status, 0, `Expected exit 0, got ${result.status}. stderr: ${result.stderr}`);
 });
 
 // Fixture-based cross-check tests (consistency validator)

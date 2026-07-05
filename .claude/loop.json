@@ -23,6 +23,19 @@
     "slicesRoot": ".claude/artifacts/loop/slices",
     "backlogRoot": ".claude/artifacts/loop/backlog",
     "maxIterations": 25,
+    "marathonRunner": "wave",
+    "wave": {
+      "size": 3,
+      "sliceCommand": "/crew:build",
+      "sliceCommandFallback": "/crew:build",
+      "fixCommand": "/crew:fix",
+      "maxParallel": 3,
+      "dispatchTimeoutMs": 1800000,
+      "postMergeTestCmd": "node ./scripts/validate-agents.ts",
+      "maxWaveAttempts": 2,
+      "subagentType": "general-purpose",
+      "artifactsRoot": ".claude/artifacts/loop/waves"
+    },
     "cost": {
       "ceilingUsd": 75,
       "regression": {

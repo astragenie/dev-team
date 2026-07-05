@@ -1,6 +1,6 @@
 ---
 id: FEAT-181
-status: triaged
+status: done
 priority: P2
 category: quality
 target_release: null

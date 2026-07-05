@@ -1,0 +1,36 @@
+You are the verifier. Validate SLICE-215 for FEAT-202 — "extract shared retry helper into scripts/lib/retry.ts."
+
+## Builder handoff (crew:fullstack-dev)
+
+Extracted the duplicated retry-with-backoff logic (previously copy-pasted in 3 files) into `scripts/lib/retry.ts`. All call sites updated to import the shared helper. No behavior change — same backoff schedule, same max-attempts default.
+
+## Files touched
+
+| Path | Action |
+|---|---|
+| `scripts/lib/retry.ts` | create |
+| `scripts/lib/gepa/optimize-runner.ts` | edit — import shared retry() |
+| `scripts/lib/langfuse-emit.ts` | edit — import shared retry() |
+| `evals/providers/generic-openai.ts` | edit — import shared retry() |
+| `tests/lib/retry.test.ts` | create — 6 cases covering backoff schedule, max-attempts, jitter |
+
+## Full gate evidence
+
+```
+$ bun run lint
+biome check: 0 warnings, 0 errors
+$ bun run format:check
+biome format --check: all files formatted
+$ bun run typecheck
+tsc --noEmit: 0 errors
+$ bun test --parallel
+ 612 pass
+ 0 fail
+ Ran 612 tests across 84 files. [11.4s]
+```
+
+## Note from builder
+
+One cosmetic note: `scripts/lib/retry.ts` still carries a `// TODO(FEAT-202): consider exposing a custom jitter strategy` comment left over from the original file — purely a future-enhancement marker, no functional gap. Nothing in this diff touches auth, billing, or data-integrity paths; it is a pure internal refactor with identical runtime behavior, confirmed by the unchanged backoff-schedule test assertions.
+
+Produce your verdict.

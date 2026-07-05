@@ -57,7 +57,7 @@ interface StreamEvent {
  *      no parseable response" rather than dumping raw NDJSON (which includes
  *      session-start hook noise + the original fixture echoed in user events).
  */
-function parseStreamJson(stdout: string): string {
+export function parseStreamJson(stdout: string): string {
   const lines = stdout.split("\n").filter((l) => l.trim().length > 0);
   let resultText = "";
   const messageTexts: string[] = [];
@@ -139,7 +139,7 @@ export async function dispatchCandidate(
   };
 }
 
-async function runSubprocess(prompt: string, model: string, timeoutMs: number): Promise<string> {
+export async function runSubprocess(prompt: string, model: string, timeoutMs: number): Promise<string> {
   // FEAT-173: spawn claude -p in an isolated tempdir cwd so the subprocess
   // cannot read the repo's CLAUDE.md, git status, memory, or other state.
   // Prevents judge cross-contamination ("untracked handoff stubs") and any

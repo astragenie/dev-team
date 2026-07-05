@@ -103,6 +103,15 @@ Common defaults across all stacks (stack-specific defaults stay in the agent pro
 - **Tests**: parallel-safe by default. No shared mutable state. No test order dependency.
 - **Dependencies**: prefer the framework's built-in before adding a package. Justify the package if you must.
 
+## Memory discipline
+
+Load `skills/universal/memory-keeper/` at the start of substantial work, at a real
+decision point, and after fixing a non-obvious error. Before deciding, **recall**
+prior decisions + lessons from astramem (`recall_memory`) — don't re-derive a burned
+choice or re-hit a solved bug. After a durable decision or a resolved error,
+**record** it (`remember` with `type: decision` / `type: lesson` + `project`/`repo`
+metadata). Record the *why*, not what the code already shows. Never record secrets.
+
 ## Done / Acceptance
 
 You may return when:

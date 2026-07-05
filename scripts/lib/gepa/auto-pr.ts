@@ -78,9 +78,14 @@ export interface AutoPrResult {
 }
 
 export class GhAuthError extends Error {
-  constructor(public readonly manualCommands: string[]) {
+  readonly manualCommands: string[];
+  // Explicit field assignment, not a constructor parameter property — Node's
+  // strip-only TS mode (the consumer runtime, ADR-002) cannot erase parameter
+  // properties. Keep crew scripts strip-only-compatible.
+  constructor(manualCommands: string[]) {
     super("gh CLI not authenticated — run `gh auth login`");
     this.name = "GhAuthError";
+    this.manualCommands = manualCommands;
   }
 }
 

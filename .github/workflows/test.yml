@@ -19,15 +19,18 @@ jobs:
         node ./scripts/validate-dispatch-graph.ts
         node ./scripts/validate-workflows.ts
         node ./scripts/validate-slices.ts
+        node ./scripts/validate-badges.ts
         node ./scripts/validate-loop-state.ts
         node ./scripts/validate-bundles.ts
         node ./scripts/validate-configs.ts
+        node ./scripts/validate-routing-table.ts --coverage-only
         for f in tests/fixtures/openapi/*.openapi.yaml; do if [ "$(basename "$f")" = "broken-missing-examples.openapi.yaml" ]; then if node ./scripts/validate-contracts.ts "$f"; then echo "ERROR: negative fixture passed lint"; exit 1; fi; else node ./scripts/validate-contracts.ts "$f"; fi; done
         for f in tests/fixtures/ux-specs/*.md; do if [ "$(basename "$f")" = "missing-operationid.md" ]; then if node ./scripts/validate-ux-spec.ts "$f"; then echo "ERROR: negative fixture passed"; exit 1; fi; else node ./scripts/validate-ux-spec.ts "$f"; fi; done
       advisory-validators: |
         node ./scripts/validate-syntheses.ts
         CREW_VALIDATE_ROUTING_TABLE=1 node ./scripts/validate-routing-table.ts
         node ./scripts/validate-adr-template.ts --strict
+        node ./scripts/validate-backlog-drift.ts
       bun-commands: |
         bun run lint
         bun run format:check

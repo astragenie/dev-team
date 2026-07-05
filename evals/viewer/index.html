@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>crew-eval run viewer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    color-scheme: light dark;
+    --pass: #1a7f37;
+    --fail: #cf222e;
+    --skip: #9a6700;
+    --border: #d0d7de;
+    --muted: #656d76;
+    --bg-alt: #f6f8fa;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 24px;
+    max-width: 1100px;
+    margin-inline: auto;
+    line-height: 1.4;
+  }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 20px; }
+  .picker {
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .picker input[type="file"] { font: inherit; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .badge.pass { background: #dafbe1; color: var(--pass); }
+  .badge.fail { background: #ffebe9; color: var(--fail); }
+  .badge.skip { background: #fff8c5; color: var(--skip); }
+  .badge.neutral { background: var(--bg-alt); color: var(--muted); }
+  #error {
+    display: none;
+    background: #ffebe9;
+    border: 1px solid var(--fail);
+    color: var(--fail);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    white-space: pre-wrap;
+    font-size: 0.9rem;
+  }
+  #summary {
+    display: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  #summary dl {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px 20px;
+    margin: 0;
+  }
+  #summary dt { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  #summary dd { margin: 2px 0 0; font-size: 0.95rem; word-break: break-word; }
+  #summary .note { margin-top: 12px; font-size: 0.8rem; color: var(--muted); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    display: none;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: var(--bg-alt); position: sticky; top: 0; }
+  tr.fail-row { background: #fff5f5; }
+  td.name { font-weight: 600; max-width: 260px; word-break: break-word; }
+  td.center { text-align: center; }
+  details summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; }
+  details pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: var(--bg-alt);
+    padding: 8px;
+    border-radius: 6px;
+    max-height: 240px;
+    overflow: auto;
+  }
+  .empty-state { color: var(--muted); font-size: 0.9rem; }
+</style>
+</head>
+<body>
+  <h1>crew-eval run viewer</h1>
+  <p class="sub">
+    Zero-dependency, offline viewer for <code>evals/runs/*.json</code>. Open this file directly
+    (<code>file://</code>) — no server required.
+  </p>
+
+  <div class="picker">
+    <label for="file-input"><strong>Load a run file:</strong></label>
+    <input id="file-input" type="file" accept="application/json,.json" />
+    <span id="file-name" class="sub" style="margin:0;"></span>
+  </div>
+
+  <div id="error"></div>
+
+  <div id="summary"></div>
+
+  <table id="results">
+    <thead>
+      <tr>
+        <th>Test</th>
+        <th>Result</th>
+        <th>Duration</th>
+        <th>Cost (usd)</th>
+        <th>Provider</th>
+        <th>validate_with</th>
+        <th>Judge rationale</th>
+        <th>Asserts</th>
+      </tr>
+    </thead>
+    <tbody id="results-body"></tbody>
+  </table>
+
+  <p id="empty-state" class="empty-state">No run loaded yet.</p>
+
+  <script>
+    // -------------------------------------------------------------------
+    // Type-erased mirror of evals/viewer/viewer.ts — kept in sync by hand.
+    // See viewer.ts for the typed source (checked by `bun run typecheck`)
+    // and schema provenance notes (why cost/provider render as "—").
+    // -------------------------------------------------------------------
+
+    function parseRunResult(raw) {
+      if (raw === null || typeof raw !== "object") {
+        throw new Error("File does not contain a JSON object.");
+      }
+      if (!Array.isArray(raw.tests)) {
+        throw new Error('Missing or invalid "tests" array — not an eval-run JSON file.');
+      }
+      if (typeof raw.summary !== "object" || raw.summary === null) {
+        throw new Error('Missing "summary" object — not an eval-run JSON file.');
+      }
+      if (raw.tests.length === 0) {
+        throw new Error('"tests" array is empty — nothing to render.');
+      }
+      return raw;
+    }
+
+    function fmtDuration(t) {
+      if (typeof t.durationSec === "number") return t.durationSec + "s";
+      return t.durationMs + "ms";
+    }
+
+    function fmtValidations(v) {
+      if (!v || v.length === 0) return "—";
+      return v.map((e) => e.judge + ":" + e.verdict).join(", ");
+    }
+
+    function passRate(summary) {
+      if (summary.total === 0) return "n/a";
+      return Math.round((summary.passed / summary.total) * 1000) / 10 + "%";
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function badge(pass) {
+      return pass
+        ? '<span class="badge pass">PASS</span>'
+        : '<span class="badge fail">FAIL</span>';
+    }
+
+    function renderSummary(run) {
+      const s = run.summary;
+      const totalCostKnown = false; // not persisted in the run schema — see viewer.ts notes
+      const rows = [
+        ["Prompt", escapeHtml(run.promptId ?? "—")],
+        ["Mode", run.dryRun ? "dry-run" : "live"],
+        ["Timestamp", escapeHtml(run.timestamp ?? "—")],
+        ["Judge (run-level)", escapeHtml(run.judgeId ?? "—")],
+        ["Prompt version", escapeHtml(run.promptVersion ?? "—")],
+        ["Git SHA", escapeHtml(run.gitSha ?? "—")],
+        ["Total cases", String(s.total ?? 0)],
+        ["Passed", String(s.passed ?? 0)],
+        ["Failed", String(s.failed ?? 0)],
+        ["Errored", String(s.errored ?? 0)],
+        ["Pass rate", passRate(s)],
+        ["Total duration", typeof run.totalDurationSec === "number" ? run.totalDurationSec + "s" : "—"],
+        ["Total cost (usd)", totalCostKnown ? "" : "not tracked in this run schema"]
+      ];
+      let html = "<dl>";
+      for (const [label, value] of rows) {
+        html += "<dt>" + escapeHtml(label) + "</dt><dd>" + value + "</dd>";
+      }
+      html += "</dl>";
+      if (Array.isArray(run.judgeErrors) && run.judgeErrors.length > 0) {
+        html +=
+          '<div class="note"><strong>Judge errors:</strong> ' +
+          run.judgeErrors.map(escapeHtml).join("; ") +
+          "</div>";
+      }
+      html +=
+        '<div class="note">"Cost (usd)" and "Provider" are not currently persisted per-test in ' +
+        "evals/runs/*.json (only a run-level judgeId exists) — cells show — until a future " +
+        "schema version adds them (see FEAT-186).</div>";
+      return html;
+    }
+
+    function renderAssertsDetail(t) {
+      let html = "<details><summary>" + t.asserts.length + " assert(s)</summary><ul style='margin:6px 0 0;padding-left:18px;'>";
+      for (const a of t.asserts) {
+        html +=
+          "<li>" +
+          badge(a.pass) +
+          " <code>" +
+          escapeHtml(a.type) +
+          "</code> — " +
+          escapeHtml(a.message) +
+          "</li>";
+      }
+      html += "</ul>";
+      if (t.candidateOutput) {
+        html += "<details><summary>candidate output</summary><pre>" + escapeHtml(t.candidateOutput) + "</pre></details>";
+      }
+      if (t.fixtureContent) {
+        html += "<details><summary>fixture</summary><pre>" + escapeHtml(t.fixtureContent) + "</pre></details>";
+      }
+      if (t.error) {
+        html += '<div class="note" style="color:var(--fail);">error: ' + escapeHtml(t.error) + "</div>";
+      }
+      html += "</details>";
+      return html;
+    }
+
+    function renderRows(tests) {
+      let html = "";
+      for (const t of tests) {
+        const disagreementFlag = t.disagreement ? " ⚠" : "";
+        const rationale =
+          Array.isArray(t.judgeRationales) && t.judgeRationales.length > 0
+            ? escapeHtml(t.judgeRationales.join(" / "))
+            : "—";
+        html +=
+          '<tr class="' + (t.pass ? "" : "fail-row") + '">' +
+          '<td class="name">' + escapeHtml(t.name) + "</td>" +
+          '<td class="center">' + badge(t.pass) + (t.error ? ' <span class="badge fail">ERROR</span>' : "") + "</td>" +
+          '<td class="center">' + fmtDuration(t) + "</td>" +
+          '<td class="center">—</td>' +
+          '<td class="center">—</td>' +
+          '<td class="center">' + escapeHtml(fmtValidations(t.validations)) + disagreementFlag + "</td>" +
+          "<td>" + rationale + "</td>" +
+          "<td>" + renderAssertsDetail(t) + "</td>" +
+          "</tr>";
+      }
+      return html;
+    }
+
+    function showError(message) {
+      const el = document.getElementById("error");
+      el.textContent = message;
+      el.style.display = "block";
+      document.getElementById("summary").style.display = "none";
+      document.getElementById("results").style.display = "none";
+      document.getElementById("empty-state").style.display = "none";
+    }
+
+    function clearError() {
+      const el = document.getElementById("error");
+      el.style.display = "none";
+      el.textContent = "";
+    }
+
+    function render(run) {
+      clearError();
+      document.getElementById("summary").innerHTML = renderSummary(run);
+      document.getElementById("summary").style.display = "block";
+      document.getElementById("results-body").innerHTML = renderRows(run.tests);
+      document.getElementById("results").style.display = "table";
+      document.getElementById("empty-state").style.display = "none";
+    }
+
+    document.getElementById("file-input").addEventListener("change", function (evt) {
+      const file = evt.target.files && evt.target.files[0];
+      if (!file) return;
+      document.getElementById("file-name").textContent = file.name;
+      const reader = new FileReader();
+      reader.onload = function () {
+        let parsedJson;
+        try {
+          parsedJson = JSON.parse(String(reader.result));
+        } catch (err) {
+          showError("Could not parse file as JSON: " + (err && err.message ? err.message : String(err)));
+          return;
+        }
+        try {
+          const run = parseRunResult(parsedJson);
+          render(run);
+        } catch (err) {
+          showError("Malformed eval-run file: " + (err && err.message ? err.message : String(err)));
+        }
+      };
+      reader.onerror = function () {
+        showError("Could not read file: " + (reader.error ? reader.error.message : "unknown error"));
+      };
+      reader.readAsText(file);
+    });
+  </script>
+</body>
+</html>

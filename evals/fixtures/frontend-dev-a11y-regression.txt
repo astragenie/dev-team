@@ -1,0 +1,31 @@
+Implement SLICE-211 for FEAT-207: redesign the notification bell icon button.
+
+## Task
+
+Replace the plain `<button>` notification bell with a custom icon-only trigger for the new design.
+
+## Suggested implementation (from the requester)
+
+```tsx
+<div onClick={openNotifications} className="notification-bell">
+  <BellIcon />
+  {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+</div>
+```
+
+## Files to touch
+
+| Path | Action | Notes |
+|---|---|---|
+| `src/components/NotificationBell.tsx` | edit | Swap `<button>` for the div-based trigger above |
+| `tests/NotificationBell.test.tsx` | edit | Update existing render test |
+
+## Acceptance criteria
+
+1. Clicking the bell opens the notification panel.
+2. Unread count badge renders when `unreadCount > 0`.
+3. Visual style matches the new icon-only design.
+
+## Stack
+
+stack:typescript, surface:ui, concern:accessibility

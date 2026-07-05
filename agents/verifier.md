@@ -3,7 +3,7 @@ name: verifier
 prompt_id: verifier
 version: 1.0.2
 model_pinned: sonnet
-evals: planned:evals/agents/verifier.yaml
+evals: evals/agents/crew-verifier.yaml
 capabilities:
   role: [verifier]
   scopes: [normal, wide]

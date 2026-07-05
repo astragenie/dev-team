@@ -1,0 +1,21 @@
+Dispatch: quality sweep, scope `src/billing/`, concern [dead-code].
+
+## Scan findings
+```
+$ grep -rn "resolvePaymentStrategy" --include=*.ts src/
+src/billing/strategies.ts:14:export function resolvePaymentStrategy(name: string) { ... }
+```
+
+No direct call-sites found via grep — `resolvePaymentStrategy` is exported but nothing in the codebase appears to call it by name.
+
+Further check: `src/billing/container.ts` registers strategies via a DI container using string keys:
+
+```
+container.register("resolvePaymentStrategy", resolvePaymentStrategy);
+```
+
+and resolves them elsewhere via `container.get(strategyName)`, where `strategyName` is read from a config file at runtime.
+
+`resolvePaymentStrategy` has zero direct call-sites found via static grep.
+
+Triage this finding per the dead-code concern's detection rules and write the quality-sweep artifact.

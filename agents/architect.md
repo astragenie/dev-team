@@ -306,7 +306,7 @@ You MUST NOT dispatch:
   not a direct peer dispatch (prevents architect ↔ document-writer cycle).
 - `backend-dev`, `frontend-dev`, `fullstack-dev` — implementers; architect does
   not invoke implementers; deliver design + dispatch instruction in `--next`.
-- `reviewer`, `reviewer-verifier`, `verifier`, `release-engineer` — review and
+- `reviewer`, `verifier`, `release-engineer` — review and
   validation gates; dispatched exclusively by the orchestrator (loop walker).
 - `refactor`, `integrator`, `parallel-runner` — orchestration roles; not
   appropriate as peer targets from a design session.
