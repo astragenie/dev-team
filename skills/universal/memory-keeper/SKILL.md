@@ -32,12 +32,13 @@ This skill is about **astramem** — the searchable layer agents read + write.
 Before substantial work, a real decision, or repeating something that smells
 familiar, **search first**:
 
-- `recall_memory({ query, k, project, repo, type })` — top-K semantic recall.
+- `recall_memory({ query, k, project, agent, type })` — top-K semantic recall.
 - `search_memory({ query, ... })` — hybrid FTS + vector when you need exact terms.
 
 Ask: *did we already decide this? did we already hit this error? is there a lesson?*
 One recall call costs almost nothing; re-deriving a burned decision costs a whole
-session. Filter by `project`/`repo` to stay scoped.
+session. **Scope your recall** — filter by `project` (this repo's memories) and, when
+you want your own role's prior lessons, `agent` (e.g. `agent: "crew:reviewer"`).
 
 ### 2. RECORD after you learn (write)
 
