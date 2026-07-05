@@ -1,0 +1,13 @@
+{
+  "run_id": "7842bf2d-641d-4b9c-bba3-ddb98f264db3",
+  "cycle_id": "7842bf2d-641d-4b9c-bba3-ddb98f264db3",
+  "agent": "reviewer",
+  "k": 3,
+  "candidates_evaluated": 3,
+  "partial": false,
+  "no_winner": true,
+  "winner": null,
+  "trials": [],
+  "started_at": "2026-07-05T10:15:22.661Z",
+  "finished_at": "2026-07-05T10:15:22.691Z"
+}
