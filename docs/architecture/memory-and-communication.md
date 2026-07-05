@@ -93,6 +93,31 @@ It should be rebuilt from:
 - claims/state updates
 - recent handoffs and reviews
 
+### 5. Semantic Memory (astramem)
+
+The layers above are file-based and inspectable — repo memory, run artifacts, role
+definitions, recency. They answer "what is written down." They do **not** answer
+"did we already decide this, or already hit this error?" across sessions, because a
+decision made in a transcript that compacts away leaves no searchable trace.
+
+The **astramem** MCP store (provider adopted via FEAT-188) is the durable,
+semantically-searchable layer that closes that gap:
+
+- **Recall** — `recall_memory` / `search_memory` do vector + FTS retrieval over past
+  `decision` / `lesson` / `fact` memories, scoped by `project` / `repo`. An agent
+  starting substantial work searches here first.
+- **Record** — `remember` writes a durable memory typed `decision` (a choice + its
+  why), `lesson` (what an error taught), or `fact` (a non-obvious system truth), with
+  `project` / `repo` / `importance` / `confidence` metadata.
+- **Correct** — `supersede_memory` / `invalidate_memory` keep it from drifting stale.
+
+This is distinct from the file `MEMORY.md` index (a human-readable pointer list loaded
+at session start) — astramem is the searchable working memory agents read + write
+during a task. A memory reflects state when written; verify before acting on it.
+
+Discipline for this layer lives in the universal skill `skills/universal/memory-keeper/`,
+which every agent loads at decision points and after resolving errors.
+
 ## Wake-Up Briefs
 
 Every agent should begin important work with a wake-up brief.
