@@ -1,0 +1,35 @@
+# Task Handoff: Agent-dispatch hook does not block architect-reviewer on FEAT-tagged work
+
+- Created: 2026-07-05T11:42:34.449Z
+- From: researcher
+- To: dispatcher
+- Objective: The user's observation is REFUTED: no hook or gate blocks/reroutes crew:architect-reviewer dispatch; the PreToolUse Agent hook is pure dispatch-timing telemetry that always passes through, and the only reviewer-gate enforcement (FEAT-163) is a static CI-time linter over agent .md peer-dispatch sections that doesn't even name architect-reviewer.
+- Allowed Scope:
+  - hooks/hooks.json
+  - hooks/pre-tool-use-agent.ts
+  - hooks/lib/dispatch-timing-pre-tap.ts
+  - scripts/lib/dispatch/peer-dispatch-allowlist.ts
+  - scripts/validate-dispatch-graph.ts
+  - scripts/validate-agents.ts
+  - agents/architect-reviewer.md
+  - docs/routing-table.md
+  - skills/workflow/dispatcher-routing/SKILL.md
+  - skills/workflow/fan-out-review/SKILL.md
+  - FEAT-163 backlog artifact
+- Forbidden Scope: -
+- Deliverable: Citation-backed findings doc (below) tracing the real mechanism: (1) hooks/hooks.json wires PreToolUse:Agent -> hooks/pre-tool-use-agent.ts. (2) pre-tool-use-agent.ts:2-3 explicit comment 'Records dispatch start time for timing telemetry (FEAT-149)... Always exits 0 — never blocks.' It calls runDispatchTimingPreTap() which only records timing to a dispatch-handle-store and returns null (PreToolUse null = pass-through/allow). No branch anywhere inspects subagent_type for architect-reviewer, no branch inspects FEAT tags, no branch rewrites tool_input to reroute to a different agent. Verdict: the hook layer cannot and does not block or reroute any Agent dispatch. (3) The real reviewer-gate rule is FEAT-163 (.claude/artifacts/loop/backlog/done/FEAT-163.md:40): 'Hard rule: review and validation gates (crew:inspector, crew:verifier, crew:inspector-verifier, crew:release-engineer) remain dispatchable ONLY by the orchestrator (loop walker), never by any peer agent.' This is enforced via scripts/lib/dispatch/peer-dispatch-allowlist.ts GATE_AGENTS = {reviewer, reviewer-lite, csharp-reviewer, typescript-reviewer, verifier} — architect-reviewer is NOT in this set. The enforcement mechanism is scripts/validate-dispatch-graph.ts + scripts/validate-agents.ts, both STATIC CI-time linters that parse each allowlisted agent's own '## Peer dispatch' markdown section and fail CI if a GATE_AGENT name appears there — i.e. it constrains what a SUB-agent (architect, backend-dev, fullstack-dev, etc., the 10 agents in PEER_DISPATCH_ALLOWLIST) may list as ITS OWN callable peers, so no builder-tier agent can spawn its own reviewer. It never executes at runtime and never touches the orchestrator's own Agent-tool calls. (4) crew:architect-reviewer itself carries Tools: Read, Grep, Glob, Bash only (no Agent tool per its frontmatter) and has no '## Peer dispatch' section at all — it is absent from both PEER_DISPATCH_ALLOWLIST and GATE_AGENTS. It is therefore outside every mechanism examined. (5) docs/routing-table.md:71 and skills/workflow/fan-out-review/SKILL.md:22 are narrative routing guidance (read by the LLM, not enforced by code) recommending crew:architect-reviewer specifically for ADR/design review and reviewer-disagreement tiebreaking, distinct from crew:reviewer (code-change review). No FEAT-tag condition anywhere forces crew:reviewer over crew:architect-reviewer or blocks architect-reviewer. GREP across the full repo for 'reroute', 'FEAT-tagged', 'blocks architect-reviewer', 'force...crew:reviewer' returned zero hits in code/docs. CONCLUSION: the user's observation does not match any mechanism in the codebase. It is consistent with the ground truth in this session (architect-reviewer dispatched cleanly for FEAT-191 and FEAT-192 with no block) because there is genuinely nothing that would block it — from any dispatch path, FEAT-tagged or not. Most plausible explanation for the misread: conflating the FEAT-163 'no agent may dispatch its own reviewer' rule (which lists reviewer/verifier/csharp-reviewer/typescript-reviewer, not architect-reviewer, and only restricts the 10 peer-dispatch-capable sub-agents, not the orchestrator) with a belief that it covers architect-reviewer too.
+- Changed Files:
+  - hooks/hooks.json
+  - hooks/pre-tool-use-agent.ts
+  - hooks/lib/dispatch-timing-pre-tap.ts
+  - scripts/lib/dispatch/peer-dispatch-allowlist.ts
+  - scripts/validate-dispatch-graph.ts
+  - agents/architect-reviewer.md
+  - docs/routing-table.md
+  - skills/workflow/dispatcher-routing/SKILL.md
+  - skills/workflow/fan-out-review/SKILL.md
+  - .claude/artifacts/loop/backlog/done/FEAT-163.md
+- Confidence: high
+- Risks: Did not exhaustively read scripts/validate-agents.ts line-by-line (only grepped for GATE_AGENTS/PEER_DISPATCH_ALLOWLIST imports at lines 21,148,161,196,492) — the peer-dispatch-section-shape lint logic there was not fully traced, though it operates on the same static-file-parsing model as validate-dispatch-graph.ts and could not plausibly intercept a live Agent-tool call either way. Did not check whether an older repo revision (pre-FEAT-163 or an intermediate SLICE) once had reroute logic that was since removed — only current HEAD was inspected.
+- Suggested Next Handoff: If the user has a specific transcript or session log showing an actual block/reroute event, hand it to crew:investigator to trace which hook or script fired in that session (grep .claude/logs/events.jsonl or otel spans for that session_id) — that would be the only way to find a real occurrence if one exists outside this repo's current logic.
+
