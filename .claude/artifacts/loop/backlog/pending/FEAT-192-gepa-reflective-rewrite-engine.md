@@ -6,14 +6,14 @@ category: capability
 target_release: null
 created: 2026-07-05
 depends_on: [FEAT-183]
-slices: [SLICE-A, SLICE-B, SLICE-C]
+slices: [SLICE-A, SLICE-B, SLICE-C, SLICE-D]
 derived_from: docs/superpowers/plans/2026-07-05-gepa-reflective-rewrite-engine-plan.md
 pm_customer_impact: 0.75
-pm_effort_estimate: 0.30
+pm_effort_estimate: 0.38
 pm_strategic_alignment: 0.85
 pm_technical_risk: 0.65
 pm_dependency_depth: 0.25
-composite_score: 0.68
+composite_score: 0.66
 autonomous_safe: false
 tags: [gepa, agents, prompt-optimization, candidate-generator, llm-dispatch, aiplugin-dev, in-repo]
 triage_notes: |
@@ -68,6 +68,14 @@ triage_notes: |
   win -- AC-2 non-trivial-diff + no-op rejection closes part; full semantic coverage is v2.
   Observability watch-item (SLICE-87 observability 0.78, n=1): AC-6 adds a structured
   gepa_rewriter_dispatch event per dispatch.
+  Slicing review (architect + pm, 2026-07-05): order A->B->C->D confirmed strictly
+  sequential. HIDDEN PREREQUISITE found — no judge-backed Scorer exists in
+  scripts/lib/gepa (gepa-optimize-cmd.ts wires noopScorer() + no cases); AC-3 cannot be
+  proven through the real CLI without one. Split into a new SLICE-C (Scorer adapter +
+  split-heldout wiring, moved out of SLICE-B where it had no caller). Effort 0.30->0.38,
+  composite 0.68->0.66, ~2.25->3.25 dev-days. Highest-risk hunk = the per-candidate
+  all-case gate in optimize-runner::determineWinner (shared by every agent's optimize
+  cycle). Build order across backlog: FEAT-192 -> memory-keeper -> FEAT-190 (P2).
 ---
 
 # FEAT-192: GEPA reflective-rewrite engine (the real candidate generator)
@@ -146,13 +154,27 @@ identity-anchor guardrail so promotion is honest.
 
 ## Slice plan
 
+Restructured after the 2026-07-05 slicing review (architect + pm). Order is strictly
+sequential A→B→C→D. The review surfaced a hidden prerequisite: **there is no
+judge-backed `Scorer` in `scripts/lib/gepa`** — `gepa-optimize-cmd.ts` passes
+`noopScorer()` and never populates `cases`, so AC-3 cannot be proven through the real
+CLI path without building a Scorer adapter. That is now its own slice (SLICE-C),
+pulled out of the old 0.5d SLICE-C which had assumed it existed.
+
 | Slice | Scope | ~ETA |
 |---|---|---|
-| SLICE-A | Export `runSubprocess`+`parseStreamJson` from `candidate-dispatch.ts`; wire `GEPA_LIVE_GENERATOR`; `dispatchRewriter()` — rewrite-prompt wrapper (champion + FULL rationales, varied framing per slot), response-format extraction (AC-7), stub fallback | 1.0 d |
-| SLICE-B | Guardrails: structural identity-anchor check (AC-5), non-trivial / no-op diff rejection (AC-2), per-candidate all-case promotion gate in `optimize-runner` (AC-4), wire `split-train-heldout`, re-validate `GENERATOR_ESTIMATE_USD`; unit tests | 0.75 d |
-| SLICE-C | AC-3 end-to-end proof against the live `aiplugin-dev respects-350-line-cap` failure → candidate flips it to PASS, no regression, non-null winner; capture opt artifact | 0.5 d |
+| SLICE-A | Export `runSubprocess`+`parseStreamJson` from `candidate-dispatch.ts` (first commit — unblocks B/C; additive, eval path untouched); wire `GEPA_LIVE_GENERATOR`; `dispatchRewriter()` — rewrite-prompt wrapper (champion + FULL rationales, varied framing per slot), response-format extraction (AC-7), stub fallback | 1.0 d |
+| SLICE-B | Guardrails: structural identity-anchor check (AC-5), non-trivial / no-op diff rejection (AC-2), **per-candidate all-case promotion gate in `optimize-runner::determineWinner`** (AC-4) — HIGHEST-RISK hunk, shared by every agent's optimize cycle, gets its own tight review pass; re-validate `GENERATOR_ESTIMATE_USD`; unit tests. (Rebases on SLICE-A — same file.) | 0.75 d |
+| SLICE-C | **Judge-backed `Scorer` adapter** — bridge `candidate-dispatch` + the judge (reuse `evals/lib/run-eval.ts` patterns) so `gepa-optimize` scores candidates against real eval cases through the CLI; wire `split-train-heldout` to produce the `cases` array (moved here from SLICE-B — it had no caller until this harness exists) | 1.0 d |
+| SLICE-D | AC-3 end-to-end proof against the live `aiplugin-dev respects-350-line-cap` failure → candidate flips to PASS, no regression, non-null winner via the all-case gate; capture opt artifact | 0.5 d |
 
-Engineering ~2.25 dev-days. Dispatch cost: K `claude -p` (subscription, $0 API) + judge (Groq, cents).
+Engineering ~3.25 dev-days (was 2.25 — the Scorer adapter was hidden). Dispatch cost:
+K `claude -p` (subscription, $0 API) + judge (Groq, cents).
+
+**Build order + prioritization (pm slicing verdict):** FEAT-192 first (P1, unblocked
+today — FEAT-183 done, AC-3 fixture present), then the memory-keeper work, then
+FEAT-190 (P2, widest blast radius + cross-repo). SLICE-A + SLICE-B both touch
+`candidate-generator-aiplugin.ts` sequentially (rebase, no concurrency).
 
 ## Risks + mitigations
 
