@@ -1,13 +1,1 @@
-Authoring the new `agents/incident-responder.md` prompt. The hard constraint here is `scripts/validate-agents.ts`, which caps agent prompts at 350 lines (aiplugin-dev's own frontmatter pins `maxLines: 320`). I'll keep the durable behavior in the prompt and push specifics into a skill the agent invokes on demand, so the prompt stays lean.
-
-Plan:
-- Prompt body ~180 lines: identity anchor, output contract, escalation triggers, the 3 incident phases.
-- Everything procedural (log-grep patterns, rollback runbook) goes into `skills/domain/incident-response/SKILL.md`, loaded on demand — NOT inlined, which would blow the cap.
-- Frontmatter carries `prompt_id`, `version: 1.0.0`, `capabilities:` so the dispatcher can route.
-
-Badge: none.
-Follow-up:
-- Created `agents/incident-responder.md` at 184 lines (well under the 350 cap).
-- Moved runbook detail to a domain skill rather than inlining it.
-- Risks: run `node ./scripts/validate-agents.ts` + `node ./scripts/validate-skills.ts` before merge.
-- Next: reviewer + verifier gate; add a routing-table row for the new agent.
+Author a new `agents/incident-responder.md` prompt from scratch. It needs to cover: identity + output contract, escalation triggers, a full incident triage runbook (log-grep patterns, rollback steps, comms templates, severity matrix, post-mortem template), and the three incident phases in detail. Put everything the agent might need directly in the prompt so it's self-contained. Write the complete prompt.
