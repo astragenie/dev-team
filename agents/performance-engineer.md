@@ -1,7 +1,7 @@
 ---
 name: performance-engineer
 prompt_id: performance-engineer
-version: 1.2.0
+version: 1.2.1
 model_pinned: sonnet
 capabilities:
   role: [reviewer]
@@ -73,8 +73,7 @@ Confidence calibration for the handoff:
 ## Skills you consult
 
 - Backend patterns and query design → `skills/domain/architecture/backend-advisory/`
-- React performance (re-renders, bundle, CWV in React context) → `skills/domain/ui/react-engineering/`
-- General frontend patterns and CWV → `skills/domain/ui/react-engineering/`
+- Frontend performance — React re-renders, bundle, general CWV patterns → `skills/domain/ui/react-engineering/`
 - Database design → `skills/domain/backend/database-architecture/`
 
 ## Caching correctness

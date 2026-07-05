@@ -1,7 +1,7 @@
 ---
 name: test-automator
 prompt_id: test-automator
-version: 2.3.0
+version: 2.3.1
 model_pinned: sonnet
 capabilities:
   role: [implementer]
@@ -13,7 +13,7 @@ description: Test automation implementation specialist — builds test suites, f
 model: sonnet
 effort: high
 maxTurns: 60
-maxMinutes: 25
+maxMinutes: 25 # above 12-min implementer baseline: self-verify requires full-suite run + back-to-back rerun (wall-clock-bound)
 warnAtTurns: 50
 warnAtMinutes: 20
 maxLines: 280

@@ -37,6 +37,50 @@ Sorted ascending = attack order.
 | typescript-reviewer | 1.0.0 | 10 | 9 | 9 | 10 | 9 | 7 | 7 | 9 | **9.0** | twin of csharp-reviewer, same duplication + Peer-dispatch-section gaps |
 | refactor | 3.0.0 | 10 | 10 | 10 | 10 | 9 | 9 | 9 | 6 | **9.2** | maxTurns 30, no maxMinutes, no rationale vs fleet baseline; "~90% confidence" trigger is soft |
 
+## Rescore v2 — 2026-07-05, reviewer: rescore subagents 1–4 (Fable 5), graded post-pass-2 disk
+
+Fleet mean ≈ 8.5 (baseline 8.2). Scores are descriptive of disk at grading
+time; passes 3–4 fixed most cited gaps AFTER these grades (noted per row).
+Caps: dev-lite, typescript-reviewer, architect-reviewer (fresh contradictions
+found by deeper verification — all three fixed in passes 3–4).
+
+| Agent | v1 | v2 | Δ | v2 headline gap → disposition |
+|---|---|---|---|---|
+| verifier | 8.0⚠ | **9.33** | +1.3 | FIRST-call contradiction fixed in pass 1 (cap lifted) |
+| researcher | 8.3 | **9.3** | +1.0 | peer-dispatch section added pass 2; none material |
+| reviewer-lite | 8.96 | **9.25** | +0.3 | none material |
+| csharp-reviewer | 9.0 | **9.1** | +0.1 | twin boilerplate (governance) |
+| reviewer | 8.0⚠ | **9.1** | +1.1 | contradiction fixed pass 2 (cap lifted); dup sentence :105-106 open |
+| refactor | 9.2 | 9.1 | −0.1 | grader noise; dead-code rule ×3 (minor dup) open |
+| investigator | 8.7 | **9.0** | +0.3 | none material |
+| frontend-dev | 8.8 | **9.0** | +0.2 | UX-spec drift procedure softer than OpenAPI's (open, minor) |
+| architect | 8.0 | **8.96** | +1.0 | 343/350 headroom (open); MUST-NOT dedup landed pass 2 |
+| fullstack-dev | 8.5 | **8.9** | +0.4 | ~15-reads soft cap lacks escalation trigger (minor) |
+| performance-engineer | 8.3 | **8.9** | +0.6 | dup skill row → fixed pass 4 |
+| test-automator | 8.0 | **8.8** | +0.8 | maxMinutes deviation comment → fixed pass 4 |
+| backend-dev | 8.8 | 8.75 | −0.1 | peer-list mixing fixed pass 2; maxLines override removed pass 3; inline EF-detail-vs-skill drift risk (open, governance) |
+| aiplugin-dev | 8.9 | 8.7 | −0.2 | maxLines override removed pass 3 |
+| cloud-architect | 6.5 | **8.1** | +1.6 | zero skill loads → fixed pass 4 (cloud-architecture skill wired + Bash read-only note); routing-table row gap open |
+| release-engineer | 7.7 | **8.08** | +0.4 | maxLines override removed pass 3; no maxMinutes (open); dual-role breadth (needs-human, governance three-test) |
+| typescript-reviewer | 9.0 | 8.0⚠ | −1.0 | REAL: ts-conventions path nonexistent + wrong node-ts-patterns path → both fixed pass 4 (cap lifts on regrade) |
+| qa-expert | 7.9 | 7.9 | 0 | boilerplate share ~38% of file (governance extraction) |
+| uxdesigner | 6.9 | **7.6** | +0.7 | top HARD contract added pass 3; boilerplate dup (governance) |
+| integrator | 8.1 | 7.4⚠ | −0.7 | REAL: no tools field (ALL tools incl. Agent) + --run-title bug → both fixed pass 3 (cap lifts on regrade) |
+| dev-lite | 8.85 | 7.2⚠ | −1.7 | REAL: Bash granted vs "No Bash available" LIMITS contradiction → fixed pass 3 (cap lifts on regrade) |
+| document-writer | 7.0 | 7.2 | +0.2 | CLI prefix fixed pass 3; open: dup HARD contract, dup delegation lists, 0.0–1.0 confidence scale vs fleet h/m/l (needs-human), role breadth |
+
+## Pass 4 — 2026-07-05, rescore fresh defects (fixed)
+
+- typescript-reviewer 1.0.1: nonexistent `typescript/ts-conventions` → `typescript-pro` (absorbed 2026-06-21); `typescript/node-ts-patterns` → `backend/node-ts-patterns`.
+- performance-engineer 1.2.1: duplicate react-engineering skill row merged.
+- test-automator 2.3.1: maxMinutes 25 deviation now justified inline.
+- cloud-architect 1.2.0: `skills/domain/infra/cloud-architecture/` wired as always-load; Bash scoped read-only.
+
+## Open items (not chased — low-impact or governance)
+
+- **Governance decisions**: peer-dispatch boilerplate → shared skill; stack-reviewer twin contract → shared skill; reviewer-verifier ghost (0c07e69); light-tier taxonomy unification (dev-lite vs reviewer-lite); document-writer confidence scale + role breadth; release-engineer dual-role vs three-test; platform-principles extraction (fullstack/frontend); backend-dev inline-EF-detail vs skill drift.
+- **Minor open**: reviewer dup sentence; refactor dead-code rule ×3; architect 343/350 headroom; frontend-dev UX-drift procedure; fullstack-dev soft-cap trigger; release-engineer maxMinutes; cloud-architect routing-table row.
+
 ## Pass 1 — 2026-07-05, cross-fleet mechanical reds (fixed)
 
 - Systemic #1 stale-ref "(dispatcher role removed)" removed from qa-expert 1.0.1, document-writer 1.0.1, uxdesigner 1.0.1, release-engineer 1.3.1.
