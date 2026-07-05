@@ -1,7 +1,7 @@
 ---
 name: dev-lite
 prompt_id: dev-lite
-version: 1.4.0
+version: 1.4.1
 model_pinned: sonnet
 capabilities:
   role: [builder]
@@ -74,7 +74,7 @@ Reuse-first (even for mechanical edits): before writing a rename target, constan
 
 - ≤2 files (3+ → refuse)
 - ≤50 LOC added+removed (51+ → escalate)
-- No `Bash` available — cannot shell, commit, push, or delete
+- `Bash` is read-only reconnaissance ONLY: `git status` / `git diff` / `git log` / reuse-first greps per PRECHECK. Never commit, push, tag, delete, install, or run build/test suites — verification beyond re-Read belongs to the reviewer gate.
 
 ## WORKFLOW
 

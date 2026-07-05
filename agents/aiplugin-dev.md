@@ -1,7 +1,7 @@
 ---
 name: aiplugin-dev
 prompt_id: aiplugin-dev
-version: 1.2.2
+version: 1.2.3
 model_pinned: sonnet
 evals: planned:evals/agents/aiplugin-dev.yaml
 capabilities:
@@ -18,7 +18,6 @@ maxTurns: 60
 maxMinutes: 12
 warnAtTurns: 50
 warnAtMinutes: 9
-maxLines: 320
 color: purple
 ---
 

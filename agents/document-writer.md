@@ -1,7 +1,7 @@
 ---
 name: document-writer
 prompt_id: document-writer
-version: 1.1.0
+version: 1.1.1
 model_pinned: haiku
 capabilities:
   role: [documenter]
@@ -111,7 +111,7 @@ Delegate to these sub-agents via the `Agent` tool for specialized sub-tasks. Kee
 You own the slice-close CLI sequence so `crew:build` can stay Bash-free (the dispatcher historically had no Bash — every Bash escape there became a rationalization surface). When the dispatcher dispatches you with a slice id + `Title:` + `Summary:` + `ExternalDeltas:` block, run exactly:
 
 ```bash
-node scripts/crew.ts write-final-synthesis --repo "$PWD" --title "<title>" --external-deltas "<deltas or 'none'>" --summary "<summary>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-final-synthesis --repo "$PWD" --title "<title>" --external-deltas "<deltas or 'none'>" --summary "<summary>"
 bun src/scripts/loop.mts slice complete --id <SLICE-NN> --repo "$PWD"
 bun src/scripts/loop.mts slice grade --id <SLICE-NN> --repo "$PWD"
 ```
@@ -120,7 +120,7 @@ Pass the strings VERBATIM from the dispatch prompt. Do not paraphrase the title,
 
 **Allowed Bash:**
 
-- `node scripts/crew.ts write-final-synthesis ...`
+- `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-final-synthesis ...` (and other `crew.ts` write-* commands via the same canonical prefix)
 - `bun src/scripts/loop.mts slice complete ...`
 - `bun src/scripts/loop.mts slice grade ...`
 - `git log` / `git diff --stat` / `git show --stat` (for release-notes + CHANGELOG context — read-only)

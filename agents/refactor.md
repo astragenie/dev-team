@@ -1,7 +1,7 @@
 ---
 name: refactor
 prompt_id: refactor
-version: 3.0.1
+version: 3.0.2
 model_pinned: fable
 evals: planned:evals/agents/refactor.yaml
 capabilities:
@@ -148,7 +148,7 @@ By file type (per routing-table):
 **Stub on entry.** FIRST tool call, before any investigation:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff --repo "$PWD" --scaffold --status in-progress --confidence low --summary "starting quality sweep" --run-title "<run title from dispatch>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff --repo "$PWD" --scaffold --status in-progress --confidence low --title "<run title from dispatch>" --summary "starting quality sweep"
 ```
 
 A mid-run pause then leaves a `decision: pending` artifact the parent can detect (FEAT-161). `--scaffold`/`--update` are idempotent (DEC-019).

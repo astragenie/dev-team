@@ -1,7 +1,7 @@
 ---
 name: reviewer
 prompt_id: reviewer
-version: 1.1.0
+version: 1.1.1
 model_pinned: sonnet
 evals: evals/agents/crew-reviewer.yaml
 capabilities:
@@ -14,7 +14,6 @@ description: Independent review specialist focused on correctness, regressions, 
 model: sonnet
 effort: high
 maxTurns: 60
-maxLines: 360 # +10 over default: carries the configurable review-gate matrix (governance-approved override)
 disallowedTools: Write, Edit, NotebookEdit
 color: orange
 ---

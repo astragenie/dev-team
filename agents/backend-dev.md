@@ -1,7 +1,7 @@
 ---
 name: backend-dev
 prompt_id: backend-dev
-version: 2.4.2
+version: 2.4.3
 model_pinned: sonnet
 evals: planned:evals/agents/backend-dev.yaml
 capabilities:
@@ -18,7 +18,6 @@ maxTurns: 60
 maxMinutes: 12
 warnAtTurns: 50
 warnAtMinutes: 9
-maxLines: 330
 color: orange
 ---
 

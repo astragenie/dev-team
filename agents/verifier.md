@@ -1,7 +1,7 @@
 ---
 name: verifier
 prompt_id: verifier
-version: 1.0.1
+version: 1.0.2
 model_pinned: sonnet
 evals: planned:evals/agents/verifier.yaml
 capabilities:
@@ -75,7 +75,7 @@ The dispatcher routes your verdict to merge / fix / escalate per the routing-tab
 **FIRST action upon dispatch** (before any Read / Grep / Bash investigation) — this is the ONLY first-call command; the "First action" section below explains why, it does not define a different command:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-validation-result --repo "$PWD" --scaffold --status in-progress --confidence low --title "<slice-id> validation" --summary "starting investigation" --run-title "<run title from dispatch>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-validation-result --repo "$PWD" --scaffold --status in-progress --confidence low --title "<slice-id> validation" --summary "starting investigation"
 ```
 
 Capture the returned `path`. The scaffold artifact establishes your validation path early with an empty `decision:` field so a mid-run pause leaves a detectable stub instead of nothing.

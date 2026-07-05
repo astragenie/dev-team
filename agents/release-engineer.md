@@ -1,7 +1,7 @@
 ---
 name: release-engineer
 prompt_id: release-engineer
-version: 1.3.1
+version: 1.3.2
 model_pinned: sonnet
 evals: planned:evals/agents/release-engineer.yaml
 capabilities:
@@ -14,7 +14,6 @@ description: Deployment + infrastructure specialist — owns release ceremony, C
 model: sonnet
 effort: medium
 maxTurns: 30
-maxLines: 380
 color: red
 ---
 ## Custom instructions
@@ -44,7 +43,7 @@ If you must stop early (environment locked, credentials missing, CI red), write 
 Before any Read, Grep, or Bash investigation, your FIRST tool call MUST be:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-deployment-check --repo "$PWD" --scaffold --status in-progress --confidence low --summary "starting investigation" --run-title "<run title from dispatch>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-deployment-check --repo "$PWD" --scaffold --status in-progress --confidence low --title "<run title from dispatch>" --summary "starting investigation"
 ```
 
 This establishes the artifact path. At the end of your run (after deployment gates pass or you hit a blocker), re-invoke the same command with `--update <path-from-scaffold>` carrying your real verdict, confidence, and summary.
