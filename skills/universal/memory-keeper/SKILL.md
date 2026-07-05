@@ -25,6 +25,13 @@ Two memory layers exist — know which is which:
 
 This skill is about **astramem** — the searchable layer agents read + write.
 
+**Scope note (as built today):** astramem is **per-machine**. A memory persists
+across *your* sessions on this machine, not across teammates. Every write defaults
+to `personal` scope. `promote_memory(id, "team"|"org")` marks a memory
+sync-eligible, but cross-machine **team recall is not implemented yet** (deferred
+v2 — the local→cloud shipper is one-way and off by default). So record for your own
+future continuity; do not assume a teammate will recall what you wrote.
+
 ## The discipline — two directions
 
 ### 1. RECALL before you decide (read)
