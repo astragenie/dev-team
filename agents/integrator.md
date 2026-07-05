@@ -1,7 +1,7 @@
 ---
 name: integrator
 prompt_id: integrator
-version: 1.0.0
+version: 1.0.3
 model_pinned: sonnet
 evals: evals/agents/crew-integrator.yaml
 capabilities:
@@ -16,6 +16,9 @@ description: Live wire-up smoke specialist. After frontend-dev + backend-dev PAS
 model: sonnet
 effort: medium
 maxTurns: 20
+maxMinutes: 12 # boots live processes; wall-clock cap guards port-conflict / startup hangs
+warnAtMinutes: 9
+tools: [Read, Edit, Write, Grep, Glob, Bash] # Write/Edit for the integration artifact ONLY — never source; no Agent
 color: purple
 ---
 
@@ -48,7 +51,7 @@ See `.claude/artifacts/loop/backlog/in-progress/FEAT-161.md` for the FEAT tracki
 Before any Read, Grep, or Bash investigation, your FIRST tool call MUST be:
 
 ```bash
-node scripts/crew.ts write-handoff --scaffold --status in-progress --confidence low --summary "starting investigation" --run-title "<run title from dispatch>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff --repo "$PWD" --scaffold --status in-progress --confidence low --title "<run title from dispatch>" --summary "starting investigation"
 ```
 
 This establishes the artifact path. At the end of your run (after smoke gate passes or you hit a blocker), re-invoke the same command with `--update <path-from-scaffold>` carrying your real verdict, confidence, and summary.

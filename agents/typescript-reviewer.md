@@ -1,7 +1,7 @@
 ---
 name: typescript-reviewer
 prompt_id: typescript-reviewer
-version: 1.0.0
+version: 1.0.1
 model_pinned: sonnet
 capabilities:
   role: [reviewer]
@@ -74,9 +74,8 @@ Returning narration without running LAST `write-review-result` is a contract vio
 ## Scope
 
 - Read the diff (`git diff` or files specified in the dispatch)
-- Load `skills/domain/typescript/ts-conventions/` (always — compiler flags, type rules, Zod, size budgets, supply chain)
-- Load `skills/domain/typescript-pro/` only when diff touches advanced type patterns / full-stack safety / build tooling
-- Load `skills/domain/typescript/node-ts-patterns/` only when diff touches `.ts` files targeting Node.js (plugins, CLI, backend, scripts)
+- Load `skills/domain/typescript-pro/` (always — compiler flags, type rules, Zod boundaries, size budgets, supply chain; absorbed the prior ts-conventions skill 2026-06-21, plus advanced type patterns / full-stack safety / build tooling)
+- Load `skills/domain/backend/node-ts-patterns/` only when diff touches `.ts` files targeting Node.js (plugins, CLI, backend, scripts)
 - Check every `.ts` / `.tsx` file in the diff against the checklist below
 - Report findings — do not fix them
 
