@@ -160,49 +160,70 @@ describe("determineWinner — AC-4 per-candidate all-case promotion gate", () =>
     expect(result.winner?.prompt_path).toBe(join(repoPath, "candidate-cand-1.md"));
   });
 
-  test("two candidates: one all-pass, one partial-pass -> the all-pass candidate wins", async () => {
+  test("ADVERSARIAL: rank-1 candidate fails a case; the search finds a lower-ranked, fully-passing candidate as winner", async () => {
+    // This is the regression test for the review HIGH finding: the gate must
+    // SEARCH `ranked`, not just gate-check `rank1[0]`. cand-fail's case-1
+    // trial is deliberately built to Pareto-DOMINATE every cand-pass trial
+    // (higher score, lower cost, lower latency) so it lands at rank 1 —
+    // exactly the AC-3 shape, where a real fix can raise cost/latency and
+    // rank below a candidate that only "won" by failing to be evaluated on
+    // every case. A naive `rank1[0]` pick returns no_winner:true here even
+    // though cand-pass is a fully valid winner.
     const repoPath = makeRepo();
+    const failPath = join(repoPath, "candidate-fail.md");
+    const passPath = join(repoPath, "candidate-pass.md");
+
     const generator: CandidateGenerator = {
       async generate() {
-        const goodPath = join(repoPath, "candidate-good.md");
-        const badPath = join(repoPath, "candidate-partial.md");
-        writeFileSync(goodPath, "# Good candidate\nPasses everything.\n", "utf8");
-        writeFileSync(badPath, "# Partial candidate\nPasses only one case.\n", "utf8");
-        const good: Candidate = {
-          id: "cand-good",
+        writeFileSync(failPath, "# Fails one case\nWins case-1 big, bombs case-2.\n", "utf8");
+        writeFileSync(passPath, "# Passes every case\nModest but consistent scores.\n", "utf8");
+        const failCandidate: Candidate = {
+          id: "cand-fail",
           agent: "fullstack-dev",
-          prompt_path: goodPath,
-          prompt_hash: "hash-good",
+          prompt_path: failPath,
+          prompt_hash: "hash-fail",
           prompt_size_lines: 2,
           derived_from_trials: [],
           generator_cost_usd: 0,
           created_at: new Date().toISOString()
         };
-        const partial: Candidate = {
-          id: "cand-partial",
+        const passCandidate: Candidate = {
+          id: "cand-pass",
           agent: "fullstack-dev",
-          prompt_path: badPath,
-          prompt_hash: "hash-partial",
+          prompt_path: passPath,
+          prompt_hash: "hash-pass",
           prompt_size_lines: 2,
           derived_from_trials: [],
           generator_cost_usd: 0,
           created_at: new Date().toISOString()
         };
-        return [good, partial];
+        return [failCandidate, passCandidate];
       }
     };
 
-    // Scorer: "hash-good" passes both cases; "hash-partial" passes only case-1.
+    // cand-fail: case-1 is excellent (score 0.99, cheap, fast) — dominates
+    // every cand-pass trial — but case-2 fails outright (score 0.1).
+    // cand-pass: modest but consistent (score 0.5, pricier, slower) on both
+    // cases — never rank 1, but the only candidate passing every case.
     const scorer: Scorer = {
       async score(agentRun, evalCase) {
-        const isGood = agentRun.candidate_prompt_path.includes("candidate-good");
-        const pass = isGood || evalCase.id === "case-1";
+        const isFail = agentRun.candidate_prompt_path.includes("candidate-fail");
+        if (isFail) {
+          const pass = evalCase.id === "case-1";
+          return {
+            pass,
+            score: pass ? 0.99 : 0.1,
+            cost_usd: 0.001,
+            latency_ms: 100,
+            rationale: pass ? "case-1: excellent" : "case-2: bombed"
+          };
+        }
         return {
-          pass,
-          score: isGood ? 0.95 : 0.9,
-          cost_usd: 0.001,
-          latency_ms: 100,
-          rationale: "scored"
+          pass: true,
+          score: 0.5,
+          cost_usd: 0.01,
+          latency_ms: 200,
+          rationale: `${evalCase.id}: passed`
         };
       }
     };
@@ -216,6 +237,9 @@ describe("determineWinner — AC-4 per-candidate all-case promotion gate", () =>
       generator,
       scorer,
       cases: CASES,
+      // artifactOnly stays true — this test isolates determineWinner's
+      // search behavior via runOptimize's public surface, not the auto-PR
+      // git/gh subprocess path (covered separately by the SLICE-105 guard).
       artifactOnly: true
     });
 
@@ -223,11 +247,17 @@ describe("determineWinner — AC-4 per-candidate all-case promotion gate", () =>
     if (!result) return;
 
     expect(result.trials).toHaveLength(4);
+    // Sanity check that this scenario IS adversarial: cand-fail's case-1
+    // trial really is the sole global rank-1 (a naive `rank1[0]` pick would
+    // land on it).
+    const rank1Trials = result.trials.filter((t) => t.pareto_rank === 1);
+    expect(rank1Trials).toHaveLength(1);
+    expect(rank1Trials[0]?.candidate_prompt_hash).toBe("hash-fail");
+
+    // The search must skip the ineligible rank-1 candidate and select the
+    // lower-ranked, fully-passing candidate instead.
     expect(result.no_winner).toBe(false);
     expect(result.winner).not.toBeNull();
-    // The partial candidate fails the all-case gate even though its
-    // case-1 trial alone might otherwise be competitive; only the
-    // all-pass candidate can win.
-    expect(result.winner?.prompt_path).toBe(join(repoPath, "candidate-good.md"));
+    expect(result.winner?.prompt_path).toBe(passPath);
   });
 });

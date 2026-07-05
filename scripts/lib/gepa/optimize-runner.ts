@@ -270,25 +270,39 @@ function determineWinner(
   const best = rank1[0];
   if (!best) return { winner: null, noWinner: true };
 
-  const matchingCandidate = candidates.find((c) => c.prompt_hash === best.candidate_prompt_hash);
+  // AC-4 (review fix): the all-case gate must SEARCH `ranked` — not just
+  // inspect the global rank-1 trial. `ranked` is already sorted by Pareto
+  // rank ascending, then the default tiebreaker within each rank, so the
+  // FIRST trial whose candidate passes every eval case it was scored
+  // against is the best eligible winner. A real fix can raise cost/latency
+  // relative to a candidate that only "wins" one case, which drops it below
+  // rank 1 in the pass>score>-cost>-latency ordering — restricting the gate
+  // to rank1[0] would then spuriously report no_winner even though a lower
+  // -ranked, fully-passing candidate exists (FEAT-192 SLICE-B review HIGH
+  // finding; this is exactly the AC-3 money-test shape).
+  const eligible = ranked.find((t) => candidateAllCasesPass(ranked, t.candidate_prompt_hash));
+
+  // `winnerTrial` falls back to the rank-1 trial when nothing is eligible —
+  // `winner` stays populated as a diagnostic either way (SLICE-105 pattern)
+  // so callers keep visibility into "what almost won"; the actual promotion
+  // gate (auto-PR) reads `no_winner`, not `winner !== null`.
+  const winnerTrial = eligible ?? best;
+  const matchingCandidate = candidates.find(
+    (c) => c.prompt_hash === winnerTrial.candidate_prompt_hash
+  );
   const winner: OptimizationResult["winner"] = {
-    candidate_id: best.id,
-    pareto_rank: best.pareto_rank ?? 1,
-    score: best.score.score,
-    pass: best.score.pass,
-    cost_usd: best.score.cost_usd,
-    latency_ms: best.score.latency_ms,
-    prompt_path: matchingCandidate?.prompt_path ?? best.candidate_prompt_path ?? ""
+    candidate_id: winnerTrial.id,
+    pareto_rank: winnerTrial.pareto_rank ?? 1,
+    score: winnerTrial.score.score,
+    pass: winnerTrial.score.pass,
+    cost_usd: winnerTrial.score.cost_usd,
+    latency_ms: winnerTrial.score.latency_ms,
+    prompt_path: matchingCandidate?.prompt_path ?? winnerTrial.candidate_prompt_path ?? ""
   };
 
-  // AC-4: the rank-1 candidate is only a REAL winner (no_winner: false) when
-  // it passes EVERY eval case it was scored against — not merely the one
-  // case that produced this rank-1 trial. `winner` stays populated either
-  // way (diagnostic — same pattern as the pre-existing pass=false path
-  // below) so callers keep visibility into "what almost won"; the actual
-  // promotion gate (auto-PR) reads `no_winner`, not `winner !== null`.
-  const allCasesPass = candidateAllCasesPass(ranked, best.candidate_prompt_hash);
-  return { winner, noWinner: !best.score.pass || !allCasesPass };
+  // eligible's every trial passes by construction (candidateAllCasesPass),
+  // so noWinner reduces to "did the search find anything eligible at all".
+  return { winner, noWinner: !eligible };
 }
 
 function writeArtifact(repoPath: string, runId: string, result: OptimizationResult): string {
