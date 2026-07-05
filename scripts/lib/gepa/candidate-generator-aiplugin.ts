@@ -154,16 +154,35 @@ export type RewriteExtractionResult = { ok: true; content: string } | { ok: fals
  * (AC-7 response-format contract). Free-form prose with no fenced block, an
  * empty response, or an empty fenced block are all rejections — the caller
  * must never write raw/error text to the candidate `.md`.
+ *
+ * The response-format contract requires the ENTIRE response to be ONE fenced
+ * block, so the closing fence is anchored to the END of the (trimmed)
+ * response — captured greedily from the first opening fence's newline to the
+ * final closing fence — rather than matched non-greedily to the FIRST closing
+ * fence. A non-greedy match silently truncates at any nested fenced block
+ * inside the rewritten prompt body (e.g. a ```bash example — normal in agent
+ * .md files, present in agents/aiplugin-dev.md itself), and the truncated
+ * text still passes validateCandidateSize and would enter the Pareto
+ * pipeline as a corrupted "valid" candidate.
  */
 export function extractRewrittenContent(responseText: string): RewriteExtractionResult {
-  if (!responseText || responseText.trim().length === 0) {
+  const trimmed = responseText.trim();
+  if (trimmed.length === 0) {
     return { ok: false, reason: "empty_response" };
   }
-  const fenceMatch = responseText.match(/```[ \t]*[\w.-]*\r?\n([\s\S]*?)\r?\n?```/);
-  if (!fenceMatch || typeof fenceMatch[1] !== "string") {
+
+  const openMatch = trimmed.match(/^```[ \t]*[\w.-]*\r?\n/);
+  if (!openMatch || !trimmed.endsWith("```")) {
     return { ok: false, reason: "no_fenced_block" };
   }
-  const content = fenceMatch[1].trim();
+
+  const startIdx = openMatch[0].length;
+  const endIdx = trimmed.length - 3; // exclude the final closing ```
+  if (endIdx <= startIdx) {
+    return { ok: false, reason: "empty_fenced_block" };
+  }
+
+  const content = trimmed.slice(startIdx, endIdx).trim();
   if (content.length === 0) {
     return { ok: false, reason: "empty_fenced_block" };
   }

@@ -134,6 +134,59 @@ describe("extractRewrittenContent — AC-7 response-format contract", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toBe("empty_fenced_block");
   });
+
+  it("regression: does NOT truncate at a nested fenced block inside the rewritten body", () => {
+    // agents/aiplugin-dev.md (the SLICE-D/AC-3 target) legitimately contains a
+    // fenced example inside its own body. A non-greedy close-fence match
+    // would stop at the FIRST ``` after the opening fence — i.e. at the
+    // nested block's own closing fence — silently truncating everything
+    // after it (including the trailing text below).
+    const response = [
+      "```markdown",
+      "# aiplugin-dev",
+      "",
+      "## Identity anchor",
+      "",
+      "You are aiplugin-dev.",
+      "",
+      "Example usage:",
+      "",
+      "```bash",
+      'echo "hello from a nested fence"',
+      "```",
+      "",
+      "more text after the nested example -- must survive extraction",
+      "```"
+    ].join("\n");
+
+    const result = extractRewrittenContent(response);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.content).toContain("```bash");
+      expect(result.content).toContain('echo "hello from a nested fence"');
+      expect(result.content).toContain(
+        "more text after the nested example -- must survive extraction"
+      );
+      // The full body must be present, not truncated at the nested fence.
+      expect(result.content).toBe(
+        [
+          "# aiplugin-dev",
+          "",
+          "## Identity anchor",
+          "",
+          "You are aiplugin-dev.",
+          "",
+          "Example usage:",
+          "",
+          "```bash",
+          'echo "hello from a nested fence"',
+          "```",
+          "",
+          "more text after the nested example -- must survive extraction"
+        ].join("\n")
+      );
+    }
+  });
 });
 
 // ── AC-1 flag routing + end-to-end live path via generate() ─────────────────
