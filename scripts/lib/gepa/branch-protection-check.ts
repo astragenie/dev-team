@@ -37,13 +37,15 @@ export class GhAbsentError extends Error {
 }
 
 export class GhApiError extends Error {
-  constructor(
-    message: string,
-    public readonly exitCode: number,
-    public readonly stderr: string
-  ) {
+  readonly exitCode: number;
+  readonly stderr: string;
+  // Explicit fields, not parameter properties — Node strip-only mode (ADR-002
+  // consumer runtime) cannot erase them.
+  constructor(message: string, exitCode: number, stderr: string) {
     super(message);
     this.name = "GhApiError";
+    this.exitCode = exitCode;
+    this.stderr = stderr;
   }
 }
 
