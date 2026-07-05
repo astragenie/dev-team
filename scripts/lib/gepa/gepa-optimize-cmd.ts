@@ -285,6 +285,67 @@ function buildTrainSeedTrials(agent: string, trainCases: EvalCase[]): Trial[] {
   }));
 }
 
+/**
+ * Last-resort cold-start seed (FEAT-192 SLICE-D). Fires only when BOTH the
+ * train split AND the historical trial store are empty — the shape produced
+ * by `--split 0/N` (every case pushed into heldOut, the AC-3 proof split) on
+ * an agent with zero trial history. Without this, `dispatchRewriter` would
+ * run its very first candidate-generation attempt with no failing-trial
+ * context at all — `buildTrainSeedTrials` has nothing to draw from once
+ * every case is held out (SLICE-C review HIGH follow-up: forcing all cases
+ * into heldOut empties `train`, which zeroes `trainSeedTrials`).
+ *
+ * Same honesty rule as `buildTrainSeedTrials`: no fabricated judge score.
+ * The rationale says plainly that no baseline trial exists yet and folds in
+ * the case's OWN rubric text — the one thing actually known about what
+ * "pass" requires — rather than inventing a specific failure narrative. A
+ * live optimize cycle should supersede this the moment real trial history
+ * exists (see `resolveFailingTrialContext`'s priority order).
+ */
+function buildHeldOutSeedTrials(agent: string, heldOutCases: EvalCase[]): Trial[] {
+  const now = new Date().toISOString();
+  return heldOutCases.map((c) => {
+    const rubricText = (c.rubric ?? []).join(" / ") || "no rubric provided";
+    return {
+      id: crypto.randomUUID(),
+      agent,
+      phase: "build",
+      candidate_prompt_hash: "champion-cold-start",
+      candidate_prompt_path: null,
+      input: c.input,
+      output: null,
+      score: {
+        pass: false,
+        score: 0,
+        cost_usd: 0,
+        latency_ms: 0,
+        rationale: `cold-start seed (no baseline trial yet for case "${c.id}"): scored on this rubric — ${rubricText}`
+      },
+      source: "eval",
+      pareto_rank: null,
+      created_at: now
+    };
+  });
+}
+
+/**
+ * Cold-start failing-trial context, in priority order: real trial-store
+ * history > train-split seed trials > heldOut-split seed trials (last
+ * resort — see `buildHeldOutSeedTrials`). The heldOut fallback only fires
+ * when BOTH higher-priority sources are empty.
+ */
+function resolveFailingTrialContext(
+  agent: string,
+  failingTrials: Trial[],
+  trainSeedTrials: Trial[],
+  heldOutCases: EvalCase[]
+): Trial[] {
+  if (failingTrials.length > 0) return failingTrials;
+  if (trainSeedTrials.length > 0) return trainSeedTrials;
+  if (heldOutCases.length > 0) return buildHeldOutSeedTrials(agent, heldOutCases);
+  return failingTrials;
+}
+
 export interface OptimizeEvalCasesResult {
   /** Held-out cases — passed to runOptimize's `cases`; these score candidates. */
   heldOut: EvalCase[];
@@ -339,7 +400,7 @@ export function selectScorer(hasCases: boolean, judgeChain: JudgeChainEntry[]): 
 }
 
 /** Resolved inputs for the `runOptimize({ scorer, cases, failingTrials })` call. */
-interface ResolvedOptimizeInputs {
+export interface ResolvedOptimizeInputs {
   scorer: Scorer;
   cases?: EvalCase[];
   failingTrials: Trial[];
@@ -348,9 +409,10 @@ interface ResolvedOptimizeInputs {
 /**
  * Decide scorer + cases + effective failingTrials for one optimize cycle.
  * Extracted out of runGepaOptimizeCmd to keep its cognitive complexity in
- * budget (FEAT-192 SLICE-C).
+ * budget (FEAT-192 SLICE-C). Exported (FEAT-192 SLICE-D) so the AC-3 proof
+ * split/seeding interaction is directly unit-testable without a live LLM.
  */
-async function resolveOptimizeInputs(
+export async function resolveOptimizeInputs(
   repoPath: string,
   agent: string,
   split: SplitOpts | undefined,
@@ -361,8 +423,12 @@ async function resolveOptimizeInputs(
   const hasCases = heldOutCases.length > 0;
   const judgeChain = evalCases?.judgeChain ?? DEFAULT_JUDGE_CHAIN;
   const trainSeedTrials = evalCases?.trainSeedTrials ?? [];
-  const effectiveFailingTrials =
-    failingTrials.length === 0 && trainSeedTrials.length > 0 ? trainSeedTrials : failingTrials;
+  const effectiveFailingTrials = resolveFailingTrialContext(
+    agent,
+    failingTrials,
+    trainSeedTrials,
+    heldOutCases
+  );
 
   return {
     scorer: selectScorer(hasCases, judgeChain),
