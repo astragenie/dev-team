@@ -28,9 +28,24 @@ import { adaptArtifact } from "./adapt-artifact.ts";
 import type { ArtifactRecord } from "../artifacts/write.ts";
 import type { ArtifactFields } from "../artifacts/types.ts";
 
-// FEAT-210: fullstack-dev (S2) + frontend-dev (canary, low-stakes second agent).
-// Remaining S5c agents (backend-dev, verifier) land with SLICE-102.
-const CAPTURE_AGENT_ALLOWLIST = new Set(["fullstack-dev", "frontend-dev"]);
+// Capture allowlist = the eval-capable roster. Capture is trial LOGGING only,
+// so it is safe for EVERY agent — including the critical allowlist (reviewer,
+// verifier, architect). The critical-agent guard lives on PROMOTION (auto-merge
+// downgrades to a draft PR), never on capture. This set mirrors the agents that
+// carry an eval spec (evals/agents/crew-*.yaml) or a .gepa/eval seed dataset, so
+// every captured trial has a scoring destination. Agents with no eval surface
+// are excluded to avoid dead trials.
+const CAPTURE_AGENT_ALLOWLIST = new Set([
+  "fullstack-dev",
+  "frontend-dev",
+  "backend-dev",
+  "verifier",
+  "reviewer",
+  "architect",
+  "integrator",
+  "refactor",
+  "release-engineer"
+]);
 
 const EVENTS_LOG_PATH = ".claude/logs/events.jsonl";
 

@@ -110,12 +110,36 @@ describe("captureTee", () => {
     const root = mkdtempSync(join(tmpdir(), "gepa-tee-"));
     try {
       writeFileSync(join(root, "gepa.config.json"), enabledConfig());
-      // Pass reviewer as owner — should be filtered out by the capture allowlist
-      await captureTee(root, sampleRecord(), sampleFields({ owner: "reviewer" }));
+      // document-writer has no eval surface → filtered out by the capture allowlist.
+      await captureTee(root, sampleRecord(), sampleFields({ owner: "document-writer" }));
       const exists = await Bun.file(
-        join(root, ".claude/artifacts/crew/gepa/trials/reviewer.jsonl")
+        join(root, ".claude/artifacts/crew/gepa/trials/document-writer.jsonl")
       ).exists();
       expect(exists).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("captures reviewer (eval-capable roster, critical-agent guard is on promotion not capture)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gepa-tee-"));
+    try {
+      writeFileSync(join(root, "gepa.config.json"), enabledConfig());
+      const record: ArtifactRecord = {
+        kind: "review-result",
+        path: "/tmp/fake-review.md",
+        title: "review"
+      };
+      await captureTee(root, record, sampleFields({ owner: "reviewer", verdict: "rejected" }));
+      const trialFile = join(root, ".claude/artifacts/crew/gepa/trials/reviewer.jsonl");
+      const lines = readFileSync(trialFile, "utf8").trim().split("\n");
+      expect(lines).toHaveLength(1);
+      const trial = JSON.parse(lines[0]!);
+      expect(trial.agent).toBe("reviewer");
+      expect(trial.phase).toBe("review");
+      // rejected verdict → captured trial records the failure, not the pass=true default.
+      expect(trial.score.pass).toBe(false);
+      expect(trial.score.score).toBe(0);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
