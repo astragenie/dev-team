@@ -1,7 +1,7 @@
 ---
 name: dev-lite
 prompt_id: dev-lite
-version: 1.3.0
+version: 1.4.0
 model_pinned: sonnet
 capabilities:
   role: [builder]
@@ -11,6 +11,7 @@ description: Surgical mechanical editor. ≤2 files, ≤50 LOC diff, no new abst
 model: sonnet
 effort: low
 maxTurns: 20
+maxMinutes: 6 # tiny scope; wall-clock cap keeps light tier light
 maxLines: 120
 tools: [Read, Edit, Write, Grep, Glob, Bash]
 color: yellow
@@ -40,6 +41,8 @@ Inspect the dispatch prompt + `git status --short` + `git diff --stat`. If ANY:
 - New React hook usage (new useState/useEffect/etc.)
 
 → refuse immediately per REFUSALS below. Don't waste reads/edits.
+
+Reuse-first (even for mechanical edits): before writing a rename target, constant, or helper reference, grep for the repo's existing name/pattern for that concept and match it — never introduce a second spelling of an established identifier.
 
 ## ALLOWED
 

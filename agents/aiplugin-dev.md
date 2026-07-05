@@ -1,8 +1,9 @@
 ---
 name: aiplugin-dev
 prompt_id: aiplugin-dev
-version: 1.2.1
+version: 1.2.2
 model_pinned: sonnet
+evals: planned:evals/agents/aiplugin-dev.yaml
 capabilities:
   role: [implementer]
   surfaces: [plugin-internals, agent-prompts, plugin-manifest, hooks, commands, docs, scripts]

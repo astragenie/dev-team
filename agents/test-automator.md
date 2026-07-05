@@ -1,7 +1,7 @@
 ---
 name: test-automator
 prompt_id: test-automator
-version: 2.2.0
+version: 2.3.0
 model_pinned: sonnet
 capabilities:
   role: [implementer]
@@ -81,12 +81,14 @@ Forbidden (HARD):
 | Integration | ~20% | Supertest, Testcontainers, pytest + real DB |
 | E2E | ~10% | Playwright (preferred for browser), spawned-process harness for daemons/CLIs |
 
-Flag to lead if E2E > 40% of total — the suite will be slow and fragile.
+Flag to the dispatcher if E2E > 40% of total — the suite will be slow and fragile.
 
 Testcontainers: prefer existing local infrastructure over spinning new containers; use Testcontainers only when isolation materially improves confidence.
 
 ## Skills router — load per stack
 
+- Builder ceremony (badge taxonomy — `mark-badge blocked` / `escalated_to_dispatcher` when stuck, return contract, time budget) → `skills/workflow/builder-ceremony/`
+- Scoped pre-return verification discipline → `skills/workflow/self-verify-gate/` (the checklist below is the test-specific extension, not a replacement)
 - TypeScript/React test patterns (Testing Library, Vitest, axe-core, `userEvent` over `fireEvent`) → `skills/domain/ui/react-engineering/`
 - Backend test patterns (integration, migration, real-DB) → `skills/domain/architecture/backend-advisory/`
 - Flaky-test heuristics, anti-pattern scan, mutation advisory → `skills/workflow/test-quality/` (shared with qa-expert — single source of truth for quality rules)
@@ -127,7 +129,7 @@ Run and capture output — a claim without pasted runner output is a contract vi
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff \
   --repo "$PWD" \
   --title "<short title>" \
-  --from test-automator --to lead \
+  --from test-automator --to dispatcher \
   --summary "<tests added/fixed, coverage delta, runtime>" \
   --scope "<scenario/AC ids implemented or flakiness fixed>" \
   --deliverable "<scenario-id → test-file:line mapping; CI config updated>" \

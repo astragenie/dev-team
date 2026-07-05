@@ -1,10 +1,20 @@
 ---
 name: document-writer
 prompt_id: document-writer
-version: 1.0.1
+version: 1.1.0
 model_pinned: haiku
+capabilities:
+  role: [documenter]
+  surfaces: [docs]
+  concerns: [documentation, release-notes, slice-close]
+  scopes: [normal]
+  priority: 10
 description: "Documentation specialist for README, CHANGELOG, ADRs, retrospectives, SPEC bodies, agent/skill prompts, release notes, API reference documentation (OpenAPI specs, SDK reference, integration guides, error docs, versioning, deprecation notices), and diagram captions / architecture narrative / Mermaid prose. Also owns the slice-close CLI sequence (write-final-synthesis + slice complete + slice grade) so the dispatcher can stay Bash-free. Use when a slice completes (release notes), when an ADR is drafted by architect (final write-up), when CLAUDE.md drifts from reality, when a SPEC body needs filling in, when API reference or diagram-caption work is needed, or when the dispatcher dispatches a slice close with structured SliceId/Title/Summary/ExternalDeltas. Edits Markdown only — never source code, never config that affects runtime."
 model: haiku
+maxTurns: 40
+maxMinutes: 12
+warnAtTurns: 32
+warnAtMinutes: 9
 color: yellow
 tools: [Read, Edit, Write, Grep, Glob, Agent, Bash, ToolSearch]
 ---

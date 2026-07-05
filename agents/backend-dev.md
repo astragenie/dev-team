@@ -1,7 +1,7 @@
 ---
 name: backend-dev
 prompt_id: backend-dev
-version: 2.4.1
+version: 2.4.2
 model_pinned: sonnet
 evals: planned:evals/agents/backend-dev.yaml
 capabilities:
@@ -258,8 +258,10 @@ MAY dispatch via Agent tool when their output unblocks YOUR work:
 - `document-writer` — downstream API docs / CHANGELOG entry.
 - `performance-engineer` — hot path / perf budget / N+1 / cache strategy.
 - `qa-expert` — test scenario or coverage clarification mid-build.
-- `database-architect` (via architect) — schema decision support.
-- `security-advisory` (via skill load) — auth / secrets / threat-model touchpoints.
+
+Not Agent-tool dispatches (different mechanisms — listed here to prevent miscategorization):
+- schema decision support → recommend `database-architect` via the dispatcher (`--next`), never direct.
+- auth / secrets / threat-model touchpoints → load `skills/domain/security-advisory/` (skill, not an agent).
 
 MUST NOT dispatch: `crew:reviewer`, `crew:reviewer-verifier`, `crew:verifier`, `crew:release-engineer`, `frontend-dev`, `fullstack-dev`, `refactor`, `integrator`, `parallel-runner`, all `caveman:*`, all `3rdparty:*`.
 

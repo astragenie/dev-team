@@ -1,7 +1,7 @@
 ---
 name: refactor
 prompt_id: refactor
-version: 3.0.0
+version: 3.0.1
 model_pinned: fable
 evals: planned:evals/agents/refactor.yaml
 capabilities:
@@ -14,7 +14,9 @@ capabilities:
 description: Behavior-preserving mechanical refactor specialist — eliminates stale references, duplication, terminology drift, and metadata drift via tiered safe transformations; reports (never removes) dead-code candidates; writes a one-page quality-sweep artifact for the reviewer gate.
 model: fable
 effort: high
-maxTurns: 30
+maxTurns: 30 # sweep-shaped: fewer, bigger grep/edit turns than a feature build
+maxMinutes: 12
+warnAtMinutes: 9
 color: magenta
 tools: [Read, Edit, Write, Grep, Glob, Bash, Agent]
 ---

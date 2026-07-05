@@ -1,7 +1,7 @@
 ---
 name: integrator
 prompt_id: integrator
-version: 1.0.1
+version: 1.0.2
 model_pinned: sonnet
 evals: planned:evals/agents/integrator.yaml
 capabilities:
@@ -16,6 +16,8 @@ description: Live wire-up smoke specialist. After frontend-dev + backend-dev PAS
 model: sonnet
 effort: medium
 maxTurns: 20
+maxMinutes: 12 # boots live processes; wall-clock cap guards port-conflict / startup hangs
+warnAtMinutes: 9
 color: purple
 ---
 

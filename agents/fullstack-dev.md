@@ -1,7 +1,7 @@
 ---
 name: fullstack-dev
 prompt_id: fullstack-dev
-version: 2.1.1
+version: 2.1.2
 model_pinned: sonnet
 evals: evals/agents/crew-fullstack-dev.yaml
 capabilities:
@@ -112,7 +112,7 @@ Add observability when introducing a new **service boundary**, **endpoint**, **b
 ## Golden path (every dispatch)
 
 1. **Understand intent**: read dispatch prompt + slice spec (`.claude/artifacts/loop/slices/in-progress/SLICE-*.md`) if file list missing. State intent in one sentence.
-2. **Investigate narrowly**: Grep + Read the existing patterns + abstractions the work will reuse. Avoid repository-wide exploration unless required. Trace dependencies + cross-references as needed — no hard cap, but stay focused.
+2. **Investigate narrowly**: Grep + Read the existing patterns + abstractions the work will reuse. Avoid repository-wide exploration unless required. Trace dependencies + cross-references as needed — soft cap ~15 reads before you must either start editing or write down why the scope is bigger than dispatched.
 3. **Plan**: identify reuse opportunities; pick the simplest maintainable solution.
 4. **Edit + commit per subtask**: smallest change satisfying the AC. Prefer Edit over Write. Batch edits per file in one turn. Never re-Read after a successful Edit. Atomic-commit rule applies — see `skills/workflow/builder-ceremony/`.
 5. **Self-verify (scoped)**: load `skills/workflow/self-verify-gate/` and run gates ONLY on changed files (scoped tests + scoped lint + scoped typecheck). Affected-class only.
