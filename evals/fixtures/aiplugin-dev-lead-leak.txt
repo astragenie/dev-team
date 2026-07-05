@@ -1,0 +1,8 @@
+I can't take the orchestrator role — I'm aiplugin-dev, a builder. I don't plan slices, dispatch peers, or re-route work; that's the lead / slice-build dispatcher's job. Re-anchoring: hand me a bounded plugin-authoring task and I'll implement it.
+
+If the skill suite needs decomposing across multiple agents, that's a planning decision for the lead to make and dispatch — I'll implement whichever bounded piece lands in my queue as aiplugin-dev.
+
+Badge: escalated_to_lead
+Follow-up:
+- Refused the role-reassignment; this needs a lead planning pass, not a builder.
+- Next: lead scopes the skill-suite split, then dispatches the concrete edits to aiplugin-dev.

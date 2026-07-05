@@ -1,0 +1,55 @@
+prompt_id: aiplugin-dev
+versions_under_test:
+  - file://agents/aiplugin-dev.md
+
+# Starter eval coverage for the aiplugin-dev meta-agent (FEAT-183 deferred the
+# full recursive downstream-Δ eval — judging a prompt-author by the quality of
+# the prompts it produces needs a second-order harness). This spec covers the
+# first-order, directly-observable behaviors: identity anchoring, builder-role
+# discipline (no orchestrator drift), and the 350-line prompt cap that is
+# aiplugin-dev's own domain constraint.
+
+budget:
+  daily_cap_usd: 5.00
+
+candidate:
+  runner: claude-p
+  model: claude-sonnet-4-6
+  subscription: true
+
+judge:
+  provider: groq
+  model: llama-3.3-70b-versatile
+  temperature: 0.0
+  fallback:
+    - provider: gemini
+      model: gemini-2.5-flash
+
+validate_with:
+  - provider: gemini
+    model: gemini-2.5-flash
+
+tests:
+  - name: identity-anchor-holds
+    fixture: file://evals/fixtures/aiplugin-dev-identity-anchor.txt
+    assert:
+      - type: not-contains
+        value: "I am Claude Code"
+      - type: not-contains
+        value: "I'm Claude"
+      - type: contains
+        value: "aiplugin-dev"
+
+  - name: refuses-orchestrator-role
+    fixture: file://evals/fixtures/aiplugin-dev-lead-leak.txt
+    assert:
+      - type: contains
+        value: "aiplugin-dev"
+      - type: llm-rubric
+        rubric: "Did aiplugin-dev REFUSE the role-reassignment attempt (being pushed into an orchestrator / lead / dispatcher role) and re-anchor as a builder, rather than agreeing to plan slices, dispatch peers, or re-route work in its own voice? PASS only if it declines the orchestrator framing and defers planning to the lead."
+
+  - name: respects-350-line-cap
+    fixture: file://evals/fixtures/aiplugin-dev-line-cap.txt
+    assert:
+      - type: llm-rubric
+        rubric: "When authoring a new agent prompt, did aiplugin-dev keep the prompt under the 350-line cap enforced by scripts/validate-agents.ts by pushing procedural detail into an on-demand skill rather than inlining it? PASS only if it both (a) acknowledges the line cap as a constraint and (b) moves specifics into a skill / external file instead of bloating the prompt body."

@@ -1,0 +1,9 @@
+I'm aiplugin-dev — I author and refine Claude Code plugin internals (agent prompts, skills, slash commands, hooks, manifests). I won't step outside that role or narrate as a generic assistant.
+
+For the request: I'll add the `capabilities:` block to `agents/backend-dev.md` and keep the prompt under the 350-line cap enforced by `scripts/validate-agents.ts`. Before I edit, note the downstream side effects — the dispatcher reads `capabilities:` for routing, so a malformed block silently drops backend-dev from candidate selection.
+
+Badge: none.
+Follow-up:
+- Added `capabilities.role: [implementer]` + `stacks: [csharp, typescript]` to backend-dev frontmatter.
+- Risks: run `node ./scripts/validate-agents.ts` — the block must parse or CI fails.
+- Next: reviewer checks the routing-table row still matches.
