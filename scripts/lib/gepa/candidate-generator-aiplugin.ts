@@ -27,9 +27,14 @@
  * Response-format contract (AC-7): the instruction requires a single fenced
  * code block containing the complete revised file; extraction failure (no
  * block / empty block / spawn failure) rejects the slot — never writes raw or
- * error text to the candidate .md, never crashes the cycle. Guardrails
- * (identity-anchor structural check, no-op-diff rejection, the per-candidate
- * all-case promotion gate) are SLICE-B scope, not built here.
+ * error text to the candidate .md, never crashes the cycle.
+ *
+ * FEAT-192 SLICE-B adds two pre-write guardrails that run on EVERY resolved
+ * slot content (stub or live) between "content resolved" and "file written":
+ * `checkIdentityAnchor` (AC-5 — structural, not a prompt instruction) and
+ * `checkNonTrivialDiff` (AC-2 — no-op / whitespace-only rejection). The
+ * per-candidate all-case promotion gate (AC-4) lives in optimize-runner.ts's
+ * `determineWinner`, not here.
  */
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -40,8 +45,24 @@ import { validateCandidateSize } from "@astragenie/gepa-core";
 import type { Candidate } from "@astragenie/gepa-core";
 import { parseStreamJson, runSubprocess } from "../../../evals/lib/candidate-dispatch.ts";
 
-/** Estimate for the aiplugin-dev dispatch cost (used for BudgetMeter.reserve). */
-export const GENERATOR_ESTIMATE_USD = 0.05;
+/**
+ * Estimate for the aiplugin-dev dispatch cost (used for BudgetMeter.reserve).
+ *
+ * FEAT-192 SLICE-B re-validation: the stub-era value (0.05) was calibrated for
+ * a synthetic $0 mutation, not a real `claude -p` dispatch. A live rewrite
+ * dispatch sends the FULL champion prompt (up to the 350-line cap, ~4-5k
+ * tokens) plus up to `maxTrialSample` (default 10) FULL judge rationales
+ * (unbounded but typically ~200-500 tokens each, ~2-5k tokens) as input, and
+ * expects a complete rewritten file (up to 350 lines, ~3-4k tokens) as
+ * output. At Claude Sonnet-class per-token rates (~$3/MTok in, ~$15/MTok
+ * out) that is roughly (8000 / 1e6 * 3) + (4000 / 1e6 * 15) ≈ $0.08 per
+ * dispatch. The dispatch itself runs on subscription (not metered API
+ * billing — see FEAT-192 context), so this estimate is a BudgetMeter proxy
+ * for compute cost / rate-limiting K dispatches per day against
+ * `gepa.budget.daily_usd`, not a literal invoice line. Rounded up slightly
+ * for retry/variance headroom.
+ */
+export const GENERATOR_ESTIMATE_USD = 0.08;
 
 const EVENTS_LOG_PATH = ".claude/logs/events.jsonl";
 
@@ -189,6 +210,196 @@ export function extractRewrittenContent(responseText: string): RewriteExtraction
   return { ok: true, content };
 }
 
+// ── Guardrails (FEAT-192 SLICE-B) ───────────────────────────────────────────
+//
+// Both checks run on EVERY resolved slot content — stub or live — between
+// "content resolved" and "file written". A gutted-identity or no-op candidate
+// must never reach the scored set (no Trial is ever produced for it, so it
+// never carries a pareto_rank — same exclusion pattern as the existing
+// oversized-candidate rejection below).
+
+const IDENTITY_ANCHOR_HEADING = "## Identity anchor";
+const IDENTITY_ANCHOR_SIMILARITY_THRESHOLD = 0.4;
+const MIN_CHANGED_LINES = 2;
+
+/**
+ * Extract the body of the `## Identity anchor` section: everything after the
+ * heading line up to (but not including) the next level-1 or level-2
+ * heading, or end of file. Level-3+ subheadings inside the anchor section
+ * are kept as part of the body. Returns null when the heading is absent.
+ */
+function extractIdentityAnchorBody(content: string): string | null {
+  const lines = content.split(/\r?\n/);
+  const startIdx = lines.findIndex((l) => l.trim() === IDENTITY_ANCHOR_HEADING);
+  if (startIdx === -1) return null;
+  const bodyLines: string[] = [];
+  for (let i = startIdx + 1; i < lines.length; i++) {
+    const line = lines[i] ?? "";
+    if (/^#{1,2}\s/.test(line)) break;
+    bodyLines.push(line);
+  }
+  return bodyLines.join("\n").trim();
+}
+
+/** Lowercase alphanumeric-run word set. Fragments < 2 chars are dropped as punctuation noise. */
+function wordSet(text: string): Set<string> {
+  const words = text.toLowerCase().match(/[a-z0-9]{2,}/g) ?? [];
+  return new Set(words);
+}
+
+/**
+ * Similarity measure decision (SLICE-B): recall of the champion's
+ * identity-anchor vocabulary surviving in the candidate —
+ * |champion_words ∩ candidate_words| / |champion_words|.
+ *
+ * Deliberately a containment/recall measure, not symmetric Jaccard: a
+ * rewrite that EXPANDS the anchor with new supporting detail must not be
+ * penalized (Jaccard's growing union would drag the score down for
+ * additions), but a rewrite that GUTS the anchor down to a fragment must
+ * score low regardless of how short the surviving fragment is — recall
+ * against the champion's vocabulary captures exactly "how much of the
+ * original identity survived", which is what AC-5 asks to guard. This is a
+ * heuristic, not semantic diffing (full semantic coverage is a FEAT-192
+ * non-goal, v2).
+ */
+function identityAnchorSimilarity(championBody: string, candidateBody: string): number {
+  const championWords = wordSet(championBody);
+  if (championWords.size === 0) return 1; // nothing to preserve — trivially ok
+  const candidateWords = wordSet(candidateBody);
+  let overlap = 0;
+  for (const w of championWords) {
+    if (candidateWords.has(w)) overlap++;
+  }
+  return overlap / championWords.size;
+}
+
+export type IdentityAnchorCheckResult =
+  | { ok: true }
+  | { ok: false; reason: "missing_heading" | "anchor_gutted"; similarity?: number };
+
+/**
+ * AC-5 structural guardrail: reject a candidate whose content no longer
+ * contains the `## Identity anchor` heading, or whose anchor body has
+ * dropped below the similarity threshold vs the champion's. A concrete
+ * structural assertion, not a prompt instruction to the rewriter.
+ */
+export function checkIdentityAnchor(
+  champion: string,
+  candidateContent: string
+): IdentityAnchorCheckResult {
+  const championBody = extractIdentityAnchorBody(champion);
+  if (championBody === null) {
+    // Champion itself has no identity anchor to protect — nothing to guard.
+    return { ok: true };
+  }
+  const candidateBody = extractIdentityAnchorBody(candidateContent);
+  if (candidateBody === null) {
+    return { ok: false, reason: "missing_heading" };
+  }
+  const similarity = identityAnchorSimilarity(championBody, candidateBody);
+  if (similarity < IDENTITY_ANCHOR_SIMILARITY_THRESHOLD) {
+    return { ok: false, reason: "anchor_gutted", similarity };
+  }
+  return { ok: true };
+}
+
+/**
+ * Count of lines whose multiset membership differs between champion and
+ * candidate (added + removed), after trimming each line. A cheap
+ * non-semantic diff proxy — good enough for a "did anything real change"
+ * guardrail, not a full diff algorithm (order-insensitive by design: a
+ * reordered-but-unchanged file should not count as a real edit either).
+ */
+function countChangedLines(championText: string, candidateText: string): number {
+  const tally = (text: string): Map<string, number> => {
+    const counts = new Map<string, number>();
+    for (const rawLine of text.split(/\r?\n/)) {
+      const line = rawLine.trim();
+      counts.set(line, (counts.get(line) ?? 0) + 1);
+    }
+    return counts;
+  };
+  const championCounts = tally(championText);
+  const candidateCounts = tally(candidateText);
+  const keys = new Set([...championCounts.keys(), ...candidateCounts.keys()]);
+  let changed = 0;
+  for (const key of keys) {
+    changed += Math.abs((championCounts.get(key) ?? 0) - (candidateCounts.get(key) ?? 0));
+  }
+  return changed;
+}
+
+export type NonTrivialDiffCheckResult =
+  | { ok: true }
+  | {
+      ok: false;
+      reason: "identical_to_champion" | "whitespace_only_diff" | "below_min_changed_lines";
+      changedLines?: number;
+    };
+
+/**
+ * AC-2 guardrail: reject a candidate whose diff vs the champion is empty,
+ * whitespace-only, or below the minimal changed-line threshold. A real
+ * rewrite changes something; a whitespace edit disguised as a win must not
+ * enter the Pareto set.
+ */
+export function checkNonTrivialDiff(
+  champion: string,
+  candidateContent: string
+): NonTrivialDiffCheckResult {
+  const championTrimmed = champion.trim();
+  const candidateTrimmed = candidateContent.trim();
+  if (championTrimmed === candidateTrimmed) {
+    return { ok: false, reason: "identical_to_champion" };
+  }
+  const collapseWhitespace = (s: string): string => s.replace(/\s+/g, " ").trim();
+  if (collapseWhitespace(championTrimmed) === collapseWhitespace(candidateTrimmed)) {
+    return { ok: false, reason: "whitespace_only_diff" };
+  }
+  const changedLines = countChangedLines(champion, candidateContent);
+  if (changedLines < MIN_CHANGED_LINES) {
+    return { ok: false, reason: "below_min_changed_lines", changedLines };
+  }
+  return { ok: true };
+}
+
+/** A pre-write guardrail rejection, ready to log via `logEvent`. */
+interface GuardrailRejection {
+  event: "gepa_identity_anchor_broken" | "gepa_noop_candidate";
+  reason: string;
+  extra?: Record<string, unknown>;
+}
+
+/**
+ * Run both SLICE-B pre-write guardrails (AC-5 identity-anchor, AC-2
+ * non-trivial-diff) against one slot's resolved content. Extracted out of
+ * `generate()`'s loop body to keep its cognitive complexity within budget —
+ * mirrors the existing `resolveCandidateContent` extraction pattern.
+ */
+function checkPreWriteGuardrails(champion: string, content: string): GuardrailRejection | null {
+  const anchorCheck = checkIdentityAnchor(champion, content);
+  if (!anchorCheck.ok) {
+    return {
+      event: "gepa_identity_anchor_broken",
+      reason: anchorCheck.reason,
+      ...(anchorCheck.reason === "anchor_gutted"
+        ? { extra: { similarity: anchorCheck.similarity } }
+        : {})
+    };
+  }
+  const diffCheck = checkNonTrivialDiff(champion, content);
+  if (!diffCheck.ok) {
+    return {
+      event: "gepa_noop_candidate",
+      reason: diffCheck.reason,
+      ...(diffCheck.reason === "below_min_changed_lines"
+        ? { extra: { changed_lines: diffCheck.changedLines } }
+        : {})
+    };
+  }
+  return null;
+}
+
 /** Test seam: override the subprocess runner used by the live rewrite dispatch. */
 export interface RewriteDispatchDeps {
   runSubprocess: (prompt: string, model: string, timeoutMs: number) => Promise<string>;
@@ -224,7 +435,10 @@ async function dispatchRewriterForSlot(
   try {
     stdout = await deps.runSubprocess(prompt, DEFAULT_REWRITE_MODEL, DEFAULT_REWRITE_TIMEOUT_MS);
   } catch (err) {
-    return { ok: false, reason: `spawn_failed: ${err instanceof Error ? err.message : String(err)}` };
+    return {
+      ok: false,
+      reason: `spawn_failed: ${err instanceof Error ? err.message : String(err)}`
+    };
   }
   return extractRewrittenContent(parseStreamJson(stdout));
 }
@@ -307,6 +521,110 @@ function extractAgentName(championPath: string): string {
   return basename.replace(/\.md$/i, "");
 }
 
+/** Context threaded through `processCandidateSlot` — one per `generate()` call, shared across all K slots. */
+interface SlotContext {
+  repoPath: string;
+  cycleId: string;
+  outDir: string;
+  champion: string;
+  trialsSample: string;
+  failingTrials: Trial[];
+  agentName: string;
+  maxTrialSample: number;
+  rewriteDeps: RewriteDispatchDeps;
+  liveMode: boolean;
+  meter: BudgetMeter;
+  oversizedIds: string[];
+}
+
+/**
+ * Resolve, guardrail-check, write, and size-validate one candidate slot.
+ * Returns the candidate on success, or null when the slot was rejected at
+ * any stage (extraction failure, identity-anchor guardrail, no-op-diff
+ * guardrail, or oversize) — the budget reservation is released on every
+ * rejection path. Extracted out of `generate()`'s loop body to keep its
+ * cognitive complexity within budget (FEAT-192 SLICE-B).
+ */
+async function processCandidateSlot(
+  slotIndex: number,
+  reservationId: string,
+  ctx: SlotContext
+): Promise<Candidate | null> {
+  const resolved = await resolveCandidateContent(
+    ctx.liveMode,
+    ctx.repoPath,
+    ctx.champion,
+    ctx.trialsSample,
+    ctx.failingTrials,
+    slotIndex,
+    ctx.agentName,
+    ctx.maxTrialSample,
+    ctx.rewriteDeps
+  );
+  if (!resolved.ok) {
+    // Rejected slot (live mode only) — release budget, skip to next slot.
+    await ctx.meter.release(reservationId);
+    return null;
+  }
+  const content = resolved.content;
+
+  // AC-5 + AC-2: pre-write guardrails, gated between "content resolved" and
+  // "file written". Never let a gutted-identity or no-op candidate reach the
+  // scored set: release the reservation, skip the slot, no Trial is ever
+  // produced for it (equivalent to pareto_rank: null).
+  const rejection = checkPreWriteGuardrails(ctx.champion, content);
+  if (rejection) {
+    logEvent(ctx.repoPath, {
+      event: rejection.event,
+      slot_index: slotIndex,
+      cycle_id: ctx.cycleId,
+      agent: ctx.agentName,
+      reason: rejection.reason,
+      ...(rejection.extra ?? {})
+    });
+    await ctx.meter.release(reservationId);
+    return null;
+  }
+
+  const id = crypto.randomUUID();
+  const promptPath = join(ctx.outDir, `${id}.md`);
+  writeFileSync(promptPath, content, "utf8");
+
+  const lineCount = countLines(content);
+  const candidate: Candidate = {
+    id,
+    agent: ctx.agentName,
+    prompt_path: promptPath,
+    prompt_hash: hashContent(content),
+    prompt_size_lines: lineCount,
+    derived_from_trials: ctx.failingTrials.slice(0, ctx.maxTrialSample).map((t) => t.id),
+    generator_cost_usd: GENERATOR_ESTIMATE_USD,
+    created_at: new Date().toISOString()
+  };
+
+  // Validate size BEFORE LLM scoring spend (AC-4 requirement).
+  const sizeCheck = validateCandidateSize(candidate, 350);
+  if (!sizeCheck.ok) {
+    ctx.oversizedIds.push(id);
+    logEvent(ctx.repoPath, {
+      event: "gepa_oversized_candidate",
+      candidate_id: id,
+      agent: candidate.agent,
+      cycle_id: ctx.cycleId,
+      lines: lineCount,
+      reason: "oversized_candidate"
+    });
+    // Release the budget reservation — no scoring spend will occur.
+    await ctx.meter.release(reservationId);
+    // Oversized candidates are excluded from the returned array.
+    return null;
+  }
+
+  // Record generator cost.
+  await ctx.meter.record(reservationId, GENERATOR_ESTIMATE_USD);
+  return candidate;
+}
+
 export interface CandidateGeneratorOpts {
   /** Absolute path to repo root. */
   repoPath: string;
@@ -364,6 +682,20 @@ export function createAipluginCandidateGenerator(
       if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 
       const candidates: Candidate[] = [];
+      const slotCtx: SlotContext = {
+        repoPath,
+        cycleId,
+        outDir,
+        champion,
+        trialsSample,
+        failingTrials,
+        agentName,
+        maxTrialSample,
+        rewriteDeps,
+        liveMode,
+        meter,
+        oversizedIds
+      };
 
       for (let i = 0; i < k; i++) {
         // Reserve budget BEFORE generating the candidate (per AC-4 contract).
@@ -373,64 +705,8 @@ export function createAipluginCandidateGenerator(
           break;
         }
 
-        const resolved = await resolveCandidateContent(
-          liveMode,
-          repoPath,
-          champion,
-          trialsSample,
-          failingTrials,
-          i,
-          agentName,
-          maxTrialSample,
-          rewriteDeps
-        );
-        if (!resolved.ok) {
-          // Rejected slot (live mode only) — release budget, skip to next slot.
-          await meter.release(reservation.reservationId);
-          continue;
-        }
-        const content = resolved.content;
-
-        const id = crypto.randomUUID();
-        const promptPath = join(outDir, `${id}.md`);
-
-        writeFileSync(promptPath, content, "utf8");
-
-        const lineCount = countLines(content);
-        const hash = hashContent(content);
-
-        const candidate: Candidate = {
-          id,
-          agent: agentName,
-          prompt_path: promptPath,
-          prompt_hash: hash,
-          prompt_size_lines: lineCount,
-          derived_from_trials: failingTrials.slice(0, maxTrialSample).map((t) => t.id),
-          generator_cost_usd: GENERATOR_ESTIMATE_USD,
-          created_at: new Date().toISOString()
-        };
-
-        // Validate size BEFORE LLM scoring spend (AC-4 requirement).
-        const sizeCheck = validateCandidateSize(candidate, 350);
-        if (!sizeCheck.ok) {
-          oversizedIds.push(id);
-          logEvent(repoPath, {
-            event: "gepa_oversized_candidate",
-            candidate_id: id,
-            agent: candidate.agent,
-            cycle_id: cycleId,
-            lines: lineCount,
-            reason: "oversized_candidate"
-          });
-          // Release the budget reservation — no scoring spend will occur.
-          await meter.release(reservation.reservationId);
-          // Oversized candidates are excluded from the returned array.
-          continue;
-        }
-
-        // Record generator cost.
-        await meter.record(reservation.reservationId, GENERATOR_ESTIMATE_USD);
-        candidates.push(candidate);
+        const candidate = await processCandidateSlot(i, reservation.reservationId, slotCtx);
+        if (candidate) candidates.push(candidate);
       }
 
       return candidates;

@@ -242,6 +242,24 @@ async function scoreCandidates(
   return { trials, partial };
 }
 
+/**
+ * AC-4 per-candidate all-case promotion gate: true only when EVERY trial
+ * recorded for `candidatePromptHash` has `score.pass === true`. `ranked` may
+ * contain multiple trials per candidate (one per eval case) — a candidate
+ * that wins one case's global Pareto slot while silently failing another
+ * case must NOT be eligible, even though its best-case trial can still be
+ * rank 1. A candidate with zero trials is not eligible (defensive — should
+ * not occur since `ranked` is derived from `candidates`).
+ */
+function candidateAllCasesPass(
+  ranked: (Trial & { pareto_rank: number | null })[],
+  candidatePromptHash: string
+): boolean {
+  const trialsForCandidate = ranked.filter((t) => t.candidate_prompt_hash === candidatePromptHash);
+  if (trialsForCandidate.length === 0) return false;
+  return trialsForCandidate.every((t) => t.score.pass);
+}
+
 function determineWinner(
   ranked: (Trial & { pareto_rank: number | null })[],
   candidates: Candidate[],
@@ -262,7 +280,15 @@ function determineWinner(
     latency_ms: best.score.latency_ms,
     prompt_path: matchingCandidate?.prompt_path ?? best.candidate_prompt_path ?? ""
   };
-  return { winner, noWinner: !best.score.pass };
+
+  // AC-4: the rank-1 candidate is only a REAL winner (no_winner: false) when
+  // it passes EVERY eval case it was scored against — not merely the one
+  // case that produced this rank-1 trial. `winner` stays populated either
+  // way (diagnostic — same pattern as the pre-existing pass=false path
+  // below) so callers keep visibility into "what almost won"; the actual
+  // promotion gate (auto-PR) reads `no_winner`, not `winner !== null`.
+  const allCasesPass = candidateAllCasesPass(ranked, best.candidate_prompt_hash);
+  return { winner, noWinner: !best.score.pass || !allCasesPass };
 }
 
 function writeArtifact(repoPath: string, runId: string, result: OptimizationResult): string {

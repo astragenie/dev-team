@@ -252,8 +252,25 @@ describe("generate() — AC-1 flag routing", () => {
       rewriteDeps: {
         async runSubprocess(prompt: string) {
           capturedPrompt = prompt;
+          // A genuine minimal-diff rewrite: identity anchor content is fully
+          // preserved (plus an added clause) and a new section is appended —
+          // non-trivial vs the champion so it clears the SLICE-B AC-2 no-op
+          // guardrail, while the AC-5 identity-anchor guardrail passes
+          // because every champion anchor word survives in the candidate.
           return streamJsonFor(
-            "```markdown\n# fullstack-dev\n\n## Identity anchor\n\nYou are fullstack-dev.\n```"
+            [
+              "```markdown",
+              "# fullstack-dev",
+              "",
+              "## Identity anchor",
+              "",
+              "You are fullstack-dev. Stay narrowly scoped to fullstack implementation work.",
+              "",
+              "## Scope note",
+              "",
+              "Do not claim other agents' roles.",
+              "```"
+            ].join("\n")
           );
         }
       }
