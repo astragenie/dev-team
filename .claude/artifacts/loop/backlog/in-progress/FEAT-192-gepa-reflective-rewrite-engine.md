@@ -1,6 +1,6 @@
 ---
 id: FEAT-192
-status: pending
+status: in-progress
 priority: P1
 category: capability
 target_release: null
@@ -200,3 +200,36 @@ FEAT-190 (P2, widest blast radius + cross-repo). SLICE-A + SLICE-B both touch
 - Winner-gate site: `scripts/lib/gepa/optimize-runner.ts::determineWinner`
 - AC-3 target: `evals/agents/crew-aiplugin-dev.yaml → respects-350-line-cap`
 - Reviews (2026-07-05): architect-reviewer (4 HIGH folded) + pm (P1, composite 0.68)
+
+## Build status — 2026-07-05 (code-complete + plumbing-proven; AC-3 live evidence deferred)
+
+All 4 slices shipped on `feat/auto-safe-wave` and passed an independent review gate.
+The review gate caught a real fail-silent HIGH bug on A, B, and C that the builders'
+own unit tests missed — each fixed before merge (evidence that the gate is load-bearing).
+
+| Slice | Commit | Review | What landed |
+|---|---|---|---|
+| A | `dispatchRewriter` + response-format extraction (AC-1, AC-7) | fixed after HIGH (nested-fence truncation → anchor start+end) | `candidate-generator-aiplugin.ts`, `candidate-dispatch.ts` primitives exported |
+| B | `18807ca` → `3a3756e` | approved_with_notes → HIGH fixed (`determineWinner` searched only rank1[0] → now searches `ranked` for all-case-pass winner; adversarial regression test) | AC-2 no-op reject, AC-5 identity anchor, AC-4 per-candidate all-case gate |
+| C | `c6bb54c` | `e0189ee` approved_with_notes (HIGH = money case lands in train under default split → SLICE-D constraint) | `judge-scorer.ts` judge-backed Scorer + `split-heldout` wiring, `noopScorer` byte-identical fallback preserved |
+| D | `ce4da53` | `2c1f51c` approved_with_notes (no blocking — held under scrutiny) | AC-3 proof harness: `--split 0/3` scores all 3 cases, 3-tier failing-trial seeding, real-yaml regression test, offline mock-judge e2e (generate→score→rank→`no_winner:false`, `derived_from_trials` traced) |
+
+**Memory loop verified** (astramem, ids `2a4ab19b`/`c9559940`/`b8325cf5`/`e303cc4e`/`47b05893`/`d0236346`/`7b991c28`/`f19bee0c` + verification fact `a4af0e14`): each fresh
+slice builder recorded its decision/lesson and the next recalled across handoffs with
+no handoff doc — SLICE-A's nested-fence lesson pre-warned the SLICE-D target 3 slices ahead.
+
+### AC-3 (live "prompts improving" proof) — DEFERRED pending operator run
+Blocked on a rotated `GROQ_API_KEY` (prior key burned/exposed). Follows the SLICE-107
+deferred-AC precedent. Runbook (avoids grader-in-loop leakage — astramem lesson `a48fa77e`):
+
+1. **Rigor (recommended):** seed one real baseline failing trial — run the judge once on
+   the unmodified champion `agents/aiplugin-dev.md` against the 3 cases, stored to the gepa
+   trial store, so tier-1 (real history) fires instead of the rubric-derived tier-3 seed.
+2. Run: `GROQ_API_KEY=<rotated> GEPA_LIVE_GENERATOR=1 bun scripts/crew.ts gepa-optimize aiplugin-dev --budget 5 --split 0/3`
+
+   Quick path (works today, weaker citation): skip step 1 — tier-3 heldOut-seed supplies
+   rubric-derived context automatically.
+
+Expected: candidate flips `respects-350-line-cap` → PASS, no regression on the other two,
+`no_winner:false`, candidate under `.claude/artifacts/crew/gepa/candidates/<cycle>/`. Capture
+the opt artifact → then FEAT-192 fully closes.
