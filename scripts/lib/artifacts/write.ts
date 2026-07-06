@@ -797,9 +797,19 @@ async function fireFailureCaptureSilent(
   // trial store, alongside the learnings.jsonl append above. Two parallel
   // providers (operator decision): lessons → learnings.jsonl, failing trials
   // → the GEPA reflection corpus.
+  //
+  // Goes through captureFailureTrialGuarded (timeout-raced, ~1.5s ceiling),
+  // NOT captureFailureTrial directly: @astragenie/gepa-core's installed
+  // package resolves to raw .ts source, so the first dynamic import that
+  // touches it in a process can take multiple seconds cold — long enough to
+  // blow this CLI command's expected latency (regression caught + fixed
+  // here; see capture-failure-trial-guard.ts's header comment for the full
+  // root cause).
   try {
-    const { captureFailureTrial } = await import("../gepa/capture-failure-trial.ts");
-    await captureFailureTrial(repoPath, {
+    const { captureFailureTrialGuarded } = await import(
+      "../gepa/capture-failure-trial-guard.ts"
+    );
+    await captureFailureTrialGuarded(repoPath, {
       agent: agent ?? "unknown",
       phase: kind === "review-result" ? "review" : "validate",
       rationale,

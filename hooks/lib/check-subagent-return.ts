@@ -25,13 +25,22 @@ import { captureFailureLearning } from "../../scripts/lib/memory/capture-learnin
 // module load for the WHOLE hook; a dynamic import inside try/catch degrades
 // to a silent no-op instead, matching scripts/lib/artifacts/write.ts's
 // fireCaptureTeeSilent pattern for the exact same hazard.
+//
+// Goes through captureFailureTrialGuarded (timeout-raced, ~1.5s ceiling), not
+// captureFailureTrial directly — the FIRST dynamic import that touches
+// gepa-core in a process can take multiple seconds cold (raw .ts source, no
+// compiled dist/), long enough to stall this hook past its expected budget.
+// See scripts/lib/gepa/capture-failure-trial-guard.ts's header comment for
+// the full root cause + the recommended upstream fix.
 async function fireFailureTrialSilent(
   repoPath: string,
   entry: { rationale: string; source: string }
 ): Promise<void> {
   try {
-    const { captureFailureTrial } = await import("../../scripts/lib/gepa/capture-failure-trial.ts");
-    await captureFailureTrial(repoPath, {
+    const { captureFailureTrialGuarded } = await import(
+      "../../scripts/lib/gepa/capture-failure-trial-guard.ts"
+    );
+    await captureFailureTrialGuarded(repoPath, {
       agent: "unknown",
       phase: "build",
       rationale: entry.rationale,

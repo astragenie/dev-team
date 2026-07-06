@@ -7,6 +7,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { captureFailureTrial } from "../../scripts/lib/gepa/capture-failure-trial.ts";
+import { captureFailureTrialGuarded } from "../../scripts/lib/gepa/capture-failure-trial-guard.ts";
 
 function enabledConfig(extra: Record<string, unknown> = {}) {
   return JSON.stringify({
@@ -151,6 +152,52 @@ describe("captureFailureTrial", () => {
       await expect(
         captureFailureTrial(root, { agent: "reviewer", phase: "review", rationale: "x" })
       ).resolves.toBeUndefined();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+// FEAT-193 S1 fix-forward: captureFailureTrialGuarded races the whole
+// dynamic-import + write against a short timeout, so a slow/cold
+// @astragenie/gepa-core module load can never hold a caller (a CLI command,
+// a hook) open for longer than the configured ceiling.
+describe("captureFailureTrialGuarded", () => {
+  test("writes the trial on the normal (fast) path", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gepa-failure-trial-guard-"));
+    try {
+      writeFileSync(join(root, "gepa.config.json"), enabledConfig());
+      await captureFailureTrialGuarded(root, {
+        agent: "reviewer",
+        phase: "review",
+        rationale: "guarded happy path"
+      });
+      const trialFile = join(root, ".claude/artifacts/crew/gepa/trials/reviewer.jsonl");
+      const trial = JSON.parse(readFileSync(trialFile, "utf8").trim());
+      expect(trial.agent).toBe("reviewer");
+      expect(trial.score.rationale).toBe("guarded happy path");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("resolves within the timeout ceiling and drops the trial when forced to race a 0ms budget", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gepa-failure-trial-guard-timeout-"));
+    try {
+      writeFileSync(join(root, "gepa.config.json"), enabledConfig());
+      const start = Date.now();
+      // 0ms timeout forces the timeout branch to win the race virtually
+      // every time, regardless of how fast the real write would have been —
+      // proving the guard degrades to a no-op rather than ever rejecting or
+      // hanging.
+      await expect(
+        captureFailureTrialGuarded(
+          root,
+          { agent: "reviewer", phase: "review", rationale: "should not block" },
+          0
+        )
+      ).resolves.toBeUndefined();
+      expect(Date.now() - start).toBeLessThan(500);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
