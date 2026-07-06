@@ -6,7 +6,7 @@ category: platform
 target_release: null
 created: 2026-07-04
 depends_on: []
-slices: [S1a, S1b, S2, S3a, S3b, S4, S5]
+slices: [S1a, S1b, S2, S3a, S3b, S4, S5, S6]
 derived_from: docs/superpowers/specs/2026-07-04-memory-provider-plan.md
 pm_customer_impact: 0.85
 pm_effort_estimate: 0.65
@@ -108,6 +108,17 @@ tolerate the bridge's existing keys (not hard-error them).
   or `search_memory`/`recall_memory`/`remember`) — the provider selector routes SaaS-or-local.
   Do NOT wrap the bridge's CLI-shelling `resolveCli()` (stale, runner-plugin#324).
   **This is the source-of-truth writer.** Contract-parity test vs fileProvider (the dual-write duplicate).
+- **S6 — Deliberate-`remember` enforcement (dev-team, prompt/skill):** make good memories
+  get *written on purpose* rather than left to the auto-distiller (which emits low-signal
+  fragments — status snapshots, git trivia, vacuous negatives; see distiller-quality tickets
+  astramem-local#119 / astragenie/memory#659 / astramem-plugin#28). Add a slice-close
+  `remember` step to the dispatcher close ceremony (`document-writer` slice-close path /
+  `runner:close`) that captures the slice's load-bearing decision/lesson in the **durable
+  shape** (why + how-to-apply + `{project, repo, agent, importance, confidence}`), and
+  tighten `skills/universal/memory-keeper/SKILL.md` to require that shape + recall-before-deciding
+  at real decision points. Complements B (daemon-side gate): A ensures signal is *produced*
+  well; B stops the distiller from *polluting*. Prompt/skill only — no runtime store change.
+  `autonomous_safe: false` (dispatch/skill prompt edits → human-in-loop review).
 - **S5 — Eval interaction + hygiene:** capture-parity golden test (incl. SIGKILL),
   with/without-memory GEPA judge-score-delta fixture, 45-day decay (except critical),
   superseded/invalidated never recalled. **Also (S2 review MEDIUM note):** `fileProvider.recall()`
@@ -157,9 +168,17 @@ tolerate the bridge's existing keys (not hard-error them).
 - GIVEN one GEPA v1 agent's eval fixture run with vs without the injected memory block, WHEN judge scores are compared, THEN the delta is measured and reported.
 - GIVEN an entry older than 45 days and not `critical`, WHEN `recall()` runs, THEN it is excluded; GIVEN superseded/invalidated, THEN never returned regardless of age.
 
+### S6 — Deliberate-`remember` enforcement (dev-team, prompt/skill)
+- GIVEN a slice closes (dispatcher close ceremony / `runner:close`), WHEN the ceremony runs, THEN it captures the slice's key decision/lesson via a deliberate `remember` in the durable shape — `type ∈ {decision, lesson, fact}`, non-empty *why* AND *how-to-apply*, `metadata {project, repo, agent, importance, confidence}` — instead of relying on the auto-distiller.
+- GIVEN an agent makes a constraining decision or fixes a non-obvious error mid-slice, WHEN it resolves, THEN `memory-keeper` directs a durable `remember`, and `recall`-before-deciding is invoked at task start (recall → act → record loop).
+- GIVEN a memory written via the enforced path, WHEN inspected, THEN it is distinguishable from a distiller fragment: carries why + how-to-apply and `importance ≥ 0.6` (not an ephemeral status snapshot / git-derivable fact / bare todo).
+- GIVEN the enforcement wording is added to `memory-keeper/SKILL.md` + the dispatcher slice-close path, WHEN `validate-skills.ts` / `validate-agents.ts` run, THEN they pass (tier/description/≤line-cap intact) — pure prompt/skill change, no source or config-runtime edit.
+- GIVEN astramem is unpaired/absent, WHEN the enforced `remember` fires, THEN it degrades to the local provider without error (consistent with S1a/S4).
+- GIVEN the distiller-quality gate (B: astramem-local#119) is NOT yet shipped, WHEN S6 lands, THEN good memories are still produced (A is independent of B — A improves the signal source, B stops pollution; neither blocks the other).
+
 ## Dependency order
 
-S1a ∥ S1b (disjoint repos) → S2 → S3a ∥ S3b → S4 ∥ S5. FEAT-193 depends on **S1a** specifically (the capture events), not S1b.
+S1a ∥ S1b (disjoint repos) → S2 → S3a ∥ S3b → S4 ∥ S5. **S6 ∥ S3a/S3b/S4/S5** — independent of the provider/transport work (prompt/skill only; depends only on S1a's capture + astramem MCP being reachable, both true today). FEAT-193 depends on **S1a** specifically (the capture events), not S1b.
 
 ## Refs
 
