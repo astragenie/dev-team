@@ -3,10 +3,14 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { checkSubagentReturn } from "../../scripts/lib/subagent-return/check.ts";
+import { detectSubagentIncomplete } from "../../scripts/lib/subagent-return/incomplete-detector.ts";
 import { isEnabled, readCrewConfig } from "../../scripts/lib/features-service.ts";
 // TELEMETRY: dispatch-timing tap (FEAT-149)
 import { recordDispatchEnd } from "../../scripts/lib/dispatch-timing.ts";
 import { loadAndDeleteDispatchHandle } from "./dispatch-handle-store.ts";
+// FEAT-188 S1a AC-3/AC-4: capture repair — tee failures into the legacy
+// learnings store. Fire-and-forget; never throws into this hook's path.
+import { captureFailureLearning } from "../../scripts/lib/memory/capture-learning.ts";
 
 async function logEvent(
   repoPath: string,
@@ -140,7 +144,31 @@ export async function runCheckSubagentReturnHook(raw: string): Promise<string | 
   }
 
   if (warnings.length > 0) {
-    await logEvent(cwd, "inline-return-warn", session_id, warnings[0] ?? "");
+    const warning = warnings[0] ?? "";
+    await logEvent(cwd, "inline-return-warn", session_id, warning);
+    // AC-3: capture onto the EXISTING inline-return-warn signal.
+    await captureFailureLearning(cwd, {
+      severity: "medium",
+      summary: warning,
+      tags: ["inline-return-warn"],
+      source: "inline-return-warn"
+    });
+
+    // AC-4: subagent_incomplete — a NEW signal, strictly narrower than the
+    // warn above (also requires no terminal status marker). See
+    // scripts/lib/subagent-return/incomplete-detector.ts for the shared
+    // detector (built once for #162 Fix A to reuse, not duplicate).
+    if (detectSubagentIncomplete({ body })) {
+      const detail = "oversized pathless return with no terminal status marker";
+      await logEvent(cwd, "subagent-incomplete", session_id, detail);
+      await captureFailureLearning(cwd, {
+        severity: "medium",
+        summary: detail,
+        tags: ["subagent-incomplete"],
+        source: "subagent-incomplete"
+      });
+    }
+
     return JSON.stringify({ decision: "approve", systemMessage: warnings.join("\n") });
   }
   return null;

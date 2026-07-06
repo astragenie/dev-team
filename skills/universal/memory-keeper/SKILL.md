@@ -25,12 +25,15 @@ Two memory layers exist — know which is which:
 
 This skill is about **astramem** — the searchable layer agents read + write.
 
-**Scope note (as built today):** astramem is **per-machine**. A memory persists
-across *your* sessions on this machine, not across teammates. Every write defaults
-to `personal` scope. `promote_memory(id, "team"|"org")` marks a memory
-sync-eligible, but cross-machine **team recall is not implemented yet** (deferred
-v2 — the local→cloud shipper is one-way and off by default). So record for your own
-future continuity; do not assume a teammate will recall what you wrote.
+**Scope note (astramem plugin v0.6):** astramem routes every call through a
+**provider selector** to a **local daemon or SaaS** backend — the plugin owns
+transport, so reach it via the MCP tools (or `/astramem:recall` / `/astramem:remember`),
+**never a raw `astramem` CLI**. With a **local** provider a memory persists across
+*your* sessions on this machine only; a **SaaS** provider can share memories across
+machines/teammates when paired to the same dashboard. Every write defaults to
+`personal` scope; `promote_memory(id, "team"|"org")` marks a memory shareable.
+Confirm which provider this workstation is paired to (`get_health` / `astramem connect`)
+before assuming a teammate will recall what you wrote.
 
 ## The discipline — two directions
 

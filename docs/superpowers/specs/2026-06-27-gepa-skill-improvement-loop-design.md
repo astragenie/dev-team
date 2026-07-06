@@ -1,5 +1,8 @@
 # GEPA — Skill Improvement Loop Design
 
+> **STALE / PARTIALLY SUPERSEDED (2026-07-06).** Two claims below are out of date:
+> (1) **`astramemStore` was never built** — gepa-core ships only `fileStore`; `astramemStore` is an unbuilt config enum value (`storage.backend: "file"|"astramem"`), so the GEPA trial corpus is JSONL-only today. (2) The **"astramem CLI present" framing is wrong** — astramem is live at plugin **v0.6** and the supported interface is the **plugin commands / MCP tools / importable providers** (`@astragenie/astramem-plugin` exports map, PR #23), **not** a shelled CLI (`astramem_cli_path`). Current memory reality: `docs/research/2026-07-06-memory-bridge-reconciliation.md` + memory `astramem-live-v06-interface`. The `fileStore`/GEPA-trials design below remains accurate.
+
 **Date:** 2026-06-27
 **Status:** Brainstorm complete, awaiting user review before plan writing.
 **Tracks issue:** [astragenie/dev-team#121](https://github.com/astragenie/dev-team/issues/121)

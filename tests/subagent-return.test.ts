@@ -62,6 +62,30 @@ async function makeRepoWithCrewJson(featuresJson: Record<string, unknown>): Prom
   return repo;
 }
 
+// Plain isolated tmp repo (no crew.json needed). FEAT-188 S1a wires
+// learnings.jsonl capture onto warn-triggering paths — tests that trigger a
+// warn must run against an isolated repo, never the real `process.cwd()`
+// dev-team checkout, or they'd append real rows into the tracked
+// .claude/artifacts/loop/learnings.jsonl on every test run.
+async function makeTmpRepo(): Promise<string> {
+  return fs.mkdtemp(path.join(os.tmpdir(), "subagent-return-tmp-"));
+}
+
+async function readLearningsLines(repo: string): Promise<Record<string, unknown>[]> {
+  try {
+    const raw = await fs.readFile(
+      path.join(repo, ".claude", "artifacts", "loop", "learnings.jsonl"),
+      "utf8"
+    );
+    return raw
+      .split("\n")
+      .filter((l) => l.trim().length > 0)
+      .map((l) => JSON.parse(l));
+  } catch {
+    return [];
+  }
+}
+
 // Build a PostToolUse Agent stdin payload with the given body.
 function makeStdin(body: string, cwd = process.cwd()) {
   return JSON.stringify({
@@ -97,14 +121,19 @@ test("AC-8: body > threshold WITH .claude/artifacts/crew/handoffs/foo.md → sil
 // SMOKE: Hook runtime contract with warning path (verifies stdin→stdout payload wiring)
 // AC-9: body > threshold WITHOUT artifact path → warn with byte count + cost-discipline rule #2
 test("smoke: AC-9 — body > threshold (1000 bytes) WITHOUT artifact path → warn", async () => {
-  const body = makeBody(1000);
-  const result = await runHookSpawn(makeStdin(body));
-  assert.equal(result.exitCode, 0);
-  assert.notEqual(result.stdout, "");
-  const parsed = JSON.parse(result.stdout);
-  assert.equal(parsed.decision, "approve");
-  assert.match(parsed.systemMessage, /cost-discipline rule #2/);
-  assert.match(parsed.systemMessage, /1000/);
+  const repo = await makeTmpRepo();
+  try {
+    const body = makeBody(1000);
+    const result = await runHookSpawn(makeStdin(body, repo));
+    assert.equal(result.exitCode, 0);
+    assert.notEqual(result.stdout, "");
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.decision, "approve");
+    assert.match(parsed.systemMessage, /cost-discipline rule #2/);
+    assert.match(parsed.systemMessage, /1000/);
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
 });
 
 // Feature off via crew.json: short-circuit (silent even on large body without path)
@@ -152,11 +181,16 @@ test("config: features['subagent-inline-warn'].threshold=2048 + body=2500 → wa
 
 // Default-on: no crew.json, body=1000 no path → warn at default 512 threshold
 test("default-on — no crew.json + body=1000 no path → warn", async () => {
-  const result = await runHookSpawn(makeStdin(makeBody(1000)));
-  assert.equal(result.exitCode, 0);
-  assert.notEqual(result.stdout, "");
-  const parsed = JSON.parse(result.stdout);
-  assert.equal(parsed.decision, "approve");
+  const repo = await makeTmpRepo();
+  try {
+    const result = await runHookSpawn(makeStdin(makeBody(1000), repo));
+    assert.equal(result.exitCode, 0);
+    assert.notEqual(result.stdout, "");
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.decision, "approve");
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
 });
 
 // AC-12: Windows-style path separator → silent (path detected)
@@ -215,42 +249,160 @@ test("AC-11c: empty body string → silent", async () => {
 
 // tool_response.body fallback → works
 test("tool_response.body fallback: body field used when content absent", async () => {
-  const payload = JSON.stringify({
-    session_id: "s1",
-    tool_name: "Agent",
-    cwd: process.cwd(),
-    tool_response: { body: makeBody(1000) }
-  });
-  const result = await runHook(payload);
-  assert.equal(result.exitCode, 0);
-  assert.notEqual(result.stdout, "");
-  const parsed = JSON.parse(result.stdout);
-  assert.equal(parsed.decision, "approve");
+  const repo = await makeTmpRepo();
+  try {
+    const payload = JSON.stringify({
+      session_id: "s1",
+      tool_name: "Agent",
+      cwd: repo,
+      tool_response: { body: makeBody(1000) }
+    });
+    const result = await runHook(payload);
+    assert.equal(result.exitCode, 0);
+    assert.notEqual(result.stdout, "");
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.decision, "approve");
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
 });
 
 // tool_response as string → works
 test("tool_response as plain string: string body used as fallback", async () => {
-  const payload = JSON.stringify({
-    session_id: "s1",
-    tool_name: "Agent",
-    cwd: process.cwd(),
-    tool_response: makeBody(1000)
-  });
-  const result = await runHook(payload);
-  assert.equal(result.exitCode, 0);
-  assert.notEqual(result.stdout, "");
-  const parsed = JSON.parse(result.stdout);
-  assert.equal(parsed.decision, "approve");
+  const repo = await makeTmpRepo();
+  try {
+    const payload = JSON.stringify({
+      session_id: "s1",
+      tool_name: "Agent",
+      cwd: repo,
+      tool_response: makeBody(1000)
+    });
+    const result = await runHook(payload);
+    assert.equal(result.exitCode, 0);
+    assert.notEqual(result.stdout, "");
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.decision, "approve");
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
 });
 
 // AC-4: decision is always "approve", never "block"
 test("AC-4: output decision is always approve, never block", async () => {
-  const result = await runHook(makeStdin(makeBody(2000)));
-  assert.equal(result.exitCode, 0);
-  if (result.stdout !== "") {
-    const parsed = JSON.parse(result.stdout);
-    assert.notEqual(parsed.decision, "block");
-    assert.equal(parsed.decision, "approve");
+  const repo = await makeTmpRepo();
+  try {
+    const result = await runHook(makeStdin(makeBody(2000), repo));
+    assert.equal(result.exitCode, 0);
+    if (result.stdout !== "") {
+      const parsed = JSON.parse(result.stdout);
+      assert.notEqual(parsed.decision, "block");
+      assert.equal(parsed.decision, "approve");
+    }
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
+});
+
+// ── FEAT-188 S1a AC-3: inline-return-warn capture ───────────────────────────
+// Wire capture onto the EXISTING `subagent-return:inline-return-warn` signal
+// (hyphenated — not a new event). Every warn-triggering body (large,
+// pathless, no terminal status) must append a failure-kind learnings entry.
+
+test("AC-3: inline-return-warn fires → captures a failure entry in learnings.jsonl", async () => {
+  const repo = await makeTmpRepo();
+  try {
+    const result = await runHook(makeStdin(makeBody(1000), repo));
+    assert.notEqual(result.stdout, "");
+    const lines = await readLearningsLines(repo);
+    const captured = lines.filter((l) => l.source === "inline-return-warn");
+    assert.equal(captured.length, 1);
+    assert.equal(captured[0]!.kind, "failure");
+    assert.match(captured[0]!.summary as string, /cost-discipline rule #2/);
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
+});
+
+test("AC-3: no warn (short body) → no learnings.jsonl capture", async () => {
+  const repo = await makeTmpRepo();
+  try {
+    await runHook(makeStdin(makeBody(100), repo));
+    const lines = await readLearningsLines(repo);
+    assert.equal(lines.length, 0);
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
+});
+
+test("AC-3: warn with feature disabled → no capture either (gate shared with the warn itself)", async () => {
+  const repo = await makeRepoWithCrewJson({ "subagent-inline-warn": { enabled: false } });
+  try {
+    await runHook(makeStdin(makeBody(5000), repo));
+    const lines = await readLearningsLines(repo);
+    assert.equal(lines.length, 0);
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
+});
+
+// ── FEAT-188 S1a AC-4: subagent_incomplete (NEW signal) ─────────────────────
+// Defined + emitted only when the oversized, pathless return ALSO carries no
+// terminal status marker (DONE/BLOCKED/HELP/IN-PROGRESS) — a strict subset
+// of the inline-return-warn trigger, so this never fires on a NEW condition
+// the warn itself hasn't already gated on (no additional false-positive
+// surface). See scripts/lib/subagent-return/incomplete-detector.ts.
+
+test("AC-4: oversized pathless body with NO terminal status → subagent-incomplete event + capture", async () => {
+  const repo = await makeTmpRepo();
+  try {
+    const result = await runHook(makeStdin(makeBody(1000), repo));
+    assert.notEqual(result.stdout, "");
+    const lines = await readLearningsLines(repo);
+    const captured = lines.filter((l) => l.source === "subagent-incomplete");
+    assert.equal(captured.length, 1);
+    assert.equal(captured[0]!.kind, "failure");
+
+    const events = await fs.readFile(path.join(repo, ".claude", "logs", "events.jsonl"), "utf8");
+    const eventLines = events
+      .split("\n")
+      .filter((l) => l.trim().length > 0)
+      .map((l) => JSON.parse(l));
+    assert.ok(
+      eventLines.some((e) => e.event === "subagent-return:subagent-incomplete"),
+      "expected a subagent-return:subagent-incomplete event log entry"
+    );
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
+});
+
+test("AC-4: oversized pathless body WITH a terminal status marker → no subagent-incomplete capture", async () => {
+  const repo = await makeTmpRepo();
+  try {
+    const body = `DONE: finished the task.\n${makeBody(1000)}`;
+    await runHook(makeStdin(body, repo));
+    const lines = await readLearningsLines(repo);
+    assert.equal(
+      lines.filter((l) => l.source === "subagent-incomplete").length,
+      0,
+      "a declared terminal status must suppress the new signal"
+    );
+    // inline-return-warn still fires independently (still no artifact path).
+    assert.equal(lines.filter((l) => l.source === "inline-return-warn").length, 1);
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
+});
+
+test("AC-4: body with an artifact path → no subagent-incomplete (already has a recorded outcome)", async () => {
+  const repo = await makeTmpRepo();
+  try {
+    const body = makeBody(800) + " .claude/artifacts/crew/handoffs/foo.md " + makeBody(100);
+    await runHook(makeStdin(body, repo));
+    const lines = await readLearningsLines(repo);
+    assert.equal(lines.length, 0);
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
   }
 });
 

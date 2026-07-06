@@ -1,0 +1,31 @@
+# Task Handoff: FEAT-188/FEAT-193 memory-bridge vs GEPA-trial-corpus reconciliation
+
+- Created: 2026-07-06T11:57:42.775Z
+- From: researcher
+- To: dispatcher
+- Objective: memory-bridge.emit() and the GEPA trials JSONL are two separate, unconnected stores today; FEAT-188's proposed memory.* config block collides field-names with the live bridge's memory.* config in loop.json and needs renaming, not a rewrite
+- Allowed Scope:
+  - Read-only: runner-plugin memory-bridge.mts/memory-recall.mts/docs/sop/memory-bridge.md
+  - dev-team FEAT-188/FEAT-193 backlog items
+  - memory-provider-plan spec
+  - gepa capture-tee.ts + gepa-core file-store.ts
+  - mid-job-death research doc
+- Forbidden Scope: -
+- Deliverable: Facet-3 findings: confirmed emit() never writes to .claude/artifacts/crew/gepa/trials/*.jsonl (only capture-tee.ts does, via gepa-core fileStore); unified memory config schema proposal (k not topK, enabled vs provider kept orthogonal); target architecture box diagram (3 layers: episodic MemoryProvider / GEPA trial corpus / astramem transport); FEAT-188 S4 re-scope recommendation (thin adapter over existing bridge CLI-resolution code, not a reimplementation); FEAT-193 confirmed unchanged, not already done by the bridge
+- Changed Files:
+  - runner-plugin/src/scripts/lib/memory-bridge.mts
+  - runner-plugin/src/scripts/lib/memory-recall.mts
+  - runner-plugin/docs/sop/memory-bridge.md
+  - runner-plugin/src/scripts/lib/slice-linker/start-slice.mts
+  - dev-team/.claude/artifacts/loop/backlog/pending/FEAT-193.md
+  - dev-team/.claude/artifacts/loop/backlog/in-progress/FEAT-188-memory-provider-capture-recall.md
+  - dev-team/docs/superpowers/specs/2026-07-04-memory-provider-plan.md
+  - dev-team/scripts/lib/gepa/capture-tee.ts
+  - dev-team/node_modules/@astragenie/gepa-core/src/store/file-store.ts
+  - dev-team/.claude/loop.json
+  - dev-team/gepa.config.json
+  - dev-team/docs/research/2026-07-06-agent-mid-job-death-analysis.md
+- Confidence: high
+- Risks: Did not read recall-injector.mts (formatRecallBlock) or candidate-generator-aiplugin.ts internals in full — assumed their role from names/comments and capture-tee.ts docstring; astramem's own internal storage location (memory-plugin side) not inspected, only the CLI contract from the caller side; config-schema merge proposal is a recommendation, not validated against FEAT-188 S2 implementation code (does not exist yet)
+- Suggested Next Handoff: architect-feature or FEAT-188 S2 implementation should adopt the unified memory config schema below before writing config-parsing code, to avoid a second collision once S2 lands
+
