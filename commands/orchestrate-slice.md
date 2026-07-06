@@ -172,6 +172,20 @@ in Step 3 / 3a / 3b prepend the block when non-empty, omit it otherwise.
 
 ---
 
+### Step 2.6 — Resolve builder model tier (REQUIRED — run before every builder dispatch below)
+
+**Do NOT let Step 3 / 3a / 3b's Agent-tool dispatch inherit the session model.** Resolve the tier explicitly, once per orchestrate-slice run:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" resolve-model --repo "$PWD" --phase build
+```
+
+Store the printed value (e.g. `sonnet`) as `BUILD_MODEL`. Pass `BUILD_MODEL` as the `model:` argument on every builder Agent-tool call in Steps 3 / 3a / 3b below (`crew:fullstack-dev`, `crew:frontend-dev`, `crew:backend-dev` — uxdesigner is not a builder and is unaffected). If a shape classifier is available for this slice (mechanical doc-only / config-only / test-only / single-module edit), pass `--shape <shape>` too — it overrides the phase tier and takes priority over `BUILD_MODEL`.
+
+**Honest limitation:** this is an orchestrator-honored instruction, not a hook-enforced one. The autonomous wave path (`runner-plugin`'s `model-router`, `resolveWaveDispatchModel`) sets the dispatch model programmatically before the subagent spawns — there is no equivalent hard gate here. A `PreToolUse` hook on `Agent` that injects the resolved model when `model:` is absent (tracked as a possible S2b follow-up) would close this gap; it is intentionally out of scope for this instruction wiring.
+
+---
+
 ### Steps 2 + 3 — UX designer + Builder (parallel when both fire)
 
 `crew:uxdesigner` and `crew:fullstack-dev` both consume the FEAT-scoped contracts artifact (Step 1's `CONTRACT_YAML_PATH` + `CONTRACT_MD_PATH`) but NOT each other's output. Builder works from contracts + slice ACs; uxdesigner produces UX spec for reviewer to check separately. Both fire concurrently.
@@ -237,6 +251,8 @@ Store the returned path as `UX_SPEC_PATH`.
 
 Prepend `${SINGLE_BLOCK}` from Step 2.5 when non-empty. Omit otherwise.
 
+**Agent-tool dispatch: pass `model: ${BUILD_MODEL}`** (from Step 2.6) explicitly — do not inherit the session model.
+
 ```
 <SINGLE_BLOCK from Step 2.5 — omit when empty>
 
@@ -261,6 +277,8 @@ When both branches fire, the orchestrator collects `UX_SPEC_PATH` AND `BUILDER_H
 ##### Step 3a — `crew:frontend-dev`
 
 Prepend `${FE_BLOCK}` from Step 2.5 when non-empty. Omit otherwise.
+
+**Agent-tool dispatch: pass `model: ${BUILD_MODEL}`** (from Step 2.6) explicitly — do not inherit the session model.
 
 ```
 <FE_BLOCK from Step 2.5 — omit when empty>
@@ -287,6 +305,8 @@ Store the returned path as `BUILDER_FE_HANDOFF_PATH`.
 ##### Step 3b — `crew:backend-dev`
 
 Prepend `${BE_BLOCK}` from Step 2.5 when non-empty. Omit otherwise.
+
+**Agent-tool dispatch: pass `model: ${BUILD_MODEL}`** (from Step 2.6) explicitly — do not inherit the session model.
 
 ```
 <BE_BLOCK from Step 2.5 — omit when empty>

@@ -41,6 +41,18 @@ If not matched → standard ladder below.
 
 Builder routing: see `docs/routing-table.md` → "Builder routing matrix" (generated from `docs/routing-table.yaml` — the authoritative source; do not hand-copy the table here, edit the yaml and re-run `node scripts/render-routing-table.ts` instead). `commands/orchestrate-slice.md` "Builder routing" carries the full signal-level decision detail (`FE_ONLY`/`BE_ONLY`/`SPLIT_BUILD`/`TS_TOOLING_ONLY`) this matrix summarizes.
 
+### Model tier resolution (REQUIRED — run before every builder Agent-tool dispatch)
+
+**Do NOT inherit the session model for the builder dispatch.** Before invoking the `Agent` tool for the specialist builder, resolve its tier explicitly:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" resolve-model --repo "$PWD" --phase build
+```
+
+Pass the printed value (e.g. `sonnet`) as the Agent-tool dispatch's `model:` argument. If the slice classifies as a trivial shape (`doc-update` / `config-tweak` / `test-only` / `single-module-edit`), pass `--shape <shape>` too — it overrides the phase tier. This mirrors the autonomous wave path's `resolveWaveDispatchModel`, which sets the model programmatically; here the resolution is honored by the orchestrator LLM, not enforced by a hook — see "Honest limitation" below.
+
+**Honest limitation:** this instruction has no hard hook enforcement. The autonomous wave path (`runner-plugin`'s `model-router`) sets the dispatch model programmatically before the subagent spawns; the interactive path here relies on the dispatcher LLM (you) actually running `resolve-model` and actually passing its output as `model:`. A `PreToolUse` hook on `Agent` that injects the resolved model when `model:` is absent (S2b) would close this gap — not built in this slice.
+
 After the builder returns PASS — parallel reviewer fan-out:
 
 Dispatch Reviewer A and Reviewer B in a **single Agent-tool message** (two parallel invocations):
@@ -103,7 +115,7 @@ Workflow:
 10. Only use a `team run` when ownership can be split cleanly.
 11. If using a `team run`, claim files only when parallel work might collide, and open approvals only when scope or ownership boundaries must be crossed.
 12. If using a `team run`, assign bounded work to:
-   - builder for implementation
+   - builder for implementation — **resolve its model tier first** via "Model tier resolution" above, and pass it explicitly as the Agent-tool `model:` argument. Never let the builder dispatch silently inherit the session model.
    - reviewer for change review
    - validator for behavior checks when behavior can be exercised
    - researcher for uncertainty reduction if needed
