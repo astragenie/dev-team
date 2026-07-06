@@ -3,6 +3,59 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [0.51.0] — 2026-07-06 — GEPA reflective-rewrite engine + agent-prompt optimization pass
+
+> Note: `0.50.0` was version-bumped + changelogged (commit `4609537`) but never
+> tagged. `v0.51.0` is the first tag carrying both the 0.50.0 P1-hardening (below)
+> and all the GEPA / agent-optimization work landed since.
+
+### Minor — FEAT-192 GEPA reflective-rewrite engine (the "brain")
+
+Completes the loop FEAT-183 scaffolded: `synthesizeCandidate()` previously
+appended a marker and never rewrote a prompt, so every optimize cycle returned
+`no_winner`. Four slices shipped on `feat/auto-safe-wave`, each caught + fixed a
+fail-silent HIGH bug at the independent review gate before merge.
+
+- **SLICE-A** — `dispatchRewriter()` reuses the `claude -p` stream-json primitives
+  (`runSubprocess`/`parseStreamJson` now exported from `candidate-dispatch.ts`) to
+  dispatch `aiplugin-dev` with champion + failing trials + judge rationale, gated
+  behind `GEPA_LIVE_GENERATOR=1`; stub `$0` dry-mode fallback preserved (AC-1, AC-7).
+  Fixed a nested-fence truncation bug (anchor extraction to start+end).
+- **SLICE-B** — structural guardrails: identity-anchor preservation (AC-5), non-trivial
+  / no-op diff rejection (AC-2), and a **per-candidate all-case promotion gate** in
+  `optimize-runner::determineWinner` (AC-4) — previously it picked `rank1[0]` from a
+  global Pareto and a candidate could win one case while regressing another.
+- **SLICE-C** — judge-backed `Scorer` adapter (`judge-scorer.ts`) + `split-heldout`
+  wiring; byte-identical `noopScorer` fallback preserved.
+- **SLICE-D** — AC-3 proof harness: `--split 0/3` scores all cases, 3-tier
+  failing-trial seeding, offline mock-judge e2e (generate→score→rank→`no_winner:false`).
+
+  **AC-3 live "prompts improving" proof is DEFERRED** pending an operator run with a
+  rotated `GROQ_API_KEY` — see FEAT-192 runbook. FEAT-192 fully closes once captured.
+
+### Minor — Agent-prompt optimization benchmark
+
+- All 23 agent prompts graded against `docs/prompts/agent-prompt-optimization.md`
+  (audit log `docs/grades/agent-prompt-scores.md`). Baseline fleet mean **8.2 → 8.5**
+  after 4 fix passes: cross-fleet mechanical reds (stale refs, CLI canonicalization),
+  per-agent gap fixes, and fresh contradiction defects (dev-lite Bash contradiction,
+  typescript-reviewer dead skill paths, integrator missing tools field). Largest
+  gains: cloud-architect 6.5→8.1, verifier 8.0→9.33, reviewer 8.0→9.1.
+- `performance-engineer`, `refactor`, `test-automator` prompts hardened per external review.
+
+### Minor — GEPA-under-Node + eval-spec coverage
+
+- **FEAT-191** — consume gepa-core `0.7.0`; GEPA now runs under Node (ADR-003 runtime
+  parity; the reflective engine no longer requires Bun).
+- **FEAT-189** — eval specs for verifier, backend-dev, frontend-dev, integrator,
+  refactor, release-engineer; `aiplugin-dev` converted to a live-agent eval; local
+  eval-run viewer.
+- **FEAT-423** — `memory-keeper` skill: agents record decisions + errors to astramem
+  with live agent-scoped recall across handoffs (verified across FEAT-192's 4 slices).
+- Arch-review wave (SLICE-197/198) — CI-gate hygiene + stripped foreign peer boilerplate
+  from agent-pack agents.
+- `.env.example` — documents the `GROQ_API_KEY` / `GEMINI_API_KEY` live-judge env vars.
+
 ## [0.50.0] — 2026-07-04 — P1 enforcement hardening (verdict enums + fail-open fix + feature flags)
 
 ### Minor — P1.3 enum verdict frontmatter + fail-open badge fix (2026-07-04)
