@@ -64,11 +64,7 @@ function logDropEvent(repoPath: string, trialId: string, agent: string, reason: 
   }
 }
 
-// Exported for reuse by capture-failure-trial.ts (FEAT-193 S1) — the failing-
-// trial writer needs the same candidate_prompt_hash/path derivation so
-// production-failure trials land in the corpus with the same provenance shape
-// as capture-tee's success/observed trials.
-export function computePromptHash(repoPath: string, agent: string): string {
+function computePromptHash(repoPath: string, agent: string): string {
   const agentPath = join(repoPath, "agents", `${agent}.md`);
   if (!existsSync(agentPath)) return "unknown";
   try {

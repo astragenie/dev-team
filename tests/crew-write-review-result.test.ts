@@ -174,54 +174,6 @@ test("write-review-result: rejected decision captures a failure entry in learnin
   }
 });
 
-// FEAT-193 S1: the same rejected-review write ALSO dual-writes a failing
-// Trial to the agent's GEPA trial store, alongside the learnings.jsonl
-// capture above.
-test("write-review-result: rejected decision also dual-writes a failing GEPA trial", async () => {
-  const repoPath = await makeTempRepo("crew-wrr-rejected-trial-");
-  try {
-    await fs.writeFile(
-      path.join(repoPath, "gepa.config.json"),
-      JSON.stringify({
-        capture: { enabled: true, exclude: [], walltime_ms: 2000 },
-        storage: { backend: "file", file_root: ".claude/artifacts/crew/gepa/trials" }
-      })
-    );
-    const { status } = runCli([
-      "write-review-result",
-      "--repo",
-      repoPath,
-      "--title",
-      "Rejected review",
-      "--reviewer",
-      "reviewer",
-      "--decision",
-      "rejected",
-      "--summary",
-      "missing null guard"
-    ]);
-    assert.equal(status, 0);
-    const raw = await fs.readFile(
-      path.join(repoPath, ".claude", "artifacts", "crew", "gepa", "trials", "reviewer.jsonl"),
-      "utf8"
-    );
-    const lines = raw
-      .split("\n")
-      .filter((l) => l.trim().length > 0)
-      .map((l) => JSON.parse(l));
-    assert.equal(lines.length, 1);
-    assert.equal(lines[0].agent, "reviewer");
-    assert.equal(lines[0].phase, "review");
-    assert.equal(lines[0].source, "captured");
-    assert.equal(lines[0].score.pass, false);
-    assert.equal(lines[0].score.score, 0);
-    assert.match(lines[0].score.rationale, /missing null guard/);
-    assert.equal(lines[0].input.capture_origin, "production_failure");
-  } finally {
-    await cleanup(repoPath);
-  }
-});
-
 // Approved reviews must NOT trigger failure capture.
 test("write-review-result: approved decision does not write learnings.jsonl", async () => {
   const repoPath = await makeTempRepo("crew-wrr-approved-no-capture-");

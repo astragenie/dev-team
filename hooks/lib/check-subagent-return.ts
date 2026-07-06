@@ -12,36 +12,6 @@ import { loadAndDeleteDispatchHandle } from "./dispatch-handle-store.ts";
 // learnings store. Fire-and-forget; never throws into this hook's path.
 import { captureFailureLearning } from "../../scripts/lib/memory/capture-learning.ts";
 
-// FEAT-193 S1: dual-write sibling — also tee failures into the GEPA trial
-// store. This hook has no reliable agent identity (PostToolUse on the Task
-// tool carries no subagent_type field), so trials land under agent "unknown"
-// and phase "build" (the default for non-phase-specific signals, matching
-// adapt-artifact.ts's KIND_TO_PHASE mapping for run-brief/handoff/final-synthesis).
-//
-// Imported dynamically (not a static top-level import) — @astragenie/gepa-core's
-// installed package points main/exports at raw .ts source, and this hook is
-// invoked via plain `node --experimental-strip-types` (not bun), which refuses
-// to strip types for anything under node_modules. A static import would crash
-// module load for the WHOLE hook; a dynamic import inside try/catch degrades
-// to a silent no-op instead, matching scripts/lib/artifacts/write.ts's
-// fireCaptureTeeSilent pattern for the exact same hazard.
-async function fireFailureTrialSilent(
-  repoPath: string,
-  entry: { rationale: string; source: string }
-): Promise<void> {
-  try {
-    const { captureFailureTrial } = await import("../../scripts/lib/gepa/capture-failure-trial.ts");
-    await captureFailureTrial(repoPath, {
-      agent: "unknown",
-      phase: "build",
-      rationale: entry.rationale,
-      input: { source: entry.source }
-    });
-  } catch {
-    // never propagate
-  }
-}
-
 async function logEvent(
   repoPath: string,
   code: string,
@@ -183,8 +153,6 @@ export async function runCheckSubagentReturnHook(raw: string): Promise<string | 
       tags: ["inline-return-warn"],
       source: "inline-return-warn"
     });
-    // FEAT-193 S1: dual-write — same signal, also a failing GEPA trial.
-    await fireFailureTrialSilent(cwd, { rationale: warning, source: "inline-return-warn" });
 
     // AC-4: subagent_incomplete — a NEW signal, strictly narrower than the
     // warn above (also requires no terminal status marker). See
@@ -199,8 +167,6 @@ export async function runCheckSubagentReturnHook(raw: string): Promise<string | 
         tags: ["subagent-incomplete"],
         source: "subagent-incomplete"
       });
-      // FEAT-193 S1: dual-write for the subagent-incomplete signal too.
-      await fireFailureTrialSilent(cwd, { rationale: detail, source: "subagent-incomplete" });
     }
 
     return JSON.stringify({ decision: "approve", systemMessage: warnings.join("\n") });
