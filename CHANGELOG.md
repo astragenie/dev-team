@@ -3,6 +3,71 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [0.52.0] — 2026-07-06 — Memory capture/recall loop + model-routing token-burn fix
+
+Minor: new memory infrastructure + a model-routing cost fix + builder-prompt
+guardrails. All landed via build→independent-review→merge; CI green (11 gates,
+`bun run test` 1674 pass / 0 fail).
+
+### Minor — FEAT-188 MemoryProvider capture/recall loop (S1a + S2 + S3a)
+
+The learning loop that feeds agent lessons back into dispatch, repaired end to end.
+
+- **S1a — capture repair** (`scripts/validate-syntheses.ts`, `scripts/lib/artifacts/write.ts`,
+  `scripts/lib/memory/capture-learning.ts`, `hooks/lib/check-subagent-return.ts`): grade
+  placeholder/all-zero rejection (killed the 27% grade-rot); fire-and-forget failure capture
+  on review-FAIL / validation-FAIL / `inline-return-warn`; a new `subagent-incomplete` signal
+  (shared with #162 Fix A). Capture never throws into a gate.
+- **S2 — MemoryProvider interface + noop/file providers** (`scripts/lib/memory/`): Zod entry
+  schema, `noopProvider` (byte-identical default) / `fileProvider` (atomic append, legacy
+  adapter), unified `memory` config parser reconciling the runner-plugin bridge's live keys.
+- **S3a — recall injection** (`scripts/lib/memory/inject-recall.ts` + `recall-block` CLI):
+  recall block injected at the dev-team dispatch sites, reusing the bridge's
+  `## Prior context (from astramem)` format; noop byte-identical golden test.
+- **runner-plugin side (merged there):** S1b root-caused the stale `learnings.jsonl` — capture
+  was writing to per-slice worktree copies discarded on prune (`resolveCanonicalRepoRoot` fix);
+  grades.jsonl had the same bug (#326).
+
+### Minor — FEAT-193 S1 failure → GEPA trial-store bridge
+
+Real production failures now flow into the GEPA trial corpus as failing trials
+(`source: captured` + `capture_origin` marker; gepa-core `source` enum lacks `production` —
+tracked plugins-common#7). Cold-load guard (`capture-failure-trial-guard.ts`, zero-runtime
+gepa-core dep, timeout-raced) so a cold gepa-core import never hangs the write-review CLI.
+
+### Minor — FEAT-194 model routing (the token-burn fix)
+
+Root cause: dev-team `loop.json` had no `modelRouting` block, so the router fell back to Opus
+for every non-trivial build; interactive `/crew:build` bypassed the router entirely and
+inherited the session model. Both paths burned Opus; `model_pinned` was vestigial.
+
+- **Config** — `loop.modelRouting: {architect:opus, build:sonnet, default:sonnet}` routes the
+  build pass to Sonnet.
+- **S1** — `crew.json features["model-routing"]` toggle (reuses `isEnabled`).
+- **S2** — `resolve-model` CLI + wired `build.md`/`fix.md`/`orchestrate-slice.md` to resolve +
+  pass the tier explicitly (no session-model inherit).
+- **S2b** — a PreToolUse hook hard-enforcing the tier on builder-tier Agent dispatch
+  (`updatedInput` inject, systemMessage fallback), gated by the S1 kill-switch, fail-open.
+- **S3** — documented `model_pinned` as advisory (not enforced) in `docs/standards/agent-playbook.md`.
+
+### Minor — token-burn guardrails (P0, dev-team #167)
+
+Builder prompts (`backend-dev`/`frontend-dev`/`fullstack-dev`/`dev-lite`) gained a
+checkpoint-commit rule (>30 files or >150k tokens → checkpoint + report) and a
+mechanical-work-is-scripted rule (`rg | sed`, not per-file LLM). Cites the 496k-token
+post-mortem (#165). Research: `docs/research/2026-07-06-token-burn-patch-plan.md`.
+
+### Patch — #168 npm ci lockfile drift
+
+`package-lock.json` pinned gepa-core `0.6.0` vs `package.json` `0.7.0` → `npm ci` (CI gate #1)
+was red. Lock regenerated.
+
+### Deferred to next release
+
+FEAT-188 S4 (astramemProvider via astramem-plugin exports, #23 merged) + S5 (eval/drift);
+FEAT-194 S4 (cost/token burn-watch — in flight). runner-plugin follow-ups: #322/#324 (bridge),
+S3b (wave-runner recall).
+
 ## [0.51.1] — 2026-07-06 — First GEPA-promoted champion (aiplugin-dev) + mid-job-death research
 
 Patch: prompt-quality promotion + research doc. No new commands/skills.
