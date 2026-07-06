@@ -78,7 +78,7 @@ const SEVERITY_TO_IMPORTANCE: Record<MemorySeverity, number> = {
   low: 0.25
 };
 
-interface RemoteHandle {
+export interface RemoteHandle {
   provider: AstramemWireProvider;
   name: "local" | "saas";
 }
@@ -88,6 +88,16 @@ export interface AstramemProviderOptions extends FileProviderOptions {
    * (the operator's "2 parallel providers" mode — astramem is source of
    * truth, the JSONL is the derived duplicate). */
   dualWrite?: boolean;
+  /**
+   * Internal test seam (FEAT-188 S4 issue #170). Overrides the
+   * local-then-saas health-probe resolver (`makeRemoteResolver()`) so
+   * tests can inject a pure in-memory fake `RemoteHandle` instead of
+   * standing up a real `http.Server` daemon. Never set by production
+   * callers — `resolveProvider()`/`astramemProvider()` production paths
+   * never pass this. Underscore-prefixed to signal "not part of the
+   * public contract."
+   */
+  __resolveRemote?: () => Promise<RemoteHandle | null>;
 }
 
 function toStoredEntry(input: MemoryEntryInput, supersedesOverride?: string): MemoryEntry {
@@ -218,7 +228,7 @@ export function astramemProvider(
   const dualWrite = options.dualWrite ?? false;
   const defaultMaxTokens = options.recall?.maxTokens ?? DEFAULT_MAX_TOKENS;
   const fallback = fileProvider(repoPath, options.recall ? { recall: options.recall } : {});
-  const resolveRemote = makeRemoteResolver();
+  const resolveRemote = options.__resolveRemote ?? makeRemoteResolver();
 
   async function writeThrough(entry: MemoryEntryInput, supersedesOverride?: string): Promise<void> {
     const stored = toStoredEntry(entry, supersedesOverride);

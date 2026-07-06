@@ -5,13 +5,26 @@
 // deterministically by pointing MEMORY_API_URL_LOCAL at an unreachable port
 // and leaving MEMORY_API_URL_SAAS unset (probeSaas short-circuits to null
 // without a network call — see astramem-provider.ts).
+//
+// Paired-mode tests (below) use a pure in-memory fake `RemoteHandle`
+// injected via the `__resolveRemote` test seam — no `http.Server`, no
+// socket. This is a deliberate fix for astragenie/dev-team#170: the
+// previous real-daemon-over-loopback version of these 2 tests flaked
+// deterministically inside the full `bun run test` suite (never in
+// isolation). Root cause (see the FEAT-188 S4 flake-fix handoff): the repo's
+// only other in-process `http.Server` test (tests/telemetry-hook-flush.test.ts)
+// aborts from the same known Bun #5090 node:test-cascade bug in the same
+// full-suite runs — astramem's fire-and-forget remember() over a real
+// socket was a downstream casualty of that single-process scheduling
+// corruption, not standalone HTTP contention. Removing the real socket
+// removes the exposure entirely while preserving the routing/dual-write
+// assertions the tests exist to cover.
 import fs from "node:fs/promises";
-import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { astramemProvider } from "../scripts/lib/memory/astramem-provider.ts";
+import { astramemProvider, type RemoteHandle } from "../scripts/lib/memory/astramem-provider.ts";
 import { fileProvider } from "../scripts/lib/memory/file-provider.ts";
 
 const UNREACHABLE_LOCAL_URL = "http://127.0.0.1:1";
@@ -193,60 +206,59 @@ test("resolveProvider wires provider:astramem to astramemProvider (S2 hand-off)"
   }
 });
 
-// --- paired mode (fake local daemon) — exercises the branch the unpaired
-// tests above cannot reach: a real health() 200 + a real remember() POST. ---
+// --- paired mode (in-memory fake wire provider) — exercises the branch the
+// unpaired tests above cannot reach: a "healthy" resolveRemote() + a
+// remember() call — with NO real socket. Fixed per astragenie/dev-team#170:
+// see the file-header comment for why the previous real-http.Server version
+// of these 2 tests flaked in the full suite. Injected via the
+// `__resolveRemote` test seam on AstramemProviderOptions
+// (scripts/lib/memory/astramem-provider.ts) — production callers never set
+// this option.
 
-interface FakeDaemon {
-  url: string;
+interface FakeWireDaemon {
   rememberCalls: number;
-  close: () => Promise<void>;
+  resolveRemote: () => Promise<RemoteHandle | null>;
 }
 
-async function startFakeLocalDaemon(): Promise<FakeDaemon> {
+function makeFakeWireDaemon(): FakeWireDaemon {
   let rememberCalls = 0;
-  const server = http.createServer((req, res) => {
-    if (req.method === "GET" && req.url === "/health") {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ ok: true, version: "test" }));
-      return;
+  const handle: RemoteHandle = {
+    name: "local",
+    provider: {
+      async ingest(): Promise<void> {
+        /* not exercised by astramemProvider's write path */
+      },
+      async ingestTranscript(): Promise<void> {
+        /* not exercised by astramemProvider's write path */
+      },
+      async recall() {
+        return { hits: [] };
+      },
+      async remember(): Promise<void> {
+        rememberCalls += 1;
+      },
+      async health() {
+        return { ok: true, version: "test-fake" };
+      }
     }
-    if (req.method === "POST" && req.url === "/remember") {
-      rememberCalls += 1;
-      let body = "";
-      req.on("data", (chunk) => {
-        body += chunk;
-      });
-      req.on("end", () => {
-        void body; // drained, not asserted on — presence of the call is what matters
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ ok: true }));
-      });
-      return;
-    }
-    res.writeHead(404);
-    res.end();
-  });
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const address = server.address();
-  if (address === null || typeof address === "string") {
-    throw new Error("expected a bound TCP address");
-  }
+  };
   return {
-    url: `http://127.0.0.1:${address.port}`,
     get rememberCalls() {
       return rememberCalls;
     },
-    close: () => new Promise<void>((resolve) => server.close(() => resolve()))
+    resolveRemote: async () => handle
   };
 }
 
 /**
  * remember() is intentionally fire-and-forget (not awaited by capture()) —
- * poll briefly instead of asserting immediately, since the network call is
- * not guaranteed to have landed the instant capture() resolves.
+ * poll briefly instead of asserting immediately, since the in-memory
+ * increment is not guaranteed to have landed the instant capture() resolves
+ * (it still goes through a microtask hop via the fire-and-forget promise
+ * chain in writeThrough()).
  */
 async function waitForRememberCalls(
-  daemon: FakeDaemon,
+  daemon: FakeWireDaemon,
   expected: number,
   timeoutMs = 2000
 ): Promise<void> {
@@ -262,74 +274,52 @@ async function waitForRememberCalls(
   );
 }
 
-async function withPairedLocalEnv<T>(daemonUrl: string, fn: () => Promise<T>): Promise<T> {
-  const priorLocal = process.env["MEMORY_API_URL_LOCAL"];
-  const priorSaas = process.env["MEMORY_API_URL_SAAS"];
-  const priorSaasAlias = process.env["MEMORY_API_URL"];
-  process.env["MEMORY_API_URL_LOCAL"] = daemonUrl;
-  delete process.env["MEMORY_API_URL_SAAS"];
-  delete process.env["MEMORY_API_URL"];
-  try {
-    return await fn();
-  } finally {
-    if (priorLocal === undefined) delete process.env["MEMORY_API_URL_LOCAL"];
-    else process.env["MEMORY_API_URL_LOCAL"] = priorLocal;
-    if (priorSaas === undefined) delete process.env["MEMORY_API_URL_SAAS"];
-    else process.env["MEMORY_API_URL_SAAS"] = priorSaas;
-    if (priorSaasAlias === undefined) delete process.env["MEMORY_API_URL"];
-    else process.env["MEMORY_API_URL"] = priorSaasAlias;
-  }
-}
-
-test("astramemProvider (paired, dualWrite:true) writes BOTH the fake local daemon AND the local JSONL", async () => {
+test("astramemProvider (paired, dualWrite:true) writes BOTH the fake remote AND the local JSONL", async () => {
   const repo = await makeTempRepo("memory-astramem-paired-dualwrite-");
-  const daemon = await startFakeLocalDaemon();
+  const daemon = makeFakeWireDaemon();
   try {
-    await withPairedLocalEnv(daemon.url, async () => {
-      const provider = astramemProvider(repo, { dualWrite: true });
-      await provider.capture({
-        kind: "failure",
-        severity: "high",
-        summary: "paired dual-write capture",
-        source: "test"
-      });
-
-      await waitForRememberCalls(daemon, 1);
-
-      const fileResults = await fileProvider(repo).recall({ k: 5 });
-      assert.equal(
-        fileResults.length,
-        1,
-        "dualWrite:true must also mirror the entry into the local JSONL"
-      );
-      assert.equal(fileResults[0]!.summary, "paired dual-write capture");
+    const provider = astramemProvider(repo, {
+      dualWrite: true,
+      __resolveRemote: daemon.resolveRemote
     });
+    await provider.capture({
+      kind: "failure",
+      severity: "high",
+      summary: "paired dual-write capture",
+      source: "test"
+    });
+
+    await waitForRememberCalls(daemon, 1);
+
+    const fileResults = await fileProvider(repo).recall({ k: 5 });
+    assert.equal(
+      fileResults.length,
+      1,
+      "dualWrite:true must also mirror the entry into the local JSONL"
+    );
+    assert.equal(fileResults[0]!.summary, "paired dual-write capture");
   } finally {
-    await daemon.close();
     await cleanup(repo);
   }
 });
 
-test("astramemProvider (paired, dualWrite:false) writes ONLY the daemon — no local JSONL mirror", async () => {
+test("astramemProvider (paired, dualWrite:false) writes ONLY the fake remote — no local JSONL mirror", async () => {
   const repo = await makeTempRepo("memory-astramem-paired-nodual-");
-  const daemon = await startFakeLocalDaemon();
+  const daemon = makeFakeWireDaemon();
   try {
-    await withPairedLocalEnv(daemon.url, async () => {
-      const provider = astramemProvider(repo);
-      await provider.capture({
-        kind: "failure",
-        severity: "high",
-        summary: "paired single-write capture",
-        source: "test"
-      });
-
-      await waitForRememberCalls(daemon, 1);
-
-      const fileResults = await fileProvider(repo).recall({ k: 5 });
-      assert.equal(fileResults.length, 0, "dualWrite:false must NOT mirror into the local JSONL");
+    const provider = astramemProvider(repo, { __resolveRemote: daemon.resolveRemote });
+    await provider.capture({
+      kind: "failure",
+      severity: "high",
+      summary: "paired single-write capture",
+      source: "test"
     });
+
+    await waitForRememberCalls(daemon, 1);
+
+    const fileResults = await fileProvider(repo).recall({ k: 5 });
+    assert.equal(fileResults.length, 0, "dualWrite:false must NOT mirror into the local JSONL");
   } finally {
-    await daemon.close();
     await cleanup(repo);
   }
 });
