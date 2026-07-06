@@ -1,0 +1,38 @@
+# Task Handoff: FEAT-188 S1a — Capture repair (dev-team)
+
+- Created: 2026-07-06T12:40:19.965Z
+- From: fullstack-dev
+- To: lead
+- Objective: Repair the broken learnings capture loop in dev-team: reject placeholder-rotted grade files, auto-capture failure entries on review/validation FAIL and on the existing inline-return-warn signal, define+emit the new subagent_incomplete signal, and point docs/decisions/README.md at the real decision store.
+- Allowed Scope:
+  - scripts/validate-syntheses.ts
+  - scripts/lib/memory/capture-learning.ts
+  - scripts/lib/artifacts/write.ts
+  - scripts/lib/subagent-return/incomplete-detector.ts
+  - hooks/lib/check-subagent-return.ts
+  - docs/decisions/README.md
+  - tests/*
+- Forbidden Scope:
+  - S1b (runner-plugin)
+  - S2 (MemoryProvider interface)
+  - S3-S5
+  - astramem integration
+  - issue #162 blocking/lockfile enforcement
+- Deliverable: 5 AC-scoped changes (grade placeholder rejection, review/validation-FAIL capture, inline-return-warn capture, subagent_incomplete new signal, decisions README pointer) + 26 new/updated tests, all green; zero-warning lint; typecheck clean. Awaiting human review (autonomous_safe=false).
+- Changed Files:
+  - scripts/validate-syntheses.ts
+  - scripts/lib/memory/capture-learning.ts
+  - scripts/lib/artifacts/write.ts
+  - scripts/lib/subagent-return/incomplete-detector.ts
+  - hooks/lib/check-subagent-return.ts
+  - docs/decisions/README.md
+  - tests/validate-syntheses.test.ts
+  - tests/capture-learning.test.ts
+  - tests/crew-write-review-result.test.ts
+  - tests/enum-verdicts.test.ts
+  - tests/incomplete-detector.test.ts
+  - tests/subagent-return.test.ts
+- Confidence: high — every AC has a passing test exercised against real repo data (21/78 = 27% grade placeholder rot reproduced exactly matching FEAT's cited figure); no pollution of tracked learnings.jsonl verified via git status
+- Risks: S1a intentionally does not gate capture behind a feature flag (writes unconditionally on FAIL/warn/incomplete) per revision note 'S1a writes to the existing JSONL directly' — if that volume proves noisy in practice, a follow-up can add a crew.json feature gate. subagent_incomplete is scoped as a strict subset of inline-return-warn's existing trigger (oversized+pathless+no-terminal-status) rather than adding a new dirty-worktree git-shell check, to stay minimal and avoid a second detector diverging from #162's future guard — flagged inline in code comments for the #162 implementer.
+- Suggested Next Handoff: Human review gate (autonomous_safe=false) — this FEAT does not self-approve. After PASS: S1b (runner-plugin, separate repo/session) can proceed in parallel; S2 (MemoryProvider interface) is next in dependency order.
+

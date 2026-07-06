@@ -762,6 +762,38 @@ async function fireCaptureTeeSilent(
   }
 }
 
+// FEAT-188 S1a AC-2: auto-capture a `failure`-kind learnings entry whenever
+// a review-result write carries the "rejected" verdict, or a
+// validation-result write carries the "fail" verdict. Fire-and-forget,
+// mirrors fireCaptureTeeSilent above — never blocks or fails the write this
+// hooks onto.
+function isFailingVerdict(kind: string, fields: ArtifactFields): boolean {
+  if (kind === "review-result") return fields.verdict === "rejected";
+  if (kind === "validation-result") return fields.verdict === "fail";
+  return false;
+}
+
+async function fireFailureCaptureSilent(
+  repoPath: string,
+  kind: string,
+  fields: ArtifactFields
+): Promise<void> {
+  if (!isFailingVerdict(kind, fields)) return;
+  try {
+    const { captureFailureLearning } = await import("../memory/capture-learning.ts");
+    const agent = kind === "review-result" ? fields.reviewer : fields.validator;
+    await captureFailureLearning(repoPath, {
+      agent: agent ?? null,
+      severity: "high",
+      summary: fields.findings || fields.summary || `${kind} verdict: ${fields.verdict}`,
+      tags: [kind, fields.slice, fields.feature].filter((t): t is string => Boolean(t)),
+      source: kind === "review-result" ? "review_fail" : "validation_fail"
+    });
+  } catch {
+    // never propagate
+  }
+}
+
 export async function writeArtifact(
   repoPath: string,
   kind: string,
@@ -791,6 +823,7 @@ export async function writeArtifact(
       await registerWorkflowArtifact(repoPath, artifact, fields);
     }
     await fireCaptureTeeSilent(repoPath, artifact, fields);
+    await fireFailureCaptureSilent(repoPath, kind, fields);
 
     return ok(artifact);
   } catch (e) {

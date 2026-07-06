@@ -5,6 +5,7 @@
 // artifacts (no verdict) keep the old default-pass behavior, and the Zod
 // schemas round-trip real writer output.
 import fs from "node:fs/promises";
+import path from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -262,6 +263,67 @@ test("write-validation-result: unrecognized decision exits 2", async () => {
     ]);
     assert.equal(status, 2);
     assert.match(stderr, /unknown decision/i);
+  } finally {
+    await cleanup(repoPath);
+  }
+});
+
+// FEAT-188 S1a AC-2: a "fail" validation-result write auto-captures a
+// failure-kind entry into the legacy learnings store.
+test("write-validation-result: fail decision captures a failure entry in learnings.jsonl", async () => {
+  const repoPath = await makeTempDir("enum-verdicts-fail-capture-");
+  try {
+    const { status } = runCli([
+      "write-validation-result",
+      "--repo",
+      repoPath,
+      "--title",
+      "Failed validation",
+      "--validator",
+      "verifier",
+      "--decision",
+      "fail",
+      "--summary",
+      "build broke on clean checkout"
+    ]);
+    assert.equal(status, 0);
+    const raw = await fs.readFile(
+      path.join(repoPath, ".claude", "artifacts", "loop", "learnings.jsonl"),
+      "utf8"
+    );
+    const lines = raw
+      .split("\n")
+      .filter((l) => l.trim().length > 0)
+      .map((l) => JSON.parse(l));
+    assert.equal(lines.length, 1);
+    assert.equal(lines[0].kind, "failure");
+    assert.equal(lines[0].agent, "verifier");
+    assert.equal(lines[0].source, "validation_fail");
+    assert.match(lines[0].summary, /build broke on clean checkout/);
+  } finally {
+    await cleanup(repoPath);
+  }
+});
+
+// "pass" must NOT trigger failure capture.
+test("write-validation-result: pass decision does not write learnings.jsonl", async () => {
+  const repoPath = await makeTempDir("enum-verdicts-pass-no-capture-");
+  try {
+    const { status } = runCli([
+      "write-validation-result",
+      "--repo",
+      repoPath,
+      "--title",
+      "Passed validation",
+      "--decision",
+      "pass",
+      "--summary",
+      "all good"
+    ]);
+    assert.equal(status, 0);
+    await assert.rejects(
+      fs.readFile(path.join(repoPath, ".claude", "artifacts", "loop", "learnings.jsonl"), "utf8")
+    );
   } finally {
     await cleanup(repoPath);
   }

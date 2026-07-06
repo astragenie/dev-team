@@ -137,6 +137,69 @@ test("write-review-result: rejected decision bypasses the test-adequacy gate", a
   }
 });
 
+// FEAT-188 S1a AC-2: a rejected review-result write auto-captures a
+// failure-kind entry into the legacy learnings store.
+test("write-review-result: rejected decision captures a failure entry in learnings.jsonl", async () => {
+  const repoPath = await makeTempRepo("crew-wrr-rejected-capture-");
+  try {
+    const { status } = runCli([
+      "write-review-result",
+      "--repo",
+      repoPath,
+      "--title",
+      "Rejected review",
+      "--reviewer",
+      "reviewer",
+      "--decision",
+      "rejected",
+      "--summary",
+      "missing null guard"
+    ]);
+    assert.equal(status, 0);
+    const raw = await fs.readFile(
+      path.join(repoPath, ".claude", "artifacts", "loop", "learnings.jsonl"),
+      "utf8"
+    );
+    const lines = raw
+      .split("\n")
+      .filter((l) => l.trim().length > 0)
+      .map((l) => JSON.parse(l));
+    assert.equal(lines.length, 1);
+    assert.equal(lines[0].kind, "failure");
+    assert.equal(lines[0].agent, "reviewer");
+    assert.equal(lines[0].source, "review_fail");
+    assert.match(lines[0].summary, /missing null guard/);
+  } finally {
+    await cleanup(repoPath);
+  }
+});
+
+// Approved reviews must NOT trigger failure capture.
+test("write-review-result: approved decision does not write learnings.jsonl", async () => {
+  const repoPath = await makeTempRepo("crew-wrr-approved-no-capture-");
+  try {
+    const { status } = runCli([
+      "write-review-result",
+      "--repo",
+      repoPath,
+      "--title",
+      "Approved review",
+      "--decision",
+      "approved",
+      "--summary",
+      "all good",
+      "--test-summary",
+      "covered"
+    ]);
+    assert.equal(status, 0);
+    await assert.rejects(
+      fs.readFile(path.join(repoPath, ".claude", "artifacts", "loop", "learnings.jsonl"), "utf8")
+    );
+  } finally {
+    await cleanup(repoPath);
+  }
+});
+
 // Scenario 5: approved_with_notes + no flags → exit 2 (gate also fires on approved_with_notes branch)
 test("write-review-result: approved_with_notes without test flags also exits 2", async () => {
   const repoPath = await makeTempRepo("crew-wrr-approved-with-notes-");
