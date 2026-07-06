@@ -40,6 +40,7 @@ import {
   UnsupportedSkipExpressionError,
   type WorkflowPhase
 } from "../workflow-config.ts";
+import { parseMemoryConfig, resolveEffectiveConfig } from "../memory/config.ts";
 
 // ── Soak dispatcher hook (FEAT-183 S7 / SLICE-104) ────────────────────────────
 //
@@ -96,6 +97,19 @@ export interface RoutingResult {
   matched_tag?: string;
 }
 
+/**
+ * Recall-scoping hint for the runtime consumer (S3b, the loop-plugin
+ * orchestrator) — NOT the recall block itself. planDispatch stays a pure
+ * plan generator (no side effects, no I/O to the memory store); the
+ * consumer calls scripts/lib/memory/inject-recall.ts's injectRecall() with
+ * these values at the actual dispatch call.
+ */
+export interface DispatchMemoryHint {
+  tags: string[];
+  /** Absent on parallel_dispatch phases (multiple agents, no single scope). */
+  agent?: string;
+}
+
 export interface DispatchPhase {
   role: string;
   /** Resolved agent ref for single-agent phases. Empty string for parallel_dispatch phases. */
@@ -114,6 +128,12 @@ export interface DispatchPhase {
    * invoking the agent. Propagated verbatim from the YAML phase definition.
    */
   require_user_approval?: boolean;
+  /**
+   * FEAT-188 S3a — present only when `opts.memoryConfig` resolves to
+   * recall-enabled. Absent otherwise, so existing golden dispatch-trace
+   * fixtures (memory not configured) stay byte-identical.
+   */
+  memory?: DispatchMemoryHint;
 }
 
 // ── skip_when evaluation (v1, narrowly scoped) ─────────────────────────────────
@@ -209,6 +229,13 @@ function resolveRouting(
  *                           evaluate skip_when expressions).
  * @param opts.sliceTags     Tags from the slice frontmatter (used for builder
  *                           variant routing via routing.tag_routes).
+ * @param opts.memoryConfig  Raw `memory` config block (FEAT-188 unified
+ *                           schema). When omitted, or when it resolves to
+ *                           recall-disabled (provider:"none" or
+ *                           recall.enabled:false), no `memory` hint is
+ *                           attached to any phase — existing golden dispatch
+ *                           traces stay byte-identical (AC: highest-risk
+ *                           regression property).
  *
  * @returns Ordered array of DispatchPhase objects. Skipped phases have
  *          gate === "skipped" and a skipReason set.
@@ -218,11 +245,15 @@ export async function planDispatch(opts: {
   sliceWorkflow?: string;
   changedFiles: string[];
   sliceTags?: string[];
+  memoryConfig?: unknown;
 }): Promise<DispatchPhase[]> {
-  const { repoRoot, sliceWorkflow, changedFiles, sliceTags = [] } = opts;
+  const { repoRoot, sliceWorkflow, changedFiles, sliceTags = [], memoryConfig } = opts;
 
   const config = await loadWorkflowConfig(repoRoot);
   const workflow = expandWorkflow(config, sliceWorkflow);
+
+  const memoryHintEnabled =
+    memoryConfig !== undefined && resolveEffectiveConfig(parseMemoryConfig(memoryConfig)).recallEnabled;
 
   const phases: DispatchPhase[] = [];
 
@@ -248,6 +279,12 @@ export async function planDispatch(opts: {
 
     if (skipReason !== undefined) {
       dispatchPhase.skipReason = skipReason;
+    }
+
+    if (memoryHintEnabled) {
+      dispatchPhase.memory = dispatchPhase.agent
+        ? { tags: sliceTags, agent: dispatchPhase.agent }
+        : { tags: sliceTags };
     }
 
     phases.push(dispatchPhase);
