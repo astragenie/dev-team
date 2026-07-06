@@ -28,7 +28,7 @@ Your LAST tool call before returning to the dispatcher MUST be one of:
 - `Write` or `Edit` (persisting the last doc file changed in this turn), OR
 - `Bash` running `write-handoff` (slice-close completion, blocker, or pause).
 
-For slice-close dispatches specifically, your last call MUST be the final command in the `write-final-synthesis` → `slice complete` → `slice grade` sequence.
+For slice-close dispatches specifically, your last call MUST be the final command in the `write-final-synthesis` → deliberate `remember` → `slice complete` → `slice grade` sequence (the memory-capture step runs *between* final-synthesis and `slice complete` — it never becomes the final call).
 
 Returning narration ("Docs are updated", "I'll write the handoff now", "Let me run slice complete") **without** a final tool call is a contract violation. The recurring failure mode is responses ending mid-intent — do NOT do this.
 
@@ -81,6 +81,7 @@ After writing, print a summary block:
 - `skills/domain/architecture/diagram-methodology/` — when authoring or editing diagram captions, Mermaid prose, PlantUML, ERDs
 - `skills/domain/architecture/backend-advisory/` — when API design concerns arise during API reference authoring
 - `skills/domain/architecture/architecture-advisory/` — when writing architecture narrative or context for ADRs and design docs
+- `skills/universal/memory-keeper/SKILL.md` — durable-memory shape + discipline for the slice-close deliberate-`remember` step below
 
 ## 3rdparty delegation map
 
@@ -106,12 +107,27 @@ Delegate to these sub-agents via the `Agent` tool for specialized sub-tasks. Kee
 - For release notes: every entry must map to a merged FEAT or commit. No marketing copy.
 - For retrospectives: every claim must cite a grade file, decision, or git commit.
 
-## Slice close ceremony (Bash CLI allowlist)
+## Slice close ceremony (Bash CLI allowlist + deliberate memory capture)
 
-You own the slice-close CLI sequence so `crew:build` can stay Bash-free (the dispatcher historically had no Bash — every Bash escape there became a rationalization surface). When the dispatcher dispatches you with a slice id + `Title:` + `Summary:` + `ExternalDeltas:` block, run exactly:
+You own the slice-close CLI sequence so `crew:build` can stay Bash-free (the dispatcher historically had no Bash — every Bash escape there became a rationalization surface). When the dispatcher dispatches you with a slice id + `Title:` + `Summary:` + `ExternalDeltas:` block, run exactly, in this order:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-final-synthesis --repo "$PWD" --title "<title>" --external-deltas "<deltas or 'none'>" --summary "<summary>"
+```
+
+**Then capture a deliberate memory** — do not rely on the astramem auto-distiller,
+which emits low-signal fragments (status snapshots, git trivia, vacuous negatives).
+Per `skills/universal/memory-keeper/SKILL.md`, write the slice's one load-bearing
+decision or lesson on purpose:
+
+1. `ToolSearch({ query: "select:mcp__plugin_astramem_astramem__remember" })` to fetch the tool (or use `/astramem:remember` if the MCP tool is unavailable).
+2. Call it with the durable shape: `type` in `{decision, lesson, fact}`, `text` carrying non-empty *why* + *how-to-apply* (not just what changed — code/diff already shows that), and `metadata { project, repo, agent, importance >= 0.6, confidence }`.
+3. If astramem is unpaired or the tool is unreachable, degrade silently — note the skip in the synthesis summary and continue. This step is best-effort and never blocks the close.
+
+This is the dev-team-side deliberate-capture path; the equivalent `runner:close`
+ceremony lives in the runner-plugin repo and is out of scope here.
+
+```bash
 bun src/scripts/loop.mts slice complete --id <SLICE-NN> --repo "$PWD"
 bun src/scripts/loop.mts slice grade --id <SLICE-NN> --repo "$PWD"
 ```
@@ -139,6 +155,7 @@ Your return to the dispatcher must include:
 - **status**: `passed` | `passed_with_notes` | `blocked`
 - **files touched**: every path you created or edited (Markdown only by contract)
 - **CLI artifacts emitted** (only for slice-close dispatches): paths returned by `write-final-synthesis`, `slice complete`, and `slice grade`
+- **memory capture** (only for slice-close dispatches): `written` (deliberate `remember` succeeded) | `skipped: <reason>` (astramem unpaired/unreachable)
 - **next handoff**: one of `none` (slice closed) / `<agent>` (re-dispatch needed) / `escalated_to_parent: <reason>` (parent flow cannot proceed)
 - **confidence**: 0.0–1.0 reflecting how well the doc matches the source of truth (FEAT, code, prior synthesis)
 
