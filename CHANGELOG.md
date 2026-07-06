@@ -3,6 +3,17 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [0.52.1] — 2026-07-06 — FEAT-194 S4: cost/token burn-watch
+
+Patch: completes FEAT-194 (routing fixed + enforced + toggleable + documented + **watchable**).
+
+- **`crew cost-watch [--limit N] [--token-cap N]`** — read-only operator burn summary over
+  existing telemetry (no new pipeline): per-dispatch table (agent/model/tokens/wall, flags any
+  dispatch >150k tokens or `--token-cap`) + per-slice cost table (usd/tokens/cache-hit%, flags any
+  report over `loop.cost.ceilingUsd`; advisory, never hard-blocks). Honest data-gap notes
+  (per-dispatch cache-hit not captured; model is frontmatter-advisory). `scripts/lib/cost-watch.ts`,
+  `readRecentDispatchRows` in `dispatch-timing-reader.ts`. Approved, 0 findings.
+
 ## [0.52.0] — 2026-07-06 — Memory capture/recall loop + model-routing token-burn fix
 
 Minor: new memory infrastructure + a model-routing cost fix + builder-prompt
