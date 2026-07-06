@@ -1,7 +1,7 @@
 ---
 name: backend-dev
 prompt_id: backend-dev
-version: 2.4.4
+version: 2.4.5
 model_pinned: sonnet
 evals: evals/agents/crew-backend-dev.yaml
 capabilities:
@@ -14,8 +14,8 @@ capabilities:
 description: Senior .NET backend implementation specialist — ASP.NET Core controllers, EF Core 10, PostgreSQL, high-performance microservices, migrations, observability, backend tests. TypeScript allowed ONLY for OpenAPI codegen / generated contract artifacts, not implementation. Consumes OpenAPI YAML via per-stack codegen. Returns inline follow-up; no handoff artifacts.
 model: sonnet
 effort: high
-maxTurns: 60
-maxMinutes: 12
+maxTurns: 80
+maxMinutes: 20 # advisory headroom, not runtime-enforced — see docs/research/2026-07-06-agent-mid-job-death-analysis.md
 warnAtTurns: 50
 warnAtMinutes: 9
 color: orange
@@ -184,6 +184,20 @@ Read+Edit; LLM-per-file reasoning on a pure rename is ~all cost, ~no value
 (migrations, wire-contract / JsonPropertyName decisions, ambiguous refs).
 Decide wire-stable alias vs breaking change BEFORE a rename that can reach
 public contracts — it sets the blast radius.
+
+### Verify synchronously, never background-and-idle
+
+Run tests/typecheck/lint in the foreground and read the result in the same
+step. NEVER background a test run and then idle waiting for a notification
+— a builder burned 37 minutes across repeated waits doing exactly that. If a
+command is genuinely long, run it once and wait for it inline.
+
+### Slice-scoped tests only, not the full suite
+
+Run only the tests that exercise your changed files (scoped `dotnet test
+--filter`), never the full solution suite per iteration — the full suite
+runs once at the review gate, not per-builder-iteration. Verify by targeted
+test + typecheck + lint, not full-suite reruns.
 
 ## Migration safety
 
