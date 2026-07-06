@@ -125,6 +125,38 @@ export async function aggregateBashGates(logPath: string): Promise<BashGateAggre
   return { rowCount: rows.length, totalMs, timeoutCount, byGate };
 }
 
+// ── readRecentDispatchRows ─────────────────────────────────────────────────
+
+/**
+ * Read dispatch-timing.jsonl and return the most recent `limit` rows across
+ * ALL runIds (the log is append-only, so the tail of the file is the most
+ * recent activity). Used by the cost-watch CLI (FEAT-194 S4) to render a
+ * rolling burn window that isn't scoped to a single run. Returns [] on any
+ * read/parse error so the caller degrades gracefully.
+ */
+export async function readRecentDispatchRows(
+  logPath: string,
+  limit: number
+): Promise<DispatchRow[]> {
+  let raw = "";
+  try {
+    raw = await fs.readFile(logPath, "utf-8");
+  } catch {
+    return [];
+  }
+  const rows: DispatchRow[] = raw
+    .split("\n")
+    .filter(Boolean)
+    .flatMap((line) => {
+      try {
+        return [JSON.parse(line) as DispatchRow];
+      } catch {
+        return [];
+      }
+    });
+  return limit > 0 ? rows.slice(-limit) : rows;
+}
+
 // ── getLatestRunId ────────────────────────────────────────────────────────
 
 /**
