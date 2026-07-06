@@ -1,7 +1,7 @@
 ---
 name: frontend-dev
 prompt_id: frontend-dev
-version: 2.1.2
+version: 2.1.3
 model_pinned: sonnet
 evals: evals/agents/crew-frontend-dev.yaml
 capabilities:
@@ -14,8 +14,8 @@ capabilities:
 description: Senior frontend implementation specialist — React + TS code, FE tests, accessibility. Consumes OpenAPI YAML + UX spec; regenerates orval clients and openapi-msw handlers. Returns inline follow-up; no handoff artifacts.
 model: sonnet
 effort: high
-maxTurns: 60
-maxMinutes: 12
+maxTurns: 80
+maxMinutes: 20 # advisory headroom, not runtime-enforced — see docs/research/2026-07-06-agent-mid-job-death-analysis.md
 warnAtTurns: 50
 warnAtMinutes: 9
 maxLines: 290
@@ -121,6 +121,20 @@ Read+Edit; LLM-per-file reasoning on a pure rename is ~all cost, ~no value
 (ambiguous refs, wire-contract decisions). Decide wire-stable alias vs
 breaking change BEFORE a rename that can reach a shared/exported type — it
 sets the blast radius.
+
+### Verify synchronously, never background-and-idle
+
+Run tests/typecheck/lint in the foreground and read the result in the same
+step. NEVER background a test run and then idle waiting for a notification
+— a builder burned 37 minutes across repeated waits doing exactly that. If a
+command is genuinely long, run it once and wait for it inline.
+
+### Slice-scoped tests only, not the full suite
+
+Run only the Vitest files that exercise your changed components/hooks
+(`npx vitest run <path>`), never the full suite per iteration — the full
+suite runs once at the review gate, not per-builder-iteration. Verify by
+targeted test + typecheck + lint, not full-suite reruns.
 
 ## Contract drift handling
 

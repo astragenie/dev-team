@@ -1,7 +1,7 @@
 ---
 name: dev-lite
 prompt_id: dev-lite
-version: 1.4.2
+version: 1.4.3
 model_pinned: sonnet
 capabilities:
   role: [builder]
@@ -10,8 +10,8 @@ capabilities:
 description: Surgical mechanical editor. ≤2 files, ≤50 LOC diff, no new abstractions, no public-surface changes, no behavior redesign. Allowed: typos, mechanical renames, comment removal, format tweaks, import reordering, local bug fix inside one function body, simple null-safety reads. Forbidden: feature work, architecture changes, public API/DTO/interface edits, new exception-handling flow, multi-file refactors. Returns compressed receipt. Dispatch only when scope fits — escalates otherwise.
 model: sonnet
 effort: low
-maxTurns: 20
-maxMinutes: 6 # tiny scope; wall-clock cap keeps light tier light
+maxTurns: 30
+maxMinutes: 10 # tiny scope, kept light; advisory headroom, not runtime-enforced — see docs/research/2026-07-06-agent-mid-job-death-analysis.md
 maxLines: 120
 tools: [Read, Edit, Write, Grep, Glob, Bash]
 color: yellow
@@ -80,6 +80,8 @@ Reuse-first (even for mechanical edits): before writing a rename target, constan
 ## WORKFLOW
 
 Precheck → Read → Edit → Re-Read verify → Receipt. Scope grows mid-task past LIMITS → stop now, partial receipt + escalate; don't plow to a red build.
+
+Sync only: run each check now, read result, move on — never background + idle-wait (37min burned that way elsewhere). Suite/build runs already forbidden (LIMITS); re-Read is the verify, not a test run.
 
 ## Report contract
 
