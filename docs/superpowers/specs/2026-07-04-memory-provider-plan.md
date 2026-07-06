@@ -1,5 +1,7 @@
 # MemoryProvider — Capture/Recall Learning Loop Plan
 
+> **SUPERSEDED (2026-07-06) by FEAT-188 rev2.** This original plan assumed a greenfield MemoryProvider and an `astramemProvider` "adapter over the astramem MCP/CLI." Reconciliation found ~60-65% already exists in runner-plugin's memory-bridge, astramem is live at plugin **v0.6** (interface = plugin/MCP/importable providers, NOT the CLI), and the config keys collide with the live bridge. The authoritative plan is now the FEAT-188 file (`.claude/artifacts/loop/backlog/in-progress/FEAT-188-memory-provider-capture-recall.md`, rev2) + `docs/research/2026-07-06-memory-bridge-reconciliation.md`. Read this doc for original design intent only.
+
 **Date:** 2026-07-04
 **Status:** proposed (from architecture review section 15)
 **Source:** `docs/superpowers/specs/2026-07-04-crew-architecture-review-REPORT.md` §15
