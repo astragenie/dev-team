@@ -126,7 +126,8 @@ const FLAG_SPEC = {
   "--concern": { key: "concern" },
   "--lens": { key: "lens" },
   "--since": { key: "since" },
-  "--tag": { key: "tag" }
+  "--tag": { key: "tag" },
+  "--tags": { key: "tags" }
 } as const;
 
 type FlagSpecValues = (typeof FLAG_SPEC)[keyof typeof FLAG_SPEC];
@@ -241,6 +242,7 @@ function buildDefaultFlags(): Flags {
     gepaK: null,
     since: null,
     tag: null,
+    tags: null,
     skipReason: null
   };
 }
@@ -376,7 +378,9 @@ function usage(target: string | null = null) {
     "gepa-invalidate":
       "  node scripts/crew.ts gepa-invalidate --agent <name> [--since <iso>] [--tag <tag>] [--repo <path>]",
     "gepa-revert": "  node scripts/crew.ts gepa-revert --agent <name> [--repo <path>]",
-    "gepa-thaw": "  node scripts/crew.ts gepa-thaw <agent> [--repo <path>]"
+    "gepa-thaw": "  node scripts/crew.ts gepa-thaw <agent> [--repo <path>]",
+    "recall-block":
+      "  node scripts/crew.ts recall-block --repo <path> [--agent <name>] [--tags <a,b>]"
   };
 
   const subcommandsMap = subcommands as Record<string, string | undefined>;
@@ -1362,6 +1366,21 @@ const COMMANDS = {
     if (result.stderr) process.stderr.write(result.stderr);
     if (result.exitCode !== 0) process.exit(result.exitCode);
     return result.stdout.trim();
+  },
+
+  // FEAT-188 S3a — the CLI surface dispatch-assembly commands (build.md,
+  // fix.md, ship.md, orchestrate-slice.md) call to fetch a formatted recall
+  // block before dispatching a subagent. Best-effort: returns { block: "" }
+  // when memory/recall is disabled, no entries match, or anything fails.
+  "recall-block": async ({ repoPath, flags }: CommandContext) => {
+    const { buildRecallBlock } = await import("./lib/memory/inject-recall.ts");
+    const tags = splitCsv(flags.tags);
+    const block = await buildRecallBlock({
+      repoPath,
+      ...(typeof flags.agent === "string" && flags.agent ? { agent: flags.agent } : {}),
+      ...(tags.length > 0 ? { tags } : {})
+    });
+    return { block };
   }
 };
 
