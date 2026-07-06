@@ -1,6 +1,6 @@
 ---
 id: FEAT-192
-status: in-progress
+status: done
 priority: P1
 category: capability
 target_release: null

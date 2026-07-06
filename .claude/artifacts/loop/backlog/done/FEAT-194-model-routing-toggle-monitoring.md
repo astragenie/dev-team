@@ -1,6 +1,6 @@
 ---
 id: FEAT-194
-status: pending
+status: done
 priority: null
 category: feature
 target_release: null

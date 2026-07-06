@@ -233,8 +233,15 @@ and `docs/routing-table.md` for current routing.
 - **Governance.** `docs/governance.md` records decision tallies + revert
   policy. Phase 1 governance applies to all new work until Phase 2 opens.
 - **Cost telemetry.** Cost reports land in `.claude/artifacts/crew/cost/`
-  per slice and feed `brief-me` cost tables. Average ~$40/slice on
-  opus-4-7 with 99.9% cache hit is the current normal.
+  per slice and feed `brief-me` cost tables. Historical baseline was ~$40/slice
+  on opus-4-7 at 99.9% cache hit.
+- **Model routing (v0.52.0, FEAT-194 / #167).** Builds route to **Sonnet**, not
+  Opus, via `loop.modelRouting` (`{architect:opus, build:sonnet, default:sonnet}`) —
+  the autonomous wave path honors it programmatically; interactive `/crew:build`
+  resolves + passes it via `crew resolve-model --phase build`; a PreToolUse hook
+  hard-enforces it on builder-tier dispatch. Toggle: `crew.json features["model-routing"]`.
+  Root cause of the prior Opus burn: no `modelRouting` block → router fell back to
+  Opus for every non-trivial build. Watch burn with **`crew cost-watch [--token-cap N]`**.
 
 ### Open Phase 1 deferrals
 
