@@ -188,7 +188,10 @@ function renderDispatchSection(dispatch: DispatchBurnSummary): string[] {
       `| ${r.agent} | ${r.model} | ${r.tokenIn.toLocaleString()}/${r.tokenOut.toLocaleString()} | ${r.totalTokens.toLocaleString()} | ${r.wallMs} | ${r.flagged ? "⚠ OVER CAP" : ""} |`
     );
   }
-  lines.push("", `Rolling total (this window): ${dispatch.rollingTotalTokens.toLocaleString()} tokens`);
+  lines.push(
+    "",
+    `Rolling total (this window): ${dispatch.rollingTotalTokens.toLocaleString()} tokens`
+  );
   if (dispatch.flaggedCount > 0) {
     lines.push(
       `⚠ ${dispatch.flaggedCount} dispatch(es) crossed the ${dispatch.perDispatchTokenCap.toLocaleString()}-token cap. Advisory only.`
@@ -216,13 +219,17 @@ function renderSliceSection(slice: SliceBurnSummary): string[] {
   }
   lines.push("", `Rolling USD (deduped window, informational): $${slice.rollingUsd.toFixed(4)}`);
   if (slice.ceilingUsd == null) {
-    lines.push("_(no loop.cost.ceilingUsd configured in .claude/loop.json — no ceiling flag available)_");
+    lines.push(
+      "_(no loop.cost.ceilingUsd configured in .claude/loop.json — no ceiling flag available)_"
+    );
   } else if (slice.ceilingExceeded) {
     lines.push(
       `⚠ ${slice.flaggedPaths.size} report(s) exceeded loop.cost.ceilingUsd ($${slice.ceilingUsd}) on their own. Advisory only — not a hard stop.`
     );
   } else {
-    lines.push(`OK — no single report in this window exceeded loop.cost.ceilingUsd ($${slice.ceilingUsd}).`);
+    lines.push(
+      `OK — no single report in this window exceeded loop.cost.ceilingUsd ($${slice.ceilingUsd}).`
+    );
   }
   lines.push("");
   return lines;

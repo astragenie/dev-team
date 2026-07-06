@@ -222,7 +222,11 @@ test("renderCostWatchReport renders dispatch + slice tables and a cap warning", 
     dispatch: summarizeDispatchBurn([
       row({ agent: "crew:aiplugin-dev", model: "opus", tokenIn: 140_000, tokenOut: 20_000 })
     ]),
-    slice: summarizeSliceBurn([costReport({ path: "/s99.md", runTitle: "SLICE99", usd: 80 })], 80, 75)
+    slice: summarizeSliceBurn(
+      [costReport({ path: "/s99.md", runTitle: "SLICE99", usd: 80 })],
+      80,
+      75
+    )
   });
   assert.match(report, /crew:aiplugin-dev/);
   assert.match(report, /opus/);
@@ -265,7 +269,7 @@ test("buildCostWatch reads dispatch-timing.jsonl + cost reports + loop.json ceil
 
     const costReportMd = [
       "---",
-      'kind: cost-report',
+      "kind: cost-report",
       'run_title: "SLICE1"',
       "usd: 2.5",
       "total_tokens: 500000",
@@ -275,7 +279,14 @@ test("buildCostWatch reads dispatch-timing.jsonl + cost reports + loop.json ceil
       "# Cost Report: SLICE1"
     ].join("\n");
     await fs.writeFile(
-      path.join(tmp, ".claude", "artifacts", "crew", "cost", "20260101T000000Z-cost-report-slice-slice1.md"),
+      path.join(
+        tmp,
+        ".claude",
+        "artifacts",
+        "crew",
+        "cost",
+        "20260101T000000Z-cost-report-slice-slice1.md"
+      ),
       costReportMd
     );
 

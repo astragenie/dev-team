@@ -1195,7 +1195,9 @@ const COMMANDS = {
     const tokenCap = flags.tokenCap ? parseInt(flags.tokenCap, 10) : undefined;
     const data = await buildCostWatch(repoPath, {
       ...(limit !== undefined && Number.isFinite(limit) ? { limit } : {}),
-      ...(tokenCap !== undefined && Number.isFinite(tokenCap) ? { perDispatchTokenCap: tokenCap } : {})
+      ...(tokenCap !== undefined && Number.isFinite(tokenCap)
+        ? { perDispatchTokenCap: tokenCap }
+        : {})
     });
     return renderCostWatchReport(data);
   },
