@@ -82,6 +82,28 @@
             "description": "crew:git-gate-reminder"
           }
         ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun \"${PWD}/hooks/pre-tool-use-agent.ts\"",
+            "description": "crew:dispatch-timing-pretap"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun \"${PWD}/hooks/check-subagent-return.ts\"",
+            "description": "crew:check-subagent-return"
+          }
+        ]
       }
     ]
   }
