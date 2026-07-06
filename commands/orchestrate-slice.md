@@ -172,6 +172,34 @@ in Step 3 / 3a / 3b prepend the block when non-empty, omit it otherwise.
 
 ---
 
+### Step 2.6 — Recall injection (FEAT-188 S3a)
+
+Fetch a recall block per builder variant BEFORE dispatching (same CLI surface
+`commands/build.md` / `commands/fix.md` / `commands/ship.md` use):
+
+```bash
+# SPLIT_BUILD = true
+FE_RECALL_BLOCK=$(node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" recall-block \
+  --repo "$PWD" --agent crew:frontend-dev --tags "<FEAT tags csv>" 2>/dev/null | jq -r '.block // empty')
+
+BE_RECALL_BLOCK=$(node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" recall-block \
+  --repo "$PWD" --agent crew:backend-dev --tags "<FEAT tags csv>" 2>/dev/null | jq -r '.block // empty')
+
+# SPLIT_BUILD = false
+SINGLE_RECALL_BLOCK=$(node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" recall-block \
+  --repo "$PWD" --agent <resolved single-variant builder agent> --tags "<FEAT tags csv>" 2>/dev/null | jq -r '.block // empty')
+```
+
+Each block is `""` when memory is not configured (`provider:none` or
+`recall.enabled:false`), nothing matched, or the CLI call fails — the CLI's
+own best-effort guard (`scripts/lib/memory/inject-recall.ts`) never throws.
+Treat empty as "no block — proceed without it". The builder dispatch prompts
+in Step 3 / 3a / 3b prepend the block (already the shared
+`## Prior context (from astramem)` format) when non-empty, after the Step
+2.5 skills block, omit otherwise.
+
+---
+
 ### Steps 2 + 3 — UX designer + Builder (parallel when both fire)
 
 `crew:uxdesigner` and `crew:fullstack-dev` both consume the FEAT-scoped contracts artifact (Step 1's `CONTRACT_YAML_PATH` + `CONTRACT_MD_PATH`) but NOT each other's output. Builder works from contracts + slice ACs; uxdesigner produces UX spec for reviewer to check separately. Both fire concurrently.
@@ -235,10 +263,12 @@ Store the returned path as `UX_SPEC_PATH`.
 
 #### Step 3 prompt — `crew:fullstack-dev`
 
-Prepend `${SINGLE_BLOCK}` from Step 2.5 when non-empty. Omit otherwise.
+Prepend `${SINGLE_BLOCK}` from Step 2.5 when non-empty, then `${SINGLE_RECALL_BLOCK}` from Step 2.6 when non-empty. Omit either when empty.
 
 ```
 <SINGLE_BLOCK from Step 2.5 — omit when empty>
+
+<SINGLE_RECALL_BLOCK from Step 2.6 — omit when empty>
 
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
@@ -260,10 +290,12 @@ When both branches fire, the orchestrator collects `UX_SPEC_PATH` AND `BUILDER_H
 
 ##### Step 3a — `crew:frontend-dev`
 
-Prepend `${FE_BLOCK}` from Step 2.5 when non-empty. Omit otherwise.
+Prepend `${FE_BLOCK}` from Step 2.5 when non-empty, then `${FE_RECALL_BLOCK}` from Step 2.6 when non-empty. Omit either when empty.
 
 ```
 <FE_BLOCK from Step 2.5 — omit when empty>
+
+<FE_RECALL_BLOCK from Step 2.6 — omit when empty>
 
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
@@ -286,10 +318,12 @@ Store the returned path as `BUILDER_FE_HANDOFF_PATH`.
 
 ##### Step 3b — `crew:backend-dev`
 
-Prepend `${BE_BLOCK}` from Step 2.5 when non-empty. Omit otherwise.
+Prepend `${BE_BLOCK}` from Step 2.5 when non-empty, then `${BE_RECALL_BLOCK}` from Step 2.6 when non-empty. Omit either when empty.
 
 ```
 <BE_BLOCK from Step 2.5 — omit when empty>
+
+<BE_RECALL_BLOCK from Step 2.6 — omit when empty>
 
 Slice: <SLICE-NN title>
 Slice file: <absolute path>

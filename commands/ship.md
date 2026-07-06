@@ -97,9 +97,12 @@ qa_decision = passed AND verifier_decision = passed
    - `.ts` + `surface:cross-layer` → `crew:fullstack-dev`
    - `.ts` + `surface:plugin` → `crew:aiplugin-dev`
    - no clear tag → `crew:fullstack-dev`
-3. Dispatch the specialist builder with the aggregated FAIL findings as fix scope. Builder produces
+3. **Recall injection (FEAT-188 S3a):** before dispatching, fetch a recall block:
+   `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" recall-block --repo "$PWD" --agent <specialist-builder-agent-name> --tags "<FEAT tags csv>"`
+   If `.block` is non-empty, prepend it verbatim (it is already the `## Prior context (from astramem)` block) to the retry dispatch instruction, ahead of the aggregated FAIL findings. If empty (memory not configured, or nothing recalled), omit — do not add any placeholder text.
+4. Dispatch the specialist builder with the aggregated FAIL findings as fix scope. Builder produces
    a fix + handoff artifact.
-4. Increment retry counter.
+5. Increment retry counter.
 
 ### Retry gate
 
