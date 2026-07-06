@@ -65,11 +65,23 @@ export function resolveModelForPhase(
  * Resolve the model an interactive dispatch should pass explicitly as the
  * Agent-tool `model:` argument: trivial-shape override first, falling back
  * to phase-based routing when the shape doesn't carry one.
+ *
+ * `modelRoutingEnabled` (FEAT-194 S1) is the crew.json `features["model-
+ * routing"].enabled` toggle, resolved by the CLI caller via
+ * features-service.ts's `isEnabled()` — this function stays pure/no-I/O, so
+ * the caller hands in the already-resolved boolean. Defaults to `true`
+ * (routing on) so existing call sites and tests are unaffected. When
+ * `false`, routing is fully bypassed (including the trivial-shape override)
+ * and the FALLBACK_MODEL ("opus") is returned unconditionally — an operator
+ * flips the flag off to audit or roll back routing without editing
+ * loop.json.
  */
 export function resolveDispatchModel(
   phase: string,
   shape: string | null | undefined,
-  config: LoopModelRoutingConfig | null | undefined
+  config: LoopModelRoutingConfig | null | undefined,
+  modelRoutingEnabled = true
 ): string {
+  if (!modelRoutingEnabled) return FALLBACK_MODEL;
   return resolveShapeTier(shape) ?? resolveModelForPhase(phase, config);
 }
