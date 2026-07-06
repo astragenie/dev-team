@@ -100,6 +100,7 @@ const FLAG_SPEC = {
   "--judge": { key: "judge" },
   "--split": { key: "split" },
   "--severity": { key: "severity" },
+  "--shape": { key: "shape" },
   "--skip-reason": { key: "skipReason" },
   "--slice": { key: "slice" },
   "--started-at": { key: "startedAt" },
@@ -150,6 +151,7 @@ function buildDefaultFlags(): Flags {
     resolver: null,
     kind: null,
     severity: null,
+    shape: null,
     summary: null,
     reason: null,
     note: null,
@@ -380,7 +382,12 @@ function usage(target: string | null = null) {
     "gepa-revert": "  node scripts/crew.ts gepa-revert --agent <name> [--repo <path>]",
     "gepa-thaw": "  node scripts/crew.ts gepa-thaw <agent> [--repo <path>]",
     "recall-block":
-      "  node scripts/crew.ts recall-block --repo <path> [--agent <name>] [--tags <a,b>]"
+      "  node scripts/crew.ts recall-block --repo <path> [--agent <name>] [--tags <a,b>]",
+    "resolve-model":
+      "  node scripts/crew.ts resolve-model --phase <build|architect|...> [--shape <shape>] [--repo <path>]\n" +
+      "    Reads .claude/loop.json loop.modelRouting + the trivial-shape tier table and\n" +
+      "    prints the resolved model string (e.g. sonnet). Falls back to opus only when\n" +
+      "    no routing is configured. FEAT-194 S2 — interactive-dispatch model resolution."
   };
 
   const subcommandsMap = subcommands as Record<string, string | undefined>;
@@ -1381,6 +1388,31 @@ const COMMANDS = {
       ...(tags.length > 0 ? { tags } : {})
     });
     return { block };
+  },
+
+  // FEAT-194 S2 — resolves the model tier an interactive dispatch (Agent-tool
+  // `model:` argument) should pass explicitly instead of inheriting the
+  // session model. Reads .claude/loop.json loop.modelRouting (missing/invalid
+  // file is non-fatal — treated as "no routing configured", which resolves to
+  // the opus fallback). Pure resolution logic lives in
+  // ./lib/models/resolve-model.ts; this handler owns the one bit of I/O.
+  "resolve-model": async ({ repoPath, flags }: CommandContext) => {
+    const phase = typeof flags.phase === "string" ? flags.phase : null;
+    if (!phase) {
+      throw new Error("resolve-model refused: --phase <build|architect|...> is required.");
+    }
+    const shape = typeof flags.shape === "string" ? flags.shape : null;
+    const { resolveDispatchModel } = await import("./lib/models/resolve-model.ts");
+    const fs = await import("node:fs/promises");
+    const pathMod = await import("node:path");
+    let config: { loop?: { modelRouting?: Record<string, string> } } | null = null;
+    try {
+      const raw = await fs.readFile(pathMod.join(repoPath, ".claude", "loop.json"), "utf8");
+      config = JSON.parse(raw);
+    } catch {
+      config = null;
+    }
+    return resolveDispatchModel(phase, shape, config);
   }
 };
 

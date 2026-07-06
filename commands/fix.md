@@ -99,6 +99,18 @@ Escalate to user with both artifact paths + findings. Do not silently keep tryin
 
 See `docs/routing-table.md` → "Builder routing matrix" (generated from `docs/routing-table.yaml` — the authoritative source; do not hand-copy the table here, edit the yaml and re-run `node scripts/render-routing-table.ts` instead). `commands/orchestrate-slice.md` "Builder routing" carries the full signal-level decision detail (`FE_ONLY`/`BE_ONLY`/`SPLIT_BUILD`/`TS_TOOLING_ONLY`) this matrix summarizes.
 
+## Model tier resolution (REQUIRED — run before every builder Agent-tool dispatch)
+
+**Do NOT inherit the session model for the builder dispatch.** Before invoking the `Agent` tool in step 7 below, resolve the builder's tier explicitly:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" resolve-model --repo "$PWD" --phase build
+```
+
+Pass the printed value (e.g. `sonnet`) as the Agent-tool dispatch's `model:` argument. Add `--shape <shape>` when the fix classifies as a trivial shape (`doc-update` / `config-tweak` / `test-only` / `single-module-edit`) — it overrides the phase tier.
+
+**Honest limitation:** no hard hook enforces this — unlike the autonomous wave path (`runner-plugin`'s `model-router`), which sets the dispatch model programmatically, this instruction only works if the dispatcher LLM actually runs `resolve-model` and actually passes its output as `model:`. A `PreToolUse` hook on `Agent` that injects the resolved model when absent (S2b) would close the gap — not built here.
+
 ## Workflow
 
 1. Verify the current workspace path:
@@ -117,11 +129,11 @@ See `docs/routing-table.md` → "Builder routing matrix" (generated from `docs/r
    - whether the work should stay whole or be split into bounded sub-tasks
 6. If the task is substantial enough that future wake-up context will matter, write a run brief:
    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-run-brief --repo "$PWD" --title "<short title>" --goal "<goal>" --mode "team run"`
-7. Pick the specialist builder from the routing table above.
+7. Pick the specialist builder from the routing table above and dispatch via the `Agent` tool.
+   - **Resolve the model tier first** via "Model tier resolution" above (`crew resolve-model --phase build`) and pass the printed value as the Agent-tool `model:` argument — do NOT inherit the session model.
    - **Recall injection (FEAT-188 S3a):** before dispatching, fetch a recall block:
      `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" recall-block --repo "$PWD" --agent <specialist-agent-name> --tags "<FEAT tags csv>"`
      If `.block` is non-empty, prepend it verbatim (it is already the `## Prior context (from astramem)` block) to the builder's dispatch instruction. If empty (memory not configured, or nothing recalled), omit — do not add any placeholder text.
-   - Dispatch the builder via the `Agent` tool.
    - Set `size: standard` for substantive changes (requires `write-handoff` artifact).
    - Set `size: light` only for trivial one-line fixups (skips artifact, but builder still returns structured completion).
    - If this run references a design doc, pass the design doc path to the builder.
