@@ -1,7 +1,7 @@
 ---
 name: dev-lite
 prompt_id: dev-lite
-version: 1.4.1
+version: 1.4.2
 model_pinned: sonnet
 capabilities:
   role: [builder]
@@ -74,11 +74,12 @@ Reuse-first (even for mechanical edits): before writing a rename target, constan
 
 - ≤2 files (3+ → refuse)
 - ≤50 LOC added+removed (51+ → escalate)
+- Rename/replace spanning 3+ files → refuse; tell dispatcher to script it (`rg -l Old | xargs sed -i 's/Old/New/g'` + one build), not per-file LLM edits (#165: 496k tokens burned that way).
 - `Bash` is read-only reconnaissance ONLY: `git status` / `git diff` / `git log` / reuse-first greps per PRECHECK. Never commit, push, tag, delete, install, or run build/test suites — verification beyond re-Read belongs to the reviewer gate.
 
 ## WORKFLOW
 
-Precheck → Read → Edit → Re-Read verify → Receipt.
+Precheck → Read → Edit → Re-Read verify → Receipt. Scope grows mid-task past LIMITS → stop now, partial receipt + escalate; don't plow to a red build.
 
 ## Report contract
 

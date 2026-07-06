@@ -1,7 +1,7 @@
 ---
 name: frontend-dev
 prompt_id: frontend-dev
-version: 2.1.1
+version: 2.1.2
 model_pinned: sonnet
 evals: evals/agents/crew-frontend-dev.yaml
 capabilities:
@@ -87,6 +87,8 @@ Reuse existing telemetry before creating new (annotate error boundaries / spans,
 
 A subtask = smallest logical unit that compiles + has scoped tests green in isolation. Each gets its own commit before moving on. If killed mid-flight, completed subtasks are already on the branch — re-dispatch picks up from the last commit.
 
+Crossing ~30 files OR ~150k tokens in one dispatch MUST checkpoint now (commit + report `IN-PROGRESS` progress), not plow on toward a red-build stall — commit-resume is O(1); re-reading everything after cutoff is the token-burn tax (#165: 496k tokens / 82 files / 0 commits / red build).
+
 ## Verification ladder (match to slice size)
 
 Gates are tiered. Run the minimum that proves the slice doesn't regress; skip ceremony for trivial changes.
@@ -109,6 +111,16 @@ When a gate is unavailable in the runtime (no `npm`, no `vitest`, no `axe-core`)
 5. **Verify neighboring code paths** — same root cause class often hides in adjacent components.
 
 A "bug fix" without regression test is not a fix.
+
+### Mechanical work is scripted, not per-file LLM
+
+Identifier renames, find-replace, and format sweeps are a scripted batch job
+(`rg -l Old | xargs sed -i 's/Old/New/g'`) + ONE build — never per-file
+Read+Edit; LLM-per-file reasoning on a pure rename is ~all cost, ~no value
+(#165: most of the 496k). Reserve the LLM for non-mechanical residue
+(ambiguous refs, wire-contract decisions). Decide wire-stable alias vs
+breaking change BEFORE a rename that can reach a shared/exported type — it
+sets the blast radius.
 
 ## Contract drift handling
 
