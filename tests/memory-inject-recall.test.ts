@@ -150,7 +150,10 @@ test("buildRecallBlock respects recall.maxTokens (token-budget truncation)", asy
 
     const block = await buildRecallBlock({ repoPath: repo });
     const lineCount = block.length === 0 ? 0 : block.split("\n").length - 1; // minus header line
-    assert.ok(lineCount <= 1, `expected <=1 recalled line under a tight token budget, got ${lineCount}`);
+    assert.ok(
+      lineCount <= 1,
+      `expected <=1 recalled line under a tight token budget, got ${lineCount}`
+    );
   } finally {
     await cleanup(repo);
   }

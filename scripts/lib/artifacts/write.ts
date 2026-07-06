@@ -806,9 +806,7 @@ async function fireFailureCaptureSilent(
   // here; see capture-failure-trial-guard.ts's header comment for the full
   // root cause).
   try {
-    const { captureFailureTrialGuarded } = await import(
-      "../gepa/capture-failure-trial-guard.ts"
-    );
+    const { captureFailureTrialGuarded } = await import("../gepa/capture-failure-trial-guard.ts");
     await captureFailureTrialGuarded(repoPath, {
       agent: agent ?? "unknown",
       phase: kind === "review-result" ? "review" : "validate",

@@ -253,7 +253,8 @@ export async function planDispatch(opts: {
   const workflow = expandWorkflow(config, sliceWorkflow);
 
   const memoryHintEnabled =
-    memoryConfig !== undefined && resolveEffectiveConfig(parseMemoryConfig(memoryConfig)).recallEnabled;
+    memoryConfig !== undefined &&
+    resolveEffectiveConfig(parseMemoryConfig(memoryConfig)).recallEnabled;
 
   const phases: DispatchPhase[] = [];
 

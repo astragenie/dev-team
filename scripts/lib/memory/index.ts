@@ -16,4 +16,9 @@ export { fileProvider } from "./file-provider.ts";
 export type { FileProviderOptions } from "./file-provider.ts";
 export { resolveProvider } from "./resolve-provider.ts";
 export type { InjectRecallOptions } from "./inject-recall.ts";
-export { buildRecallBlock, formatRecallBlock, injectRecall, loadMemoryConfig } from "./inject-recall.ts";
+export {
+  buildRecallBlock,
+  formatRecallBlock,
+  injectRecall,
+  loadMemoryConfig
+} from "./inject-recall.ts";
