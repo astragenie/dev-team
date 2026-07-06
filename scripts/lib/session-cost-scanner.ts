@@ -46,9 +46,21 @@ export {
   SYNTHETIC_MODEL_PREFIXES
 } from "./session-cost-scanner/compute.ts";
 
+// Resolve the user's home directory, honoring an explicitly-set HOME / USERPROFILE
+// env var BEFORE falling back to os.homedir(). This matters because runtimes
+// disagree: Bun-on-Linux's os.homedir() reads the passwd/uid database and ignores
+// a reassigned $HOME, whereas Node and Bun-on-Windows honor the env var. Preferring
+// the env var makes the fallback path deterministic across runtimes (and testable
+// via a temp-dir HOME override). For real runs where the env var matches the OS home
+// this is a no-op.
+function resolveHomeDir(): string {
+  const fromEnv = process.env.HOME || process.env.USERPROFILE;
+  return fromEnv && fromEnv.trim() ? fromEnv : os.homedir();
+}
+
 export function getProjectsRoot(): string {
   const override = process.env.CREW_PROJECTS_ROOT;
-  return override ? path.resolve(override) : path.join(os.homedir(), ".claude", "projects");
+  return override ? path.resolve(override) : path.join(resolveHomeDir(), ".claude", "projects");
 }
 
 export async function* readJsonlLines(file: string): AsyncGenerator<JsonlLine> {
