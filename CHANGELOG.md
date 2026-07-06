@@ -3,6 +3,17 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [0.52.3] — 2026-07-06 — Manifest-parity release fix
+
+Patch: restores the `plugin.json` ↔ `package.json` version parity that
+`validate-manifests.ts` enforces as a HARD CI gate. The release ceremony bumped
+only `package.json`, leaving `plugin.json` behind — so the tagged commit failed CI
+with `version drift: plugin.json=X, package.json=Y`. This latent gap shipped red in
+v0.52.0–v0.52.2 (all fast-failed at the manifest gate). Fix: bump both manifests,
+and correct the release-ceremony checklist in `CLAUDE.md` to list `plugin.json`
+explicitly + add "CI green on the release commit" to the verify step. No behavior
+change — v0.52.2 content carries forward.
+
 ## [0.52.2] — 2026-07-06 — Activate the recording loop + builder speed guardrails
 
 Patch: makes the previously-dark capture/telemetry hooks live in dev-team's own

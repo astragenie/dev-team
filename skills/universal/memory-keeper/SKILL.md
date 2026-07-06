@@ -94,7 +94,7 @@ remember({
         "dispatch tables that read fine at 15. How to apply: don't re-lower without a " +
         "concrete new hotspot.",
   type: "decision",
-  metadata: { project: "dev-team", repo: "dev-team", agent: "crew:builder",
+  metadata: { project: "dev-team", repo: "dev-team", agent: "crew:fullstack-dev",
               importance: 0.6, confidence: 0.9 }
 })
 ```

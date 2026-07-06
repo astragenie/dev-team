@@ -19,16 +19,6 @@ Anything ambiguous, blocked, or spanning multiple tiers routes to **the dispatch
 
 Rationale: `crew:fullstack-dev` previously ate every untagged + every single-stack slice. The generalist agent paid every dispatch cost including specialist-territory slices. SLICE-C routes specialists when FEAT declares stack/surface tags. For untagged slices, `classifyChangedFiles()` in `scripts/orchestrate-slice-classify.ts` detects pure-TS-tooling work (script/test/eval edits) and routes to `backend-dev`, reserving fullstack-dev for genuine generalist use cases (agent/skill/hook/doc edits that lack surface/stack tags). See `commands/orchestrate-slice.md` "Builder routing" section for the full dispatch matrix.
 
-## Model tier routing (FEAT-194 / #167, v0.52.0)
-
-Orthogonal to the builder matrix above: WHICH agent is a routing decision; WHICH model that agent's dispatch uses is resolved by `loop.modelRouting` (`{architect:opus, build:sonnet, default:sonnet}`), gated by `crew.json features["model-routing"]`.
-
-- **Autonomous wave path** — `runner-plugin` `model-router` (`resolveWaveDispatchModel`) sets the dispatch model programmatically. Trivial shapes (doc-update/config-tweak/test-only/single-module-edit) → sonnet; real builds → the `build` tier.
-- **Interactive `/crew:build`/`fix`/`orchestrate-slice`** — resolve + pass the tier explicitly: `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" resolve-model --phase build [--shape <shape>]` → pass the result as the Agent `model:` arg. Do NOT inherit the session model.
-- **Hard enforcement** — the `pre-tool-use-model-enforce` PreToolUse hook injects the resolved tier on builder-tier dispatch when `model:` is absent (kill-switch gated, fail-open).
-- **`model_pinned`** in agent frontmatter is advisory only — never read by the router. See `docs/standards/agent-playbook.md`.
-- **Burn-watch** — `crew cost-watch [--limit N] [--token-cap N]`.
-
 ---
 
 ### Workflow signals
@@ -40,7 +30,7 @@ _New work, bugs, chores, ambiguous scope, release, and session-start routing._
 | **New feature request** (FEAT-\*, `feat:` in title) | dispatcher + fullstack-dev | Dispatcher refines scope, sketches acceptance; fullstack-dev picks up bounded implementation. Pair with `/crew:build` to auto-select bounded skills. |
 | **Urgent bug fix** (`fix:` commits, production-impacting) | dispatcher + verifier | Dispatcher triages and scopes; fullstack-dev fixes in isolation; verifier confirms behavior before merge. May skip reviewer if fix is trivial, but document the decision. |
 | **Code quality / simplification** (refactor, lint, complexity cuts) | reviewer + fullstack-dev | Fullstack-dev owns refactor; reviewer gates the changes. Tests must stay green. No behavioral change expected. |
-| **Standalone quality sweep** (stale-ref cleanup, duplication, terminology drift, metadata drift) | `crew:refactor` | Dispatch as a standalone slice. Agent scans repo (or scoped path), applies tiered behavior-preserving fixes, writes `.claude/artifacts/crew/quality/` artifact. Never commits — orchestrator owns commits after the reviewer gates the artifact + diff. Dead code is reported, not removed. Hard stop at >20 files affected. |
+| **Standalone quality sweep** (stale-ref cleanup, complexity cap enforcement, manifest consistency) | `crew:refactor` | Dispatch as a standalone slice. Agent scans repo (or scoped path), fixes directly, writes `.claude/artifacts/crew/quality/` artifact before committing. Reviewer gates the artifact + diff. Hard stop at >20 files affected. |
 | **Documentation-only change** (docs, README, guides) | dispatcher (optional review) | No behavioral change; minimal quality gate needed. Helpful to spot gaps but not blocking. |
 | **Dependency updates / chore** (chore:, version bump, marketplace sync) | release-engineer + reviewer | Release-engineer or dispatcher owns the change; reviewer validates no silent breakage. Post-merge, release-engineer confirms artifact/plugin registration is live. |
 | **Ambiguous scope** (unclear where to start, spans multiple modules) | dispatcher | Re-scope task, define boundaries, then dispatch to fullstack-dev. Use `/crew:using-crew` to frame the work. |

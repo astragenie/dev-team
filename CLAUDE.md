@@ -91,13 +91,18 @@ Source of truth for what users actually receive is the marketplace manifest.
 
 1. CI green on `main` (all eight gates above).
 2. Update `CHANGELOG.md` — new top section, dated, grouped by FEAT.
-3. Bump `version` in:
-   - `package.json`
-   - `.claude-plugin/marketplace.json` → `plugins[name=crew].version`
+3. Bump `version` in **both** in-repo manifests — `validate-manifests.ts` enforces
+   `plugin.json` ↔ `package.json` parity as a HARD CI gate, so bumping only one
+   fails CI (this bit v0.52.0–v0.52.2):
+   - `.claude-plugin/plugin.json` → `version`
+   - `package.json` → `version`
+   - (`marketplace.json` is NOT in-repo — the registry lives in `astra-marketplace`;
+     bump it there as the paired cross-repo commit, see the astra-marketplace HARD RULE.)
 4. Commit: `chore(release): vX.Y.Z — <one-line summary>`.
 5. Tag annotated: `git tag -a vX.Y.Z -m "vX.Y.Z"`.
 6. Push both: `git push origin main --follow-tags`.
-7. Verify the tag appears on GitHub and the marketplace manifest is reachable.
+7. Verify the tag appears on GitHub, **CI is green on the release commit**, and the
+   registry `marketplace.json` in `astra-marketplace` reflects the new version.
 
 ### Versioning
 
