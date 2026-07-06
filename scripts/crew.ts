@@ -1396,6 +1396,13 @@ const COMMANDS = {
   // file is non-fatal — treated as "no routing configured", which resolves to
   // the opus fallback). Pure resolution logic lives in
   // ./lib/models/resolve-model.ts; this handler owns the one bit of I/O.
+  //
+  // FEAT-194 S1 — gated behind the crew.json features["model-routing"]
+  // toggle (default on), read via features-service.ts's isEnabled() —
+  // the same helper the other three crew.json feature flags
+  // (redundant-read-stop/subagent-inline-warn/shell-preflight) use. When
+  // the operator flips it off, routing is bypassed entirely and the opus
+  // fallback is returned regardless of loop.json content.
   "resolve-model": async ({ repoPath, flags }: CommandContext) => {
     const phase = typeof flags.phase === "string" ? flags.phase : null;
     if (!phase) {
@@ -1403,6 +1410,7 @@ const COMMANDS = {
     }
     const shape = typeof flags.shape === "string" ? flags.shape : null;
     const { resolveDispatchModel } = await import("./lib/models/resolve-model.ts");
+    const { isEnabled, readCrewConfig } = await import("./lib/features-service.ts");
     const fs = await import("node:fs/promises");
     const pathMod = await import("node:path");
     let config: { loop?: { modelRouting?: Record<string, string> } } | null = null;
@@ -1412,7 +1420,9 @@ const COMMANDS = {
     } catch {
       config = null;
     }
-    return resolveDispatchModel(phase, shape, config);
+    const crewConfig = await readCrewConfig(repoPath);
+    const modelRoutingEnabled = isEnabled("model-routing", crewConfig);
+    return resolveDispatchModel(phase, shape, config, modelRoutingEnabled);
   }
 };
 

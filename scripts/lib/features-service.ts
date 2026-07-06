@@ -105,6 +105,15 @@ export const FEATURES: Readonly<Record<string, FeatureMeta>> = {
     scope: "shared",
     owner: "platform",
     since: "0.48.0"
+  },
+  "model-routing": {
+    version: "1.0.0",
+    default: true,
+    description:
+      "Gates model-tier routing for the `crew resolve-model` CLI (interactive /crew:build /crew:fix /crew:orchestrate-slice dispatch). Enabled (default): resolves .claude/loop.json loop.modelRouting as today (build -> sonnet). Disabled: resolve-model always returns the opus fallback regardless of loop.json, so an operator can turn routing off for audit/rollback without deleting the loop.json config.",
+    scope: "crew",
+    owner: "platform",
+    since: "0.51.2"
   }
 } as const;
 

@@ -320,6 +320,35 @@ test("isEnabled: otel-telemetry / bash-gate-telemetry / task-update-burst-warn /
 // from the registry default it duplicates.
 // ──────────────────────────────────────────────────────────────────────────
 
+// ──────────────────────────────────────────────────────────────────────────
+// FEAT-194 S1 — model-routing toggle (mirrors redundant-read-stop /
+// subagent-inline-warn / shell-preflight). Gates the `crew resolve-model`
+// CLI, not a hook — default-on since routing is now the desired baseline.
+// ──────────────────────────────────────────────────────────────────────────
+
+test("registry: model-routing is present, default true, scope crew", () => {
+  const meta = getFeatureMeta("model-routing");
+  assert.ok(meta, "expected model-routing to be registered in FEATURES");
+  assert.equal(meta!.default, true);
+  assert.equal(meta!.scope, "crew");
+  assert.equal(typeof meta!.version, "string");
+  assert.equal(typeof meta!.description, "string");
+  assert.equal(typeof meta!.since, "string");
+  assert.ok("model-routing" in FEATURES);
+});
+
+test("isEnabled: model-routing defaults to true with no config", () => {
+  assert.equal(isEnabled("model-routing", null), true);
+  assert.equal(isEnabled("model-routing", { features: {} }), true);
+});
+
+test("isEnabled: model-routing flips off via crew.json override", () => {
+  const result = isEnabled("model-routing", {
+    features: { "model-routing": { enabled: false } }
+  });
+  assert.equal(result, false);
+});
+
 test("feature-flag-lite: HOOK_FLAG_DEFAULTS matches the registry default for every flag it duplicates", () => {
   for (const [name, liteDefault] of Object.entries(HOOK_FLAG_DEFAULTS)) {
     const registryMeta = getFeatureMeta(name);

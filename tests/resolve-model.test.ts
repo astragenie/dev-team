@@ -75,3 +75,25 @@ test("resolveDispatchModel: falls through to phase-based routing for a non-trivi
 test("resolveDispatchModel: falls back to opus with no shape and no config", () => {
   assert.equal(resolveDispatchModel("build", null, null), "opus");
 });
+
+// FEAT-194 S1 — crew.json features["model-routing"].enabled toggle. The
+// crew.ts CLI handler resolves this boolean via features-service.ts's
+// isEnabled() and passes it in as the 4th arg; these tests exercise the
+// pure resolution behavior directly.
+test("resolveDispatchModel: toggle omitted (default) behaves exactly as before — routing on", () => {
+  assert.equal(resolveDispatchModel("build", null, COMMITTED_ROUTING), "sonnet");
+  assert.equal(resolveDispatchModel("architect", null, COMMITTED_ROUTING), "opus");
+});
+
+test("resolveDispatchModel: toggle explicitly true — routing on, same as default", () => {
+  assert.equal(resolveDispatchModel("build", null, COMMITTED_ROUTING, true), "sonnet");
+});
+
+test("resolveDispatchModel: toggle false — always returns the opus fallback, ignoring modelRouting", () => {
+  assert.equal(resolveDispatchModel("build", null, COMMITTED_ROUTING, false), "opus");
+  assert.equal(resolveDispatchModel("architect", null, COMMITTED_ROUTING, false), "opus");
+});
+
+test("resolveDispatchModel: toggle false — bypasses the trivial-shape override too", () => {
+  assert.equal(resolveDispatchModel("build", "doc-update", COMMITTED_ROUTING, false), "opus");
+});
