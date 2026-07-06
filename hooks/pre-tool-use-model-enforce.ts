@@ -13,6 +13,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { logHookError } from "./hook-error.ts";
+import { isEnabled, readCrewConfig } from "../scripts/lib/features-service.ts";
 import {
   parseAgentDispatchInput,
   decideModelEnforcement,
@@ -56,6 +57,11 @@ async function main(): Promise<void> {
 
   try {
     const repoPath = parseCwd(raw);
+    // FEAT-194 S1 kill-switch: if the operator disabled the model-routing
+    // feature in crew.json, this hard-enforcement hook stands down too
+    // (default-on: absent config / absent flag → isEnabled returns true).
+    const crewConfig = await readCrewConfig(repoPath);
+    if (!isEnabled("model-routing", crewConfig)) return;
     const loopConfig = await readLoopConfig(repoPath);
     const decision = decideModelEnforcement(dispatch, loopConfig);
     const out = buildHookOutput(dispatch, decision);
