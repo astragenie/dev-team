@@ -3,6 +3,32 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [0.52.2] — 2026-07-06 — Activate the recording loop + builder speed guardrails
+
+Patch: makes the previously-dark capture/telemetry hooks live in dev-team's own
+dogfooding, adds builder self-verify guardrails, and closes FEAT-192. All landed
+via build→independent-review→merge; CI green (validate-agents, typecheck, lint,
+format:check, `bun run test` 1689 pass / 0 fail, e2e-smoke).
+
+- **Hook-wiring — Agent-tool matchers into `.claude/settings.json`.** Wires the
+  `PreToolUse` (`pre-tool-use-agent`, `pre-tool-use-model-enforce`) + `PostToolUse`
+  (`check-subagent-return`) Agent matchers that `hooks/hooks.json` declares but the
+  live dogfooding settings lacked. Activates FEAT-188 S1a failure capture +
+  dispatch-timing that were silently dark. Additive-only, fail-open confirmed.
+  Review: approved_with_notes (fast-follow: `templates.ts` DEFAULT_SETTINGS for
+  fresh consumer repos still lacks the 3 matchers).
+- **P0-4 builder speed guardrail.** Adds synchronous self-verify (verify before
+  handoff, don't forward-narrate) + slice-scoped test runs (only tests exercising
+  changed files during iterative self-verify) to backend/frontend/fullstack/dev-lite
+  prompts; bumps advisory maxTurns/maxMinutes headroom (labeled not-runtime-enforced,
+  per `docs/research/2026-07-06-agent-mid-job-death-analysis.md`). Additive-only,
+  no safety-rule deletions. Review: approved (0 findings).
+- **nested-test cascade fix.** Hermetic-ized `projects-root-override` fallback test
+  (overrides HOME→temp dir) — it was scanning the real `~/.claude/projects`, hitting
+  a 30s timeout that cascaded through Bun's sequential runner. 30s → 275ms.
+- **FEAT-192 done — GEPA reflective rewrite live-proven.** AC-3 winner score 1.000;
+  `gepa-optimize --split` now forwards to `runGepaOptimizeCmd` (matches `--budget`/`--k`).
+
 ## [0.52.1] — 2026-07-06 — FEAT-194 S4: cost/token burn-watch
 
 Patch: completes FEAT-194 (routing fixed + enforced + toggleable + documented + **watchable**).
