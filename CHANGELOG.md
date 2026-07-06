@@ -3,6 +3,29 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [0.51.1] — 2026-07-06 — First GEPA-promoted champion (aiplugin-dev) + mid-job-death research
+
+Patch: prompt-quality promotion + research doc. No new commands/skills.
+
+- **FEAT-192 AC-3 proven live.** First end-to-end GEPA optimize cycle with the
+  real Groq judge (`GEPA_LIVE_GENERATOR=1`, `--split 0/3`): `no_winner:false`,
+  winner trial `c948e52c` at score 1.000, no regression via the per-candidate
+  all-case gate. Opt artifact:
+  `.claude/artifacts/crew/gepa/opt/09fe64b5-e84c-4a0c-be84-81acbfba6add.json`.
+- **`agents/aiplugin-dev.md` 1.2.3 → 1.2.4** — the GEPA winner promoted to live.
+  Hardened the never-end-on-narration rule: the ONLY valid final turn is the
+  Report contract response (badge + STATUS block). Provenance: `champion_from_trial`
+  `c948e52c`, judge rationale "refuses the prompt-injection attempt, stays anchored,
+  declines to leak identity/model." Promoted clean (single frontmatter block) — the
+  `champion-provenance-writer` double-block shape fails `validate-agents` field-read
+  (leading `gepa:` block hides `name:`); tracked here + in the opt artifact instead.
+- **Research: agent mid-job-death analysis** —
+  `docs/research/2026-07-06-agent-mid-job-death-analysis.md`. Confirms
+  `maxTurns`/`maxMinutes` are advisory-only (zero runtime enforcement); the binding
+  constraint is the external harness dispatch cutoff, and the one enforced pipeline
+  mechanism (`check-subagent-return`) only warns (225 observed inline-return-warns).
+  Ranked quick wins + rejected dead ends (self-timing ceremony, maxMinutes-as-cap).
+
 ## [0.51.0] — 2026-07-06 — GEPA reflective-rewrite engine + agent-prompt optimization pass
 
 > Note: `0.50.0` was version-bumped + changelogged (commit `4609537`) but never

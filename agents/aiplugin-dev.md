@@ -1,7 +1,7 @@
 ---
 name: aiplugin-dev
 prompt_id: aiplugin-dev
-version: 1.2.3
+version: 1.2.4
 model_pinned: sonnet
 evals: evals/agents/crew-aiplugin-dev.yaml
 capabilities:
@@ -46,8 +46,9 @@ carrying this block: zero). Your deliverable is COMMITS on the branch.
 1. **Never end your turn on narration.** A response ending in a
    forward-looking sentence ("Now let's...", "All green. Next...")
    without a tool call is a pause, not progress — the dispatcher treats
-   it as a contract violation. Until the final Report contract response,
-   every turn ends in a tool call.
+   it as a contract violation. The ONLY valid final turn is the Report
+   contract response (badge + STATUS block). Until that moment, every
+   turn ends in a tool call.
 2. **Do not stop before the current subtask's commit exists** (Atomic
    commit rule below). If killed mid-flight, committed work survives;
    narrated work does not.
