@@ -3,6 +3,25 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [0.52.4] — 2026-07-06 — First green CI: cross-runtime home resolution
+
+Patch: fixes a Linux-only test failure that kept `main` CI red (the last of a
+chain of latent reds that v0.52.0–v0.52.2 hid behind the manifest gate). This is
+the first release cut on a **CI-green** commit — verified on the self-hosted runner
+before tagging, not just locally.
+
+- **`getProjectsRoot()` fallback is now hermetic across runtimes.** The
+  `projects-root-override` test overrides `$HOME` to a temp dir to exercise the
+  `~/.claude/projects` fallback fast + hermetically. But Bun-on-Linux's
+  `os.homedir()` reads the passwd/uid database and **ignores a reassigned `$HOME`**
+  (Node and Bun-on-Windows honor it) — so on the Linux runner `getProjectsRoot()`
+  returned the real `/home/ubuntu`, failing the assertion and, worse, scanning the
+  runner's real project tree. New `resolveHomeDir()` prefers `HOME`/`USERPROFILE`
+  before `os.homedir()`. No-op for real runs where env and OS home agree.
+- **Advisory note (not release-blocking):** `validate-syntheses` (advisory,
+  continue-on-error) flags historical `sliceNN-grade.md` artifacts with unfilled
+  `- bullet` placeholder text — a cleanup candidate, does not fail CI.
+
 ## [0.52.3] — 2026-07-06 — Manifest-parity release fix
 
 Patch: restores the `plugin.json` ↔ `package.json` version parity that
