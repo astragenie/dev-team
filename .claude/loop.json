@@ -43,6 +43,11 @@
         "window": 5,
         "minSamples": 3
       }
+    },
+    "modelRouting": {
+      "architect": "opus",
+      "build": "sonnet",
+      "default": "sonnet"
     }
   },
   "stack": {
@@ -92,7 +97,7 @@
   ],
   "productName": "hero-crew",
   "productDescription": "Claude Code plugin: Crew harness with lead-guided engineering workflow, bounded subagents, quality gates, and inspectable handoffs.",
-  "stackDescription": "- ESM / Node.js (node:test, ESLint flat config, Prettier)\n- Content-heavy plugin: agents/, skills/, commands/, hooks/\n- No server, no container — plugin is installed by consumers",
+  "stackDescription": "- ESM / Node.js (node:test, ESLint flat config, Prettier)\n- Content-heavy plugin: agents/, skills/, commands/, hooks/\n- No server, no container \u00e2\u20ac\u201d plugin is installed by consumers",
   "github": {
     "enabled": false,
     "repo": null
