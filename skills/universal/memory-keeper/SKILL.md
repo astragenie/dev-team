@@ -37,10 +37,12 @@ before assuming a teammate will recall what you wrote.
 
 ## The discipline — two directions
 
-### 1. RECALL before you decide (read)
+### 1. RECALL before you decide (read) — required at task start
 
 Before substantial work, a real decision, or repeating something that smells
-familiar, **search first**:
+familiar, **search first**. This is not optional: the loop is
+`recall → act → record`, and skipping the first step is how a lesson already
+paid for gets re-learned the hard way.
 
 - `recall_memory({ query, k, project, agent, type })` — top-K semantic recall.
 - `search_memory({ query, ... })` — hybrid FTS + vector when you need exact terms.
@@ -64,9 +66,21 @@ Pick the `type` honestly:
 | `lesson` | what a bug/error/failure taught — the trap + how to avoid it next time |
 | `fact` | a stable truth about the system not derivable from the code |
 | `event` | a notable thing that happened (a release, a migration, an incident) |
-| `note` / `todo` / `command` | lighter-weight; use sparingly |
+| `note` / `todo` / `command` | lighter-weight; use sparingly — never the *only* record of a load-bearing decision |
 
-Always attach `metadata`: `{ project, repo, agent, importance (0-1), confidence (0-1) }`.
+**A "keeper" memory (one meant to survive and be recalled later) REQUIRES:**
+
+- `type` in `{decision, lesson, fact}` — not `note`/`todo`/`event` for anything load-bearing.
+- Non-empty **why** — the rationale, not just the outcome.
+- Non-empty **how-to-apply** — what the next agent should *do* differently because of it.
+- `metadata { project, repo, agent, importance, confidence }` — all five present.
+- `importance >= 0.6` — below that it isn't a keeper; don't inflate the score to
+  qualify it, and don't write it as a keeper type either.
+
+Missing why, missing how-to-apply, or `importance < 0.6` means: this isn't a keeper
+— downgrade to `note` or skip the write. This bar is the enforcement lever against
+distiller-style noise (low-signal auto-generated fragments); see "What is NOT a
+durable memory" below.
 
 ## Examples
 
@@ -117,6 +131,17 @@ MCP call:
 - Secrets, tokens, keys — ever.
 - Transient chatter only this turn cares about.
 
+**What is NOT a durable memory** (the auto-distiller's low-signal failure modes —
+don't hand-write these either):
+- Ephemeral status ("trunk green", "tests passing right now") — true this instant,
+  stale by the next commit.
+- Git-derivable facts (a commit SHA, a branch name, a file's current line count) —
+  `git log` / `grep` answers this faster and more accurately than a stored memory.
+- Vacuous negatives ("nothing unusual happened", "no issues found") — no why, no
+  how-to-apply, so it can never inform a future decision.
+- Bare todos with no decision or lesson attached ("fix this later") — that's a
+  todo-list entry, not a memory; if a real gotcha is behind it, write the lesson.
+
 If asked to remember something the repo already records, capture instead *what was
 non-obvious about it* and record that.
 
@@ -129,11 +154,11 @@ non-obvious about it* and record that.
   moment; the reader must verify it still holds before acting on it.
 - Wrong memory → correct it (`supersede_memory`) or drop it (`invalidate_memory`).
 
-## Minimal loop
+## Minimal loop (required at task start and at every real decision point)
 
 ```
 start task → recall_memory({query, project, repo})   → act with prior context
-decision made / error fixed → remember({text, type, metadata})
+decision made / error fixed → remember({text, type, metadata}) meeting the keeper bar above
 ```
 
 Cheap to do, expensive to skip. A team that records its decisions and errors stops
