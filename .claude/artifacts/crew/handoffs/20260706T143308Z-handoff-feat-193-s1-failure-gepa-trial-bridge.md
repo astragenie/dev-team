@@ -10,8 +10,13 @@
   second JSONL writer.
 
 ## Status
-IN-PROGRESS handoff → ready for review (all planned AC work committed;
-one architecture deviation flagged below needs reviewer sign-off).
+IN-PROGRESS handoff → ready for re-review. **Update (post first review):**
+this dual-write was merged to `main` once, then **reverted** — CI caught a
+real regression (`tests/crew-write-review-result.test.ts`'s dual-write test
+timed out at 5s / CLI exited 1 on a cold machine). Root cause + fix are in
+commit `a15ee94c` (see Risk #3, rewritten below) and are the reason this
+handoff is being resubmitted. One architecture deviation (Risk #1) still
+needs reviewer sign-off.
 
 ## Allowed scope (per dispatch)
 - New module under `scripts/lib/gepa/`
@@ -47,6 +52,13 @@ beside `captureFailureLearning()` at all 4 S1a capture points.
 - `tests/subagent-return.test.ts` — +2 integration tests (inline-return-warn
   / subagent-incomplete dual-write via the real hook) + 2 small test helpers
   (`seedGepaConfig`, `readTrialLines`).
+- `scripts/lib/gepa/capture-failure-trial-guard.ts` (new, fix-forward commit
+  `a15ee94c`) — timeout-guarded wrapper; see Risk #3.
+- `tests/gepa/capture-failure-trial.test.ts` (fix-forward) — +2 tests for
+  the guard (happy path + forced 0ms-timeout drop).
+- `tests/crew-write-review-result.test.ts` (fix-forward) — the dual-write
+  test rewritten for best-effort semantics + a module-scope gepa-core
+  pre-warm.
 
 ## Confidence
 High on correctness of the dual-write wiring and test coverage. Medium on
@@ -90,8 +102,11 @@ downstream S2/S3 consumer would filter on.
    case other in-flight worktrees from the same session are similarly
    stale.
 
-3. **Real regression caught + fixed pre-handoff**: my first wiring attempt
-   used a static top-level `import { captureFailureTrial } from
+3. **Two rounds of the same root cause — both fixed, second one caught by
+   CI after a merge+revert.**
+
+   **Round 1** (pre-first-handoff): my first wiring attempt used a static
+   top-level `import { captureFailureTrial } from
    "../../scripts/lib/gepa/capture-failure-trial.ts"` in
    `check-subagent-return.ts`. That file is invoked via plain `node
    --experimental-strip-types` (not bun) by the real hook shim
@@ -101,15 +116,76 @@ downstream S2/S3 consumer would filter on.
    type-strip under `node_modules`
    (`ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING`). A static import crashed
    the *entire hook module load*, not just the capture call — caught by 2
-   failing spawn-based smoke tests in `tests/subagent-return.test.ts`
-   (`bun test` transpiles everything itself so in-process tests didn't
-   catch it; only the `spawn("node", ...)` tests did). Fixed by switching
-   to a dynamic `import()` wrapped in try/catch (`fireFailureTrialSilent`),
-   matching the pattern `scripts/lib/artifacts/write.ts`'s
-   `fireCaptureTeeSilent` already uses for the identical hazard. Verified
-   fixed: 0 failures across all 81 slice-scoped tests post-fix.
+   failing spawn-based smoke tests in `tests/subagent-return.test.ts`. Fixed
+   by switching to a dynamic `import()` wrapped in try/catch
+   (`fireFailureTrialSilent`), matching `write.ts`'s `fireCaptureTeeSilent`
+   pattern for the identical hazard.
 
-4. **`hooks/lib/check-subagent-return.ts` has no reliable agent identity**
+   **Round 2** (post-merge, caught by CI, this branch reverted from `main`
+   and resubmitted): a dynamic `import()` avoids the hard crash, but it does
+   NOT avoid the *cost* of a cold module load — resolving/parsing/linking
+   the whole `@astragenie/gepa-core` provider tree (ollama, generic-openai,
+   groq, gemini, azure-openai — all eagerly re-exported from its `index.ts`)
+   the first time any process touches it. On the CI/build machine that load
+   took long enough to blow past `write-review-result`'s expected CLI
+   latency and the test's default timeout (5s) — the CLI exited non-zero.
+   It only "passed" in my worktree because gepa-core was already warm from
+   dozens of earlier `bun test` runs in the same session.
+
+   **Fix** (commit `a15ee94c`): `scripts/lib/gepa/capture-failure-trial-guard.ts`
+   is a new module with **no runtime dependency on gepa-core at all** (only
+   a `import type` of `FailureTrialInput`, erased at compile time) — so
+   importing it is always cheap. Its `captureFailureTrialGuarded()` races
+   the real `import("./capture-failure-trial.ts")` + `captureFailureTrial()`
+   call against a **~1.5s `Promise.race` ceiling**; on timeout OR error it
+   silently drops the trial. Both call sites (`write.ts`'s
+   `fireFailureCaptureSilent`, the hook's `fireFailureTrialSilent`) now go
+   through the guard, not `capture-failure-trial.ts` directly. Matches the
+   operator decision: astramem is the source of truth, this JSONL corpus is
+   a derived duplicate — a trial dropped under a slow/cold load is an
+   acceptable trade for a CLI/hook that never hangs.
+
+   Caveat: `Promise.race` cannot cancel the underlying dynamic import — a
+   slow cold load keeps running in the background after the guard times
+   out and returns. This is intentional and safe (fire-and-forget, no
+   shared mutable state at risk) but means the *logical* ceiling is ~1.5s
+   even though the *process* may still have that background work in flight
+   briefly after the CLI/hook has already moved on.
+
+   Test changes to match: `tests/crew-write-review-result.test.ts`'s
+   dual-write test now asserts what the regression actually was — the CLI
+   must always exit 0 — and treats the trial file's existence as
+   best-effort (checked/validated only if present, never required). It also
+   pre-warms `@astragenie/gepa-core` at module scope in the parent (Bun)
+   test process before spawning any CLI child, to bias the common case
+   toward the happy path by warming the OS-level file cache (shared across
+   processes) even though each spawned child's own V8/Node module cache
+   always starts empty. Verified: `tests/crew-write-review-result.test.ts`
+   run alone (not as part of a warm multi-file suite) → 11/11 pass, ~13s
+   wall time for the whole file.
+
+   **Recommended upstream fix (cross-repo, not done here)**: file a
+   `plugins-common` issue/FEAT to have `@astragenie/gepa-core` publish and
+   resolve to its compiled `dist/*.js` as `main`/`exports` instead of raw
+   `src/*.ts`. That removes the cold-parse cost for every consumer of the
+   package, not just this guard — the guard is a local mitigation, not a
+   fix of the underlying package defect.
+
+4. **Pre-existing, NOT newly introduced: `write.ts`'s existing
+   `fireCaptureTeeSilent` (capture-tee.ts, shipped before FEAT-193) has the
+   identical cold-gepa-core-load exposure and is still unguarded.** It runs
+   *before* my `fireFailureCaptureSilent` in `writeArtifact`, so in the
+   common case it pays the cold-load cost first and warms the process's
+   module cache for my code — but on a sufficiently slow/cold machine, THAT
+   call alone could still stall a `writeArtifact` invocation for multiple
+   seconds, independent of anything in this slice. Out of scope for FEAT-193
+   S1 to fix (not part of the dispatched capture points), but flagging
+   because it's the same hazard class one layer up — recommend a follow-up
+   to wrap `fireCaptureTeeSilent`'s dynamic import in the same
+   `captureFailureTrialGuarded`-style race, or fast-track the upstream
+   compiled-`dist/` fix so neither call site needs a guard at all.
+
+5. **`hooks/lib/check-subagent-return.ts` has no reliable agent identity**
    — PostToolUse on the `Task` tool carries no `subagent_type` field, so
    the inline-return-warn / subagent-incomplete trials are written under
    `agent: "unknown"`, `phase: "build"` (consistent with
@@ -122,10 +198,21 @@ downstream S2/S3 consumer would filter on.
    `dispatch-timing`).
 
 ## Evidence
-- `bun test tests/gepa/capture-failure-trial.test.ts tests/subagent-return.test.ts tests/capture-learning.test.ts tests/crew-write-review-result.test.ts tests/gepa/capture-tee.test.ts` → **81 pass, 0 fail** (40 expect() calls).
-- `bun run typecheck` → clean.
+- `bun test tests/crew-write-review-result.test.ts` run **ALONE** (the file
+  that failed at 5s on `main`) → **11 pass, 0 fail**, ~13s wall time.
+- `bun test tests/gepa/capture-failure-trial.test.ts tests/subagent-return.test.ts tests/capture-learning.test.ts tests/gepa/capture-tee.test.ts` → **72 pass, 0 fail** (44 expect() calls).
+- Combined slice-scoped total: **83 pass, 0 fail** across the 5 files (7 net
+  new vs. the first handoff: +2 guard tests, existing counts otherwise
+  unchanged since the fix is call-site rewiring, not new capture points).
+- `bun run typecheck` → clean (no unused-import diagnostic on
+  `captureFailureTrialGuarded` — both call sites use it).
 - `bun run lint` (scripts/ + hooks/) → clean, 0 warnings.
-- `npx biome format` on all 7 touched source/test files → no fixes needed.
+- Checked specifically for the "await has no effect" warning flagged
+  mid-task: not reproducible against the current committed state (`npx
+  biome lint` on the touched test files shows only the pre-existing,
+  out-of-scope `Bun` global false-positive already present in
+  `tests/gepa/capture-tee.test.ts` before this slice — not a new issue).
+- `npx biome format` on all touched source/test files → no fixes needed.
 - Secret grep on full diff → no matches.
 - Full suite (`bun run test`) was **NOT run** per explicit token-discipline
   instruction (3 prior builders this session died running it) — scoped
