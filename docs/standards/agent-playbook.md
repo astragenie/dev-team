@@ -26,7 +26,7 @@ The validator's `enumerateAgents` (in `scripts/validate-agents.ts`) walks `agent
 name: <kebab-name>           # MUST match filename
 prompt_id: <kebab-name>      # usually identical to name
 version: 1.0.0               # semver MAJOR.MINOR.PATCH
-model_pinned: opus           # or sonnet / haiku
+model_pinned: opus           # or sonnet / haiku — ADVISORY default, not enforced (see note below)
 capabilities:
   role: [<role>]             # architect | reviewer | builder | validator | deployer | researcher
   surfaces: [...]
@@ -43,6 +43,12 @@ color: cyan
 ```
 
 If `tools:` includes `Agent`, the agent is in the peer-dispatch tier — must add a `## Peer dispatch` body section with whitelist, blacklist (`MUST NOT dispatch`), and budget line. The validator enforces this for the names in `PEER_DISPATCH_ALLOWLIST`.
+
+### `model_pinned` is advisory, not enforced
+
+`model_pinned` is a **declared-preference default**, predating model routing. No resolver reads it — confirmed against `scripts/lib/models/resolve-model.ts` and its `resolveDispatchModel` / `resolveModelForPhase` / `resolveShapeTier` exports, which look only at `.claude/loop.json` → `loop.modelRouting[phase]` (falling back to `loop.modelRouting.default`, then a hardcoded `opus`), gated by the `crew.json` `features["model-routing"]` toggle. The autonomous wave path uses the equivalent `model-router` in the companion `loop` plugin — same shape, same blind spot. Neither path consults an agent's frontmatter.
+
+Do not read `model_pinned` as a guarantee that a dispatch runs on that model tier — it will not, unless a human manually passes `model:` on the `Agent` tool call. Keep the field when adding or promoting an agent (documents intended tier for humans skimming frontmatter; a placeholder if per-agent routing is ever wired in), but do not silently strip it from existing agents over this note alone — that is 20+ files of churn for a doc-accuracy fix. If `model_pinned`-driven routing becomes real, update this note and `resolve-model.ts`'s header comment together.
 
 Required body sections:
 
