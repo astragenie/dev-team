@@ -117,7 +117,11 @@ See `docs/routing-table.md` → "Builder routing matrix" (generated from `docs/r
    - whether the work should stay whole or be split into bounded sub-tasks
 6. If the task is substantial enough that future wake-up context will matter, write a run brief:
    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-run-brief --repo "$PWD" --title "<short title>" --goal "<goal>" --mode "team run"`
-7. Pick the specialist builder from the routing table above and dispatch via the `Agent` tool.
+7. Pick the specialist builder from the routing table above.
+   - **Recall injection (FEAT-188 S3a):** before dispatching, fetch a recall block:
+     `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" recall-block --repo "$PWD" --agent <specialist-agent-name> --tags "<FEAT tags csv>"`
+     If `.block` is non-empty, prepend it verbatim (it is already the `## Prior context (from astramem)` block) to the builder's dispatch instruction. If empty (memory not configured, or nothing recalled), omit — do not add any placeholder text.
+   - Dispatch the builder via the `Agent` tool.
    - Set `size: standard` for substantive changes (requires `write-handoff` artifact).
    - Set `size: light` only for trivial one-line fixups (skips artifact, but builder still returns structured completion).
    - If this run references a design doc, pass the design doc path to the builder.

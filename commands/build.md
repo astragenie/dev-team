@@ -107,6 +107,9 @@ Workflow:
    - reviewer for change review
    - validator for behavior checks when behavior can be exercised
    - researcher for uncertainty reduction if needed
+12a. **Recall injection (FEAT-188 S3a).** Before dispatching the builder, fetch a recall block:
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" recall-block --repo "$PWD" --agent <builder-agent-name> --tags "<FEAT tags csv>"`
+   - If `.block` is non-empty, prepend it verbatim (it is already the `## Prior context (from astramem)` block) to the builder's dispatch instruction. If empty (memory not configured, or nothing recalled), omit — do not add any placeholder text.
 13. Keep ownership explicit and avoid same-file parallel editing.
    - Set a `size` on each dispatched task: use `size: light` for trivial tasks (one-line fixes, typo corrections, variable renames) — a light-close skips the `write-handoff` artifact but the teammate still returns the structured completion message. Use `size: standard` (default) for anything substantive — these REQUIRE a `write-handoff` artifact. Light is for noise reduction on trivial work; do not use it to skip audit trail on substantive changes.
 14. Require structured acknowledgements and completion reports from every teammate or helper.
