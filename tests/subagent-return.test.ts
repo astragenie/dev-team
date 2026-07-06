@@ -86,6 +86,33 @@ async function readLearningsLines(repo: string): Promise<Record<string, unknown>
   }
 }
 
+// FEAT-193 S1: seed a minimal enabled gepa.config.json so captureFailureTrial
+// (the dual-write sibling of captureFailureLearning) is not a config no-op.
+async function seedGepaConfig(repo: string): Promise<void> {
+  await fs.writeFile(
+    path.join(repo, "gepa.config.json"),
+    JSON.stringify({
+      capture: { enabled: true, exclude: [], walltime_ms: 2000 },
+      storage: { backend: "file", file_root: ".claude/artifacts/crew/gepa/trials" }
+    })
+  );
+}
+
+async function readTrialLines(repo: string, agent: string): Promise<Record<string, unknown>[]> {
+  try {
+    const raw = await fs.readFile(
+      path.join(repo, ".claude", "artifacts", "crew", "gepa", "trials", `${agent}.jsonl`),
+      "utf8"
+    );
+    return raw
+      .split("\n")
+      .filter((l) => l.trim().length > 0)
+      .map((l) => JSON.parse(l));
+  } catch {
+    return [];
+  }
+}
+
 // Build a PostToolUse Agent stdin payload with the given body.
 function makeStdin(body: string, cwd = process.cwd()) {
   return JSON.stringify({
@@ -389,6 +416,49 @@ test("AC-4: oversized pathless body WITH a terminal status marker → no subagen
     );
     // inline-return-warn still fires independently (still no artifact path).
     assert.equal(lines.filter((l) => l.source === "inline-return-warn").length, 1);
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
+});
+
+// ── FEAT-193 S1: dual-write into the GEPA trial store ───────────────────────
+// Same inline-return-warn / subagent-incomplete signals ALSO append a failing
+// Trial to .claude/artifacts/crew/gepa/trials/unknown.jsonl (agent identity is
+// unavailable at this hook, per capture-failure-trial.ts's doc comment).
+
+test("FEAT-193 S1: inline-return-warn also dual-writes a failing GEPA trial", async () => {
+  const repo = await makeTmpRepo();
+  try {
+    await seedGepaConfig(repo);
+    await runHook(makeStdin(makeBody(1000), repo));
+    const trials = await readTrialLines(repo, "unknown");
+    const captured = trials.filter(
+      (t) => (t.input as Record<string, unknown>)?.source === "inline-return-warn"
+    );
+    assert.equal(captured.length, 1);
+    assert.equal(captured[0]!.agent, "unknown");
+    assert.equal(captured[0]!.phase, "build");
+    assert.equal(captured[0]!.source, "captured");
+    assert.equal((captured[0]!.score as Record<string, unknown>).pass, false);
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
+});
+
+test("FEAT-193 S1: subagent-incomplete also dual-writes a failing GEPA trial", async () => {
+  const repo = await makeTmpRepo();
+  try {
+    await seedGepaConfig(repo);
+    await runHook(makeStdin(makeBody(1000), repo));
+    const trials = await readTrialLines(repo, "unknown");
+    const captured = trials.filter(
+      (t) => (t.input as Record<string, unknown>)?.source === "subagent-incomplete"
+    );
+    assert.equal(captured.length, 1);
+    assert.match(
+      (captured[0]!.score as Record<string, unknown>).rationale as string,
+      /no terminal status marker/
+    );
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
