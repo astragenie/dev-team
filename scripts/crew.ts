@@ -97,6 +97,7 @@ const FLAG_SPEC = {
   "--source-project": { key: "sourceProject" },
   "--scope": { key: "scope" },
   "--limit": { key: "limit" },
+  "--token-cap": { key: "tokenCap" },
   "--judge": { key: "judge" },
   "--split": { key: "split" },
   "--severity": { key: "severity" },
@@ -233,6 +234,7 @@ function buildDefaultFlags(): Flags {
     lens: null,
     gepaSource: null,
     limit: null,
+    tokenCap: null,
     live: false,
     validate: false,
     judge: null,
@@ -361,6 +363,12 @@ function usage(target: string | null = null) {
     "cost-slice":
       "  node scripts/crew.mjs cost-slice --repo <path> [--started-at <iso>] [--completed-at <iso>] [--run-title <text>] [--source-project <slug>] [--aggregate-all]",
     "cost-advise": "  node scripts/crew.mjs cost-advise --repo <path>",
+    "cost-watch":
+      "  node scripts/crew.ts cost-watch --repo <path> [--limit N] [--token-cap N]\n" +
+      "    Read-only operator burn-watch (FEAT-194 S4): recent per-dispatch agent/model/tokens\n" +
+      "    (.claude/logs/dispatch-timing.jsonl) + recent per-slice usd/tokens/cache-hit%\n" +
+      "    (.claude/artifacts/crew/cost/), with an advisory flag against loop.cost.ceilingUsd\n" +
+      "    and a per-dispatch token cap (default 150000). No new telemetry pipeline.",
     "agent-stats":
       "  node scripts/crew.ts agent-stats [--agent <name>] [--window last_n_slices:<N>] [--repo <path>]",
     "agent-route":
@@ -1178,6 +1186,19 @@ const COMMANDS = {
     };
   },
   "cost-slice": ({ repoPath, flags }: CommandContext) => costSliceHandler({ repoPath, flags }),
+
+  // Read-only operator burn-watch (FEAT-194 S4). Rides existing cost-report
+  // artifacts + dispatch-timing.jsonl — no new telemetry pipeline.
+  "cost-watch": async ({ repoPath, flags }: CommandContext) => {
+    const { buildCostWatch, renderCostWatchReport } = await import("./lib/cost-watch.ts");
+    const limit = flags.limit ? parseInt(flags.limit, 10) : undefined;
+    const tokenCap = flags.tokenCap ? parseInt(flags.tokenCap, 10) : undefined;
+    const data = await buildCostWatch(repoPath, {
+      ...(limit !== undefined && Number.isFinite(limit) ? { limit } : {}),
+      ...(tokenCap !== undefined && Number.isFinite(tokenCap) ? { perDispatchTokenCap: tokenCap } : {})
+    });
+    return renderCostWatchReport(data);
+  },
 
   "cost-setup": async ({ repoPath, flags }: CommandContext) => {
     const { parseFeatureOverrides, runCostSetup } = await import("./lib/cost-setup.ts");
