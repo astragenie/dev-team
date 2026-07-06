@@ -779,15 +779,31 @@ async function fireFailureCaptureSilent(
   fields: ArtifactFields
 ): Promise<void> {
   if (!isFailingVerdict(kind, fields)) return;
+  const agent = kind === "review-result" ? fields.reviewer : fields.validator;
+  const rationale = fields.findings || fields.summary || `${kind} verdict: ${fields.verdict}`;
   try {
     const { captureFailureLearning } = await import("../memory/capture-learning.ts");
-    const agent = kind === "review-result" ? fields.reviewer : fields.validator;
     await captureFailureLearning(repoPath, {
       agent: agent ?? null,
       severity: "high",
-      summary: fields.findings || fields.summary || `${kind} verdict: ${fields.verdict}`,
+      summary: rationale,
       tags: [kind, fields.slice, fields.feature].filter((t): t is string => Boolean(t)),
       source: kind === "review-result" ? "review_fail" : "validation_fail"
+    });
+  } catch {
+    // never propagate
+  }
+  // FEAT-193 S1: dual-write — also append a failing Trial to the agent's GEPA
+  // trial store, alongside the learnings.jsonl append above. Two parallel
+  // providers (operator decision): lessons → learnings.jsonl, failing trials
+  // → the GEPA reflection corpus.
+  try {
+    const { captureFailureTrial } = await import("../gepa/capture-failure-trial.ts");
+    await captureFailureTrial(repoPath, {
+      agent: agent ?? "unknown",
+      phase: kind === "review-result" ? "review" : "validate",
+      rationale,
+      input: { slice: fields.slice ?? null, feature: fields.feature ?? null, kind }
     });
   } catch {
     // never propagate
