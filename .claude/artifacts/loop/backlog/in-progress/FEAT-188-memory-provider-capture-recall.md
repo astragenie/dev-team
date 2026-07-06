@@ -90,7 +90,7 @@ tolerate the bridge's existing keys (not hard-error them).
 - **S1b — Capture repair (runner-plugin, cross-repo):** `runner:close` lessons/surprises
   capture, `runner:pr-fix` circuit-breaker trips, retrospective-decision capture. Must be
   built in a runner-plugin session/worktree. ∥ S1a (disjoint repos).
-- **S2 — MemoryProvider interface + noop/file providers:** `src/lib/memory/` — Zod entry
+- **S2 — MemoryProvider interface + noop/file providers:** `scripts/lib/memory/` (dev-team convention — NOT a new `src/` dir; extend S1a's `scripts/lib/memory/capture-learning.ts`) — Zod entry
   schema (kind/severity/tags/summary≤280/provenance/supersedes), `MemoryProvider` interface,
   atomic O_APPEND JSONL, legacy `learnings.jsonl` adapter, the **unified config parser above**.
   `learnings.mts` already ≈ fileProvider — wrap/consolidate, don't reinvent.
@@ -110,7 +110,10 @@ tolerate the bridge's existing keys (not hard-error them).
   **This is the source-of-truth writer.** Contract-parity test vs fileProvider (the dual-write duplicate).
 - **S5 — Eval interaction + hygiene:** capture-parity golden test (incl. SIGKILL),
   with/without-memory GEPA judge-score-delta fixture, 45-day decay (except critical),
-  superseded/invalidated never recalled.
+  superseded/invalidated never recalled. **Also (S2 review MEDIUM note):** `fileProvider.recall()`
+  reads only the last 64KB of `learnings.jsonl` (`tailReadJsonl` default window) — accepted-risk
+  in S2, but S5 must either raise/override the window or add full-file ranking so `recall()`
+  cannot silently miss entries older than the tail in a large store. (Mirrors the S4 dual-write drift note.)
 
 ## Acceptance criteria
 
