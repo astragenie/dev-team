@@ -1,0 +1,38 @@
+# Task Handoff: FEAT-188 S2 — MemoryProvider interface + noop/file providers
+
+- Created: 2026-07-06T14:10:19Z
+- From: fullstack-dev
+- To: lead
+- Objective: Ship the MemoryProvider interface, the unified `memory` config schema (resolving the collision between runner-plugin's live memory-bridge keys and this FEAT's new ones per docs/research/2026-07-06-memory-bridge-reconciliation.md §4), and two backends — noopProvider (default) and fileProvider (JSONL, atomic O_APPEND, legacy-row adapter, recency x severity ranking).
+- Allowed Scope:
+  - scripts/lib/memory/*.ts
+  - tests/memory-provider-*.test.ts
+- Forbidden Scope:
+  - S1a (already shipped, a5a1517) — capture-learning.ts's public API (`captureFailureLearning`) untouched
+  - S1b (runner-plugin, separate repo)
+  - S3a/S3b (recall injection at dispatch sites)
+  - S4 (astramemProvider — blocked on astramem-plugin#23)
+  - S5 (eval interaction + hygiene)
+- Deliverable: `scripts/lib/memory/` module — `schema.ts` (MemoryEntry + unified MemoryConfig Zod schemas), `config.ts` (parseMemoryConfig + resolveEffectiveConfig implementing the enabled x provider precedence), `types.ts` (MemoryProvider interface), `noop-provider.ts`, `file-provider.ts` + `legacy-adapter.ts` + `ranking.ts`, `resolve-provider.ts` (the config -> provider wiring point), `index.ts` (barrel). 45 scoped tests pass (4 new files + S1a's untouched `capture-learning.test.ts`), lint zero-warning, typecheck clean. No changes to tsconfig/biome/package.json — `scripts/lib/` was already in their scan scope.
+- Changed Files:
+  - scripts/lib/memory/capture-learning.ts (refactored: `appendJsonlEntry`/`LEARNINGS_PATH` now exported so fileProvider reuses the same atomic-append primitive instead of forking a second JSONL writer; public API `captureFailureLearning` unchanged, S1a's own test suite passes untouched)
+  - scripts/lib/memory/schema.ts (new)
+  - scripts/lib/memory/config.ts (new)
+  - scripts/lib/memory/types.ts (new)
+  - scripts/lib/memory/noop-provider.ts (new)
+  - scripts/lib/memory/legacy-adapter.ts (new)
+  - scripts/lib/memory/ranking.ts (new)
+  - scripts/lib/memory/file-provider.ts (new)
+  - scripts/lib/memory/resolve-provider.ts (new)
+  - scripts/lib/memory/index.ts (new)
+  - tests/memory-provider-schema.test.ts (new, 11 tests)
+  - tests/memory-provider-config.test.ts (new, 13 tests)
+  - tests/memory-provider-noop.test.ts (new, 6 tests)
+  - tests/memory-provider-file.test.ts (new, 10 tests)
+- Confidence: high — every AC has a passing unit test: AC-1 (noop golden test — no memory block or `provider:"none"` selects noop, no filesystem writes), AC-2 (config accepts bridge-live keys `enabled`/`recall.k`/`recall.timeoutMs`/`project`, rejects `recall.topK` as unknown via `.strict()`, hard-errors an unrecognized `provider` enum value), AC-3 (enabled x provider precedence: `provider:"none"` forces disabled regardless of `enabled`; `enabled:"never"` disables regardless of `provider`; `recall.enabled:false` disables recall only; `dualWrite` parsed + carried through `resolveEffectiveConfig` for S4 to consume), AC-4/5 (atomic O_APPEND via the shared sink; torn-line discard verified with a simulated mid-write JSON fragment), AC-6 (recency x severity ranking, token-budget truncation, supersede-chain resolution, invalidate-exclusion, and inclusion of both older learnings.jsonl row generations via `legacy-adapter.ts`).
+- Risks:
+  - Location correction mid-task: the FEAT-188 doc text says `src/lib/memory/` (inherited from the pre-reconciliation design doc), but this repo has no `src/` — the module lives at `scripts/lib/memory/` alongside S1a's `capture-learning.ts`, consistent with repo convention. No tsconfig/biome/package.json changes were needed or made.
+  - `resolveProvider()` maps `provider:"astramem"` to `fileProvider` (S4 not implemented yet) — intentional forward-compatible fallback matching S4's own eventual "unpaired falls back to file" contract, not a shortcut around the AC (S4's real transport work is untouched).
+  - Token-budget truncation uses a chars/4 estimate (no tokenizer dependency) — documented in `ranking.ts`; acceptable coarse-grained approximation for a recall-block budget, revisit if S3 injection needs tighter accuracy.
+  - `fileProvider.recall()` reads via `tailReadJsonl` (64KB default tail window) rather than the full file — recency-biased ranking already favors the tail, but a repo with a very large `learnings.jsonl` and many old high-severity entries outside that window would not surface them. No test currently exercises a multi-MB file; flag for S5 hygiene pass if it matters in practice.
+- Suggested Next Handoff: Human review gate (autonomous_safe=false) — this FEAT does not self-approve. After PASS: S3a/S3b (recall injection at the 6 dispatch sites) is next in dependency order; S4 (astramemProvider) is blocked on astramem-plugin#23.
