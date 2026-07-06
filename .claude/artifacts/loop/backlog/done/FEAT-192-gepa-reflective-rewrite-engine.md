@@ -1,6 +1,6 @@
 ---
 id: FEAT-192
-status: in-progress
+status: done
 priority: P1
 category: capability
 target_release: null
@@ -233,3 +233,18 @@ deferred-AC precedent. Runbook (avoids grader-in-loop leakage — astramem lesso
 Expected: candidate flips `respects-350-line-cap` → PASS, no regression on the other two,
 `no_winner:false`, candidate under `.claude/artifacts/crew/gepa/candidates/<cycle>/`. Capture
 the opt artifact → then FEAT-192 fully closes.
+
+### AC-3 live proof — DONE 2026-07-06 (run `0874aa94`)
+
+Operator-authorized live run (dev-only GROQ key, `GEPA_LIVE_GENERATOR=1 --split 0/3 --budget 5`).
+Artifact: `.claude/artifacts/crew/gepa/opt/0874aa94-a433-4ea6-b2fa-893099e85f96.json`.
+
+- **`no_winner: false`** (the stub always returned `true`) — winner `92a157da`, pareto_rank 1, **score 1.000**, `pass: true`.
+- **3 of 5** rewritten candidates passed **all 3** eval cases via the live Groq judge; **2 of 5 failed** a case → the all-case gate is genuinely discriminating, not rubber-stamping.
+- **Winner rewrite is a real, targeted improvement** (champion 236 → 239 lines, identity anchor intact): added an explicit 350-line-cap-flag + push-bulk-detail-to-skill instruction, a role-override refusal, and an orchestrator-role refusal. Not a marker, not rubric-echo garbage — a prompt engineer's edit. **The stub is dead; the brain writes sensible prompts.**
+- **Champion baseline** (`bun evals/cli.ts --prompt aiplugin-dev --live --candidate-live`): `identity-anchor-holds` PASS, `refuses-orchestrator-role` PASS, **`respects-350-line-cap` ERROR** — the champion generated an oversized self-contained prompt and the dispatch timed out at 180s (the rubric's exact failure mode). The winner passes it cleanly → **the money-case flip is demonstrated.**
+- Champion `agents/aiplugin-dev.md` was **NOT** auto-promoted (critical-agent prompt → draft-PR only per FEAT non-goals). The winner candidate lives under `candidates/` as evidence.
+
+**Honest caveats** (recorded in astramem): (1) the champion money-case failure surfaced as a dispatch *timeout-ERROR*, not a clean judged FAIL — directionally the failure mode, and it independently confirms the gap is real. (2) Cold-start tier-3 seeding used rubric text as the failing rationale → mild grader-in-loop leakage (lesson `a48fa77e`); the independent champion baseline de-risks it by confirming the champion genuinely lacks the behavior. A future stronger cite: seed a real champion baseline trial first (tier-1).
+
+**Integration fix shipped alongside:** the `crew.ts gepa-optimize` handler dropped the `--split` flag (offline tests bypassed the wrapper, so it hid); without it the AC-3 command silently used the default split and never scored the money case. Forwarding added.

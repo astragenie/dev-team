@@ -1314,6 +1314,7 @@ const COMMANDS = {
     const rawArgs: string[] = [...positionals];
     if (typeof flags.budget === "string" && flags.budget) rawArgs.push("--budget", flags.budget);
     if (typeof flags.gepaK === "string" && flags.gepaK) rawArgs.push("--k", flags.gepaK);
+    if (typeof flags.split === "string" && flags.split) rawArgs.push("--split", flags.split);
     if (flags.artifactOnly === true) rawArgs.push("--artifact-only");
     const result = await runGepaOptimizeCmd(repoPath, rawArgs);
     if (result.stdout) process.stdout.write(result.stdout);
