@@ -68,6 +68,43 @@ Pick the `type` honestly:
 
 Always attach `metadata`: `{ project, repo, agent, importance (0-1), confidence (0-1) }`.
 
+## Examples
+
+**RECALL before deciding** — e.g. `crew:reviewer` about to judge a stack pattern it
+half-remembers arguing about:
+
+```
+recall_memory({ query: "EF Core migration pattern for multi-tenant schema", k: 5,
+  project: "dev-team", agent: "crew:reviewer", type: "decision" })
+```
+
+When semantic recall isn't enough and you need an exact term:
+
+```
+search_memory({ query: "biome cognitive-complexity threshold", project: "dev-team" })
+```
+
+**RECORD after a decision or a fixed error** — the `text` carries the *why*, not just
+the *what*:
+
+```
+remember({
+  text: "Decision: bumped biome.json cognitive-complexity threshold 10 -> 15. Why: " +
+        "10 was the migration-original value, not Biome's default, and over-flagged " +
+        "dispatch tables that read fine at 15. How to apply: don't re-lower without a " +
+        "concrete new hotspot.",
+  type: "decision",
+  metadata: { project: "dev-team", repo: "dev-team", agent: "crew:builder",
+              importance: 0.6, confidence: 0.9 }
+})
+```
+
+**Slash-command equivalents** — same discipline when you'd rather not hand-write the
+MCP call:
+
+- `/astramem:recall EF Core migration pattern for multi-tenant schema`
+- `/astramem:remember Decision: bumped biome threshold 10->15 because it over-flagged dispatch tables`
+
 ## What to record (and what NOT to)
 
 **Record:**
