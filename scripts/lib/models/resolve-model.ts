@@ -18,6 +18,14 @@
 //
 // Pure — no I/O. The CLI wrapper (`crew resolve-model` in scripts/crew.ts)
 // owns reading .claude/loop.json and handing the parsed config in.
+//
+// FEAT-194 S3: this resolver does NOT consult an agent's `model_pinned`
+// frontmatter (agents/*.md). That field is a declared-preference default
+// only — see docs/standards/agent-playbook.md "`model_pinned` is advisory,
+// not enforced" for the reconciliation note. Effective model comes from
+// `loop.modelRouting` (this file) or the operator's manual `model:` arg on
+// the Agent tool call, never from agent frontmatter. Keep this comment and
+// that doc note in sync if per-agent routing is ever wired in.
 
 const FALLBACK_MODEL = "opus";
 
