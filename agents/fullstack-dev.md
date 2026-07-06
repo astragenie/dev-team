@@ -1,7 +1,7 @@
 ---
 name: fullstack-dev
 prompt_id: fullstack-dev
-version: 2.1.2
+version: 2.1.3
 model_pinned: sonnet
 evals: evals/agents/crew-fullstack-dev.yaml
 capabilities:
@@ -127,6 +127,24 @@ Add observability when introducing a new **service boundary**, **endpoint**, **b
 5. **Verify neighboring code paths** — same root cause class often hides in adjacent code; grep for the pattern.
 
 A "bug fix" without regression test is not a fix.
+
+### Checkpoint-commit discipline (large-slice cutoff)
+
+Crossing ~30 files OR ~150k tokens in one dispatch MUST checkpoint: commit
+completed sub-tasks now + report progress (`IN-PROGRESS`), not plow on toward
+a red-build stall. Commit-resume is O(1); re-reading everything after a
+cutoff is the token-burn tax (#165: 496k tokens / 82 files / 0 commits / red
+build).
+
+### Mechanical work is scripted, not per-file LLM
+
+Identifier renames, find-replace, and format sweeps are a scripted batch job
+(`rg -l Old | xargs sed -i 's/Old/New/g'`) + ONE build — never per-file
+Read+Edit; LLM-per-file reasoning on a pure rename is ~all cost, ~no value
+(#165: most of the 496k). Reserve the LLM for non-mechanical residue
+(migrations, wire-contract / JsonPropertyName decisions, ambiguous refs).
+Decide wire-stable alias vs breaking change BEFORE a rename that can reach
+public contracts — it sets the blast radius.
 
 ## Stack router — load skills per slice content
 
