@@ -3,8 +3,16 @@
 // fileProvider (AC-2) and contract-parity vs fileProvider (AC-3). No live
 // astramem daemon exists in CI, so these tests force the "unpaired" branch
 // deterministically by pointing MEMORY_API_URL_LOCAL at an unreachable port
-// and leaving MEMORY_API_URL_SAAS unset (probeSaas short-circuits to null
-// without a network call — see astramem-provider.ts).
+// and leaving MEMORY_API_URL_SAAS unset — the underlying
+// astramem-plugin/providers/local factory (invoked by astramem-client's
+// resolveWireProvider(), which this module now delegates to) reads that env
+// var as its default health-check target.
+//
+// astramem-client caches the FIRST resolveWireProvider() result (success or
+// failure) for the process lifetime — see astramem-client/src/resolve.ts.
+// `withUnpairedEnv()` calls `_resetResolveCache()` around each test so a
+// resolution cached by an earlier test (in this file or elsewhere in the
+// same `bun test` process) can't leak into these env-var-driven assertions.
 //
 // Paired-mode tests (below) use a pure in-memory fake `RemoteHandle`
 // injected via the `__resolveRemote` test seam — no `http.Server`, no
@@ -24,6 +32,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { _resetResolveCache } from "@astragenie/astramem-client";
 import { astramemProvider, type RemoteHandle } from "../scripts/lib/memory/astramem-provider.ts";
 import { fileProvider } from "../scripts/lib/memory/file-provider.ts";
 
@@ -44,6 +53,7 @@ async function withUnpairedEnv<T>(fn: () => Promise<T>): Promise<T> {
   process.env["MEMORY_API_URL_LOCAL"] = UNREACHABLE_LOCAL_URL;
   delete process.env["MEMORY_API_URL_SAAS"];
   delete process.env["MEMORY_API_URL"];
+  _resetResolveCache();
   try {
     return await fn();
   } finally {
@@ -53,6 +63,7 @@ async function withUnpairedEnv<T>(fn: () => Promise<T>): Promise<T> {
     else process.env["MEMORY_API_URL_SAAS"] = priorSaas;
     if (priorSaasAlias === undefined) delete process.env["MEMORY_API_URL"];
     else process.env["MEMORY_API_URL"] = priorSaasAlias;
+    _resetResolveCache();
   }
 }
 
@@ -225,12 +236,6 @@ function makeFakeWireDaemon(): FakeWireDaemon {
   const handle: RemoteHandle = {
     name: "local",
     provider: {
-      async ingest(): Promise<void> {
-        /* not exercised by astramemProvider's write path */
-      },
-      async ingestTranscript(): Promise<void> {
-        /* not exercised by astramemProvider's write path */
-      },
       async recall() {
         return { hits: [] };
       },
