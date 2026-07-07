@@ -15,6 +15,7 @@
 import { readFile, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { TrialSchema } from "@astragenie/gepa-core";
 import type { Trial } from "@astragenie/gepa-core";
 
 const TRIALS_SUBPATH = [".claude", "artifacts", "crew", "gepa", "trials"];
@@ -88,11 +89,14 @@ async function readTrials(file: string): Promise<Trial[]> {
   for (const line of raw.split("\n")) {
     const t = line.trim();
     if (!t) continue;
+    let json: unknown;
     try {
-      out.push(JSON.parse(t) as Trial);
+      json = JSON.parse(t);
     } catch {
-      // skip malformed line
+      continue; // malformed JSON syntax — skip
     }
+    const parsed = TrialSchema.safeParse(json); // skip schema-drifted rows
+    if (parsed.success) out.push(parsed.data as Trial);
   }
   return out;
 }

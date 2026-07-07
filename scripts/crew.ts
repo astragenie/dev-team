@@ -27,6 +27,7 @@ const FLAG_SPEC = {
   "--force": { key: "force", boolean: true },
   "--help": { key: "help", boolean: true },
   "-h": { key: "help", boolean: true },
+  "--json": { key: "json", boolean: true },
   "--live": { key: "live", boolean: true },
   "--no-self": { key: "noSelf", boolean: true },
   "--non-code": { key: "nonCode", boolean: true },
@@ -128,6 +129,7 @@ const FLAG_SPEC = {
   "--concern": { key: "concern" },
   "--lens": { key: "lens" },
   "--since": { key: "since" },
+  "--sibling": { key: "sibling" },
   "--tag": { key: "tag" },
   "--tags": { key: "tags" }
 } as const;
@@ -235,6 +237,8 @@ function buildDefaultFlags(): Flags {
     gepaSource: null,
     limit: null,
     tokenCap: null,
+    sibling: null,
+    json: false,
     live: false,
     validate: false,
     judge: null,
@@ -376,7 +380,7 @@ function usage(target: string | null = null) {
     "gepa-history":
       "  node scripts/crew.ts gepa-history <agent> [--source eval|captured|soak] [--limit N] [--repo <path>]",
     "gepa-corpus-sync":
-      "  node scripts/crew.ts gepa-corpus-sync [--sibling <path>]... [--json] [--repo <path>]",
+      "  node scripts/crew.ts gepa-corpus-sync [--sibling <p1,p2,...>] [--json] [--repo <path>]",
     "gepa-corpus-report":
       "  node scripts/crew.ts gepa-corpus-report [<agent>] [--json] [--repo <path>]",
     "gepa-eval":
@@ -1325,23 +1329,36 @@ const COMMANDS = {
     return result.stdout.trim();
   },
 
-  "gepa-corpus-sync": async ({ repoPath, positionals }: CommandContext) => {
+  "gepa-corpus-sync": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { runCorpusSyncCmd } = await import("./lib/gepa/corpus-sync.ts");
-    // positionals carry any --sibling/--json passthrough already split by the arg parser.
-    const result = await runCorpusSyncCmd(repoPath, positionals);
-    if (result.stdout) process.stdout.write(result.stdout);
+    const rawArgs: string[] = [...positionals];
+    // --sibling takes a comma-separated list of repo roots (the single-value
+    // flag parser keeps only the last token, so siblings ride one flag).
+    if (typeof flags.sibling === "string" && flags.sibling) {
+      for (const s of flags.sibling
+        .split(",")
+        .map((x) => x.trim())
+        .filter(Boolean)) {
+        rawArgs.push("--sibling", s);
+      }
+    }
+    if (flags.json === true) rawArgs.push("--json");
+    const result = await runCorpusSyncCmd(repoPath, rawArgs);
+    // Return-only: main console.log's the return value, so writing stdout here
+    // too would double-print (breaks `--json | jq`).
     if (result.stderr) process.stderr.write(result.stderr);
     if (result.exitCode !== 0) process.exit(result.exitCode);
-    return result.stdout.trim();
+    return result.stdout.trimEnd();
   },
 
-  "gepa-corpus-report": async ({ repoPath, positionals }: CommandContext) => {
+  "gepa-corpus-report": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { runCorpusReportCmd } = await import("./lib/gepa/corpus-report.ts");
-    const result = await runCorpusReportCmd(repoPath, positionals);
-    if (result.stdout) process.stdout.write(result.stdout);
+    const rawArgs: string[] = [...positionals];
+    if (flags.json === true) rawArgs.push("--json");
+    const result = await runCorpusReportCmd(repoPath, rawArgs);
     if (result.stderr) process.stderr.write(result.stderr);
     if (result.exitCode !== 0) process.exit(result.exitCode);
-    return result.stdout.trim();
+    return result.stdout.trimEnd();
   },
 
   "gepa-eval": async ({ repoPath, flags, positionals }: CommandContext) => {

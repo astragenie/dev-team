@@ -5,7 +5,15 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { syncCorpus } from "../scripts/lib/gepa/corpus-sync.ts";
+
+const cliPath = path.join(
+  path.dirname(path.dirname(fileURLToPath(import.meta.url))),
+  "scripts",
+  "crew.ts"
+);
 
 const TRIALS = [".claude", "artifacts", "crew", "gepa", "trials"];
 
@@ -154,5 +162,57 @@ test("AC-5: read-only on siblings; missing trials dir skipped without error", as
     assert.equal(after, before, "sync must never mutate a sibling");
   } finally {
     await cleanup(hub, sibWith, sibBare);
+  }
+});
+
+test("corrupt + schema-drifted rows are skipped, valid ones still aggregate (no throw)", async () => {
+  const hub = await makeRepo("corpus-hub-");
+  const sib = await makeRepo("corpus-sib-");
+  try {
+    const dir = path.join(sib, ...TRIALS);
+    await fs.mkdir(dir, { recursive: true });
+    const lines = [
+      "{ not valid json", // malformed syntax
+      JSON.stringify({ id: "x", agent: "backend-dev" }), // valid JSON, invalid TrialSchema
+      JSON.stringify(makeTrial("backend-dev", "real failure")) // valid production-failure trial
+    ];
+    await fs.writeFile(path.join(dir, "backend-dev.jsonl"), lines.join("\n") + "\n", "utf8");
+
+    const report = await syncCorpus({ hubRepo: hub, siblingRepos: [sib] });
+    assert.equal(report.totalEligible, 1, "only the schema-valid production-failure counts");
+    assert.equal(report.totalAdded, 1);
+    assert.equal((await readHubTrials(hub, "backend-dev")).length, 1);
+  } finally {
+    await cleanup(hub, sib);
+  }
+});
+
+test("CLI: --sibling + --json flags are wired (no 'Unknown argument')", async () => {
+  const hub = await makeRepo("corpus-hub-");
+  const sib = await makeRepo("corpus-sib-");
+  try {
+    await writeTrials(sib, "fullstack-dev", [makeTrial("fullstack-dev", "cli path")]);
+    // CLI scripts run on Node per ADR-002 (not bun, which `bun test` would
+    // otherwise use via process.execPath).
+    const res = spawnSync(
+      "node",
+      [
+        "--experimental-strip-types",
+        cliPath,
+        "gepa-corpus-sync",
+        "--sibling",
+        sib,
+        "--json",
+        "--repo",
+        hub
+      ],
+      { encoding: "utf8", timeout: 60_000 }
+    );
+    assert.equal(res.status, 0, `CLI failed: ${res.stderr}`);
+    assert.doesNotMatch(res.stderr ?? "", /Unknown argument/, "flags must be registered");
+    const report = JSON.parse(res.stdout);
+    assert.equal(report.totalAdded, 1, "CLI --sibling path must aggregate");
+  } finally {
+    await cleanup(hub, sib);
   }
 });
