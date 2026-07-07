@@ -8,6 +8,16 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 Not yet released (no version bump). Landed on `main` via build → independent
 review → merge.
 
+- **FEAT-193 S3 report half + AC-10 blocker (build; awaiting review).** New
+  `scripts/lib/gepa/corpus-report.ts` + `crew gepa-corpus-report [<agent>]` CLI: the
+  analyze-before-adjust digest — clusters each agent's production-failure trials by
+  failure mode (case/whitespace-normalized rationale), ranks by frequency, enumerates
+  EVERY agent with ≥1 failure (completeness), and cites the agent's FEAT-188 astramem
+  lessons by id. Pure read+report — never invokes gepa-optimize or promotes (AC-9 human
+  gate). +4 AC tests. **AC-10 blocker fixed:** `validate-agents.ts` `parseFrontmatter`
+  now strips a leading `gepa:` block before field-read (reusing
+  `stripGepafrontmatter`), so a champion-provenance-written agent no longer fails on a
+  missing `name`/`description` — unblocks S3 optimize-wiring. +2 regression tests.
 - **FEAT-193 S2 — `gepa-corpus-sync` (build; awaiting review).** New
   `scripts/lib/gepa/corpus-sync.ts` + `crew gepa-corpus-sync` CLI: scans sibling
   repos for production-failure GEPA trials and merges them into the dev-team hub

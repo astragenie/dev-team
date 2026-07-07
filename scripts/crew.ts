@@ -377,6 +377,8 @@ function usage(target: string | null = null) {
       "  node scripts/crew.ts gepa-history <agent> [--source eval|captured|soak] [--limit N] [--repo <path>]",
     "gepa-corpus-sync":
       "  node scripts/crew.ts gepa-corpus-sync [--sibling <path>]... [--json] [--repo <path>]",
+    "gepa-corpus-report":
+      "  node scripts/crew.ts gepa-corpus-report [<agent>] [--json] [--repo <path>]",
     "gepa-eval":
       "  node scripts/crew.ts gepa-eval <agent> [--live] [--judge <name>] [--validate] [--split N/M] [--repo <path>]",
     "gepa-mine-reviewer":
@@ -1327,6 +1329,15 @@ const COMMANDS = {
     const { runCorpusSyncCmd } = await import("./lib/gepa/corpus-sync.ts");
     // positionals carry any --sibling/--json passthrough already split by the arg parser.
     const result = await runCorpusSyncCmd(repoPath, positionals);
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+    if (result.exitCode !== 0) process.exit(result.exitCode);
+    return result.stdout.trim();
+  },
+
+  "gepa-corpus-report": async ({ repoPath, positionals }: CommandContext) => {
+    const { runCorpusReportCmd } = await import("./lib/gepa/corpus-report.ts");
+    const result = await runCorpusReportCmd(repoPath, positionals);
     if (result.stdout) process.stdout.write(result.stdout);
     if (result.stderr) process.stderr.write(result.stderr);
     if (result.exitCode !== 0) process.exit(result.exitCode);
