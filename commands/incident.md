@@ -73,7 +73,7 @@ Reviewer B returns `rejected`:
 On N exhausted:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge blocked \
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge incident_blocked \
   --note "<aggregated FAIL summary>"
 ```
 
@@ -102,7 +102,7 @@ Same table as `/crew:build` and `/crew:fix`:
 4. Classify the incident against the triage table above. State the chosen branch explicitly.
 5. Apply skills:
    - For release-ceremony recovery (broken tag / version mismatch / marketplace drift): load `skills/workflow/release-recovery/` before dispatch.
-   - For prod incident (RCA / log reading / metric correlation / rollback decision): the incident-response skill ships in SLICE-B; for SLICE-A, route to `crew:researcher` with the release-recovery skill if release-ceremony-adjacent, or to specialist builder if code-level cause is known.
+   - For prod incident (RCA / log reading / metric correlation / rollback decision): load `skills/workflow/incident-response/` before dispatch — covers the diagnosis triage table, log/metric/trace reading patterns, the rollback decision tree, common failure modes, and the post-mortem template.
 6. Dispatch per triage branch:
    - **Unknown root cause**: `crew:researcher` with finding artifact required.
    - **Code locations needed**: `crew:investigator` (no artifact).
@@ -130,6 +130,6 @@ Same table as `/crew:build` and `/crew:fix`:
 
 ## Notes
 
-- Production promotion is NEVER unlocked by this dispatcher. Rollback path stops at staging-verify; prod rollback requires explicit user approval per deployer rules.
-- `incident_blocked` badge ships in SLICE-B alongside the incident-response skill. SLICE-A surfaces blockers through the generic `blocked` badge.
-- Skill content `skills/workflow/release-recovery/` is the authoritative reference for broken-tag / marketplace-drift / version-forward patterns. The dispatcher is intentionally thin — routing only, details live in the skill.
+- Production promotion is NEVER unlocked by this dispatcher. Rollback path stops at staging-verify; prod rollback requires explicit user approval per deployer rules — mark `incident_blocked` and hand the decision to the user rather than guessing.
+- `incident_blocked` badge: set on retry-exhaustion (auto-fix loop above) or when a rollback decision needs explicit user sign-off. Lands in the same `incident` gate slot as `incident_resolved` / `rollback_executed` — distinct from the generic `blocked` badge used elsewhere in the workflow.
+- Skill content `skills/workflow/release-recovery/` is the authoritative reference for broken-tag / marketplace-drift / version-forward patterns. `skills/workflow/incident-response/` is the authoritative reference for prod-incident diagnosis, log/metric/trace reading, and rollback decision-making. The dispatcher is intentionally thin — routing only, details live in the skills.
