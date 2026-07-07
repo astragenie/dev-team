@@ -798,7 +798,12 @@ const pendingCaptures = new Set<Promise<void>>();
 
 function trackDetached(capture: Promise<void>): void {
   pendingCaptures.add(capture);
-  void capture.finally(() => pendingCaptures.delete(capture));
+  // Defensive: the detached captures already swallow their own errors
+  // (fireGuarded never rejects; fireFailureCaptureSilent is fully try/caught),
+  // but a terminal .catch keeps trackDetached robust to a future capture path
+  // that could reject — a detached rejection would otherwise surface as a
+  // process-level unhandledRejection. Non-blocking hardening (review #360).
+  void capture.finally(() => pendingCaptures.delete(capture)).catch(() => {});
 }
 
 /** Test seam: await every fire-and-forget capture triggered by writeArtifact
