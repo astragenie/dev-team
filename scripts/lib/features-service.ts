@@ -97,6 +97,15 @@ export const FEATURES: Readonly<Record<string, FeatureMeta>> = {
     owner: "platform",
     since: "0.48.0"
   },
+  "checkpoint-cadence": {
+    version: "1.0.0",
+    default: true,
+    description:
+      "dev-team#174: PostToolUse child-side hook. After the first Edit/Write in a builder session, every N post-edit tool calls it injects a systemMessage nudging the builder to write a resume scaffold (.claude/state/crew/checkpoint-<slice>.md) so a mid-job death loses no WIP. Cadence knob: features['checkpoint-cadence'].threshold (default 20).",
+    scope: "crew",
+    owner: "platform",
+    since: "0.54.0"
+  },
   "event-emit": {
     version: "1.0.0",
     default: true,

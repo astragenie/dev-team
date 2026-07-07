@@ -6,8 +6,28 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 ## [Unreleased] — 2026-07-07 — memory-loop closeout + capture/hook fixes
 
 Not yet released (no version bump). Landed on `main` via build → independent
-review → merge; not pushed.
+review → merge.
 
+- **Builder pre-death checkpoint (dev-team#174).** New PostToolUse child-side
+  `hooks/checkpoint-cadence.ts` + `hooks/lib/checkpoint-cadence.ts`: after the first
+  Edit/Write in a builder session, every N post-edit tool calls (default 20, knob
+  `features['checkpoint-cadence'].threshold`) it injects a `[checkpoint]` systemMessage
+  nudging the builder to write a gitignored resume scaffold
+  (`.claude/state/crew/checkpoint-<slice>.md`) so a mid-job death loses no WIP. Pure
+  state-file read/write, zero gepa-core imports (stays off the #360 cold-parse path);
+  counter only arms after the first edit (no false nudges mid-investigation). Wired into
+  builder prompts (`fullstack-dev`, `backend-dev`) + `builder-ceremony` skill carve-out.
+  Default-on feature `checkpoint-cadence`. +5 unit tests.
+- **Cost-report immutability guard (dev-team#178).** `resolveArtifactPath()` now ignores
+  `fields.updatePath` for the three cost-report kinds — a slice-close with a stale/wide
+  `currentRun` window could otherwise point `updatePath` at an unrelated historical
+  cost-report and clobber it into a lossy stub (damage previously git-reverted). Removes
+  the overwrite capability structurally; idempotent update stays for all other kinds.
+  +3 regression tests.
+- **FEAT-193 promoted + ACs.** Moved pending→triaged; authored Given-When-Then ACs for
+  S2 (`gepa-corpus-sync`) + S3 (`gepa-corpus-report`) — `capture_origin` marker discipline,
+  product_completeness gate, human-gate, provenance-blocker. S2 build-ready; S3
+  optimize-wiring held for FEAT-185. Build-ready slice plan in handoffs.
 - **FEAT-188 memory loop — dev-team side COMPLETE (S1a/S2/S3a/S4/S5/S6).** S5
   (eval + hygiene) merged: astramem↔JSONL `drift-check` + backfill (closes the S4
   source-of-truth completeness gap), `fileProvider.recall()` full-window scan (was

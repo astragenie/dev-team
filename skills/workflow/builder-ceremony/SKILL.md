@@ -13,6 +13,8 @@ triggers: ["badge", "secret grep", "scope-cross", "context ceiling", "primary re
 
 Builders return inline. No handoff artifacts, no bundles, no stubs. Reviewer reads `git diff` + your STATUS/Files/Risks/Next directly. This skill carries the slice-boundary protocol that changes rarely but matters every time.
 
+Exception (dev-team#174): a `[checkpoint]` system-message nudge from the checkpoint-cadence hook asks you to write a gitignored resume scaffold at `.claude/state/crew/checkpoint-<slice-id>.md`. That state file is NOT a handoff artifact (never under `.claude/artifacts/crew/handoffs/`, never via `write-handoff`) — write it when nudged; the inline-only rule still bars handoff artifacts/bundles/stubs.
+
 ## Trigger
 
 Load at slice boundaries:

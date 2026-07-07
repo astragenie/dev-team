@@ -175,6 +175,13 @@ a red-build stall. Commit-resume is O(1); re-reading everything after a
 cutoff is the token-burn tax (#165: 496k tokens / 82 files / 0 commits / red
 build).
 
+On a `[checkpoint]` system-message nudge (the checkpoint-cadence hook,
+dev-team#174), if you have uncommitted work, ALSO write/overwrite
+`.claude/state/crew/checkpoint-<slice-id>.md` with `git status --short` +
+`git diff --stat`, your current sub-task, and your next intended step. This
+is a resume scaffold that survives a mid-job cutoff — it is NOT a handoff
+artifact, so do NOT invoke `write-handoff`.
+
 ### Mechanical work is scripted, not per-file LLM
 
 Identifier renames, find-replace, and format sweeps are a scripted batch job
