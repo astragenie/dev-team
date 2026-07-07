@@ -723,7 +723,12 @@ function resolveArtifactPath(
   fields: ArtifactFields,
   config: { prefix: string }
 ): string {
-  if (fields.updatePath) return fields.updatePath;
+  // #178: cost-report kinds are immutable emit events — never honor
+  // `updatePath` for them. A stale/wide currentRun window could otherwise
+  // point updatePath at an unrelated historical cost-report and clobber it
+  // into a lossy stub. These three kinds only ever mint fresh timestamped
+  // files; idempotent same-path update stays available to all other kinds.
+  if (fields.updatePath && !isCostReportKind(kind)) return fields.updatePath;
   const title = fields.title ?? fields.summary ?? kind;
   const fileName = `${timestampSlug()}-${config.prefix}-${slugify(title)}.md`;
   return path.join(artifactDir, fileName);

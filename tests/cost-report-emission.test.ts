@@ -281,3 +281,49 @@ test("cost-report: legacy kind still emits a file with -cost-report- in name", a
     await cleanup(tmpDir);
   }
 });
+
+// ---------------------------------------------------------------------------
+// #178 regression: cost-report kinds are immutable emit events. `updatePath`
+// (idempotent same-path overwrite) must be IGNORED for the three cost-report
+// kinds, otherwise a slice-close with a stale/wide currentRun window could
+// clobber an unrelated historical cost-report file into a lossy stub. The
+// fix removes the overwrite capability structurally rather than trusting an
+// emit-window predicate.
+// ---------------------------------------------------------------------------
+
+for (const kind of ["cost-report", "cost-report-slice", "cost-report-aggregate"] as const) {
+  test(`${kind}: updatePath cannot clobber an existing historical cost file (#178)`, async () => {
+    const tmpDir = await makeTempDir();
+    try {
+      const costDir = path.join(tmpDir, ".claude", "artifacts", "crew", "cost");
+      await fs.mkdir(costDir, { recursive: true });
+      const historicalPath = path.join(costDir, "20260101T000000Z-cost-report-slice-historical.md");
+      const SENTINEL = "# Historical report — must NOT be overwritten\nusd: 999.99\n";
+      await fs.writeFile(historicalPath, SENTINEL);
+
+      const result = await writeArtifact(tmpDir, kind, {
+        title: "fresh-emit",
+        runTitle: "fresh-emit",
+        cost: makeMultiSourceCost(),
+        outcome: null,
+        updatePath: historicalPath
+      });
+      assert.ok(result.ok, "writeArtifact should still succeed");
+
+      // Historical file is byte-preserved — not clobbered.
+      const after = await fs.readFile(historicalPath, "utf8");
+      assert.equal(after, SENTINEL, "historical cost-report file must be preserved intact");
+
+      // The emit still landed — as a NEW timestamped file, not at updatePath.
+      assert.notEqual(
+        result.value.path,
+        historicalPath,
+        "cost-report emit must mint a fresh path, never reuse updatePath"
+      );
+      const files = await listCostDir(tmpDir);
+      assert.equal(files.length, 2, `Expected historical + fresh file, got: ${files.join(", ")}`);
+    } finally {
+      await cleanup(tmpDir);
+    }
+  });
+}
