@@ -3,6 +3,36 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [0.53.0] — 2026-07-06 — FEAT-188 S4 + S6: astramem memory provider + deliberate-remember enforcement
+
+Minor: lands the astramem source-of-truth writer and the discipline that makes
+agents produce well-formed memories (not distiller noise). Two FEAT-188 slices.
+
+- **S4 — `astramemProvider`** (`scripts/lib/memory/astramem-provider.ts`): routes
+  agent memories (decisions, lessons, review rejections) to the astramem semantic
+  store (vector + FTS, local-daemon-or-SaaS) via the plugin provider layer
+  (`@astragenie/astramem-plugin/providers/local` + `/saas`, astramem-plugin#23) —
+  NOT CLI-shell, NOT a hand-rolled HTTP client (DEC, dev-team#172). **Dual-write**:
+  astramem (source of truth) + local JSONL mirror when `dualWrite:true`; falls back
+  to the file provider when unpaired. New dep `@astragenie/astramem-plugin` pinned at
+  `e851f19c`; `npm ci` verified clean with and without SSH (codeload HTTPS tarball).
+- **S4 flake fix (issue #170):** the paired dual-write tests used a real in-process
+  `http.Server` that starved under Bun's `node:test` scheduling bug (bun#5090) in the
+  full suite. Replaced with a pure in-memory fake wire provider injected via a
+  test-only `__resolveRemote` seam — no socket, no starvation. Production path
+  byte-identical (seam unset in prod). Full suite green (1697 pass / 0 fail),
+  reproduced by an independent reviewer.
+- **S6 — deliberate-`remember` enforcement:** `memory-keeper` skill now requires the
+  durable "keeper" bar (`type ∈ {decision,lesson,fact}` + why + how-to-apply +
+  metadata + `importance ≥ 0.6`) and lists what is NOT a durable memory (ephemeral
+  status, git-trivia, vacuous negatives); `document-writer` slice-close gained a
+  deliberate `remember` step (degrade-safe; terminal call stays `slice grade`).
+  Counters the low-signal auto-distiller (tracked: astramem-local#119).
+- **DEC (dev-team#172):** single astramem transport = plugin/MCP; CLI-shell +
+  in-process HTTP client retired.
+- Also: `CLAUDE.md` corrected — `bun run test` has no `--parallel` (removed in a20f9dd9
+  for bun#5090).
+
 ## [0.52.4] — 2026-07-06 — First green CI: cross-runtime home resolution
 
 Patch: fixes a Linux-only test failure that kept `main` CI red (the last of a
