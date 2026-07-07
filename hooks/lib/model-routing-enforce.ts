@@ -131,6 +131,7 @@ export function buildHookOutput(
   }
   return JSON.stringify({
     hookSpecificOutput: {
+      hookEventName: "PreToolUse",
       permissionDecision: "allow",
       updatedInput: decision.updatedInput
     },

@@ -163,6 +163,10 @@ test("buildHookOutput: inject decision → JSON with hookSpecificOutput.updatedI
   const out = buildHookOutput(dispatch, decision);
   assert.ok(out !== null);
   const parsed = JSON.parse(out);
+  // Required by the PreToolUse hookSpecificOutput schema — without it the
+  // harness rejects the whole payload and the model injection silently no-ops
+  // (dev-team#176). Assert it so the field can't regress.
+  assert.equal(parsed.hookSpecificOutput.hookEventName, "PreToolUse");
   assert.equal(parsed.hookSpecificOutput.permissionDecision, "allow");
   assert.equal(parsed.hookSpecificOutput.updatedInput.model, "sonnet");
   assert.match(parsed.systemMessage, /crew:aiplugin-dev/);
