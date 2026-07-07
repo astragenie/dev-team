@@ -14,8 +14,10 @@ export type { MemoryProvider, RecallQuery } from "./types.ts";
 export { noopProvider } from "./noop-provider.ts";
 export { fileProvider } from "./file-provider.ts";
 export type { FileProviderOptions } from "./file-provider.ts";
-export { astramemProvider } from "./astramem-provider.ts";
-export type { AstramemProviderOptions } from "./astramem-provider.ts";
+export { astramemProvider, resolveAstramemRemote } from "./astramem-provider.ts";
+export type { AstramemProviderOptions, RemoteHandle } from "./astramem-provider.ts";
+export { checkDrift } from "./drift-check.ts";
+export type { DriftCheckOptions, DriftReport } from "./drift-check.ts";
 export { resolveProvider } from "./resolve-provider.ts";
 export type { InjectRecallOptions } from "./inject-recall.ts";
 export {
