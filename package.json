@@ -41,6 +41,7 @@
     "evals:view": "node -e \"console.log('Open in your browser: file://' + require('path').resolve('evals/viewer/index.html').replace(/\\\\/g,'/'))\""
   },
   "dependencies": {
+    "@astragenie/astramem-plugin": "git+https://github.com/astragenie/astramem-plugin.git#e851f19c7a8d89bd88c62d392918aa78aebf2184",
     "@astragenie/gepa-core": "0.7.0",
     "@aws-sdk/client-bedrock-runtime": "^3",
     "@opentelemetry/api": "^1.9.0",

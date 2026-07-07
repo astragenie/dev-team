@@ -5,6 +5,7 @@
     "": {
       "name": "crew-plugin",
       "dependencies": {
+        "@astragenie/astramem-plugin": "git+https://github.com/astragenie/astramem-plugin.git#e851f19c7a8d89bd88c62d392918aa78aebf2184",
         "@astragenie/gepa-core": "0.7.0",
         "@aws-sdk/client-bedrock-runtime": "^3",
         "@opentelemetry/api": "^1.9.0",
@@ -24,6 +25,8 @@
     },
   },
   "packages": {
+    "@astragenie/astramem-plugin": ["@astragenie/astramem-plugin@github:astragenie/astramem-plugin#e851f19", { "dependencies": { "zod": "^3.23.0" }, "bin": { "memory-login": "./bin/memory-login.ts", "memory-refresh": "./bin/memory-refresh.ts", "memory-token": "./bin/memory-token.ts", "memory-connect": "./bin/memory-connect.ts", "astramem-login": "./bin/astramem-login.ts", "astramem-refresh": "./bin/astramem-refresh.ts", "astramem-token": "./bin/astramem-token.ts", "astramem-connect": "./bin/astramem-connect.ts", "astramem": "./bin/astramem" } }, "astragenie-astramem-plugin-e851f19", "sha512-7LDMS6KMQ8FCfE2P11FxKtXEaV2G+KQlLfqy6js7dQe+nOAB33mdIUIikza9+N9CCFnWMxHrgD+K1a/Bz2JcOg=="],
+
     "@astragenie/gepa-core": ["@astragenie/gepa-core@0.7.0", "", { "dependencies": { "zod": "^3.23.0" }, "peerDependencies": { "@azure/openai": "*", "@google/generative-ai": "*" }, "optionalPeers": ["@azure/openai", "@google/generative-ai"] }, "sha512-ncqmP/ys/WTU7jPUZd2bzeInrDDZlhgf07aJ2ZyB2nvzTYF2/eShmD+jbkTKYE/h+0O/Qb3NHZYVeePU/GPGPQ=="],
 
     "@aws-crypto/crc32": ["@aws-crypto/crc32@5.2.0", "", { "dependencies": { "@aws-crypto/util": "^5.2.0", "@aws-sdk/types": "^3.222.0", "tslib": "^2.6.2" } }, "sha512-nLbCWqQNgUiwwtFsen1AdzAtvuLRsQS8rYgMuxCrdKf9kOssamGLuPwyTY9wyYblNr9+1XM8v6zoDTPPSIeANg=="],

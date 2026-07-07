@@ -47,7 +47,7 @@ External-plugin skills (`context7`, `microsoft-docs:*`, `plugin-dev:*`, `terrafo
 
 Requires Node 22.6+ (strip-types runtime; see `docs/superpowers/specs/2026-06-07-ts-migration-and-perf-design.md`).
 
-- `bun run test` — full test suite via Bun (`bun test --parallel --timeout 30000 tests/`; requires Bun 1.3+); `bun run test:node` is the Node.js fallback.
+- `bun run test` — full test suite via Bun (`bun test --timeout 60000 tests/`; requires Bun 1.3+). No `--parallel` — removed in `a20f9dd9` to work around Bun's `node:test` single-process scheduling bug (bun#5090); `bun run test:node` is the Node.js fallback.
 - `bun run lint` — Biome lint.
 - `bun run format` / `bun run format:check` — Biome format.
 - `bun run e2e:smoke` — end-to-end smoke against a temp sample repo.
@@ -67,7 +67,7 @@ and every PR. All steps are blocking; lint must stay zero-warning.
 7. `bun run lint`
 8. `bun run format:check`
 9. `bun run typecheck`
-10. `bun run test` (Bun test runner — `bun test --parallel`)
+10. `bun run test` (Bun test runner — `bun test --timeout 60000 tests/`, no `--parallel`; see bun#5090 note above)
 11. `node ./scripts/e2e-smoke.ts`
 
 Node runs dependency install (`npm ci`) and all `./scripts/*.ts` CLI/validators
