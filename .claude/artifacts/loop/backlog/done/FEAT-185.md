@@ -1,14 +1,14 @@
 ---
 id: FEAT-185
-status: partial
-shipped_slices: [SLICE-108]
-remaining_slices: [SLICE-109]
+status: done
+shipped_slices: [SLICE-108, SLICE-109]
+remaining_slices: []
 reconciliation_note: "SLICE-108 (S-A: ollama+generic+groq+gemini) shipped 2026-06-28..30 across gepa-core PRs #122/#123/#124 → v0.3.1 without being materialized as a file (see docs/superpowers/specs/2026-06-30-feat-183-wave-plan.md). SLICE-109 (S-B) revised 2026-06-30 to azure-only — bedrock dropped per operator Q3. proposed_slices block below is the ORIGINAL 2026-06-28 decomp; treat as historical reference, not current plan."
 priority: P2
 category: refactor
 target_release: null
 created: 2026-06-28
-revised: 2026-06-30
+revised: 2026-07-07
 depends_on: [FEAT-184]
 slices: []
 derived_from: null
