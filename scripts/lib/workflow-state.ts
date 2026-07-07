@@ -301,8 +301,7 @@ const BADGE_TABLE: Record<string, BadgeSpec> = {
   },
   // FEAT-182 SLICE-A: incident-response dispatcher badges. incident_resolved
   // marks full pass through /crew:incident triage; rollback_executed marks a
-  // release-engineer-driven rollback. incident_blocked deferred to SLICE-B
-  // alongside the incident-response skill.
+  // release-engineer-driven rollback.
   incident_resolved: {
     selector: (run) => [run.gates, "incident"],
     status: "resolved",
@@ -311,6 +310,15 @@ const BADGE_TABLE: Record<string, BadgeSpec> = {
   rollback_executed: {
     selector: (run) => [run.gates, "incident"],
     status: "rolled-back",
+    custom: true
+  },
+  // FEAT-182 SLICE-B: retry-exhaustion or a rollback decision that needs the
+  // user. Lands in the same `incident` gate slot as incident_resolved /
+  // rollback_executed, so the incident timeline stays in one place — distinct
+  // from the generic `blocked` badge used elsewhere in the workflow.
+  incident_blocked: {
+    selector: (run) => [run.gates, "incident"],
+    status: "blocked",
     custom: true
   }
 };
@@ -329,7 +337,7 @@ function applyBadge(
 
   if (spec.custom) {
     const gateObj: GateEntry = { status: spec.status, updatedAt: nowIso(), note: note || "" };
-    if (badge === "blocked" && blockedBy !== null) {
+    if ((badge === "blocked" || badge === "incident_blocked") && blockedBy !== null) {
       gateObj.blockedBy = blockedBy;
     }
     (parent as unknown as Record<string, GateEntry | null>)[key] = gateObj;

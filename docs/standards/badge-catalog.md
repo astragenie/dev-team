@@ -34,3 +34,4 @@ on the gate entry); `--blocked-by <artifact-id>` only affects `blocked`.
 | `escalated_to_lead` | Backward-compat alias of `escalated_to_dispatcher` (pre-FEAT-180 rename); resolves to the same gate. | `gates.escalation` → `escalated` | `--note` |
 | `incident_resolved` | Full pass through `/crew:incident` triage completed (FEAT-182 SLICE-A). | `gates.incident` → `resolved` | `--note` |
 | `rollback_executed` | Release-engineer-driven rollback executed (FEAT-182 SLICE-A). | `gates.incident` → `rolled-back` | `--note` |
+| `incident_blocked` | Retry-exhaustion or a rollback decision needing user sign-off during `/crew:incident` (FEAT-182 SLICE-B). | `gates.incident` → `blocked` | `--note`, `--blocked-by <artifact-id>` |

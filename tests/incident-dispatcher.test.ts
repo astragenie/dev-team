@@ -18,8 +18,10 @@ function readDoc(relPath: string): string {
 
 const incident = readDoc("commands/incident.md");
 const skill = readDoc("skills/workflow/release-recovery/SKILL.md");
+const incidentResponseSkill = readDoc("skills/workflow/incident-response/SKILL.md");
 const workflowState = readDoc("scripts/lib/workflow-state.ts");
 const gates = readDoc("scripts/lib/workflow-state-gates.ts");
+const crewCli = readDoc("scripts/crew.ts");
 
 // /crew:incident dispatcher ────────────────────────────────────────────────
 
@@ -153,4 +155,77 @@ test("FEAT-182 SLICE-A: BADGE_TABLE registers rollback_executed", () => {
 
 test("FEAT-182 SLICE-A: incident gate slot added to RunGates", () => {
   assert.match(gates, /incident:\s*GateEntry\s*\|\s*null/);
+});
+
+// FEAT-182 SLICE-B: incident_blocked badge + incident-response skill ───────
+
+test("FEAT-182 SLICE-B: BADGE_TABLE registers incident_blocked", () => {
+  assert.match(workflowState, /incident_blocked:\s*\{/);
+});
+
+test("FEAT-182 SLICE-B: mark-badge usage string lists incident_blocked", () => {
+  assert.match(
+    crewCli,
+    /--badge[\s\S]*?incident_resolved\|rollback_executed\|incident_blocked/,
+    "mark-badge usage string must advertise incident_blocked"
+  );
+});
+
+test("FEAT-182 SLICE-B: dispatcher marks incident_blocked on auto-fix retry exhaustion", () => {
+  assert.match(
+    incident,
+    /On N exhausted:[\s\S]*?mark-badge --repo "\$PWD" --badge incident_blocked/,
+    "retry-exhaustion path must mark incident_blocked, not the generic blocked badge"
+  );
+});
+
+test("FEAT-182 SLICE-B: dispatcher documents incident_blocked for a rollback decision needing the user", () => {
+  assert.match(
+    incident,
+    /mark `incident_blocked` and hand the decision to the user/i,
+    "prod-rollback-needs-approval path must be documented as an incident_blocked case"
+  );
+});
+
+test("FEAT-182 SLICE-B: dispatcher loads the incident-response skill before prod-incident dispatch", () => {
+  assert.match(
+    incident,
+    /load `skills\/workflow\/incident-response\/` before dispatch/,
+    "prod-incident branch must load the incident-response skill"
+  );
+});
+
+test("FEAT-182 SLICE-B: incident-response SKILL has tier=workflow frontmatter", () => {
+  assert.match(incidentResponseSkill, /^---\s*\n[\s\S]*?\ntier: workflow\b/m);
+});
+
+test("FEAT-182 SLICE-B: incident-response describes the rollback decision tree (code vs config vs traffic)", () => {
+  assert.match(incidentResponseSkill, /Rollback decision tree \(code vs config vs traffic\)/i);
+});
+
+test("FEAT-182 SLICE-B: incident-response names the Azure MCP tools for log/metric/trace reading", () => {
+  assert.match(incidentResponseSkill, /mcp__plugin_azure_azure__monitor/);
+  assert.match(incidentResponseSkill, /mcp__plugin_azure_azure__applicationinsights/);
+  assert.match(incidentResponseSkill, /mcp__plugin_azure_azure__grafana/);
+});
+
+test("FEAT-182 SLICE-B: incident-response includes a post-mortem template", () => {
+  assert.match(incidentResponseSkill, /## Post-mortem template/);
+  assert.match(incidentResponseSkill, /### Contributing factors/);
+  assert.match(incidentResponseSkill, /### Action items/);
+});
+
+test("FEAT-182 SLICE-B: incident-response stays under 200-line tier cap", () => {
+  const lines = incidentResponseSkill.split(/\r?\n/).length;
+  assert.ok(
+    lines <= 200,
+    `incident-response SKILL.md is ${lines} lines, exceeds 200-line workflow tier cap`
+  );
+});
+
+test("FEAT-182 SLICE-B: release-engineer documents the incident-triggered rollback procedure", () => {
+  const releaseEngineer = readDoc("agents/release-engineer.md");
+  assert.match(releaseEngineer, /## Rollback procedure \(incident-triggered\)/);
+  assert.match(releaseEngineer, /prod → stage → dev/);
+  assert.match(releaseEngineer, /v<X\.Y\.Z>-rollback-<timestamp>/);
 });

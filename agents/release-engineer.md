@@ -205,6 +205,25 @@ When a deploy fails mid-flight:
    the follow-up: redeploy after fix, investigate root cause, or
    escalate to the user.
 
+## Rollback procedure (incident-triggered)
+
+When `/crew:incident` dispatches you for a rollback decision (distinct from
+the mid-deploy failure covered by Rollback discipline above):
+
+1. Revert in reverse deployment order: prod → stage → dev. Never revert
+   dev/stage first and leave prod on the broken revision longest.
+2. Tag the rollback commit `v<X.Y.Z>-rollback-<timestamp>` (UTC,
+   `YYYYMMDDHHmm`) — never reuse or delete the broken tag; the rollback tag
+   documents the recovery, the broken tag stays as audit trail.
+3. Document the rollback in the incident artifact (deployment-check
+   `--evidence`): what broke, what was reverted, and the new tag.
+4. If the underlying cause is a broken/mismatched release tag rather than a
+   code regression, this is release-ceremony recovery, not an incident
+   rollback — hand off to `skills/workflow/release-recovery/` instead
+   (broken-tag fix-forward, never re-tag).
+5. Prod rollback still requires explicit user approval per rule 11 above —
+   mark `incident_blocked` and wait if you don't have it yet.
+
 ## Infrastructure scope
 
 Beyond pure release ceremony, you OWN:
