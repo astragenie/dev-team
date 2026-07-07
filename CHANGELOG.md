@@ -8,24 +8,36 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 Not yet released (no version bump). Landed on `main` via build → independent
 review → merge.
 
-- **FEAT-193 S3 report half + AC-10 blocker (build; awaiting review).** New
-  `scripts/lib/gepa/corpus-report.ts` + `crew gepa-corpus-report [<agent>]` CLI: the
-  analyze-before-adjust digest — clusters each agent's production-failure trials by
-  failure mode (case/whitespace-normalized rationale), ranks by frequency, enumerates
-  EVERY agent with ≥1 failure (completeness), and cites the agent's FEAT-188 astramem
-  lessons by id. Pure read+report — never invokes gepa-optimize or promotes (AC-9 human
-  gate). +4 AC tests. **AC-10 blocker fixed:** `validate-agents.ts` `parseFrontmatter`
-  now strips a leading `gepa:` block before field-read (reusing
-  `stripGepafrontmatter`), so a champion-provenance-written agent no longer fails on a
-  missing `name`/`description` — unblocks S3 optimize-wiring. +2 regression tests.
-- **FEAT-193 S2 — `gepa-corpus-sync` (build; awaiting review).** New
+- **FEAT-193 S3 — report + feed-to-optimize bridge + AC-10 blocker (approved).**
+  Closes FEAT-193. Three parts:
+  - **Report half** — `scripts/lib/gepa/corpus-report.ts` + `crew gepa-corpus-report
+    [<agent>]`: the analyze-before-adjust digest — clusters each agent's
+    production-failure trials by failure mode (case/whitespace-normalized rationale),
+    ranks by frequency, enumerates EVERY agent with ≥1 failure (completeness), and
+    cites the agent's FEAT-188 astramem lessons by id. Pure read+report — never invokes
+    gepa-optimize or promotes (AC-9 human gate). +4 AC tests.
+  - **Feed-to-optimize bridge** — `scripts/lib/gepa/corpus-optimize.ts` +
+    `crew gepa-corpus-optimize <agent> --budget <usd> [--k <int>]`: the human-typed
+    analyze→optimize hand-off. Renders the digest FIRST, then feeds the aggregated hub
+    corpus into ONE optimize cycle forced `--artifact-only` — a candidate is generated +
+    judge-scored but NEVER auto-promoted/PR'd (promotion stays a further explicit human
+    step). AC-9 preserved: report *generation* has no optimize import; only this
+    separate command reaches optimize. Delegates injectable for hermetic tests. +7 tests
+    pinning analyze-before-optimize ordering, the forced-artifact-only no-promote
+    guarantee, exit-code propagation, and never-throws. Reviewed `approved` (0 findings).
+  - **AC-10 blocker fixed** — `validate-agents.ts` `parseFrontmatter` now strips a
+    leading `gepa:` block before field-read (reusing `stripGepafrontmatter`), so a
+    champion-provenance-written agent no longer fails on a missing `name`/`description` —
+    the promote path can't break agent validation. +2 regression tests.
+- **FEAT-193 S2 — `gepa-corpus-sync` (approved).** New
   `scripts/lib/gepa/corpus-sync.ts` + `crew gepa-corpus-sync` CLI: scans sibling
   repos for production-failure GEPA trials and merges them into the dev-team hub
   corpus, deduping by `(agent, rationale-hash)`, idempotent. Marker discipline —
   only `input.capture_origin === "production_failure"` is eligible (never `source`).
   Read-only on siblings; writes only the hub via gepa-core `fileStore().put()`.
   Completeness: `added + deduped === eligible`, every contributing agent enumerated.
-  +5 AC tests. `autonomous_safe=false` → human review gate before close.
+  +7 tests (incl. schema-drift skip + CLI wiring). Reviewed `approved` after one
+  needs_fix round (CLI flags, schema-drift guard, NUL-byte dedup key, dedup namespace).
 - **FEAT-185 done + FEAT-182 done (backlog reconcile).** Stale-state sweep: FEAT-185
   S-B (azure→gepa-core) was already shipped (SLICE-109 in done/, gepa-core 0.7.0);
   FEAT-182 (incident-response) merged `2b53396f`. Both reconciled to done/. FEAT-188

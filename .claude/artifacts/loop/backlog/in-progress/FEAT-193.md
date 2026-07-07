@@ -8,8 +8,8 @@ created: 2026-07-06
 updated: 2026-07-07
 depends_on: [FEAT-188]
 slices: [S1, S2, S3, SLICE-109]
-shipped_slices: [S1]
-remaining_slices: [S2, S3]
+shipped_slices: [S1, S2, S3]
+remaining_slices: []
 derived_from: null
 pm_customer_impact: 0.4
 pm_effort_estimate: 0.55

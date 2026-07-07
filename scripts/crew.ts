@@ -383,6 +383,8 @@ function usage(target: string | null = null) {
       "  node scripts/crew.ts gepa-corpus-sync [--sibling <p1,p2,...>] [--json] [--repo <path>]",
     "gepa-corpus-report":
       "  node scripts/crew.ts gepa-corpus-report [<agent>] [--json] [--repo <path>]",
+    "gepa-corpus-optimize":
+      "  node scripts/crew.ts gepa-corpus-optimize <agent> --budget <usd> [--k <int>] [--repo <path>]",
     "gepa-eval":
       "  node scripts/crew.ts gepa-eval <agent> [--live] [--judge <name>] [--validate] [--split N/M] [--repo <path>]",
     "gepa-mine-reviewer":
@@ -1356,6 +1358,17 @@ const COMMANDS = {
     const rawArgs: string[] = [...positionals];
     if (flags.json === true) rawArgs.push("--json");
     const result = await runCorpusReportCmd(repoPath, rawArgs);
+    if (result.stderr) process.stderr.write(result.stderr);
+    if (result.exitCode !== 0) process.exit(result.exitCode);
+    return result.stdout.trimEnd();
+  },
+
+  "gepa-corpus-optimize": async ({ repoPath, flags, positionals }: CommandContext) => {
+    const { runCorpusOptimizeCmd } = await import("./lib/gepa/corpus-optimize.ts");
+    const rawArgs: string[] = [...positionals];
+    if (typeof flags.budget === "string" && flags.budget) rawArgs.push("--budget", flags.budget);
+    if (typeof flags.gepaK === "string" && flags.gepaK) rawArgs.push("--k", flags.gepaK);
+    const result = await runCorpusOptimizeCmd(repoPath, rawArgs);
     if (result.stderr) process.stderr.write(result.stderr);
     if (result.exitCode !== 0) process.exit(result.exitCode);
     return result.stdout.trimEnd();
