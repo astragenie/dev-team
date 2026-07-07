@@ -18,9 +18,39 @@ autonomous_safe: false
 tags: ["stack:typescript", "surface:plugin", "concern:memory", "concern:dispatch"]
 triage_notes: "Free-text intake 2026-07-04 (PM-scored at intake, FEAT-277 mode). Architecture review §15 found the capture/recall loop broken at every stage: learnings.jsonl stale since 2026-06-11 (zero capture through the entire GEPA cluster), 27% of 78 grade files are unfilled placeholders, 21% all-zero scores, and 2 of runner:lessons-recent's already-shipping top-5 digest entries are placeholder noise today. P1 reflects user-flagged importance plus quantified, already-materializing operational damage balanced against real multi-slice effort. autonomous_safe=false because S3 touches dispatch prompts across every builder/reviewer/verifier gate; S1/S2/S4/S5 could individually qualify as safe but the FEAT is gated as a whole."
 started_at: 2026-07-06
-updated: 2026-07-06
+updated: 2026-07-07
+slices_landed_dev_team: [S1a, S2, S3a, S4, S5, S6]
+slices_remaining: [S1b, S3b]
 revision: "2026-07-06 rev2 — reconciled against runner-plugin's existing memory-bridge + astramem plugin v0.6 (3-agent research fan-out + architect review). See docs/research/2026-07-06-memory-bridge-reconciliation.md."
 ---
+
+## Progress note (2026-07-07 — S5 landed)
+
+**dev-team side is now complete: S1a, S2, S3a, S4, S5, S6 are all merged to
+main.** S5 (eval interaction + memory hygiene) merged at `79bc2e44` (`Merge
+FEAT-188 S5 — eval interaction + memory hygiene`), closing the S4
+astramem<->JSONL drift/completeness gap (`scripts/lib/memory/drift-check.ts`),
+the S2 tail-read MEDIUM note (`file-provider.ts`, 64KB → 16MB/unbounded
+window), 45-day recall decay with critical-exempt (`ranking.ts`), and the
+with/without-memory GEPA judge-score-delta fixture (`evals/memory-delta.ts`,
+`--live` gated per the SLICE-107/FEAT-184 AC-3 pattern). Independent review:
+approved_with_notes
+(`.claude/artifacts/crew/reviews/20260707T075143Z-review-result-feat-188-s5-review.md`).
+Full suite green on merged main: 1715 pass / 0 fail / 117 skip; lint clean.
+Slice-close ceremony run retroactively — see
+`.claude/artifacts/loop/slices/completed/FEAT-188-S5_eval-interaction-memory-hygiene.md`,
+`.claude/artifacts/loop/grades/20260707T081133Z-feat188s5-grade.md`, and
+`.claude/artifacts/crew/runs/20260707T080727Z-final-synthesis-feat-188-s5-eval-interaction-memory-hygiene.md`.
+
+**Remaining before FEAT-188 can move to done:** S1b and S3b (both
+runner-plugin, cross-repo — must be built in a runner-plugin session/worktree
+per the FEAT body's dependency order). Status stays `in-progress` until those
+land.
+
+**Follow-up (deferred, non-blocking):** `evals/memory-delta.ts`'s live-judge
+AC needs an operator to run `bun evals/memory-delta.ts --live` with a judge
+credential (e.g. `GROQ_API_KEY`) to capture the actual measured delta —
+tracked the same way as the FEAT-184/SLICE-107 AC-3 deferral.
 # FEAT-188: MemoryProvider — capture/recall learning loop
 
 ## Revision note (2026-07-06 rev2 — READ FIRST)
