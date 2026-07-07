@@ -1,9 +1,17 @@
-// scripts/lib/memory/ranking.ts — FEAT-188 S2
+// scripts/lib/memory/ranking.ts — FEAT-188 S2 + S5 (decay hygiene)
 //
 // recall() ranking = recency x severity, with token-budget truncation and
 // supersede-chain resolution. Token cost is an approximation (chars / 4,
 // the common no-tokenizer heuristic) — no tokenizer dependency is justified
 // for a coarse recall-block budget.
+//
+// S5 decay hygiene (FEAT-188 S5 AC): an entry older than DECAY_DAYS and NOT
+// `critical` severity is excluded from recall() entirely (not just
+// down-ranked) — a stale `low`/`medium`/`high` lesson stops being injected
+// once it ages out. `critical` entries never decay by age (only supersede/
+// invalidate can retire them). Superseded/invalidated entries are excluded
+// regardless of age — that filter already existed pre-S5; decay is an
+// additional, independent exclusion, not a replacement for it.
 import type { MemoryEntry, MemorySeverity } from "./schema.ts";
 
 const SEVERITY_WEIGHT: Record<MemorySeverity, number> = {
@@ -14,6 +22,15 @@ const SEVERITY_WEIGHT: Record<MemorySeverity, number> = {
 };
 
 const CHARS_PER_TOKEN = 4;
+const DECAY_DAYS = 45;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** True when `entry` has aged past the decay window and is not `critical`. */
+function isDecayed(entry: MemoryEntry, now: number): boolean {
+  if (entry.severity === "critical") return false;
+  const ageMs = now - Date.parse(entry.ts);
+  return ageMs > DECAY_DAYS * MS_PER_DAY;
+}
 
 export function estimateTokens(text: string): number {
   return Math.max(1, Math.ceil(text.length / CHARS_PER_TOKEN));
@@ -66,7 +83,10 @@ export function rankAndTruncate(
 
   const eligible = entries.filter(
     (entry) =>
-      !supersededIds.has(entry.id) && !invalidatedIds.has(entry.id) && matchesScope(entry, opts)
+      !supersededIds.has(entry.id) &&
+      !invalidatedIds.has(entry.id) &&
+      !isDecayed(entry, now) &&
+      matchesScope(entry, opts)
   );
 
   const scored = eligible

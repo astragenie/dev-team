@@ -20,8 +20,21 @@ import type { MemoryProvider, RecallQuery } from "./types.ts";
 const DEFAULT_K = 5;
 const DEFAULT_MAX_TOKENS = 800;
 const MAX_SUMMARY_LENGTH = 280;
-/** Generous tail window — recall is recency-biased, so reading the tail is sufficient. */
-const TAIL_READ_COUNT = 500;
+/**
+ * S5 fix (S2 review MEDIUM note): tailReadJsonl's default byte window
+ * (64KB) could silently drop entries older than the window in a large
+ * store — a correctness bug once decay hygiene (ranking.ts) lets `critical`
+ * entries survive indefinitely: a buried critical entry beyond the old 64KB
+ * window would never reach rankAndTruncate at all, regardless of severity.
+ * FULL_STORE_MAX_BYTES raises the window generously (16MB — several orders
+ * of magnitude past any realistic learnings.jsonl size) so recall()
+ * effectively performs full-file ranking. FULL_STORE_RECORD_CAP similarly
+ * removes the record-count cap; `.slice(-count)` is safe even when `count`
+ * exceeds the array length, so this is not a behavior change for small
+ * stores, only a correctness fix for large ones.
+ */
+const FULL_STORE_MAX_BYTES = 16 * 1024 * 1024;
+const FULL_STORE_RECORD_CAP = Number.MAX_SAFE_INTEGER;
 
 const TOMBSTONE_MARKER = "__memory_invalidated__";
 
@@ -50,7 +63,7 @@ export function fileProvider(repoPath: string, options: FileProviderOptions = {}
 
   async function readAllRaw(): Promise<Record<string, unknown>[]> {
     const targetPath = path.join(repoPath, ...LEARNINGS_PATH);
-    return tailReadJsonl(targetPath, TAIL_READ_COUNT);
+    return tailReadJsonl(targetPath, FULL_STORE_RECORD_CAP, { maxBytes: FULL_STORE_MAX_BYTES });
   }
 
   return {

@@ -131,10 +131,29 @@ function toIngestPayload(entry: MemoryEntry): IngestPayload {
   };
 }
 
+/**
+ * S5 test-fidelity seam (FEAT-188 S4 review 🟡 fast-follow): probeLocal(),
+ * probeSaas(), and makeRemoteResolver() are exported (previously
+ * module-private) with an optional loader-override so tests can exercise
+ * the REAL success path — health()->{ok:true} resolving to a RemoteHandle —
+ * without a real in-process http.Server (the #170 flake source) and without
+ * bypassing straight to __resolveRemote (which paired tests already use and
+ * which never touches this code at all). Production callers (astramemProvider
+ * below, resolveAstramemRemote for the S5 drift-check) never pass overrides —
+ * the default loadLocalProvider/loadSaasProvider dynamic imports are used,
+ * identical to pre-S5 behavior.
+ */
+export interface RemoteLoaderOverrides {
+  loadLocal?: () => Promise<AstramemWireProvider>;
+  loadSaas?: () => Promise<AstramemWireProvider>;
+}
+
 /** Best-effort probe: is the local astramem daemon reachable? Never throws. */
-async function probeLocal(): Promise<RemoteHandle | null> {
+export async function probeLocal(
+  overrides: RemoteLoaderOverrides = {}
+): Promise<RemoteHandle | null> {
   try {
-    const provider = await loadLocalProvider();
+    const provider = await (overrides.loadLocal ?? loadLocalProvider)();
     const health = await provider.health();
     return health.ok ? { provider, name: "local" } : null;
   } catch {
@@ -143,10 +162,12 @@ async function probeLocal(): Promise<RemoteHandle | null> {
 }
 
 /** Best-effort probe: is SaaS configured AND reachable? Never throws. */
-async function probeSaas(): Promise<RemoteHandle | null> {
+export async function probeSaas(
+  overrides: RemoteLoaderOverrides = {}
+): Promise<RemoteHandle | null> {
   if (!process.env["MEMORY_API_URL_SAAS"] && !process.env["MEMORY_API_URL"]) return null;
   try {
-    const provider = await loadSaasProvider();
+    const provider = await (overrides.loadSaas ?? loadSaasProvider)();
     const health = await provider.health();
     return health.ok ? { provider, name: "saas" } : null;
   } catch {
@@ -162,17 +183,30 @@ async function probeSaas(): Promise<RemoteHandle | null> {
  * exports map (astramem-plugin#23). Caches the resolution briefly so a burst
  * of captures/recalls doesn't re-probe on every call.
  */
-function makeRemoteResolver(): () => Promise<RemoteHandle | null> {
+export function makeRemoteResolver(
+  overrides: RemoteLoaderOverrides = {}
+): () => Promise<RemoteHandle | null> {
   let cached: { handle: RemoteHandle | null; expiresAt: number } | null = null;
 
   return async function resolveRemote(): Promise<RemoteHandle | null> {
     const now = Date.now();
     if (cached && now < cached.expiresAt) return cached.handle;
 
-    const handle = (await probeLocal()) ?? (await probeSaas());
+    const handle = (await probeLocal(overrides)) ?? (await probeSaas(overrides));
     cached = { handle, expiresAt: now + HEALTH_CACHE_TTL_MS };
     return handle;
   };
+}
+
+/**
+ * Public one-shot resolver — a fresh (uncached) resolution of the paired
+ * astramem backend, if any. Used by the S5 drift-check (a one-shot CLI
+ * diagnostic, not a hot capture/recall path, so the makeRemoteResolver()
+ * cache would buy nothing) and available to any other one-shot caller that
+ * needs a RemoteHandle without standing up a full astramemProvider.
+ */
+export async function resolveAstramemRemote(): Promise<RemoteHandle | null> {
+  return makeRemoteResolver()();
 }
 
 /**

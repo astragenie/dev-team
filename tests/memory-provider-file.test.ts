@@ -212,6 +212,50 @@ test("fileProvider.recall resolves supersede chains — only the latest entry in
   }
 });
 
+test("fileProvider.recall reads entries buried beyond the legacy 64KB tail window in a large store (S5 fix)", async () => {
+  const repo = await makeTempRepo("memory-file-large-store-");
+  try {
+    const provider = fileProvider(repo);
+    // Pad the store well past the old tailReadJsonl default 64KB byte window
+    // (~500 bytes/entry * 400 entries ≈ 200KB) before writing the entry
+    // recall() must still surface.
+    const padding = "x".repeat(400);
+    for (let i = 0; i < 400; i += 1) {
+      await provider.capture({
+        id: `pad-${i}`,
+        kind: "lesson",
+        severity: "low",
+        summary: `padding ${i} ${padding}`,
+        source: "t"
+      });
+    }
+    await provider.capture({
+      id: "buried-critical",
+      kind: "decision",
+      severity: "critical",
+      summary: "buried early in a large store but must remain recallable",
+      source: "t"
+    });
+    for (let i = 0; i < 50; i += 1) {
+      await provider.capture({
+        id: `tail-${i}`,
+        kind: "lesson",
+        severity: "low",
+        summary: `tail padding ${i}`,
+        source: "t"
+      });
+    }
+
+    const results = await provider.recall({ k: 1000, maxTokens: 1_000_000 });
+    assert.ok(
+      results.some((r) => r.id === "buried-critical"),
+      "recall() must not silently drop an entry buried beyond the legacy 64KB tail window"
+    );
+  } finally {
+    await cleanup(repo);
+  }
+});
+
 test("fileProvider.invalidate excludes an entry from future recall() calls", async () => {
   const repo = await makeTempRepo("memory-file-invalidate-");
   try {
