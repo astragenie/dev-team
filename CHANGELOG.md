@@ -3,6 +3,37 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [Unreleased] — 2026-07-07 — memory-loop closeout + capture/hook fixes
+
+Not yet released (no version bump). Landed on `main` via build → independent
+review → merge; not pushed.
+
+- **FEAT-188 memory loop — dev-team side COMPLETE (S1a/S2/S3a/S4/S5/S6).** S5
+  (eval + hygiene) merged: astramem↔JSONL `drift-check` + backfill (closes the S4
+  source-of-truth completeness gap), `fileProvider.recall()` full-window scan (was
+  a 64KB tail-read), 45-day recall decay (critical-exempt) + supersede/invalidate
+  exclusion, and a with/without-memory GEPA judge-score-delta fixture
+  (`evals/memory-delta.ts`, `--live` gated). Only cross-repo S1b/S3b (runner-plugin
+  capture + recall-injection) remain — see the MemoryProvider-unification work-order.
+- **Capture-guard wall-time bound (fixes runner-plugin#360).** New shared
+  `scripts/lib/gepa/guarded-fire.ts` — `fireGuarded(fn, ms)` with an `.unref()`'d
+  race timer — guards `fireCaptureTeeSilent`; `writeArtifact` now **detaches** both
+  fire-and-forget captures (`trackDetached` + terminal `.catch`) instead of
+  inline-awaiting. Removes the cold `@astragenie/gepa-core` `.ts`-parse tax from
+  every artifact write (ceremonies + gate writes were paying it ~10×/close).
+  Fire-and-forget contract preserved; production byte-identical when test seams unset.
+- **Model-routing enforce hook fix (#176).** `hooks/lib/model-routing-enforce.ts`
+  now emits the required `hookEventName: "PreToolUse"` in `hookSpecificOutput` — the
+  harness had been rejecting the payload, silently disabling FEAT-194 S2b routing
+  (builder dispatch fell back to Opus). +regression assertion.
+- **FEAT-182 COMPLETE — incident + release-recovery.** SLICE-B lands
+  `skills/workflow/incident-response/SKILL.md` (triage table, Azure MCP log/metric
+  tools, rollback decision tree, post-mortem template), a scoped rollback procedure
+  in `agents/release-engineer.md`, the `incident_blocked` badge (workflow-state +
+  crew.ts + badge-catalog), and incident-dispatcher smokes. SLICE-A (`/crew:incident`
+  dispatcher + release-recovery skill + incident_resolved/rollback_executed badges)
+  had already landed.
+
 ## [0.53.0] — 2026-07-06 — FEAT-188 S4 + S6: astramem memory provider + deliberate-remember enforcement
 
 Minor: lands the astramem source-of-truth writer and the discipline that makes

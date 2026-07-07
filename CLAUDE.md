@@ -122,6 +122,19 @@ To pick up a `loop` release: bump version in the loop repo's
 `package.json` AND its `marketplace.json`, tag, push, then refresh the
 local plugin install.
 
+### Shared code (`astragenie/plugins-common`)
+
+Code reused across ≥2 astra plugins (crew/dev-team, runner-plugin,
+memory-plugin) lives in the **`astragenie/plugins-common`** Bun-workspaces
+monorepo — NOT duplicated per plugin. Today: `packages/gepa-core/`,
+`packages/plugin-kernel/`. Publish = push a per-package tag (`gepa-core-v*`)
+→ `.github/workflows/release.yml` → `npm publish --provenance` (needs an
+`@astragenie` Automation NPM_TOKEN + a `repository` field per package). Edit
+it from **that repo's own session/worktree**, never cross-session from here
+(see the astra-marketplace HARD RULE + `cross-repo-edits-require-worktree`
+memory). MemoryProvider (`scripts/lib/memory/`) is a flagged extraction
+candidate so dev-team + runner-plugin share ONE provider (FEAT-188 S1b/S3b).
+
 ### Hard rules
 
 - Never force-push `main`. Never delete tags. Never skip hooks (`--no-verify`).

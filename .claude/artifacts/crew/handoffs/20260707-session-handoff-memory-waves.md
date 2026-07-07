@@ -17,12 +17,15 @@ Close FEAT-188 memory loop (dev-team side), triage FEAT-193, then run selected b
 - `9fa4b3ca` — **#176 hook fix** (Wave 1.6): added `hookEventName:"PreToolUse"` to `hooks/lib/model-routing-enforce.ts` `buildHookOutput`. Restores FEAT-194 S2b model-routing enforcement (was silently no-op → builds fell back to Opus). Reviewed approved.
 - `694828d8` — chore(state): S5 ceremony/grade/review artifacts + FEAT-188 progress note + FEAT-193 triage frontmatter.
 
-## IN FLIGHT (act on this first)
-- **FEAT-182 SLICE-B** built + committed `26d98e18` on branch `wave2-feat182-incident` (worktree `.claude/worktrees/wave2-feat182-incident`). Full `crew:reviewer` was dispatched (agentId a2eb627b5af5f7e93) — **check its verdict**:
-  - PASS/approve(_with_notes) → merge `wave2-feat182-incident` → main (no-ff). Closes FEAT-182 (SLICE-A already on main since `e371622d`).
-  - needs_fix → pivot to `crew:fix`.
-  - Contents: `skills/workflow/incident-response/SKILL.md` (105L), `agents/release-engineer.md` rollback section (318/350), `incident_blocked` badge (workflow-state.ts + crew.ts + badge-catalog.md), 14 new smokes in `tests/incident-dispatcher.test.ts` (31 pass).
-  - autonomous_safe=false → human-in-loop on review intended; operator delegated ("continue without me").
+## DONE since first handoff
+- **FEAT-182 COMPLETE** — SLICE-B merged `2b53396f` (approved_with_notes; crew:reviewer + plugin-dev:skill-reviewer). Verified #176 survived the three-way merge + `incident_blocked` landed. Non-blocking polish left: SKILL.md trigger phrases `"OOM"`/`"traffic spike"` may false-positive; no fallback hint for consumer repos lacking Azure MCP tools.
+- **Docs/KB updated**: CHANGELOG `[Unreleased]` (FEAT-188 complete + #360 + #176 + FEAT-182), CLAUDE.md new "Shared code (plugins-common)" section, memory `plugins-common-monorepo-publish` broadened to shared-code-hub + MemoryProvider extraction candidate.
+
+## NEXT — runner-plugin MemoryProvider unification (operator-requested 2026-07-07)
+Local checkout: `C:/work/mega/runner-plugin/` (also worktree dirs `runner-plugin-worktrees/`, `runner-plugin-p1/`). **Edit via a worktree of that repo / its own session — NOT dev-team.**
+Goal: unify runner-plugin's memory access onto the ONE MemoryProvider (capture + recall) instead of its stale bridge (`memory-bridge.mts`/`memory-recall.mts`/`resolveCli`, runner#324). This IS FEAT-188 S1b (capture: `runner:close` lessons, `runner:pr-fix` breaker, retrospective decisions) + S3b (recall: wave runner + retire the bridge's own `runRecallHook` to kill double-injection).
+Preferred approach (per operator + plugins-common): **extract MemoryProvider (`dev-team/scripts/lib/memory/`) into `astragenie/plugins-common/packages/` as a shared package**, then BOTH dev-team and runner-plugin import it — true single source, no duplication. Sequence: (1) extract to plugins-common package + publish; (2) dev-team swaps its local `scripts/lib/memory/` to import the package (additive, contract-parity test); (3) runner-plugin adopts the same package + retires the bridge. Recall-injection contract is frozen at `docs/contracts/recall-injection-v1.md` (commit 4bcf33d8) — reuse, don't fork.
+Blocked-until: needs a plugins-common session (publish) + runner-plugin session (adopt). Not startable cleanly from dev-team alone.
 
 ## BLOCKED — need other repos' own sessions (do NOT force from dev-team)
 - **FEAT-190** (Bun single runtime): CI lives in `astragenie/common` reusable workflow; SLICE-A deletes `package-lock.json` → reds main CI until cross-repo SLICE-C. Open an `astragenie/common` session first.
