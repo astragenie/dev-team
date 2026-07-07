@@ -29,13 +29,14 @@
 // @astragenie/gepa-core should publish/resolve to its compiled dist/*.js as
 // main/exports, not raw src/*.ts — that removes the cold-parse cost for
 // every consumer, not just this guard.
+//
+// Wave 1.5 (runner-plugin issue #360) fix-forward: the race + ceiling logic
+// now lives in the shared guarded-fire.ts helper (reused by write.ts's
+// capture-tee path too) — see that module's header for why the race timer
+// must be `.unref()`'d. This module keeps its own name/signature for
+// backward compatibility; only the internals changed.
 import type { FailureTrialInput } from "./capture-failure-trial.ts";
-
-const DEFAULT_TIMEOUT_MS = 1500;
-
-function timeoutAfter(ms: number): Promise<"timeout"> {
-  return new Promise((resolve) => setTimeout(() => resolve("timeout"), ms));
-}
+import { DEFAULT_GUARD_TIMEOUT_MS, fireGuarded } from "./guarded-fire.ts";
 
 /**
  * Best-effort, timeout-guarded sibling of captureFailureTrial. Never throws,
@@ -46,17 +47,10 @@ function timeoutAfter(ms: number): Promise<"timeout"> {
 export async function captureFailureTrialGuarded(
   repoPath: string,
   entry: FailureTrialInput,
-  timeoutMs: number = DEFAULT_TIMEOUT_MS
+  timeoutMs: number = DEFAULT_GUARD_TIMEOUT_MS
 ): Promise<void> {
-  try {
-    await Promise.race([
-      (async () => {
-        const { captureFailureTrial } = await import("./capture-failure-trial.ts");
-        await captureFailureTrial(repoPath, entry);
-      })(),
-      timeoutAfter(timeoutMs)
-    ]);
-  } catch {
-    // Fire-and-forget: never propagate.
-  }
+  await fireGuarded(async () => {
+    const { captureFailureTrial } = await import("./capture-failure-trial.ts");
+    await captureFailureTrial(repoPath, entry);
+  }, timeoutMs);
 }

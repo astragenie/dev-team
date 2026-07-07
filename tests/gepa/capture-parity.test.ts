@@ -6,7 +6,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { writeArtifact } from "../../scripts/lib/artifacts/write.ts";
+import { __drainPendingCaptures, writeArtifact } from "../../scripts/lib/artifacts/write.ts";
 import type { ArtifactFields } from "../../scripts/lib/artifacts/types.ts";
 
 function normalizeVolatile(content: string): string {
@@ -55,6 +55,11 @@ describe("capture parity", () => {
       };
       await writeArtifact(on, "handoff", fields);
       await writeArtifact(off, "handoff", fields);
+      // Wave 1.5 (issue #360): writeArtifact's capture-tee call is now
+      // detached (fire-and-forget), so its filesystem side effects are not
+      // guaranteed to have landed the instant writeArtifact returns. Drain
+      // before asserting on the trial file / artifact tree.
+      await __drainPendingCaptures();
 
       const filter = (rel: string) =>
         rel.includes(".claude/artifacts/crew/") && !rel.includes("/gepa/");
