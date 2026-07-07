@@ -6,7 +6,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { writeArtifact } from "../../scripts/lib/artifacts/write.ts";
+import { __drainPendingCaptures, writeArtifact } from "../../scripts/lib/artifacts/write.ts";
 import type { ArtifactFields } from "../../scripts/lib/artifacts/types.ts";
 
 function listAllFiles(root: string): string[] {
@@ -62,6 +62,9 @@ describe("capture-absent parity", () => {
     try {
       await writeArtifact(a, "handoff", fullstackFields());
       await writeArtifact(b, "handoff", fullstackFields());
+      // Wave 1.5 (issue #360): capture-tee is detached — drain before
+      // snapshotting the tree.
+      await __drainPendingCaptures();
       expect(filterNonGepa(copyTreeContent(a))).toEqual(filterNonGepa(copyTreeContent(b)));
     } finally {
       rmSync(a, { recursive: true, force: true });
@@ -77,6 +80,7 @@ describe("capture-absent parity", () => {
         JSON.stringify({ capture: { enabled: false } })
       );
       await writeArtifact(root, "handoff", fullstackFields());
+      await __drainPendingCaptures();
       const all = listAllFiles(root);
       expect(all.some((p) => p.includes(".claude/artifacts/crew/gepa/"))).toBe(false);
     } finally {

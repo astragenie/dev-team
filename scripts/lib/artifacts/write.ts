@@ -10,6 +10,8 @@ import { ok, err } from "../result.ts";
 import type { Result } from "../result.ts";
 import type { ArtifactFields, CostBreakdown, CostOutcome, DispatchBreakdown } from "./types.ts";
 import { renderDispatchBreakdownSection } from "../dispatch-timing-reader.ts";
+import { fireGuarded } from "../gepa/guarded-fire.ts";
+import type { captureTee as CaptureTeeFn } from "../gepa/capture-tee.ts";
 
 export type { ArtifactFields, CostBreakdown, CostOutcome } from "./types.ts";
 
@@ -748,18 +750,61 @@ function renderArtifactBody(
   return config.render(fields);
 }
 
-// Fire-and-forget GEPA capture tee. Never propagates errors.
+// Test-only overrides for writeArtifact (Wave 1.5 / runner-plugin issue
+// #360). Mirrors the `__resolveRemote` seam in astramem-provider.ts:
+// underscore-prefixed, optional, never set by production callers. When
+// omitted (every production call site), the default dynamic-import loader
+// runs — byte-identical to pre-seam behavior.
+export interface WriteArtifactTestOverrides {
+  /** Overrides the dynamic-import loader fireCaptureTeeSilent uses to reach
+   * captureTee — lets tests inject a slow/fake module instead of racing a
+   * real (possibly cold) @astragenie/gepa-core parse. */
+  __captureTeeLoader?: () => Promise<{ captureTee: typeof CaptureTeeFn }>;
+  /** Shrinks the fireGuarded race ceiling below the production default so
+   * tests don't have to wait out the real timeout to observe it winning. */
+  __guardTimeoutMs?: number;
+}
+
+const defaultCaptureTeeLoader = () => import("../gepa/capture-tee.ts");
+
+// Fire-and-forget GEPA capture tee. Guarded (Wave 1.5 / issue #360): races
+// the dynamic import + write against a bounded ceiling so a cold
+// @astragenie/gepa-core parse can never hang this call open indefinitely.
+// Never propagates errors.
 async function fireCaptureTeeSilent(
   repoPath: string,
   artifact: ArtifactRecord,
-  fields: ArtifactFields
+  fields: ArtifactFields,
+  overrides: WriteArtifactTestOverrides = {}
 ): Promise<void> {
-  try {
-    const { captureTee } = await import("../gepa/capture-tee.ts");
+  await fireGuarded(async () => {
+    const loader = overrides.__captureTeeLoader ?? defaultCaptureTeeLoader;
+    const { captureTee } = await loader();
     await captureTee(repoPath, artifact, fields);
-  } catch {
-    // never propagate
-  }
+  }, overrides.__guardTimeoutMs);
+}
+
+// Test-only bookkeeping (Wave 1.5 / issue #360): production code never
+// awaits writeArtifact's fire-and-forget captures (see writeArtifact below)
+// — they are detached so a slow/cold capture never delays the artifact
+// write's return, and a process that exits before a detached capture
+// settles simply drops it (accepted trade, documented on
+// capture-failure-trial-guard.ts / guarded-fire.ts). Tests, however, need a
+// deterministic way to know the background work has settled before
+// asserting on its side effects, without sleeping. This tracker is
+// additive and inert in production: nothing outside tests calls
+// __drainPendingCaptures.
+const pendingCaptures = new Set<Promise<void>>();
+
+function trackDetached(capture: Promise<void>): void {
+  pendingCaptures.add(capture);
+  void capture.finally(() => pendingCaptures.delete(capture));
+}
+
+/** Test seam: await every fire-and-forget capture triggered by writeArtifact
+ * so far. Never called by production code. */
+export async function __drainPendingCaptures(): Promise<void> {
+  await Promise.allSettled([...pendingCaptures]);
 }
 
 // FEAT-188 S1a AC-2: auto-capture a `failure`-kind learnings entry whenever
@@ -821,7 +866,8 @@ async function fireFailureCaptureSilent(
 export async function writeArtifact(
   repoPath: string,
   kind: string,
-  fields: ArtifactFields = {}
+  fields: ArtifactFields = {},
+  overrides: WriteArtifactTestOverrides = {}
 ): Promise<Result<ArtifactRecord, Error>> {
   try {
     const config = resolveArtifactConfig(kind);
@@ -846,8 +892,12 @@ export async function writeArtifact(
     if (!isCostReportKind(kind)) {
       await registerWorkflowArtifact(repoPath, artifact, fields);
     }
-    await fireCaptureTeeSilent(repoPath, artifact, fields);
-    await fireFailureCaptureSilent(repoPath, kind, fields);
+    // Wave 1.5 (issue #360): detached, not inline-awaited. Both captures are
+    // best-effort derived duplicates (astramem / the GEPA trial corpus
+    // remain source of truth) — a slow/cold capture must never delay this
+    // write's return. See fireCaptureTeeSilent + guarded-fire.ts headers.
+    trackDetached(fireCaptureTeeSilent(repoPath, artifact, fields, overrides));
+    trackDetached(fireFailureCaptureSilent(repoPath, kind, fields));
 
     return ok(artifact);
   } catch (e) {
