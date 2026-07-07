@@ -8,6 +8,19 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 Not yet released (no version bump). Landed on `main` via build → independent
 review → merge.
 
+- **FEAT-193 S2 — `gepa-corpus-sync` (build; awaiting review).** New
+  `scripts/lib/gepa/corpus-sync.ts` + `crew gepa-corpus-sync` CLI: scans sibling
+  repos for production-failure GEPA trials and merges them into the dev-team hub
+  corpus, deduping by `(agent, rationale-hash)`, idempotent. Marker discipline —
+  only `input.capture_origin === "production_failure"` is eligible (never `source`).
+  Read-only on siblings; writes only the hub via gepa-core `fileStore().put()`.
+  Completeness: `added + deduped === eligible`, every contributing agent enumerated.
+  +5 AC tests. `autonomous_safe=false` → human review gate before close.
+- **FEAT-185 done + FEAT-182 done (backlog reconcile).** Stale-state sweep: FEAT-185
+  S-B (azure→gepa-core) was already shipped (SLICE-109 in done/, gepa-core 0.7.0);
+  FEAT-182 (incident-response) merged `2b53396f`. Both reconciled to done/. FEAT-188
+  `slices_remaining` narrowed to `[S3b]` (S1b shipped in runner-plugin; S3b tracked
+  by runner-plugin#363).
 - **Builder pre-death checkpoint (dev-team#174).** New PostToolUse child-side
   `hooks/checkpoint-cadence.ts` + `hooks/lib/checkpoint-cadence.ts`: after the first
   Edit/Write in a builder session, every N post-edit tool calls (default 20, knob

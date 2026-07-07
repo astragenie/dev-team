@@ -375,6 +375,8 @@ function usage(target: string | null = null) {
       "  node scripts/crew.ts agent-route [--role <r>] [--surface <s>] [--stack <s>] [--concern <c>] [--lens <l>] [--scope <s>] [--repo <path>]",
     "gepa-history":
       "  node scripts/crew.ts gepa-history <agent> [--source eval|captured|soak] [--limit N] [--repo <path>]",
+    "gepa-corpus-sync":
+      "  node scripts/crew.ts gepa-corpus-sync [--sibling <path>]... [--json] [--repo <path>]",
     "gepa-eval":
       "  node scripts/crew.ts gepa-eval <agent> [--live] [--judge <name>] [--validate] [--split N/M] [--repo <path>]",
     "gepa-mine-reviewer":
@@ -1315,6 +1317,16 @@ const COMMANDS = {
     if (flags.gepaSource) rawArgs.push("--source", flags.gepaSource);
     if (flags.limit) rawArgs.push("--limit", flags.limit);
     const result = await runGepaHistoryCmd(repoPath, rawArgs);
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+    if (result.exitCode !== 0) process.exit(result.exitCode);
+    return result.stdout.trim();
+  },
+
+  "gepa-corpus-sync": async ({ repoPath, positionals }: CommandContext) => {
+    const { runCorpusSyncCmd } = await import("./lib/gepa/corpus-sync.ts");
+    // positionals carry any --sibling/--json passthrough already split by the arg parser.
+    const result = await runCorpusSyncCmd(repoPath, positionals);
     if (result.stdout) process.stdout.write(result.stdout);
     if (result.stderr) process.stderr.write(result.stderr);
     if (result.exitCode !== 0) process.exit(result.exitCode);
