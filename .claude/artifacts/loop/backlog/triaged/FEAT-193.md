@@ -1,6 +1,6 @@
 ---
 id: FEAT-193
-status: pending
+status: triaged
 priority: P2
 category: feature
 target_release: null
