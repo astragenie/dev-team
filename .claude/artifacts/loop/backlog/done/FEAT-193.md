@@ -1,6 +1,6 @@
 ---
 id: FEAT-193
-status: in-progress
+status: done
 priority: P2
 category: feature
 target_release: null
@@ -22,6 +22,10 @@ tags: ["stack:typescript", "surface:plugin", "concern:gepa", "concern:memory"]
 triage_notes: "\"PM triage 2026-07-07. STATUS CORRECTION: this file's frontmatter was stale — S1 (failure→GEPA trial-store bridge) is ALREADY MERGED to main, not just 'wired'. git log shows the full S1 arc: 06085f54/f5c6ebef (build), cc0dea9a (merge, approved_with_notes), 58bc10ba (revert — CI regression, tests/crew-write-review-result.test.ts timed out cold), a15ee94c (fix-forward: timeout-guarded capture-failure-trial-guard.ts), 39543edf/608cb4d6 (re-merge), d9bb7465 (re-review, approved_with_notes). Handoff: .claude/artifacts/crew/handoffs/20260706T143308Z-handoff-feat-193-s1-failure-gepa-trial-bridge.md. Re-review: .claude/artifacts/crew/reviews/20260706T165736Z-review-result-feat-193-slice-a-re-review-cli-hang-fix.md. Hard dependency (FEAT-188 S1a specifically, not the whole FEAT-188) was satisfied before S1 even started (S1a's 4 capture points are the ones S1 wires into) — dependency_depth scored near-zero on that basis. Recommend backlog-promote this FEAT out of pending/ to reflect the true partial-shipped state (out of PM's write scope — use /runner:backlog-* per repo convention) and correct 'status' + 'slices' once that command runs."
 DECISION: "autonomous_safe=false at the FEAT level, following the FEAT-188 precedent of gating the whole FEAT when any remaining slice touches the prompt-optimization pipeline even if other slices could individually qualify as safe. S2 (pure cross-repo aggregation/dedup, non-prompt-affecting) could plausibly be autonomous_safe on its own merits, but S3 (gepa-corpus-report) is explicitly the analyze-before-adjust human gate whose output directly informs a human's decision to run gepa-optimize + promote a candidate — per the FEAT's own text, 'Analyze-before-adjust is a required human gate — never blind auto-promote,' so the reporting tool that feeds that decision warrants human review before it's trusted, consistent with how S1's own dispatch was marked 'autonomous_safe=false... human/reviewer gate required, do not self-approve' in its handoff. Pre-mortem (Framework 3) not triggered — technical_risk 0.45 < 0.6 and priority is P2, not P0/P1.\""
 started_at: 2026-07-07
+slices_complete: [SLICE-109]
+force_closed: true
+slices_remaining_at_close: [S1, S2, S3]
+completed_at: 2026-07-07
 ---
 ## Description
 
