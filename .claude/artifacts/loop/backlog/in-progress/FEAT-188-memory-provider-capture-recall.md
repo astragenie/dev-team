@@ -20,7 +20,7 @@ triage_notes: "Free-text intake 2026-07-04 (PM-scored at intake, FEAT-277 mode).
 started_at: 2026-07-06
 updated: 2026-07-07
 slices_landed_dev_team: [S1a, S2, S3a, S4, S5, S6]
-slices_remaining: [S1b, S3b]
+slices_remaining: [S3b]  # S1b shipped runner-plugin f2803af9 (#361); S3b tracked by runner-plugin#363
 revision: "2026-07-06 rev2 — reconciled against runner-plugin's existing memory-bridge + astramem plugin v0.6 (3-agent research fan-out + architect review). See docs/research/2026-07-06-memory-bridge-reconciliation.md."
 ---
 

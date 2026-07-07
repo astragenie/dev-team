@@ -1,11 +1,12 @@
 ---
 id: FEAT-182
-status: triaged
+status: done
 priority: P2
 category: capability
 target_release: null
 created: 2026-06-22
 triaged: 2026-06-29
+completed: 2026-07-07
 depends_on: []
 slices: []
 derived_from: null
