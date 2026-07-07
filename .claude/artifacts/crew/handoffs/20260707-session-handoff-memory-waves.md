@@ -40,6 +40,12 @@ Blocked-until: needs a plugins-common session (publish) + runner-plugin session 
 - `astragenie/dev-team#175` — add affected-test resolver (changed-files→test-file) for build-phase self-verify.
 - `astragenie/dev-team#176` — model-routing hook missing hookEventName (FIXED on main).
 - `astragenie/dev-team#178` — slice-close cost-report emitter rewrites historical reports lossy when currentRun stale. Damage reverted; fix = scope dedup to current run only.
+- `astragenie/dev-team#179` — orphaned hung `bun test` outlives resumed agent ~69min + fires stale notification; MCP servers not reaped on session close. Split ownership: fix #2 (hard `bun test` timeout) = dev-team plugin; fix #1 (reap children) + #3 (generation-tag notifications) = **Claude Code CLI/harness (upstream, not plugin-fixable)**.
+
+## Session close (2026-07-07)
+- **Process cleanup done**: killed 1 hung `bun test` zombie (PID 33444, guarded-fire, 61min) + 52 orphaned MCP procs (>60min, ~5 stale context7/playwright/azure/upstash generations). Spared: astramem daemon (:7777, back up), dev servers (:5173/:5176), tsserver/LSP, codex, current MCP set. 13 fresh MCP procs left live.
+- Post-close MCP sweep (run after quitting Claude Code): `Get-CimInstance Win32_Process | ? { $_.CommandLine -match '_npx.*(mcp|context7|@upstash|@playwright|@azure)' } | % { Stop-Process -Id $_.ProcessId -Force }`
+- **Final main commits (local, UNPUSHED)**: `bb149ecc` handoff → `2b53396f` FEAT-182 SLICE-B → `694828d8` state → `25bd4494` docs → (this handoff update). No push, no tags, no release this session.
 
 ## Deferred / degraded
 - **astramem `remember` deferred**: local daemon down (`127.0.0.1:7777`, SaaS unconfigured) all session. S5 drift-check lesson bridged to harness memory (`dualwrite-drift-reconcile-pattern`). Re-run `astramem remember` when daemon up. The S5 grade file also holds the durable lesson.
