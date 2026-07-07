@@ -803,7 +803,11 @@ function trackDetached(capture: Promise<void>): void {
   // but a terminal .catch keeps trackDetached robust to a future capture path
   // that could reject — a detached rejection would otherwise surface as a
   // process-level unhandledRejection. Non-blocking hardening (review #360).
-  void capture.finally(() => pendingCaptures.delete(capture)).catch(() => {});
+  void capture
+    .finally(() => pendingCaptures.delete(capture))
+    .catch(() => {
+      /* swallow: detached captures already handle their own errors (see above) */
+    });
 }
 
 /** Test seam: await every fire-and-forget capture triggered by writeArtifact
