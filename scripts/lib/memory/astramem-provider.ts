@@ -1,40 +1,19 @@
 // scripts/lib/memory/astramem-provider.ts — FEAT-188 S4
 //
-// The source-of-truth writer. Delegates to the astramem-plugin's exported
-// provider layer (`@astragenie/astramem-plugin/providers/local` +
-// `/providers/saas`, astramem-plugin#23/#25) — never shells the CLI
-// (resolveCli(), stale per runner-plugin#324) and never hand-rolls an MCP
-// client.
+// The source-of-truth writer. Provider resolution is delegated to the
+// shared `@astragenie/astramem-client` package's `resolveWireProvider()`
+// (FEAT-188 unification, dev-team#172) — this module no longer hand-rolls
+// dynamic imports of astramem-plugin's provider factories or its own
+// local-then-saas health-probe/cache; that logic now lives once in
+// astramem-client's src/resolve.ts and is shared verbatim with
+// runner-plugin's memory-transport. Never shells the CLI (resolveCli(),
+// stale per runner-plugin#324) and never hand-rolls an MCP client.
 //
-// The plugin's own precedence selector (src/lib/selector.ts) is NOT part of
-// the package's public exports map — astramem-plugin's package.json only
-// exports ".", "./providers/local", "./providers/saas", "./contracts". So
-// this module implements a small selection wrapper that mirrors the
-// selector's local-then-saas precedence using the exported provider
-// factories' own health() probes, cached briefly to avoid re-probing on
-// every capture/recall.
-//
-// Unpaired (local unreachable + saas unconfigured/unreachable) always falls
-// back to fileProvider — best-effort, never throws (S4 AC-2).
-//
-// Note on the two dynamic imports below: providers/local.ts and
-// providers/saas.ts transitively import errors.ts/secrets.ts, which fail
-// `tsc --noEmit` under THIS repo's stricter compiler options
-// (noUncheckedIndexedAccess, noImplicitOverride) — an upstream-only
-// strictness gap; astramem-plugin doesn't enable those flags itself, and
-// forking/patching the sibling repo is out of S4 scope. Building the
-// specifier from a non-literal expression (Array.join, not a string
-// literal) makes TypeScript's `import()` resolve to `Promise<any>` instead
-// of statically descending into that module's internals, so the value
-// import stays type-check-clean while the concrete shape is still enforced
-// via the `AstramemWireProvider` cast (typed cleanly off "./contracts",
-// which has no such issue).
+// Unpaired (resolveWireProvider() resolves null) always falls back to
+// fileProvider — best-effort, never throws (S4 AC-2).
 import crypto from "node:crypto";
-import type {
-  IngestPayload,
-  MemoryProvider as AstramemWireProvider,
-  RecallHit
-} from "@astragenie/astramem-plugin/contracts";
+import { resolveWireProvider, type WireProvider } from "@astragenie/astramem-client";
+import type { IngestPayload, RecallHit } from "@astragenie/astramem-plugin/contracts";
 import { fileProvider, type FileProviderOptions } from "./file-provider.ts";
 import {
   MemoryEntrySchema,
@@ -45,27 +24,6 @@ import {
 } from "./schema.ts";
 import type { MemoryProvider, RecallQuery } from "./types.ts";
 
-const PROVIDERS_LOCAL_SPECIFIER = ["@astragenie/astramem-plugin", "providers/local"].join("/");
-const PROVIDERS_SAAS_SPECIFIER = ["@astragenie/astramem-plugin", "providers/saas"].join("/");
-
-interface LocalProviderModule {
-  createLocalProvider(opts?: { url?: string }): AstramemWireProvider;
-}
-interface SaasProviderModule {
-  createSaasProvider(opts?: { url?: string }): AstramemWireProvider;
-}
-
-async function loadLocalProvider(): Promise<AstramemWireProvider> {
-  const mod = (await import(PROVIDERS_LOCAL_SPECIFIER)) as LocalProviderModule;
-  return mod.createLocalProvider();
-}
-
-async function loadSaasProvider(): Promise<AstramemWireProvider> {
-  const mod = (await import(PROVIDERS_SAAS_SPECIFIER)) as SaasProviderModule;
-  return mod.createSaasProvider();
-}
-
-const HEALTH_CACHE_TTL_MS = 5000;
 const MAX_SUMMARY_LENGTH = 280;
 const DEFAULT_K = 5;
 const DEFAULT_MAX_TOKENS = 800;
@@ -79,7 +37,7 @@ const SEVERITY_TO_IMPORTANCE: Record<MemorySeverity, number> = {
 };
 
 export interface RemoteHandle {
-  provider: AstramemWireProvider;
+  provider: WireProvider;
   name: "local" | "saas";
 }
 
@@ -89,13 +47,13 @@ export interface AstramemProviderOptions extends FileProviderOptions {
    * truth, the JSONL is the derived duplicate). */
   dualWrite?: boolean;
   /**
-   * Internal test seam (FEAT-188 S4 issue #170). Overrides the
-   * local-then-saas health-probe resolver (`makeRemoteResolver()`) so
-   * tests can inject a pure in-memory fake `RemoteHandle` instead of
-   * standing up a real `http.Server` daemon. Never set by production
-   * callers — `resolveProvider()`/`astramemProvider()` production paths
-   * never pass this. Underscore-prefixed to signal "not part of the
-   * public contract."
+   * Internal test seam (FEAT-188 S4 issue #170). Overrides the default
+   * resolver (`defaultResolveRemote()`, wrapping astramem-client's
+   * `resolveWireProvider()`) so tests can inject a pure in-memory fake
+   * `RemoteHandle` instead of standing up a real `http.Server` daemon.
+   * Never set by production callers — `resolveProvider()`/
+   * `astramemProvider()` production paths never pass this.
+   * Underscore-prefixed to signal "not part of the public contract."
    */
   __resolveRemote?: () => Promise<RemoteHandle | null>;
 }
@@ -132,81 +90,34 @@ function toIngestPayload(entry: MemoryEntry): IngestPayload {
 }
 
 /**
- * S5 test-fidelity seam (FEAT-188 S4 review 🟡 fast-follow): probeLocal(),
- * probeSaas(), and makeRemoteResolver() are exported (previously
- * module-private) with an optional loader-override so tests can exercise
- * the REAL success path — health()->{ok:true} resolving to a RemoteHandle —
- * without a real in-process http.Server (the #170 flake source) and without
- * bypassing straight to __resolveRemote (which paired tests already use and
- * which never touches this code at all). Production callers (astramemProvider
- * below, resolveAstramemRemote for the S5 drift-check) never pass overrides —
- * the default loadLocalProvider/loadSaasProvider dynamic imports are used,
- * identical to pre-S5 behavior.
+ * Default remote resolver — wraps the shared astramem-client's
+ * `resolveWireProvider()` (dep-mode selector → dep-mode local/saas probe →
+ * runtime plugin-root discovery, cached for the process lifetime; see
+ * astramem-client/src/resolve.ts) into this module's `RemoteHandle` shape.
+ *
+ * Compromise: the shared resolver deliberately does not report which
+ * backend (local vs saas) it paired with — that distinction lived only in
+ * this module's now-deleted local-then-saas probe, and folding it back in
+ * would mean re-implementing the health probe this module just deleted.
+ * `name` is therefore a best-effort "local" default; it is surfaced to
+ * callers (e.g. the memory-drift-check CLI's `provider` field, S5) for
+ * display purposes only — no code in this module or its callers branches
+ * on it. Follow-up: ask astramem-client to expose the resolved backend
+ * name if that distinction becomes load-bearing (see commit body).
  */
-export interface RemoteLoaderOverrides {
-  loadLocal?: () => Promise<AstramemWireProvider>;
-  loadSaas?: () => Promise<AstramemWireProvider>;
-}
-
-/** Best-effort probe: is the local astramem daemon reachable? Never throws. */
-export async function probeLocal(
-  overrides: RemoteLoaderOverrides = {}
-): Promise<RemoteHandle | null> {
-  try {
-    const provider = await (overrides.loadLocal ?? loadLocalProvider)();
-    const health = await provider.health();
-    return health.ok ? { provider, name: "local" } : null;
-  } catch {
-    return null;
-  }
-}
-
-/** Best-effort probe: is SaaS configured AND reachable? Never throws. */
-export async function probeSaas(
-  overrides: RemoteLoaderOverrides = {}
-): Promise<RemoteHandle | null> {
-  if (!process.env["MEMORY_API_URL_SAAS"] && !process.env["MEMORY_API_URL"]) return null;
-  try {
-    const provider = await (overrides.loadSaas ?? loadSaasProvider)();
-    const health = await provider.health();
-    return health.ok ? { provider, name: "saas" } : null;
-  } catch {
-    return null;
-  }
+async function defaultResolveRemote(): Promise<RemoteHandle | null> {
+  const provider = await resolveWireProvider();
+  return provider ? { provider, name: "local" } : null;
 }
 
 /**
- * Resolve which astramem backend (if any) is currently paired. Mirrors the
- * astramem-plugin selector's precedence (local first, saas fallback) using
- * only the package's exported provider factories + their own health()
- * probe — the selector function itself is not part of the package's public
- * exports map (astramem-plugin#23). Caches the resolution briefly so a burst
- * of captures/recalls doesn't re-probe on every call.
- */
-export function makeRemoteResolver(
-  overrides: RemoteLoaderOverrides = {}
-): () => Promise<RemoteHandle | null> {
-  let cached: { handle: RemoteHandle | null; expiresAt: number } | null = null;
-
-  return async function resolveRemote(): Promise<RemoteHandle | null> {
-    const now = Date.now();
-    if (cached && now < cached.expiresAt) return cached.handle;
-
-    const handle = (await probeLocal(overrides)) ?? (await probeSaas(overrides));
-    cached = { handle, expiresAt: now + HEALTH_CACHE_TTL_MS };
-    return handle;
-  };
-}
-
-/**
- * Public one-shot resolver — a fresh (uncached) resolution of the paired
- * astramem backend, if any. Used by the S5 drift-check (a one-shot CLI
- * diagnostic, not a hot capture/recall path, so the makeRemoteResolver()
- * cache would buy nothing) and available to any other one-shot caller that
- * needs a RemoteHandle without standing up a full astramemProvider.
+ * Public one-shot resolver — resolution of the paired astramem backend, if
+ * any (subject to astramem-client's process-lifetime resolution cache).
+ * Used by the S5 drift-check and available to any other one-shot caller
+ * that needs a RemoteHandle without standing up a full astramemProvider.
  */
 export async function resolveAstramemRemote(): Promise<RemoteHandle | null> {
-  return makeRemoteResolver()();
+  return defaultResolveRemote();
 }
 
 /**
@@ -262,7 +173,7 @@ export function astramemProvider(
   const dualWrite = options.dualWrite ?? false;
   const defaultMaxTokens = options.recall?.maxTokens ?? DEFAULT_MAX_TOKENS;
   const fallback = fileProvider(repoPath, options.recall ? { recall: options.recall } : {});
-  const resolveRemote = options.__resolveRemote ?? makeRemoteResolver();
+  const resolveRemote = options.__resolveRemote ?? defaultResolveRemote;
 
   async function writeThrough(entry: MemoryEntryInput, supersedesOverride?: string): Promise<void> {
     const stored = toStoredEntry(entry, supersedesOverride);

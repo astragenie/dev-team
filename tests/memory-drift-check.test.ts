@@ -30,8 +30,6 @@ function makeFakeRemote(knownIds: Set<string>): RemoteHandle {
   return {
     name: "local",
     provider: {
-      async ingest(): Promise<void> {},
-      async ingestTranscript(): Promise<void> {},
       async remember(): Promise<void> {},
       async health() {
         return { ok: true, version: "test-fake" };
@@ -138,8 +136,6 @@ test("checkDrift never writes to astramem — it is a read-only diagnostic", asy
     const remote: RemoteHandle = {
       name: "local",
       provider: {
-        async ingest(): Promise<void> {},
-        async ingestTranscript(): Promise<void> {},
         async remember(): Promise<void> {
           rememberCalls += 1;
         },
