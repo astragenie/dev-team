@@ -391,6 +391,11 @@ function usage(target: string | null = null) {
     "gepa-thaw": "  node scripts/crew.ts gepa-thaw <agent> [--repo <path>]",
     "recall-block":
       "  node scripts/crew.ts recall-block --repo <path> [--agent <name>] [--tags <a,b>]",
+    "memory-drift-check":
+      "  node scripts/crew.ts memory-drift-check --repo <path> [--window <days>]\n" +
+      "    Read-only: compares learnings.jsonl entries in the window against astramem's\n" +
+      "    recall() results and reports entries not confirmed present remotely (S4\n" +
+      "    accepted-risk drift note). Never writes to astramem.",
     "resolve-model":
       "  node scripts/crew.ts resolve-model --phase <build|architect|...> [--shape <shape>] [--repo <path>]\n" +
       "    Reads .claude/loop.json loop.modelRouting + the trivial-shape tier table and\n" +
@@ -1412,6 +1417,29 @@ const COMMANDS = {
       ...(tags.length > 0 ? { tags } : {})
     });
     return { block };
+  },
+
+  // FEAT-188 S5 — read-only diagnostic comparing JSONL entries within a
+  // window against astramem's recall() results (S4 accepted-risk note: the
+  // dual-write fan-out is best-effort, so a silent astramem failure can leave
+  // the JSONL derived-duplicate MORE complete than astramem's source of
+  // truth). Never writes to astramem — surfaces candidates for an operator
+  // to reconcile manually.
+  "memory-drift-check": async ({ repoPath, flags }: CommandContext) => {
+    const { resolveAstramemRemote } = await import("./lib/memory/astramem-provider.ts");
+    const { checkDrift } = await import("./lib/memory/drift-check.ts");
+    const remote = await resolveAstramemRemote();
+    if (!remote) {
+      return {
+        paired: false,
+        message: "astramem is unpaired — no drift check possible (nothing to compare against)."
+      };
+    }
+    const windowDays = typeof flags.window === "string" ? Number(flags.window) : undefined;
+    const report = await checkDrift(repoPath, remote, {
+      ...(windowDays !== undefined && Number.isFinite(windowDays) ? { windowDays } : {})
+    });
+    return { paired: true, provider: remote.name, ...report };
   },
 
   // FEAT-194 S2 — resolves the model tier an interactive dispatch (Agent-tool
