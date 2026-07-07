@@ -86,6 +86,60 @@ line-count only, not field-read). Manual promotions must stay single-frontmatter
 writer (merge `gepa:` into the existing block, or make validate-agents strip a
 leading gepa block before field-read) before wiring any auto-promotion.
 
+## Acceptance Criteria (S2 / S3) — authored 2026-07-07
+
+Given-When-Then, per triage_notes AC-quality gate. All trials referenced are the
+production-failure signal only: `input.capture_origin === "production_failure"`
+(the documented S1 deviation) — NEVER match on `source` (all such trials carry
+`source: "captured"`, indistinguishable from eval trials by that field).
+
+### S2 — `gepa-corpus-sync` (cross-repo aggregation)
+
+- **AC-S2-1 (aggregate):** GIVEN sibling repos on the machine each holding
+  `.claude/artifacts/crew/gepa/trials/<agent>.jsonl` with production-failure trials,
+  WHEN `gepa-corpus-sync` runs from the dev-team hub, THEN every trial with
+  `input.capture_origin === "production_failure"` is merged into the hub's per-agent
+  corpus keyed by agent.
+- **AC-S2-2 (dedup + idempotent):** GIVEN the same trial `(agent, rationale-hash)`
+  exists in ≥2 sources (sibling+sibling or sibling+hub), WHEN sync runs, THEN it lands
+  exactly once; AND re-running sync with no new trials adds zero rows.
+- **AC-S2-3 (completeness — product_completeness gate):** GIVEN N eligible sibling
+  trials across M agents, WHEN sync completes, THEN `added + skipped_as_dup === N`
+  (no trial silently dropped), AND sync emits a summary enumerating EVERY agent that
+  contributed ≥1 trial with its added/deduped counts.
+- **AC-S2-4 (marker discipline):** GIVEN a trial with `source: "captured"` but WITHOUT
+  `input.capture_origin === "production_failure"` (e.g. an eval trial), WHEN sync runs,
+  THEN it is NOT aggregated.
+- **AC-S2-5 (read-only on siblings):** GIVEN sync scans sibling repos, WHEN it runs,
+  THEN it only READS sibling trial files and WRITES only the dev-team hub corpus (never
+  mutates a sibling); AND a sibling lacking the trials dir is skipped without error.
+
+### S3 — `gepa-corpus-report` (analyze gate; feed-to-optimize)
+
+- **AC-S3-1 (digest):** GIVEN an aggregated hub corpus with failing trials, WHEN
+  `gepa-corpus-report <agent>` runs, THEN it outputs a per-agent digest that clusters
+  and ranks failure modes by frequency.
+- **AC-S3-2 (completeness):** GIVEN the hub corpus holds failures for M agents, WHEN
+  `gepa-corpus-report` runs with no agent arg, THEN it enumerates ALL M agents with ≥1
+  captured failure — not a partial/sampled subset.
+- **AC-S3-3 (astramem citation):** GIVEN FEAT-188 astramem lessons match a failure
+  cluster, WHEN the report renders that cluster, THEN it pulls and cites the matching
+  lesson(s) by id.
+- **AC-S3-4 (human gate — no blind auto-promote):** GIVEN the report informs
+  `gepa-optimize`, WHEN report generation completes, THEN it does NOT invoke
+  gepa-optimize or promote any candidate automatically — it only emits the digest for a
+  human to act on.
+- **AC-S3-5 (provenance blocker cleared first):** GIVEN `champion-provenance-writer.ts`
+  prepends a `gepa:` frontmatter block that breaks `validate-agents.ts`, WHEN any
+  feed-to-optimize / promotion path is wired, THEN champion-provenance-writer is fixed
+  first (single-frontmatter, or validate-agents strips a leading gepa block) — verified
+  by `validate-agents.ts` passing on a provenance-written agent.
+
+**Sequencing:** S2 is build-ready (no FEAT-185 coupling). S3 digest/report half is
+build-ready; hold S3's `gepa-optimize` wiring (AC-S3-4/5 paths) until the gepa-core
+provider surface stabilizes (FEAT-185 SLICE-A/B) to avoid targeting a moving judge/
+provider stack.
+
 ## Refs
 
 - FEAT-188 (`memory-provider-capture-recall`) — the capture/recall foundation this rides on.
