@@ -480,6 +480,272 @@ async function scenarioRecallInjectionContract(): Promise<void> {
   await scenarioRecallInjectionAc3(injectRecall, dispatchBaseline);
 }
 
+// ---------------------------------------------------------------------------
+// Scenario: slice-ceremony e2e (FEAT-197 / SLICE-111)
+//
+// Drives the loop plugin's ceremony CLI (../runner-plugin/src/scripts/
+// loop.mts) against a hermetic temp repo and asserts the slice start ->
+// complete -> grade state/artifact transitions. runner-plugin is a sibling
+// repo checkout, not an npm dependency of dev-team — this scenario only
+// exercises real transitions when that sibling checkout is present on disk
+// (the astra monorepo dev workspace layout). Today's CI has no ../runner-plugin
+// sibling checkout, so this scenario SKIPS there — the skip is logged loudly
+// (not a quiet green) and can be promoted to a hard failure via
+// CREW_REQUIRE_CEREMONY_E2E once CI wires the sibling checkout in (tracked as
+// a dev-team backlog followup FEAT, not solved here — that's a cross-repo
+// astragenie/common CI change, out of scope for this fix).
+// ---------------------------------------------------------------------------
+
+const loopCliPath = path.resolve("../runner-plugin/src/scripts/loop.mts");
+const loopCliRoot = path.resolve(loopCliPath, "../../..");
+
+async function pathExists(candidate: string): Promise<boolean> {
+  return fs
+    .access(candidate)
+    .then(() => true)
+    .catch(() => false);
+}
+
+// Collapses casing/punctuation so a scoping token (e.g. sliceId "SLICE-01")
+// can be matched against artifact prose regardless of whether the producer
+// rendered it with a dash ("SLICE-01"), without one ("SLICE01"), or in a
+// different case — see run_title shape observed in real cost-report
+// artifacts under .claude/artifacts/crew/cost/ ("FEAT900 SLICE01").
+function normalizeForScopeMatch(text: string): string {
+  return text.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+async function execLoopCli(args: string[]): Promise<any> {
+  const { stdout } = await execFile("bun", [loopCliPath, ...args], {
+    cwd: loopCliRoot,
+    maxBuffer: 20 * 1024 * 1024
+  });
+  return JSON.parse(stdout);
+}
+
+/**
+ * Seed a hermetic temp repo with the minimal scaffold `slice start --id
+ * FEAT-X` needs: the four backlog state dirs, a minimal `.claude/loop.json`
+ * (memory.enabled: "never" keeps astramem recall out of the hermetic path),
+ * and one triaged FEAT with a bare `## Acceptance criteria` heading — NOT
+ * the `(Given-When-Then)` suffix, which trips the AC linter (runner#370).
+ */
+async function seedCeremonyRepo(repoRoot: string): Promise<void> {
+  const backlogRoot = path.join(repoRoot, ".claude", "artifacts", "loop", "backlog");
+  await Promise.all(
+    ["pending", "triaged", "in-progress", "done"].map((state) =>
+      fs.mkdir(path.join(backlogRoot, state), { recursive: true })
+    )
+  );
+  await fs.writeFile(
+    path.join(repoRoot, ".claude", "loop.json"),
+    JSON.stringify({ schemaVersion: 1, loop: {}, memory: { enabled: "never" } }, null, 2),
+    "utf8"
+  );
+  const featBody = [
+    "---",
+    "id: FEAT-900",
+    "status: triaged",
+    "priority: P2",
+    "category: null",
+    "target_release: null",
+    "created: 2026-07-08",
+    "updated: 2026-07-08",
+    "depends_on: []",
+    "slices: []",
+    "derived_from: null",
+    "autonomous_safe: true",
+    "---",
+    "# FEAT-900: E2E ceremony smoke feature",
+    "",
+    "Seeded test feature body for the slice-ceremony e2e smoke.",
+    "",
+    "## Acceptance criteria",
+    "",
+    "- [ ] AC-1: seeded acceptance criterion for e2e ceremony smoke",
+    ""
+  ].join("\n");
+  await fs.writeFile(path.join(backlogRoot, "triaged", "FEAT-900.md"), featBody, "utf8");
+}
+
+/**
+ * Gate-satisfaction recipe: review-gate.mts / validation-gate.mts are
+ * verdict-aware — they read frontmatter `decision:` off the newest artifact
+ * filename that matches the slice-id token under
+ * .claude/artifacts/crew/{reviews,validations}/. Writing these directly
+ * (no agent, no badge CLI) satisfies both gates hermetically for `slice
+ * complete`.
+ */
+async function writeGateArtifact(
+  repoRoot: string,
+  kind: "reviews" | "validations",
+  sliceId: string,
+  decision: string
+): Promise<void> {
+  const dir = path.join(repoRoot, ".claude", "artifacts", "crew", kind);
+  await fs.mkdir(dir, { recursive: true });
+  const token = sliceId.toLowerCase().replace("-", "");
+  const label = kind === "reviews" ? "review" : "validation";
+  const filename = `20260708T090000Z-${label}-${token}-e2e-smoke.md`;
+  const body = `---\ndecision: ${decision}\n---\n# ${label === "review" ? "Review" : "Validation"} — ${sliceId}\n`;
+  await fs.writeFile(path.join(dir, filename), body, "utf8");
+}
+
+async function scenarioSliceCeremony(): Promise<void> {
+  if (!(await pathExists(loopCliPath))) {
+    const skipMessage =
+      "[scenario] slice-ceremony: SKIPPED — runner-plugin CLI not on disk; ceremony e2e NOT " +
+      `exercised (looked for ${loopCliPath}; this scenario only runs in the astra monorepo dev ` +
+      "workspace where both repos are checked out side by side — a lone dev-team clone, " +
+      "including today's CI, has no loop CLI to drive)";
+    // Opt-in hard-fail: once CI grows an ../runner-plugin sibling checkout,
+    // set CREW_REQUIRE_CEREMONY_E2E to turn this from a silent-pass gap into
+    // an enforced gate, without breaking clones that legitimately lack the
+    // sibling today. Wiring the CI checkout itself is cross-repo
+    // (astragenie/common reusable workflow) and out of scope here — tracked
+    // as a dev-team backlog followup FEAT.
+    if (process.env["CREW_REQUIRE_CEREMONY_E2E"]) {
+      throw new Error(
+        `${skipMessage} — CREW_REQUIRE_CEREMONY_E2E is set, failing hard instead of skipping.`
+      );
+    }
+    console.log(skipMessage);
+    return;
+  }
+
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "e2e-ceremony-"));
+  await seedCeremonyRepo(tmp);
+
+  // AC-1: slice start --id FEAT-X -> SLICE file under slices/pending,
+  // workflow-state currentRun rotated, run-brief under crew/runs.
+  const startResult = await execLoopCli([
+    "slice",
+    "start",
+    "--id",
+    "FEAT-900",
+    "--repo",
+    tmp,
+    "--no-dispatch"
+  ]);
+  const sliceId: string = startResult.slice?.id;
+  assert.match(
+    sliceId,
+    /^SLICE-\d+$/,
+    "slice-ceremony AC-1: slice start must return a SLICE-NN id"
+  );
+
+  const pendingDir = path.join(tmp, ".claude", "artifacts", "loop", "ai-loop", "slices", "pending");
+  const pendingFiles = await fs.readdir(pendingDir).catch(() => [] as string[]);
+  assert.ok(
+    pendingFiles.length > 0,
+    "slice-ceremony AC-1: expected a slice file under slices/pending"
+  );
+
+  const workflowStatePath = path.join(tmp, ".claude", "state", "crew", "workflow-state.json");
+  const workflowState = JSON.parse(await fs.readFile(workflowStatePath, "utf8"));
+  assert.ok(
+    workflowState.currentRun?.startedAt,
+    "slice-ceremony AC-1: workflow-state currentRun must be rotated"
+  );
+
+  // run-brief creation depends on a cached crew CLI install being
+  // discoverable (findHeroCrewCli). That dependency is satisfied whenever
+  // this scenario runs at all (verified empirically: on a machine with the
+  // ../runner-plugin sibling present, findHeroCrewCli always resolves too),
+  // so this is a hard assert, not a soft log — a regression here (e.g.
+  // writeCrewRunBrief silently failing) must fail the scenario.
+  const runsDir = path.join(tmp, ".claude", "artifacts", "crew", "runs");
+  const runsFiles = await fs.readdir(runsDir).catch(() => [] as string[]);
+  assert.ok(
+    runsFiles.length > 0,
+    "slice-ceremony AC-1: expected a run-brief file under crew/runs (writeCrewRunBrief must " +
+      "resolve when this scenario executes)"
+  );
+  console.log("[scenario] slice-ceremony AC-1 (slice start transitions + run-brief): PASS");
+
+  await writeGateArtifact(tmp, "reviews", sliceId, "approved");
+  await writeGateArtifact(tmp, "validations", sliceId, "pass");
+
+  // AC-2: slice complete --id SLICE-Y -> reviewGate + validationGate
+  // satisfied, slice pending->completed, feature in-progress->done.
+  const completeResult = await execLoopCli(["slice", "complete", "--id", sliceId, "--repo", tmp]);
+  assert.equal(
+    completeResult.reviewGate?.satisfied,
+    true,
+    "slice-ceremony AC-2: reviewGate.satisfied must be true"
+  );
+  assert.equal(
+    completeResult.validationGate?.satisfied,
+    true,
+    "slice-ceremony AC-2: validationGate.satisfied must be true"
+  );
+  assert.match(
+    completeResult.slice?.to ?? "",
+    /completed[\\/]/,
+    "slice-ceremony AC-2: slice must move into completed/"
+  );
+  assert.match(
+    completeResult.feature?.to ?? "",
+    /done[\\/]/,
+    "slice-ceremony AC-2: feature must move into done/"
+  );
+  await fs.access(completeResult.slice.to);
+  await fs.access(completeResult.feature.to);
+  console.log("[scenario] slice-ceremony AC-2 (complete gate satisfaction + moves): PASS");
+
+  // AC-3: a cost-report under crew/cost/, scoped to this slice's run — not
+  // just directory non-emptiness. Depends on the same cached crew CLI
+  // discovery as AC-1's run-brief, which resolves whenever this scenario
+  // runs at all, so this is a hard assert. Cost-report frontmatter doesn't
+  // always carry a `slice:` field (outcome-linkage's SLICE[-_]\d+ regex
+  // misses the undashed "SLICE01" token emitted in run_title — see
+  // normalizeForScopeMatch above), so the scoping check normalizes
+  // punctuation/case on both sides and looks for the sliceId token anywhere
+  // in the report body (e.g. run_title: "FEAT900 SLICE01").
+  const costDir = path.join(tmp, ".claude", "artifacts", "crew", "cost");
+  const costFiles = await fs.readdir(costDir).catch(() => [] as string[]);
+  assert.ok(
+    costFiles.length > 0,
+    "slice-ceremony AC-3: expected a cost-report file under crew/cost"
+  );
+  const latestCostFile = costFiles.sort()[costFiles.length - 1] as string;
+  const costText = await fs.readFile(path.join(costDir, latestCostFile), "utf8");
+  assert.ok(
+    normalizeForScopeMatch(costText).includes(normalizeForScopeMatch(sliceId)),
+    `slice-ceremony AC-3: cost-report ${latestCostFile} must reference ${sliceId} ` +
+      "(attribution scoping), not just be present in the directory"
+  );
+  console.log("[scenario] slice-ceremony AC-3 (cost-report present + attribution scoped): PASS");
+
+  // AC-4: slice grade --id SLICE-Y -> grade file with frontmatter
+  // slice:SLICE-Y + non-null feature + a scores block.
+  const gradeResult = await execLoopCli(["slice", "grade", "--id", sliceId, "--repo", tmp]);
+  const gradeContent = await fs.readFile(gradeResult.gradePath, "utf8");
+  assert.match(
+    gradeContent,
+    new RegExp(`slice: ${sliceId}`),
+    "slice-ceremony AC-4: grade frontmatter must carry the slice id"
+  );
+  assert.match(
+    gradeContent,
+    /feature: FEAT-\d+/,
+    "slice-ceremony AC-4: grade frontmatter must carry a non-null feature"
+  );
+  assert.match(
+    gradeContent,
+    /scores:/,
+    "slice-ceremony AC-4: grade frontmatter must carry a scores block"
+  );
+  console.log("[scenario] slice-ceremony AC-4 (grade file transitions): PASS");
+
+  // AC-5: covered structurally, not by a dedicated code path — every
+  // assert.* above throws on failure, propagating unhandled up through this
+  // async function to main()'s `.catch()` below, which sets
+  // process.exitCode = 1. Wrapping this scenario in a local try/catch would
+  // defeat that contract, so it deliberately has none.
+  console.log("[scenario] slice-ceremony (FEAT-197 / SLICE-111): PASS");
+}
+
 async function main() {
   console.log(`Creating sample repo at ${repoPath}`);
 
@@ -543,6 +809,9 @@ async function main() {
 
   console.log("\nScenario: recall-injection-contract (FEAT-196)");
   await scenarioRecallInjectionContract();
+
+  console.log("\nScenario: slice-ceremony e2e (FEAT-197)");
+  await scenarioSliceCeremony();
 }
 
 main().catch((error) => {
