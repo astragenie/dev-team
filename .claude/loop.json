@@ -92,7 +92,9 @@
   "reviewers": {
     "ladder": [
       "A"
-    ]
+    ],
+    "strictParallel": true,
+    "serialTimingThresholdMs": 90000
   },
   "mandatoryDocs": [
     "docs/architecture/platform-overview.md"
