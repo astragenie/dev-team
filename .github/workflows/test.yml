@@ -7,7 +7,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  # Runs every validator, advisory-validator, lint/format/typecheck, and the
+  # Linux-only e2e smoke commands exactly once (AC-3). The sharded test suite
+  # lives in the `test` matrix job below so it doesn't multiply this job N times.
+  checks:
     uses: astragenie/common/.github/workflows/reusable-plugin-ci.yml@main
     with:
       validators: |
@@ -35,7 +38,27 @@ jobs:
         bun run lint
         bun run format:check
         bun run typecheck
-        bun run test
       linux-only-commands: |
         node ./scripts/e2e-smoke.ts
         bun run e2e:smoke:ux
+
+  # FEAT-200: shards `bun run test` across a 3-way matrix to cut the test-phase
+  # critical path. `bun test` runs single-process per invocation (no --parallel,
+  # bun#5090 — see CLAUDE.md), so parallelism comes from splitting the *file
+  # list* across independent CI jobs instead. scripts/test-shard.ts computes the
+  # disjoint file subset per shard (see tests/test-shard.test.ts for the
+  # union-equals-all / no-overlap proof). Each shard is an independent job, so a
+  # failing test in any shard fails that shard's job and blocks the gate (AC-4).
+  #
+  # SHARD_TOTAL below (3) must stay in sync with the `matrix.shard` list — the
+  # `with:` block for a reusable-workflow call cannot read workflow-level `env`,
+  # so this is the single place both are declared.
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2]
+    uses: astragenie/common/.github/workflows/reusable-plugin-ci.yml@main
+    with:
+      bun-commands: |
+        SHARD_TOTAL=3 SHARD_INDEX=${{ matrix.shard }} bun run test:shard
