@@ -3,6 +3,43 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [v0.55.0] — 2026-07-08 — stabilization + e2e wave
+
+Minor: e2e guards for the memory loop and slice ceremony, cross-cutting CI
+hardening (test sharding, grade-rot gate, drift gate), and a customer-facing
+`crew:builder` phantom-dispatch fix. All landed via PR #181 (parallel 3-worktree
+wave, conflict-free merge; sharded CI matrix validated green in production).
+
+- **FEAT-196 — recall-injection-v1 contract e2e.** `scripts/e2e-smoke.ts` gains a
+  `scenarioRecallInjectionContract` phase asserting the frozen contract:
+  `provider:none` → byte-identical dispatch, `provider:file` → exactly one injected
+  block, zero-match → byte-identical + structured `recall_injection_smoke` event.
+  Guards the interface runner-plugin#368 (S3b) consumes before that repo builds on it.
+- **FEAT-197 — full slice-ceremony e2e.** `scenarioSliceCeremony` drives the loop
+  ceremony CLI (start→complete→grade) against a hermetic temp repo and asserts the
+  transitions unit tests miss (currentRun rotation, gate satisfaction, file moves,
+  cost-report attribution, grade back-link). Loud-skip + `CREW_REQUIRE_CEREMONY_E2E`
+  hard-fail gate for CI enforcement.
+- **FEAT-199 — grade-rot gate + backfill.** `validate-syntheses.ts` now rejects
+  placeholder / all-zero / unfilled-template grade files under
+  `.claude/artifacts/loop/grades/` (pre-2026-07-08 rot grandfathered, logged not
+  hard-failed). One-time backfill regenerated 22 grandfathered grades from real
+  source artifacts (0 unrecoverable, audit-verified no fabrication) — grade rot
+  0/22. *Follow-up: promote the grade check advisory→hard to fail CI red on new rot.*
+- **FEAT-200 — test sharding.** `bun test` split across a 3-way CI matrix
+  (`scripts/test-shard.ts` + `test:shard`; proven exact cover of 191 test files) to
+  cut test-phase wall-clock — bun#5090 (no `--parallel`) workaround.
+- **FEAT-201 — dual-write drift gate.** `drift-check.ts` CLI (exit 0/1/2 + structured
+  `memory_drift` event carrying count+ids of entries missing from the SoT) + new
+  scheduled `.github/workflows/drift.yml` + hermetic e2e. Surfaces silent
+  astramem↔JSONL divergence instead of hiding it.
+- **Fix — `crew:builder` phantom dispatch (customer-facing).** The runner-installed
+  loop rules told orchestrators to dispatch a phantom `crew:builder` agent, breaking
+  a consumer repo. Corrected `rules.md`, and **extended `validate-agent-refs` to scan
+  `.claude/loop`** so the class can't recur. Cross-repo source + validator gap filed
+  as runner-plugin#371.
+- **Backlog — FEAT-198 deduped into FEAT-190** (cross-platform golden gate).
+
 ## [v0.54.0] — 2026-07-08 — GEPA corpus loop + memory-provider closeout
 
 Minor: closes the FEAT-193 GEPA corpus analyze→optimize bridge and the
