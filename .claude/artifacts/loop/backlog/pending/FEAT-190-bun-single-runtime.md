@@ -6,7 +6,7 @@ category: infra
 target_release: null
 created: 2026-07-05
 depends_on: []
-slices: [SLICE-A, SLICE-B, SLICE-C, SLICE-D, SLICE-E]
+slices: [SLICE-A, SLICE-B, SLICE-C, SLICE-D, SLICE-E, SLICE-F]
 derived_from: docs/architecture/decisions/ADR-003-bun-single-runtime.md
 pm_customer_impact: 0.60
 pm_effort_estimate: 0.45
@@ -140,3 +140,21 @@ ADR-003.
 - Trigger evidence: `hooks/hooks.json`; `scripts/lib/gepa/*`, `scripts/lib/cost/*`;
   observed `Stripping types … node_modules` failure on `node scripts/crew.ts
   gepa-optimize`.
+
+## SLICE-F — cross-platform golden gate (deduped in from FEAT-198, 2026-07-08)
+
+FEAT-198 (cross-platform OS matrix / golden gate) was closed as a duplicate of
+this FEAT — its CI-matrix ask is already SLICE-C/E here. What SLICE-C/E did NOT
+already cover, and is now owned as **SLICE-F**, is the *golden-assertion* half:
+the cross-platform correctness tests that make the new Linux + Windows jobs
+actually discriminate platform breakage (not just run twice). Build SLICE-F
+alongside SLICE-E (same CI-matrix change).
+
+Acceptance criteria (from FEAT-198):
+
+- AC-F1: Given the new Linux CI job, When `bun run test` runs on it, Then it passes green using an env-first `resolveHomeDir()` (not raw `os.homedir()`), closing the `bun-homedir-ignores-home-on-linux` gap.
+- AC-F2: Given the Windows job (SLICE-E baseline, not duplicated) and the new Linux job running in parallel, When the capture-parity byte-filter suite runs on both, Then both produce byte-identical capture output, or any platform-specific delta is explicitly allowlisted with a documented reason — closing the capture-parity Windows byte-filter flake.
+- AC-F3: Given the benchmark p95 suite currently skipped on Windows and in CI, When the matrix lands, Then the benchmark either runs on ≥1 non-Windows CI job with a recorded p95 assertion, or is explicitly `benchmark_skip_reason`-logged rather than silently absent.
+- AC-F4: Given a PR introducing a Linux-only or Windows-only regression, When CI runs the matrix, Then the affected-OS job fails red while the other stays green — proving the matrix discriminates platform breakage rather than duplicating identical assertions.
+
+Add `cross-platform` + `golden-test` to the concern set when slicing.

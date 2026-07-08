@@ -1,6 +1,9 @@
 ---
 id: FEAT-198
-status: triaged
+status: declined
+duplicate_of: FEAT-190
+closed: 2026-07-08
+closure: "Duplicate of FEAT-190 (Bun single runtime). FEAT-190 SLICE-C/E already scope the Linux+Windows CI matrix + cross-repo astragenie/common coordination; FEAT-198's unique golden-assertion half (resolveHomeDir, capture byte-parity, benchmark p95) was folded into FEAT-190 as SLICE-F with its 4 ACs. Close here to avoid two FEATs racing on the same .github/workflows + astragenie/common surface."
 priority: P1
 category: feature
 target_release: null
