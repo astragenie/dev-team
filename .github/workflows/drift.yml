@@ -1,0 +1,75 @@
+name: memory-drift-check
+
+# FEAT-201: scheduled dual-write drift gate.
+#
+# astramem writes are fire-and-forget (astramem-provider.ts's writeThrough():
+# errors are logged/swallowed, never propagated) while the local JSONL append
+# is synchronous/atomic — so a silent astramem failure can leave the derived
+# JSONL duplicate MORE complete than the astramem source of truth
+# (scripts/lib/memory/drift-check.ts is the read-only diagnostic from
+# FEAT-188 S5; nothing invoked it on a schedule until this workflow, FEAT-201).
+#
+# Deliberately its OWN workflow, separate from .github/workflows/test.yml
+# (FEAT-200 owns that file) — this needs a paired astramem backend (only the
+# self-hosted runner has one; a plain GH-hosted runner never pairs) and runs
+# on a schedule, not per-push/PR.
+#
+# Exit codes from `runDriftCheckCli` (scripts/lib/memory/drift-check.ts):
+#   0 — no drift (missing-from-astramem count <= threshold)
+#   1 — drift exceeds threshold -> a `memory_drift` event (count + ids) was
+#       appended to .claude/logs/events.jsonl -> this job FAILS
+#   2 — astramem unreachable/unpaired this run -> inconclusive (not a drift
+#       verdict) -> annotated as a warning, job stays green. A red gate here
+#       would mean "the daemon happened to be down", not "data drifted".
+
+on:
+  schedule:
+    - cron: '17 6 * * *' # daily, off-peak UTC
+  workflow_dispatch:
+    inputs:
+      threshold:
+        description: Max tolerated entries-only-in-JSONL before failing the gate
+        required: false
+        default: '0'
+      window_days:
+        description: Recency window (days) to check for drift
+        required: false
+        default: ''
+
+jobs:
+  drift-check:
+    runs-on: [self-hosted, astragenie, aws]
+    steps:
+      - uses: actions/checkout@v4
+      # Bun baked into runner image (devops#64) — no setup-bun, no ETXTBSY race.
+      - run: bun install --frozen-lockfile
+
+      - name: Run memory drift-check
+        id: drift
+        run: |
+          set +e
+          THRESHOLD="${{ github.event.inputs.threshold || '0' }}"
+          WINDOW_DAYS="${{ github.event.inputs.window_days }}"
+          ARGS=(--repo "$GITHUB_WORKSPACE" --threshold "$THRESHOLD")
+          if [ -n "$WINDOW_DAYS" ]; then
+            ARGS+=(--window-days "$WINDOW_DAYS")
+          fi
+          node --experimental-strip-types ./scripts/lib/memory/drift-check.ts "${ARGS[@]}"
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          # Never fail this step directly — the two annotation steps below
+          # decide the job's final pass/fail based on the captured exit code,
+          # so an inconclusive (unreachable-astramem) run can stay green.
+          exit 0
+
+      - name: Annotate inconclusive run (astramem unreachable)
+        if: steps.drift.outputs.exit_code == '2'
+        run: |
+          echo "::warning::memory-drift-check: astramem is unreachable/unpaired this run — drift is inconclusive, not verified. Job stays green (this is an environment gap, not a data-drift finding)."
+
+      - name: Annotate + fail on drift exceeding threshold
+        if: steps.drift.outputs.exit_code == '1'
+        run: |
+          echo "::error::memory-drift-check: drift exceeded threshold — see the memory_drift event in .claude/logs/events.jsonl for the count + ids to reconcile"
+          tail -n 5 .claude/logs/events.jsonl || true
+          exit 1

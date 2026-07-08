@@ -12,13 +12,26 @@
 // remotely, so an operator can reconcile the source of truth. It NEVER
 // writes to astramem — backfill/reconciliation is a deliberate follow-up
 // action, not something this slice auto-applies.
+//
+// FEAT-201: CLI entry point (--repo/--threshold[/--window-days]) so this
+// diagnostic can actually be *run* — nothing invoked it before this. Gates on
+// entries-only-in-JSONL count vs --threshold: exceeding it exits non-zero and
+// emits a structured `memory_drift` event to `.claude/logs/events.jsonl` (own
+// small emitter, deliberately NOT routed through
+// scripts/lib/gepa/observability-events.ts — that sink is GEPA-event branded,
+// see scripts/e2e-smoke.ts's logSmokeEvent for the same call). Astramem being
+// unreachable (unpaired) is treated as inconclusive, not a pass — exit 2, no
+// event (nothing to reconcile ids for).
+import { appendFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 // eslint-disable-next-line import/no-unresolved -- allowJs JSDoc-typed sibling module (see scripts/lib/jsonl.mjs)
 import { tailReadJsonl } from "../jsonl.mjs";
-import type { RemoteHandle } from "./astramem-provider.ts";
+import { resolveAstramemRemote, type RemoteHandle } from "./astramem-provider.ts";
 import { LEARNINGS_PATH } from "./capture-learning.ts";
 import { normalizeLegacyRow } from "./legacy-adapter.ts";
 import type { MemoryEntry } from "./schema.ts";
+
+const EVENTS_LOG_REL = [".claude", "logs", "events.jsonl"] as const;
 
 const DEFAULT_WINDOW_DAYS = 45;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -99,4 +112,148 @@ export async function checkDrift(
   }
 
   return { windowDays, checked: entries.length, missingFromAstramem };
+}
+
+// ---------------------------------------------------------------------------
+// CLI (FEAT-201)
+// ---------------------------------------------------------------------------
+
+export interface DriftCheckCliOptions {
+  repo: string;
+  threshold: number;
+  windowDays?: number;
+}
+
+function parseThreshold(raw: string | undefined): number {
+  const parsed = raw !== undefined ? Number(raw) : Number.NaN;
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error(`--threshold must be a non-negative number, got: ${String(raw)}`);
+  }
+  return parsed;
+}
+
+function parseWindowDays(raw: string | undefined): number {
+  const parsed = raw !== undefined ? Number(raw) : Number.NaN;
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`--window-days must be a positive number, got: ${String(raw)}`);
+  }
+  return parsed;
+}
+
+export function parseDriftCheckArgs(argv: string[]): DriftCheckCliOptions {
+  let repo = process.cwd();
+  let threshold = 0;
+  let windowDays: number | undefined;
+  for (let i = 0; i < argv.length; i += 1) {
+    const a = argv[i];
+    if (a === "--repo") {
+      repo = argv[++i] ?? repo;
+    } else if (a === "--threshold") {
+      threshold = parseThreshold(argv[++i]);
+    } else if (a === "--window-days") {
+      windowDays = parseWindowDays(argv[++i]);
+    }
+  }
+  return { repo, threshold, ...(windowDays !== undefined ? { windowDays } : {}) };
+}
+
+/**
+ * Emits the `memory_drift` event (AC-4: carries count + ids of entries
+ * missing from the SoT so an operator can reconcile). Never throws — mirrors
+ * emitGepaEvent's contract (scripts/lib/gepa/observability-events.ts) even
+ * though this is a deliberately separate, non-GEPA-branded sink.
+ */
+function emitDriftEvent(repoPath: string, report: DriftReport, threshold: number): void {
+  try {
+    const logPath = path.join(repoPath, ...EVENTS_LOG_REL);
+    mkdirSync(path.dirname(logPath), { recursive: true });
+    const line = `${JSON.stringify({
+      ts: new Date().toISOString(),
+      event: "memory_drift",
+      windowDays: report.windowDays,
+      threshold,
+      checked: report.checked,
+      count: report.missingFromAstramem.length,
+      ids: report.missingFromAstramem.map((entry) => entry.id)
+    })}\n`;
+    appendFileSync(logPath, line, { flag: "a" });
+  } catch {
+    // Event log write must never propagate — this is diagnostic telemetry.
+  }
+}
+
+export interface DriftCheckCliResult {
+  report: DriftReport | null;
+  threshold: number;
+  exitCode: number;
+  /** Set only for the inconclusive (astramem unreachable) path. */
+  reason?: string;
+}
+
+export interface DriftCheckCliOverrides {
+  /**
+   * Internal test seam (mirrors AstramemProviderOptions.__resolveRemote in
+   * astramem-provider.ts). Overrides the default `resolveAstramemRemote()`
+   * so tests can inject a pure in-memory fake `RemoteHandle` instead of
+   * standing up a real astramem daemon. Never set by production callers.
+   */
+  __resolveRemote?: () => Promise<RemoteHandle | null>;
+}
+
+/**
+ * CLI-runnable wrapper around checkDrift(). Exit codes:
+ *   0 — no drift (missingFromAstramem.length <= threshold)
+ *   1 — drift exceeds threshold (memory_drift event emitted)
+ *   2 — astramem unreachable/unpaired; drift is inconclusive (no event —
+ *       there is nothing confirmed-missing to reconcile ids for)
+ */
+export async function runDriftCheckCli(
+  argv: string[],
+  overrides: DriftCheckCliOverrides = {}
+): Promise<DriftCheckCliResult> {
+  const { repo, threshold, windowDays } = parseDriftCheckArgs(argv);
+  const resolveRemote = overrides.__resolveRemote ?? resolveAstramemRemote;
+  const remote = await resolveRemote();
+  if (!remote) {
+    return {
+      report: null,
+      threshold,
+      exitCode: 2,
+      reason: "astramem is not paired/reachable — drift cannot be verified this run"
+    };
+  }
+
+  const report = await checkDrift(repo, remote, windowDays !== undefined ? { windowDays } : {});
+  const driftCount = report.missingFromAstramem.length;
+  if (driftCount > threshold) {
+    emitDriftEvent(repo, report, threshold);
+    return { report, threshold, exitCode: 1 };
+  }
+  return { report, threshold, exitCode: 0 };
+}
+
+// Run when invoked directly (not when imported by tests) — same isMain
+// pattern as scripts/validate-backlog-drift.ts.
+const isMain =
+  import.meta.url === `file://${process.argv[1]}` ||
+  process.argv[1]?.endsWith("drift-check.ts");
+
+if (isMain) {
+  const { report, threshold, exitCode, reason } = await runDriftCheckCli(process.argv.slice(2));
+  if (reason) {
+    process.stdout.write(`memory-drift-check: ${reason}\n`);
+  } else if (report) {
+    const driftCount = report.missingFromAstramem.length;
+    process.stdout.write(
+      `memory-drift-check: checked ${report.checked} entr${report.checked === 1 ? "y" : "ies"} ` +
+        `in the last ${report.windowDays}d window; ${driftCount} missing from astramem ` +
+        `(threshold: ${threshold})\n`
+    );
+    if (driftCount > 0) {
+      for (const entry of report.missingFromAstramem) {
+        process.stdout.write(`  - ${entry.id}: ${entry.summary}\n`);
+      }
+    }
+  }
+  process.exit(exitCode);
 }
