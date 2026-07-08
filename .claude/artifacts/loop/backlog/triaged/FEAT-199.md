@@ -29,9 +29,16 @@ Enforce grade-placeholder rejection in CI plus backfill — promote validate-syn
 Created via free-text intake (`/runner:intake "<text>"`). Priority is
 unset — this FEAT has not been scored yet. Run `/runner:triage`
 (PM scoring + `backlog pm-apply`) to score it before slicing.
-## Acceptance criteria (Given-When-Then)
+## Acceptance criteria
 
-- AC-1: Given a grade file under `.claude/artifacts/loop/grades/` containing placeholder content (every field the literal string `bullet`, or every dimension score `0`), When the extended validator (grown from scripts/validate-syntheses.ts's existing placeholder-rejection pattern) runs, Then it exits non-zero and lists every offending file path.
-- AC-2: Given a grade file with real, non-placeholder content and non-zero dimension scores, When the same validator runs, Then it exits 0 and does not flag the file.
-- AC-3: Given the current backlog of 80 grade files with a confirmed placeholder pattern (SLICE-94/95 verified directly) (edge/failure path), When the one-time backfill script runs, Then every previously-flagged file is either regenerated with real, source-cited content or explicitly annotated `backfill_status: unrecoverable` with a reason, and a before/after summary report is written under `.claude/artifacts/loop/`.
-- AC-4: Given the new validator wired into `.github/workflows/test.yml` as a HARD CI step, When a new PR introduces a placeholder or all-zero grade file, Then CI fails red on that PR -- closing the gap that let the current placeholder/all-zero rot accumulate silently, and directly targeting the weak `test_confidence` (0.548) and `observability` (0.496) grade dimensions by making the grade signal itself enforced and inspectable.
+_Slice 199a (gate logic — parallel, this wave). `scripts/validate-syntheses.ts` is ALREADY a HARD CI step (`.github/workflows/test.yml:30`), so extending its logic activates the gate with NO workflow edit — 199a owns only `scripts/validate-syntheses.ts` + its test._
+
+- AC-1: Given a grade file under `.claude/artifacts/loop/grades/` containing placeholder content (a `bullet`/`bullet N` literal in a required prose field, an unfilled `<fill …>`/`TBD` token, OR every dimension score `0`), When `scripts/validate-syntheses.ts` runs, Then it exits non-zero and lists every offending grade file path with the reason.
+- AC-2: Given a grade file with real, non-placeholder content and non-zero dimension scores, When the same validator runs, Then it exits 0 and does not flag the file. (Regression fixtures: a known-good grade like `20260708T081627Z-slice110-grade.md` passes; a synthetic placeholder grade fails.)
+- AC-4: Given `validate-syntheses.ts` already runs as a HARD CI step (`test.yml:30`), When a PR introduces a placeholder/all-zero grade file, Then CI fails red on that PR — closing the gap that let the placeholder/all-zero rot accumulate silently. NO `.github/workflows/test.yml` edit required (the step exists; only the validator's grade-file coverage is new). Directly targets the weak `test_confidence` + `observability` grade dimensions.
+
+## Deferred — slice 199b (backfill; GATED, human-review; runs AFTER 199a merges)
+
+Not part of the parallel wave — rewrites ~20+ already-committed grade artifacts (`.claude/artifacts/loop/grades/`), which is not a clean `git revert`. Run only after 199a's gate is live, so backfilled grades must pass the new gate.
+
+- AC-3: Given the current grade files with a confirmed placeholder pattern (SLICE-94/95 verified), When the one-time backfill runs, Then every previously-flagged file is either regenerated with real, source-cited content OR explicitly annotated `backfill_status: unrecoverable` with a reason, and a before/after summary report is written under `.claude/artifacts/loop/`.
