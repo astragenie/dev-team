@@ -81,3 +81,29 @@ test("resolves crew: tokens that name a skill directory", async () => {
   const result = await validateAgentRefs(root);
   assert.equal(result.ok, true, `unexpected findings: ${JSON.stringify(result.findings)}`);
 });
+
+test("fails on a phantom agent reference inside .claude/loop/rules.md", async () => {
+  // Regression for the shipped bug: a phantom `crew:builder` dispatch
+  // instruction in the loop-methodology markdown broke a consumer repo
+  // because the scan only covered commands/skills/agents, not .claude/loop/.
+  const root = await makeRepoRoot({
+    "agents/fullstack-dev.md": "---\nname: fullstack-dev\n---\nbody",
+    ".claude/loop/rules.md":
+      "# Autonomous Loop — HARD RULES\n\nDispatch implementation via `crew:builder`.\n"
+  });
+  const result = await validateAgentRefs(root);
+  assert.equal(result.ok, false);
+  assert.ok(
+    result.findings.some((f) => f.token === "crew:builder" && f.file === ".claude/loop/rules.md")
+  );
+});
+
+test("passes on a real agent reference inside .claude/loop/rules.md", async () => {
+  const root = await makeRepoRoot({
+    "agents/fullstack-dev.md": "---\nname: fullstack-dev\n---\nbody",
+    ".claude/loop/rules.md":
+      "# Autonomous Loop — HARD RULES\n\nDispatch implementation via `crew:fullstack-dev`.\n"
+  });
+  const result = await validateAgentRefs(root);
+  assert.equal(result.ok, true, `unexpected findings: ${JSON.stringify(result.findings)}`);
+});

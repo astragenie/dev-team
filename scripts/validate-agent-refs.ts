@@ -2,13 +2,23 @@
 // validate-agent-refs.ts — phantom agent/command reference sweep
 // (crew-architecture-review 2026-07-04, Finding 2.1 + Section 8 fitness function).
 //
-// Scans commands/, skills/, agents/ for `crew:<name>` (and `crew:3rdparty:<name>`)
-// dispatch tokens and fails if <name> does not resolve to a real command file
+// Scans commands/, skills/, agents/, and the durable loop-methodology markdown
+// under .claude/loop/ for `crew:<name>` (and `crew:3rdparty:<name>`) dispatch
+// tokens and fails if <name> does not resolve to a real command file
 // (commands/<name>.md), a real agent file (agents/<name>.md), or a real
 // 3rdparty agent/command file. This catches the exact failure mode the
 // architecture review found: a rename or a copy-pasted community agent pack
 // leaves behind a dispatch instruction that resolves to nothing, and nothing
 // in CI notices until a live dispatch fails with "Agent type not found".
+//
+// .claude/loop/ is included because it ships the HARD RULE methodology that
+// autonomous orchestrators (and consumer repos that install this plugin) read
+// verbatim — a phantom `crew:<name>` there breaks a consumer repo exactly like
+// one in commands/skills/agents would, and it shipped once already (a
+// `crew:builder` phantom in .claude/loop/rules.md, fixed by hand before this
+// scan existed). Only .claude/loop/**/*.md is scanned — never
+// .claude/artifacts/**, .claude/logs/, or .claude/state/, which are run-local
+// output, not durable authored methodology.
 //
 // Forward references (agents intentionally referenced before they exist, each
 // with documented registry-fallback handling at its reference sites) live in
@@ -114,7 +124,7 @@ export async function validateAgentRefs(repoRoot = REPO_ROOT) {
     agentNames3rdparty: listMdBasenames(path.join(repoRoot, "agents", "3rdparty"))
   };
 
-  const scanDirs = ["commands", "skills", "agents"];
+  const scanDirs = ["commands", "skills", "agents", path.join(".claude", "loop")];
   const files: string[] = [];
   for (const d of scanDirs) {
     files.push(...(await walkMarkdown(path.join(repoRoot, d))));
