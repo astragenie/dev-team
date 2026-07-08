@@ -97,3 +97,111 @@ Layer 2 — GEPA trial corpus (crew/dev-team-local, EXISTING + FEAT-193)
 2. Decompose SLICE-109 (placeholder blob) → S1a/S1b/S2/S3a/S3b/S4/S5 real slices (per architect review).
 3. Confirm the memory-plugin v0.4 / astramem-CLI timeline — Layer 1 recall + S4 are inert until it ships; S1 capture + S3 file-provider recall + all of FEAT-193 work without it.
 4. Decide ownership of the Windows-path + `--project=featId` cache bugs — they block real astramem use once v0.4 lands.
+
+## 8. Options Considered — retrospective backfill (FEAT-234, 2026-07-08)
+
+> **ADDENDUM (2026-07-08).** The v0.64.0 architect design review of the shipped
+> FEAT-188 arc passed on substance (SOUND-WITH-DEBT — the decisions below were
+> correct) but flagged that this doc recorded them in prose without a formal
+> options-comparison shape. This section backfills that structure against what
+> actually happened: the shipped FEAT-188 closure note, the frozen
+> `docs/contracts/recall-injection-v1.md`, and dev-team#170/#172. No decision is
+> changed — only the comparison is made explicit and auditable.
+
+### 8.1 Topology — one memory home vs. two independent stacks
+
+The question, live as of the 2026-07-04 original FEAT-188 plan: should dev-team
+build its own greenfield `MemoryProvider` independent of runner-plugin, or should
+the two repos converge on one canonical implementation?
+
+#### Option A — Two independent memory stacks (runner-plugin and dev-team each own a `MemoryProvider`)
+
+Each repo keeps evolving its own capture+recall+provider stack in isolation:
+runner-plugin continues down its own `memory-bridge.mts` / `memory-recall.mts` /
+`learnings.mts` path; dev-team builds FEAT-188's `MemoryProvider` as an unrelated,
+separately-designed system.
+
+**Why rejected:** this is close to what the 2026-07-04 plan actually assumed
+before this reconciliation caught it (§0 supersession note on the plan doc) —
+and the concrete failure mode had already started to materialize: both stacks
+independently reused the same top-level `memory` key in the same
+`.claude/loop.json`, with colliding field names (`recall.k` vs. the plan's
+`recall.topK`, and an `enabled`/`provider` split with no agreed precedence — see
+§4). Left as two stacks, a repo running both would get load-order-dependent
+behavior, and — worse — two disconnected stores with no reconciliation path,
+duplicating the exact "two stores that never touch" problem this doc separately
+diagnoses between the astramem-fed bridge and the GEPA trial JSONL (§3).
+
+#### Option B — One canonical `MemoryProvider` home (dev-team/crew), runner-plugin's bridge folded in as the seed (CHOSEN)
+
+Dev-team owns the interface/schema (S2), the astramem provider (S4), and the
+recall-injection contract (`recall-injection-v1.md`, frozen 2026-07-06);
+runner-plugin's existing `memory-bridge.mts` / `learnings.mts` / `memory-recall.mts`
+are treated as ~60-65% of the target build already done (§0 bottom line) and
+folded in — `learnings.mts` ≈ `fileProvider`, `resolveCli()` ≈ the pre-existing
+astramem adapter, later re-platformed onto the plugin/MCP transport (§8.2) —
+rather than discarded. runner-plugin becomes a **consumer** of the frozen v1
+contract (S3b, runner-plugin#358) instead of a second implementation.
+
+**Why chosen:** preserves already-shipped, working infra instead of throwing it
+away; forces exactly one config schema (§4's field-by-field reconciliation) and
+one recall-block format (`## Prior context (from astramem)`, reused verbatim by
+both repos per `recall-injection-v1.md`, not forked). Recorded explicitly as
+DEC-066: "Memory stack consolidates into crew via merge — runner's existing
+schema is the seed, not a from-scratch rebuild."
+
+### 8.2 Transport — astramem access method for capture/recall
+
+dev-team#172 (2026-07-06, closed) named three transports in play across the two
+repos and requested a single decision. S4's original framing had accepted
+CLI-shell or a reimplemented HTTP client as viable; runner-plugin#357/#358 had
+already framed MCP-only — the two repos were inconsistent until #172 forced a
+pick.
+
+#### Option 1 — CLI-shell to `bin/astramem` (the bridge's original `resolveCli()` transport)
+
+**Why rejected:** built on a stale premise — the bridge's own comments assumed
+astramem was dormant until memory-plugin v0.4 shipped a CLI; astramem is
+actually live at plugin v0.6 with a provider-selector interface. Concrete,
+already-observed failure modes (runner-plugin#324): a Windows path-probe bug
+(only resolves a bare `astramem` on `PATH`, not an absolute install path) and a
+`--project=featId` argv bug that silently drops recall to `[]` (wrong scoping
+key entirely). It also structurally bypasses the provider selector, so it can
+never route to SaaS-backed astramem — only ever a local binary, if one happens
+to resolve.
+
+#### Option 2 — Reimplemented in-process HTTP client
+
+**Why rejected:** concrete failure mode captured live in dev-team#170 — the S4
+paired dual-write tests stood up an in-process `http.Server` fake daemon, and
+the provider's fire-and-forget client made a real socket round-trip to it.
+Under Bun's saturated 180-file parallel test run, the event loop never
+serviced the accept+round-trip within any deadline tried (2s, 5s, 15s all
+failed identically — bumping the timeout only moved the failure, which is what
+ruled out "just slow" and confirmed genuine event-loop starvation under load).
+This blocked the v0.53.0 release until diagnosed. A hand-rolled HTTP layer also
+duplicates transport/routing logic (local-vs-SaaS) the astramem plugin's own
+provider selector already solves — a second thing to keep correct for no
+benefit.
+
+#### Option 3 — astramem plugin commands / local MCP tools (`remember`, `recall_memory`, `search_memory`, `get_health`) (CHOSEN)
+
+**Why chosen:** this is the plugin's own supported, versioned interface
+(plugin v0.6 / astramem v1.1.0); the provider selector handles SaaS-vs-local
+routing internally, so there is no CLI path assumption, no hand-rolled HTTP
+server, and no need for a per-test fake daemon. Resolved in dev-team#172
+(2026-07-06): dev-team's shipped S4 production code imports the plugin's
+provider layer directly, and the #170 fix replaced the in-process `http.Server`
+in tests with an in-memory fake via a `__resolveRemote` injection seam — proving
+the transport choice also fixed the flake, not just the staleness concern.
+Recorded in FEAT-188's closed record as "DEC (dev-team#172, 2026-07-06) —
+single astramem transport = plugin/MCP." The DEC retires Option 1 and Option 2
+in **dev-team's** shipped code. On the **runner-plugin** side the decision is
+adopted but the migration is staged, not complete: S1b (`f2803af9`, #361) moved
+capture + slice-start recall onto the plugin provider but deliberately **keeps
+the CLI spawn as a rollout fallback**, and the remaining capture callers +
+`memory-bridge.mts`/`memory-recall.mts` deletion are the open work (runner-plugin
+FEAT-235). So "retired repo-wide" is the target end-state, not yet the shipped
+reality on runner-plugin — see runner-plugin `f2803af9` and dev-team#172's own
+resolution note ("runner-plugin's live emit()/recall still shell the CLI … that
+migration is the remaining open work, tracked there").
