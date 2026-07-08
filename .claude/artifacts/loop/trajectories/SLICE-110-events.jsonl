@@ -1,0 +1,14 @@
+{"type":"shape_classified","sliceId":"SLICE-110","featureId":"FEAT-196","timestamp":"2026-07-08T08:02:22.220Z","shape":"none","rationale":"no files","inlinePathUsed":false}
+{"type":"workflow_state_changed","sliceId":"SLICE-110","featureId":"FEAT-196","timestamp":"2026-07-08T08:02:27.875Z","from":null,"to":"building"}
+{"type":"gate_transition","sliceId":"SLICE-110","featureId":"FEAT-196","timestamp":"2026-07-08T08:14:08.840Z","gate":"review","from":null,"to":"passed"}
+{"type":"gate_transition","sliceId":"SLICE-110","featureId":"FEAT-196","timestamp":"2026-07-08T08:14:08.840Z","gate":"blocked","from":null,"to":"passed"}
+{"type":"gate_transition","sliceId":"SLICE-110","featureId":"FEAT-196","timestamp":"2026-07-08T08:14:08.840Z","gate":"validation","from":null,"to":"failed"}
+{"type":"gate_transition","sliceId":"SLICE-110","featureId":"FEAT-196","timestamp":"2026-07-08T08:14:08.840Z","gate":"test-adequacy","from":null,"to":"passed"}
+{"type":"gate_transition","sliceId":"SLICE-110","featureId":"FEAT-196","timestamp":"2026-07-08T08:14:08.840Z","gate":"simplify","from":null,"to":"passed"}
+{"type":"workflow_state_changed","sliceId":"SLICE-110","featureId":"FEAT-196","timestamp":"2026-07-08T08:14:10.113Z","from":"building","to":"done"}
+{"type":"gate_transition","sliceId":"SLICE-110","featureId":"FEAT-196","timestamp":"2026-07-08T08:16:26.514Z","gate":"review","from":null,"to":"passed"}
+{"type":"gate_transition","sliceId":"SLICE-110","featureId":"FEAT-196","timestamp":"2026-07-08T08:16:26.514Z","gate":"blocked","from":null,"to":"passed"}
+{"type":"gate_transition","sliceId":"SLICE-110","featureId":"FEAT-196","timestamp":"2026-07-08T08:16:26.514Z","gate":"validation","from":null,"to":"passed"}
+{"type":"gate_transition","sliceId":"SLICE-110","featureId":"FEAT-196","timestamp":"2026-07-08T08:16:26.514Z","gate":"test-adequacy","from":null,"to":"passed"}
+{"type":"gate_transition","sliceId":"SLICE-110","featureId":"FEAT-196","timestamp":"2026-07-08T08:16:26.514Z","gate":"simplify","from":null,"to":"passed"}
+{"type":"workflow_state_changed","sliceId":"SLICE-110","featureId":"FEAT-196","timestamp":"2026-07-08T08:16:27.554Z","from":"building","to":"done"}

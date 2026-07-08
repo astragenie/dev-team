@@ -6,6 +6,7 @@ import path from "node:path";
 import assert from "node:assert/strict";
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
+import type { MemoryEntry } from "./lib/memory/schema.ts";
 
 const execFile = promisify(execFileCallback);
 const rootPath = await fs.mkdtemp(path.join(os.tmpdir(), "crew-e2e-"));
@@ -323,6 +324,162 @@ async function scenarioValidationStaleFlow(sampleRoot: string) {
   console.log("[scenario] validation-stale-flow: PASS");
 }
 
+// ---------------------------------------------------------------------------
+// Scenario: recall-injection-v1 contract smoke (FEAT-196 / SLICE-110)
+//
+// Guards the frozen contract at docs/contracts/recall-injection-v1.md
+// end-to-end through the real public helper (scripts/lib/memory/
+// inject-recall.ts) — never a forked recall-block format. Each case gets its
+// own throwaway temp repo (mirrors smokeBuildBundle's isolated-tmp pattern
+// above) with a real .claude/loop.json + learnings.jsonl fixture so
+// loadMemoryConfig's actual file-read path is exercised, not just rawConfig
+// passthrough.
+// ---------------------------------------------------------------------------
+
+async function writeMemoryLoopConfig(repoRoot: string, memoryBlock: unknown): Promise<void> {
+  const loopConfigPath = path.join(repoRoot, ".claude", "loop.json");
+  await fs.mkdir(path.dirname(loopConfigPath), { recursive: true });
+  await fs.writeFile(loopConfigPath, JSON.stringify({ memory: memoryBlock }, null, 2), "utf8");
+}
+
+async function writeRecallFixtureEntry(repoRoot: string, entry: MemoryEntry): Promise<void> {
+  const learningsPath = path.join(repoRoot, ".claude", "artifacts", "loop", "learnings.jsonl");
+  await fs.mkdir(path.dirname(learningsPath), { recursive: true });
+  await fs.appendFile(learningsPath, `${JSON.stringify(entry)}\n`, "utf8");
+}
+
+// Local, e2e-smoke-scoped structured event log — deliberately NOT routed
+// through scripts/lib/gepa/observability-events.ts (that sink is GEPA-event
+// branded); this smoke's `recall_injection_smoke` event is test-infra-only
+// telemetry for AC-3, kept out of the product runtime surface entirely.
+async function logSmokeEvent(repoRoot: string, fields: Record<string, unknown>): Promise<void> {
+  const eventsPath = path.join(repoRoot, ".claude", "logs", "events.jsonl");
+  await fs.mkdir(path.dirname(eventsPath), { recursive: true });
+  const line = `${JSON.stringify({ ts: new Date().toISOString(), ...fields })}\n`;
+  await fs.appendFile(eventsPath, line, "utf8");
+}
+
+function recallFixtureEntry(source: string): MemoryEntry {
+  return {
+    id: `smoke-${source}`,
+    ts: new Date(Date.now() - 60_000).toISOString(),
+    kind: "lesson",
+    severity: "low",
+    agent: null,
+    tags: ["smoke-fixture"],
+    summary: `Recall-injection-v1 contract fixture entry (${source}).`,
+    source: "e2e-smoke-fixture"
+  };
+}
+
+async function scenarioRecallInjectionAc1(
+  injectRecall: typeof import("./lib/memory/index.ts").injectRecall,
+  dispatchBaseline: string
+): Promise<void> {
+  // AC-1: provider:none -> byte-identical, zero injected blocks.
+  const repoNone = await fs.mkdtemp(path.join(os.tmpdir(), "smoke-recall-none-"));
+  await writeMemoryLoopConfig(repoNone, { provider: "none" });
+  const resultNone = await injectRecall(dispatchBaseline, { repoPath: repoNone });
+  assert.equal(
+    resultNone,
+    dispatchBaseline,
+    "AC-1: provider:none must return dispatchText byte-identical to baseline"
+  );
+
+  // AC-1 (alt path): provider:file but recall.enabled:false -> same guarantee,
+  // even with a matching fixture entry present in the store.
+  const repoRecallDisabled = await fs.mkdtemp(path.join(os.tmpdir(), "smoke-recall-disabled-"));
+  await writeMemoryLoopConfig(repoRecallDisabled, { provider: "file", recall: { enabled: false } });
+  await writeRecallFixtureEntry(repoRecallDisabled, recallFixtureEntry("ac1-disabled"));
+  const resultDisabled = await injectRecall(dispatchBaseline, { repoPath: repoRecallDisabled });
+  assert.equal(
+    resultDisabled,
+    dispatchBaseline,
+    "AC-1: recall.enabled:false must return dispatchText byte-identical to baseline"
+  );
+  console.log("[scenario] recall-injection-contract AC-1 (provider:none / recall disabled): PASS");
+}
+
+async function scenarioRecallInjectionAc2(
+  injectRecall: typeof import("./lib/memory/index.ts").injectRecall,
+  formatRecallBlock: typeof import("./lib/memory/index.ts").formatRecallBlock,
+  dispatchBaseline: string
+): Promise<void> {
+  // AC-2: provider:file, exactly one matching entry -> exactly one injected block.
+  const repoOneMatch = await fs.mkdtemp(path.join(os.tmpdir(), "smoke-recall-one-"));
+  await writeMemoryLoopConfig(repoOneMatch, { provider: "file" });
+  const fixtureEntry = recallFixtureEntry("ac2-one-match");
+  await writeRecallFixtureEntry(repoOneMatch, fixtureEntry);
+  const resultOneMatch = await injectRecall(dispatchBaseline, { repoPath: repoOneMatch });
+
+  const expectedBlock = formatRecallBlock([fixtureEntry]);
+  assert.equal(
+    resultOneMatch,
+    `${dispatchBaseline}\n\n${expectedBlock}`,
+    "AC-2: single matching entry must inject exactly the frozen single-entry block"
+  );
+  const headerMatches = resultOneMatch.match(/## Prior context \(from astramem\)/g) ?? [];
+  assert.equal(
+    headerMatches.length,
+    1,
+    "AC-2: exactly one recall header must be injected (no double-inject)"
+  );
+  const entryLines = resultOneMatch.split("\n").filter((line) => line.startsWith("- **["));
+  assert.equal(entryLines.length, 1, "AC-2: exactly one recall entry line must be injected");
+  console.log("[scenario] recall-injection-contract AC-2 (provider:file, one match): PASS");
+}
+
+async function scenarioRecallInjectionAc3(
+  injectRecall: typeof import("./lib/memory/index.ts").injectRecall,
+  dispatchBaseline: string
+): Promise<void> {
+  // AC-3: provider:file, zero matching entries (tag-scope miss) -> byte-identical
+  // dispatch + a structured recall_injection_smoke event with entriesInjected: 0.
+  const repoZeroMatch = await fs.mkdtemp(path.join(os.tmpdir(), "smoke-recall-zero-"));
+  await writeMemoryLoopConfig(repoZeroMatch, { provider: "file" });
+  await writeRecallFixtureEntry(repoZeroMatch, recallFixtureEntry("ac3-zero-match"));
+  const resultZeroMatch = await injectRecall(dispatchBaseline, {
+    repoPath: repoZeroMatch,
+    tags: ["smoke-tag-that-does-not-exist"]
+  });
+  assert.equal(
+    resultZeroMatch,
+    dispatchBaseline,
+    "AC-3: zero matching entries must return dispatchText byte-identical to baseline"
+  );
+
+  await logSmokeEvent(repoZeroMatch, {
+    event: "recall_injection_smoke",
+    case: "provider-file-zero-match",
+    entriesInjected: 0
+  });
+  const eventsRaw = await fs.readFile(
+    path.join(repoZeroMatch, ".claude", "logs", "events.jsonl"),
+    "utf8"
+  );
+  const smokeEvent = eventsRaw
+    .trim()
+    .split(/\r?\n/)
+    .map((line) => JSON.parse(line))
+    .find((event) => event.event === "recall_injection_smoke");
+  assert.ok(smokeEvent, "AC-3: recall_injection_smoke event must be logged");
+  assert.equal(smokeEvent.entriesInjected, 0, "AC-3: entriesInjected must be 0");
+  console.log(
+    "[scenario] recall-injection-contract AC-3 (provider:file, zero match + event): PASS"
+  );
+}
+
+async function scenarioRecallInjectionContract(): Promise<void> {
+  const { injectRecall, formatRecallBlock } = await import("./lib/memory/index.ts");
+
+  const dispatchBaseline =
+    "Dispatch fullstack-dev to SLICE-110 -- implement the recall-injection e2e contract smoke.\n";
+
+  await scenarioRecallInjectionAc1(injectRecall, dispatchBaseline);
+  await scenarioRecallInjectionAc2(injectRecall, formatRecallBlock, dispatchBaseline);
+  await scenarioRecallInjectionAc3(injectRecall, dispatchBaseline);
+}
+
 async function main() {
   console.log(`Creating sample repo at ${repoPath}`);
 
@@ -383,6 +540,9 @@ async function main() {
 
   console.log("\nScenario: validation-stale-flow");
   await scenarioValidationStaleFlow(repoPath);
+
+  console.log("\nScenario: recall-injection-contract (FEAT-196)");
+  await scenarioRecallInjectionContract();
 }
 
 main().catch((error) => {

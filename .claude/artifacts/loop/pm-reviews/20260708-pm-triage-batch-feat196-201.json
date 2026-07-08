@@ -1,0 +1,140 @@
+[
+  {
+    "featureId": "FEAT-196",
+    "scores": {
+      "customer_impact": 0.70,
+      "effort_estimate": 0.20,
+      "strategic_alignment": 0.70,
+      "technical_risk": 0.15,
+      "dependency_depth": 0.15
+    },
+    "compositePriority": "P1",
+    "autonomousSafe": true,
+    "demandEvidence": "Task context: 'runner#368 is about to build S3b against the frozen recall-injection-v1 contract that FEAT-196 guards.' Named, imminent cross-repo consumer (runner-plugin#368) building against a contract this repo froze via FEAT-188. loop-snapshot.md confirms FEAT-188 is the current in-flight P1.",
+    "scopeNotes": "Smallest deliverable: two assertions added to the existing scripts/e2e-smoke.ts (391 lines, read on disk) -- provider:none byte-identical dispatch, provider:file single-entry exactly-one-inject. Cut-to-half: keep only the provider:none baseline assertion if forced, since a silent double-inject is the worse failure mode and the no-recall path is the fastest regression signal for runner#368. No overlap found: e2e-smoke.ts today asserts workflow-state currentRun shape (lines 306-321) but nothing about recall-injection contract. Effort analog: 20260613T195716Z-cost-report-slice-pre-rendered-universals-render-script-hash-drift-ci-gate-pil.md ($76.18, 1 session, 26 min, single-script extension with a CI-gate shape) -- same shape (extend an existing script with a new assertion), confirms effort 0.20-0.25 band; used 0.20. Weak grade dimensions (loop-snapshot.md, all 7 averages <0.80): observability 0.496 and test_confidence 0.548 are most relevant to a test-infra FEAT; reliability 0.526 also relevant. AC-3 and AC-4 below target observability (structured log event) and test_confidence (blocking non-zero exit) respectively so autonomous_safe:true is justified per the weak-dimension AC-coverage rule.",
+    "risks": [
+      "Pre-mortem Q1 (failed review in 2 weeks): most likely cause is the new assertions being written against a stubbed/mocked recall provider instead of the real dispatch path, so 'byte-identical' passes trivially without exercising the actual merge logic where injection happens -- reviewer must confirm the smoke drives the real CLI dispatch, not a unit-level stub.",
+      "Pre-mortem Q2 (rollback if merged and broke the loop): revert-only. This is a test-only diff to scripts/e2e-smoke.ts; git revert of that commit fully restores prior behavior, no migration or state cleanup needed.",
+      "Pre-mortem Q3 (coverage gap): existing recall-provider unit tests exercise the provider in isolation and would not catch a regression in the dispatch-time merge/injection glue code -- that gap is exactly what AC-1/AC-2 close."
+    ],
+    "reasoning": "technical_risk 0.15 band 0.0-0.2 (known e2e-smoke.ts pattern, single file, trivial git revert). composite_score=0.7425 -> P1 via (impact>=0.7 AND alignment>=0.6). autonomous_safe=true: no numeric gate tripped (risk/effort/dep all <=0.6), only edits a script CI already invokes (not the workflow YAML itself), and ACs below cover the weak observability/test_confidence dimensions.",
+    "acs": [
+      "AC-1: Given provider:none configured for the recall-injection-v1 dispatch path, When scripts/e2e-smoke.ts runs the recall-injection contract check, Then the dispatch payload is byte-identical to the no-recall baseline (zero injected blocks).",
+      "AC-2: Given provider:file configured with exactly one matching recall entry, When the e2e smoke exercises the dispatch path, Then exactly one recall block is injected into the dispatch payload (no duplicate or double-inject).",
+      "AC-3: Given provider:file configured but the recall store returns zero matching entries (edge/failure path), When the e2e smoke exercises the dispatch path, Then the dispatch payload is byte-identical to the provider:none baseline and the run logs a structured `recall_injection_smoke` event with `entriesInjected: 0`.",
+      "AC-4: Given the e2e smoke suite, When `bun run e2e:smoke` completes, Then a non-zero exit code is returned if any of AC-1/AC-2/AC-3 fail, consistent with the existing e2e-smoke.ts blocking-gate convention."
+    ]
+  },
+  {
+    "featureId": "FEAT-197",
+    "scores": {
+      "customer_impact": 0.60,
+      "effort_estimate": 0.55,
+      "strategic_alignment": 0.75,
+      "technical_risk": 0.45,
+      "dependency_depth": 0.30
+    },
+    "compositePriority": "P2",
+    "autonomousSafe": false,
+    "demandEvidence": "Lessons digest (bun ../runner-plugin/src/scripts/loop.mts lessons recent 5), SLICE-86 surprise: 'Runner CLI did NOT auto-promote FEAT-160 to done/ this time (unlike SLICE-84/85 close where FEAT-159 got auto-moved). May be because FEAT-160's status was already in-progress (vs triaged) when slice complete fired. Worth confirming the heuristic next time.' -- concrete evidence of an unresolved ceremony-state ambiguity this e2e would have caught.",
+    "scopeNotes": "Smallest deliverable: drive slice start -> build -> review -> validate -> close against the sample/temp repo used by e2e-smoke.ts and assert only the 4 named outcomes (artifacts land, currentRun rotates, cost attribution attaches, file moves to completed) -- cut build/review/validate to a stubbed pass-through if forced to halve, keeping only start+close state transitions. Partial overlap found: scripts/e2e-smoke.ts (391 lines, read on disk) already asserts workflow-state.currentRun shape at lines 306-321, but nothing about the full build->review->validate->close chain, cost attribution, or the slice-file-move-to-completed step -- net-new coverage, not a duplicate. AC clarity: FEAT body is descriptive prose only, no Given-When-Then criteria present -- autonomous_safe:false per the vague-AC rule (this is P2, so PM does not draft ACs inline per the priority-gating table; a human or a --deep rerun should size the AC set before slicing). Effort analog: qa-expert test-quality-lens aggregate (20260613T192005Z, $112.83 across 4 sessions, cross-subsystem test-tooling work) is the closest shape -- multi-subsystem test-infra work, actual cost ran higher than a single-file change; supports effort 0.55 (bumped from a naive single-file guess) rather than assuming it is as cheap as FEAT-196.",
+    "risks": [
+      "Blast radius spans slice-linker/dispatch, cost aggregation, workflow-state, and artifact writers -- a flaky multi-step e2e across that many subsystems risks being disabled/skipped under CI time pressure rather than fixed, which would defeat its purpose.",
+      "Dispatching real subagents inside an e2e run (to exercise build/review/validate) could be costly and slow per run; if the FEAT is sliced without deciding to mock those steps, effort could run well above the 0.55 estimate.",
+      "Weak grade dimensions test_confidence (0.548) and reliability (0.526) are directly the target of this FEAT -- but until AC are drafted, there is no criterion holding the implementation to those dimensions, which is why autonomous_safe stays false until AC exist."
+    ],
+    "reasoning": "technical_risk 0.45, band 0.3-0.5 (new e2e pattern in repo -- orchestrating the full ceremony has no existing analog -- but test-only, no schema/contract change, clean git revert). composite_score=0.615; neither P1 branch fires (impact 0.60 < 0.7; alignment 0.75 < 0.8) -> P2. autonomous_safe=false: no explicit AC in the FEAT body (P2, no --deep/--spec passed, so PM does not draft AC this pass) -- AC-clarity gate trips regardless of numeric scores."
+  },
+  {
+    "featureId": "FEAT-198",
+    "scores": {
+      "customer_impact": 0.70,
+      "effort_estimate": 0.55,
+      "strategic_alignment": 0.70,
+      "technical_risk": 0.65,
+      "dependency_depth": 0.45
+    },
+    "compositePriority": "P1",
+    "autonomousSafe": false,
+    "demandEvidence": "Task context + own memory: 'capture-parity Windows byte-filter, bun-homedir-ignores-home-on-linux (canonical locally-green-not-equal-CI-green trap), benchmark p95 skipped Windows+CI.' MEMORY.md entry bun-homedir-ignores-home-on-linux.md confirms this is a real, previously-hit bug: 'Bun-on-Linux os.homedir() ignores reassigned HOME (passwd/uid); honors USERPROFILE on Windows -- the canonical locally-green != CI-green trap.' Verified directly: grepped .github/workflows/test.yml for jobs:|runs-on:|matrix: and found only a single `jobs:` line with no runs-on/matrix entries, confirming the FEAT's claim of one self-hosted OS.",
+    "scopeNotes": "Overlap check (important): FEAT-190 (pending, P2, read on disk) SLICE-C already scopes 'keep/enable a Windows job' in .github/workflows/test.yml and its cross-repo reusable-plugin-ci.yml@main, and SLICE-E scopes 'Windows smoke as blocking gate.' FEAT-198's incremental value over FEAT-190 is the NEW Linux job plus the golden byte-parity/homedir assertions -- scope this FEAT to explicitly depend on or coordinate with FEAT-190 SLICE-C/E rather than re-adding a duplicate Windows job. Smallest deliverable: one additional Linux CI job (or dedicated golden test) asserting resolveHomeDir() env-first behavior + capture byte-parity; cut benchmark-p95 enablement if forced to halve (log a skip-reason instead, see AC-3). Effort analog: FEAT-190's own triage notes size its Windows-CI-plus-cross-repo-coordination sub-scope (SLICE-C) at 1.0 dev-day + coordination as one slice inside a 0.45 overall effort FEAT -- FEAT-198 is narrower (adds Linux, reuses/coordinates on the Windows piece) but still carries the same cross-repo astragenie/common coordination risk, so effort 0.55 is set slightly below FEAT-190's whole-migration 0.45-weighted mechanical bulk but above a single-repo-only CI edit.",
+    "risks": [
+      "Pre-mortem Q1 (failed review in 2 weeks): most likely cause is the new Linux job passing only because CI hard-codes HOME before Bun starts (masking the bug) rather than fixing resolveHomeDir() to be env-first as the existing memory note prescribes -- that would be a CI-only workaround leaving the real library bug live for consumers.",
+      "Pre-mortem Q2 (rollback if merged and broke the loop): NOT revert-only -- if astragenie/common's reusable-plugin-ci.yml needs updating too (same cross-repo dependency FEAT-190 SLICE-C already names), rollback requires a coordinated revert in both dev-team and astragenie/common per the astra-marketplace HARD RULE cross-repo constraint.",
+      "Pre-mortem Q3 (coverage gap): confirmed via direct grep that .github/workflows/test.yml has zero runs-on/matrix entries today -- no existing test exercises Linux or a second OS, so any platform-specific regression is currently invisible; AC-4 below is written specifically to prove the new matrix actually discriminates platform-specific breakage rather than just re-running the same assertions twice."
+    ],
+    "reasoning": "technical_risk 0.65, band 0.6-0.8 (cross-module reach: touches .github/workflows/test.yml AND likely the cross-repo astragenie/common reusable workflow, matching FEAT-190's own risk table entry 'Cross-repo astragenie/common reusable CI doesn't accept Bun -- Med'). composite_score=0.6075 -> P1 via (impact>=0.7 AND alignment>=0.6); pre-mortem mandatory both via P1 and via risk>=0.6. autonomous_safe=false: technical_risk (0.65) exceeds the 0.6 numeric gate, and this touches the CI workflow definition itself (not just a script CI invokes), matching the repo's own precedent on FEAT-190 (CI-touching work marked autonomous_safe:false).",
+    "acs": [
+      "AC-1: Given a new Linux CI job added to the test pipeline (in .github/workflows/test.yml or the coordinated astragenie/common reusable-plugin-ci.yml path), When `bun run test` runs on that job, Then it passes green using an env-first resolveHomeDir() resolution (not raw os.homedir()), closing the bun-homedir-ignores-home-on-linux gap.",
+      "AC-2: Given a Windows CI job (existing self-hosted baseline, coordinated with FEAT-190 SLICE-C/E rather than duplicated) and the new Linux CI job running in parallel, When the capture-parity byte-filter test suite runs on both, Then both platforms produce byte-identical capture output, or any platform-specific delta is explicitly allowlisted with a documented reason -- closing the capture-parity Windows byte-filter flake.",
+      "AC-3: Given the benchmark p95 suite currently skipped on Windows and in CI (edge/failure path), When the cross-platform matrix lands, Then the benchmark step either runs on at least one non-Windows CI job with a recorded p95 assertion, or is explicitly marked skip with a structured `benchmark_skip_reason` event logged rather than silently absent.",
+      "AC-4: Given a PR that introduces a Linux-only or Windows-only regression, When CI runs the new matrix, Then the job for the affected OS fails (red) while the other OS job stays green, proving the matrix discriminates platform-specific breakage rather than duplicating identical assertions."
+    ]
+  },
+  {
+    "featureId": "FEAT-199",
+    "scores": {
+      "customer_impact": 0.75,
+      "effort_estimate": 0.35,
+      "strategic_alignment": 0.75,
+      "technical_risk": 0.65,
+      "dependency_depth": 0.20
+    },
+    "compositePriority": "P1",
+    "autonomousSafe": false,
+    "demandEvidence": "FEAT body + loop-snapshot.md directly confirm: last-5-grade averages are ALL below 0.80 (architecture_quality 0.528, reliability 0.526, observability 0.496, production_readiness 0.516, security 0.516, test_confidence 0.548, product_completeness 0.48) -- the exact 'poisons every downstream loop decision' claim. Personally verified via `bun ../runner-plugin/src/scripts/loop.mts lessons recent 5`: SLICE-94 and SLICE-95 grades both show `avg_score: 0`, empty lessons arrays, and literal placeholder text `bullet` in surprises/followups -- direct, first-hand confirmation of the all-zero/placeholder pattern this FEAT targets.",
+    "scopeNotes": "Smallest deliverable: extend the existing scripts/validate-syntheses.ts (107 lines, read on disk) placeholder-detection pattern to grade files, wire as a HARD CI step, and do the one-time backfill sweep. Cut-to-half: ship the CI gate first (stops new rot) and defer the historical backfill to a follow-up slice if forced to halve -- the gate has the higher leverage (every future grade), while backfill is a one-time cleanup. No overlap: validate-syntheses.ts today only validates synthesis artifacts, not grades. Effort analog: 20260613T195716Z hash-drift CI-gate pilot slice ($76.18, 1 session, single-script-extension-plus-CI-gate shape) is the closest match for the gate half; the backfill half (rewriting ~20+ of the ~80 grade files on disk, confirmed via `find .claude/artifacts/loop/grades -name '*.md' | wc -l` = 80) adds work beyond that single analog, so overall effort is bumped to 0.35 rather than the pilot slice's ~0.20-0.25.",
+    "risks": [
+      "Pre-mortem Q1 (failed review in 2 weeks): most likely cause is the backfill script 'fixing' all-zero files by inventing plausible-looking scores instead of honestly marking them `backfill_status: unrecoverable` -- fabricated grade data would be a worse outcome than the current known-missing placeholder, and a careful reviewer must reject any backfill entry that cannot cite the source session/artifact it regenerated from.",
+      "Pre-mortem Q2 (rollback if merged and broke the loop): NOT revert-only for the backfill half -- it rewrites ~20+ already-committed grade files (`.claude/artifacts/` is durable committed history per CLAUDE.md); reverting requires confirming no downstream PM/effort-calibration decision was already made against the 'corrected' grades, echoing the dual-write drift-reconcile lesson (`dualwrite-drift-reconcile-pattern.md`) about corrections needing an explicit reconcile step, not a blind revert. The CI-gate half alone is a clean git revert.",
+      "Pre-mortem Q3 (coverage gap): validate-syntheses.ts (107 lines, confirmed on disk) currently validates synthesis artifacts only -- nothing in CI today would catch a new placeholder or all-zero grade file landing; that is precisely the gap AC-1 and AC-4 close."
+    ],
+    "reasoning": "technical_risk 0.65, band 0.6-0.8 (data-shape correction across ~20+ already-committed grade artifacts, rollback needs a reconcile step not a blind revert, plus a new HARD CI gate wired into .github/workflows/test.yml). composite_score=0.6925 -> P1 via (impact>=0.7 AND alignment>=0.6); pre-mortem mandatory via both P1 and risk>=0.6. autonomous_safe=false: technical_risk (0.65) exceeds the 0.6 gate and this wires a new step into the HARD CI gate file -- human-in-loop required per repo convention.",
+    "acs": [
+      "AC-1: Given a grade file under `.claude/artifacts/loop/grades/` containing placeholder content (every field the literal string `bullet`, or every dimension score `0`), When the extended validator (grown from scripts/validate-syntheses.ts's existing placeholder-rejection pattern) runs, Then it exits non-zero and lists every offending file path.",
+      "AC-2: Given a grade file with real, non-placeholder content and non-zero dimension scores, When the same validator runs, Then it exits 0 and does not flag the file.",
+      "AC-3: Given the current backlog of 80 grade files with a confirmed placeholder pattern (SLICE-94/95 verified directly) (edge/failure path), When the one-time backfill script runs, Then every previously-flagged file is either regenerated with real, source-cited content or explicitly annotated `backfill_status: unrecoverable` with a reason, and a before/after summary report is written under `.claude/artifacts/loop/`.",
+      "AC-4: Given the new validator wired into `.github/workflows/test.yml` as a HARD CI step, When a new PR introduces a placeholder or all-zero grade file, Then CI fails red on that PR -- closing the gap that let the current placeholder/all-zero rot accumulate silently, and directly targeting the weak `test_confidence` (0.548) and `observability` (0.496) grade dimensions by making the grade signal itself enforced and inspectable."
+    ]
+  },
+  {
+    "featureId": "FEAT-200",
+    "scores": {
+      "customer_impact": 0.55,
+      "effort_estimate": 0.35,
+      "strategic_alignment": 0.50,
+      "technical_risk": 0.45,
+      "dependency_depth": 0.25
+    },
+    "compositePriority": "P2",
+    "autonomousSafe": false,
+    "demandEvidence": "FEAT body + repo CLAUDE.md: 'bun test single-process, no --parallel (bun#5090) -> slow suite'; CLAUDE.md's own local-commands section documents the same constraint verbatim ('No --parallel -- removed in a20f9dd9 to work around Bun's node:test single-process scheduling bug (bun#5090)'). Frequency: every CI run and every local `bun run test` invocation -- daily, not an edge case -- but this is a velocity/DX improvement, not a correctness-blocking defect, so it does not reach the same customer_impact band as FEAT-196/198/199.",
+    "scopeNotes": "Smallest deliverable: split by file-glob across 2 CI jobs first (not N), prove the sharding boundary has zero test overlap/omission, before expanding to more shards. Cut-to-half: 2-shard split only, skip result-aggregation tooling if forced to halve (rely on CI's native per-job pass/fail). No overlap with FEAT-198 (OS matrix) or FEAT-190 (runtime migration) found -- this is orthogonal (splits the existing single-OS job's test glob, does not add an OS). Effort analog: no close cost analog found for test-sharding specifically; closest shape is the hash-drift CI-gate pilot ($76.18, single session) for the CI-wiring mechanics, but sharding also requires proving shard-boundary correctness (no test silently dropped) which that analog does not cover -- noting 'no direct cost analog' and keeping effort at the dimension-table default 0.35.",
+    "risks": [
+      "Shard-boundary bugs (a test silently excluded from every shard) would reduce effective coverage while looking green -- the FEAT needs an explicit 'every test file assigned to exactly one shard' assertion, which is not called out in the current bare-prose FEAT body.",
+      "bun#5090 (no --parallel) means sharding is a workaround bounded by an external upstream bug; if bun#5090 is fixed first, this FEAT's approach may need to be revisited (--parallel re-enabled) rather than layered on top.",
+      "Touches .github/workflows/test.yml directly (the HARD CI gate file) -- any misconfigured job matrix risks breaking CI for every future PR until caught."
+    ],
+    "reasoning": "technical_risk 0.45, band 0.3-0.5 (new-to-repo sharding pattern, single CI workflow file, no data/schema change, clean revert). composite_score=0.565; neither P1 branch fires (impact 0.55 < 0.7; alignment 0.50 < 0.8) -> P2. autonomous_safe=false: no AC in the bare-prose FEAT body (P2, no --deep/--spec) trips the AC-clarity gate, and this directly edits .github/workflows/test.yml (CI-touching convention, same as FEAT-190's autonomous_safe:false precedent)."
+  },
+  {
+    "featureId": "FEAT-201",
+    "scores": {
+      "customer_impact": 0.65,
+      "effort_estimate": 0.25,
+      "strategic_alignment": 0.70,
+      "technical_risk": 0.30,
+      "dependency_depth": 0.30
+    },
+    "compositePriority": "P2",
+    "autonomousSafe": false,
+    "demandEvidence": "FEAT body + own memory (dualwrite-drift-reconcile-pattern.md): 'best-effort SoT + durable derived-duplicate needs explicit reconcile/backfill (FEAT-188 S5 drift-check.ts); recall must full-window scan not tail-read 64KB.' Confirmed on disk: scripts/lib/memory/drift-check.ts exists (102 lines) -- this FEAT wires an already-built check into a gate rather than building new detection logic from scratch. loop-snapshot.md confirms FEAT-188 (the memory-capture/recall feature this drift-check belongs to) is the current in-flight P1.",
+    "scopeNotes": "Smallest deliverable: wire the existing drift-check.ts into a scheduled job (lower blast radius than a blocking PR gate) with a threshold, plus the single e2e asserting dualWrite:true on both stores; cut the e2e if forced to halve, since the scheduled drift-check alone already surfaces silent drift. No overlap found: nothing else in the pending/in-progress backlog wires drift-check.ts into CI or a schedule today. Effort analog: 20260613T195716Z hash-drift CI-gate pilot slice ($76.18, 1 session, 26 min) is a near-exact shape match -- an existing detection script wired into a CI/scheduled gate -- confirms effort 0.25.",
+    "risks": [
+      "astramem writes are fire-and-forget by design (per FEAT body); a drift-check threshold set too loose could let real drift through silently, while too tight could false-positive on normal async-write latency -- the FEAT as written does not yet specify the threshold value or its basis.",
+      "Depends on FEAT-188 remaining stable while still in-progress (loop-snapshot.md: FEAT-188 slices S1a/S1b/S2/S3a/S3b/S4/S5/S6, S3b upcoming per runner#368) -- wiring a gate against a moving in-flight feature risks the gate needing rework once S3b lands.",
+      "Touches CI-or-scheduled-job configuration to wire the gate -- same CI-touching convention that keeps this autonomous_safe:false until a human confirms the schedule/threshold choice."
+    ],
+    "reasoning": "technical_risk 0.30, band 0.3-0.5 (extends an existing, already-merged script (drift-check.ts) into a new CI/scheduled step -- new wiring pattern but no schema change, clean revert). composite_score=0.6925; neither P1 branch fires (impact 0.65 < 0.7; alignment 0.70 < 0.8) -> P2. autonomous_safe=false: no AC in the bare-prose FEAT body (P2, no --deep/--spec) trips the AC-clarity gate, and this wires into CI-or-scheduled-job config (CI-touching convention)."
+  }
+]
