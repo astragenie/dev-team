@@ -113,22 +113,28 @@ test("validateSyntheses passes on a filled-in grade file", async () => {
   await fs.rm(dir, { recursive: true, force: true });
 });
 
+// FEAT-199a: grandfather cutoff is 2026-07-08T00:00:00Z. Fixtures that must
+// hard-fail use a post-cutoff timestamp (2026-07-09) so the grandfather gate
+// doesn't swallow them; the dedicated grandfather tests below use a
+// pre-cutoff timestamp (2026-07-06) to prove old rot is graced instead.
+
 test("validateSyntheses rejects a grade file with '- bullet' placeholder lines", async () => {
   const rotted = FILLED_GRADE.replace(
     "- Real lesson learned here.\n- Another concrete lesson.",
     "- bullet 1\n- bullet 2"
   );
-  const dir = await makeGradesDir({ "20260706T000000Z-slice98-grade.md": rotted });
+  const dir = await makeGradesDir({ "20260709T000000Z-slice98-grade.md": rotted });
   const result = await validateSyntheses(dir);
   assert.equal(result.errors.length, 1);
   assert.match(result.errors[0]!, /grade_incomplete/);
   assert.match(result.errors[0]!, /bullet/);
+  assert.equal(result.grandfatheredGradeRot.length, 0);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
 test("validateSyntheses rejects a grade file with a bare '- bullet' surprises/followups placeholder", async () => {
   const rotted = `${FILLED_GRADE}\n## Surprises\n\n- bullet\n`;
-  const dir = await makeGradesDir({ "20260706T000000Z-slice97-grade.md": rotted });
+  const dir = await makeGradesDir({ "20260709T000000Z-slice97-grade.md": rotted });
   const result = await validateSyntheses(dir);
   assert.equal(result.errors.length, 1);
   assert.match(result.errors[0]!, /grade_incomplete/);
@@ -140,10 +146,62 @@ test("validateSyntheses rejects a grade file whose AC scores are all unfilled (0
     /scores:\n(?:.*\n)+decisions: \[\]/,
     "scores:\n  architecture_quality: 0\n  reliability: 0\n  observability: 0\n  production_readiness: 0\n  security: 0\n  test_confidence: 0\n  product_completeness: 0\ndecisions: []"
   );
-  const dir = await makeGradesDir({ "20260706T000000Z-slice96-grade.md": unfilled });
+  const dir = await makeGradesDir({ "20260709T000000Z-slice96-grade.md": unfilled });
   const result = await validateSyntheses(dir);
   assert.equal(result.errors.length, 1);
   assert.match(result.errors[0]!, /grade_incomplete/);
+  await fs.rm(dir, { recursive: true, force: true });
+});
+
+test("validateSyntheses rejects a grade file with an unrendered '<title>' heading", async () => {
+  const rotted = FILLED_GRADE.replace(
+    "# SLICE-99 — Grade",
+    "# SLICE-99: <title> — Grade"
+  );
+  const dir = await makeGradesDir({ "20260709T000000Z-slice93-grade.md": rotted });
+  const result = await validateSyntheses(dir);
+  assert.equal(result.errors.length, 1);
+  assert.match(result.errors[0]!, /grade_incomplete/);
+  assert.match(result.errors[0]!, /<title>/);
+  await fs.rm(dir, { recursive: true, force: true });
+});
+
+test("validateSyntheses rejects a grade file with an unfilled 'DEC-TBD: Short decision title' placeholder", async () => {
+  const rotted = `${FILLED_GRADE}\n## Decisions\n\n### DEC-TBD: Short decision title\n\n**Rationale**: Why this decision was made.\n`;
+  const dir = await makeGradesDir({ "20260709T000000Z-slice92-grade.md": rotted });
+  const result = await validateSyntheses(dir);
+  assert.equal(result.errors.length, 1);
+  assert.match(result.errors[0]!, /grade_incomplete/);
+  assert.match(result.errors[0]!, /DEC-TBD/);
+  await fs.rm(dir, { recursive: true, force: true });
+});
+
+test("validateSyntheses does NOT flag a real (id-pending) 'DEC-TBD:' decision with a real title", async () => {
+  const real = `${FILLED_GRADE}\n## Decisions\n\n### DEC-TBD: checkJs:false for migrate-first TS adoption\n\n**Rationale**: Real rationale text.\n`;
+  const dir = await makeGradesDir({ "20260709T000000Z-slice91-grade.md": real });
+  const result = await validateSyntheses(dir);
+  assert.equal(result.errors.length, 0);
+  await fs.rm(dir, { recursive: true, force: true });
+});
+
+test("validateSyntheses rejects a grade file with an unfilled '(narrative)' section", async () => {
+  const rotted = `${FILLED_GRADE}\n## What went well\n\n(narrative)\n`;
+  const dir = await makeGradesDir({ "20260709T000000Z-slice90-grade.md": rotted });
+  const result = await validateSyntheses(dir);
+  assert.equal(result.errors.length, 1);
+  assert.match(result.errors[0]!, /grade_incomplete/);
+  assert.match(result.errors[0]!, /narrative/);
+  await fs.rm(dir, { recursive: true, force: true });
+});
+
+test("validateSyntheses does NOT flag '<title>'-shaped prose that isn't the unrendered heading", async () => {
+  // Real content referencing a filename pattern like `cost-report-<title>.md`
+  // must not trip the heading-placeholder check (regression for the
+  // 20260602T142422Z-slice13-grade.md false positive found during FEAT-199a).
+  const real = `${FILLED_GRADE}\n\nLegacy \`cost-report-<title>.md\` files continue to parse.\n`;
+  const dir = await makeGradesDir({ "20260709T000000Z-slice89-grade.md": real });
+  const result = await validateSyntheses(dir);
+  assert.equal(result.errors.length, 0);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -151,5 +209,45 @@ test("validateSyntheses ignores non-grade files in the grades directory", async 
   const dir = await makeGradesDir({ "README.md": "- bullet\nnot a grade file" });
   const result = await validateSyntheses(dir);
   assert.equal(result.errors.length, 0);
+  await fs.rm(dir, { recursive: true, force: true });
+});
+
+// ── FEAT-199a: grandfather cutoff for pre-existing grade rot ────────────────
+
+test("validateSyntheses grandfathers rotted grade files dated before the FEAT-199a cutoff", async () => {
+  const rotted = FILLED_GRADE.replace(
+    "- Real lesson learned here.\n- Another concrete lesson.",
+    "- bullet 1\n- bullet 2"
+  );
+  const dir = await makeGradesDir({ "20260706T000000Z-slice98-grade.md": rotted });
+  const result = await validateSyntheses(dir);
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.grandfatheredGradeRot.length, 1);
+  assert.match(result.grandfatheredGradeRot[0]!, /grandfathered/);
+  assert.match(result.grandfatheredGradeRot[0]!, /FEAT-199b/);
+  await fs.rm(dir, { recursive: true, force: true });
+});
+
+test("validateSyntheses hard-fails a rotted grade file dated exactly at the FEAT-199a cutoff", async () => {
+  const rotted = FILLED_GRADE.replace(
+    "- Real lesson learned here.\n- Another concrete lesson.",
+    "- bullet 1\n- bullet 2"
+  );
+  const dir = await makeGradesDir({ "20260708T000000Z-slice98-grade.md": rotted });
+  const result = await validateSyntheses(dir);
+  assert.equal(result.errors.length, 1);
+  assert.equal(result.grandfatheredGradeRot.length, 0);
+  await fs.rm(dir, { recursive: true, force: true });
+});
+
+test("validateSyntheses treats a grade file with no parseable timestamp prefix as new (not grandfathered)", async () => {
+  const rotted = FILLED_GRADE.replace(
+    "- Real lesson learned here.\n- Another concrete lesson.",
+    "- bullet 1\n- bullet 2"
+  );
+  const dir = await makeGradesDir({ "legacy-slice98-grade.md": rotted });
+  const result = await validateSyntheses(dir);
+  assert.equal(result.errors.length, 1);
+  assert.equal(result.grandfatheredGradeRot.length, 0);
   await fs.rm(dir, { recursive: true, force: true });
 });
