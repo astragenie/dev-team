@@ -127,7 +127,9 @@ async function validateGradeFiles(
     if (!reason) continue;
     const timestamp = parseGradeFilenameTimestamp(name);
     if (timestamp && timestamp < GRADE_ROT_GRANDFATHER_CUTOFF) {
-      grandfathered.push(`${name}: ${reason} (grandfathered pre-FEAT-199a rot — see FEAT-199b backfill)`);
+      grandfathered.push(
+        `${name}: ${reason} (grandfathered pre-FEAT-199a rot — see FEAT-199b backfill)`
+      );
       continue;
     }
     errors.push(`${name}: ${reason}`);

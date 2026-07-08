@@ -154,10 +154,7 @@ test("validateSyntheses rejects a grade file whose AC scores are all unfilled (0
 });
 
 test("validateSyntheses rejects a grade file with an unrendered '<title>' heading", async () => {
-  const rotted = FILLED_GRADE.replace(
-    "# SLICE-99 — Grade",
-    "# SLICE-99: <title> — Grade"
-  );
+  const rotted = FILLED_GRADE.replace("# SLICE-99 — Grade", "# SLICE-99: <title> — Grade");
   const dir = await makeGradesDir({ "20260709T000000Z-slice93-grade.md": rotted });
   const result = await validateSyntheses(dir);
   assert.equal(result.errors.length, 1);
