@@ -427,28 +427,40 @@ node -e "
 "
 ```
 
-**Classify tier:**
+**Classify tier (telemetry only — does not change gate dispatch; see `RISK_GATE` below):**
 
-- `tier: full` — long slices, cross-plugin, >10 changed files AND ≥7 ACs. Dispatch separate `crew:reviewer` and `crew:verifier` in parallel.
-- `tier: light` — short slices with `SHORT_SLICE = true` AND `BEHAVIOR_CHANGED = true`. Dispatch `crew:reviewer` and `crew:verifier` in parallel (same gate as full tier; the tier flag is retained for run-brief/telemetry only).
+- `tier: full` — long slices, cross-plugin, >10 changed files AND ≥7 ACs.
+- `tier: light` — short slices with `SHORT_SLICE = true` AND `BEHAVIOR_CHANGED = true`.
 
 Tier is recorded in the slice-progress tracking via `write-run-brief --tier <light|full>` (invoked by loop's internal machinery; may be logged for reference).
+
+**Compute `RISK_GATE`** (FEAT-202 / SLICE-112 — lean review gate). Post-builder gate composition is governed by risk, not tier. `RISK_GATE = true` when ANY of:
+
+- slice frontmatter `risk: high` (case-insensitive), OR
+- FEAT tags include `concern:security` OR `concern:performance`, OR
+- `SPLIT_BUILD = true` (from Step 0 classification)
+
+`RISK_GATE = false` otherwise — the LOW/MEDIUM-risk common case.
 
 Print the outcome before proceeding:
 
 ```
-SHORT_SLICE=<true|false>  TIER=<light|full>
+SHORT_SLICE=<true|false>  TIER=<light|full>  RISK_GATE=<true|false>
 ```
 
 ---
 
-### Step 4 & 5 — Reviewer and Validator (concurrent gates)
+### Step 4 & 5 — Reviewer and Validator (risk-gated)
 
-After builder PASS, dispatch both review and validation in parallel according to tier.
+After builder PASS, dispatch the post-builder gate. Composition is governed by `RISK_GATE` (Step 4.5), not tier.
 
 #### Dispatch selection
 
-**Both tiers** dispatch `crew:reviewer` and `crew:verifier` concurrently (single message, two `Agent` calls, or parallel tool invocations). The `light`/`full` tier flag no longer changes the gate agents — it is retained for run-brief telemetry only. (Historically `tier: light` dispatched a single combined `reviewer-validator` agent; that agent was superseded by `reviewer-lite` + the push-gate model, so the light path now uses the same concurrent reviewer + verifier gate as full.)
+**`RISK_GATE = false` (LOW/MEDIUM risk — the default):** dispatch exactly **one** `crew:reviewer` (Step 4 prompt below). Do **not** dispatch a dedicated `crew:verifier`. Validation for the close-time gate is delegated to the reviewer's evidenced approval artifact plus the CI full-suite gate (`.github/workflows/test.yml`), which runs the whole-repo suite independently of this dispatch — see `.claude/loop.json` `loop.validation.satisfiedByReview: true` and `skills/workflow/validator-gate/SKILL.md`. (The `pre-push-verifier` hook only checks for a PASS artifact behind a default-off flag; CI is the actual full-suite runner.)
+
+**`RISK_GATE = true` (HIGH risk, OR FEAT tags `concern:security` / `concern:performance`, OR `SPLIT_BUILD = true`):** dispatch the heavy path in one parallel message — a 2nd reviewer per `skills/workflow/fan-out-review/SKILL.md` AND/OR a dedicated `crew:verifier` (Step 5 prompt below). This is the explicit override condition for this gate; do not apply the heavy path outside these three signals.
+
+(Historically both tiers always dispatched `crew:reviewer` + `crew:verifier` concurrently regardless of risk. FEAT-202 / SLICE-112 replaced that with the `RISK_GATE` switch above, ported from runner-plugin's lean post-builder-fanout model, which runs `reviewers.ladder: ["A"]` by default in production and delegates validation to `deriveValidationGate`'s `satisfiedByReview` path.)
 
 #### Step 4 prompt — `crew:reviewer` (both tiers; parallel)
 
@@ -468,18 +480,18 @@ When SPLIT_BUILD=true:
 When SPLIT_BUILD=false:
   Builder handoff: <BUILDER_HANDOFF_PATH>
 
-Review the implementation diff(s) for correctness, test coverage, regressions, and contract/UX/integration conformance per the rules in your agent prompt. Re-run the builder's affected-class test set (named in the handoff's `## Deferred to validator` line) to confirm it is green and covers the changed classes; the full suite runs at the validator gate.
+Review the implementation diff(s) for correctness, test coverage, regressions, and contract/UX/integration conformance per the rules in your agent prompt. Re-run the builder's affected-class test set (named in the handoff's `## Deferred to validator` line) to confirm it is green and covers the changed classes; the full suite runs at the CI gate (`.github/workflows/test.yml`) (or, when `RISK_GATE=true`, also at the dedicated verifier).
 
-Concurrently, the validator is running the mandatory full gate and may provide evidence you can reference.
+When `RISK_GATE=true` a dedicated `crew:verifier` is running concurrently and may provide evidence you can reference. When `RISK_GATE=false` (the default), your approval is the evidenced artifact the close-time validation gate delegates to (`loop.validation.satisfiedByReview: true`) — write it so it stands alone as proof of behavior, not just style.
 
 Return the review-result artifact path.
 ```
 
 Store the returned path(s) as `REVIEW_RESULT_PATH` (or the aggregated set when fanning out multi-lens).
 
-#### Step 5 prompt — `crew:verifier` (always; parallel)
+#### Step 5 prompt — `crew:verifier` (RISK_GATE=true only)
 
-**Always run on a code-bearing slice — no skip.** The validator owns the mandatory full gate (whole-repo lint, `format:check`, the complete test suite, `verify:all`) that the scoped builders no longer run. Run it even when `BEHAVIOR_CHANGED = false`: a code-only diff still needs the full suite to run somewhere, and this is the only always-on home for it.
+**Dispatch only when `RISK_GATE = true`** (Step 4.5: HIGH risk, OR `concern:security` / `concern:performance` tags, OR `SPLIT_BUILD = true`). On the `RISK_GATE = false` default, skip this dispatch entirely — the mandatory full gate (whole-repo lint, `format:check`, the complete test suite, `verify:all`) is owned by CI (`.github/workflows/test.yml`) instead of a per-slice dedicated agent; see `skills/workflow/validator-gate/SKILL.md`.
 
 Dispatch with this prompt:
 
@@ -504,18 +516,18 @@ Return the validation artifact path.
 
 Store the returned path as `VALIDATION_PATH`.
 
-> **Light tier uses the same two prompts above.** The former combined `reviewer-validator` light-tier prompt was removed — light slices dispatch the Step 4 `crew:reviewer` prompt and the Step 5 `crew:verifier` prompt concurrently, exactly as full tier.
+> **Tier no longer changes gate composition.** `RISK_GATE` (Step 4.5) is now the sole switch between the single-reviewer default and the heavy 2nd-reviewer/verifier path — light and full tier slices both use the same `RISK_GATE` dispatch selection above. The former combined `reviewer-validator` light-tier prompt was removed.
 
 #### Conflict rule: reviewer needs_fix invalidates validation
 
-If reviewer returns `needs_fix`:
+If any dispatched reviewer returns `needs_fix`:
 
-1. Mark validation result stale: `node scripts/crew.ts mark-badge --repo "$PWD" --badge validation_stale --note "invalidated by review needs_fix"`.
+1. If `RISK_GATE = true` and a `VALIDATION_PATH` was produced: mark it stale — `node scripts/crew.ts mark-badge --repo "$PWD" --badge validation_stale --note "invalidated by review needs_fix"`. When `RISK_GATE = false` (no dedicated verifier ran), skip this sub-step — there is no separate validation artifact to invalidate; the reviewer's own `needs_fix` result is the signal.
 2. Re-dispatch builder with review findings (run `/crew:fix` flow).
-3. After builder PASS on the fix bounce: re-dispatch `crew:reviewer` and `crew:verifier` concurrently (both tiers use the same gate).
-4. Proceed to Step 6 after both gates PASS.
+3. After builder PASS on the fix bounce: re-dispatch the same gate composition selected in Step 4.5 (single reviewer on `RISK_GATE = false`; reviewer + 2nd reviewer/verifier on `RISK_GATE = true`).
+4. Proceed to Step 6 after all dispatched gates PASS.
 
-If both return PASS (or approved_with_notes / passed_with_notes): proceed to Step 6.
+If all dispatched gates return PASS (or approved_with_notes / passed_with_notes): proceed to Step 6.
 
 ---
 

@@ -48,6 +48,9 @@
       "architect": "opus",
       "build": "sonnet",
       "default": "sonnet"
+    },
+    "validation": {
+      "satisfiedByReview": true
     }
   },
   "stack": {
@@ -88,8 +91,7 @@
   },
   "reviewers": {
     "ladder": [
-      "A",
-      "B"
+      "A"
     ]
   },
   "mandatoryDocs": [
