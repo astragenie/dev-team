@@ -1,9 +1,9 @@
 ---
 id: FEAT-188
-status: in-progress
+status: done
 priority: P1
 category: platform
-target_release: null
+target_release: v0.54.0
 created: 2026-07-04
 depends_on: []
 slices: [S1a, S1b, S2, S3a, S3b, S4, S5, S6]
@@ -20,7 +20,9 @@ triage_notes: "Free-text intake 2026-07-04 (PM-scored at intake, FEAT-277 mode).
 started_at: 2026-07-06
 updated: 2026-07-07
 slices_landed_dev_team: [S1a, S2, S3a, S4, S5, S6]
-slices_remaining: [S3b]  # S1b shipped runner-plugin f2803af9 (#361); S3b tracked by runner-plugin#363
+slices_remaining: []  # dev-team scope complete; S1b shipped runner-plugin f2803af9 (#361); S3b re-homed to runner-plugin#368 + dev-team FEAT-195
+closed: 2026-07-08
+closure: "dev-team scope complete (S1a/S2/S3a/S4/S5/S6 merged, v0.54.0). Cross-repo remainder S3b re-homed to runner-plugin#368 + tracked in dev-team FEAT-195; S1b already shipped runner-plugin f2803af9 (#361). Split-close: FEAT-188 closes on dev-team deliverable; runner-plugin S3b closes independently."
 revision: "2026-07-06 rev2 — reconciled against runner-plugin's existing memory-bridge + astramem plugin v0.6 (3-agent research fan-out + architect review). See docs/research/2026-07-06-memory-bridge-reconciliation.md."
 ---
 
@@ -42,10 +44,12 @@ Slice-close ceremony run retroactively — see
 `.claude/artifacts/loop/grades/20260707T081133Z-feat188s5-grade.md`, and
 `.claude/artifacts/crew/runs/20260707T080727Z-final-synthesis-feat-188-s5-eval-interaction-memory-hygiene.md`.
 
-**Remaining before FEAT-188 can move to done:** S1b and S3b (both
-runner-plugin, cross-repo — must be built in a runner-plugin session/worktree
-per the FEAT body's dependency order). Status stays `in-progress` until those
-land.
+**Closed 2026-07-08 (split-close).** dev-team scope is complete — all six
+dev-team slices merged to main and shipping in **v0.54.0**. S1b already shipped
+runner-plugin `f2803af9` (#361). The last cross-repo slice **S3b is re-homed**
+to **runner-plugin#368** (actionable spec) + dev-team **FEAT-195** (dev-team-side
+tracking) so it closes on runner-plugin's own cadence rather than holding this
+FEAT open. FEAT-188 closes on the dev-team deliverable.
 
 **Follow-up (deferred, non-blocking):** `evals/memory-delta.ts`'s live-judge
 AC needs an operator to run `bun evals/memory-delta.ts --live` with a judge
