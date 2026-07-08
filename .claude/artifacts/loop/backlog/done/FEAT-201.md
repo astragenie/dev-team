@@ -1,6 +1,8 @@
 ---
 id: FEAT-201
-status: triaged
+status: done
+closed: 2026-07-08
+closure: "Landed on stabilization/e2e-wave (parallel wave). drift-check.ts CLI (exit 0/1/2, memory_drift event with count+ids) + new scheduled .github/workflows/drift.yml + hermetic scenarioDriftDualWrite e2e (fake-remote seam, no live daemon). Review approved (0 findings). Does not touch test.yml."
 priority: P2
 category: feature
 target_release: null

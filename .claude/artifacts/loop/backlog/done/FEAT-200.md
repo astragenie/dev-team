@@ -1,6 +1,8 @@
 ---
 id: FEAT-200
-status: triaged
+status: done
+closed: 2026-07-08
+closure: "Landed on stabilization/e2e-wave (parallel wave). Sharded bun test into a 3-way CI matrix (checks job runs validators+e2e once; test job matrix runs test:shard). Partition = proven exact cover of 191 test files. Review approved_with_notes (MEDIUM: SHARD_TOTAL duplicated matrix+with-line, no sync guard — followup). Branch protection unconfigured so status-check rename is safe."
 priority: P2
 category: feature
 target_release: null
