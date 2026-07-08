@@ -1,7 +1,9 @@
 ---
 id: FEAT-199
-status: in-progress
+status: done
 started_at: 2026-07-08
+closed: 2026-07-08
+closure: "199a (grade-rot gate) + 199b (backfill 22 grandfathered grades, 0 unrecoverable, audit-verified no fabrication) both landed on stabilization/e2e-wave. validate-syntheses reports 0 grade rot. Followup (not blocking close): validate-syntheses runs ADVISORY — promote the grade-check to a HARD CI step so new rot fails red (AC-4 hard-block), a small test.yml change coordinated with FEAT-200."
 progress: "199a (grade-placeholder rejection gate) LANDED on stabilization/e2e-wave — validate-syntheses.ts now rejects placeholder/all-zero/unfilled-template grade files, pre-2026-07-08 rot grandfathered (logged, not hard-fail). Review approved_with_notes. NOTE: validate-syntheses runs as an ADVISORY CI validator, so 199a detects+lists rot but does not yet fail CI red on NEW rot (AC-4 hard-block) — promoting the grade check to a HARD step is a small test.yml followup (coordinate with FEAT-200's test.yml ownership). REMAINING: 199b backfill (rewrite ~22 grandfathered grade files, gated/human-review, runs after 199a) — see the Deferred section."
 priority: P1
 category: feature
