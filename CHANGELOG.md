@@ -3,11 +3,21 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
-## [Unreleased] — 2026-07-07 — memory-loop closeout + capture/hook fixes
+## [v0.54.0] — 2026-07-08 — GEPA corpus loop + memory-provider closeout
 
-Not yet released (no version bump). Landed on `main` via build → independent
-review → merge.
+Minor: closes the FEAT-193 GEPA corpus analyze→optimize bridge and the
+dev-team half of the FEAT-188 memory capture/recall provider, plus FEAT-182
+(incident-response) and FEAT-185 backlog reconcile and capture/hook hardening.
 
+- **FEAT-188 closed (dev-team scope) — MemoryProvider capture/recall loop.**
+  All six dev-team slices merged: S1a capture repair, S2 MemoryProvider
+  interface + noop/file providers, S3a recall injection at dev-team dispatch
+  sites (frozen contract `docs/contracts/recall-injection-v1.md`), S4
+  astramemProvider (MCP/plugin transport, DEC #172), S5 eval interaction +
+  hygiene (drift-check, 45-day decay, tail-read fix), S6 deliberate-`remember`
+  enforcement. Split-close: the last cross-repo slice **S3b** (recall injection
+  at runner-plugin dispatch sites) is re-homed to **runner-plugin#368** +
+  dev-team **FEAT-195**; S1b already shipped runner-plugin `f2803af9` (#361).
 - **FEAT-193 S3 — report + feed-to-optimize bridge + AC-10 blocker (approved).**
   Closes FEAT-193. Three parts:
   - **Report half** — `scripts/lib/gepa/corpus-report.ts` + `crew gepa-corpus-report
