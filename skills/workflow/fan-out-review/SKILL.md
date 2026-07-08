@@ -17,7 +17,9 @@ Load when risk is HIGH or FEAT tags include `concern:security` / `concern:perfor
 
 ## Fan-Out Review
 
-When risk is HIGH or FEAT tags include `concern:security` / `concern:performance`: dispatch 2 reviewers default (correctness + slice's dominant concern); scale to 4 when both security and performance tags are present or the dispatcher's prompt flags a wide blast radius. Each gets a `Review lens:` line. Aggregate all lens findings before one fullstack-dev re-dispatch — never one per lens.
+**Single-reviewer is the default.** Outside the trigger conditions below, `/crew:orchestrate-slice` dispatches exactly **one** `crew:reviewer` (`RISK_GATE = false` — see `commands/orchestrate-slice.md` Step 4.5 and `skills/workflow/validator-gate/SKILL.md`). This skill's fan-out only applies once `RISK_GATE` flips true.
+
+When risk is HIGH or FEAT tags include `concern:security` / `concern:performance` (i.e. `RISK_GATE = true`): dispatch 2 reviewers default (correctness + slice's dominant concern); scale to 4 when both security and performance tags are present or the dispatcher's prompt flags a wide blast radius. Each gets a `Review lens:` line. Aggregate all lens findings before one fullstack-dev re-dispatch — never one per lens.
 
 **Reviewer disagreement** (lens A → PASS, lens B → NEEDS_FIX, or 2+ lenses conflict on severity): dispatch `crew:architect-reviewer` for binding tiebreaker. Single round, decision final, no further escalation in the same review dimension.
 
@@ -27,7 +29,8 @@ When risk is HIGH or FEAT tags include `concern:security` / `concern:performance
 
 Fan-out review is complete when:
 
-- the correct reviewer count has been chosen (2 default; 4 on both security + performance or wide blast radius)
+- the single-reviewer default was preserved outside HIGH-risk / `concern:security` / `concern:performance` / `SPLIT_BUILD` triggers (`RISK_GATE = false`)
+- the correct reviewer count has been chosen once `RISK_GATE = true` (2 default; 4 on both security + performance or wide blast radius)
 - all lens findings have been aggregated before a single fullstack-dev re-dispatch
 - reviewer disagreement has been resolved via `crew:architect-reviewer` tiebreaker (single round, binding)
 - the forbidden lumping pattern has been avoided
