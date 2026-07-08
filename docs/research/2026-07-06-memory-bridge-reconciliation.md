@@ -195,5 +195,13 @@ provider layer directly, and the #170 fix replaced the in-process `http.Server`
 in tests with an in-memory fake via a `__resolveRemote` injection seam — proving
 the transport choice also fixed the flake, not just the staleness concern.
 Recorded in FEAT-188's closed record as "DEC (dev-team#172, 2026-07-06) —
-single astramem transport = plugin/MCP," retiring both Option 1 and Option 2
-repo-wide (both dev-team and runner-plugin).
+single astramem transport = plugin/MCP." The DEC retires Option 1 and Option 2
+in **dev-team's** shipped code. On the **runner-plugin** side the decision is
+adopted but the migration is staged, not complete: S1b (`f2803af9`, #361) moved
+capture + slice-start recall onto the plugin provider but deliberately **keeps
+the CLI spawn as a rollout fallback**, and the remaining capture callers +
+`memory-bridge.mts`/`memory-recall.mts` deletion are the open work (runner-plugin
+FEAT-235). So "retired repo-wide" is the target end-state, not yet the shipped
+reality on runner-plugin — see runner-plugin `f2803af9` and dev-team#172's own
+resolution note ("runner-plugin's live emit()/recall still shell the CLI … that
+migration is the remaining open work, tracked there").
