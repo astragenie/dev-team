@@ -746,6 +746,131 @@ async function scenarioSliceCeremony(): Promise<void> {
   console.log("[scenario] slice-ceremony (FEAT-197 / SLICE-111): PASS");
 }
 
+// ---------------------------------------------------------------------------
+// Scenario: dual-write drift-check e2e (FEAT-201)
+//
+// scripts/lib/memory/drift-check.ts (FEAT-188 S5) is a read-only diagnostic
+// for the astramem dual-write accepted risk: astramem writes are
+// fire-and-forget, so the local JSONL "derived duplicate" can silently
+// outpace the astramem "source of truth". Nothing invoked this diagnostic
+// before FEAT-201 wired a CLI entry (--repo/--threshold) + this scenario +
+// a scheduled workflow (.github/workflows/drift.yml).
+//
+// Hermetic by construction: there is no live astramem daemon in CI, so the
+// "astramem" side of the dual-write is a pure in-memory fake RemoteHandle
+// injected via drift-check.ts's own `__resolveRemote` test seam (same seam
+// astramemProvider() already exposes and tests/memory-drift-check.test.ts /
+// tests/drift-check-cli.test.ts already exercise) — not a live daemon, and
+// not something this scenario needed to skip.
+// ---------------------------------------------------------------------------
+
+async function scenarioDriftDualWrite(): Promise<void> {
+  const { astramemProvider } = await import("./lib/memory/astramem-provider.ts");
+  const { fileProvider } = await import("./lib/memory/file-provider.ts");
+  const { runDriftCheckCli } = await import("./lib/memory/drift-check.ts");
+
+  const repo = await fs.mkdtemp(path.join(os.tmpdir(), "e2e-drift-"));
+
+  // Fake "source of truth" — remember() records ids it received, recall()
+  // matches the entry's own summary text against those ids (mirrors the
+  // makeFakeRemote() fixture in tests/memory-drift-check.test.ts).
+  const knownIds = new Set<string>();
+  const fakeRemote = {
+    name: "local" as const,
+    provider: {
+      async remember(payload: { id: string }): Promise<void> {
+        knownIds.add(payload.id);
+      },
+      async health() {
+        return { ok: true, version: "e2e-smoke-fake" };
+      },
+      async recall(req: { query: string; k?: number }) {
+        const hits = [...knownIds]
+          .filter((id) => req.query.includes(id))
+          .map((id) => ({ id, type: "lesson", text: req.query, score: 1 }));
+        return { hits };
+      }
+    }
+  };
+  const resolveFakeRemote = async () => fakeRemote;
+
+  // Case 1: provider:astramem + dualWrite:true -> a capture lands in BOTH
+  // stores (the fake SoT via remember(), and the local JSONL via the
+  // dual-write mirror) -> drift-check must report zero drift.
+  const dualWriteProvider = astramemProvider(repo, {
+    dualWrite: true,
+    __resolveRemote: resolveFakeRemote
+  });
+  await dualWriteProvider.capture({
+    id: "e2e-drift-dual-write-ok",
+    kind: "lesson",
+    severity: "low",
+    summary: "e2e-drift-dual-write-ok landed in both astramem and the local JSONL",
+    source: "e2e-smoke"
+  });
+
+  const zeroDriftResult = await runDriftCheckCli(["--repo", repo, "--threshold", "0"], {
+    __resolveRemote: resolveFakeRemote
+  });
+  assert.equal(
+    zeroDriftResult.exitCode,
+    0,
+    "scenarioDriftDualWrite: a dual-write capture confirmed in astramem must report zero drift"
+  );
+  assert.equal(
+    zeroDriftResult.report?.missingFromAstramem.length,
+    0,
+    "scenarioDriftDualWrite: the dual-write capture must not appear as missing"
+  );
+
+  // Case 2: inject an astramem-miss — a capture that reaches ONLY the local
+  // JSONL, simulating writeThrough()'s fire-and-forget remember() silently
+  // failing (the accepted risk this diagnostic exists to surface).
+  await fileProvider(repo).capture({
+    id: "e2e-drift-astramem-miss",
+    kind: "failure",
+    severity: "high",
+    summary: "e2e-drift-astramem-miss only ever reached the local JSONL",
+    source: "e2e-smoke"
+  });
+
+  const gapResult = await runDriftCheckCli(["--repo", repo, "--threshold", "0"], {
+    __resolveRemote: resolveFakeRemote
+  });
+  assert.equal(
+    gapResult.exitCode,
+    1,
+    "scenarioDriftDualWrite: an astramem-miss exceeding threshold 0 must fail the gate"
+  );
+  const missingIds = (gapResult.report?.missingFromAstramem ?? []).map((e) => e.id);
+  assert.deepEqual(
+    missingIds,
+    ["e2e-drift-astramem-miss"],
+    "scenarioDriftDualWrite: drift-check must report exactly the injected gap — no more, no less"
+  );
+
+  const eventsRaw = await fs.readFile(
+    path.join(repo, ".claude", "logs", "events.jsonl"),
+    "utf8"
+  );
+  const driftEvent = eventsRaw
+    .trim()
+    .split(/\r?\n/)
+    .map((line) => JSON.parse(line))
+    .find((event) => event.event === "memory_drift");
+  assert.ok(driftEvent, "scenarioDriftDualWrite: a memory_drift event must be emitted (AC-4)");
+  assert.equal(driftEvent.count, 1, "scenarioDriftDualWrite: event count must match the gap");
+  assert.deepEqual(
+    driftEvent.ids,
+    ["e2e-drift-astramem-miss"],
+    "scenarioDriftDualWrite: event ids must carry the reconciliation target (AC-4)"
+  );
+
+  console.log(
+    "[scenario] drift-dual-write (FEAT-201): PASS — hermetic fake-remote seam, no live astramem daemon"
+  );
+}
+
 async function main() {
   console.log(`Creating sample repo at ${repoPath}`);
 
@@ -812,6 +937,9 @@ async function main() {
 
   console.log("\nScenario: slice-ceremony e2e (FEAT-197)");
   await scenarioSliceCeremony();
+
+  console.log("\nScenario: drift-dual-write (FEAT-201)");
+  await scenarioDriftDualWrite();
 }
 
 main().catch((error) => {
