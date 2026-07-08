@@ -849,10 +849,7 @@ async function scenarioDriftDualWrite(): Promise<void> {
     "scenarioDriftDualWrite: drift-check must report exactly the injected gap — no more, no less"
   );
 
-  const eventsRaw = await fs.readFile(
-    path.join(repo, ".claude", "logs", "events.jsonl"),
-    "utf8"
-  );
+  const eventsRaw = await fs.readFile(path.join(repo, ".claude", "logs", "events.jsonl"), "utf8");
   const driftEvent = eventsRaw
     .trim()
     .split(/\r?\n/)

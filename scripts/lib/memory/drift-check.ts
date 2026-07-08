@@ -235,8 +235,7 @@ export async function runDriftCheckCli(
 // Run when invoked directly (not when imported by tests) — same isMain
 // pattern as scripts/validate-backlog-drift.ts.
 const isMain =
-  import.meta.url === `file://${process.argv[1]}` ||
-  process.argv[1]?.endsWith("drift-check.ts");
+  import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith("drift-check.ts");
 
 if (isMain) {
   const { report, threshold, exitCode, reason } = await runDriftCheckCli(process.argv.slice(2));
