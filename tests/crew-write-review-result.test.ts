@@ -423,7 +423,11 @@ test("write-review-result: --not-checked / --author-id / --judge-id round-trip i
     assert.equal(status, 0, "expected exit 0 with the new optional flags");
     const result = JSON.parse(stdout);
     const body = await fs.readFile(result.path, "utf8");
-    assert.match(body, /not_checked:.*\["perf","i18n","a11y"\]/, "frontmatter must list not_checked");
+    assert.match(
+      body,
+      /not_checked:.*\["perf","i18n","a11y"\]/,
+      "frontmatter must list not_checked"
+    );
     assert.match(body, /author_id: builder-1/, "frontmatter must contain author_id");
     assert.match(body, /judge_id: reviewer-1/, "frontmatter must contain judge_id");
     assert.match(body, /Not Checked:/, "body must surface a Not Checked section");
@@ -519,8 +523,16 @@ test("write-review-result: self_approval is absent when neither author-id nor ju
     assert.equal(status, 0);
     const result = JSON.parse(stdout);
     const body = await fs.readFile(result.path, "utf8");
-    assert.doesNotMatch(body, /self_approval:/, "self_approval must not appear when author-id is absent");
-    assert.doesNotMatch(body, /not_checked:/, "not_checked must not appear when --not-checked is absent");
+    assert.doesNotMatch(
+      body,
+      /self_approval:/,
+      "self_approval must not appear when author-id is absent"
+    );
+    assert.doesNotMatch(
+      body,
+      /not_checked:/,
+      "not_checked must not appear when --not-checked is absent"
+    );
     assert.doesNotMatch(body, /author_id:/, "author_id must not appear when --author-id is absent");
     assert.doesNotMatch(body, /judge_id:/, "judge_id must not appear when --judge-id is absent");
   } finally {
@@ -556,7 +568,11 @@ test("write-review-result: backward compat — no new flags leaves output byte-i
     const bodyB = await fs.readFile(JSON.parse(second.stdout).path, "utf8");
     // Strip the one field that legitimately varies run-to-run (Created: <iso>).
     const normalize = (body: string) => body.replace(/- Created: .*/g, "- Created: <ts>");
-    assert.equal(normalize(bodyA), normalize(bodyB), "identical inputs must produce identical shape");
+    assert.equal(
+      normalize(bodyA),
+      normalize(bodyB),
+      "identical inputs must produce identical shape"
+    );
     for (const body of [bodyA, bodyB]) {
       assert.doesNotMatch(body, /not_checked:/);
       assert.doesNotMatch(body, /author_id:/);
