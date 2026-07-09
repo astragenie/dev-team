@@ -84,6 +84,13 @@ Check whether `.claude/artifacts/crew/designs/<FEAT-ID>-contracts.openapi.yaml` 
 
 3. **Artifact does NOT exist** → instruct architect to create it from scratch. Use the dispatch prompt below with the creation branch.
 
+**Companion-file clobber guard (SPIKE-1).** `<FEAT-ID>-contracts.md` has two possible producers with two different section schemas, and this step must never blind-overwrite the other producer's schema:
+
+- `crew:architect-feature` Step 2 writes the FEAT-level schema: five sections `## TypeScript Interfaces` / `## API Contracts` / `## Event Schemas` / `## Data Contracts` / `## Inferred Tags`.
+- This step (orchestrate-slice Step 1) writes the companion-to-YAML schema per `skills/domain/architecture/openapi-authoring/SKILL.md`: Decision rationale + Data Contracts + Revisions sections only — no wire-type duplication.
+
+Before the architect touches `CONTRACT_MD_PATH` (whether the YAML exists or not), it MUST read the existing `.md` file first if one is present. If it contains a `## Inferred Tags` section, that is the signature of architect-feature's FEAT-level schema — preserve all five of its sections verbatim and APPEND a `## Revision — SLICE-NN` subsection below them rather than replacing the file. If no `## Inferred Tags` section is present (companion schema already, or file absent), proceed with the companion schema as normal. This instruction is embedded in the dispatch prompt below so the architect enforces it, not just this command doc.
+
 **Revision-required heuristic.** A slice requires a contract revision when ANY of the following holds:
 
 - Slice frontmatter has `revises_contract: true` (explicit, highest precedence)
@@ -106,8 +113,10 @@ Contract artifact target (canonical YAML): .claude/artifacts/crew/designs/<FEAT-
 Contract markdown companion:               .claude/artifacts/crew/designs/<FEAT-ID>-contracts.md
 Derived TS (regenerated, committed):       .claude/artifacts/crew/designs/<FEAT-ID>-contracts.ts
 
-If the YAML already exists: read it, then add the new operations / schemas for this slice. Bump `info.version` (semver) if any public operation changes. Append `## Revision — SLICE-NN` to the markdown.
-If the YAML does not exist: create it from scratch following `skills/domain/openapi-authoring/SKILL.md`.
+If the YAML already exists: read it, then add the new operations / schemas for this slice. Bump `info.version` (semver) if any public operation changes.
+If the YAML does not exist: create it from scratch following `skills/domain/architecture/openapi-authoring/SKILL.md`.
+
+Before writing the markdown companion (`CONTRACT_MD_PATH`): READ it first if it already exists on disk. If it contains a `## Inferred Tags` section, it was authored by architect-feature's FEAT-level schema (`## TypeScript Interfaces` / `## API Contracts` / `## Event Schemas` / `## Data Contracts` / `## Inferred Tags`) — do NOT overwrite it. Preserve all five sections verbatim and APPEND a `## Revision — SLICE-NN` subsection below them. Otherwise (no `## Inferred Tags` — companion schema already in place, or file absent), write/extend it using only the companion schema: Decision rationale + Data Contracts + Revisions, per `skills/domain/architecture/openapi-authoring/SKILL.md` — no wire-type duplication.
 
 After writing/revising the YAML, regenerate the TS:
   node ./scripts/validate-contracts.ts <yaml> --write

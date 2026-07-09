@@ -80,13 +80,29 @@ Contract artifact target: .claude/artifacts/crew/designs/<FEAT-ID>-contracts.md
 
 Read the researcher findings, FEAT file, and spec before producing anything.
 
-If the contract artifact already exists: add a ## Feature Revision — <today's date>
-subsection to each relevant section. Do NOT remove or overwrite existing sections.
-(Use the "Feature Revision" prefix to distinguish from orchestrate-slice's
-"## Revision — SLICE-NN" subsections.)
+Before deciding whether the contract artifact "already exists", READ it first if
+present and check which schema it uses (companion-file clobber guard, SPIKE-1):
 
-If the contract artifact does not exist: create it with these five sections (write
-"N/A — not applicable." for any section that does not apply):
+- **FEAT-level schema (this command's own)** — has a `## Inferred Tags` section
+  alongside `## TypeScript Interfaces` / `## API Contracts` / `## Event Schemas` /
+  `## Data Contracts`.
+- **Companion schema (orchestrate-slice Step 1's)** — Decision rationale + Data
+  Contracts + Revisions sections only, per
+  `skills/domain/architecture/openapi-authoring/SKILL.md`, with NO `## Inferred
+  Tags` section. This is orchestrate-slice's markdown companion to a FEAT's
+  `<FEAT-ID>-contracts.openapi.yaml`, not a completed FEAT-level artifact.
+
+If the file has the FEAT-level schema already: add a ## Feature Revision —
+<today's date> subsection to each relevant section. Do NOT remove or overwrite
+existing sections. (Use the "Feature Revision" prefix to distinguish from
+orchestrate-slice's "## Revision — SLICE-NN" subsections.)
+
+If the file is absent, OR present but only in the companion schema (no
+`## Inferred Tags`): do NOT treat its presence as "already done" — a companion
+file is not a substitute for the FEAT-level artifact. Preserve any existing
+companion content (Decision rationale / Data Contracts / Revisions) verbatim,
+and add the five FEAT-level sections around/after it (write "N/A — not
+applicable." for any section that does not apply):
   ## TypeScript Interfaces
   ## API Contracts
   ## Event Schemas
@@ -113,7 +129,15 @@ Store the returned path as `CONTRACT_PATH`.
 
 1. Read `CONTRACT_PATH`. Find the `## Inferred Tags` section.
 2. Parse the `tags:` YAML list from that section.
-   - If the section is absent: print
+   - If the section is absent AND the file otherwise matches the companion
+     schema (Decision rationale + Data Contracts + Revisions, no FEAT-level
+     sections at all — i.e. Step 2's merge did not run or was skipped): print
+     `"Note: <CONTRACT_PATH> is orchestrate-slice's companion schema (no FEAT-level sections yet) — Step 2 should have merged in ## Inferred Tags; re-run architect-feature if it did not."`
+     This is a distinct, documented case from a genuine missing-tags condition
+     below — it means Step 2's merge guard was expected to add the section and
+     didn't, not that no tags apply.
+   - If the section is absent for any other reason (FEAT-level sections present
+     but tags genuinely not inferred): print
      `"Warning: ## Inferred Tags not found in contracts artifact — FEAT frontmatter unchanged"`
      and continue to Step 4 (FEAT frontmatter unchanged). Exit 0 after Step 4.
 3. Read the FEAT file frontmatter. If `tags:` key is absent, treat current value as `[]`.
