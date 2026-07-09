@@ -38,6 +38,37 @@ If `reviewer-lite` returns `rejected` (semantic complexity detected, MEDIUM+ fin
 
 If not matched → standard ladder below.
 
+## Collision pre-flight (WS-4 — run BEFORE write-run-brief / builder dispatch)
+
+Git-native, no lock file: before this dispatcher writes its own run brief (Workflow step 6 below) or dispatches investigator/builder, check whether another build/fix is already in progress on the branch currently checked out here. Run this check FIRST — `write-run-brief` archives the existing `currentRun` into `recentRuns` and starts a fresh one, which erases the very signal this check depends on, so the ordering matters.
+
+```bash
+current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+collision_worktree=""
+if [ -n "$current_branch" ]; then
+  while IFS= read -r wt_path; do
+    [ -z "$wt_path" ] && continue
+    state_file="$wt_path/.claude/state/crew/workflow-state.json"
+    [ -f "$state_file" ] || continue
+    status=$(jq -r '.currentRun.status // empty' "$state_file" 2>/dev/null)
+    if [ -n "$status" ] && [ "$status" != "completed" ]; then
+      collision_worktree="$wt_path"
+      break
+    fi
+  done < <(git worktree list --porcelain | awk -v b="refs/heads/$current_branch" \
+      '/^worktree /{wt=$2} /^branch /{if ($2==b) print wt}')
+fi
+```
+
+- Each worktree owns its own `.claude/state/crew/workflow-state.json` — there is no shared lock, so detection means reading a candidate worktree's own state file directly. This also covers the common case where the CURRENT directory is the only worktree entry on this branch and it already has an unfinished `currentRun` (status not `completed`) from an earlier, not-yet-closed build/fix.
+- Fail-open: if `git`, `jq`, or the state file read fails for any reason, treat it as "no collision" and proceed normally — this is a collision *trigger*, not a hard gate.
+- If `collision_worktree` is empty → no collision, proceed with the workflow below unchanged.
+- If `collision_worktree` is non-empty → isolate THIS session into its own worktree before continuing:
+  1. Pick (or reuse) a worktree path: `<parent-of-repo>/<repo-basename>-worktrees/<branch-name>` (same sibling convention the loop plugin's `worktree-manager` uses — keeps the two ceremonies consistent when both are installed in a repo).
+  2. If that path is not already a registered worktree, create it: `git worktree add "<path>" -b "<branch-name>-<short-suffix>"` (or reuse the existing worktree/branch if `git worktree list` already shows it).
+  3. Re-verify the workspace: `pwd` inside the new worktree, then re-run Workflow step 2 below (`crew.ts wake-up --repo "<new-worktree-path>"`) so the rest of this run's `--repo` / `$PWD` references point at the isolated worktree, not the original directory.
+  4. Continue the rest of this workflow (investigator/researcher triage, `write-run-brief`, builder dispatch, review, etc.) entirely inside the isolated worktree. Do not flip any global `worktreeMode`-style default for the repo — this isolation applies to this run only.
+
 ## Phase order (standard ladder)
 
 ### Triage step — pick the right investigation tool

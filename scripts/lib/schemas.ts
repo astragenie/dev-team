@@ -97,8 +97,13 @@ export const VALIDATION_DECISIONS = ["pass", "fail", "skipped"] as const;
 export type ValidationDecision = (typeof VALIDATION_DECISIONS)[number];
 
 // needs_fix is a write-time alias for rejected, not a fourth review state (D7).
+// approved_with_conditions / needs_revision are the verdicts agents/architect-reviewer.md
+// actually emits (FIX-0) — widened here rather than adding a fourth/fifth
+// canonical state, same pattern as needs_fix.
 const REVIEW_DECISION_ALIASES: Record<string, ReviewDecision> = {
-  needs_fix: "rejected"
+  needs_fix: "rejected",
+  approved_with_conditions: "approved_with_notes",
+  needs_revision: "rejected"
 };
 
 // Legacy values actually emitted by existing callers (agents/verifier.md,
