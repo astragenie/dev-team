@@ -60,6 +60,13 @@ export interface ArtifactFields {
   dispatchBreakdown?: DispatchBreakdown | undefined;
   /** Per-agent rolling stats for the `## Agent stats (rolling)` cost-report section (FEAT-159 SLICE-B). */
   agentStats?: import("../agent-stats-aggregator.ts").AgentStatsRow[] | undefined;
+  /** What the reviewer deliberately did NOT cover (dev-team#247). Absent/empty = legacy artifact. */
+  notChecked?: string[] | undefined;
+  /** Reviewer/author identity for self-approval detection (dev-team#247). */
+  authorId?: string | undefined;
+  judgeId?: string | undefined;
+  /** Derived: `authorId != null && authorId === judgeId`. Not settable via CLI flag. */
+  selfApproval?: boolean | undefined;
 }
 
 /** Aggregated telemetry for the ## Per-dispatch breakdown cost-report section (FEAT-151). */
