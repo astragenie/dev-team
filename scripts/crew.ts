@@ -537,15 +537,18 @@ function assertBuilderName(
 }
 
 // Resolve --decision into the canonical review verdict enum, exiting with
-// code 2 on an unrecognized value (needs_fix is accepted as a rejected alias
-// — P1.3 D7). Hoisted out of write-review-result to stay under the
+// code 2 on an unrecognized value (needs_fix, needs_revision accepted as
+// rejected aliases; approved_with_conditions accepted as an approved_with_notes
+// alias — P1.3 D7, widened FIX-0 for agents/architect-reviewer.md's verdict
+// vocab). Hoisted out of write-review-result to stay under the
 // cognitive-complexity cap, mirroring assertBuilderName above.
 function resolveReviewVerdict(rawDecision: string | null): string | undefined {
   if (!rawDecision) return undefined;
   const normalized = normalizeReviewDecision(rawDecision);
   if (!normalized) {
     process.stderr.write(
-      `[crew] write-review-result refused: unknown decision "${rawDecision}". Valid values: approved, approved_with_notes, rejected (needs_fix accepted as an alias for rejected).\n`
+      `[crew] write-review-result refused: unknown decision "${rawDecision}". Valid values: approved, approved_with_notes, rejected ` +
+        "(needs_fix, needs_revision accepted as aliases for rejected; approved_with_conditions accepted as an alias for approved_with_notes).\n"
     );
     process.exit(2);
   }

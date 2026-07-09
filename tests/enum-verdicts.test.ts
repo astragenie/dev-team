@@ -49,6 +49,20 @@ test("normalizeReviewDecision: needs_fix normalizes to rejected (aliasOf recorde
   assert.deepEqual(result, { canonical: "rejected", aliasOf: "needs_fix" });
 });
 
+// FIX-0: architect-reviewer.md emits approved_with_conditions / needs_revision,
+// neither of which was in REVIEW_DECISION_ALIASES — every non-approved
+// architect-reviewer verdict hit the unrecognized-value branch and exit(2)'d
+// before anything was written. Widen the alias map, not the canonical enum.
+test("normalizeReviewDecision: approved_with_conditions normalizes to approved_with_notes (aliasOf recorded)", () => {
+  const result = normalizeReviewDecision("approved_with_conditions");
+  assert.deepEqual(result, { canonical: "approved_with_notes", aliasOf: "approved_with_conditions" });
+});
+
+test("normalizeReviewDecision: needs_revision normalizes to rejected (aliasOf recorded)", () => {
+  const result = normalizeReviewDecision("needs_revision");
+  assert.deepEqual(result, { canonical: "rejected", aliasOf: "needs_revision" });
+});
+
 test("normalizeReviewDecision: canonical values pass through with no aliasOf", () => {
   for (const value of ["approved", "approved_with_notes", "rejected"] as const) {
     const result = normalizeReviewDecision(value);
@@ -135,6 +149,64 @@ test("write-review-result: approved_with_notes (with test-summary) writes canoni
 
     const state = await loadState(repoPath);
     assert.equal(state.currentRun.gates.review.status, "passed");
+  } finally {
+    await cleanup(repoPath);
+  }
+});
+
+test("write-review-result: approved_with_conditions (architect-reviewer.md verdict) is accepted and normalized to approved_with_notes in frontmatter", async () => {
+  const repoPath = await makeTempDir("enum-verdicts-awc-");
+  try {
+    const { status, stdout } = runCli([
+      "write-review-result",
+      "--repo",
+      repoPath,
+      "--title",
+      "Architecture review with conditions",
+      "--decision",
+      "approved_with_conditions",
+      "--summary",
+      "acceptable pending follow-up",
+      "--test-summary",
+      "covered"
+    ]);
+    assert.equal(status, 0, "approved_with_conditions must be accepted, not refused");
+    const result = JSON.parse(stdout);
+    const body = await fs.readFile(result.path, "utf8");
+    assert.match(body, /^decision: approved_with_notes$/m, "frontmatter must carry the canonical value");
+
+    const state = await loadState(repoPath);
+    assert.equal(state.currentRun.gates.review.status, "passed");
+  } finally {
+    await cleanup(repoPath);
+  }
+});
+
+test("write-review-result: needs_revision (architect-reviewer.md verdict) is accepted, normalized to rejected in frontmatter, and fails the review gate", async () => {
+  const repoPath = await makeTempDir("enum-verdicts-needs-revision-");
+  try {
+    const { status, stdout } = runCli([
+      "write-review-result",
+      "--repo",
+      repoPath,
+      "--title",
+      "Architecture review needs revision",
+      "--decision",
+      "needs_revision",
+      "--summary",
+      "service boundary unclear"
+    ]);
+    assert.equal(status, 0, "needs_revision must be accepted, not refused");
+    const result = JSON.parse(stdout);
+    const body = await fs.readFile(result.path, "utf8");
+    assert.match(body, /^decision: rejected$/m, "frontmatter must carry the canonical value");
+
+    const state = await loadState(repoPath);
+    assert.equal(
+      state.currentRun.gates.review.status,
+      "failed",
+      "needs_revision must fail the review gate exactly like rejected"
+    );
   } finally {
     await cleanup(repoPath);
   }
