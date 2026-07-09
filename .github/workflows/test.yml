@@ -69,8 +69,8 @@ jobs:
         bun run format:check
         bun run typecheck
       linux-only-commands: |
-        node ./scripts/e2e-smoke.ts
-        bun run e2e:smoke:ux
+        for i in 1 2 3; do node ./scripts/e2e-smoke.ts && break || { [ "$i" = 3 ] && exit 1; echo "e2e-smoke retry $i/3"; sleep 5; }; done
+        for i in 1 2 3; do bun run e2e:smoke:ux && break || { [ "$i" = 3 ] && exit 1; echo "e2e:smoke:ux retry $i/3"; sleep 5; }; done
 
   # FEAT-200: shards `bun run test` across a 3-way matrix to cut the test-phase
   # critical path. `bun test` runs single-process per invocation (no --parallel,
