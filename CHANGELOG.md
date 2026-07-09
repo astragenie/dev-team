@@ -3,6 +3,27 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [v0.57.0] — 2026-07-09 — review-result not-checked + author/judge identity
+
+Minor: `write-review-result` gains four optional, backward-compatible
+fields — `not_checked[]`, `author_id`, `judge_id`, and a derived
+`self_approval` boolean (`authorId != null && authorId === judgeId`).
+Absent inputs produce byte-identical output to pre-v0.57.0 (dev-team#247,
+upstream of runner-plugin#247/FEAT-180).
+
+- **`--not-checked <a,b,c>`** — comma-separated list of what the reviewer
+  deliberately did NOT cover; round-trips into `not_checked` frontmatter
+  (JSON array) and a `Not Checked:` body list.
+- **`--author-id <id>` / `--judge-id <id>`** — reviewer/author identity;
+  surfaced as `author_id` / `judge_id` frontmatter and `Author:` / `Judge:`
+  body fields.
+- **`self_approval`** — derived, not a flag. Only appears once `--author-id`
+  is passed (never defaults to `false`), and renders a `⚠ self-approval`
+  body marker when true.
+- **Scaffold** — `write-review-result --scaffold` now always includes a
+  `## Not checked` section, prompting reviewers to declare skips even
+  without the new flags (scaffold mode never receives CLI flags).
+
 ## [v0.56.0] — 2026-07-09 — arch-gate crew support
 
 Minor: crew-side support for runner's arch-gate epic (PR #189) — a

@@ -395,3 +395,195 @@ test("write-review-result: --findings persisted in artifact frontmatter", async 
     await cleanup(repoPath);
   }
 });
+
+// dev-team#247: --not-checked / --author-id / --judge-id round-trip into the
+// artifact, and self_approval is derived (author == judge).
+test("write-review-result: --not-checked / --author-id / --judge-id round-trip into the artifact", async () => {
+  const repoPath = await makeTempRepo("crew-wrr-not-checked-");
+  try {
+    const { status, stdout } = runCli([
+      "write-review-result",
+      "--repo",
+      repoPath,
+      "--title",
+      "Not-checked review",
+      "--decision",
+      "approved",
+      "--summary",
+      "looks good",
+      "--test-summary",
+      "all pass",
+      "--not-checked",
+      "perf,i18n,a11y",
+      "--author-id",
+      "builder-1",
+      "--judge-id",
+      "reviewer-1"
+    ]);
+    assert.equal(status, 0, "expected exit 0 with the new optional flags");
+    const result = JSON.parse(stdout);
+    const body = await fs.readFile(result.path, "utf8");
+    assert.match(
+      body,
+      /not_checked:.*\["perf","i18n","a11y"\]/,
+      "frontmatter must list not_checked"
+    );
+    assert.match(body, /author_id: builder-1/, "frontmatter must contain author_id");
+    assert.match(body, /judge_id: reviewer-1/, "frontmatter must contain judge_id");
+    assert.match(body, /Not Checked:/, "body must surface a Not Checked section");
+    assert.match(body, /Author: builder-1/, "body must surface Author");
+    assert.match(body, /Judge: reviewer-1/, "body must surface Judge");
+  } finally {
+    await cleanup(repoPath);
+  }
+});
+
+// dev-team#247: self_approval derives true when author-id === judge-id.
+test("write-review-result: self_approval derives true when author-id equals judge-id", async () => {
+  const repoPath = await makeTempRepo("crew-wrr-self-approval-true-");
+  try {
+    const { status, stdout } = runCli([
+      "write-review-result",
+      "--repo",
+      repoPath,
+      "--title",
+      "Self-approval review",
+      "--decision",
+      "approved",
+      "--summary",
+      "looks good",
+      "--test-summary",
+      "all pass",
+      "--author-id",
+      "same-agent",
+      "--judge-id",
+      "same-agent"
+    ]);
+    assert.equal(status, 0);
+    const result = JSON.parse(stdout);
+    const body = await fs.readFile(result.path, "utf8");
+    assert.match(body, /self_approval: true/, "frontmatter must record self_approval: true");
+    assert.match(body, /self-approval/i, "body must surface the self-approval marker");
+  } finally {
+    await cleanup(repoPath);
+  }
+});
+
+// dev-team#247: self_approval derives false (and is still recorded) when
+// author-id and judge-id differ.
+test("write-review-result: self_approval derives false when author-id and judge-id differ", async () => {
+  const repoPath = await makeTempRepo("crew-wrr-self-approval-false-");
+  try {
+    const { status, stdout } = runCli([
+      "write-review-result",
+      "--repo",
+      repoPath,
+      "--title",
+      "Differing identities review",
+      "--decision",
+      "approved",
+      "--summary",
+      "looks good",
+      "--test-summary",
+      "all pass",
+      "--author-id",
+      "builder-1",
+      "--judge-id",
+      "reviewer-1"
+    ]);
+    assert.equal(status, 0);
+    const result = JSON.parse(stdout);
+    const body = await fs.readFile(result.path, "utf8");
+    assert.match(body, /self_approval: false/, "frontmatter must record self_approval: false");
+    assert.doesNotMatch(body, /⚠/, "body must NOT surface the self-approval warning marker");
+  } finally {
+    await cleanup(repoPath);
+  }
+});
+
+// dev-team#247: self_approval is entirely absent (no flag passed) when
+// author-id is not provided — it must never default to false in the
+// artifact so absence stays distinguishable from a known non-self-approval.
+test("write-review-result: self_approval is absent when neither author-id nor judge-id is passed", async () => {
+  const repoPath = await makeTempRepo("crew-wrr-self-approval-absent-");
+  try {
+    const { status, stdout } = runCli([
+      "write-review-result",
+      "--repo",
+      repoPath,
+      "--title",
+      "No identity review",
+      "--decision",
+      "approved",
+      "--summary",
+      "looks good",
+      "--test-summary",
+      "all pass"
+    ]);
+    assert.equal(status, 0);
+    const result = JSON.parse(stdout);
+    const body = await fs.readFile(result.path, "utf8");
+    assert.doesNotMatch(
+      body,
+      /self_approval:/,
+      "self_approval must not appear when author-id is absent"
+    );
+    assert.doesNotMatch(
+      body,
+      /not_checked:/,
+      "not_checked must not appear when --not-checked is absent"
+    );
+    assert.doesNotMatch(body, /author_id:/, "author_id must not appear when --author-id is absent");
+    assert.doesNotMatch(body, /judge_id:/, "judge_id must not appear when --judge-id is absent");
+  } finally {
+    await cleanup(repoPath);
+  }
+});
+
+// dev-team#247 BACKWARD COMPAT: with none of the new flags passed, the
+// artifact's shape (frontmatter block + body) must be identical to the
+// pre-existing shape — no new frontmatter keys or body sections leak in.
+test("write-review-result: backward compat — no new flags leaves output byte-identical in shape", async () => {
+  const repoA = await makeTempRepo("crew-wrr-compat-a-");
+  const repoB = await makeTempRepo("crew-wrr-compat-b-");
+  try {
+    const argsFor = (repoPath: string) => [
+      "write-review-result",
+      "--repo",
+      repoPath,
+      "--title",
+      "Compat review",
+      "--decision",
+      "approved",
+      "--summary",
+      "looks good",
+      "--test-summary",
+      "all pass"
+    ];
+    const first = runCli(argsFor(repoA));
+    const second = runCli(argsFor(repoB));
+    assert.equal(first.status, 0);
+    assert.equal(second.status, 0);
+    const bodyA = await fs.readFile(JSON.parse(first.stdout).path, "utf8");
+    const bodyB = await fs.readFile(JSON.parse(second.stdout).path, "utf8");
+    // Strip the one field that legitimately varies run-to-run (Created: <iso>).
+    const normalize = (body: string) => body.replace(/- Created: .*/g, "- Created: <ts>");
+    assert.equal(
+      normalize(bodyA),
+      normalize(bodyB),
+      "identical inputs must produce identical shape"
+    );
+    for (const body of [bodyA, bodyB]) {
+      assert.doesNotMatch(body, /not_checked:/);
+      assert.doesNotMatch(body, /author_id:/);
+      assert.doesNotMatch(body, /judge_id:/);
+      assert.doesNotMatch(body, /self_approval:/);
+      assert.doesNotMatch(body, /Not Checked:/);
+      assert.doesNotMatch(body, /^Author:/m);
+      assert.doesNotMatch(body, /^Judge:/m);
+    }
+  } finally {
+    await cleanup(repoA);
+    await cleanup(repoB);
+  }
+});

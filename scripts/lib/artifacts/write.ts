@@ -47,6 +47,9 @@ function renderField(label: string, value: unknown): string {
 }
 
 function toList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
   if (!value || typeof value !== "string") {
     return [];
   }
@@ -113,6 +116,20 @@ function renderOptionalFrontmatter(fields: ArtifactFields): string {
   if (fields.skipReason) {
     lines.push(`skip_reason: ${JSON.stringify(fields.skipReason)}`);
   }
+  // dev-team#247: optional review-metadata fields. All additive — absent
+  // when not passed, so legacy output stays byte-identical.
+  if (fields.notChecked && fields.notChecked.length > 0) {
+    lines.push(`not_checked: ${JSON.stringify(fields.notChecked)}`);
+  }
+  if (fields.authorId) {
+    lines.push(`author_id: ${fields.authorId}`);
+  }
+  if (fields.judgeId) {
+    lines.push(`judge_id: ${fields.judgeId}`);
+  }
+  if (fields.selfApproval !== undefined) {
+    lines.push(`self_approval: ${fields.selfApproval}`);
+  }
   if (lines.length === 0) {
     return "";
   }
@@ -142,6 +159,14 @@ function renderReviewResultScaffold(fields: ArtifactFields): string {
     "- pass: 0",
     "- partial: 0",
     "- fail: 0",
+    "",
+    // dev-team#247 / FEAT-180: intentional template addition, not a stray
+    // byte-diff. Scaffold mode never receives CLI flags (it's the empty
+    // skeleton a reviewer fills in by hand), so this section is unconditional
+    // — every scaffolded review prompts the reviewer to declare what they
+    // deliberately did NOT cover, which is the whole point of FEAT-180.
+    "## Not checked",
+    "- (what was deliberately NOT covered by this review, or 'none')",
     "",
     "## Risks",
     "- (describe residual risks or 'none')",
@@ -273,6 +298,19 @@ const SIMPLE_RENDERERS: Record<string, ArtifactConfig> = {
       }
       if (f.nonCode) {
         lines.push(renderField("Non-Code Review", "yes"));
+      }
+      // dev-team#247: optional reviewer-identity + not-checked metadata.
+      if (f.authorId) {
+        lines.push(renderField("Author", f.authorId));
+      }
+      if (f.judgeId) {
+        lines.push(renderField("Judge", f.judgeId));
+      }
+      if (f.selfApproval) {
+        lines.push("⚠ self-approval: author and judge are the same identity");
+      }
+      if (f.notChecked && f.notChecked.length > 0) {
+        lines.push(renderListField("Not Checked", f.notChecked));
       }
       if (f.validationEvidence) {
         lines.push("");

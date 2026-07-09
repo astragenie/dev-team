@@ -315,6 +315,11 @@ test("write-review-result --scaffold emits skeleton with empty judgment fields",
     assert.match(body, /## Test Summary/, "must have Test Summary section");
     assert.match(body, /## Changed Files/, "must have Changed Files section");
     assert.match(body, /## Findings/, "must have Findings section");
+    // dev-team#247 / FEAT-180: scaffold always prompts a Not-checked
+    // declaration, unconditionally (scaffold mode never receives CLI flags,
+    // so there's nothing to gate on) — locking the intended behavior so a
+    // future diff to renderReviewResultScaffold can't drop it silently.
+    assert.match(body, /## Not checked/, "must have Not checked section");
     assert.match(body, /## Risks/, "must have Risks section");
     assert.match(body, /## Notes/, "must have Notes section");
   } finally {

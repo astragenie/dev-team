@@ -156,7 +156,12 @@ export const ReviewArtifactSchema = z.object({
   feature: z.string().optional(),
   slice: z.string().optional(),
   findings: z.string().optional(),
-  status: z.string().optional()
+  status: z.string().optional(),
+  // dev-team#247: optional, backward-compatible review-metadata fields.
+  not_checked: z.array(z.string()).optional(),
+  author_id: z.string().optional(),
+  judge_id: z.string().optional(),
+  self_approval: z.boolean().optional()
 });
 export type ReviewArtifact = z.infer<typeof ReviewArtifactSchema>;
 

@@ -37,6 +37,7 @@ const FLAG_SPEC = {
   // Value-consuming flags.
   "--agent": { key: "agent" },
   "--alerts": { key: "alerts" },
+  "--author-id": { key: "authorId" },
   "--budget": { key: "budget" },
   "--approver": { key: "approver" },
   "--badge": { key: "badge" },
@@ -100,6 +101,8 @@ const FLAG_SPEC = {
   "--limit": { key: "limit" },
   "--token-cap": { key: "tokenCap" },
   "--judge": { key: "judge" },
+  "--judge-id": { key: "judgeId" },
+  "--not-checked": { key: "notChecked" },
   "--split": { key: "split" },
   "--severity": { key: "severity" },
   "--shape": { key: "shape" },
@@ -242,6 +245,9 @@ function buildDefaultFlags(): Flags {
     live: false,
     validate: false,
     judge: null,
+    judgeId: null,
+    authorId: null,
+    notChecked: null,
     split: null,
     out: null,
     weeks: null,
@@ -355,7 +361,7 @@ function usage(target: string | null = null) {
     "write-handoff":
       "  node scripts/crew.mjs write-handoff --repo <path> --title <text> [--from <role>] [--to <role>] [--files <a,b>]",
     "write-review-result":
-      "  node scripts/crew.mjs write-review-result --repo <path> --title <text> [--reviewer <role>] [--decision approved|approved_with_notes|rejected|needs_fix] [--verdict <decision>]",
+      "  node scripts/crew.mjs write-review-result --repo <path> --title <text> [--reviewer <role>] [--decision approved|approved_with_notes|rejected|needs_fix] [--verdict <decision>] [--not-checked <a,b,c>] [--author-id <id>] [--judge-id <id>]",
     "write-validation-plan":
       "  node scripts/crew.mjs write-validation-plan --repo <path> --title <text> [--validator <role>] [--environment <name>]",
     "write-validation-result":
@@ -603,6 +609,25 @@ function splitCsv(value: string | null | undefined): string[] {
     .split(",")
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
+}
+
+// dev-team#247: derive the optional review-metadata fields for
+// write-review-result. Hoisted out of the dispatch lambda (same reasoning as
+// pickFlags) to keep its cognitive complexity under the biome cap.
+// selfApproval is DERIVED (not a flag): `authorId != null && authorId ===
+// judgeId`, so it stays undefined — and self_approval never lands in
+// frontmatter — when the caller doesn't pass --author-id.
+function deriveReviewMetadataFields(flags: Flags): {
+  notChecked: string[];
+  authorId: string | undefined;
+  judgeId: string | undefined;
+  selfApproval: boolean | undefined;
+} {
+  const notChecked = splitCsv(flags.notChecked);
+  const authorId = flags.authorId ?? undefined;
+  const judgeId = flags.judgeId ?? undefined;
+  const selfApproval = authorId !== undefined ? authorId === judgeId : undefined;
+  return { notChecked, authorId, judgeId, selfApproval };
 }
 
 // Read currentRun.slice from workflow-state.json with a graceful fallback.
@@ -1007,6 +1032,7 @@ const COMMANDS = {
     const verdict = resolveReviewVerdict(rawDecision);
     refuseIfTestAdequacyMissing(verdict, flags);
     const status = flags.status !== "open" ? (flags.status ?? undefined) : undefined;
+    const { notChecked, authorId, judgeId, selfApproval } = deriveReviewMetadataFields(flags);
     refuseIfSchemaInvalid(
       "write-review-result",
       ReviewArtifactSchema.safeParse({
@@ -1015,7 +1041,11 @@ const COMMANDS = {
         feature: flags.feature ?? undefined,
         slice: flags.slice ?? undefined,
         findings: flags.findings ?? undefined,
-        status
+        status,
+        not_checked: notChecked.length > 0 ? notChecked : undefined,
+        author_id: authorId,
+        judge_id: judgeId,
+        self_approval: selfApproval
       })
     );
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
@@ -1029,6 +1059,10 @@ const COMMANDS = {
       nonCode: flags.nonCode ?? undefined,
       findings: flags.findings ?? null,
       scaffold: flags.scaffold ?? undefined,
+      notChecked: notChecked.length > 0 ? notChecked : undefined,
+      authorId,
+      judgeId,
+      selfApproval,
       ...pickFlags(flags, [
         "summary",
         "evidence",
