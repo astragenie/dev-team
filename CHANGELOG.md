@@ -3,6 +3,22 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [v0.56.0] — 2026-07-09 — arch-gate crew support
+
+Minor: crew-side support for runner's arch-gate epic (PR #189) — a
+pre-existing reviewer-verdict-vocab bug fix, a same-branch worktree
+pre-flight guard, and cross-producer clobber guards on contracts artifacts.
+All landed via PR #189, plus CI docs-only fast-path/auto-merge (#190/#191/#192).
+
+- **FIX-0 — normalize architect-reviewer verdict vocab.** `approved_with_conditions`
+  / `needs_revision` aliases are now recognized; this was a pre-existing CLI
+  `exit(2)` bug affecting all reviewer usage, not just arch-gate.
+- **WS-4 — same-branch in-progress pre-flight worktree guard** in
+  `build.md` / `fix.md`.
+- **GATE-B — cross-producer clobber guards** on `designs/<FEAT>-contracts.md`
+  (`orchestrate-slice` + `architect-feature`).
+- **CI — docs-only fast-path / auto-merge** (#190/#191/#192).
+
 ## [v0.55.0] — 2026-07-08 — stabilization + e2e wave
 
 Minor: e2e guards for the memory loop and slice ceremony, cross-cutting CI
