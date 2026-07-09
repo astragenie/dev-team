@@ -413,3 +413,58 @@ test("installGlobal writes one managed global memory copy and is idempotent", as
     }
   }
 });
+
+// Missing-script guard (cross-referenced from astragenie/runner-plugin#402):
+// a checkout can carry a committed .claude/settings.json that references
+// .claude/hooks/* while the hooks were never materialized in that clone
+// (crew:install not run — the scripts live only in the plugin cache). The
+// unguarded commands then error "No such file or directory" on EVERY tool
+// call. The emitted commands must no-op silently when the script file is
+// absent, and still execute it normally when present.
+test("settings hook commands no-op silently when .claude/hooks is not materialized", async () => {
+  const repoPath = await makeTempDir("crew-hook-guard-missing-");
+  await fs.writeFile(path.join(repoPath, "CLAUDE.md"), "# Repo\n");
+
+  await bootstrapRepo(repoPath);
+  const settings = JSON.parse(
+    await fs.readFile(path.join(repoPath, ".claude", "settings.json"), "utf8")
+  );
+
+  // Simulate the fresh-checkout state: settings.json present, hooks absent.
+  await fs.rm(path.join(repoPath, ".claude", "hooks"), { recursive: true, force: true });
+
+  const commands: string[] = [];
+  for (const entries of Object.values(settings.hooks) as any[]) {
+    for (const entry of entries) {
+      for (const hook of entry.hooks ?? []) commands.push(hook.command);
+    }
+  }
+  assert.ok(commands.length >= 6, `expected all crew hook commands, got ${commands.length}`);
+
+  for (const command of commands) {
+    // execFile rejects on non-zero exit — resolving IS the assertion.
+    const { stdout, stderr } = await execFile("bash", ["-c", command], { cwd: repoPath });
+    assert.equal(stdout.trim(), "", `guarded command must stay silent: ${command}`);
+    assert.equal(stderr.trim(), "", `guarded command must not error: ${command}`);
+  }
+});
+
+test("guarded hook command still executes the materialized script (stdin preserved)", async () => {
+  const repoPath = await makeTempDir("crew-hook-guard-present-");
+  await fs.writeFile(path.join(repoPath, "CLAUDE.md"), "# Repo\n");
+
+  await bootstrapRepo(repoPath);
+  const settings = JSON.parse(
+    await fs.readFile(path.join(repoPath, ".claude", "settings.json"), "utf8")
+  );
+  const sessionStartCommand = settings.hooks.SessionStart[0].hooks[0].command as string;
+
+  await execFile(
+    "bash",
+    ["-c", `printf '%s' '{"hook_event_name":"SessionStart"}' | ( ${sessionStartCommand} )`],
+    { cwd: repoPath }
+  );
+
+  const events = await fs.readFile(path.join(repoPath, ".claude", "logs", "events.jsonl"), "utf8");
+  assert.match(events, /"event":"session_start"/);
+});
