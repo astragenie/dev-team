@@ -453,6 +453,19 @@ process.stdout.write(JSON.stringify({
 NODE
 `;
 
+// Missing-script guard (astragenie/runner-plugin#402 cross-reference): a
+// checkout can carry a committed .claude/settings.json referencing
+// .claude/hooks/* while the scripts were never materialized in that clone
+// (crew:install not run there — they live only in the plugin cache). An
+// unguarded command then errors "No such file or directory" on EVERY
+// matching tool call. The guard makes the command a silent no-op until
+// crew:install materializes the script; `exec` preserves stdin and the
+// script's own exit code when it IS present.
+function guardedHookCommand(script: string, args?: string): string {
+  const scriptPath = `\${PWD}/.claude/hooks/${script}`;
+  return `s="${scriptPath}"; [ -f "$s" ] || exit 0; exec "$s"${args ? ` ${args}` : ""}`;
+}
+
 export const DEFAULT_SETTINGS = {
   hooks: {
     SessionStart: [
@@ -461,7 +474,7 @@ export const DEFAULT_SETTINGS = {
         hooks: [
           {
             type: "command",
-            command: "${PWD}/.claude/hooks/log_event.sh session_start",
+            command: guardedHookCommand("log_event.sh", "session_start"),
             description: "crew:session-start"
           }
         ]
@@ -472,7 +485,7 @@ export const DEFAULT_SETTINGS = {
         hooks: [
           {
             type: "command",
-            command: "${PWD}/.claude/hooks/log_event.sh task_created",
+            command: guardedHookCommand("log_event.sh", "task_created"),
             description: "crew:task-created"
           }
         ]
@@ -483,7 +496,7 @@ export const DEFAULT_SETTINGS = {
         hooks: [
           {
             type: "command",
-            command: "${PWD}/.claude/hooks/log_event.sh task_completed",
+            command: guardedHookCommand("log_event.sh", "task_completed"),
             description: "crew:task-completed"
           }
         ]
@@ -494,7 +507,7 @@ export const DEFAULT_SETTINGS = {
         hooks: [
           {
             type: "command",
-            command: "${PWD}/.claude/hooks/log_event.sh subagent_start",
+            command: guardedHookCommand("log_event.sh", "subagent_start"),
             description: "crew:subagent-start"
           }
         ]
@@ -505,7 +518,7 @@ export const DEFAULT_SETTINGS = {
         hooks: [
           {
             type: "command",
-            command: "${PWD}/.claude/hooks/log_event.sh subagent_stop",
+            command: guardedHookCommand("log_event.sh", "subagent_stop"),
             description: "crew:subagent-stop"
           }
         ]
@@ -517,7 +530,7 @@ export const DEFAULT_SETTINGS = {
         hooks: [
           {
             type: "command",
-            command: "${PWD}/.claude/hooks/check_git_gate.sh",
+            command: guardedHookCommand("check_git_gate.sh"),
             description: "crew:git-gate-reminder"
           }
         ]
