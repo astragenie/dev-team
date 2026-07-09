@@ -55,7 +55,10 @@ test("normalizeReviewDecision: needs_fix normalizes to rejected (aliasOf recorde
 // before anything was written. Widen the alias map, not the canonical enum.
 test("normalizeReviewDecision: approved_with_conditions normalizes to approved_with_notes (aliasOf recorded)", () => {
   const result = normalizeReviewDecision("approved_with_conditions");
-  assert.deepEqual(result, { canonical: "approved_with_notes", aliasOf: "approved_with_conditions" });
+  assert.deepEqual(result, {
+    canonical: "approved_with_notes",
+    aliasOf: "approved_with_conditions"
+  });
 });
 
 test("normalizeReviewDecision: needs_revision normalizes to rejected (aliasOf recorded)", () => {
@@ -173,7 +176,11 @@ test("write-review-result: approved_with_conditions (architect-reviewer.md verdi
     assert.equal(status, 0, "approved_with_conditions must be accepted, not refused");
     const result = JSON.parse(stdout);
     const body = await fs.readFile(result.path, "utf8");
-    assert.match(body, /^decision: approved_with_notes$/m, "frontmatter must carry the canonical value");
+    assert.match(
+      body,
+      /^decision: approved_with_notes$/m,
+      "frontmatter must carry the canonical value"
+    );
 
     const state = await loadState(repoPath);
     assert.equal(state.currentRun.gates.review.status, "passed");
