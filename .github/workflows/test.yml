@@ -7,10 +7,40 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Docs-only fast-path: docs/markdown/backlog-only PRs skip checks+test and
+  # pass via the always-running `gate` job below. Fail-safe: unknown diff => code=true.
+  changes:
+    name: detect changes
+    runs-on: self-hosted
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - id: filter
+        shell: bash
+        run: |
+          set -uo pipefail
+          base="${{ github.event.pull_request.base.sha }}"
+          if [ -z "$base" ] || ! git cat-file -e "$base" 2>/dev/null; then base="HEAD~1"; fi
+          changed=$(git diff --name-only "$base" HEAD || echo "UNKNOWN")
+          echo "changed files:"; echo "$changed"
+          if [ -z "$changed" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          elif echo "$changed" | grep -qvE '(^docs/|\.md$|/backlog/|^\.github/backlog/)'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs-only change detected -- checks+test will be skipped"
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   # Runs every validator, advisory-validator, lint/format/typecheck, and the
   # Linux-only e2e smoke commands exactly once (AC-3). The sharded test suite
   # lives in the `test` matrix job below so it doesn't multiply this job N times.
   checks:
+    needs: changes
+    if: ${{ needs.changes.outputs.code == 'true' }}
     uses: astragenie/common/.github/workflows/reusable-plugin-ci.yml@main
     with:
       validators: |
@@ -54,6 +84,8 @@ jobs:
   # `with:` block for a reusable-workflow call cannot read workflow-level `env`,
   # so this is the single place both are declared.
   test:
+    needs: changes
+    if: ${{ needs.changes.outputs.code == 'true' }}
     strategy:
       fail-fast: false
       matrix:
@@ -62,3 +94,24 @@ jobs:
     with:
       bun-commands: |
         SHARD_TOTAL=3 SHARD_INDEX=${{ matrix.shard }} bun run test:shard
+
+  # Required check. Always runs so it reports on every PR (no stuck-check trap).
+  # Passes when docs-only (checks+test skipped) OR both checks and every test
+  # shard succeeded.
+  gate:
+    name: gate
+    needs: [changes, checks, test]
+    if: always()
+    runs-on: self-hosted
+    steps:
+      - name: Evaluate gate
+        shell: bash
+        run: |
+          set -uo pipefail
+          code='${{ needs.changes.outputs.code }}'
+          c='${{ needs.checks.result }}'
+          t='${{ needs.test.result }}'
+          echo "changes.code=$code checks=$c test=$t"
+          if [ "$code" != "true" ]; then echo "docs-only -- gate passes"; exit 0; fi
+          if [ "$c" = "success" ] && [ "$t" = "success" ]; then echo "checks+test passed"; exit 0; fi
+          echo "checks=$c test=$t -- gate fails"; exit 1
