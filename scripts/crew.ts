@@ -287,6 +287,10 @@ function readFlagFileValue(filePath: string): string {
 // Returns the next parse index when `value` is a recognized `-file`
 // companion token, or null otherwise (not handled — caller falls through).
 // See #152.
+// FLAG_SPEC authors: never add a real flag whose name ends in `-file` —
+// it would collide with this companion convention. Also note only one
+// flag per invocation may read stdin via `-`; a second `-` read after
+// EOF yields an empty string, not an error.
 function tryApplyFileFlagToken(
   value: string,
   rest: string[],
