@@ -4,7 +4,7 @@
 // per call; callers cache as appropriate.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { parse as parseYaml } from "yaml";
+import { parseFrontmatter } from "@astragenie/plugin-std";
 
 export interface AgentCapabilities {
   role?: string[];
@@ -39,23 +39,19 @@ export interface RouteMatch {
 }
 
 // ── Frontmatter parser ──────────────────────────────────────────────────────
-
-function extractFrontmatter(md: string): string | null {
-  const m = /^---\r?\n([\s\S]*?)\r?\n---/.exec(md);
-  return m?.[1] ?? null;
-}
+// plugin-std's parseFrontmatter throws on an unterminated fence or unparsable
+// YAML; this registry walk must stay tolerant (skip the file, never crash the
+// walk), so both failure modes are caught and treated as "no capabilities".
 
 function parseEntry(name: string, relPath: string, md: string): AgentRegistryEntry | null {
-  const fm = extractFrontmatter(md);
-  if (!fm) return null;
-  let parsed: unknown;
+  let data: Record<string, unknown>;
   try {
-    parsed = parseYaml(fm);
+    ({ data } = parseFrontmatter(md));
   } catch {
     return null;
   }
-  if (!parsed || typeof parsed !== "object") return null;
-  const obj = parsed as Record<string, unknown>;
+  if (!data || typeof data !== "object") return null;
+  const obj = data;
   const caps = obj["capabilities"];
   if (!caps || typeof caps !== "object") return null;
   const capsRec = caps as Record<string, unknown>;

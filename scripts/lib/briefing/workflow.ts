@@ -1,5 +1,6 @@
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
+import { parseFrontmatter } from "@astragenie/plugin-std";
 import { getCachedArtifact } from "../artifact-cache.mjs";
 import { pathExists } from "../fs-utils.ts";
 
@@ -85,6 +86,20 @@ function extractMarkdownField(body: string, label: string): string {
   return match ? (match[1] ?? "").trim() : "";
 }
 
+// getCachedArtifact's `body` is the raw, unstripped file text (fm + body
+// together) — strip the fence here for heading extraction only. parseFrontmatter
+// throws on an unterminated fence; fall back to the 3-char slice the old
+// `body.slice(body.indexOf("\n---", 3) + 4)` one-liner produced in that case
+// (indexOf returns -1, so -1 + 4 = 3) so malformed input degrades identically.
+function stripFrontmatterBody(raw: string): string {
+  if (!raw.startsWith("---")) return raw;
+  try {
+    return parseFrontmatter(raw).body;
+  } catch {
+    return raw.slice(3);
+  }
+}
+
 async function readArtifactSummary(
   filePath: string,
   fallbackTitle = ""
@@ -98,7 +113,7 @@ async function readArtifactSummary(
     throw err;
   }
   const { fm, body, mtimeMs } = cached;
-  const bodyAfterFm = body.startsWith("---") ? body.slice(body.indexOf("\n---", 3) + 4) : body;
+  const bodyAfterFm = stripFrontmatterBody(body);
   const [heading = ""] = bodyAfterFm.split("\n");
   return {
     path: filePath,

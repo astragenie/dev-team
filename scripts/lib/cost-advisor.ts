@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { parseFrontmatter as parseFrontmatterStd } from "@astragenie/plugin-std";
 import { computeGrade, type GradeLetter } from "./cost-advisor-grades.ts";
 import {
   applyRules,
@@ -18,36 +19,21 @@ export { computeGrade } from "./cost-advisor-grades.ts";
 
 // ---- frontmatter + body parsers ----
 
-// Parse one frontmatter value: strip surrounding quotes via JSON.parse where
-// possible, coerce numeric-looking strings to numbers, otherwise return raw.
-function parseFrontmatterValue(raw: string): string | number {
-  if (raw.startsWith('"') && raw.endsWith('"')) {
-    try {
-      return JSON.parse(raw) as string;
-    } catch {
-      return raw;
-    }
-  }
-  if (/^-?\d+(?:\.\d+)?$/.test(raw)) return Number(raw);
-  return raw;
-}
-
+// Cost-report frontmatter values (usd, duration_ms, run_title, ...) are all
+// consumed downstream via Number()/String() coercion or passed through as
+// opaque `?? null`, so the wider real-YAML value types plugin-std returns
+// (numbers instead of numeric strings, etc.) are compatible with every
+// existing caller. parseReportFiles() already wraps this call in a try/catch
+// that silently skips unreadable/malformed report files, which also covers
+// plugin-std's throw-on-unterminated-fence / throw-on-bad-YAML — no fence at
+// all still degrades to an empty frontmatter object, matching the old
+// `{ fm: null, body: text }` (folded to `{}` at the call site) tolerance.
 function parseFrontmatter(text: string): {
   fm: Record<string, string | number> | null;
   body: string;
 } {
-  if (!text.startsWith("---")) return { fm: null, body: text };
-  const end = text.indexOf("\n---", 3);
-  if (end < 0) return { fm: null, body: text };
-  const block = text.slice(3, end).trim();
-  const body = text.slice(end + 4);
-  const fm: Record<string, string | number> = {};
-  for (const line of block.split(/\r?\n/)) {
-    const m = line.match(/^([\w_]+):\s*(.*)$/);
-    if (!m?.[1]) continue;
-    fm[m[1]] = parseFrontmatterValue(m[2]?.trim() ?? "");
-  }
-  return { fm, body };
+  const { data, body } = parseFrontmatterStd(text);
+  return { fm: data as Record<string, string | number>, body };
 }
 
 function extractBodyMetric(body: string, label: string): string | null {
