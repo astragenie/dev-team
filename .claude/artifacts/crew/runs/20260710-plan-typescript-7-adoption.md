@@ -82,3 +82,16 @@ Core principle: **decouple typecheck-speed from emit.** TS 7 as the fast typeche
 ## Sequencing note
 
 Independent of the just-shipped v0.61.0 work — no file overlap with the memory/adoption tracks. Can start the Wave-0 spike anytime. Recommend: **spike first, decide Path A/B on evidence, then dev-team (safe) before plugins-common (gated).**
+
+---
+
+## Spike outcomes (2026-07-10)
+
+### S0a — dev-team: **NO-GO (deferred)** — see dev-team#214
+- Typecheck parity is **perfect**: `typescript ^6.0.3 → ^7.0.2` gives 0 new diagnostics; all 10 tsconfig options accepted; lint/format clean.
+- **Blocker**: TS 7.0 removed the classic compiler API (`ts.factory`, etc.) from the default import → `openapi-typescript` (devDep ^7.13.0, peerDep still `^5.x`) throws at module-load → breaks `validate-contracts.ts` + its CI-gate test. Not fixable in dev-team source.
+- **Decision**: stay on TS6. Revisit trigger = openapi-typescript declares `typescript ^7` support (watch its releases). Interim option if urgent: npm/bun `overrides` pinning openapi-typescript's nested typescript to ^6.
+- Plan gap corrected: the "no compiler-API usage" check must include **transitive devDependencies**, not just first-party source. openapi-typescript is the sole blocker.
+
+### S0b — plugins-common: (pending) — independent of #214
+plugins-common does NOT use openapi-typescript, so the dev-team blocker doesn't apply. Its TS7 viability rides solely on the declaration-emit parity verdict (S0b). Wave 2 proceeds or falls to Path B on that evidence alone.
