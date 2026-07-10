@@ -1,7 +1,4 @@
-import { execFile as execFileCallback } from "node:child_process";
-import { promisify } from "node:util";
-
-const execFile = promisify(execFileCallback);
+import { runGit as runGitStd } from "@astragenie/plugin-std/git";
 
 const BRANCH_COMMITS_LIMIT = 5;
 const REPO_ACTIVITY_LIMIT = 8;
@@ -50,8 +47,8 @@ function parseInteger(value: string): number {
 
 async function runGit(repoPath: string, args: string[]): Promise<string | null> {
   try {
-    const result = await execFile("git", args, { cwd: repoPath });
-    return result.stdout.trim();
+    const result = await runGitStd(args, { cwd: repoPath });
+    return result.ok ? result.stdout.trim() : null;
   } catch {
     return null;
   }

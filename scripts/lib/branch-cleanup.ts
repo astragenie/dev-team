@@ -5,17 +5,14 @@
 // squash-merges (missed by `git branch --merged` but detectable via an
 // empty `git diff <base>...<branch> --stat`).
 
-import { execFile as execFileCallback } from "node:child_process";
-import { promisify } from "node:util";
-
-const execFile = promisify(execFileCallback);
+import { runGit as runGitStd } from "@astragenie/plugin-std/git";
 
 // Run a git command in the given repo directory.
 // Returns stdout on success, null on any error (non-zero exit, ENOENT, etc.).
 async function runGit(repoPath: string, args: string[]): Promise<string | null> {
   try {
-    const { stdout } = await execFile("git", args, { cwd: repoPath });
-    return stdout.trim();
+    const result = await runGitStd(args, { cwd: repoPath });
+    return result.ok ? result.stdout.trim() : null;
   } catch {
     return null;
   }
