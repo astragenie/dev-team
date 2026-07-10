@@ -28,7 +28,24 @@ Only real sitting work was plugins-common PR #9 — now being landed (P1 below).
 - W1-A ✗ — dev-team pins still astramem-client ^0.1.0 / gepa-core 0.7.0
 - W2/W3/W4 ✗ not started. No v0.59.0 cut.
 
-## P1 state (IN FLIGHT — resume here)
+## UPDATE 2026-07-10 (Opus session, post-limit resume)
+
+- **Recovered near-lost fix**: prior p1-builder left the actual CI fix STAGED-BUT-UNCOMMITTED (issue #171 failure mode) in plugins-common — `ci.yml` + `peer-dep-matrix.yml` edits adding `bun --filter @astragenie/plugin-std build` before typecheck. Merge commit `3d90d3c` had dropped the plugin-std build line (kept only astramem-client), so gepa-core + plugin-registry failed TS2307 and every peer-dep cell failed resolving `@astragenie/plugin-std/http`.
+- Committed as `8584ed8`, pushed. Verified locally BEFORE push: fresh `dist` wipe + build + full `typecheck`/`lint`/`format:check`/`test` green across all 5 packages (gepa-core 212, plugin-registry 59, openclaw 38 tests pass). plugin-registry's TS2339/TS18046 errors were all cascading from the missing plugin-std import — vanish once resolved.
+- CI running on `8584ed8`. Next: confirm green → crew review gate → merge PR #9 → main CI → P2 tags.
+- **W2-pre report SAVED**: `.claude/artifacts/crew/runs/20260710-w2pre-plugin-std-swap-map.md` (investigator delivered full swap-list before dying). Feeds P4. Headline: frontmatter swap first (5 CRLF-unsafe parsers, highest value), http = skip (zero dev-team callers), jsonl needs a non-throwing-wrapper decision first.
+
+## P1 DONE + P2 SEQUENCE (critical dep-order finding)
+
+- **P1 COMPLETE**: PR #9 auto-merged to plugins-common main as `6341bab` (green CI + Peer-Dep both pass). Two real fixes landed this session: `8584ed8` (CI build plugin-std before typecheck — recovered from staged-but-uncommitted) + `ed81050` (plugin-registry cli.ts `import.meta.main` guard — root cause of the never-green cli.test.ts: main() ran on import, set process.exitCode=1). Main CI is suppressed by auto-merge (plan principle 7); verified green via tree-identity (`ed81050` tree == `6341bab` tree, 0-file diff). ci.yml has no `workflow_dispatch` — nice-to-have follow-up to add one.
+- **P2 BLOCKER — publish order is forced**: `gepa-core` AND `plugin-registry` package.json both declare `@astragenie/plugin-std: "workspace:*"`. release.yml publish-guard (`.github/workflows/release.yml:45`) rejects any `npm publish` whose package.json still has a `workspace:` dep. So:
+  1. Tag `plugin-std-v0.5.0` (clean, no workspace deps) → publish FIRST.
+  2. Tag `astramem-client-v0.2.0` (clean, only a peerDep on astramem-plugin >=0.6.0) → independent, anytime.
+  3. **Then** edit `packages/gepa-core/package.json` dep `@astragenie/plugin-std` `workspace:*` → `^0.5.0`, COMMIT to main, THEN tag `gepa-core-v0.10.0`. Cannot tag gepa-core before plugin-std is published + this pin lands.
+  4. plugin-registry (v0.1.0) not in P2 scope, but same pin needed whenever it publishes.
+- Publish = irreversible (npm locks version slot 24h even after unpublish — memory `gepa-core-v0.2.0-unpublish-lockout`). Gate on p1-reviewer PUBLISH_OK verdict first.
+
+## P1 state (superseded — see above)
 
 plugins-common `feat/plugin-std-stabilization` (= OPEN PR #9, plugin-std 0.5.0 + gepa-core 0.10.0 adoption + plugin-registry 0.1.0):
 
