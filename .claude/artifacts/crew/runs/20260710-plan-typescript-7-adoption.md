@@ -95,3 +95,9 @@ Independent of the just-shipped v0.61.0 work — no file overlap with the memory
 
 ### S0b — plugins-common: (pending) — independent of #214
 plugins-common does NOT use openapi-typescript, so the dev-team blocker doesn't apply. Its TS7 viability rides solely on the declaration-emit parity verdict (S0b). Wave 2 proceeds or falls to Path B on that evidence alone.
+
+### S0b + Wave 2 — plugins-common: **ADOPTED TS7 (merged)**
+- S0b verdict EMIT_OK; Wave 2 merged as plugins-common PR #26 (main `77d935b`). typescript ^5.x → ^7.0.2 across all 6 packages; removed `esModuleInterop:false` (3 files — TS7 removed the option, inert here).
+- **Emit safety, corrected**: non-zod packages (plugin-std) emit BYTE-identical; **zod packages (memory-provider, gepa-core) are TYPE-identical but NOT byte-identical** — TS7's normalized declaration emit sorts union members + object properties alphabetically. Same lines/types/optionality; structurally identical for consumers (verified: consumer smoke exit 0, full suite 0 fail). On next natural release those packages' published `.d.ts` reorder cosmetically — harmless.
+- Toolchain-only: no source, no version bumps, no forced republish. CI green on TS7 (Linux).
+- **Net TS7 status**: plugins-common ✅ on TS7; dev-team ⏸ deferred (openapi-typescript, #214). The two repos decoupled — the dev-team blocker never touched plugins-common.
