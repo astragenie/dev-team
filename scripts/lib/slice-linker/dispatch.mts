@@ -40,7 +40,7 @@ import {
   UnsupportedSkipExpressionError,
   type WorkflowPhase
 } from "../workflow-config.ts";
-import { parseMemoryConfig, resolveEffectiveConfig } from "../memory/config.ts";
+import { parseMemoryConfig, resolveEffectiveConfig } from "@astragenie/memory-provider";
 
 // ── Soak dispatcher hook (FEAT-183 S7 / SLICE-104) ────────────────────────────
 //

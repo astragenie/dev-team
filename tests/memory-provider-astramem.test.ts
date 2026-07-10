@@ -33,8 +33,7 @@ import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { _resetResolveCache } from "@astragenie/astramem-client";
-import { astramemProvider, type RemoteHandle } from "../scripts/lib/memory/astramem-provider.ts";
-import { fileProvider } from "../scripts/lib/memory/file-provider.ts";
+import { astramemProvider, fileProvider, type RemoteHandle } from "@astragenie/memory-provider";
 
 const UNREACHABLE_LOCAL_URL = "http://127.0.0.1:1";
 
@@ -197,7 +196,7 @@ test("astramemProvider.supersede resolves the chain when unpaired — only the l
 });
 
 test("resolveProvider wires provider:astramem to astramemProvider (S2 hand-off)", async () => {
-  const { resolveProvider } = await import("../scripts/lib/memory/resolve-provider.ts");
+  const { resolveProvider } = await import("@astragenie/memory-provider");
   const repo = await makeTempRepo("memory-astramem-wiring-");
   try {
     await withUnpairedEnv(async () => {
@@ -223,8 +222,7 @@ test("resolveProvider wires provider:astramem to astramemProvider (S2 hand-off)"
 // see the file-header comment for why the previous real-http.Server version
 // of these 2 tests flaked in the full suite. Injected via the
 // `__resolveRemote` test seam on AstramemProviderOptions
-// (scripts/lib/memory/astramem-provider.ts) — production callers never set
-// this option.
+// (@astragenie/memory-provider) — production callers never set this option.
 
 interface FakeWireDaemon {
   rememberCalls: number;

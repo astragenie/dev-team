@@ -21,7 +21,7 @@
 // review/validation gate or hook it rides on (FEAT-188 S1a AC-6).
 //
 // FEAT-188 S2 note: appendJsonlEntry()/LEARNINGS_PATH are exported so the S2
-// fileProvider (scripts/lib/memory/file-provider.ts) can write into this
+// fileProvider (now @astragenie/memory-provider, W3b) can write into this
 // SAME store using this SAME atomic-append primitive — not a second,
 // forked JSONL writer.
 import { appendFile, mkdir } from "node:fs/promises";

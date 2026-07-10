@@ -14,7 +14,7 @@ import {
   formatRecallBlock,
   loadMemoryConfig
 } from "../scripts/lib/memory/inject-recall.ts";
-import { fileProvider } from "../scripts/lib/memory/file-provider.ts";
+import { fileProvider } from "@astragenie/memory-provider";
 
 async function makeTempRepo(prefix: string) {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));

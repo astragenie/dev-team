@@ -2,14 +2,14 @@
 // FEAT-188 S5 AC coverage: decay hygiene. An entry older than 45 days and
 // not `critical` is excluded from recall(); superseded/invalidated entries
 // are never returned regardless of age. Exercised through fileProvider
-// (the ranking logic itself lives in scripts/lib/memory/ranking.ts and is
-// shared by every provider).
+// (the ranking logic itself lives in @astragenie/memory-provider's ranking
+// module and is shared by every provider).
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { fileProvider } from "../scripts/lib/memory/file-provider.ts";
+import { fileProvider } from "@astragenie/memory-provider";
 
 async function makeTempRepo(prefix: string) {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));

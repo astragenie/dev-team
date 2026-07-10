@@ -26,10 +26,13 @@ import { appendFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 // eslint-disable-next-line import/no-unresolved -- allowJs JSDoc-typed sibling module (see scripts/lib/jsonl.mjs)
 import { tailReadJsonl } from "../jsonl.mjs";
-import { resolveAstramemRemote, type RemoteHandle } from "./astramem-provider.ts";
+import {
+  normalizeLegacyRow,
+  resolveAstramemRemote,
+  type MemoryEntry,
+  type RemoteHandle
+} from "@astragenie/memory-provider";
 import { LEARNINGS_PATH } from "./capture-learning.ts";
-import { normalizeLegacyRow } from "./legacy-adapter.ts";
-import type { MemoryEntry } from "./schema.ts";
 
 const EVENTS_LOG_REL = [".claude", "logs", "events.jsonl"] as const;
 

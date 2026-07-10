@@ -4,7 +4,7 @@
 // (commands/build.md, commands/fix.md, commands/ship.md retries,
 // commands/orchestrate-slice.md) calls before handing an instruction to a
 // subagent. Given the dispatch text + {agent, tags}, it resolves the
-// configured MemoryProvider (scripts/lib/memory/resolve-provider.ts),
+// configured MemoryProvider (@astragenie/memory-provider's resolveProvider),
 // recalls entries scoped by agent/tags within the configured token budget,
 // and appends a formatted block.
 //
@@ -22,9 +22,12 @@
 // throw.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { parseMemoryConfig, resolveEffectiveConfig } from "./config.ts";
-import { resolveProvider } from "./resolve-provider.ts";
-import type { MemoryEntry } from "./schema.ts";
+import {
+  parseMemoryConfig,
+  resolveEffectiveConfig,
+  resolveProvider,
+  type MemoryEntry
+} from "@astragenie/memory-provider";
 
 /** Path (relative to repoPath) of the unified `memory` config block's home. */
 const LOOP_CONFIG_PATH = [".claude", "loop.json"];
