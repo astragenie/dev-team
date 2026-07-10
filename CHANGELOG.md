@@ -3,6 +3,33 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [v0.60.0] — 2026-07-10 — plugin-std helper adoption (W2)
+
+Minor: replaces hand-rolled helper families with the shared
+`@astragenie/plugin-std` library, removing duplication across four seams.
+All swaps behavior-preserving (full suite green, no test changes); risky or
+contract-divergent sites deliberately kept local.
+
+- **frontmatter** (#207, #209): 4 CRLF-unsafe parsers/serializers →
+  `parseFrontmatter`/`serializeFrontmatter` (agent-registry, cost-advisor,
+  wakeup, briefing/workflow), each wrapped to preserve the old
+  tolerate-on-malformed behavior vs plugin-std's throw-on-malformed. Left local:
+  artifact-cache + its serializers (findings-as-JSON-string contract would break
+  a downstream `typeof === "string"` gate). #209 restored wakeup's exact
+  unterminated-fence fallback.
+- **git** (#208): `briefing/git.ts` + `branch-cleanup.ts` `execFile("git",…)` →
+  `runGit`, preserving the null-on-any-failure + `.trim()` contract. Left local:
+  `gepa-killswitch-cmds.ts` (plugin-std's runGit hardcodes the `git` binary and
+  would drop the `--git` CLI override).
+- **jsonl** (#210): `dispatch-timing.ts` + `approvals.ts` append sites →
+  `append()`, preserving the never-throw (fire-and-forget) and throw-to-caller
+  contracts respectively. Left local: `readApprovalEvents` (real throw-vs-swallow
+  divergence), observability event_id dedupe, `jsonl.mjs` byte-seek tail (perf),
+  serialize-jsonl (overwrite).
+- **result** (#211): `result.ts` (the original seed for plugin-std's result
+  module) now re-exports `Result`/`ok`/`err`/`map`/`flatMap` from the package;
+  all 7 importers keep their path. `http` had zero in-repo callers — skipped.
+
 ## [v0.59.0] — 2026-07-10 — plugins-common pins + reviewer idle-guard
 
 Minor: adopts the freshly published `@astragenie/*` shared packages and closes
