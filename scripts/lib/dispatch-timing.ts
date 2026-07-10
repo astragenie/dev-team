@@ -1,7 +1,7 @@
 // Dispatch-timing JSONL writer for per-subagent-dispatch wall-clock telemetry (FEAT-149).
 // Phase 1 of slice perf 2-3x spec. Pure additive — no behavior change to existing code.
-import { promises as fs } from "node:fs";
 import path from "node:path";
+import { append } from "@astragenie/plugin-std/jsonl";
 
 export type DispatchStartMeta = {
   runId: string;
@@ -42,8 +42,9 @@ export function recordDispatchEnd(handle: DispatchHandle, end: DispatchEndMeta):
       "logs",
       "dispatch-timing.jsonl"
     );
-  void fs
-    .mkdir(path.dirname(logPath), { recursive: true })
-    .then(() => fs.appendFile(logPath, JSON.stringify(row) + "\n", "utf-8"))
-    .catch(() => undefined);
+  // plugin-std's append() throws TransientError on write failure; this call site is
+  // fire-and-forget telemetry that must never throw (matches the previous inline
+  // mkdir+appendFile's `.catch(() => undefined)` swallow), so the rejection is caught
+  // and dropped identically.
+  void append(logPath, row).catch(() => undefined);
 }

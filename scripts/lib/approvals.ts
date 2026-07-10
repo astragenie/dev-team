@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
+import { append } from "@astragenie/plugin-std/jsonl";
 import { type Result, ok, err } from "./result.ts";
 
 // ---------------------------------------------------------------------------
@@ -117,9 +118,19 @@ async function appendApprovalEvent(
 ): Promise<void> {
   await ensureApprovalLog(repoPath);
   const approvalsPath = path.join(repoPath, ...APPROVALS_PATH);
-  await fs.appendFile(approvalsPath, `${JSON.stringify({ timestamp: nowIso(), ...event })}\n`);
+  // plugin-std's append() throws TransientError (instanceof Error) on write failure —
+  // same throw-to-caller contract as the previous fs.appendFile call: requestApproval
+  // lets it propagate, resolveApproval's try/catch still converts it via
+  // `e instanceof Error ? e : new Error(String(e))`.
+  await append(approvalsPath, { timestamp: nowIso(), ...event });
 }
 
+// NOT swapped to plugin-std's readSafe(): readSafe silently counts a malformed/torn
+// line as `skipped` and never throws, whereas this reader's bare `JSON.parse` throws
+// on a malformed line and lets that propagate (requestApproval has no catch;
+// resolveApproval's try/catch turns it into an Err). That is a real throw-vs-swallow
+// divergence on corruption, not a mechanical rename, so the manual parse stays local
+// per the never-force-a-swap guidance.
 async function readApprovalEvents(
   repoPath: string,
   options: { createIfMissing?: boolean } = {}
