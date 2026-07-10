@@ -35,6 +35,19 @@ Only real sitting work was plugins-common PR #9 — now being landed (P1 below).
 - CI running on `8584ed8`. Next: confirm green → crew review gate → merge PR #9 → main CI → P2 tags.
 - **W2-pre report SAVED**: `.claude/artifacts/crew/runs/20260710-w2pre-plugin-std-swap-map.md` (investigator delivered full swap-list before dying). Feeds P4. Headline: frontmatter swap first (5 CRLF-unsafe parsers, highest value), http = skip (zero dev-team callers), jsonl needs a non-throwing-wrapper decision first.
 
+## P2 COMPLETE (2026-07-10) — all three packages published
+
+npm now has: **plugin-std@0.5.0**, **astramem-client@0.2.0**, **gepa-core@0.10.1** (NOT 0.10.0 — see below). Path taken:
+- Post-merge review (p1-reviewer) returned PUBLISH_BLOCKED with 3 blockers, all fixed:
+  1. astramem-client `private:true` (copy-paste from astramem-openclaw) → removed + added publishConfig. **PR #15**.
+  2. plugin-registry cli.ts `import.meta.main` → undefined on Node <22.18/<24.2 (below engines floor 22.6) → silent no-op under `node dist/cli.js`. Swapped for version-independent ESM entry check + cli.test.ts now asserts output written. **PR #15**.
+  3. gepa-core `workspace:*` → `^0.5.0` pin (release guard). **PR #16** (also pinned plugin-registry).
+- Published plugin-std-v0.5.0 + astramem-client-v0.2.0 (clean).
+- **gepa-core-v0.10.0 tag FAILED** (release.yml pre-publish gate didn't build plugin-std → workspace-linked local copy unresolvable). Fixed release.yml (build plugin-std before gate) + bumped gepa-core 0.10.0→**0.10.1** (0.10.0 tag spent; tags never deleted; identical payload). **PR #17**. Tag gepa-core-v0.10.1 → published OK.
+- **Orphan tag**: `gepa-core-v0.10.0` exists on origin, points at pre-fix commit, published nothing. Left per "never delete tags" hard rule.
+
+**⚠️ P3 must pin gepa-core to 0.10.1 (or ^0.10.0 which allows it), NOT 0.10.0.**
+
 ## P1 DONE + P2 SEQUENCE (critical dep-order finding)
 
 - **P1 COMPLETE**: PR #9 auto-merged to plugins-common main as `6341bab` (green CI + Peer-Dep both pass). Two real fixes landed this session: `8584ed8` (CI build plugin-std before typecheck — recovered from staged-but-uncommitted) + `ed81050` (plugin-registry cli.ts `import.meta.main` guard — root cause of the never-green cli.test.ts: main() ran on import, set process.exitCode=1). Main CI is suppressed by auto-merge (plan principle 7); verified green via tree-identity (`ed81050` tree == `6341bab` tree, 0-file diff). ci.yml has no `workflow_dispatch` — nice-to-have follow-up to add one.
