@@ -15,6 +15,12 @@ import {
   runCheckSubagentReturnHook,
   parseUsageMetrics
 } from "../hooks/lib/check-subagent-return.ts";
+import {
+  runCheckReviewerDecisionHook,
+  hasDecisionLine,
+  hasDeliveredDecision,
+  isReviewerTierAgent
+} from "../hooks/lib/check-reviewer-decision.ts";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const HOOK_PATH = path.join(__dirname, "..", "hooks", "check-subagent-return.ts");
@@ -126,6 +132,24 @@ function makeStdin(body: string, cwd = process.cwd()) {
 /** Returns a string of exactly `n` ASCII chars. */
 function makeBody(n: number) {
   return "x".repeat(n);
+}
+
+// Build a SubagentStop stdin payload (dev-team#199 reviewer-decision-guard).
+function makeSubagentStopStdin(opts: {
+  agentName?: string;
+  message?: string;
+  cwd?: string;
+  stopHookActive?: boolean;
+  sessionId?: string;
+}) {
+  const payload: Record<string, unknown> = {
+    session_id: opts.sessionId ?? "test-session",
+    cwd: opts.cwd ?? process.cwd()
+  };
+  if (opts.agentName !== undefined) payload["agent_name"] = opts.agentName;
+  if (opts.message !== undefined) payload["last_assistant_message"] = opts.message;
+  if (opts.stopHookActive !== undefined) payload["stop_hook_active"] = opts.stopHookActive;
+  return JSON.stringify(payload);
 }
 
 // ── Hook integration tests ────────────────────────────────────────────────────
@@ -623,4 +647,126 @@ test("parseUsageMetrics: only total_tokens present → others zero", () => {
   assert.equal(m.totalTokens, 300);
   assert.equal(m.toolUses, 0);
   assert.equal(m.durationMs, 0);
+});
+
+// ── dev-team#199: SubagentStop reviewer-decision-guard ─────────────────────
+// Reviewer-tier subagent idles without delivering a decision → block via the
+// same SubagentStop/Stop {decision:"block", reason} contract the
+// plugin-dev:hook-development skill documents. Non-reviewer agents and
+// runtimes that don't expose last_assistant_message are never blocked.
+
+test("isReviewerTierAgent: recognizes all five reviewer-tier agents, namespaced or bare", () => {
+  for (const bare of [
+    "reviewer",
+    "reviewer-lite",
+    "typescript-reviewer",
+    "csharp-reviewer",
+    "architect-reviewer"
+  ]) {
+    assert.ok(isReviewerTierAgent(bare), `expected ${bare} to be reviewer-tier`);
+    assert.ok(isReviewerTierAgent(`crew:${bare}`), `expected crew:${bare} to be reviewer-tier`);
+  }
+});
+
+test("isReviewerTierAgent: builder/non-reviewer agents are not reviewer-tier", () => {
+  assert.ok(!isReviewerTierAgent("crew:fullstack-dev"));
+  assert.ok(!isReviewerTierAgent("verifier"));
+  assert.ok(!isReviewerTierAgent("dev-lite"));
+});
+
+test("hasDecisionLine: matches decision: approved / approved_with_notes / rejected, case-insensitively", () => {
+  assert.ok(hasDecisionLine("Findings summarized.\ndecision: approved\n"));
+  assert.ok(hasDecisionLine("Decision: approved_with_notes — two medium findings noted."));
+  assert.ok(hasDecisionLine("decision=rejected: scope exceeded"));
+  assert.ok(!hasDecisionLine("Still reviewing, no decision yet."));
+});
+
+test("hasDeliveredDecision: a review-result artifact path counts even without literal 'decision:' text", () => {
+  const msg =
+    "Review complete: .claude/artifacts/crew/reviews/20260710T000000Z-review-result-foo.md";
+  assert.ok(!hasDecisionLine(msg));
+  assert.ok(hasDeliveredDecision(msg));
+});
+
+test("reviewer decision line present → allowed (no block)", async () => {
+  const stdin = makeSubagentStopStdin({
+    agentName: "crew:reviewer",
+    message:
+      "review-result written. decision: approved_with_notes — 1 medium finding, isolated fix."
+  });
+  const out = await runCheckReviewerDecisionHook(stdin);
+  assert.equal(out, null);
+});
+
+test("reviewer with NO decision line and no artifact path → blocked", async () => {
+  const stdin = makeSubagentStopStdin({
+    agentName: "crew:typescript-reviewer",
+    message: "Looked through the diff, seems mostly fine, wrapping up now."
+  });
+  const out = await runCheckReviewerDecisionHook(stdin);
+  assert.notEqual(out, null);
+  const parsed = JSON.parse(out as string);
+  assert.equal(parsed.decision, "block");
+  assert.match(parsed.reason, /decision-guard/);
+  assert.match(parsed.reason, /crew:typescript-reviewer/);
+});
+
+test("non-reviewer agent (e.g. crew:fullstack-dev) with no decision line → unaffected", async () => {
+  const stdin = makeSubagentStopStdin({
+    agentName: "crew:fullstack-dev",
+    message: "Implementation wrapping up, no decision line here at all."
+  });
+  const out = await runCheckReviewerDecisionHook(stdin);
+  assert.equal(out, null);
+});
+
+test("reviewer with a review-result artifact path but no literal 'decision:' text → allowed", async () => {
+  const stdin = makeSubagentStopStdin({
+    agentName: "crew:reviewer",
+    message: "Done: .claude/artifacts/crew/reviews/20260710T000000Z-review-result-slice.md"
+  });
+  const out = await runCheckReviewerDecisionHook(stdin);
+  assert.equal(out, null);
+});
+
+test("stop_hook_active=true → never re-blocks (loop safety), even with no decision", async () => {
+  const stdin = makeSubagentStopStdin({
+    agentName: "crew:reviewer",
+    message: "Still nothing delivered.",
+    stopHookActive: true
+  });
+  const out = await runCheckReviewerDecisionHook(stdin);
+  assert.equal(out, null);
+});
+
+test("reviewer with no last_assistant_message field → fails open (documented residual gap)", async () => {
+  const stdin = makeSubagentStopStdin({ agentName: "crew:architect-reviewer" });
+  const out = await runCheckReviewerDecisionHook(stdin);
+  assert.equal(out, null);
+});
+
+test("missing agent_name → unaffected (cannot classify tier)", async () => {
+  const stdin = makeSubagentStopStdin({ message: "No agent identity on this payload." });
+  const out = await runCheckReviewerDecisionHook(stdin);
+  assert.equal(out, null);
+});
+
+test("malformed JSON on stdin → silent", async () => {
+  const out = await runCheckReviewerDecisionHook("not json at all");
+  assert.equal(out, null);
+});
+
+test("config: features['reviewer-decision-guard'] disabled → silent even with no decision", async () => {
+  const repo = await makeRepoWithCrewJson({ "reviewer-decision-guard": { enabled: false } });
+  try {
+    const stdin = makeSubagentStopStdin({
+      agentName: "crew:csharp-reviewer",
+      message: "Wrapping up, no decision stated.",
+      cwd: repo
+    });
+    const out = await runCheckReviewerDecisionHook(stdin);
+    assert.equal(out, null);
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
 });

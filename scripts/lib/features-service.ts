@@ -123,6 +123,15 @@ export const FEATURES: Readonly<Record<string, FeatureMeta>> = {
     scope: "crew",
     owner: "platform",
     since: "0.51.2"
+  },
+  "reviewer-decision-guard": {
+    version: "1.0.0",
+    default: true,
+    description:
+      "SubagentStop guard (dev-team#199): blocks a reviewer-tier subagent (crew:reviewer, crew:reviewer-lite, crew:typescript-reviewer, crew:csharp-reviewer, crew:architect-reviewer) from going idle with no delivered decision (decision: approved|approved_with_notes|rejected line, or a written review-result artifact path). Mitigates parallel reviewer fan-out idling that stalls the dispatcher's post-review gate.",
+    scope: "crew",
+    owner: "safety",
+    since: "0.59.0"
   }
 } as const;
 

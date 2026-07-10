@@ -107,6 +107,8 @@ After both (or only B when A skipped) return their review-result artifacts:
   ```
 - When A was skipped, `review_passed` requires only Reviewer B to approve.
 
+**Reviewer fan-out watchdog (dev-team#199).** If one reviewer of the parallel fan-out is idle with no artifact after the other reviewer has already returned, send one `SendMessage` status-check nudge to the idle reviewer. If it is still silent after that single nudge, mark `blocked` (`mark-badge --badge blocked --note "reviewer <name> idle with no artifact after nudge"`) and proceed under the single-reviewer policy (A skipped / only B required) rather than waiting indefinitely. **Idle-ping guidance:** a `teammate_idle` notification (payload `{"type":"idle_notification"}`) from a reviewer that already delivered its artifact is noise, not a signal to act on — do not re-dispatch or nudge on it.
+
 Run `/crew:ship` gates only on explicit user approval.
 
 For what counts as "substantial" below, see the canonical definition in `constitution.md` (`What "Substantial" Means`).
