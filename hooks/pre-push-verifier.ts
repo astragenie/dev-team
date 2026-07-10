@@ -17,6 +17,7 @@
 import fs from "node:fs/promises";
 import type { Dirent } from "node:fs";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { logHookError } from "./hook-error.ts";
 import { readCrewConfig, isEnabled } from "../scripts/lib/features-service.ts";
 import { parseFrontmatterBlock } from "../scripts/lib/briefing/collect-cost-parser.ts";
@@ -29,9 +30,7 @@ async function readStdin(): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
-function parseInput(
-  raw: string
-): { sessionId: string; command: string; cwd: string } | null {
+function parseInput(raw: string): { sessionId: string; command: string; cwd: string } | null {
   try {
     const obj = JSON.parse(raw) as Record<string, unknown>;
     if (
@@ -55,10 +54,45 @@ function parseInput(
 
 function isPushCommand(command: string): boolean {
   const trimmed = command.trim();
-  return (
-    /\bgit\s+push\b/.test(trimmed) ||
-    /\bgh\s+pr\s+create\b/.test(trimmed)
-  );
+  return /\bgit\s+push\b/.test(trimmed) || /\bgh\s+pr\s+create\b/.test(trimmed);
+}
+
+// Defect #1 fix (issue #164): PreToolUse's `cwd` field is the session's
+// tracked working dir, which is the MAIN checkout even when the actual
+// command changes into a git worktree first (`cd <worktree> && git push`).
+// Parse a leading `cd <path>` segment off the command so path resolution
+// below targets the directory the push actually runs from.
+function resolveCommandCwd(command: string, sessionCwd: string): string {
+  const cdMatch = command.match(/^\s*cd\s+("[^"]+"|'[^']+'|\S+)\s*(?:&&|;)/);
+  if (!cdMatch) return sessionCwd;
+  const rawTarget = (cdMatch[1] ?? "").replace(/^["']|["']$/g, "");
+  if (rawTarget === "") return sessionCwd;
+  return path.isAbsolute(rawTarget) ? rawTarget : path.resolve(sessionCwd, rawTarget);
+}
+
+// Normalizes a working directory to its git worktree root (works for both
+// the main checkout and a linked worktree — `git rev-parse --show-toplevel`
+// resolves to whichever one `dir` actually sits inside). Falls back to
+// `dir` unchanged when it isn't inside a git repo (e.g. hook test fixtures).
+function resolveGitWorktreeRoot(dir: string): string {
+  try {
+    const result = spawnSync("git", ["-C", dir, "rev-parse", "--show-toplevel"], {
+      encoding: "utf8",
+      windowsHide: true
+    });
+    if (result.status === 0 && result.stdout.trim() !== "") {
+      return result.stdout.trim();
+    }
+  } catch {
+    // git not on PATH, or dir doesn't exist — fall back below
+  }
+  return dir;
+}
+
+// Combines both steps: parse the command's effective cwd, then resolve it
+// to the git repo root actually being pushed from.
+function resolveTargetRepoRoot(command: string, sessionCwd: string): string {
+  return resolveGitWorktreeRoot(resolveCommandCwd(command, sessionCwd));
 }
 
 async function isVerifyDisabledInDeployment(repoPath: string): Promise<boolean> {
@@ -76,6 +110,12 @@ async function isVerifyDisabledInDeployment(repoPath: string): Promise<boolean> 
 
 interface ValidationScan {
   hasPassed: boolean;
+  // Defect #3 fix (issue #164): carry enough diagnostic detail that the
+  // block message can distinguish "dir empty/missing" from "artifacts
+  // exist but none within the window" from "artifacts in window, none
+  // PASS" instead of one generic "not found" string for all three.
+  scannedDir: string;
+  windowFileCount: number;
   newestArtifactPath: string | null;
   newestDecision: string | null;
 }
@@ -107,7 +147,13 @@ async function scanValidationArtifacts(repoPath: string): Promise<ValidationScan
   try {
     entries = await fs.readdir(validationsDir, { withFileTypes: true });
   } catch {
-    return { hasPassed: false, newestArtifactPath: null, newestDecision: null };
+    return {
+      hasPassed: false,
+      scannedDir: validationsDir,
+      windowFileCount: 0,
+      newestArtifactPath: null,
+      newestDecision: null
+    };
   }
 
   const mdFiles = entries
@@ -116,6 +162,10 @@ async function scanValidationArtifacts(repoPath: string): Promise<ValidationScan
 
   // Sort by name descending — filenames start with ISO timestamps (YYYYMMDDTHHMMSSZ-*).
   mdFiles.sort((a, b) => b.localeCompare(a));
+
+  let windowFileCount = 0;
+  let newestArtifactPath: string | null = null;
+  let newestDecision: string | null = null;
 
   for (const filePath of mdFiles) {
     let stat: Awaited<ReturnType<typeof fs.stat>>;
@@ -127,6 +177,7 @@ async function scanValidationArtifacts(repoPath: string): Promise<ValidationScan
     // Filename-sort doesn't guarantee mtime-sort (fresh clone resets all mtimes
     // to checkout time). Use `continue` to keep scanning instead of `break`.
     if (stat.mtimeMs < cutoffMs) continue;
+    windowFileCount++;
 
     let content: string;
     try {
@@ -136,14 +187,32 @@ async function scanValidationArtifacts(repoPath: string): Promise<ValidationScan
     }
 
     const { decision, isPass } = resolveDecisionFromArtifactContent(content);
+    if (newestArtifactPath === null) {
+      // First in-window artifact in filename-descending order — tracked for
+      // the block message even when it isn't the PASS we're looking for.
+      newestArtifactPath = filePath;
+      newestDecision = decision;
+    }
     if (isPass) {
-      return { hasPassed: true, newestArtifactPath: filePath, newestDecision: decision };
+      return {
+        hasPassed: true,
+        scannedDir: validationsDir,
+        windowFileCount,
+        newestArtifactPath: filePath,
+        newestDecision: decision
+      };
     }
     // Keep scanning — there may be an older PASS behind a recent non-pass
     continue;
   }
 
-  return { hasPassed: false, newestArtifactPath: null, newestDecision: null };
+  return {
+    hasPassed: false,
+    scannedDir: validationsDir,
+    windowFileCount,
+    newestArtifactPath,
+    newestDecision
+  };
 }
 
 async function main(): Promise<void> {
@@ -158,27 +227,43 @@ async function main(): Promise<void> {
 
   if (!isPushCommand(input.command)) return; // not a push — pass through
 
-  const config = await readCrewConfig(input.cwd);
+  // Defect #1 fix: resolve the repo the push actually targets (handles
+  // `cd <worktree> && git push` where PreToolUse's cwd is the main checkout)
+  // and use THAT root for every path-based check below.
+  const repoRoot = resolveTargetRepoRoot(input.command, input.cwd);
+
+  const config = await readCrewConfig(repoRoot);
   if (!isEnabled("push-verify", config)) return; // feature disabled (default) — pass through
 
-  if (await isVerifyDisabledInDeployment(input.cwd)) return; // repo opted out via push.verify: false
+  if (await isVerifyDisabledInDeployment(repoRoot)) return; // repo opted out via push.verify: false
 
-  const scan = await scanValidationArtifacts(input.cwd);
+  const scan = await scanValidationArtifacts(repoRoot);
 
   if (scan.hasPassed) {
     // Cache hit — recent PASS exists, allow push
     return;
   }
 
-  // No recent PASS validation artifact — block and guide the user
+  // No recent PASS validation artifact — block and guide the user.
+  // Defect #3 fix: report the exact dir scanned, how many artifacts fell
+  // within the 1h window, and the newest one's parsed decision, instead of
+  // one generic "not found" string for every distinct cause.
   const artifactHint =
-    scan.newestArtifactPath !== null
-      ? `\n  Most recent artifact (decision=${scan.newestDecision ?? "unknown"}): ${scan.newestArtifactPath}`
-      : "\n  No validation artifacts found in .claude/artifacts/crew/validations/";
+    scan.windowFileCount === 0
+      ? `\n  Scanned: ${scan.scannedDir}` +
+        `\n  No validation artifacts (*.md) found within the last hour.`
+      : `\n  Scanned: ${scan.scannedDir}` +
+        `\n  ${scan.windowFileCount} validation artifact(s) found within the last hour.` +
+        `\n  Newest artifact (decision=${scan.newestDecision ?? "unparsed"}): ${scan.newestArtifactPath}`;
 
   const message =
     `[crew:pre-push-verifier] Push blocked — no PASS validation within the last hour.` +
     artifactHint +
+    // Defect #2 fix: PreToolUse blocks are all-or-nothing — clarify that any
+    // other steps chained in the same Bash call are blocked too, not just
+    // the push itself, so a compound command doesn't get silently truncated.
+    `\n  Note: this blocks the ENTIRE command as submitted, including any` +
+    `\n  non-push steps chained before/after it (e.g. \`cp x && git push\` blocks the cp too).` +
     `\n  Run /crew:ship (dispatches crew:verifier + QA before pushing) or` +
     `\n  dispatch crew:verifier manually, then retry the push.` +
     `\n  To disable this gate: set features["push-verify"].enabled=false in .claude/crew.json` +

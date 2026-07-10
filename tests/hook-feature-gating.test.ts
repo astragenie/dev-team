@@ -2,7 +2,7 @@
 // Test suite for feature-flag gating in hooks
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -39,6 +39,18 @@ async function makeRepo() {
 
 async function cleanup(dir: string) {
   await fs.rm(dir, { recursive: true, force: true });
+}
+
+// pre-push-verifier.ts shells out to `git rev-parse --show-toplevel` to
+// resolve the repo root (issue #164 worktree fix). A plain mkdtemp dir isn't
+// a git repo, so that call falls through to whatever git repo happens to
+// enclose the OS tmpdir (e.g. a dotfiles repo in $HOME) instead of failing
+// cleanly — `git init` makes the fixture self-contained so resolution lands
+// on the fixture itself, matching how a real repo/worktree behaves.
+async function makeGitRepo() {
+  const dir = await makeRepo();
+  spawnSync("git", ["init", "--quiet", dir], { encoding: "utf8", windowsHide: true });
+  return dir;
 }
 
 function runHook(
@@ -439,7 +451,7 @@ test("check-redundant-read: cost-hygiene feature disabled → no warn/no state (
 // ──────────────────────────────────────────────────────────────────────────
 
 test("pre-push-verifier: feature disabled (default, no crew.json) → push allowed", async () => {
-  const repo = await makeRepo();
+  const repo = await makeGitRepo();
   try {
     const payload = JSON.stringify({
       session_id: "test_push_disabled",
@@ -456,7 +468,7 @@ test("pre-push-verifier: feature disabled (default, no crew.json) → push allow
 });
 
 test("pre-push-verifier: feature disabled explicitly in crew.json → push allowed", async () => {
-  const repo = await makeRepo();
+  const repo = await makeGitRepo();
   try {
     const crewDir = path.join(repo, ".claude");
     await fs.mkdir(crewDir, { recursive: true });
@@ -480,7 +492,7 @@ test("pre-push-verifier: feature disabled explicitly in crew.json → push allow
 });
 
 test("pre-push-verifier: feature enabled + no PASS artifact → push blocked", async () => {
-  const repo = await makeRepo();
+  const repo = await makeGitRepo();
   try {
     const crewDir = path.join(repo, ".claude");
     await fs.mkdir(crewDir, { recursive: true });
@@ -506,7 +518,7 @@ test("pre-push-verifier: feature enabled + no PASS artifact → push blocked", a
 });
 
 test("pre-push-verifier: feature enabled + PASS artifact within 1h → push allowed", async () => {
-  const repo = await makeRepo();
+  const repo = await makeGitRepo();
   try {
     const crewDir = path.join(repo, ".claude");
     await fs.mkdir(crewDir, { recursive: true });
@@ -537,7 +549,7 @@ test("pre-push-verifier: feature enabled + PASS artifact within 1h → push allo
 });
 
 test("pre-push-verifier: feature enabled + deployment.md push.verify:false → push allowed", async () => {
-  const repo = await makeRepo();
+  const repo = await makeGitRepo();
   try {
     const crewDir = path.join(repo, ".claude");
     await fs.mkdir(crewDir, { recursive: true });
@@ -562,6 +574,139 @@ test("pre-push-verifier: feature enabled + deployment.md push.verify:false → p
     const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
     assert.equal(result.exitCode, 0);
     assert.equal(result.stdout, "");
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// Issue #164 regressions: worktree-aware cwd resolution + not-found message
+// ──────────────────────────────────────────────────────────────────────────
+
+test("pre-push-verifier: cd-prefixed command resolves the worktree's own PASS artifact, not the session cwd", async () => {
+  const sessionCwd = await makeGitRepo();
+  const worktree = await makeGitRepo();
+  try {
+    // The worktree carries its own crew.json + fresh PASS artifact. The
+    // session cwd (main checkout) has neither — proves the scan follows the
+    // `cd` target, not the PreToolUse `cwd` field.
+    const worktreeCrewDir = path.join(worktree, ".claude");
+    await fs.mkdir(worktreeCrewDir, { recursive: true });
+    await fs.writeFile(
+      path.join(worktreeCrewDir, "crew.json"),
+      JSON.stringify({ features: { "push-verify": { enabled: true } } }),
+      "utf8"
+    );
+    const worktreeValidationsDir = path.join(worktreeCrewDir, "artifacts", "crew", "validations");
+    await fs.mkdir(worktreeValidationsDir, { recursive: true });
+    await fs.writeFile(
+      path.join(worktreeValidationsDir, "20991231T235959Z-pass.md"),
+      "# Validation\n\nDecision: passed\n",
+      "utf8"
+    );
+
+    const payload = JSON.stringify({
+      session_id: "test_push_worktree_pass",
+      tool_name: "Bash",
+      tool_input: { command: `cd "${worktree}" && git push origin main` },
+      cwd: sessionCwd
+    });
+    const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.stdout, "");
+  } finally {
+    await cleanup(sessionCwd);
+    await cleanup(worktree);
+  }
+});
+
+test("pre-push-verifier: cd-prefixed command does not leak a PASS artifact from the session cwd's main checkout", async () => {
+  const sessionCwd = await makeGitRepo();
+  const worktree = await makeGitRepo();
+  try {
+    // crew.json lives in the worktree (the repo actually being pushed).
+    const worktreeCrewDir = path.join(worktree, ".claude");
+    await fs.mkdir(worktreeCrewDir, { recursive: true });
+    await fs.writeFile(
+      path.join(worktreeCrewDir, "crew.json"),
+      JSON.stringify({ features: { "push-verify": { enabled: true } } }),
+      "utf8"
+    );
+
+    // The main checkout (session cwd) has a foreign PASS artifact that must
+    // NOT green-light a push from the worktree — the pre-fix bug scanned
+    // this dir instead of the worktree's own.
+    const sessionValidationsDir = path.join(
+      sessionCwd,
+      ".claude",
+      "artifacts",
+      "crew",
+      "validations"
+    );
+    await fs.mkdir(sessionValidationsDir, { recursive: true });
+    await fs.writeFile(
+      path.join(sessionValidationsDir, "20991231T235959Z-pass.md"),
+      "# Validation\n\nDecision: passed\n",
+      "utf8"
+    );
+
+    const payload = JSON.stringify({
+      session_id: "test_push_worktree_no_leak",
+      tool_name: "Bash",
+      tool_input: { command: `cd "${worktree}" && git push origin main` },
+      cwd: sessionCwd
+    });
+    const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
+    assert.equal(result.exitCode, 0);
+    assert.notEqual(result.stdout, "");
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.decision, "block");
+    // Defect #3: the message must report the dir actually scanned (the
+    // worktree's own validations dir), proving defect #1 is fixed too.
+    const expectedScannedDir = path.join(worktree, ".claude", "artifacts", "crew", "validations");
+    assert.ok(
+      parsed.reason.includes(expectedScannedDir),
+      `expected block reason to reference ${expectedScannedDir}, got: ${parsed.reason}`
+    );
+  } finally {
+    await cleanup(sessionCwd);
+    await cleanup(worktree);
+  }
+});
+
+test("pre-push-verifier: not-found message reports scanned dir, window count, and newest decision (not a generic string)", async () => {
+  const repo = await makeGitRepo();
+  try {
+    const crewDir = path.join(repo, ".claude");
+    await fs.mkdir(crewDir, { recursive: true });
+    await fs.writeFile(
+      path.join(crewDir, "crew.json"),
+      JSON.stringify({ features: { "push-verify": { enabled: true } } }),
+      "utf8"
+    );
+    // Artifact exists and is within the window, but is not a PASS —
+    // distinct from "dir empty" and must not produce the same message.
+    const validationsDir = path.join(crewDir, "artifacts", "crew", "validations");
+    await fs.mkdir(validationsDir, { recursive: true });
+    await fs.writeFile(
+      path.join(validationsDir, "20991231T235959Z-fail.md"),
+      "---\ndecision: fail\n---\n\n# Validation\n\nsome failure\n",
+      "utf8"
+    );
+
+    const payload = JSON.stringify({
+      session_id: "test_push_notfound_message",
+      tool_name: "Bash",
+      tool_input: { command: "git push origin main" },
+      cwd: repo
+    });
+    const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
+    assert.equal(result.exitCode, 0);
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.decision, "block");
+    assert.ok(parsed.reason.includes(validationsDir), "reason should include the scanned dir");
+    assert.match(parsed.reason, /1 validation artifact\(s\) found within the last hour/);
+    assert.match(parsed.reason, /decision=fail/);
   } finally {
     await cleanup(repo);
   }
