@@ -85,15 +85,16 @@ async function latestArtifactByPrefix(repoPath, subdir, prefix) {
 
   const body = await fs.readFile(match.path, "utf8");
   // Skip frontmatter if present (starts and ends with ---). parseFrontmatter
-  // throws on an unterminated fence; fall back to the 3-char slice the old
-  // regex produced in that case (drop just the opening fence, keep the rest
-  // unparsed) so an unterminated block degrades the same way it always did.
+  // throws on an unterminated fence; the old code guarded on
+  // `indexOf("---", 3) > 0` and, when the fence never closed, left the body
+  // fully untouched — so on that path keep `content = body` to degrade
+  // identically (heading falls back to the literal "---" first line).
   let content = body;
   if (body.startsWith("---")) {
     try {
       content = parseFrontmatter(body).body.trimStart();
     } catch {
-      content = body.slice(3);
+      content = body;
     }
   }
   const [heading = ""] = content.split("\n");
