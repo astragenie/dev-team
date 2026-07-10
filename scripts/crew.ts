@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { maybeEmitCostReport } from "./lib/cost-hygiene/emit-cost-report.ts";
@@ -261,6 +262,50 @@ function buildDefaultFlags(): Flags {
   };
 }
 
+// Strip exactly one trailing newline (LF or CRLF) so file-authored bodies
+// (which almost always end in a newline) round-trip the same as an
+// equivalent argv string, without touching any internal newlines.
+function stripSingleTrailingNewline(text: string): string {
+  return text.replace(/\r?\n$/, "");
+}
+
+// Reads a `--<flag>-file <path>` value off disk (or stdin when path is "-",
+// matching `gh issue create -F -` convention). Long prose bodies — review
+// findings, synthesis summaries — routinely contain apostrophes and
+// backticks that get mangled by shell quoting when passed as a literal
+// argv string (astragenie/dev-team#152). Reading the same content from a
+// file the caller wrote directly (no shell interpolation in between) sidesteps
+// the whole class of quoting bugs.
+function readFlagFileValue(filePath: string): string {
+  const raw = filePath === "-" ? fs.readFileSync(0, "utf8") : fs.readFileSync(filePath, "utf8");
+  return stripSingleTrailingNewline(raw);
+}
+
+// Generic `--<flag>-file <path|->` companion for every value-consuming flag
+// in FLAG_SPEC (e.g. `--summary-file`, `--findings-file`): reads the value
+// from disk/stdin instead of argv so prose bodies never ride shell quoting.
+// Returns the next parse index when `value` is a recognized `-file`
+// companion token, or null otherwise (not handled — caller falls through).
+// See #152.
+function tryApplyFileFlagToken(
+  value: string,
+  rest: string[],
+  index: number,
+  flags: Flags
+): number | null {
+  if (!value.startsWith("--") || !value.endsWith("-file")) return null;
+  const baseFlag = value.slice(0, -"-file".length);
+  const baseSpec = (FLAG_SPEC as Record<string, { key: string; boolean?: boolean }>)[baseFlag];
+  if (!baseSpec || baseSpec.boolean) return null;
+  const filePath = rest[index + 1];
+  if (filePath === undefined) {
+    throw new Error(`${value} requires a file path argument (use - to read from stdin)`);
+  }
+  const flagsRecord = flags as Record<string, string | boolean | null>;
+  flagsRecord[baseSpec.key] = readFlagFileValue(filePath);
+  return index + 2;
+}
+
 // Apply a single token to flags/positionals. Returns the next index to read
 // (usually `index + 1` or `index + 2` for value-consuming flags) or -1 to
 // signal "stop the parse loop" (encountered `--` end-of-flags separator).
@@ -289,6 +334,8 @@ function applyFlagToken(
     flagsRecord[spec.key] = rest[index + 1] ?? null;
     return index + 2;
   }
+  const fileFlagResult = tryApplyFileFlagToken(value, rest, index, flags);
+  if (fileFlagResult !== null) return fileFlagResult;
   if (value.startsWith("--")) {
     throw new Error(`Unknown argument: ${value}`);
   }
@@ -361,7 +408,9 @@ function usage(target: string | null = null) {
     "write-handoff":
       "  node scripts/crew.ts write-handoff --repo <path> --title <text> [--from <role>] [--to <role>] [--goal <text>] [--summary <text>] [--scope <text>] [--out-of-scope <text>] [--deliverable <text>] [--files <a,b>] [--confidence high|medium|low] [--risks <text>] [--next <text>] [--feature <FEAT-NNN>] [--phase <name>] [--status <text>]",
     "write-review-result":
-      "  node scripts/crew.mjs write-review-result --repo <path> --title <text> [--reviewer <role>] [--decision approved|approved_with_notes|rejected|needs_fix] [--verdict <decision>] [--not-checked <a,b,c>] [--author-id <id>] [--judge-id <id>]",
+      "  node scripts/crew.mjs write-review-result --repo <path> --title <text> [--reviewer <role>] [--decision approved|approved_with_notes|rejected|needs_fix] [--verdict <decision>] [--not-checked <a,b,c>] [--author-id <id>] [--judge-id <id>]\n" +
+      "    Prose bodies (--summary, --findings, --risks, --next, ...) accept a `--<flag>-file <path|->` companion\n" +
+      "    (e.g. --summary-file /tmp/summary.md, or - for stdin) so apostrophes/backticks never ride shell argv (#152).",
     "write-validation-plan":
       "  node scripts/crew.mjs write-validation-plan --repo <path> --title <text> [--validator <role>] [--environment <name>]",
     "write-validation-result":
@@ -369,7 +418,8 @@ function usage(target: string | null = null) {
     "write-deployment-check":
       "  node scripts/crew.mjs write-deployment-check --repo <path> --title <text> [--deployer <role>] [--environment dev|prod] [--resource <name>] [--url <service-url>] [--revision <id>] [--decision <decision>]",
     "write-final-synthesis":
-      "  node scripts/crew.mjs write-final-synthesis --repo <path> --title <text> --external-deltas <text|none> [--summary <text>] [--run-steps <a,b>] [--files <a,b>] [--force]",
+      "  node scripts/crew.mjs write-final-synthesis --repo <path> --title <text> --external-deltas <text|none> [--summary <text>] [--run-steps <a,b>] [--files <a,b>] [--force]\n" +
+      "    --summary accepts a --summary-file <path|-> companion for prose with apostrophes/backticks (#152).",
     "cost-slice":
       "  node scripts/crew.mjs cost-slice --repo <path> [--started-at <iso>] [--completed-at <iso>] [--run-title <text>] [--source-project <slug>] [--aggregate-all]",
     "cost-advise": "  node scripts/crew.mjs cost-advise --repo <path>",

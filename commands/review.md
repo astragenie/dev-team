@@ -44,6 +44,7 @@ Review should be treated as a phase, not a courtesy:
 When review materially completes, write the review artifact:
 
 - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result --repo "$PWD" --title "<short title>" --decision <approved|approved_with_notes|rejected> --author-id <builder-agent> --judge-id <reviewer-agent> --summary "<verdict>" --evidence "<files checked>" --files "<files in diff>" --test-summary "<test coverage>" --risks "<risks or none>" --next "<follow-up or none>"`
+- If `--summary` (or any prose flag) contains apostrophes/backticks, shell argv quoting can mangle or drop it (dev-team#152). Write the body to a temp file and pass `--summary-file <path>` (or any `--<flag>-file <path>`) instead.
 
 If review is intentionally skipped, record that explicitly in workflow state:
 

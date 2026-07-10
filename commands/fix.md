@@ -176,6 +176,7 @@ Pass the printed value (e.g. `sonnet`) as the Agent-tool dispatch's `model:` arg
    - Pass the builder handoff artifact path to both reviewers.
 10. After both reviewer artifacts land, write a review result for each:
     - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result --repo "$PWD" --title "<short title>" --decision <approved|approved_with_notes|rejected> --author-id <builder-agent> --judge-id <reviewer-agent> --summary "<verdict>" --evidence "<files checked>" --files "<files in diff>" --test-summary "<test coverage>" --risks "<risks or none>" --next "<follow-up or none>"`
+    - If `--summary` (or any prose flag) contains apostrophes/backticks, shell argv quoting can mangle or drop it (dev-team#152). Write the body to a temp file and pass `--summary-file <path>` (or any `--<flag>-file <path>`) instead.
 11. If either reviewer returns `rejected`, stop. Surface the findings to the user. Do not emit `review_passed`.
 12. If Reviewer A is skipped, `review_passed` requires only Reviewer B to approve.
 13. If both approved (or `approved_with_notes`), emit the completion badge:
@@ -196,3 +197,4 @@ Pass the printed value (e.g. `sonnet`) as the Agent-tool dispatch's `model:` arg
 16. For substantial work, write a final synthesis artifact:
     - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-final-synthesis --repo "$PWD" --title "<short title>" --summary "<summary>" --external-deltas "<off-repo changes required, or 'none'>"`
     - The CLI rejects missing `--external-deltas`. Enumerate sibling-config changes the fix depends on. Pass `--external-deltas none` explicitly if there are none.
+    - For `--summary` prose with apostrophes/backticks, prefer `--summary-file <path>` over inlining it (dev-team#152).

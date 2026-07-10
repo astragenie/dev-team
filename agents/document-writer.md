@@ -115,6 +115,15 @@ You own the slice-close CLI sequence so `crew:build` can stay Bash-free (the dis
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-final-synthesis --repo "$PWD" --title "<title>" --external-deltas "<deltas or 'none'>" --summary "<summary>"
 ```
 
+If the dispatched `Summary:` prose contains apostrophes, backticks, or code identifiers, inlining it as `--summary "<summary>"` can mangle or silently drop the write on shell quoting (dev-team#152). Write it to a temp file via a quoted heredoc and pass `--summary-file <path>` instead:
+
+```bash
+cat > /tmp/synthesis-summary.md <<'SUMMARY_EOF'
+<summary — apostrophes/backticks are safe inside a quoted heredoc>
+SUMMARY_EOF
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-final-synthesis --repo "$PWD" --title "<title>" --external-deltas "<deltas or 'none'>" --summary-file /tmp/synthesis-summary.md
+```
+
 **Then capture a deliberate memory** — do not rely on the astramem auto-distiller,
 which emits low-signal fragments (status snapshots, git trivia, vacuous negatives).
 Per `skills/universal/memory-keeper/SKILL.md`, write the slice's one load-bearing

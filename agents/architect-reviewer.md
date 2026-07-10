@@ -133,4 +133,20 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result --repo "$PWD" -
   --confidence "<high|medium|low>"
 ```
 
+If `--findings` (or `--summary`) prose contains apostrophes/backticks/code identifiers — the normal case for review findings — shell argv quoting can mangle or drop the body (dev-team#152). Prefer writing the body to a temp file via a quoted heredoc, then pass `--findings-file <path>` (same for `--summary-file`) instead of inlining it:
+
+```bash
+cat > /tmp/findings.md <<'FINDINGS_EOF'
+<Output Format sections 2-10, compressed markdown — apostrophes/backticks are safe inside a quoted heredoc>
+FINDINGS_EOF
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result --repo "$PWD" --update <path-from-scaffold> \
+  --decision "<approved|approved_with_notes|rejected>" \
+  --summary "<verdict + count of Critical findings>" \
+  --findings-file /tmp/findings.md \
+  --evidence "<design doc path + key line refs>" \
+  --confidence "<high|medium|low>"
+```
+
+If the artifact write still fails for any reason, return the full findings inline as your final message — never return empty.
+
 The headline reply to the dispatcher is one line: verdict plus the count of `Critical findings`. The artifact carries everything else — do not restate it in the reply.

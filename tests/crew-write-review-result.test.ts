@@ -540,6 +540,81 @@ test("write-review-result: self_approval is absent when neither author-id nor ju
   }
 });
 
+// dev-team#152: prose bodies containing apostrophes/backticks/newlines
+// mangle shell argv quoting when passed as a literal --summary string. The
+// --summary-file companion reads the same content from disk instead, so it
+// never rides shell interpolation. Round-trip fidelity is the assertion.
+test("write-review-result: --summary-file round-trips apostrophes, backticks, and newlines", async () => {
+  const repoPath = await makeTempRepo("crew-wrr-summary-file-");
+  const bodyText =
+    "The claim's validity depends on `resolveHomeDir()` behavior.\n" +
+    "It's fine on Windows but breaks on Bun's Linux build (bun#5090).\n" +
+    "Second paragraph with more `backticks` and it's still one apostrophe short.";
+  const summaryFilePath = path.join(repoPath, "summary-body.txt");
+  try {
+    await fs.writeFile(summaryFilePath, `${bodyText}\n`, "utf8");
+    const { status, stdout, stderr } = runCli([
+      "write-review-result",
+      "--repo",
+      repoPath,
+      "--title",
+      "Body-file round trip",
+      "--decision",
+      "approved",
+      "--summary-file",
+      summaryFilePath,
+      "--test-summary",
+      "all pass"
+    ]);
+    assert.equal(status, 0, `expected exit 0 with --summary-file, stderr: ${stderr}`);
+    const result = JSON.parse(stdout);
+    const artifactBody = await fs.readFile(result.path, "utf8");
+    assert.ok(
+      artifactBody.includes(bodyText),
+      `artifact must contain the exact file-sourced body verbatim, got:\n${artifactBody}`
+    );
+  } finally {
+    await cleanup(repoPath);
+  }
+});
+
+// dev-team#152: the companion also accepts "-" to read the body from stdin,
+// matching the `gh issue create -F -` convention referenced in the issue.
+test("write-review-result: --summary-file - reads the body from stdin", async () => {
+  const repoPath = await makeTempRepo("crew-wrr-summary-stdin-");
+  const bodyText = "Stdin body with an apostrophe's quote and a `backtick` span.";
+  try {
+    const result = spawnSync(
+      process.execPath,
+      [
+        "--experimental-strip-types",
+        cliPath,
+        "write-review-result",
+        "--repo",
+        repoPath,
+        "--title",
+        "Stdin body-file round trip",
+        "--decision",
+        "approved",
+        "--summary-file",
+        "-",
+        "--test-summary",
+        "all pass"
+      ],
+      { encoding: "utf8", timeout: 30_000, input: `${bodyText}\n` }
+    );
+    assert.equal(result.status, 0, `expected exit 0 reading stdin, stderr: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout);
+    const artifactBody = await fs.readFile(parsed.path, "utf8");
+    assert.ok(
+      artifactBody.includes(bodyText),
+      `artifact must contain the exact stdin-sourced body verbatim, got:\n${artifactBody}`
+    );
+  } finally {
+    await cleanup(repoPath);
+  }
+});
+
 // dev-team#247 BACKWARD COMPAT: with none of the new flags passed, the
 // artifact's shape (frontmatter block + body) must be identical to the
 // pre-existing shape — no new frontmatter keys or body sections leak in.
