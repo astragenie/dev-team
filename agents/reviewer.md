@@ -54,6 +54,7 @@ Capture the returned `path` — that is `<scaffold-path>` everywhere below. The 
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result \
   --update <scaffold-path> --status completed \
   --decision <approved|approved_with_notes|rejected> \
+  --author-id <builder-agent-from-dispatch> --judge-id <your-agent-id> \
   --summary "<one-sentence verdict>" \
   --evidence "<key evidence>" \
   --files "<files reviewed>" \
@@ -102,7 +103,7 @@ If `Review lens:` is in the prompt (`correctness/regression` · `security` · `p
 
 - **Recent context**: `git log --oneline -5`
 - **Hardcoded secrets** (scoped to changed files): `SLICE_BASE=$(git merge-base HEAD origin/main 2>/dev/null || echo HEAD~1) && git diff --name-only "$SLICE_BASE" | xargs grep -nE "(api_key|secret|password|token)\s*=\s*['\"][^'\"]{8,}"` — only flag NEW secrets (not pre-existing). When `skills/domain/security-sweep/` is loaded, this pre-flight is the entry point to its procedure — emit findings via the skill's `[SEVERITY] file:line` format and increment the review-result `--findings` counters.
-- **Dependency CVE audit** (run ONLY when diff touches `package.json` / `package-lock.json` / `requirements.txt` / `pyproject.toml` / `Cargo.toml` / `*.csproj`): wrap each in `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60}` to bound network stalls: `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} bun audit` · `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} pip-audit` · `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} cargo audit` · `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} dotnet list package --vulnerable`. When ≥2 audit commands apply (mixed-stack repo), use the parallel-gates helper: `bun scripts/lib/parallel-gates.ts --emit bun-audit,pip-audit --cmd bun-audit='bun audit' --cmd pip-audit='pip-audit' \| bash`. Skip on doc-only / code-only diffs. When `skills/domain/security-sweep/` is loaded, this pre-flight is the entry point to its procedure — emit findings via the skill's `[SEVERITY] file:line` format and increment the review-result `--findings` counters.
+- **Dependency CVE audit** (run ONLY when diff touches `package.json` / `package-lock.json` / `requirements.txt` / `pyproject.toml` / `Cargo.toml` / `*.csproj`): wrap each in `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60}` to bound network stalls: `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} bun audit` · `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} pip-audit` · `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} cargo audit` · `timeout ${CREW_BASH_GATE_TIMEOUT_S:-60} dotnet list package --vulnerable`. When ≥2 audit commands apply (mixed-stack repo), use the parallel-gates helper: `bun scripts/lib/parallel-gates.ts --emit bun-audit,pip-audit --cmd bun-audit='bun audit' --cmd pip-audit='pip-audit' \| bash`. Skip on doc-only / code-only diffs. Run these gates in the FOREGROUND and collect results in the same turn; if a command hits its timeout, record that gate in `--not-checked` and move on — never end the turn with a gate still pending (dev-team#198 shape). When `skills/domain/security-sweep/` is loaded, this pre-flight is the entry point to its procedure — emit findings via the skill's `[SEVERITY] file:line` format and increment the review-result `--findings` counters.
 - **Affected-test re-run** (fullstack-dev scoped its tests). Fullstack-devs now run only affected-class tests, not the full suite. Re-run the fullstack-dev's affected set (named in the handoff's `## Deferred to verifier` line) to confirm it is green AND that it actually covers the changed classes. If a changed class has no test in that set, raise a `tests-adequacy` finding — the fullstack-dev scoped too narrowly. The full suite itself runs at the verifier's mandatory final gate, not here.
 
 ### Diff-size scaling
@@ -166,7 +167,7 @@ When you call `write-review-result`, populate `--test-summary` with a one-senten
 
 ### Plugin- and skill-shape gates
 
-Plugin shape (`agents/`, `commands/`, `hooks/`, `.mcp.json`, `plugin.json`, `.claude-plugin/`) → `Skill({ skill: "plugin-dev:plugin-validator" })` + pair `node ./scripts/validate-manifests.ts`. Skill shape (`skills/**/SKILL.md`) → `Skill({ skill: "plugin-dev:skill-reviewer" })` + pair `node ./scripts/validate-skills.ts`. If either skill absent: `review_skipped` badge `--note "plugin-dev not installed"`. Route signals: `docs/routing-table.md` "Plugin shape change" / "Skill shape change" rows. Skip when no path pattern matches.
+Plugin shape (`agents/`, `commands/`, `hooks/`, `.mcp.json`, `plugin.json`, `.claude-plugin/`) → `Skill({ skill: "plugin-dev:plugin-validator" })` + pair `node ./scripts/validate-manifests.ts`. Skill shape (`skills/**/SKILL.md`) → `Skill({ skill: "plugin-dev:skill-reviewer" })` + pair `node ./scripts/validate-skills.ts`. If either skill absent: `review_skipped` badge `--note "plugin-dev not installed"`. If a Skill invocation stalls or returns nothing useful within 2 further tool calls: record the lens in `--not-checked` (e.g. `plugin-validator`), note it in `--risks`, and continue the review without it — never wait on a stalled skill (dev-team#197 shape). Route signals: `docs/routing-table.md` "Plugin shape change" / "Skill shape change" rows. Skip when no path pattern matches.
 
 ## Report contract
 
@@ -188,7 +189,7 @@ Emit via `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" 
 
 ## Context ceiling
 
-50 tool uses or 100k context tokens → mark `blocked` with `context_ceiling_reached`, write a `--confidence low` review-result covering what was checked, and stop. Do NOT attempt inline recovery or summarise unchecked files as reviewed.
+50 tool uses or 100k context tokens → run `mark-badge --badge blocked --note context_ceiling_reached` (note text, not a badge name), write a `--confidence low` review-result covering what was checked, and stop. Do NOT attempt inline recovery or summarise unchecked files as reviewed.
 
 ## SPLIT_BUILD conformance
 

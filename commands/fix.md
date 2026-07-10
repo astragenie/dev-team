@@ -30,7 +30,7 @@ crew:dev-lite (mechanical 1-2 file fix, compressed diff receipt)
   ↓
 crew:reviewer-lite (single review pass, auto-loads stack skill from diff extensions)
   ↓ PASS (decision: approved or approved_with_notes)
-mark-badge fix_complete
+mark-badge review_passed
 mark-badge inspected
 ```
 
@@ -101,7 +101,7 @@ parallel fan-out — single Agent-tool message with N=2 invocations:
                       ↓ aggregate both decisions
    any rejected? ─── yes ─→ retry loop below
    both approved / approved_with_notes:
-     mark-badge fix_complete
+     mark-badge review_passed
      if Reviewer B next field names a tests-adequacy gap → dispatch crew:qa-expert
 ```
 
@@ -120,7 +120,7 @@ Symmetric with `/crew:ship`'s auto-fix loop. When either Reviewer A or Reviewer 
 On N exhausted:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge fix_blocked \
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge blocked \
   --note "<aggregated FAIL summary>"
 ```
 
@@ -175,11 +175,11 @@ Pass the printed value (e.g. `sonnet`) as the Agent-tool dispatch's `model:` arg
    - **Reviewer B** — `crew:reviewer` with lens from FEAT concern tag (default: `correctness`).
    - Pass the builder handoff artifact path to both reviewers.
 10. After both reviewer artifacts land, write a review result for each:
-    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result --repo "$PWD" --title "<short title>" --decision <PASS|FAIL> --summary "<verdict>" --evidence "<files checked>" --files "<files in diff>" --test-summary "<test coverage>" --risks "<risks or none>" --next "<follow-up or none>"`
-11. If either reviewer returns `rejected`, stop. Surface the findings to the user. Do not emit `fix_complete`.
-12. If Reviewer A is skipped, `fix_complete` requires only Reviewer B to approve.
+    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result --repo "$PWD" --title "<short title>" --decision <approved|approved_with_notes|rejected> --author-id <builder-agent> --judge-id <reviewer-agent> --summary "<verdict>" --evidence "<files checked>" --files "<files in diff>" --test-summary "<test coverage>" --risks "<risks or none>" --next "<follow-up or none>"`
+11. If either reviewer returns `rejected`, stop. Surface the findings to the user. Do not emit `review_passed`.
+12. If Reviewer A is skipped, `review_passed` requires only Reviewer B to approve.
 13. If both approved (or `approved_with_notes`), emit the completion badge:
-    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge fix_complete`
+    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge review_passed`
 14. Check Reviewer B's `next` field. If it names a tests-adequacy gap, dispatch `crew:qa-expert`:
     - Pass the finding artifact and the changed files list.
     - Wait for `crew:qa-expert` to return before closing the run.

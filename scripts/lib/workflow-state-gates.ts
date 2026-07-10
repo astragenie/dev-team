@@ -16,7 +16,8 @@ export type GateStatus =
   | "recommended"
   | "stale"
   | "resolved"
-  | "rolled-back";
+  | "rolled-back"
+  | "requested";
 
 export interface GateEntry {
   status: GateStatus;
@@ -37,6 +38,7 @@ export interface RunGates {
   blocked: GateEntry | null;
   escalation: GateEntry | null;
   incident: GateEntry | null;
+  help: GateEntry | null;
 }
 
 export interface RunArtifacts {
@@ -99,7 +101,8 @@ function makeDefaultGates(): RunGates {
     deployment: { dev: null, prod: null },
     blocked: null,
     escalation: null,
-    incident: null
+    incident: null,
+    help: null
   };
 }
 
@@ -183,7 +186,8 @@ export const PENDING_GATE_CHECKS: Array<(run: WorkflowRun | null | undefined) =>
   (run) => run?.gates?.deployment?.dev?.status === "expected",
   (run) => run?.gates?.deployment?.prod?.status === "expected",
   (run) => run?.gates?.blocked?.status === "blocked",
-  (run) => run?.gates?.escalation?.status === "escalated"
+  (run) => run?.gates?.escalation?.status === "escalated",
+  (run) => run?.gates?.help?.status === "requested"
 ];
 
 export function hasPendingGates(run: WorkflowRun | null | undefined): boolean {

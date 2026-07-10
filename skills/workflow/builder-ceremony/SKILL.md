@@ -192,6 +192,13 @@ A subtask = smallest logical unit that compiles + has scoped tests green in isol
 
 **Anti-pattern:** "I'll commit everything at the end after self-verify." When end-of-run never arrives (cutoff at 70% complete), 70% of work is lost. Commit incrementally and partial work survives every kill.
 
+## Turn discipline (idle prevention — dev-team#171/#198/#162)
+
+- **Never end a turn mid-sequence.** `git add` and its `git commit` happen in the same turn — staged-but-uncommitted at turn end is a protocol violation (#171). Same for any multi-step sequence whose partial state is ambiguous to an outside observer.
+- **Foreground verification only.** Run tests/typecheck/lint as blocking foreground commands (raise the Bash `timeout` instead of backgrounding). A background command whose completion crosses a turn boundary strands the run: the harness reports you idle, the dispatcher can't tell "done" from "stalled" (#198). If you did background something, do not end the turn until you have collected its result.
+- **Exactly two terminal states.** Every dispatch ends as either (a) work committed + final report sent, or (b) `blocked`/`help_request` badge + blocked report sent. Idle with a dirty tree and no report is the silent third state that forks execution when the dispatcher nudges (#162) — never leave it.
+- **The final message is part of the contract.** Completing the work but ending the turn without the structured completion report counts as NOT done.
+
 ## Structural deviation rule
 
 Slice spec contradicts repo state (DAG cycle, conflicting prior DEC-NNN, missing assumed dependency, nonexistent file path)? STOP. Emit `mark-badge blocked --note "structural-deviation: <what>"` and return `BLOCKED: structural-deviation in slice spec.` with `Risks: structural-deviation: <what contradicts>: proposed resolution: <X>` and `Next: dispatcher decides`. Never silently drop edges or invent workarounds outside scope.

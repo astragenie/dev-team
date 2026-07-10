@@ -29,8 +29,7 @@ crew:dev-lite (mechanical 1-2 file edit, compressed diff receipt)
   ↓
 crew:reviewer-lite (single review pass, auto-loads stack skill from diff extensions)
   ↓ PASS (decision: approved or approved_with_notes)
-mark-badge build_complete
-mark-badge inspected
+mark-badge review_passed
 ```
 
 If `reviewer-lite` returns `rejected` with reason `semantic complexity detected` → fall through to the standard ladder below (re-dispatch via FEAT tag).
@@ -104,10 +103,9 @@ After both (or only B when A skipped) return their review-result artifacts:
 - Any `rejected` decision → stop; escalate to user with the artifact path(s) and findings
 - Both `approved` or `approved_with_notes` (or only B approved when A skipped):
   ```
-  node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge build_complete
-  node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge inspected
+  node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge review_passed
   ```
-- When A was skipped, `build_complete` requires only Reviewer B to approve.
+- When A was skipped, `review_passed` requires only Reviewer B to approve.
 
 Run `/crew:ship` gates only on explicit user approval.
 
@@ -167,7 +165,7 @@ Workflow:
 19. When a helper or teammate hands work back, write a handoff artifact if the run is substantial:
    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff --repo "$PWD" --title "<short title>" --from <role> --to dispatcher --summary "<headline>" --scope "<in scope>" --deliverable "<what shipped>" --files "<changed files>" --confidence "<high|medium|low>" --risks "<risks or none>" --next "<next handoff or none>"`
 20. When a reviewer materially reviews the change, write a review artifact immediately before you move on:
-   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result --repo "$PWD" --title "<short title>" --decision <PASS|FAIL> --summary "<verdict>" --evidence "<files checked>" --files "<files in diff>" --test-summary "<test coverage>" --risks "<risks or none>" --next "<follow-up or none>"`
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result --repo "$PWD" --title "<short title>" --decision <approved|approved_with_notes|rejected> --author-id <builder-agent> --judge-id <reviewer-agent> --summary "<verdict>" --evidence "<files checked>" --files "<files in diff>" --test-summary "<test coverage>" --risks "<risks or none>" --next "<follow-up or none>"`
 21. If the changed behavior can be exercised meaningfully, define the validation scenario and run validation after review. When validation is expected, record that gate in workflow state:
    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge validation_expected`
 22. When the scenario is substantial enough to preserve, write a validation plan:

@@ -79,9 +79,9 @@ _Language- and framework-specific build signals._
 | Signal | Route to | Notes |
 | --- | --- | --- |
 | **Building / editing Microsoft SDK code** (Azure SDKs, .NET libs, M365 APIs, anything namespaced `Microsoft.*` / `Azure.*`) | fullstack-dev via **`microsoft-docs:microsoft-code-reference`** | Verify method signatures + parameter shapes against official MS docs before committing. Catches hallucinated APIs that pass type-check but fail at runtime. Reviewer cross-checks on the way in. |
-| **Backend code change** (server-side logic, API handlers, data layer, service orchestration) | fullstack-dev | Load `skills/domain/architecture/backend-advisory/` for backend patterns and quality bar. |
-| **Frontend code change** (UI components, client-side logic, CSS, browser-rendered output) | fullstack-dev | Load `skills/domain/ui/react-engineering/` for frontend patterns and quality bar. |
-| **Full-stack change spanning both frontend and backend** (shared data shape, API + UI wired end-to-end) | fullstack-dev | Load `skills/domain/architecture/fullstack-advisory/` for cross-layer coherence checks. Pairs with backend and frontend advisory rows when the diff touches both surfaces separately. |
+| **Backend code change, untagged slice** (server-side logic, API handlers, data layer, service orchestration; no surface:*/stack:* tags — tagged slices follow the Builder routing matrix above) | fullstack-dev | Load `skills/domain/architecture/backend-advisory/` for backend patterns and quality bar. Tagged backend slices route to `crew:backend-dev` per the Builder routing matrix — this generalist row is the untagged fallback only. |
+| **Frontend code change, untagged slice** (UI components, client-side logic, CSS, browser-rendered output; no surface:*/stack:* tags — tagged slices follow the Builder routing matrix above) | fullstack-dev | Load `skills/domain/ui/react-engineering/` for frontend patterns and quality bar. Tagged UI slices route to `crew:frontend-dev` per the Builder routing matrix — this generalist row is the untagged fallback only. |
+| **Full-stack change spanning both frontend and backend, untagged slice** (shared data shape, API + UI wired end-to-end; tagged cross-layer slices follow the Builder routing matrix above) | fullstack-dev | Load `skills/domain/architecture/fullstack-advisory/` for cross-layer coherence checks. Pairs with backend and frontend advisory rows when the diff touches both surfaces separately. |
 | `tags include surface:ui or stack:react AND (tags include surface:api/schema OR stack:csharp/node/python)` | dispatch `crew:frontend-dev` for FE diff + `crew:backend-dev` for BE diff in parallel (orchestrate-slice Step 2+3); integrator gates afterward | <!-- routing-lint:ignore --> |
 | `tags include surface:ui or stack:react AND NOT (any backend stack tag)` | dispatch `crew:frontend-dev` only | <!-- routing-lint:ignore --> |
 | `tags include (surface:api or surface:schema or any backend stack:*) AND NOT (surface:ui or stack:react)` | dispatch `crew:backend-dev` only | <!-- routing-lint:ignore --> |
@@ -101,7 +101,7 @@ _ADR authoring, system design, database, cloud infra, API contract decisions._
 
 | Signal | Route to | Notes |
 | --- | --- | --- |
-| **Architecture sketch / system design** (ADR drafting, system design, capacity or topology decisions) | `agents/architect.md` stub | Load `skills/domain/architecture/architecture-advisory/`. Architect handles backend service architecture inline (see `## Backend architecture` section). Delegates to `agents/cloud-architect.md` and `agents/3rdparty/database-architect.md` via Agent tool for DB/cloud concerns. For API contract work load `skills/domain/architecture/api-architecture/` inline; for diagrams load `skills/domain/architecture/diagram-methodology/` inline. |
+| **Architecture sketch / system design** (ADR drafting, system design, capacity or topology decisions) | `agents/architect.md` | Load `skills/domain/architecture/architecture-advisory/`. Architect handles backend service architecture inline (see `## Backend architecture` section). Delegates to `agents/cloud-architect.md` and `agents/3rdparty/database-architect.md` via Agent tool for DB/cloud concerns. For API contract work load `skills/domain/architecture/api-architecture/` inline; for diagrams load `skills/domain/architecture/diagram-methodology/` inline. |
 | **Schema design / migration planning / database performance tuning** (ER modeling, schema evolution, index strategy, technology selection, multi-tenancy, sharding, CQRS, event sourcing) | architect / fullstack-dev | Load `skills/domain/backend/database-architecture/`. For PostgreSQL-specific query tuning, hand off to `agents/3rdparty/database-architect.md`. |
 | **Cloud infra design** (multi-region, landing zone, IAM, network topology, multi-cloud, disaster recovery, cost optimization, FinOps) | architect / release-engineer | Load `skills/domain/infra/cloud-architecture/`. For IaC specifics, co-cite `skills/domain/infra/devops-engineering/references/iac.md`. |
 
@@ -162,7 +162,7 @@ _UX design, interaction design, accessibility._
 
 | Signal | Route to | Notes |
 | --- | --- | --- |
-| **UX / UI design** (layout decisions, user flows, interaction design, component wireframes) | `agents/uxdesigner.md` stub | Load `skills/domain/ui/react-engineering/`. UXDesigner stub delegates to `agents/3rdparty/{ui-ux-designer,expert-react-frontend-engineer,frontend-developer}.md` via Agent tool. |
+| **UX / UI design** (layout decisions, user flows, interaction design, component wireframes) | `agents/uxdesigner.md` | Load `skills/domain/ui/react-engineering/`. UXDesigner delegates to `agents/3rdparty/{ui-ux-designer,expert-react-frontend-engineer,frontend-developer}.md` via Agent tool. |
 | **UX research / persona work / interaction design / accessibility audit** (user interviews, persona modeling, IA, heuristic evaluation, WCAG compliance, AI interface patterns) | uxdesigner | Load `skills/domain/ui/ux-methodology/`. For research synthesis, co-cite `skills/workflow/research-coordination/`. For implementation, co-cite `skills/domain/ui/react-engineering/` or `skills/domain/ui/react-engineering/`. |
 | **Mobile app design** (iOS/Android UX, React Native layouts, Flutter widgets, mobile interaction patterns, touch targets, platform conventions) | uxdesigner / fullstack-dev | Load `skills/domain/mobile/mobile-design/`. For implementation, delegate to `agents/3rdparty/mobile-developer.md`. |
 
@@ -182,7 +182,7 @@ _Plugin authoring, agent edits, cost analysis, model selection, autonomous_safe 
 
 ## Usage
 
-1. **At session start**: Lead or verifier retrieves bounded context with `crew:brief-me`.
+1. **At session start**: Dispatcher or verifier retrieves bounded context with `crew:brief-me`.
 2. **Incoming work**: Classify the signal using the table above.
 3. **Route to role**: Dispatch with clear scope boundary; cite this table in the handoff.
 4. **Ambiguous or cross-cutting**: Route to the dispatcher (re-scope inline) for re-scoping instead of improvising scope.

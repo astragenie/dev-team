@@ -50,7 +50,7 @@ This repository uses the Engineering OS harness for structured software work ins
 
 ## Team Roles
 
-- lead: planning, delegation, synthesis
+- dispatcher (concept, not agent): planning, delegation, synthesis via /crew:build · /crew:fix · /crew:ship
 - builder: bounded implementation
 - reviewer: independent change review
 - validator: behavior and scenario verification
@@ -93,7 +93,7 @@ Baseline: do not create commits unless the user explicitly asks. Unrequested com
 
 Exception — \`dev.stable\` opt-in:
 
-- If the current repo's \`.claude/crew/deployment.md\` contains a \`dev.stable: true\` setting, the lead and builder MAY create commits without asking on each individual edit, as long as ALL of the following hold:
+- If the current repo's \`.claude/crew/deployment.md\` contains a \`dev.stable: true\` setting, the dispatcher and builder MAY create commits without asking on each individual edit, as long as ALL of the following hold:
   - the change came from a \`/crew:build\` or \`/crew:fix\` flow that reached the synthesis step
   - the latest review artifact for the run is \`PASS\` (or \`review_skipped\` was recorded with an explicit reason)
   - the latest validation artifact for the run is \`PASS\` (or \`validation_skipped\` was recorded with an explicit reason)

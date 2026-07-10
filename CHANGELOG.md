@@ -3,6 +3,39 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [v0.58.0] — 2026-07-10 — fresh-look audit: idle-inducer + doc-CLI drift purge
+
+Minor: repo-wide audit of agent prompts, skills, and command docs against
+real failure evidence (#153 #162 #171 #186 #197 #198 #200). New badge pair,
+one skill removed, every documented CLI invocation now matches the parser.
+
+- **`help_request` / `help_resolved` badges implemented** (`gates.help` slot,
+  paired like the incident badges so an open request has a clear path).
+  The constitution's dev.stable gate and 5 agent call sites referenced this
+  badge for months; the CLI threw `Unsupported workflow badge` on it.
+- **Idle-inducer purge**: brainstorming skill gains a DISPATCH-CONTEXT GATE
+  (dispatched subagents skip the interactive question loop — #197);
+  builder-ceremony gains a turn-discipline block (same-turn add+commit #171,
+  foreground verification #198, exactly-two-terminal-states #162);
+  sync-verify guards added to performance-engineer / qa-expert / refactor;
+  reviewer gains skill-stall + gate-timeout escape hatches (degrade to
+  `--not-checked`, never block the turn); uxdesigner 3rdparty dispatches pin
+  a no-questions synchronous return contract.
+- **Doc↔CLI drift**: `PASS|FAIL` → canonical review enum in build/fix/review;
+  fabricated badges (`build_complete`, `inspected`, `fix_complete`,
+  `fix_blocked`, `qa_passed`, `verifier_passed`, `pr_filed`, `ship_blocked`)
+  remapped to the real badge set; `--outcome`/`--changed-files` →
+  `--files` (orchestrate-slice); `--trustLevel` → `--discovery-status`
+  (ship); stale `write-handoff` usage string now lists all accepted flags;
+  reviewers pass `--author-id`/`--judge-id` so v0.57.0 self-approval
+  detection activates.
+- **Retired-lead cleanup (#200)**: constitution, installer template
+  (propagation vector for consumer repos), routing-table, integrator.
+- **Simplifications**: vendored `git-commit` skill removed (contradicted the
+  authored `commit` skill, zero consumers); routing-table generalist FE/BE
+  rows scoped to untagged slices only; dead `agents/dispatcher.md` pointer
+  inlined into slice-sizing.
+
 ## [v0.57.0] — 2026-07-09 — review-result not-checked + author/judge identity
 
 Minor: `write-review-result` gains four optional, backward-compatible

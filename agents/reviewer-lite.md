@@ -66,6 +66,7 @@ Do NOT run `bun test`, `bun run lint`, `bun run format:check`, or any validation
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result \
   --update <scaffold-path> --status completed \
   --decision <approved|approved_with_notes|rejected> \
+  --author-id <builder-agent-from-dispatch> --judge-id reviewer-lite \
   --reviewer reviewer-lite \
   --summary "<one-sentence verdict + confidence reason>" \
   --evidence "<key findings or 'no findings; light-path criteria met'>" \

@@ -185,15 +185,15 @@ rows:
     route_to: fullstack-dev via **`microsoft-docs:microsoft-code-reference`**
     notes: Verify method signatures + parameter shapes against official MS docs before committing. Catches hallucinated APIs that pass type-check but fail at runtime. Reviewer cross-checks on the way in.
   - section: code-language
-    signal: "**Backend code change** (server-side logic, API handlers, data layer, service orchestration)"
+    signal: "**Backend code change, untagged slice** (server-side logic, API handlers, data layer, service orchestration; no surface:*/stack:* tags — tagged slices follow the Builder routing matrix above)"
     route_to: fullstack-dev
-    notes: Load `skills/domain/architecture/backend-advisory/` for backend patterns and quality bar.
+    notes: Load `skills/domain/architecture/backend-advisory/` for backend patterns and quality bar. Tagged backend slices route to `crew:backend-dev` per the Builder routing matrix — this generalist row is the untagged fallback only.
   - section: code-language
-    signal: "**Frontend code change** (UI components, client-side logic, CSS, browser-rendered output)"
+    signal: "**Frontend code change, untagged slice** (UI components, client-side logic, CSS, browser-rendered output; no surface:*/stack:* tags — tagged slices follow the Builder routing matrix above)"
     route_to: fullstack-dev
-    notes: Load `skills/domain/ui/react-engineering/` for frontend patterns and quality bar.
+    notes: Load `skills/domain/ui/react-engineering/` for frontend patterns and quality bar. Tagged UI slices route to `crew:frontend-dev` per the Builder routing matrix — this generalist row is the untagged fallback only.
   - section: code-language
-    signal: "**Full-stack change spanning both frontend and backend** (shared data shape, API + UI wired end-to-end)"
+    signal: "**Full-stack change spanning both frontend and backend, untagged slice** (shared data shape, API + UI wired end-to-end; tagged cross-layer slices follow the Builder routing matrix above)"
     route_to: fullstack-dev
     notes: Load `skills/domain/architecture/fullstack-advisory/` for cross-layer coherence checks. Pairs with backend and frontend advisory rows when the diff touches both surfaces separately.
   - section: code-language
@@ -246,7 +246,7 @@ rows:
     notes: Load `skills/domain/mcp-integration/` for config format, security, and integration patterns.
   - section: architecture
     signal: "**Architecture sketch / system design** (ADR drafting, system design, capacity or topology decisions)"
-    route_to: "`agents/architect.md` stub"
+    route_to: "`agents/architect.md`"
     notes: Load `skills/domain/architecture/architecture-advisory/`. Architect handles backend service architecture inline (see `## Backend architecture` section). Delegates to `agents/cloud-architect.md` and `agents/3rdparty/database-architect.md` via Agent tool for DB/cloud concerns. For API contract work load `skills/domain/architecture/api-architecture/` inline; for diagrams load `skills/domain/architecture/diagram-methodology/` inline.
   - section: architecture
     signal: "**Schema design / migration planning / database performance tuning** (ER modeling, schema evolution, index strategy, technology selection, multi-tenancy, sharding, CQRS, event sourcing)"
@@ -350,8 +350,8 @@ rows:
     notes: "After `write-handoff`, fullstack-dev calls `node scripts/crew.ts write-build-bundle --slice <id> --builder <name> --run <runId> --handoff <path> --files <a,b> --files-read <c,d>` to persist a structured bundle (handoff body, `git diff`, full contents of touched + Read files) under `.claude/artifacts/crew/bundles/{slice}/`. Non-blocking on failure — log the error and continue. Applies to `crew:fullstack-dev`, `crew:backend-dev`, `crew:frontend-dev`. Schema: `docs/standards/build-bundle-schema.md`."
   - section: ux
     signal: "**UX / UI design** (layout decisions, user flows, interaction design, component wireframes)"
-    route_to: "`agents/uxdesigner.md` stub"
-    notes: Load `skills/domain/ui/react-engineering/`. UXDesigner stub delegates to `agents/3rdparty/{ui-ux-designer,expert-react-frontend-engineer,frontend-developer}.md` via Agent tool.
+    route_to: "`agents/uxdesigner.md`"
+    notes: Load `skills/domain/ui/react-engineering/`. UXDesigner delegates to `agents/3rdparty/{ui-ux-designer,expert-react-frontend-engineer,frontend-developer}.md` via Agent tool.
   - section: ux
     signal: "**UX research / persona work / interaction design / accessibility audit** (user interviews, persona modeling, IA, heuristic evaluation, WCAG compliance, AI interface patterns)"
     route_to: uxdesigner

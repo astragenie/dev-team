@@ -224,7 +224,7 @@ The CLI prints JSON to stdout. Read the `path` field directly — do NOT depend 
 
 ### Finalize at completion
 
-Minimum required flags: `--title`, `--decision`, `--summary`, `--environment`, `--evidence`. Add `--findings` / `--risks` / `--next` / `--files` only when there is real content.
+Minimum required flags: `--title`, `--decision`, `--summary`, `--environment`, `--evidence`. Decision values `passed`/`passed_with_notes`/`failed` are legacy aliases the CLI normalizes to the canonical `pass`/`fail` enum (schemas.ts); they remain the documented three-tier semantics here, but expect `pass|fail|skipped` in any CLI error text. Add `--findings` / `--risks` / `--next` / `--files` only when there is real content.
 
 ```bash
 : "${CLAUDE_PLUGIN_ROOT:?must be set}"
