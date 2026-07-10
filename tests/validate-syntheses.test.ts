@@ -225,12 +225,14 @@ test("validateSyntheses grandfathers rotted grade files dated before the FEAT-19
   await fs.rm(dir, { recursive: true, force: true });
 });
 
-test("validateSyntheses hard-fails a rotted grade file dated exactly at the FEAT-199a cutoff", async () => {
+test("validateSyntheses hard-fails a rotted grade file dated exactly at the grandfather cutoff", async () => {
   const rotted = FILLED_GRADE.replace(
     "- Real lesson learned here.\n- Another concrete lesson.",
     "- bullet 1\n- bullet 2"
   );
-  const dir = await makeGradesDir({ "20260708T000000Z-slice98-grade.md": rotted });
+  // Cutoff advanced to 2026-07-09 (FEAT-199b) to cover the slice112/113 Jul-8
+  // grade rot; a file AT the cutoff is still held to the full standard.
+  const dir = await makeGradesDir({ "20260709T000000Z-slice98-grade.md": rotted });
   const result = await validateSyntheses(dir);
   assert.equal(result.errors.length, 1);
   assert.equal(result.grandfatheredGradeRot.length, 0);
@@ -246,5 +248,31 @@ test("validateSyntheses treats a grade file with no parseable timestamp prefix a
   const result = await validateSyntheses(dir);
   assert.equal(result.errors.length, 1);
   assert.equal(result.grandfatheredGradeRot.length, 0);
+  await fs.rm(dir, { recursive: true, force: true });
+});
+
+// ── FEAT-199b: grandfather set for pre-existing final-synthesis rot ──────────
+
+test("validateSyntheses grandfathers a rotted synthesis whose basename is in the frozen set", async () => {
+  // slice79-final-synthesis.md is a real pre-existing rotted synthesis, listed
+  // in SYNTHESIS_ROT_GRANDFATHER — it must warn, not error.
+  const dir = await makeRunsDir({
+    "slice79-final-synthesis.md": "# Synthesis\n- Grade missing — incomplete\n"
+  });
+  const result = await validateSyntheses(dir);
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.grandfatheredSynth.length, 1);
+  assert.match(result.grandfatheredSynth[0]!, /FEAT-199b/);
+  await fs.rm(dir, { recursive: true, force: true });
+});
+
+test("validateSyntheses still hard-fails a NEW rotted synthesis not in the grandfather set", async () => {
+  const dir = await makeRunsDir({
+    "feat999-slice999-final-synthesis.md": "# Synthesis\n- Grade missing — incomplete\n"
+  });
+  const result = await validateSyntheses(dir);
+  assert.equal(result.errors.length, 1);
+  assert.equal(result.grandfatheredSynth.length, 0);
+  assert.match(result.errors[0]!, /Grade missing/);
   await fs.rm(dir, { recursive: true, force: true });
 });
