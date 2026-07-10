@@ -1,5 +1,5 @@
 ---
-description: Auto-fix loop entry point for QA, verification, PR filing, and deployment evidence. Dispatches qa-expert + verifier in parallel; retries with a specialist builder on FAIL up to ship.fix_retry_limit times; files PR or escalates with ship_blocked.
+description: Auto-fix loop entry point for QA, verification, PR filing, and deployment evidence. Dispatches qa-expert + verifier in parallel; retries with a specialist builder on FAIL up to ship.fix_retry_limit times; files PR or escalates with a `blocked` badge.
 ---
 
 # Ship — Auto-Fix Loop
@@ -30,7 +30,7 @@ If guidance is absent, stale, or incomplete, inspect CI/CD + infra files and wri
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-deployment-guidance --repo "$PWD" \
   --title "<short title>" \
-  --trustLevel repo-derived   # or partial / live-verified
+  --discovery-status repo-derived   # or partial / live-verified
 ```
 
 Distinguish trust levels:
@@ -67,25 +67,20 @@ Collect both results:
 qa_decision = passed AND verifier_decision = passed
 ```
 
-1. Emit badges:
+1. Emit badge (one validation gate covers both agents — mark only after BOTH pass):
    ```bash
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge qa_passed
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge verifier_passed
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge validation_passed --note "qa-expert + verifier both passed"
    ```
 2. File PR:
    ```bash
    gh pr create --title "<title>" --body "<summary>"
    ```
-3. Emit:
-   ```bash
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge pr_filed
-   ```
-4. Write deployment check:
+3. Write deployment check (this artifact is the PR-filed evidence — there is no `pr_filed` badge):
    ```bash
    node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-deployment-check --repo "$PWD" \
-     --title "Ship: PR filed" --decision passed
+     --title "Ship: PR filed" --decision passed --url "<PR URL>"
    ```
-5. Exit — surface the PR URL to the user.
+4. Exit — surface the PR URL to the user.
 
 ### Either FAIL path
 
@@ -118,8 +113,8 @@ When retries are exhausted without both agents passing:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" \
-  --badge ship_blocked \
-  --note "<aggregated FAIL summary from qa-expert + verifier>"
+  --badge blocked \
+  --note "ship: <aggregated FAIL summary from qa-expert + verifier>"
 
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-deployment-check --repo "$PWD" \
   --title "Ship: blocked after <N> retries" \
@@ -153,11 +148,13 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge pr
 
 ## Badge reference
 
+All badge names here must exist in `docs/standards/badge-catalog.md` (generated from `BADGE_TABLE`) — do not invent ship-specific badges.
+
 | Badge | When emitted |
 |---|---|
-| `qa_passed` | `crew:qa-expert` returned passed |
-| `verifier_passed` | `crew:verifier` returned passed |
-| `pr_filed` | `gh pr create` succeeded |
-| `ship_blocked` | Retry limit exhausted, escalated to user |
+| `validation_passed` | `crew:qa-expert` AND `crew:verifier` both returned passed |
+| `blocked` | Retry limit exhausted, escalated to user (`--note "ship: ..."`) |
 | `dev_deploy_expected` | Dev environment transition started |
 | `prod_deploy_expected` | Production promotion requested |
+
+PR filing is evidenced by the `write-deployment-check` artifact (`--url <PR URL>`), not a badge.

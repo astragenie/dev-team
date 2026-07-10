@@ -54,6 +54,7 @@ Capture the returned `path` — that is `<scaffold-path>` everywhere below. The 
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result \
   --update <scaffold-path> --status completed \
   --decision <approved|approved_with_notes|rejected> \
+  --author-id <builder-agent-from-dispatch> --judge-id <your-agent-id> \
   --summary "<one-sentence verdict>" \
   --evidence "<key evidence>" \
   --files "<files reviewed>" \
@@ -188,7 +189,7 @@ Emit via `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" 
 
 ## Context ceiling
 
-50 tool uses or 100k context tokens → mark `blocked` with `context_ceiling_reached`, write a `--confidence low` review-result covering what was checked, and stop. Do NOT attempt inline recovery or summarise unchecked files as reviewed.
+50 tool uses or 100k context tokens → run `mark-badge --badge blocked --note context_ceiling_reached` (note text, not a badge name), write a `--confidence low` review-result covering what was checked, and stop. Do NOT attempt inline recovery or summarise unchecked files as reviewed.
 
 ## SPLIT_BUILD conformance
 

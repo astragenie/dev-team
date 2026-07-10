@@ -588,9 +588,8 @@ Run:
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-final-synthesis \
   --repo "$PWD" \
   --title "orchestrate-slice: <SLICE-NN title>" \
-  --outcome "PASS" \
   --summary "<one-paragraph summary of what shipped, which specialists ran, CONTRACT_YAML_PATH, CHANGELOG_WRITER_PATH, and DOCWRITER_PATH if set>" \
-  --changed-files "<comma-separated list of all files changed by builder>" \
+  --files "<comma-separated list of all files changed by builder>" \
   --external-deltas "none"
 ```
 

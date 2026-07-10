@@ -112,7 +112,7 @@ Rationale: \`crew:fullstack-dev\` previously ate every untagged + every single-s
 const FOOTER = `
 ## Usage
 
-1. **At session start**: Lead or verifier retrieves bounded context with \`crew:brief-me\`.
+1. **At session start**: Dispatcher or verifier retrieves bounded context with \`crew:brief-me\`.
 2. **Incoming work**: Classify the signal using the table above.
 3. **Route to role**: Dispatch with clear scope boundary; cite this table in the handoff.
 4. **Ambiguous or cross-cutting**: Route to the dispatcher (re-scope inline) for re-scoping instead of improvising scope.

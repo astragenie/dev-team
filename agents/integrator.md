@@ -103,7 +103,7 @@ Shape mismatch is a FAIL even when status code is correct. Record the field path
 
 ## Skip conditions
 
-- Slice classification has `SPLIT_BUILD = false`. (Lead's orchestrator should not dispatch you in this case; if it does, return immediately with `Outcome: SKIP — SPLIT_BUILD false`.)
+- Slice classification has `SPLIT_BUILD = false`. (The dispatcher should not dispatch you in this case; if it does, return immediately with `Outcome: SKIP — SPLIT_BUILD false`.)
 - Slice frontmatter has `skip: ["integrator"]`. Return `Outcome: SKIP — explicit override` + reference the slice frontmatter.
 
 ## Out of scope

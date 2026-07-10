@@ -19,7 +19,7 @@ Load this skill:
 - At SPEC decomposition time (`/loop:spec-decompose`) — size atomic actions before writing slice specs.
 - At slice-start — verify the slice fits before dispatching a builder.
 - Before any builder dispatch where the scope estimate exceeds ~30 turns.
-- When the pre-dispatch decomposition rule (see `agents/dispatcher.md`) flags ≥2 role concerns.
+- When the pre-dispatch decomposition rule (below) flags ≥2 role concerns.
 
 Skip for single-file trivial changes or dispatcher inline-handled edits.
 
@@ -59,7 +59,7 @@ Apply at least one of these split conditions before dispatching:
 
 ## Splitting strategies
 
-**Role-bundle split:** group files by role concern (see pre-dispatch decomposition rule in `agents/dispatcher.md`). Dispatch in parallel via a single message with multiple Agent tool calls.
+**Role-bundle split:** group files by role concern using the **pre-dispatch decomposition rule**: before dispatching, list the distinct role concerns the file set touches (implementation code, tests, prose/docs, design/contracts, infra/CI); ≥2 concerns → split into one dispatch per concern owner (builder, test-automator, document-writer, architect, release-engineer). Dispatch in parallel via a single message with multiple Agent tool calls.
 
 **Sequential split:** when dependency forces ordering (e.g., schema before API before UI), split into chained slices. Each slice passes an artifact handoff to the next.
 

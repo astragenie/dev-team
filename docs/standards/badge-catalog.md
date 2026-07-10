@@ -35,3 +35,5 @@ on the gate entry); `--blocked-by <artifact-id>` only affects `blocked`.
 | `incident_resolved` | Full pass through `/crew:incident` triage completed (FEAT-182 SLICE-A). | `gates.incident` → `resolved` | `--note` |
 | `rollback_executed` | Release-engineer-driven rollback executed (FEAT-182 SLICE-A). | `gates.incident` → `rolled-back` | `--note` |
 | `incident_blocked` | Retry-exhaustion or a rollback decision needing user sign-off during `/crew:incident` (FEAT-182 SLICE-B). | `gates.incident` → `blocked` | `--note`, `--blocked-by <artifact-id>` |
+| `help_request` | Builder/integrator needs operator input (missing env var, contract drift, setup problem); gates dev.stable autonomous commits and finalize while open. | `gates.help` → `requested` | `--note` |
+| `help_resolved` | Clears an open `help_request` after the operator answers. | `gates.help` → `resolved` | `--note` |

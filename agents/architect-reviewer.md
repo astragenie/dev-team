@@ -107,7 +107,7 @@ Claims without confidence + evidence-update conditions get demoted to `Open ques
 
 Produce a structured review with:
 
-1. **Summary verdict**: `approved` | `approved_with_conditions` | `needs_revision`
+1. **Summary verdict**: `approved` | `approved_with_notes` | `rejected` (canonical CLI enum; legacy aliases `approved_with_conditions`/`needs_revision` still normalize, but do not emit them)
 2. **Options-Considered structure check** — verdict + which auto-reject criterion (if any) fired.
 3. **Strengths** — what the design gets right (1–3 points).
 4. **Inversion findings** — 2–3 failure modes per top option, citing the section in the design that creates the risk.
@@ -126,7 +126,7 @@ You have no Write/Edit tools — the review body reaches disk exclusively throug
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result --repo "$PWD" --update <path-from-scaffold> \
-  --decision "<approved|approved_with_conditions|needs_revision>" \
+  --decision "<approved|approved_with_notes|rejected>" \
   --summary "<verdict + count of Critical findings>" \
   --findings "<Output Format sections 2-10, compressed markdown>" \
   --evidence "<design doc path + key line refs>" \

@@ -27,7 +27,7 @@ As of FEAT-163 (DEC-022, DEC-023), 10 agents carry the `Agent` tool and may disp
 
 Review and validation gates (`crew:reviewer`, `crew:reviewer-verifier`, `crew:verifier`) remain orchestrator-only per the hard rule in FEAT-163 line 40. No agent may dispatch its own reviewer. The loop walker (autonomous path) or the slash command (interactive path) dispatches review and validation gates after the builder's handoff lands.
 
-Lead-as-sole-orchestrator remains supported for the interactive `/crew:build` path. The autonomous loop uses `slice-build` dispatch (lives in `src/scripts/lib/slice-linker/dispatch.mts`) as the live orchestrator — peer dispatch reduces the orchestrator's routing burden by letting each agent fetch upstream dependencies and hand off downstream artifacts without a central relay.
+The interactive `/crew:build` path is dispatcher-mediated too: the session driving `/crew:build` acts as the dispatcher (a role, not a standing agent — see Team Roles above). The autonomous loop uses `slice-build` dispatch (lives in `src/scripts/lib/slice-linker/dispatch.mts`) as the live orchestrator — peer dispatch reduces the orchestrator's routing burden by letting each agent fetch upstream dependencies and hand off downstream artifacts without a central relay.
 
 ## Memory And Artifact Habit
 

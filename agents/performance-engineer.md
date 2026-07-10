@@ -93,6 +93,15 @@ Return a performance report with:
 - Measurable: benchmark command + baseline target where runnable
 - Verdict per Verdict rules above
 
+### Verify synchronously, never background-and-idle
+
+Run every measurement/test/sweep command in the foreground and read the result
+in the same step (raise the Bash timeout instead of backgrounding). NEVER
+background a long command and idle waiting for its notification — completions
+that cross a turn boundary strand the dispatch and the orchestrator cannot
+tell "done" from "stalled" (dev-team#198). If something was backgrounded
+anyway, do not end the turn until its result is collected.
+
 ## Report contract
 
 ```bash

@@ -13,6 +13,18 @@ triggers: discovery, option divergence, new feature, design exploration, trade-o
 
 # Brainstorming Ideas Into Designs
 
+## DISPATCH-CONTEXT GATE (read first)
+
+This skill's process is interactive: it asks the user questions one at a time and waits for answers. That only works when a human is present.
+
+**If you are a dispatched subagent (autonomous loop, `/crew:build`/`/crew:fix` dispatch, background Agent-tool run, any fire-and-forget context): SKIP this skill's question loop entirely.** There is no interlocutor — waiting on an answer stalls the run (dev-team#197). Instead:
+
+1. Resolve ambiguity from available artifacts (slice spec, FEAT tags, design docs, prior handoffs).
+2. Pick the least-surprising interpretation, state the assumption explicitly in your deliverable.
+3. If the ambiguity is genuinely blocking, mark `help_request` with a note and return a blocked report — never wait for a reply that cannot come.
+
+The interactive process below applies only to a live user session.
+
 ## When to use
 
 - Before starting any new feature or significant change

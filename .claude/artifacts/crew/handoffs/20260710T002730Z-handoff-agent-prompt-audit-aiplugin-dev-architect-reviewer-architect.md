@@ -1,0 +1,42 @@
+# Task Handoff: Agent-prompt audit: aiplugin-dev/architect-reviewer/architect/backend-dev/cloud-architect/csharp-reviewer/dev-lite
+
+- Created: 2026-07-10T00:27:30.073Z
+- From: researcher
+- To: dispatcher
+- Objective: Cross-file audit of 8 agent prompts found 3 P1 CLI/vocab-drift and self-contradiction findings, plus idle-, ambiguity-, and overengineering-class issues; full findings table and raw CLI/badge claim extraction returned inline to dispatcher.
+- Allowed Scope:
+  - Read-only audit of agents/aiplugin-dev.md
+  - architect-reviewer.md
+  - architect.md
+  - architect/.gepa/rubric.md
+  - backend-dev.md
+  - cloud-architect.md
+  - csharp-reviewer.md
+  - dev-lite.md against known GitHub issues #197
+  - #198
+  - #199
+  - #187
+  - #174
+  - #171
+  - #162
+  - #153
+  - #186
+  - #152
+  - #200
+  - #165
+  - #167 and constitution commit-discipline rules.
+- Forbidden Scope: -
+- Deliverable: 13-row findings table (severity/class/file:line/evidence/fix) + per-file raw CLI/flag/badge/decision-vocab extraction, delivered inline in chat response (no file written per no-report-files rule).
+- Changed Files:
+  - agents/aiplugin-dev.md
+  - agents/architect-reviewer.md
+  - agents/architect.md
+  - agents/architect/.gepa/rubric.md
+  - agents/backend-dev.md
+  - agents/cloud-architect.md
+  - agents/csharp-reviewer.md
+  - agents/dev-lite.md
+- Confidence: medium
+- Risks: Findings are prompt-text-level claims only, not verified against live crew.ts CLI flag/enum schema (per task instructions, extraction was not cross-checked against source) — the 3 P1 drift/contradiction findings (write-handoff flag mismatch architect.md vs cloud-architect.md; 3 divergent reviewer --decision enums; dev-lite Bash self-contradiction) need a second pass against scripts/crew.ts to confirm which claims are the actual bug vs. which agent is correct. FEAT-161 dead-ref and checkpoint-cadence hook existence were independently verified via filesystem; badge name specialist_recommended and --reason flag on write-review-result were not verified.
+- Suggested Next Handoff: Dispatch a researcher or investigator pass to grep scripts/crew.ts for the canonical write-handoff/write-review-result flag schemas and mark-badge enum, then diff against this handoff's raw-claims section to promote PLAUSIBLE findings to CONFIRMED; route the P1 dev-lite Bash-tool self-contradiction and the backend-dev HARD OUTPUT CONTRACT gap directly to aiplugin-dev or dev-lite maintainers as quick prompt fixes.
+

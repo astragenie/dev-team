@@ -320,6 +320,22 @@ const BADGE_TABLE: Record<string, BadgeSpec> = {
     selector: (run) => [run.gates, "incident"],
     status: "blocked",
     custom: true
+  },
+  // help_request/help_resolved: builder or integrator needs operator input
+  // (missing env var, contract drift, setup problem). Long promised by the
+  // constitution's dev.stable gate ("no help_request badge open") and
+  // instructed in builder prompts, but never backed by a BADGE_TABLE entry
+  // until now. Paired like incident_blocked/incident_resolved so an open
+  // request has an explicit clear path and cannot permanently wedge finalize.
+  help_request: {
+    selector: (run) => [run.gates, "help"],
+    status: "requested",
+    custom: true
+  },
+  help_resolved: {
+    selector: (run) => [run.gates, "help"],
+    status: "resolved",
+    custom: true
   }
 };
 
@@ -610,7 +626,8 @@ const PENDING_BADGE_SPECS: Array<{
   {
     badge: "escalated_to_dispatcher",
     check: (run) => run?.gates?.escalation?.status === "escalated"
-  }
+  },
+  { badge: "help_request", check: (run) => run?.gates?.help?.status === "requested" }
 ];
 
 function collectPendingBadges(currentRun: WorkflowRun | null | undefined): string[] {

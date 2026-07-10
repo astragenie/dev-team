@@ -165,11 +165,11 @@ Extract `SLICE_ID` from matched file's `id:` frontmatter field or its filename s
 
 Run slice start ceremony:
 
-    node scripts/loop.mjs slice start --id <SLICE_ID>
+    /loop:slice start --id <SLICE_ID>
 
 If the command exits non-zero: halt and print the full error output. Do not proceed.
 
-On success: invoke `orchestrate-slice <SLICE_ID>` from the main thread.
+On success: invoke `/crew:orchestrate-slice --id <SLICE_ID>` from the main thread.
 
 ---
 

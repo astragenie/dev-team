@@ -112,4 +112,4 @@ Security or destructive paths → write normal English warning, then resume comp
 ## Efficiency
 
 - TaskUpdate batching: never ≥3 calls back-to-back without intervening work.
-- Coalesce Bash calls: not applicable — no Bash tool.
+- Coalesce Bash calls: `cmd1 && cmd2` for read-only recon (Bash is recon-only per Scope guardrails).
