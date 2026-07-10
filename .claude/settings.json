@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${PWD}/.claude/hooks/log_event.sh session_start",
+            "command": "s=\"${PWD}/.claude/hooks/log_event.sh\"; [ -f \"$s\" ] || exit 0; exec \"$s\" session_start",
             "description": "crew:session-start"
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${PWD}/.claude/hooks/log_event.sh task_created",
+            "command": "s=\"${PWD}/.claude/hooks/log_event.sh\"; [ -f \"$s\" ] || exit 0; exec \"$s\" task_created",
             "description": "crew:task-created"
           }
         ]
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${PWD}/.claude/hooks/log_event.sh task_completed",
+            "command": "s=\"${PWD}/.claude/hooks/log_event.sh\"; [ -f \"$s\" ] || exit 0; exec \"$s\" task_completed",
             "description": "crew:task-completed"
           }
         ]
@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${PWD}/.claude/hooks/log_event.sh subagent_start",
+            "command": "s=\"${PWD}/.claude/hooks/log_event.sh\"; [ -f \"$s\" ] || exit 0; exec \"$s\" subagent_start",
             "description": "crew:subagent-start"
           }
         ]
@@ -50,12 +50,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${PWD}/.claude/hooks/log_event.sh subagent_stop",
+            "command": "s=\"${PWD}/.claude/hooks/log_event.sh\"; [ -f \"$s\" ] || exit 0; exec \"$s\" subagent_stop",
             "description": "crew:subagent-stop"
           },
           {
             "type": "command",
-            "command": "bash ${PWD}/.claude/hooks/subagent_handoff_check.sh",
+            "command": "s=\"${PWD}/.claude/hooks/subagent_handoff_check.sh\"; [ -f \"$s\" ] || exit 0; exec \"$s\"",
             "description": "crew:handoff-verifier"
           }
         ]
@@ -66,7 +66,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${PWD}/.claude/hooks/session_end_checkpoint.sh",
+            "command": "s=\"${PWD}/.claude/hooks/session_end_checkpoint.sh\"; [ -f \"$s\" ] || exit 0; exec \"$s\"",
             "description": "crew:session-end-checkpoint"
           }
         ]
@@ -78,7 +78,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${PWD}/.claude/hooks/check_git_gate.sh",
+            "command": "s=\"${PWD}/.claude/hooks/check_git_gate.sh\"; [ -f \"$s\" ] || exit 0; exec \"$s\"",
             "description": "crew:git-gate-reminder"
           }
         ]

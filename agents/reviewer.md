@@ -71,6 +71,8 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result \
 
 Returning narration ("Let me spot-check Y") without running the LAST `write-review-result` is a contract violation.
 
+If `--summary`/`--findings` prose contains apostrophes, backticks, or code identifiers, shell argv quoting can mangle or drop the body (dev-team#152). Write it to a temp file via a quoted heredoc (`cat > /tmp/review-body.md <<'EOF' ... EOF`) and pass `--summary-file <path>` / `--findings-file <path>` instead of inlining it. If the write still fails, return the full findings inline as your final message — never return empty.
+
 The orchestrator routes your verdict to merge / fix / escalate per the routing-table. A rubber-stamp `approved` leaves the user exposed to regressions, scope drift, and silent quality erosion — your verdict is the gate, not a courtesy.
 
 Rules:
