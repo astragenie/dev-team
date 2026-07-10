@@ -35,6 +35,15 @@ Only real sitting work was plugins-common PR #9 — now being landed (P1 below).
 - CI running on `8584ed8`. Next: confirm green → crew review gate → merge PR #9 → main CI → P2 tags.
 - **W2-pre report SAVED**: `.claude/artifacts/crew/runs/20260710-w2pre-plugin-std-swap-map.md` (investigator delivered full swap-list before dying). Feeds P4. Headline: frontmatter swap first (5 CRLF-unsafe parsers, highest value), http = skip (zero dev-team callers), jsonl needs a non-throwing-wrapper decision first.
 
+## P3 COMPLETE (2026-07-10) — dev-team v0.59.0 released
+
+- **W1-A pin bump** merged (dev-team PR #206): astramem-client ^0.2.0 + gepa-core 0.10.1. gepa-core 0.10.x moved LockManager to plugin-std `Result<handle|null,never>` (DEC-002) — adapted `run-with-lock.ts` + `optimize-runner.ts` with Result narrowing (behavior-preserving). Both lockfiles refreshed. CI green (self-hosted full suite).
+- **v0.59.0 cut**: CHANGELOG + dual manifest bump (plugin.json + package.json) + README pinned-callout, tag `v0.59.0` pushed (`384ec164`, CI green), astra-marketplace registry bumped crew→0.59.0 (`5317a5a`, single-field per HARD RULE). Bundled #203 (reviewer idle-guard) + #204 (settings hook guard) + #206 (pins).
+
+## P4 IN PROGRESS — W2 plugin-std adoption (target v0.60.0)
+
+Swap-map ready: `.claude/artifacts/crew/runs/20260710-w2pre-plugin-std-swap-map.md`. Order: **frontmatter first** (5 CRLF-unsafe parsers, ~9 sites, highest value + safest), then git, then jsonl (needs non-throwing-wrapper decision — gap #2), result last (drags errors.ts + `.code` migration). **http = skip** (zero dev-team callers). Each swap = behavior-preserving PR, own helper family, review gate. NOTE: adopting plugin-std in dev-team requires adding `@astragenie/plugin-std: ^0.5.0` to dev-team package.json + both lockfiles first.
+
 ## P2 COMPLETE (2026-07-10) — all three packages published
 
 npm now has: **plugin-std@0.5.0**, **astramem-client@0.2.0**, **gepa-core@0.10.1** (NOT 0.10.0 — see below). Path taken:
