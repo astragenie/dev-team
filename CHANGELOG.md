@@ -3,6 +3,30 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [v0.59.0] — 2026-07-10 — plugins-common pins + reviewer idle-guard
+
+Minor: adopts the freshly published `@astragenie/*` shared packages and closes
+the reviewer-fan-out idle gap. First wave of the 3-repo stabilization plan.
+
+- **Dependency pins (W1-A, #206)**: `@astragenie/astramem-client` → `^0.2.0`,
+  `@astragenie/gepa-core` → `0.10.1` (both now published to npm from the
+  plugins-common monorepo). gepa-core 0.10.x moved the `LockManager` contract
+  onto plugin-std's `Result` type (DEC-002): `acquire()` now returns
+  `Result<handle|null, never>`. The two consumer call sites
+  (`gepa/run-with-lock.ts`, `gepa/optimize-runner.ts`) narrow the Result before
+  use — behavior-preserving (contention still yields `lock_held`/`null`). Both
+  lockfiles refreshed for the `npm ci` gate.
+- **Reviewer-decision idle guard (W1-C, #199 / #203)**: a `SubagentStop` hook
+  now flags a reviewer subagent that ends its turn without delivering a review
+  decision, and the dispatcher gains a fan-out watchdog — one status-check nudge,
+  then proceed under single-reviewer policy rather than waiting indefinitely.
+  Idle-ping notifications from a reviewer that already delivered its artifact are
+  treated as noise, not a re-dispatch signal.
+- **Installed-hook robustness (W0-C, #202 / #152 / #204)**: dev-team's own
+  tracked `settings.json` hook commands are guarded against unmaterialized
+  `.claude/hooks/`; `crew.ts` gains a `--<flag>-file <path>` body-input form so
+  review prose containing apostrophes/backticks survives shell argv quoting.
+
 ## [v0.58.0] — 2026-07-10 — fresh-look audit: idle-inducer + doc-CLI drift purge
 
 Minor: repo-wide audit of agent prompts, skills, and command docs against
