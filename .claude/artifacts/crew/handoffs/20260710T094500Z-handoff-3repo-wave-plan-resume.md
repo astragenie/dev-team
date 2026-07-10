@@ -42,7 +42,18 @@ Only real sitting work was plugins-common PR #9 — now being landed (P1 below).
 
 ## P4 IN PROGRESS — W2 plugin-std adoption (target v0.60.0)
 
-Swap-map ready: `.claude/artifacts/crew/runs/20260710-w2pre-plugin-std-swap-map.md`. Order: **frontmatter first** (5 CRLF-unsafe parsers, ~9 sites, highest value + safest), then git, then jsonl (needs non-throwing-wrapper decision — gap #2), result last (drags errors.ts + `.code` migration). **http = skip** (zero dev-team callers). Each swap = behavior-preserving PR, own helper family, review gate. NOTE: adopting plugin-std in dev-team requires adding `@astragenie/plugin-std: ^0.5.0` to dev-team package.json + both lockfiles first.
+Swap-map: `.claude/artifacts/crew/runs/20260710-w2pre-plugin-std-swap-map.md`. plugin-std ^0.5.0 dep added in slice 1.
+
+- **Slice 1 frontmatter** ✅ merged #207 (`68af7c7e`) — 4 sites (agent-registry, cost-advisor, wakeup, briefing/workflow); artifact-cache + serializers left local (findings-as-JSON-string contract). Reviewer MERGE_OK.
+- **Slice 1 follow-up** ✅ merged #209 (`9e7bf908`) — wakeup unterminated-fence fallback restored to full-body (reviewer parity finding).
+- **Slice 2 git** ✅ merged #208 (`ef700fa7`) — briefing/git.ts + branch-cleanup.ts → runGit; gepa-killswitch left local (plugin-std runGit hardcodes `git` binary → would drop `--git` override).
+- **Slice 3 jsonl** 🔄 builder in isolated worktree. Guardrail: plugin-std `append()` THROWS; dispatch-timing/observability are fire-and-forget MUST-NOT-throw → wrap in try/catch. Likely leave observability dedupe + jsonl.mjs byte-seek tail (perf) + serialize-jsonl (overwrite) local.
+- **Slice 4 result** ⏳ pending — the riskiest (result.ts is plugin-std's seed; swapping drags errors.ts + `.code` migration at call sites, claims.ts imports {ok,err}). Broad blast radius — evaluate carefully / may warrant its own decision.
+- **http = skip** (zero dev-team callers).
+
+After W2 families land → cut v0.60.0 (CHANGELOG + dual manifest bump + README callout + tag + marketplace registry bump, same as v0.59.0).
+
+**LESSON**: dispatch adoption builders with `isolation: worktree` — a slice-2 shared-tree collision occurred when the orchestrator edited files while a non-isolated builder was live in the same checkout. Recovered via scoped `git stash`.
 
 ## P2 COMPLETE (2026-07-10) — all three packages published
 
