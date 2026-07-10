@@ -97,3 +97,18 @@ Independent review before merge; full CI green (no advisory skips on adoption/co
 behavior-preserving swaps keep existing tests unmodified; pin bumps isolated from code; no
 release tag / marketplace bump without the local tag matching. Publishes are irreversible —
 gate on the review verdict first (P2 lesson).
+
+---
+
+## Outcomes (2026-07-10, waves executed)
+
+**Critical path CLOSED — dev-team v0.61.0 released** (git + npm memory-provider@0.1.0 + marketplace). Wave 0 T0-A was a no-op (schema already reconciled in FEAT-188 S2; #170 already fixed). T0-B/T0-C/T1-A(W3a)/T2-A(W3b) all landed via review + green CI. Two release.yml build-order traps fixed pre-tag (plugin-std, astramem-client).
+
+**Follow-up asks filed** (from runner-plugin#449 adoption):
+- plugins-common#21 — tolerant parseFrontmatter mode (unblocks runner's 31-importer frontmatter family)
+- plugins-common#22 — runGitSync (unblocks runner's sync git sites)
+- plugins-common#23 — narrow Ok<T>/Err<E> + isOk/isErr (removes runner's local cast wrappers)
+
+**W3c (runner memory-provider adoption) — RULED MOOT, not filed.** Investigation (file-runner-w3c) found runner's learnings system is independently richer than memory-provider, NOT a duplicate: 13-field schema vs memory-provider's 9 (drops failure_class/root_cause/recommended_fix/evidence/status/expires_at), continuous half-life decay vs 45-day cliff, no provider-selection axis (fixed two-store JSONL+astramem model), multi-source recall (buildMemoryContext aggregates 4 readers). dev-team's W3b was a drop-in only because memory-provider was extracted verbatim from dev-team; runner never shared that code (grew via FEAT-179/219/220). Adopting would be a lossy downgrade + re-architecture. **Close the W3c line item.**
+
+**Remaining (optional, trailing):** Wave 3 #159 astramem scoped-recall (memory lane free); T1-B token-burn #167/#165 (disjoint). Neither blocks anything.
