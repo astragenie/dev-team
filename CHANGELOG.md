@@ -3,6 +3,27 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [v0.61.0] — 2026-07-10 — MemoryProvider extraction + consume (W3)
+
+Minor: the generic memory-provider layer moves to the shared
+`@astragenie/memory-provider` package; dev-team now consumes it instead of
+carrying its own copies. Closes the plugins-common adoption arc (W1 pins → W2
+plugin-std helpers → W3 memory-provider).
+
+- **Consume `@astragenie/memory-provider@0.1.0`** (#213): deletes 9 local copies
+  (`schema`, `types`, `config`, `noop-provider`, `ranking`, `legacy-adapter`,
+  `file-provider`, `astramem-provider`, `resolve-provider`) now provided by the
+  package. `capture-learning`, `inject-recall`, `drift-check` stay dev-team-local
+  (they write dev-team artifact paths) and import the shared primitives;
+  `memory/index.ts` is a re-export shim so every importer is unchanged. The
+  package's `storePath`/`normalizeRow` defaults match dev-team's exactly →
+  byte-parity, no override. Net −540 lines; full suite green (1829).
+- **Worktree-aware pre-push-verifier** (#164 / #212): the hook now resolves the
+  real git worktree root (parses a leading `cd <path>` off the command) instead
+  of scanning the session cwd, so validation-gate config + artifact scans read
+  the correct worktree; the block message reports the scanned dir, in-window
+  artifact count, and newest decision instead of one generic string.
+
 ## [v0.60.0] — 2026-07-10 — plugin-std helper adoption (W2)
 
 Minor: replaces hand-rolled helper families with the shared
