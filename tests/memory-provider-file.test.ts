@@ -7,7 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { fileProvider } from "../scripts/lib/memory/file-provider.ts";
+import { fileProvider } from "@astragenie/memory-provider";
 import { captureFailureLearning } from "../scripts/lib/memory/capture-learning.ts";
 
 async function makeTempRepo(prefix: string) {

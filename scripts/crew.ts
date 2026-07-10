@@ -1570,7 +1570,7 @@ const COMMANDS = {
   // truth). Never writes to astramem — surfaces candidates for an operator
   // to reconcile manually.
   "memory-drift-check": async ({ repoPath, flags }: CommandContext) => {
-    const { resolveAstramemRemote } = await import("./lib/memory/astramem-provider.ts");
+    const { resolveAstramemRemote } = await import("@astragenie/memory-provider");
     const { checkDrift } = await import("./lib/memory/drift-check.ts");
     const remote = await resolveAstramemRemote();
     if (!remote) {

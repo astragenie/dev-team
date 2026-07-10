@@ -135,7 +135,7 @@ function clusterFailures(trials: Trial[]): { clusters: FailureCluster[]; total: 
 /** Default lesson recall — the FEAT-188 MemoryProvider, agent-scoped. Never throws. */
 async function defaultRecallLessons(hubRepo: string, agent: string): Promise<LessonCitation[]> {
   try {
-    const { resolveProvider } = await import("../memory/resolve-provider.ts");
+    const { resolveProvider } = await import("@astragenie/memory-provider");
     const { loadMemoryConfig } = await import("../memory/inject-recall.ts");
     const provider = resolveProvider(await loadMemoryConfig(hubRepo), hubRepo);
     const entries = await provider.recall({ agent, k: DEFAULT_LESSON_K });

@@ -4,7 +4,7 @@
 // section 4 for the bridge-collision this schema resolves.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseMemoryConfig, resolveEffectiveConfig } from "../scripts/lib/memory/config.ts";
+import { parseMemoryConfig, resolveEffectiveConfig } from "@astragenie/memory-provider";
 
 test("parseMemoryConfig defaults to provider:none when no memory block is given", () => {
   const config = parseMemoryConfig(undefined);

@@ -11,7 +11,7 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fileProvider } from "../scripts/lib/memory/file-provider.ts";
+import { fileProvider } from "@astragenie/memory-provider";
 
 const LEARNINGS_REL = [".claude", "artifacts", "loop", "learnings.jsonl"];
 
@@ -44,14 +44,13 @@ describe("memory capture-parity (golden, incl. SIGKILL)", () => {
   test("a capture killed mid-write is either fully captured or safely dropped — no JSONL corruption", async () => {
     const root = mkdtempSync(join(tmpdir(), "memory-capture-sigkill-"));
     try {
-      const cwd = process.cwd().replace(/\\/g, "/");
       const child = Bun.spawn({
         cmd: [
           "bun",
           "run",
           "-e",
           `
-          const { fileProvider } = await import("${cwd}/scripts/lib/memory/file-provider.ts");
+          const { fileProvider } = await import("@astragenie/memory-provider");
           const provider = fileProvider(${JSON.stringify(root)});
           for (let i = 0; i < 300; i++) {
             await provider.capture({

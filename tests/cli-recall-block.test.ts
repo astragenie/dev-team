@@ -8,7 +8,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { runCrew } from "../scripts/crew.ts";
 import { makeTempDir } from "./helpers/cli-fixtures.ts";
-import { fileProvider } from "../scripts/lib/memory/file-provider.ts";
+import { fileProvider } from "@astragenie/memory-provider";
 
 test("CLI recall-block returns an empty block when no memory config exists", async () => {
   const repoPath = await makeTempDir("crew-cli-recall-block-none-");

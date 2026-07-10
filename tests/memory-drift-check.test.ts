@@ -13,8 +13,7 @@ import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { checkDrift } from "../scripts/lib/memory/drift-check.ts";
-import { fileProvider } from "../scripts/lib/memory/file-provider.ts";
-import type { RemoteHandle } from "../scripts/lib/memory/astramem-provider.ts";
+import { fileProvider, type RemoteHandle } from "@astragenie/memory-provider";
 import type { RecallHit } from "@astragenie/astramem-plugin/contracts";
 
 async function makeTempRepo(prefix: string) {

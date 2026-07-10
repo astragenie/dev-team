@@ -6,7 +6,7 @@ import path from "node:path";
 import assert from "node:assert/strict";
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
-import type { MemoryEntry } from "./lib/memory/schema.ts";
+import type { MemoryEntry } from "@astragenie/memory-provider";
 
 const execFile = promisify(execFileCallback);
 const rootPath = await fs.mkdtemp(path.join(os.tmpdir(), "crew-e2e-"));
@@ -765,8 +765,7 @@ async function scenarioSliceCeremony(): Promise<void> {
 // ---------------------------------------------------------------------------
 
 async function scenarioDriftDualWrite(): Promise<void> {
-  const { astramemProvider } = await import("./lib/memory/astramem-provider.ts");
-  const { fileProvider } = await import("./lib/memory/file-provider.ts");
+  const { astramemProvider, fileProvider } = await import("@astragenie/memory-provider");
   const { runDriftCheckCli } = await import("./lib/memory/drift-check.ts");
 
   const repo = await fs.mkdtemp(path.join(os.tmpdir(), "e2e-drift-"));

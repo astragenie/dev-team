@@ -3,7 +3,7 @@
 // summary<=280 | source-provenance | supersedes).
 import test from "node:test";
 import assert from "node:assert/strict";
-import { MemoryEntrySchema } from "../scripts/lib/memory/schema.ts";
+import { MemoryEntrySchema } from "@astragenie/memory-provider";
 
 function validEntry(overrides: Record<string, unknown> = {}) {
   return {

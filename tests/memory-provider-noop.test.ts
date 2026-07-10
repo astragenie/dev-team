@@ -6,8 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { noopProvider } from "../scripts/lib/memory/noop-provider.ts";
-import { resolveProvider } from "../scripts/lib/memory/resolve-provider.ts";
+import { noopProvider, resolveProvider } from "@astragenie/memory-provider";
 
 async function makeTempRepo(prefix: string) {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
