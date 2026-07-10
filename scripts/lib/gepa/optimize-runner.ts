@@ -375,7 +375,10 @@ export async function runOptimize(opts: RunOptimizeOpts): Promise<OptimizationRe
   const startedAt = new Date().toISOString();
 
   const lockRoot = opts.lockRoot ?? defaultLockRoot(repoPath);
-  const lock = await fileLockManager(lockRoot).acquire(agent, "optimize");
+  // gepa-core 0.10.x: acquire() returns Result<handle|null, never> (DEC-002).
+  // ok is always true; value === null means another process holds the lock.
+  const lockResult = await fileLockManager(lockRoot).acquire(agent, "optimize");
+  const lock = lockResult.ok ? lockResult.value : null;
   if (lock === null) return null; // Another process holds the lock.
 
   try {

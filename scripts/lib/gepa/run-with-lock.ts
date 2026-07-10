@@ -57,8 +57,11 @@ export async function runWithLock<T>(
   fn: () => Promise<T>
 ): Promise<RunWithLockOutcome<T>> {
   const manager = fileLockManager(opts.lockRoot ?? DEFAULT_LOCK_ROOT);
+  // gepa-core 0.10.x: acquire() returns Result<handle|null, never> (DEC-002).
+  // ok is always true; value === null means the lock is held (expected contention).
   const acquired = await manager.acquire(opts.agent, opts.phase);
-  if (!acquired) {
+  const handle = acquired.ok ? acquired.value : null;
+  if (!handle) {
     return {
       status: "lock_held",
       agent: opts.agent,
@@ -71,6 +74,6 @@ export async function runWithLock<T>(
   } catch (error) {
     return { status: "error", error };
   } finally {
-    await acquired.released();
+    await handle.released();
   }
 }
