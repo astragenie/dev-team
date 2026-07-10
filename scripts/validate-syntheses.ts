@@ -244,7 +244,9 @@ export async function validateSyntheses(
       if (pat.test(text)) {
         const message = `${name}: contains stale placeholder matching ${pat}`;
         if (SYNTHESIS_ROT_GRANDFATHER.has(name)) {
-          grandfatheredSynth.push(`${message} (grandfathered pre-gate rot — see FEAT-199b backfill)`);
+          grandfatheredSynth.push(
+            `${message} (grandfathered pre-gate rot — see FEAT-199b backfill)`
+          );
         } else {
           errors.push(message);
         }
