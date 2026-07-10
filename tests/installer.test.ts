@@ -5,10 +5,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 
 import { auditRepo, bootstrapRepo, initRepo, installGlobal } from "../scripts/lib/installer.ts";
 
 const execFile = promisify(execFileCallback);
+const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
 async function makeTempDir(prefix: string) {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
@@ -467,4 +469,45 @@ test("guarded hook command still executes the materialized script (stdin preserv
 
   const events = await fs.readFile(path.join(repoPath, ".claude", "logs", "events.jsonl"), "utf8");
   assert.match(events, /"event":"session_start"/);
+});
+
+// dev-team dogfoods this plugin: its own tracked .claude/settings.json is a
+// hand-maintained superset of DEFAULT_SETTINGS (it wires two repo-local
+// hooks — subagent_handoff_check.sh and session_end_checkpoint.sh — that
+// are not part of the shared installer template). That file can drift out
+// of sync with the guardedHookCommand convention (astragenie/dev-team#202:
+// a tracked settings.json referencing .claude/hooks/* while the scripts
+// were never materialized errors on every matching tool call). Regression
+// guard: every .claude/hooks/* command actually committed at repo root
+// must degrade silently when .claude/hooks/ is not materialized, exactly
+// like the installer-generated form asserted above.
+test("repo's own tracked .claude/settings.json hook commands no-op silently when .claude/hooks is absent", async () => {
+  const settings = JSON.parse(
+    await fs.readFile(path.join(repoRoot, ".claude", "settings.json"), "utf8")
+  );
+
+  const hookCommands: string[] = [];
+  for (const entries of Object.values(settings.hooks) as any[]) {
+    for (const entry of entries) {
+      for (const hook of entry.hooks ?? []) {
+        if (typeof hook.command === "string" && hook.command.includes(".claude/hooks/")) {
+          hookCommands.push(hook.command);
+        }
+      }
+    }
+  }
+  assert.ok(
+    hookCommands.length >= 8,
+    `expected all tracked .claude/hooks/* commands, got ${hookCommands.length}`
+  );
+
+  // Run each command from a cwd that has no .claude/hooks/ directory at all
+  // — the fresh-checkout / unmaterialized-worktree scenario from #202.
+  const repoPath = await makeTempDir("crew-own-settings-guard-");
+
+  for (const command of hookCommands) {
+    const { stdout, stderr } = await execFile("bash", ["-c", command], { cwd: repoPath });
+    assert.equal(stdout.trim(), "", `guarded command must stay silent: ${command}`);
+    assert.equal(stderr.trim(), "", `guarded command must not error: ${command}`);
+  }
 });
