@@ -22,28 +22,34 @@ Workflow:
    Returns `{ branch, worktreePath, base, reused }`. `reused: true` means today's
    lane already existed and you're joining it. Work happens in `worktreePath`.
 
-2. **Claim the file set for the lane** before editing, from inside the lane
-   worktree, so a concurrent wave builder can detect the overlap (claim state is
-   shared across worktrees — #163):
+2. **Check the file set is disjoint from the active wave lane** before claiming.
+   Claim state is shared across worktrees (#163), so an overlap with the wave
+   lane is detectable here:
    ```bash
    set -euo pipefail
    read -ra _args <<< "$ARGUMENTS"
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" claim --repo "<worktreePath>" --owner quickwin-lane -- "${_args[@]}"
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" claim-check --repo "<worktreePath>" --owner quickwin-lane -- "${_args[@]}"
    ```
-   - If a **conflict** is reported, the file is owned by the active wave lane —
-     do **not** take it onto the quick-win lane. Route it onto the wave branch
-     instead (or wait for release).
-   - Only proceed with files that claimed cleanly (disjoint from the wave).
+   Returns `{ disjoint, overlaps, available }`.
+   - `disjoint: true` → all files are free; proceed to claim `available`.
+   - `disjoint: false` → each `overlaps[]` entry names a file owned by the wave
+     lane (`owner`). Do **not** take those onto the quick-win lane — route them
+     onto the wave branch instead (or wait for release). Take only `available`.
 
-3. **Do the work** in `worktreePath`. Keep it small — docs / comments / artifact
+3. **Claim the disjoint file set** for the lane, from inside the lane worktree:
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" claim --repo "<worktreePath>" --owner quickwin-lane -- <available files>
+   ```
+
+4. **Do the work** in `worktreePath`. Keep it small — docs / comments / artifact
    hygiene. Anything that touches runtime code belongs on a proper slice, not
    this lane.
 
-4. **Right-sized gates** for docs/artifact/comment-only changes: route to
+5. **Right-sized gates** for docs/artifact/comment-only changes: route to
    `reviewer-lite` rather than the full verifier ceremony (see S3 of the #163
    plan — the pre-push gate accepts a docs-only validation-skip record).
 
-5. **Ship the batch** as one PR per day/wave from the lane branch — not one PR
+6. **Ship the batch** as one PR per day/wave from the lane branch — not one PR
    per one-liner.
 
 Status check (is today's lane live?):

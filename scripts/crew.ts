@@ -391,6 +391,8 @@ function usage(target: string | null = null) {
       "  node scripts/crew.mjs show-conflicts --repo <path> [--owner <name>] [files...]",
     "quickwin-lane":
       "  node scripts/crew.mjs quickwin-lane [spawn|status] --repo <path> [--date YYYY-MM-DD]",
+    "claim-check":
+      "  node scripts/crew.mjs claim-check --repo <path> [--owner <name>] <files...>",
     "request-approval":
       "  node scripts/crew.mjs request-approval --repo <path> --summary <text> [--kind <kind>] [--severity <level>] [--requester <name>] [--approver <name>] [--reason <text>]",
     "show-approvals":
@@ -863,6 +865,13 @@ const COMMANDS = {
   "show-conflicts": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { inspectClaims } = await import("./lib/claims.ts");
     return inspectClaims(repoPath, positionals, { owner: flags.owner || "lead-session" });
+  },
+
+  "claim-check": async ({ repoPath, flags, positionals }: CommandContext) => {
+    const { checkDisjoint } = await import("./lib/claims.ts");
+    return checkDisjoint(repoPath, positionals, {
+      owner: flags.owner || "quickwin-lane"
+    });
   },
 
   "quickwin-lane": async ({ repoPath, flags, positionals }: CommandContext) => {

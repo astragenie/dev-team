@@ -25,7 +25,7 @@ import { execFileSync } from "node:child_process";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { claimFiles, releaseFiles, listClaims } from "../scripts/lib/claims.ts";
+import { claimFiles, releaseFiles, listClaims, checkDisjoint } from "../scripts/lib/claims.ts";
 import { startWorkflowRun, loadWorkflowState } from "../scripts/lib/workflow-state.ts";
 
 const GIT_ENV = {
@@ -127,6 +127,46 @@ test("starting a workflow run in the wave worktree does not create or touch work
 
   const choreState = await loadWorkflowState(chore, { createIfMissing: false });
   assert.equal(choreState.currentRun, null);
+});
+
+test("checkDisjoint flags a quick-win candidate that overlaps the active wave lane, and passes a disjoint set (#163 S2)", async () => {
+  const { wave, chore } = await setupWaveAndChoreLane("disjoint");
+
+  // Active wave lane claims its files.
+  await claimFiles(wave, ["src/wave-a.ts", "src/wave-b.ts"], { owner: "wave-builder" });
+
+  // A quick-win candidate set that OVERLAPS the wave (src/wave-a.ts) — checked
+  // from the chore worktree, proving cross-lane visibility drives the verdict.
+  const overlapping = await checkDisjoint(chore, ["docs/readme.md", "src/wave-a.ts"], {
+    owner: "quickwin-lane"
+  });
+  assert.equal(overlapping.disjoint, false);
+  assert.deepEqual(
+    overlapping.overlaps.map((o) => o.path),
+    ["src/wave-a.ts"]
+  );
+  assert.equal(overlapping.overlaps[0]?.owner, "wave-builder");
+  assert.deepEqual(overlapping.available, ["docs/readme.md"]);
+
+  // A fully disjoint candidate set passes.
+  const clean = await checkDisjoint(chore, ["docs/readme.md", "docs/guide.md"], {
+    owner: "quickwin-lane"
+  });
+  assert.equal(clean.disjoint, true);
+  assert.deepEqual(clean.overlaps, []);
+  assert.deepEqual(clean.available, ["docs/guide.md", "docs/readme.md"]);
+});
+
+test("checkDisjoint does not count the quick-win lane's own prior claims as overlaps (idempotent re-check)", async () => {
+  const { chore } = await setupWaveAndChoreLane("disjoint-self");
+
+  await claimFiles(chore, ["docs/quickwin.md"], { owner: "quickwin-lane" });
+
+  const recheck = await checkDisjoint(chore, ["docs/quickwin.md", "docs/new.md"], {
+    owner: "quickwin-lane"
+  });
+  assert.equal(recheck.disjoint, true);
+  assert.deepEqual(recheck.available, ["docs/new.md", "docs/quickwin.md"]);
 });
 
 test("claiming from the main repo path itself (no active worktree) is unaffected — regression guard", async () => {

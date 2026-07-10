@@ -422,3 +422,37 @@ export async function inspectClaims(
   const { owned, conflicts, available } = classifyRequestedPaths(requested, claimsByPath, owner);
   return { owner, owned, conflicts, available };
 }
+
+export interface DisjointCheckResult {
+  disjoint: boolean;
+  // Candidate files already claimed by a DIFFERENT owner (the active wave/slice
+  // lane) — these must NOT be taken onto the quick-win lane; route them onto
+  // the wave branch instead.
+  overlaps: ClaimRecord[];
+  // Candidate files free to claim onto the quick-win lane (unclaimed, or
+  // already owned by `owner` — the check is idempotent).
+  available: string[];
+}
+
+// #163 S2 — before routing a quick win onto the parallel chore lane, verify its
+// file set is disjoint from every OTHER owner's active claims. Because claim
+// state now converges on the main worktree (#163 S-foundation), the wave lane's
+// claims are visible here regardless of which worktree the caller invokes from,
+// so this cross-lane check is finally meaningful. `owner` is the quick-win
+// lane's own id so files it already holds aren't miscounted as overlaps.
+export async function checkDisjoint(
+  repoPath: string,
+  candidateFiles: string[],
+  options: { owner?: string } = {}
+): Promise<DisjointCheckResult> {
+  if (candidateFiles.length === 0) {
+    return { disjoint: true, overlaps: [], available: [] };
+  }
+  const owner = options.owner ?? "quickwin-lane";
+  const inspection = await inspectClaims(repoPath, candidateFiles, { owner });
+  const available = [
+    ...inspection.available.map((entry) => entry.path),
+    ...inspection.owned.map((entry) => entry.path)
+  ].sort();
+  return { disjoint: inspection.conflicts.length === 0, overlaps: inspection.conflicts, available };
+}
