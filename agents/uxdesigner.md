@@ -94,6 +94,9 @@ Use the Agent tool to invoke agents/3rdparty/<specialist>.md with:
   - the design brief (user goal, context, constraints)
   - platform constraints (stack, target devices, accessibility bar)
   - expected output format (flow diagram, component spec, critique)
+  - return contract: single final message, synchronous, NO follow-up questions —
+    the specialist has no interlocutor; unresolved ambiguity goes into an
+    "Assumptions" section of its output, not a question back
 Return the specialist output plus a synthesis paragraph naming the key UX trade-offs.
 ```
 
