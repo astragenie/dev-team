@@ -2,6 +2,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import { parseFrontmatter } from "@astragenie/plugin-std";
 import { listApprovals } from "./approvals.ts";
 import { listClaims } from "./claims.ts";
 import { readDeploymentGuidanceSummary } from "./deployment-guidance/read.ts";
@@ -83,12 +84,16 @@ async function latestArtifactByPrefix(repoPath, subdir, prefix) {
   }
 
   const body = await fs.readFile(match.path, "utf8");
-  // Skip frontmatter if present (starts and ends with ---)
+  // Skip frontmatter if present (starts and ends with ---). parseFrontmatter
+  // throws on an unterminated fence; fall back to the 3-char slice the old
+  // regex produced in that case (drop just the opening fence, keep the rest
+  // unparsed) so an unterminated block degrades the same way it always did.
   let content = body;
   if (body.startsWith("---")) {
-    const endIndex = body.indexOf("---", 3); // Find closing --- after opening ---
-    if (endIndex > 0) {
-      content = body.substring(endIndex + 3).trimStart();
+    try {
+      content = parseFrontmatter(body).body.trimStart();
+    } catch {
+      content = body.slice(3);
     }
   }
   const [heading = ""] = content.split("\n");
