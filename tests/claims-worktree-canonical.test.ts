@@ -123,7 +123,10 @@ test("starting a workflow run in the wave worktree does not create or touch work
   // The chore worktree must not see the wave's currentRun, and must not
   // even have a workflow-state.json written by the wave's run.
   const choreStateFile = path.join(chore, ".claude", "state", "crew", "workflow-state.json");
-  await assert.rejects(fs.access(choreStateFile), "chore worktree must have no workflow-state.json yet");
+  await assert.rejects(
+    fs.access(choreStateFile),
+    "chore worktree must have no workflow-state.json yet"
+  );
 
   const choreState = await loadWorkflowState(chore, { createIfMissing: false });
   assert.equal(choreState.currentRun, null);

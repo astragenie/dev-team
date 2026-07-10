@@ -32,7 +32,11 @@ async function git(args: string[], cwd: string): Promise<GitOutcome> {
     const r = await runGitStd(args, { cwd, maxBuffer: 1024 * 1024 });
     return { ok: r.ok, stdout: r.stdout.trim(), stderr: r.stderr.trim() };
   } catch (error) {
-    return { ok: false, stdout: "", stderr: error instanceof Error ? error.message : String(error) };
+    return {
+      ok: false,
+      stdout: "",
+      stderr: error instanceof Error ? error.message : String(error)
+    };
   }
 }
 
@@ -125,7 +129,9 @@ export async function spawnChoreLane(
   const base = await resolveBase(mainRoot);
   const add = await git(["worktree", "add", "-b", branch, worktreePath, base], mainRoot);
   if (!add.ok) {
-    return err(new Error(`git worktree add (new lane ${branch} from ${base}) failed: ${add.stderr}`));
+    return err(
+      new Error(`git worktree add (new lane ${branch} from ${base}) failed: ${add.stderr}`)
+    );
   }
   return ok({ branch, worktreePath, base, reused: false });
 }

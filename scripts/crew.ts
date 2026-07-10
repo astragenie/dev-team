@@ -391,8 +391,7 @@ function usage(target: string | null = null) {
       "  node scripts/crew.mjs show-conflicts --repo <path> [--owner <name>] [files...]",
     "quickwin-lane":
       "  node scripts/crew.mjs quickwin-lane [spawn|status] --repo <path> [--date YYYY-MM-DD]",
-    "claim-check":
-      "  node scripts/crew.mjs claim-check --repo <path> [--owner <name>] <files...>",
+    "claim-check": "  node scripts/crew.mjs claim-check --repo <path> [--owner <name>] <files...>",
     "request-approval":
       "  node scripts/crew.mjs request-approval --repo <path> --summary <text> [--kind <kind>] [--severity <level>] [--requester <name>] [--approver <name>] [--reason <text>]",
     "show-approvals":

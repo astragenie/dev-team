@@ -77,10 +77,7 @@ test("second spawn on the same date reuses the live lane (batching: one PR/day)"
   if (!first.ok || !second.ok) return;
 
   assert.equal(second.value.reused, true);
-  assert.equal(
-    path.resolve(second.value.worktreePath),
-    path.resolve(first.value.worktreePath)
-  );
+  assert.equal(path.resolve(second.value.worktreePath), path.resolve(first.value.worktreePath));
   // Exactly one lane worktree registered — no duplicate.
   const list = git(["worktree", "list", "--porcelain"], repo);
   const laneCount = list.split("\n").filter((l) => l === `branch refs/heads/${BRANCH}`).length;
