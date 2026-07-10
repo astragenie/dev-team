@@ -131,6 +131,7 @@ const FLAG_SPEC = {
   "--surface": { key: "surface" },
   "--stack": { key: "stack" },
   "--concern": { key: "concern" },
+  "--date": { key: "date" },
   "--lens": { key: "lens" },
   "--since": { key: "since" },
   "--sibling": { key: "sibling" },
@@ -258,7 +259,8 @@ function buildDefaultFlags(): Flags {
     since: null,
     tag: null,
     tags: null,
-    skipReason: null
+    skipReason: null,
+    date: null
   };
 }
 
@@ -387,6 +389,8 @@ function usage(target: string | null = null) {
     "show-claims": "  node scripts/crew.mjs show-claims --repo <path>",
     "show-conflicts":
       "  node scripts/crew.mjs show-conflicts --repo <path> [--owner <name>] [files...]",
+    "quickwin-lane":
+      "  node scripts/crew.mjs quickwin-lane [spawn|status] --repo <path> [--date YYYY-MM-DD]",
     "request-approval":
       "  node scripts/crew.mjs request-approval --repo <path> --summary <text> [--kind <kind>] [--severity <level>] [--requester <name>] [--approver <name>] [--reason <text>]",
     "show-approvals":
@@ -859,6 +863,30 @@ const COMMANDS = {
   "show-conflicts": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { inspectClaims } = await import("./lib/claims.ts");
     return inspectClaims(repoPath, positionals, { owner: flags.owner || "lead-session" });
+  },
+
+  "quickwin-lane": async ({ repoPath, flags, positionals }: CommandContext) => {
+    const { spawnChoreLane, choreLaneStatus } = await import("./lib/worktree-manager.ts");
+    const dateOpt = flags.date ? { date: flags.date } : {};
+    const action = positionals[0] ?? "spawn";
+    if (action === "status") {
+      const status = await choreLaneStatus(repoPath, dateOpt);
+      if (!status.ok) {
+        console.error(status.error.message);
+        process.exit(1);
+      }
+      return status.value;
+    }
+    if (action !== "spawn") {
+      console.error(`Unknown quickwin-lane action: ${action} (expected spawn|status)`);
+      process.exit(1);
+    }
+    const result = await spawnChoreLane(repoPath, dateOpt);
+    if (!result.ok) {
+      console.error(result.error.message);
+      process.exit(1);
+    }
+    return result.value;
   },
 
   "request-approval": async ({ repoPath, flags, positionals }: CommandContext) => {
