@@ -882,3 +882,104 @@ test("otel-post-tool-use: missing crew.json → otel-telemetry defaults enabled 
     await cleanup(repo);
   }
 });
+
+// ──────────────────────────────────────────────────────────────────────────
+// #163 S3: docs-only pushes skip the verifier gate (quick-win chore lane)
+// ──────────────────────────────────────────────────────────────────────────
+
+const GIT_ID_ENV = {
+  GIT_AUTHOR_NAME: "Test",
+  GIT_AUTHOR_EMAIL: "test@test.com",
+  GIT_COMMITTER_NAME: "Test",
+  GIT_COMMITTER_EMAIL: "test@test.com"
+};
+
+function gitIn(args: string[], cwd: string): void {
+  const r = spawnSync("git", args, {
+    cwd,
+    encoding: "utf8",
+    windowsHide: true,
+    env: { ...process.env, ...GIT_ID_ENV }
+  });
+  if (r.status !== 0) {
+    throw new Error(`git ${args.join(" ")} failed (${r.status}): ${r.stderr ?? ""}`);
+  }
+}
+
+// A work repo tracking a bare origin/main, on a chore branch, push-verify
+// enabled, and NO PASS artifact — so only the docs-only early-allow can green
+// the push. Returns the work dir.
+async function makeLaneRepo(label: string): Promise<{ work: string; remote: string }> {
+  const remote = await fs.mkdtemp(path.join(os.tmpdir(), `s3-remote-${label}-`));
+  gitIn(["init", "-q", "-b", "main", "--bare"], remote);
+  const work = await fs.mkdtemp(path.join(os.tmpdir(), `s3-work-${label}-`));
+  gitIn(["init", "-q", "-b", "main"], work);
+  gitIn(["config", "user.email", "test@test.com"], work);
+  gitIn(["config", "user.name", "Test"], work);
+  // crew.json lands in the INITIAL commit on main so it is NOT part of the
+  // chore branch's push range — it is baseline config, not a quick-win change.
+  const crewDir = path.join(work, ".claude");
+  await fs.mkdir(crewDir, { recursive: true });
+  await fs.writeFile(
+    path.join(crewDir, "crew.json"),
+    JSON.stringify({ features: { "push-verify": { enabled: true } } }),
+    "utf8"
+  );
+  await fs.writeFile(path.join(work, "README.md"), "# test\n");
+  gitIn(["add", "-A"], work);
+  gitIn(["commit", "-q", "-m", "init"], work);
+  gitIn(["remote", "add", "origin", remote], work);
+  gitIn(["push", "-q", "-u", "origin", "main"], work);
+  gitIn(["checkout", "-q", "-b", "chore/quickwins-2026-07-10"], work);
+  gitIn(["branch", "--set-upstream-to=origin/main", "chore/quickwins-2026-07-10"], work);
+  return { work, remote };
+}
+
+test("pre-push-verifier: docs-only push is allowed without a PASS artifact (#163 S3)", async () => {
+  const { work, remote } = await makeLaneRepo("docsonly");
+  try {
+    await fs.mkdir(path.join(work, "docs"), { recursive: true });
+    await fs.writeFile(path.join(work, "docs", "note.md"), "quick win\n");
+    gitIn(["add", "-A"], work);
+    gitIn(["commit", "-q", "-m", "docs: quick win"], work);
+
+    const payload = JSON.stringify({
+      session_id: "s3_docs_only",
+      tool_name: "Bash",
+      tool_input: { command: "git push origin HEAD" },
+      cwd: work
+    });
+    const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
+    assert.equal(result.exitCode, 0);
+    // No block decision on stdout, and the docs-only skip note on stderr.
+    assert.equal(result.stdout, "");
+    assert.match(result.stderr, /docs-only push — validation skipped/);
+  } finally {
+    await cleanup(work);
+    await cleanup(remote);
+  }
+});
+
+test("pre-push-verifier: a push mixing code with docs still blocks without a PASS artifact (#163 S3)", async () => {
+  const { work, remote } = await makeLaneRepo("mixed");
+  try {
+    await fs.writeFile(path.join(work, "NOTES.md"), "notes\n");
+    await fs.writeFile(path.join(work, "index.ts"), "export const x = 1;\n");
+    gitIn(["add", "-A"], work);
+    gitIn(["commit", "-q", "-m", "docs + code"], work);
+
+    const payload = JSON.stringify({
+      session_id: "s3_mixed",
+      tool_name: "Bash",
+      tool_input: { command: "git push origin HEAD" },
+      cwd: work
+    });
+    const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
+    assert.equal(result.exitCode, 0);
+    // Non-docs file in range → normal gate applies → blocked.
+    assert.match(result.stdout, /"decision":"block"/);
+  } finally {
+    await cleanup(work);
+    await cleanup(remote);
+  }
+});

@@ -109,6 +109,10 @@ rows:
     route_to: "`/crew:parallel` skill (Path A, FEAT-136)"
     notes: Use `/crew:parallel [--max-features N]`. Creates one git worktree per FEAT, resolves the loop CLI path, calls `loop dispatch prepare` to spawn worktrees, then dispatches `crew:build` per worktree **in one parallel Agent block** (no `parallel-runner` agent involved—Path A avoids hook conflicts). Each `crew:build` runs the per-worktree slice ceremony inline. After all agents return, calls `loop dispatch finalize` to merge DONE children to main in priority order. Conflicted branches left alive for manual resolution.
   - section: workflow-signals
+    signal: "**Quick-win chore lane** (small doc / comment / artifact-hygiene wins to harvest alongside an active wave/slice, disjoint from its files)"
+    route_to: "`/crew:quickwin` skill (#163)"
+    notes: Spawns or reuses a date-keyed `chore/quickwins-<date>` worktree (`crew quickwin-lane spawn`) so wins commit + PR + merge independently of the active wave branch. Verify the file set is disjoint from the active wave lane first (`crew claim-check`) — overlapping files route onto the wave branch instead; claim only the disjoint set. Docs-only pushes skip the verifier gate (pre-push-verifier docs-only early-allow). Batch the day's wins into one PR.
+  - section: workflow-signals
     signal: "**Light-tier mechanical build** (≤2 files, ≤50 LOC diff, no new abstractions, no public-surface change — typos, mechanical renames, comment removal, format tweaks, single-function bug fix)"
     route_to: "`crew:dev-lite`"
     notes: Surgical editor; escalates back to fullstack-dev if scope grows past the cap. Pairs with the light-tier review row below.

@@ -21,6 +21,7 @@ import { spawnSync } from "node:child_process";
 import { logHookError } from "./hook-error.ts";
 import { readCrewConfig, isEnabled } from "../scripts/lib/features-service.ts";
 import { parseFrontmatterBlock } from "../scripts/lib/briefing/collect-cost-parser.ts";
+import { isDocsOnlyPush } from "../scripts/lib/docs-only.ts";
 
 const CACHE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
@@ -241,6 +242,20 @@ async function main(): Promise<void> {
 
   if (scan.hasPassed) {
     // Cache hit — recent PASS exists, allow push
+    return;
+  }
+
+  // #163 S3 — right-sized gate for the quick-win chore lane. A push whose
+  // entire range is docs/artifact-only has no runtime surface to validate, so
+  // the full verifier ceremony is pure tax. Allow it with an advisory skip
+  // note instead of blocking. Conservative by construction: any non-docs file
+  // in the range, or an indeterminate range, yields false and falls through to
+  // the normal PASS-artifact gate below.
+  if (await isDocsOnlyPush(repoRoot)) {
+    process.stderr.write(
+      "[crew:pre-push-verifier] docs-only push — validation skipped " +
+        "(no runtime surface; #163 quick-win lane).\n"
+    );
     return;
   }
 

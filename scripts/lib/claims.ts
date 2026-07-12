@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { type Result, ok, err } from "./result.ts";
+import { resolveCanonicalRepoRoot } from "./repo-root.ts";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -120,8 +121,8 @@ function toRepoRelative(repoPath: string, inputPath: string): string {
 // to recover from crashed processes.
 // ---------------------------------------------------------------------------
 
-async function acquireClaimsLock(repoPath: string): Promise<string> {
-  const claimsPath = path.join(repoPath, ...CLAIMS_PATH);
+async function acquireClaimsLock(storageRoot: string): Promise<string> {
+  const claimsPath = path.join(storageRoot, ...CLAIMS_PATH);
   const lockPath = `${claimsPath}${LOCK_SUFFIX}`;
   await ensureDir(path.dirname(lockPath));
   const deadline = Date.now() + LOCK_TIMEOUT_MS;
@@ -165,8 +166,8 @@ async function releaseClaimsLock(lockPath: string): Promise<void> {
   });
 }
 
-async function withClaimsLock<T>(repoPath: string, fn: () => Promise<T>): Promise<T> {
-  const lockPath = await acquireClaimsLock(repoPath);
+async function withClaimsLock<T>(storageRoot: string, fn: () => Promise<T>): Promise<T> {
+  const lockPath = await acquireClaimsLock(storageRoot);
   try {
     return await fn();
   } finally {
@@ -178,34 +179,45 @@ async function withClaimsLock<T>(repoPath: string, fn: () => Promise<T>): Promis
 // State persistence
 // ---------------------------------------------------------------------------
 
-async function saveClaimsState(repoPath: string, state: ClaimsState): Promise<void> {
-  const claimsPath = path.join(repoPath, ...CLAIMS_PATH);
+async function saveClaimsState(storageRoot: string, state: ClaimsState): Promise<void> {
+  const claimsPath = path.join(storageRoot, ...CLAIMS_PATH);
   state.updatedAt = nowIso();
   await fs.writeFile(claimsPath, `${JSON.stringify(state, null, 2)}\n`);
 }
 
-async function appendHistoryEvent(repoPath: string, event: Record<string, unknown>): Promise<void> {
-  const historyPath = path.join(repoPath, ...HISTORY_PATH);
+async function appendHistoryEvent(
+  storageRoot: string,
+  event: Record<string, unknown>
+): Promise<void> {
+  const historyPath = path.join(storageRoot, ...HISTORY_PATH);
   await fs.appendFile(historyPath, `${JSON.stringify({ timestamp: nowIso(), ...event })}\n`);
 }
 
 // ---------------------------------------------------------------------------
 // Public scaffold / load
+//
+// #163: claim state must converge on the MAIN worktree regardless of which
+// worktree (wave/slice checkout, or a concurrent chore-branch lane) a caller
+// invokes from — otherwise each linked worktree gets its own invisible
+// .claude/state/crew/claims.json and cross-lane file-claim conflicts can
+// never be detected. resolveCanonicalRepoRoot no-ops for the main worktree
+// and for non-git fixtures, so single-worktree callers are unaffected.
 // ---------------------------------------------------------------------------
 
 export async function ensureStateScaffold(repoPath: string): Promise<void> {
-  const stateDir = path.join(repoPath, ...STATE_DIR);
+  const storageRoot = await resolveCanonicalRepoRoot(repoPath);
+  const stateDir = path.join(storageRoot, ...STATE_DIR);
   await ensureDir(stateDir);
   await ensureFile(
-    path.join(repoPath, ...CLAIMS_PATH),
+    path.join(storageRoot, ...CLAIMS_PATH),
     `${JSON.stringify(defaultClaimsState(), null, 2)}\n`
   );
-  await ensureFile(path.join(repoPath, ...HISTORY_PATH), "");
+  await ensureFile(path.join(storageRoot, ...HISTORY_PATH), "");
 }
 
-async function claimsStateExists(repoPath: string): Promise<boolean> {
+async function claimsStateExists(storageRoot: string): Promise<boolean> {
   try {
-    await fs.access(path.join(repoPath, ...CLAIMS_PATH));
+    await fs.access(path.join(storageRoot, ...CLAIMS_PATH));
     return true;
   } catch {
     return false;
@@ -216,11 +228,12 @@ export async function loadClaimsState(
   repoPath: string,
   options: { createIfMissing?: boolean } = {}
 ): Promise<ClaimsState> {
-  if (options.createIfMissing === false && !(await claimsStateExists(repoPath))) {
+  const storageRoot = await resolveCanonicalRepoRoot(repoPath);
+  if (options.createIfMissing === false && !(await claimsStateExists(storageRoot))) {
     return defaultClaimsState();
   }
   await ensureStateScaffold(repoPath);
-  const claimsPath = path.join(repoPath, ...CLAIMS_PATH);
+  const claimsPath = path.join(storageRoot, ...CLAIMS_PATH);
   // State file is always written by this module; shape is trusted.
   return JSON.parse(await fs.readFile(claimsPath, "utf8")) as ClaimsState;
 }
@@ -237,8 +250,9 @@ export async function claimFiles(
   try {
     const owner = options.owner || "lead-session";
     const note = options.note || "";
+    const storageRoot = await resolveCanonicalRepoRoot(repoPath);
 
-    const value = await withClaimsLock(repoPath, async () => {
+    const value = await withClaimsLock(storageRoot, async () => {
       const state = await loadClaimsState(repoPath);
       const claimed: string[] = [];
       const alreadyOwned: string[] = [];
@@ -271,9 +285,9 @@ export async function claimFiles(
         });
       }
 
-      await saveClaimsState(repoPath, state);
+      await saveClaimsState(storageRoot, state);
       if (claimed.length > 0) {
-        await appendHistoryEvent(repoPath, { event: "claim", owner, files: claimed, note });
+        await appendHistoryEvent(storageRoot, { event: "claim", owner, files: claimed, note });
       }
 
       return { owner, claimed, alreadyOwned, conflicts };
@@ -291,8 +305,9 @@ export async function releaseFiles(
 ): Promise<Result<ReleaseResult, Error>> {
   try {
     const owner = options.owner ?? null;
+    const storageRoot = await resolveCanonicalRepoRoot(repoPath);
 
-    const value = await withClaimsLock(repoPath, async () => {
+    const value = await withClaimsLock(storageRoot, async () => {
       const state = await loadClaimsState(repoPath);
       const released: string[] = [];
       const skipped: ReleaseSkipped[] = [];
@@ -317,9 +332,9 @@ export async function releaseFiles(
         released.push(repoRelativePath);
       }
 
-      await saveClaimsState(repoPath, state);
+      await saveClaimsState(storageRoot, state);
       if (released.length > 0) {
-        await appendHistoryEvent(repoPath, { event: "release", owner, files: released });
+        await appendHistoryEvent(storageRoot, { event: "release", owner, files: released });
       }
 
       return { owner, released, skipped };
@@ -406,4 +421,38 @@ export async function inspectClaims(
   const requested = [...new Set(filePaths.map((inputPath) => toRepoRelative(repoPath, inputPath)))];
   const { owned, conflicts, available } = classifyRequestedPaths(requested, claimsByPath, owner);
   return { owner, owned, conflicts, available };
+}
+
+export interface DisjointCheckResult {
+  disjoint: boolean;
+  // Candidate files already claimed by a DIFFERENT owner (the active wave/slice
+  // lane) — these must NOT be taken onto the quick-win lane; route them onto
+  // the wave branch instead.
+  overlaps: ClaimRecord[];
+  // Candidate files free to claim onto the quick-win lane (unclaimed, or
+  // already owned by `owner` — the check is idempotent).
+  available: string[];
+}
+
+// #163 S2 — before routing a quick win onto the parallel chore lane, verify its
+// file set is disjoint from every OTHER owner's active claims. Because claim
+// state now converges on the main worktree (#163 S-foundation), the wave lane's
+// claims are visible here regardless of which worktree the caller invokes from,
+// so this cross-lane check is finally meaningful. `owner` is the quick-win
+// lane's own id so files it already holds aren't miscounted as overlaps.
+export async function checkDisjoint(
+  repoPath: string,
+  candidateFiles: string[],
+  options: { owner?: string } = {}
+): Promise<DisjointCheckResult> {
+  if (candidateFiles.length === 0) {
+    return { disjoint: true, overlaps: [], available: [] };
+  }
+  const owner = options.owner ?? "quickwin-lane";
+  const inspection = await inspectClaims(repoPath, candidateFiles, { owner });
+  const available = [
+    ...inspection.available.map((entry) => entry.path),
+    ...inspection.owned.map((entry) => entry.path)
+  ].sort();
+  return { disjoint: inspection.conflicts.length === 0, overlaps: inspection.conflicts, available };
 }
