@@ -95,7 +95,7 @@ export async function validateManifests(repoRoot: string) {
   const pkg = await readJson<Record<string, unknown>>(path.join(repoRoot, "package.json"));
 
   // marketplace.json was removed from hero-crew in commit bfc4d2d when the
-  // registry moved to sergeymilashico/astra-marketplace. When absent, skip
+  // registry moved to astragenie/astra-marketplace. When absent, skip
   // marketplace-only checks; plugin.json + package.json sync still runs.
   let marketplace: Record<string, unknown> | null = null;
   try {
@@ -146,9 +146,7 @@ if (isMainEntry()) {
         `  marketplace.json (${(result.marketplace["plugins"] as unknown[]).length} entries)`
       );
     } else {
-      console.log(
-        "  marketplace.json (absent — registry moved to sergeymilashico/astra-marketplace)"
-      );
+      console.log("  marketplace.json (absent — registry moved to astragenie/astra-marketplace)");
     }
     if (result.marketplace !== null) {
       for (const entry of result.marketplace["plugins"] as Array<Record<string, unknown>>) {

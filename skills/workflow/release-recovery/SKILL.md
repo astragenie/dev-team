@@ -4,7 +4,7 @@ prompt_id: release-recovery
 version: 1.0.0
 tier: workflow
 description: Recover from broken-tag releases, version drift, and marketplace-vs-plugin desync. Covers no-ff merge, version-bump-forward, paired-marketplace recovery, and the HARD RULE against tag deletion.
-owner: sergeymilashico
+owner: astra
 last_reviewed: 2026-06-29
 triggers: ["broken tag", "release recovery", "version mismatch", "marketplace drift", "tag vs HEAD drift", "version bump forward", "no-ff merge recovery", "pipefail release script"]
 ---

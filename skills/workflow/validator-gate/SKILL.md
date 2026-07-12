@@ -4,7 +4,7 @@ prompt_id: validator-gate
 version: 1.1.0
 tier: workflow
 description: Verifier dispatch decision procedure — when crew:verifier is skipped in favor of the evidenced reviewer approval (satisfiedByReview), and the risk-gated exceptions where the dedicated full gate still runs.
-owner: sergeymilashico
+owner: astra
 last_reviewed: 2026-07-08
 triggers: ["verifier dispatch", "validation gate", "validator gate", "skip validation", "crew:verifier", "satisfiedByReview"]
 ---

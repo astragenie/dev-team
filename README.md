@@ -62,7 +62,7 @@ For ownership, prompt size bar, lessons-to-standards pipeline, and the three-tes
 Add the central astra marketplace and install the plugin in Claude Code:
 
 ```
-/plugin marketplace add sergeymilashico/astra-marketplace
+/plugin marketplace add astragenie/astra-marketplace
 /plugin install crew@astra
 ```
 

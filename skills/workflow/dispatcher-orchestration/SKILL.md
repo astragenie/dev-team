@@ -4,7 +4,7 @@ prompt_id: dispatcher-orchestration
 version: 1.0.0
 tier: workflow
 description: Orchestration reference for the dispatcher — assignment shape, pre-done checklist, delegation thresholds, model exception list, context efficiency, and agent integration index.
-owner: sergeymilashico
+owner: astra
 last_reviewed: 2026-06-21
 triggers: ["assignment shape", "pre-done checklist", "delegation", "model exception", "context efficiency", "integration with other agents"]
 ---

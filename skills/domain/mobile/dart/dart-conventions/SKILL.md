@@ -5,7 +5,7 @@ version: 1.0.0
 tier: domain
 stack: dart
 description: Dart 3 conventions — null safety, sealed classes, pattern matching, Result types, lints. Use when touching *.dart files outside Flutter UI.
-owner: sergeymilashico
+owner: astra
 last_reviewed: 2026-05-24
 triggers: ["*.dart", "pubspec.yaml", "pubspec.lock", "dart"]
 ---

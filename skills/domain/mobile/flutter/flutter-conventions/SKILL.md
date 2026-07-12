@@ -5,7 +5,7 @@ version: 1.0.0
 tier: domain
 stack: flutter
 description: Flutter conventions — widget patterns, state management, navigation, performance, approved packages. Use when touching Flutter UI code.
-owner: sergeymilashico
+owner: astra
 last_reviewed: 2026-05-24
 triggers: ["*.dart", "pubspec.yaml", "flutter", "Widget", "BuildContext", "StatelessWidget", "StatefulWidget"]
 ---

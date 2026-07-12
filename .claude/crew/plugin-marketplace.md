@@ -6,8 +6,8 @@ The `crew` plugin ships from this repo. The `loop` plugin ships from a separate 
 
 | Plugin | Marketplace | GitHub Repo |
 |--------|-------------|-------------|
-| `crew` | `astra` | `sergeymilashico/hero-crew` |
-| `loop` | `loop` | `sergeymilashico/loop` |
+| `crew` | `astra` | `astragenie/dev-team` |
+| `loop` | `loop` | `astragenie/runner-plugin` |
 
 ## IMPORTANT: Never create local marketplaces
 
@@ -25,17 +25,17 @@ Use `"source": "github"` in `known_marketplaces.json`.
 ## Re-register from scratch
 
 ```bash
-git clone --depth 1 https://github.com/sergeymilashico/hero-crew \
+git clone --depth 1 https://github.com/astragenie/dev-team \
   ~/.claude/plugins/marketplaces/astra
-git clone --depth 1 https://github.com/sergeymilashico/loop \
+git clone --depth 1 https://github.com/astragenie/runner-plugin \
   ~/.claude/plugins/marketplaces/loop
 ```
 
 Add to `known_marketplaces.json`:
 ```json
-"astra": { "source": { "source": "github", "repo": "sergeymilashico/hero-crew" },
+"astra": { "source": { "source": "github", "repo": "astragenie/dev-team" },
            "installLocation": "~/.claude/plugins/marketplaces/astra" },
-"loop":  { "source": { "source": "github", "repo": "sergeymilashico/loop" },
+"loop":  { "source": { "source": "github", "repo": "astragenie/runner-plugin" },
            "installLocation": "~/.claude/plugins/marketplaces/loop" }
 ```
 
