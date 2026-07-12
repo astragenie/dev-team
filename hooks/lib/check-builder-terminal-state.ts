@@ -5,15 +5,15 @@
 // copied from (dev-team#199's proven SubagentStop pattern).
 //
 // Problem: a builder-tier subagent (fullstack-dev, backend-dev, frontend-dev,
-// aiplugin-dev, dev-lite) can go idle mid-report — including AFTER all the
-// risky work (commit, push, gh pr create) already landed — and clip the one
-// sentence that tells the dispatcher it's safe to trust the result (the
+// aiplugin-dev) can go idle mid-report — including AFTER all the risky work
+// (commit, push, gh pr create) already landed — and clip the one sentence
+// that tells the dispatcher it's safe to trust the result (the
 // `STATUS ∈ {DONE, BLOCKED, HELP, IN-PROGRESS}` Report-contract line). This
 // hook is the SubagentStop-side guard: it blocks once, directing the agent to
 // either finish its STATUS: line (cheap) or commit WIP and report
-// `STATUS: BLOCKED — <reason>` (blocked is itself a valid terminal state and
-// must NOT be blocked here — forcing completion would convert a legitimate
-// stop into a stuck loop).
+// `BLOCKED: <reason>` (blocked is itself a valid terminal state and must NOT
+// be blocked here — forcing completion would convert a legitimate stop into
+// a stuck loop).
 //
 // SCOPE / HONEST LIMITATION: same residual gap as check-reviewer-decision.ts
 // — SubagentStop's `last_assistant_message` is the only signal available at
@@ -26,8 +26,49 @@ import {
   detectSubagentIncomplete
 } from "../../scripts/lib/subagent-return/incomplete-detector.ts";
 import { hasArtifactPath } from "../../scripts/lib/subagent-return/check.ts";
-import { isBuilderTierAgent } from "./model-routing-enforce.ts";
+import { BUILDER_TIER_AGENTS } from "./model-routing-enforce.ts";
 import { isEnabled, readCrewConfig } from "../../scripts/lib/features-service.ts";
+
+// dev-team#226 (follow-up filed, not built here): dev-lite is deliberately
+// excluded from this guard's scope even though it's one of the five
+// BUILDER_TIER_AGENTS. dev-lite's Report contract (agents/dev-lite.md:86-106,
+// "Receipt IS the artifact") uses a maximally compressed vocabulary that does
+// NOT match the DONE:/BLOCKED:/HELP:/IN-PROGRESS: convention the other four
+// agents share — success is `<path:line-range> — <change>.\nverified: re-read
+// OK.`, refusals are `too-big.` / `over-loc.` / `escalate: ...` / etc — and it
+// never writes a `.claude/artifacts/crew/*.md` path either (the receipt IS
+// the artifact, not a pointer to one). A live check against dev-lite's own
+// templated messages confirmed both its success and refusal shapes trip
+// TERMINAL_STATUS_RE/hasArtifactPath's absence and get wrongly blocked.
+// Do NOT "fix" this by teaching TERMINAL_STATUS_RE dev-lite's vocabulary —
+// that couples a hook running in every consumer repo to a second agent's
+// prose contract, for a genuinely different (receipt-shaped, not
+// STATUS-line-shaped) completeness check. dev-lite is also bounded to <=2
+// files / <=50 LOC, well under the ~65-85-tool-call dispatch-death ceiling
+// this guard exists to catch, so the missing protection is low-severity, not
+// theoretical-free. See dev-team#226 for the (unbuilt) receipt-shaped
+// follow-up.
+const RECEIPT_ONLY_AGENTS: ReadonlySet<string> = new Set(["dev-lite"]);
+
+/**
+ * The subset of BUILDER_TIER_AGENTS this guard actually applies to —
+ * BUILDER_TIER_AGENTS minus the receipt-only exemption above. Derived, not
+ * hand-copied, so a newly-added builder-tier agent is in scope by default
+ * (and needs an explicit opt-out here only if it turns out to use a
+ * different vocabulary too, same as dev-lite).
+ */
+export const TERMINAL_STATE_GUARD_AGENTS: readonly string[] = Object.freeze(
+  BUILDER_TIER_AGENTS.filter((name) => !RECEIPT_ONLY_AGENTS.has(name))
+);
+
+function normalizeAgentName(agentName: string): string {
+  return agentName.includes(":") ? (agentName.split(":").pop() ?? agentName) : agentName;
+}
+
+/** True when `agentName` (bare or "<namespace>:"-prefixed) is in this guard's scope. */
+export function isInTerminalStateGuardScope(agentName: string): boolean {
+  return TERMINAL_STATE_GUARD_AGENTS.includes(normalizeAgentName(agentName));
+}
 
 /**
  * True when the builder's final message shows a delivered terminal state:
@@ -101,7 +142,7 @@ export async function runCheckBuilderTerminalStateHook(raw: string): Promise<str
   // through after one retry.
   if (stop_hook_active) return null;
 
-  if (agent_name === null || !isBuilderTierAgent(agent_name)) return null;
+  if (agent_name === null || !isInTerminalStateGuardScope(agent_name)) return null;
 
   const config = await readCrewConfig(cwd);
   if (!isEnabled("builder-terminal-state-guard", config)) return null;
