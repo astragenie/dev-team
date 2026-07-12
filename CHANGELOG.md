@@ -3,6 +3,13 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [v0.62.1] — 2026-07-12 — single-toggle model routing
+
+Patch: drops the redundant `crew.json features["model-routing"]` off-switch
+(it could drift from loop.json — interactive path off while wave path on).
+`.claude/loop.json → loop.modelRouting.enabled` is now the sole authority
+for turning model routing on/off; one file per repo, no other change needed.
+
 ## [v0.62.0] — 2026-07-12 — model routing disabled; agent frontmatter governs
 
 Minor: model-tier routing is now off in this repo, and the disabled path has
