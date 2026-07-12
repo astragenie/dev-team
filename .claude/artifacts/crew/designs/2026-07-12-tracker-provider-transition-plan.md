@@ -132,10 +132,30 @@ Separate slice: dev-team Linear auth/config surface (cannot inherit runner's loo
 Scheduled `syncPull` into the backlog as advisory cross-check. No write-back. Uses
 existing `github-provider.mts:164-188` capability.
 
-### Phase 5 — machine state (backlog/grades/cost) — BLOCKED ON UNSCOPED WORK
-Requires a NEW two-way-sync feature (does not exist; FEAT-245 is not it). Scope it first.
-Until then machine state stays on files, and per v2 §7 lifecycle writes stay soft-fail
-even after Phase 5 tightens the gate/machine-state classes.
+### Phase 5 — SCOPED AND MOSTLY DELETED (FEAT-204, 2026-07-12)
+
+Scoping outcome: **BUILD-REDUCED**. Phase 5 as originally written solved the wrong
+problem. Findings (`.claude/artifacts/loop/backlog/pending/FEAT-two-way-tracker-sync.md`):
+
+- **Local files stay the source of truth — permanently.** Invariant 1 (lifecycle
+  soft-fail) plus the hard requirement that `brief-me`/`loop`/cost-advise run offline
+  under NoopProvider make "tracker becomes authoritative for machine state" impossible.
+  The premise Phase 5 was built on does not hold.
+- **Grades and cost never move to a tracker.** Append-only telemetry, exactly one writer
+  each, no tracker-side edit path. Two of the three original Phase-5 entities were never
+  candidates for migration at all.
+- **The one real conflict is backlog feature/slice STATUS**: a human closes/reopens an
+  issue in the tracker UI while a local loop session is still working it. Last-write-wins
+  is catastrophic here — it silently erases a human's stop signal.
+- **Phase 4.5 already delivers most of the value.** The only genuinely new increment:
+  escalate a detected tracker-side status regression from an advisory log line to a
+  **blocking human-acknowledgment gate**, with forward-only auto-transitions as the sole
+  permitted auto-resolution.
+
+Net: a general bidirectional-sync engine would solve a non-problem (grades/cost) while
+under-solving the real one (status conflicts need human escalation, not merge logic).
+**Phase 5 collapses into a small addition to Phase 4.5.** FEAT-204 is
+`autonomous_safe: false` — needs user sign-off before any slice derives from it.
 
 ## Invariants (v2)
 1. Lifecycle provider writes are soft-fail — tracker outage never blocks a build. Survives
