@@ -132,6 +132,15 @@ export const FEATURES: Readonly<Record<string, FeatureMeta>> = {
     scope: "crew",
     owner: "safety",
     since: "0.59.0"
+  },
+  "builder-terminal-state-guard": {
+    version: "1.0.0",
+    default: true,
+    description:
+      "SubagentStop guard (dev-team#187, #174 — Wave 3 Guard 1, 'deliver-before-die'): blocks a STATUS-line builder-tier subagent (crew:fullstack-dev, crew:backend-dev, crew:frontend-dev, crew:aiplugin-dev — crew:dev-lite is deliberately excluded, its receipt contract uses a different vocabulary, see dev-team#226) from going idle with no delivered terminal state (a DONE|BLOCKED|HELP|IN-PROGRESS Report-contract line, or a written handoff/artifact path). BLOCKED is itself a valid terminal state and is never blocked. One retry only (stop_hook_active re-entry guard). Mitigates a builder clipping its report after risky work (commit/push/PR) but before the STATUS line the dispatcher's gates look for.",
+    scope: "crew",
+    owner: "safety",
+    since: "0.63.0"
   }
 } as const;
 
