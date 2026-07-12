@@ -261,12 +261,18 @@ export function postReportToPr(opts: PostReportOpts): PostReportResult {
   const existingId = findExistingCommentId(runGh, repoSlug, targetNumber);
 
   if (existingId) {
+    // -F (typed field), not -f (raw-field): only -F expands "@<path>" into
+    // the file's contents. -f posts the literal string "@<path>" as the
+    // body — a real bug caught by exercising this against a live PR rather
+    // than trusting the (gh-stubbed) unit tests: the marker comment was
+    // never actually written, so idempotent-update detection always missed
+    // and every retry spammed a fresh, garbled comment. See gh api --help.
     const r = runGh([
       "api",
       `repos/${repoSlug}/issues/comments/${existingId}`,
       "-X",
       "PATCH",
-      "-f",
+      "-F",
       `body=@${bodyFile}`
     ]);
     if (!r.ok) {
@@ -280,7 +286,7 @@ export function postReportToPr(opts: PostReportOpts): PostReportResult {
   const createR = runGh([
     "api",
     `repos/${repoSlug}/issues/${targetNumber}/comments`,
-    "-f",
+    "-F",
     `body=@${bodyFile}`
   ]);
   if (!createR.ok) {
