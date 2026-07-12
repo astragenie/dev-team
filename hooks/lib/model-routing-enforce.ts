@@ -114,7 +114,10 @@ export function decideModelEnforcement(
     return { action: "none" };
   }
 
+  // null = routing disabled (loop.modelRouting.enabled: false) — stand down
+  // so the dispatched agent's own `model:` frontmatter governs.
   const model = resolveDispatchModel("build", null, loopConfig);
+  if (model === null) return { action: "none" };
   return { action: "inject", model, updatedInput: { ...toolInput, model } };
 }
 

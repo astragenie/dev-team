@@ -54,15 +54,11 @@ test("loop.json: loop.validation.satisfiedByReview is true", async () => {
   assert.equal(config.loop?.validation?.satisfiedByReview, true);
 });
 
-test("loop.json: loop.modelRouting is undisturbed by the review-gate change", async () => {
+test("loop.json: loop.modelRouting is disabled — agent frontmatter governs dispatch models", async () => {
   const config = (await readJson(".claude/loop.json")) as {
     loop?: { modelRouting?: Record<string, unknown> };
   };
-  assert.deepEqual(config.loop?.modelRouting, {
-    architect: "opus",
-    build: "sonnet",
-    default: "sonnet"
-  });
+  assert.deepEqual(config.loop?.modelRouting, { enabled: false });
 });
 
 // ── AC-5: validator-gate SKILL documents the satisfiedByReview delegation ──

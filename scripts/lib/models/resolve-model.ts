@@ -22,10 +22,14 @@
 // FEAT-194 S3: this resolver does NOT consult an agent's `model_pinned`
 // frontmatter (agents/*.md). That field is a declared-preference default
 // only — see docs/standards/agent-playbook.md "`model_pinned` is advisory,
-// not enforced" for the reconciliation note. Effective model comes from
-// `loop.modelRouting` (this file) or the operator's manual `model:` arg on
-// the Agent tool call, never from agent frontmatter. Keep this comment and
-// that doc note in sync if per-agent routing is ever wired in.
+// not enforced" for the reconciliation note. While routing is ENABLED,
+// effective model comes from `loop.modelRouting` (this file) or the
+// operator's manual `model:` arg on the Agent tool call. While routing is
+// DISABLED (crew.json features["model-routing"].enabled: false, or
+// loop.modelRouting.enabled: false), resolveDispatchModel returns null and
+// dispatches omit `model:` entirely — the harness then honors each agent's
+// `model:` frontmatter in agents/*.md. Keep this comment and that doc note
+// in sync if per-agent routing is ever wired in.
 
 const FALLBACK_MODEL = "opus";
 
@@ -42,8 +46,20 @@ export const TRIVIAL_SHAPE_TIER: Readonly<Record<string, string>> = Object.freez
 
 export interface LoopModelRoutingConfig {
   loop?: {
-    modelRouting?: Record<string, string>;
+    modelRouting?: Record<string, string | boolean | Record<string, string>>;
   };
+}
+
+/**
+ * Config-level kill-switch (mirrors runner-plugin's model-router semantics):
+ * `loop.modelRouting.enabled: false` disables routing for this repo without
+ * deleting the block. Absent block or absent `enabled` key → routing stays
+ * in whatever state the crew.json feature flag says (see resolveDispatchModel).
+ */
+export function isModelRoutingEnabledInConfig(
+  config: LoopModelRoutingConfig | null | undefined
+): boolean {
+  return config?.loop?.modelRouting?.["enabled"] !== false;
 }
 
 /**
@@ -66,7 +82,13 @@ export function resolveModelForPhase(
 ): string {
   const routing = config?.loop?.modelRouting;
   if (!routing) return FALLBACK_MODEL;
-  return routing[phase] || routing.default || FALLBACK_MODEL;
+  const phaseTier = routing[phase];
+  const defaultTier = routing["default"];
+  return (
+    (typeof phaseTier === "string" ? phaseTier : null) ||
+    (typeof defaultTier === "string" ? defaultTier : null) ||
+    FALLBACK_MODEL
+  );
 }
 
 /**
@@ -78,18 +100,22 @@ export function resolveModelForPhase(
  * routing"].enabled` toggle, resolved by the CLI caller via
  * features-service.ts's `isEnabled()` — this function stays pure/no-I/O, so
  * the caller hands in the already-resolved boolean. Defaults to `true`
- * (routing on) so existing call sites and tests are unaffected. When
- * `false`, routing is fully bypassed (including the trivial-shape override)
- * and the FALLBACK_MODEL ("opus") is returned unconditionally — an operator
- * flips the flag off to audit or roll back routing without editing
- * loop.json.
+ * (routing on) so existing call sites and tests are unaffected.
+ *
+ * Disabled semantics (either the crew.json flag is off or
+ * `loop.modelRouting.enabled: false` in loop.json): returns null, meaning
+ * "do not pass a model: argument at all". Omitting the argument lets the
+ * dispatched agent's own `model:` frontmatter (agents/*.md) govern — the
+ * whole point of disabling routing is that per-agent declared models win,
+ * not that everything silently pins to the opus fallback.
  */
 export function resolveDispatchModel(
   phase: string,
   shape: string | null | undefined,
   config: LoopModelRoutingConfig | null | undefined,
   modelRoutingEnabled = true
-): string {
-  if (!modelRoutingEnabled) return FALLBACK_MODEL;
+): string | null {
+  if (!modelRoutingEnabled) return null;
+  if (!isModelRoutingEnabledInConfig(config)) return null;
   return resolveShapeTier(shape) ?? resolveModelForPhase(phase, config);
 }
