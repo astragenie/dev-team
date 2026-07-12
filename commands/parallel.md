@@ -33,9 +33,16 @@ Workflow:
 6. If `--dry-run` is set, stop here and report the plan.
 7. **Dispatch `crew:build` agents in parallel, one per worktree:**
    - Call `node <loop-cli> dispatch prepare --plan <plan-json> --parent-branch main --repo "$PWD" --json`
-     to spawn worktrees and emit the Agent batch.
+     to spawn worktrees and emit the Agent batch. This step returns the worktree path already created
+     for each feature — do not re-derive or re-type that path in prose afterward.
    - In one message, invoke **N parallel Agent calls** with `subagent_type: crew:build`, each with the
-     per-worktree slice ceremony prompt embedded (see below).
+     per-worktree slice ceremony prompt embedded (see below). **Each of these `Agent` calls MUST also set
+     `isolation: "worktree"` pointed at (or, via `EnterWorktree`'s `path:` form, attached to) the worktree
+     path the prior `dispatch prepare` step just returned for that feature — never rely on the per-worktree
+     prompt text alone to pin the subagent's cwd** (dev-team#169: a prompt-text "operate in `<path>`"
+     instruction is not a harness-enforced cwd; `isolation:` / `EnterWorktree` is). This is the one place in
+     this command where the gap actually exists — the plan-prepare step already creates the tree, this is
+     just wiring that tree into the dispatch call that follows it.
    - Each `crew:build` executes: `slice start` → dispatch the routed specialist builder (`crew:fullstack-dev` /
      `crew:backend-dev` / `crew:frontend-dev` / `crew:dev-lite` per the builder routing matrix in
      `docs/routing-table.md`) → wait for PASS → dispatch `crew:reviewer` (+ stack reviewer fan-out if applicable)

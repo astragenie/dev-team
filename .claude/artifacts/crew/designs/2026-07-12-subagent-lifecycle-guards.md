@@ -441,7 +441,39 @@ enum (wrong lock domain).
 
 ---
 
-## 6. Open questions requiring human decision (lane is `autonomous_safe: false`)
+## 6. Open questions — RESOLVED 2026-07-12 (lane unblocked)
+
+All five answered; the lane may proceed to build. Resolutions:
+
+1. **Guard 3 staleness policy — TTL 1h, no secondary signal.** Reclaim a lock whose file mtime is
+   older than 1h. Matches `pre-push-verifier.ts`'s `CACHE_WINDOW_MS` convention so the repo keeps
+   one time-window idiom. Explicitly NOT cross-checking `workflow-state.json`'s `currentRun` —
+   that couples the lock to a second file's schema and adds a failure mode when that file is itself
+   stale. Residual risk accepted: a dispatch still live past 1h could have its lock stolen; unlikely
+   given the ~65–85-tool-call death ceiling this lane exists to work around.
+2. **SubagentStop hook stacking — settle empirically, not by decision.** Whether the harness runs
+   all matched `SubagentStop` hooks or short-circuits after one returns `block` is unverified here.
+   Live smoke test during guard 1's build, BEFORE guard 3 adds a second builder-tier hook that
+   depends on the answer. Guard 3 does not start until this is known.
+3. **`#164` close-out — inline, not a slice.** Pure tracker hygiene (code shipped in `8fe359d5` /
+   PR `#212`). Close at Wave 3 kickoff; do not scope it into guard 2's doc PR.
+4. **Guard 2's cwd-assertion reversal — SIGNED OFF. Docs-only fixes `#169`.** The hard
+   `PreToolUse Edit/Write/Bash` assertion is NOT built: it would compare `cwd` against an
+   "expected worktree" it cannot independently source (dispatcher intent lives in the parent's
+   `Agent`-tool call, absent from the subagent's own hook payload; recovering it needs a
+   per-tool-call transcript read, already rejected as too expensive for a hot-path hook). The fix
+   is mandating `isolation: "worktree"` at the dispatch site, where that intent still exists.
+   **Reopen trigger (recorded):** an incident where dispatchers demonstrably DO pass `isolation:`
+   correctly and a subagent still writes outside its assigned tree. That would be a harness
+   cwd-pinning bug — a report upstream, not a plugin-side hook.
+5. **Doc-of-record split — confirmed non-duplicative.** Guard 1 → `docs/standards/agent-playbook.md`
+   (already the agent-contract doc). Guard 3 → `skills/workflow/builder-ceremony/SKILL.md` (its
+   "Turn discipline" section already names `#162` in prose; point it at the real mechanism). No new
+   content in `.claude/crew/workflow.md` — avoids a third near-synonymous location.
+
+<details>
+<summary>Original open questions (pre-resolution)</summary>
+
 
 1. **Guard 3's staleness policy** (§3): TTL-based (e.g. >1h, matching `pre-push-verifier`'s
    `CACHE_WINDOW_MS` convention) is the recommendation, but the exact window and whether to add a
@@ -469,6 +501,8 @@ enum (wrong lock domain).
    since doc sprawl across three near-synonymous locations (`agent-playbook.md`,
    `builder-ceremony/SKILL.md`, `.claude/crew/workflow.md`) is itself a minor drift risk this
    lane shouldn't add to.
+
+</details>
 
 ---
 
