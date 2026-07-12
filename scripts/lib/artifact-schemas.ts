@@ -125,18 +125,32 @@ export const ReviewArtifactSchema = {
         path: ["decision"]
       });
     }
-    for (const key of ["phase", "feature", "slice", "findings", "status", "author_id", "judge_id"] as const) {
+    for (const key of [
+      "phase",
+      "feature",
+      "slice",
+      "findings",
+      "status",
+      "author_id",
+      "judge_id"
+    ] as const) {
       if (!isOptionalString(value[key])) {
         issues.push({ message: `Expected string, received ${typeof value[key]}`, path: [key] });
       }
     }
     if (value.not_checked !== undefined) {
-      if (!Array.isArray(value.not_checked) || value.not_checked.some((v) => typeof v !== "string")) {
+      if (
+        !Array.isArray(value.not_checked) ||
+        value.not_checked.some((v) => typeof v !== "string")
+      ) {
         issues.push({ message: "Expected array of strings", path: ["not_checked"] });
       }
     }
     if (value.self_approval !== undefined && typeof value.self_approval !== "boolean") {
-      issues.push({ message: `Expected boolean, received ${typeof value.self_approval}`, path: ["self_approval"] });
+      issues.push({
+        message: `Expected boolean, received ${typeof value.self_approval}`,
+        path: ["self_approval"]
+      });
     }
     return issues.length > 0 ? fail(issues) : ok(value);
   }
