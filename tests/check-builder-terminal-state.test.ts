@@ -9,7 +9,11 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { runCheckBuilderTerminalStateHook } from "../hooks/lib/check-builder-terminal-state.ts";
+import {
+  runCheckBuilderTerminalStateHook,
+  TERMINAL_STATE_GUARD_AGENTS,
+  isInTerminalStateGuardScope
+} from "../hooks/lib/check-builder-terminal-state.ts";
 
 async function makeRepo(): Promise<string> {
   return await fs.mkdtemp(path.join(os.tmpdir(), "builder-terminal-state-test-"));
@@ -196,12 +200,12 @@ test("builder-terminal-state-guard feature disabled → pass unconditionally", a
   }
 });
 
-test("missing crew.json → builder-terminal-state-guard defaults enabled, still blocks", async () => {
+test("missing crew.json → builder-terminal-state-guard defaults enabled, still blocks (in-scope agent)", async () => {
   const repo = await makeRepo();
   try {
     const raw = payload({
       cwd: repo,
-      agent_name: "crew:dev-lite",
+      agent_name: "crew:frontend-dev",
       last_assistant_message: "Done editing."
     });
     const out = await runCheckBuilderTerminalStateHook(raw);
@@ -221,6 +225,71 @@ test("builder-tier stop with a DONE: line → pass", async () => {
       cwd: repo,
       agent_name: "crew:aiplugin-dev",
       last_assistant_message: "DONE: shipped the guard.\nFiles: hooks/foo.ts"
+    });
+    const out = await runCheckBuilderTerminalStateHook(raw);
+    assert.equal(out, null);
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// dev-lite exclusion (review finding on PR #225 — see dev-team#226): dev-lite
+// is one of BUILDER_TIER_AGENTS but is OUT of this guard's scope. Its real
+// Report contract (agents/dev-lite.md:86-106, "Receipt IS the artifact") uses
+// a compressed vocabulary this guard must never learn to recognize — these
+// tests use dev-lite's REAL documented success/refusal message shapes
+// (not a synthetic incomplete-looking string) so a false-pass can't hide
+// behind an accidentally-also-incomplete fixture.
+// ──────────────────────────────────────────────────────────────────────────
+
+test("dev-lite is excluded from TERMINAL_STATE_GUARD_AGENTS", () => {
+  assert.deepEqual(
+    [...TERMINAL_STATE_GUARD_AGENTS].sort(),
+    ["aiplugin-dev", "backend-dev", "frontend-dev", "fullstack-dev"].sort()
+  );
+  assert.equal(isInTerminalStateGuardScope("crew:dev-lite"), false);
+  assert.equal(isInTerminalStateGuardScope("dev-lite"), false);
+});
+
+test("dev-lite's REAL success receipt (agents/dev-lite.md:90-94 shape) → pass, not blocked", async () => {
+  const repo = await makeRepo();
+  try {
+    const raw = payload({
+      cwd: repo,
+      agent_name: "crew:dev-lite",
+      last_assistant_message: "hooks/lib/foo.ts:12-14 — fix null check.\nverified: re-read OK."
+    });
+    const out = await runCheckBuilderTerminalStateHook(raw);
+    assert.equal(out, null);
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+// dev-lite's six REFUSALS (agents/dev-lite.md:98-106) — spot-check two.
+test("dev-lite's REAL refusal line (too-big.) → pass, not blocked", async () => {
+  const repo = await makeRepo();
+  try {
+    const raw = payload({
+      cwd: repo,
+      agent_name: "crew:dev-lite",
+      last_assistant_message: "too-big. split: 3 one-line tasks."
+    });
+    const out = await runCheckBuilderTerminalStateHook(raw);
+    assert.equal(out, null);
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+test("dev-lite's REAL refusal line (escalate:) → pass, not blocked", async () => {
+  const repo = await makeRepo();
+  try {
+    const raw = payload({
+      cwd: repo,
+      agent_name: "crew:dev-lite",
+      last_assistant_message: "escalate: public-surface. needs full builder."
     });
     const out = await runCheckBuilderTerminalStateHook(raw);
     assert.equal(out, null);
