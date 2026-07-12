@@ -268,6 +268,14 @@ Risks: <issues / band-aid: <patch>: root cause = <X> / scope-cross / new dep | "
 
 STATUS ∈ {`DONE`, `BLOCKED`, `HELP`, `IN-PROGRESS`}. No badge needed for `DONE`. Full badge taxonomy + escalation pattern: `skills/workflow/builder-ceremony/`.
 
+## Final step — report to the dispatcher (MANDATORY)
+
+Your last action MUST be a `SendMessage` to `main` carrying your STATUS line
+(`DONE` | `BLOCKED` | `HELP`), what changed, and your evidence.
+
+If you end your turn without it, your report reaches no one — the dispatcher
+does not see your final text. The work survives on disk; the report does not.
+
 ## Owned scope
 
 - ASP.NET Core server code under `api/`, `server/`, `services/`, `backend/`, `apps/*/api/`, `src/Server.*`, `src/*.Api/`, `src/*.Services/`
