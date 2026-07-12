@@ -67,6 +67,12 @@ fi
   3. Re-verify the workspace: `pwd` inside the new worktree, then re-run step 2 of the Workflow below (`crew.ts wake-up --repo "<new-worktree-path>"`) so the rest of this run's `--repo` / `$PWD` references point at the isolated worktree, not the original directory.
   4. Continue the rest of this workflow (framing, `write-run-brief`, builder dispatch, review, etc.) entirely inside the isolated worktree. Do not flip any global `worktreeMode`-style default for the repo — this isolation applies to this run only.
 
+### Peer-dispatch isolation (distinct from the self-isolation above — dev-team#169)
+
+The collision pre-flight above is this dispatcher session isolating **itself** into a worktree on branch collision. That is a different problem from this dispatcher **peer-dispatching a builder** into a separate tree — e.g. a background/parallel builder dispatch during a `team run` whose work should land in a worktree distinct from this dispatcher's own cwd.
+
+When this ladder dispatches such a peer, the `Agent`-tool call MUST carry `isolation: "worktree"` (or, to attach an already-created tree, `EnterWorktree`'s `path:` form) — never a prompt-text instruction like "operate in `<path>`" alone. Prompt text cannot pin a subagent's cwd; only the harness's own `isolation:` / `EnterWorktree` mechanism can. If the dispatch does not need a separate tree — the common case, most builder dispatches in this ladder run in the dispatcher's own cwd — omit `isolation:` entirely; do not add it defensively where it isn't needed.
+
 ## Standard ladder (FEAT-tag routing)
 
 Builder routing: see `docs/routing-table.md` → "Builder routing matrix" (generated from `docs/routing-table.yaml` — the authoritative source; do not hand-copy the table here, edit the yaml and re-run `node scripts/render-routing-table.ts` instead). `commands/orchestrate-slice.md` "Builder routing" carries the full signal-level decision detail (`FE_ONLY`/`BE_ONLY`/`SPLIT_BUILD`/`TS_TOOLING_ONLY`) this matrix summarizes.
