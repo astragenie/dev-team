@@ -119,7 +119,7 @@ export const FEATURES: Readonly<Record<string, FeatureMeta>> = {
     version: "1.0.0",
     default: true,
     description:
-      "Gates model-tier routing for the `crew resolve-model` CLI (interactive /crew:build /crew:fix /crew:orchestrate-slice dispatch). Enabled (default): resolves .claude/loop.json loop.modelRouting as today (build -> sonnet). Disabled: resolve-model always returns the opus fallback regardless of loop.json, so an operator can turn routing off for audit/rollback without deleting the loop.json config.",
+      "Gates model-tier routing for the `crew resolve-model` CLI (interactive /crew:build /crew:fix /crew:orchestrate-slice dispatch) and the pre-tool-use-model-enforce hook. Enabled (default): resolves .claude/loop.json loop.modelRouting as today (build -> sonnet). Disabled: resolve-model prints the sentinel 'inherit' and the hook stands down — dispatches omit the Agent-tool model: argument so each agent's own model: frontmatter (agents/*.md) governs.",
     scope: "crew",
     owner: "platform",
     since: "0.51.2"

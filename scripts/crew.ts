@@ -475,7 +475,10 @@ function usage(target: string | null = null) {
       "  node scripts/crew.ts resolve-model --phase <build|architect|...> [--shape <shape>] [--repo <path>]\n" +
       "    Reads .claude/loop.json loop.modelRouting + the trivial-shape tier table and\n" +
       "    prints the resolved model string (e.g. sonnet). Falls back to opus only when\n" +
-      "    no routing is configured. FEAT-194 S2 — interactive-dispatch model resolution."
+      "    no routing is configured. Prints the sentinel 'inherit' when routing is\n" +
+      '    disabled (crew.json features["model-routing"].enabled: false or\n' +
+      "    loop.modelRouting.enabled: false) — then OMIT the Agent-tool model: argument\n" +
+      "    so the agent's own model: frontmatter governs. FEAT-194 S2."
   };
 
   const subcommandsMap = subcommands as Record<string, string | undefined>;
@@ -1633,8 +1636,10 @@ const COMMANDS = {
   // toggle (default on), read via features-service.ts's isEnabled() —
   // the same helper the other three crew.json feature flags
   // (redundant-read-stop/subagent-inline-warn/shell-preflight) use. When
-  // the operator flips it off, routing is bypassed entirely and the opus
-  // fallback is returned regardless of loop.json content.
+  // the operator flips it off (or sets loop.modelRouting.enabled: false),
+  // routing is bypassed entirely and the sentinel "inherit" is printed:
+  // the dispatcher must then OMIT the Agent-tool `model:` argument so the
+  // agent's own `model:` frontmatter (agents/*.md) governs.
   "resolve-model": async ({ repoPath, flags }: CommandContext) => {
     const phase = typeof flags.phase === "string" ? flags.phase : null;
     if (!phase) {
@@ -1654,7 +1659,7 @@ const COMMANDS = {
     }
     const crewConfig = await readCrewConfig(repoPath);
     const modelRoutingEnabled = isEnabled("model-routing", crewConfig);
-    return resolveDispatchModel(phase, shape, config, modelRoutingEnabled);
+    return resolveDispatchModel(phase, shape, config, modelRoutingEnabled) ?? "inherit";
   }
 };
 

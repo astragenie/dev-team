@@ -45,9 +45,7 @@
       }
     },
     "modelRouting": {
-      "architect": "opus",
-      "build": "sonnet",
-      "default": "sonnet"
+      "enabled": false
     },
     "validation": {
       "satisfiedByReview": true

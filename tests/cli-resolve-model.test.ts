@@ -51,14 +51,14 @@ test("CLI resolve-model: toggle explicitly enabled — behaves as today, build r
   assert.equal(output, "sonnet");
 });
 
-test("CLI resolve-model: toggle disabled — returns the opus fallback even though loop.json routes build to sonnet", async () => {
+test("CLI resolve-model: toggle disabled — prints the inherit sentinel (omit model:, agent frontmatter governs)", async () => {
   const repoPath = await makeTempDir("crew-cli-resolve-model-off-");
   await writeLoopModelRouting(repoPath);
   await writeCrewFeatureToggle(repoPath, false);
 
   const { code, output } = await runCrew(["resolve-model", "--repo", repoPath, "--phase", "build"]);
   assert.equal(code, 0);
-  assert.equal(output, "opus");
+  assert.equal(output, "inherit");
 });
 
 test("CLI resolve-model: toggle disabled also bypasses the trivial-shape override", async () => {
@@ -76,7 +76,7 @@ test("CLI resolve-model: toggle disabled also bypasses the trivial-shape overrid
     "doc-update"
   ]);
   assert.equal(code, 0);
-  assert.equal(output, "opus");
+  assert.equal(output, "inherit");
 });
 
 test("CLI resolve-model: no loop.json and no crew.json — default-on routing falls back to opus (no routing configured)", async () => {

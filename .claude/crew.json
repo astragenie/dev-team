@@ -2,6 +2,7 @@
   "features": {
     "redundant-read-stop": { "enabled": false },
     "subagent-inline-warn": { "enabled": true },
-    "shell-preflight": { "enabled": true }
+    "shell-preflight": { "enabled": true },
+    "model-routing": { "enabled": false }
   }
 }

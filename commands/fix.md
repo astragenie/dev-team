@@ -138,7 +138,7 @@ See `docs/routing-table.md` → "Builder routing matrix" (generated from `docs/r
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" resolve-model --repo "$PWD" --phase build
 ```
 
-Pass the printed value (e.g. `sonnet`) as the Agent-tool dispatch's `model:` argument. Add `--shape <shape>` when the fix classifies as a trivial shape (`doc-update` / `config-tweak` / `test-only` / `single-module-edit`) — it overrides the phase tier.
+Pass the printed value (e.g. `sonnet`) as the Agent-tool dispatch's `model:` argument. **If it prints `inherit` (model routing disabled), OMIT the `model:` argument entirely** — the dispatched agent's own `model:` frontmatter (`agents/*.md`) then governs; do not substitute a model yourself. Add `--shape <shape>` when the fix classifies as a trivial shape (`doc-update` / `config-tweak` / `test-only` / `single-module-edit`) — it overrides the phase tier.
 
 **Honest limitation:** no hard hook enforces this — unlike the autonomous wave path (`runner-plugin`'s `model-router`), which sets the dispatch model programmatically, this instruction only works if the dispatcher LLM actually runs `resolve-model` and actually passes its output as `model:`. A `PreToolUse` hook on `Agent` that injects the resolved model when absent (S2b) would close the gap — not built here.
 

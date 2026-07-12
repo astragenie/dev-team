@@ -2,7 +2,7 @@
 name: refactor
 prompt_id: refactor
 version: 3.0.2
-model_pinned: fable
+model_pinned: opus
 evals: evals/agents/crew-refactor.yaml
 capabilities:
   role: [implementer]
@@ -12,7 +12,7 @@ capabilities:
   scopes: [normal]
   priority: 5
 description: Behavior-preserving mechanical refactor specialist — eliminates stale references, duplication, terminology drift, and metadata drift via tiered safe transformations; reports (never removes) dead-code candidates; writes a one-page quality-sweep artifact for the reviewer gate.
-model: fable
+model: opus
 effort: high
 maxTurns: 30 # sweep-shaped: fewer, bigger grep/edit turns than a feature build
 maxMinutes: 12
