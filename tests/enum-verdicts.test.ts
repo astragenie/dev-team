@@ -2,8 +2,8 @@
 // Covers: writer rejects invalid enum, needs_fix normalizes to rejected,
 // skipped without skip_reason throws, handler throws on unknown verdict
 // (not just the CLI refusal), approved_with_notes -> review_passed, legacy
-// artifacts (no verdict) keep the old default-pass behavior, and the Zod
-// schemas round-trip real writer output.
+// artifacts (no verdict) keep the old default-pass behavior, and the
+// artifact-schemas.ts schemas round-trip real writer output.
 import fs from "node:fs/promises";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -17,7 +17,7 @@ import {
   normalizeValidationDecision,
   ReviewArtifactSchema,
   ValidationArtifactSchema
-} from "../scripts/lib/schemas.ts";
+} from "../scripts/lib/artifact-schemas.ts";
 import { parseFrontmatterBlock } from "../scripts/lib/briefing/collect-cost-parser.ts";
 import { makeTempDir, loadState, cliPath } from "./helpers/cli-fixtures.ts";
 
