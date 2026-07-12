@@ -141,6 +141,15 @@ export const FEATURES: Readonly<Record<string, FeatureMeta>> = {
     scope: "crew",
     owner: "safety",
     since: "0.63.0"
+  },
+  "dispatch-size-gate": {
+    version: "1.0.0",
+    default: false,
+    description:
+      "A3 (8 agent deaths, all from oversized dispatches): enforcement level of the PreToolUse/Agent dispatch-size gate (hooks/pre-tool-use-dispatch-size.ts). The hook estimates a dispatch's token cost from tier + file/dir mentions + wide-scope markers in the prompt against a 150k warn line (deliberate headroom below the 200k hard cap) and always emits an advisory systemMessage on over-threshold dispatches regardless of this flag. Default false = warn-only bake period, mirroring the git-gate-block precedent; flips to true only after warn-phase estimates are joined against real scripts/lib/dispatch-timing.ts telemetry and the threshold is confirmed well-calibrated — this repo has not run that calibration pass yet (no historical dispatch-timing.jsonl in this checkout to join against). Guardrail: this flag may only soften block->warn, never silence the gate — the warn nudge fires unconditionally regardless of flag state.",
+    scope: "crew",
+    owner: "safety",
+    since: "0.63.0"
   }
 } as const;
 
