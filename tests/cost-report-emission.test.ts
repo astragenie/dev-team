@@ -327,3 +327,163 @@ for (const kind of ["cost-report", "cost-report-slice", "cost-report-aggregate"]
     }
   });
 }
+
+// ---------------------------------------------------------------------------
+// #178 end-to-end regression: exercise the actual slice-close ceremony entry
+// point (maybeEmitCostReport, invoked by write-final-synthesis / `slice
+// complete`) rather than calling writeArtifact directly with an explicit
+// updatePath. The tests above prove writeArtifact ignores updatePath for
+// cost-report kinds; these prove the real production call chain never
+// derives an updatePath (or any other historical-file target) from a
+// stale/wide currentRun window in the first place — the exact incident
+// shape from the FEAT-188 S5 close, where currentRun was never rotated via
+// `/loop:slice start` and the emit window spanned ~8 days / 107 sessions.
+// ---------------------------------------------------------------------------
+
+async function writeWorkflowState(
+  tmpDir: string,
+  currentRun: Record<string, unknown>
+): Promise<void> {
+  const stateDir = path.join(tmpDir, ".claude", "state", "crew");
+  await fs.mkdir(stateDir, { recursive: true });
+  await fs.writeFile(
+    path.join(stateDir, "workflow-state.json"),
+    JSON.stringify(
+      { version: "1.0", updatedAt: new Date().toISOString(), currentRun, recentRuns: [] },
+      null,
+      2
+    )
+  );
+}
+
+async function withIsolatedProjectsRoot<T>(tmpDir: string, fn: () => Promise<T>): Promise<T> {
+  const original = process.env["CREW_PROJECTS_ROOT"];
+  try {
+    // Point session scanning at an empty, isolated directory so a wide
+    // emit-window scan is deterministic and never touches real
+    // ~/.claude/projects session data from the host running the test.
+    const emptyProjectsRoot = path.join(tmpDir, "isolated-projects-root");
+    await fs.mkdir(emptyProjectsRoot, { recursive: true });
+    process.env["CREW_PROJECTS_ROOT"] = emptyProjectsRoot;
+    return await fn();
+  } finally {
+    if (original === undefined) delete process.env["CREW_PROJECTS_ROOT"];
+    else process.env["CREW_PROJECTS_ROOT"] = original;
+  }
+}
+
+test("maybeEmitCostReport: stale/wide currentRun does not touch historical cost-report files (#178)", async () => {
+  const tmpDir = await makeTempDir();
+  try {
+    await withIsolatedProjectsRoot(tmpDir, async () => {
+      const costDir = path.join(tmpDir, ".claude", "artifacts", "crew", "cost");
+      await fs.mkdir(costDir, { recursive: true });
+      // Two historical reports from unrelated slices/features — mirrors the
+      // ~12-file blast radius from the incident (feat105, feat130, ...).
+      const historicalPaths = [
+        path.join(costDir, "20260607T101040Z-cost-report-slice-feat105-slice23.md"),
+        path.join(costDir, "20260609T143942Z-cost-report-slice-feat130-slice58.md")
+      ];
+      const sentinels = historicalPaths.map(
+        (_p, i) => `# Historical report ${i} — must NOT be rewritten\nusd: ${i}.5\n`
+      );
+      for (const [i, p] of historicalPaths.entries()) {
+        await fs.writeFile(p, sentinels[i]!);
+      }
+
+      // Stale currentRun: started 8 days ago, never rotated this session —
+      // the exact shape flagged in the FEAT-188 S5 synthesis cost-attribution
+      // caveat that preceded the incident.
+      const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
+      await writeWorkflowState(tmpDir, {
+        title: "stale-currentrun-emit",
+        goal: "regression repro",
+        mode: "single-session",
+        status: "in-progress",
+        startedAt: eightDaysAgo,
+        updatedAt: eightDaysAgo,
+        next: "",
+        gates: {},
+        artifacts: {}
+      });
+
+      const { maybeEmitCostReport } = await import(
+        "../scripts/lib/cost-hygiene/emit-cost-report.ts"
+      );
+      const result = await maybeEmitCostReport(tmpDir, { runTitle: "stale-currentrun-emit" });
+
+      assert.ok(result, "emitter should return a result for a stale-but-present currentRun");
+      assert.ok(
+        !("error" in (result as Record<string, unknown>)),
+        `emitter errored: ${JSON.stringify(result)}`
+      );
+
+      // Both historical files are byte-preserved — the stale/wide window
+      // never rewrote them, and never rewrote them into lossy stubs.
+      for (const [i, p] of historicalPaths.entries()) {
+        const after = await fs.readFile(p, "utf8");
+        assert.equal(after, sentinels[i]!, `historical file ${p} must be preserved intact`);
+      }
+
+      // The emit landed as a fresh file alongside the historical set, not by
+      // touching it.
+      const filesAfter = await listCostDir(tmpDir);
+      assert.ok(
+        filesAfter.length > historicalPaths.length,
+        `expected at least one fresh file alongside the ${historicalPaths.length} historical files, got: ${filesAfter.join(", ")}`
+      );
+    });
+  } finally {
+    await cleanup(tmpDir);
+  }
+});
+
+test("maybeEmitCostReport: normal (fresh) currentRun emission preserves historical files and mints exactly one report", async () => {
+  const tmpDir = await makeTempDir();
+  try {
+    await withIsolatedProjectsRoot(tmpDir, async () => {
+      const costDir = path.join(tmpDir, ".claude", "artifacts", "crew", "cost");
+      await fs.mkdir(costDir, { recursive: true });
+      const historicalPath = path.join(costDir, "20260101T000000Z-cost-report-slice-unrelated.md");
+      const sentinel = "# Historical report — must NOT be rewritten\nusd: 42.0\n";
+      await fs.writeFile(historicalPath, sentinel);
+
+      // Freshly rotated currentRun, as `/loop:slice start` produces.
+      const now = new Date().toISOString();
+      await writeWorkflowState(tmpDir, {
+        title: "fresh-currentrun-emit",
+        goal: "normal slice close",
+        mode: "single-session",
+        status: "in-progress",
+        startedAt: now,
+        updatedAt: now,
+        next: "",
+        gates: {},
+        artifacts: {}
+      });
+
+      const { maybeEmitCostReport } = await import(
+        "../scripts/lib/cost-hygiene/emit-cost-report.ts"
+      );
+      const result = await maybeEmitCostReport(tmpDir, { runTitle: "fresh-currentrun-emit" });
+
+      assert.ok(result, "emitter should return a result for a fresh currentRun");
+      assert.ok(
+        !("error" in (result as Record<string, unknown>)),
+        `emitter errored: ${JSON.stringify(result)}`
+      );
+
+      const after = await fs.readFile(historicalPath, "utf8");
+      assert.equal(after, sentinel, "unrelated historical file must be untouched");
+
+      const filesAfter = await listCostDir(tmpDir);
+      assert.equal(
+        filesAfter.length,
+        2,
+        `expected historical + exactly one fresh report, got: ${filesAfter.join(", ")}`
+      );
+    });
+  } finally {
+    await cleanup(tmpDir);
+  }
+});
