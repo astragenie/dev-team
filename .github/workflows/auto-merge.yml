@@ -16,6 +16,12 @@ name: Auto-merge on green
 # matched, and posts (or updates) a single PR comment explaining why, so a
 # disarmed PR doesn't just sit there unexplained.
 #
+# The gate FAILS CLOSED. If the sensitivity check cannot be completed (API
+# error, rate limit), the workflow disarms auto-merge and fails the job rather
+# than arming a PR whose sensitivity is unknown. A failing job on its own
+# disarms nothing — GitHub's auto-merge state is independent of this job's
+# outcome — so the disarm must happen explicitly before we give up.
+#
 # The path check is stateless: it re-evaluates the current diff on every
 # run, not just the first one. If a PR is later force-pushed to no longer
 # touch a sensitive path, it re-arms automatically — same as removing a
@@ -33,7 +39,7 @@ name: Auto-merge on green
 
 on:
   pull_request:
-    types: [opened, reopened, ready_for_review, synchronize, labeled, unlabeled]
+    types: [opened, reopened, ready_for_review, converted_to_draft, synchronize, labeled, unlabeled]
 
 permissions:
   contents: write
@@ -55,6 +61,12 @@ jobs:
             const { owner, repo } = context.repo;
             const held = pr.labels.some(l => ['hold', 'do-not-merge'].includes(l.name));
 
+            // Disabling auto-merge is the SAFE direction, so a failure here is
+            // never benign-by-default: if the PR must not merge and we could not
+            // disarm it, GitHub will still merge it on green. Distinguish the
+            // expected no-op ("auto-merge was not enabled") from a real failure
+            // and make the latter loud — a silent failed-disable IS the incident
+            // this workflow exists to prevent (#224, #225).
             const disable = async (reason) => {
               core.info(`#${pr.number}: ${reason} — disabling auto-merge.`);
               try {
@@ -65,7 +77,15 @@ jobs:
                   { id: pr.node_id }
                 );
               } catch (e) {
-                core.info(`disable no-op: ${e.message}`);
+                const notEnabled = /not enabled|no auto-?merge|Auto-merge is not/i.test(e.message || '');
+                if (notEnabled) {
+                  core.info(`disable no-op (auto-merge was not armed): ${e.message}`);
+                  return;
+                }
+                core.setFailed(
+                  `#${pr.number}: FAILED to disable auto-merge (${reason}): ${e.message}. ` +
+                  `This PR may still merge on green — disarm it by hand or add a 'hold' label NOW.`
+                );
               }
             };
 
@@ -77,19 +97,41 @@ jobs:
             // Sensitivity gate: paginate ALL changed files — a PR can exceed
             // one page of listFiles results, and a missed page means a
             // sensitive file slips through undetected.
+            //
+            // FAIL CLOSED: if we cannot complete the path check, we do not know
+            // whether this PR is sensitive — so we must assume it is. Disarm
+            // first, then fail the job. Falling through to the arming path with
+            // an unknown verdict would reintroduce the exact bug being fixed:
+            // GitHub's auto-merge state is independent of this job's outcome, so
+            // a merely-failing job disarms nothing.
             const SENSITIVE = [/^hooks\//, /^agents\//, /^commands\//, /^\.github\/workflows\//];
-            const files = await github.paginate(github.rest.pulls.listFiles, {
-              owner, repo, pull_number: pr.number, per_page: 100,
-            });
-            const matched = files
-              .map(f => f.filename)
-              .filter(name => SENSITIVE.some(re => re.test(name)));
+            const isSensitive = (name) => !!name && SENSITIVE.some(re => re.test(name));
 
+            let matched;
+            let botComment;
             const MARKER = '<!-- auto-merge-path-disarm -->';
-            const existing = await github.paginate(github.rest.issues.listComments, {
-              owner, repo, issue_number: pr.number, per_page: 100,
-            });
-            const botComment = existing.find(c => c.body && c.body.includes(MARKER));
+            try {
+              const files = await github.paginate(github.rest.pulls.listFiles, {
+                owner, repo, pull_number: pr.number, per_page: 100,
+              });
+              // Check `previous_filename` too: renaming a file OUT of a sensitive
+              // directory still changes that directory's contents.
+              matched = files
+                .filter(f => isSensitive(f.filename) || isSensitive(f.previous_filename))
+                .map(f => f.filename);
+
+              const existing = await github.paginate(github.rest.issues.listComments, {
+                owner, repo, issue_number: pr.number, per_page: 100,
+              });
+              botComment = existing.find(c => c.body && c.body.includes(MARKER));
+            } catch (e) {
+              await disable(`path check FAILED (${e.message}) — assuming sensitive`);
+              core.setFailed(
+                `#${pr.number}: could not determine sensitivity (${e.message}). ` +
+                `Auto-merge disarmed as a precaution; re-run once the API is healthy.`
+              );
+              return;
+            }
 
             if (matched.length > 0) {
               await disable(`sensitive path(s) matched: ${matched.join(', ')}`);
