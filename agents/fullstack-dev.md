@@ -212,7 +212,7 @@ is the whole bug this section exists to close. Order is load-bearing, not just c
      --headline "<one sentence>" --files <a,b> --risks "<risks|none> needs FEAT-NNN" \
      [--next "<follow-up FEAT id or dispatch hint>"] --agent fullstack-dev
    ```
-   Idempotent — re-running updates the same `<!-- crew:report -->` PR comment,
+   Idempotent — re-running updates the same `<!-- dev-team:report -->` PR comment,
    never spams a new one. Best-effort — falls back to
    `.claude/artifacts/crew/handoffs/` on disk when `gh` is unavailable; never a
    build-blocker.

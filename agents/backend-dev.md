@@ -270,7 +270,7 @@ is the whole bug this section exists to close. Order is load-bearing, not just c
      --headline "<one sentence>" --files <a,b> --risks "<risks|none>" \
      [--next "<hint>"] --agent backend-dev
    ```
-   Idempotent — re-running updates the same `<!-- crew:report -->` PR comment,
+   Idempotent — re-running updates the same `<!-- dev-team:report -->` PR comment,
    never spams a new one. Best-effort — falls back to
    `.claude/artifacts/crew/handoffs/` on disk when `gh` is unavailable; never a
    build-blocker.

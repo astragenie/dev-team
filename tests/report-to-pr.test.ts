@@ -167,6 +167,56 @@ describe("postReportToPr — idempotent update", () => {
   });
 });
 
+// ── Multi-page comment list (regression — gh --paginate array-per-page shape) ──
+//
+// `gh api ... --paginate` streams ONE JSON array PER PAGE concatenated, not
+// one merged array (confirmed via `gh api --help`: "Each page is a separate
+// JSON array or object. Pass --slurp to wrap all pages ... into an outer
+// JSON array."). A naive `JSON.parse(stdout)` on a multi-page response is
+// invalid JSON and throws, which the original code silently swallowed as
+// "no marker comment found" — on any PR/issue with more than one page of
+// comments (30 by default), every re-run would create a fresh duplicate
+// comment instead of updating the existing marker comment. This test stubs
+// the real `--slurp`-wrapped shape (an array of per-page arrays) across two
+// pages and confirms the marker comment on page 2 is still found.
+
+describe("postReportToPr — multi-page comment list (pagination)", () => {
+  it("finds the marker comment when results span more than one page", () => {
+    const existingBody = buildReportBody({ ...FIELDS, headline: "stale first attempt" });
+    const page1 = Array.from({ length: 30 }, (_, i) => ({
+      id: 100 + i,
+      body: `unrelated human comment #${i}`
+    }));
+    const page2 = [{ id: 999, body: existingBody }];
+
+    let patchCalls = 0;
+    const runGh: GhRunner = (args) => {
+      if (args[0] === "repo")
+        return ok(JSON.stringify({ owner: { login: "astragenie" }, name: "dev-team" }));
+      if (args.includes("--paginate") && args.includes("--slurp")) {
+        return ok(JSON.stringify([page1, page2]));
+      }
+      if (args.includes("-X") && args.includes("PATCH")) {
+        patchCalls += 1;
+        return ok("");
+      }
+      return fail("unexpected call");
+    };
+
+    const result = postReportToPr({
+      repoPath: tmpDir,
+      fields: { ...FIELDS, headline: "second, real attempt" },
+      prNumber: 42,
+      runGh
+    });
+
+    expect(result.mode).toBe("pr-comment");
+    expect(result.updated).toBe(true);
+    expect(result.commentId).toBe(999);
+    expect(patchCalls).toBe(1);
+  });
+});
+
 // ── No-PR fallback to disk ───────────────────────────────────────────────────
 
 describe("postReportToPr — no PR for branch, no issue fallback", () => {
@@ -237,5 +287,70 @@ describe("postReportToPr — gh unavailable / unauthenticated", () => {
 
     expect(result.mode).toBe("disk");
     expect(result.reason).toContain("rate limit");
+  });
+});
+
+// ── Same-second disk-fallback collision (regression, PR #231 review CRITICAL) ──
+//
+// Reproduces the exact scenario the review demonstrated empirically: two
+// postReportToPr() calls with a FIXED now() (so wall-clock time gives zero
+// entropy — the same failure mode as two real calls landing in the same
+// millisecond during a `gh` outage) and a failing runGh. Before the fix, the
+// fallback filename was derived only from the (millisecond-stripped) now()
+// value, so both calls produced the IDENTICAL path and the second
+// writeFileSync silently clobbered the first agent's report with zero error,
+// zero warning, exit 0 — r1.path === r2.path was true, and agent A's report
+// was gone. This test proves that no longer happens: two distinct files,
+// each with its own intact content.
+
+describe("postReportToPr — same-second disk-fallback collision (regression)", () => {
+  it("two calls with an identical fixed now() and failing gh produce two distinct, intact files", () => {
+    const fixedNow = () => new Date("2026-07-12T10:00:00.000Z");
+    const runGh: GhRunner = () => fail("gh: not found", 127);
+
+    const fieldsA: ReportFields = {
+      ...FIELDS,
+      agent: "agent-a",
+      headline: "Agent A report — MUST survive"
+    };
+    const fieldsB: ReportFields = {
+      ...FIELDS,
+      agent: "agent-b",
+      headline: "Agent B report — MUST survive"
+    };
+
+    const r1 = postReportToPr({
+      repoPath: tmpDir,
+      fields: fieldsA,
+      prNumber: 42,
+      now: fixedNow,
+      runGh
+    });
+    const r2 = postReportToPr({
+      repoPath: tmpDir,
+      fields: fieldsB,
+      prNumber: 42,
+      now: fixedNow,
+      runGh
+    });
+
+    expect(r1.mode).toBe("disk");
+    expect(r2.mode).toBe("disk");
+    expect(r1.path).toBeDefined();
+    expect(r2.path).toBeDefined();
+
+    // The bug, stated as an assertion: this must be false.
+    expect(r1.path === r2.path).toBe(false);
+
+    const handoffsDir = join(tmpDir, ".claude", "artifacts", "crew", "handoffs");
+    const files = readdirSync(handoffsDir);
+    expect(files.length).toBe(2);
+
+    const bodyA = readFileSync(r1.path as string, "utf8");
+    const bodyB = readFileSync(r2.path as string, "utf8");
+    expect(bodyA).toContain("Agent A report — MUST survive");
+    expect(bodyA).not.toContain("Agent B report");
+    expect(bodyB).toContain("Agent B report — MUST survive");
+    expect(bodyB).not.toContain("Agent A report");
   });
 });

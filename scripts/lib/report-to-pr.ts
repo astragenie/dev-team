@@ -20,14 +20,24 @@
  * (no real gh binary, no shim executable, no spawnSync in tests).
  */
 
+import { randomBytes } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 // ── Marker + body build/parse ───────────────────────────────────────────────
+//
+// NOTE: the marker literal is deliberately NOT `crew:report` — that shape
+// (`crew:<word>`) is the same shape validate-agent-refs.ts's TOKEN_RE treats
+// as a dispatch token, and the agent prompts below quote this marker literal
+// in prose. `crew:report` resolves to nothing on disk (no agents/report.md,
+// commands/report.md, skills/**/report/SKILL.md), so it read as 4 phantom
+// dispatch references — a real CI-red finding, not a validator bug. Renamed
+// once, pre-merge, before any agent has posted a live comment against the
+// old marker (see dev-team PR #231 review, HIGH finding).
 
-export const REPORT_MARKER_START = "<!-- crew:report -->";
-export const REPORT_MARKER_END = "<!-- /crew:report -->";
+export const REPORT_MARKER_START = "<!-- dev-team:report -->";
+export const REPORT_MARKER_END = "<!-- /dev-team:report -->";
 
 export type ReportStatus = "DONE" | "BLOCKED" | "HELP" | "IN-PROGRESS";
 
@@ -40,7 +50,7 @@ export interface ReportFields {
   next?: string;
 }
 
-/** True when `body` carries a crew:report marker (used to find the report comment to update). */
+/** True when `body` carries the report marker (used to find the report comment to update). */
 export function containsReportMarker(body: string): boolean {
   return body.includes(REPORT_MARKER_START);
 }
@@ -160,10 +170,27 @@ function findExistingCommentId(
   repoSlug: string,
   targetNumber: number
 ): number | null {
-  const r = runGh(["api", `repos/${repoSlug}/issues/${targetNumber}/comments`, "--paginate"]);
+  // `--paginate` alone streams one JSON array PER PAGE, concatenated
+  // (`gh api --help`: "Each page is a separate JSON array or object.").
+  // GitHub's REST API pages at 30 comments by default, so any PR/issue with
+  // more than one page's worth of comments would make the raw output
+  // multiple back-to-back JSON arrays (e.g. `[...][...]`) — invalid input to
+  // a single JSON.parse(), which would throw, get swallowed by the catch
+  // below, and read as "no marker comment yet" — silently causing a
+  // duplicate-comment spam instead of the intended idempotent update.
+  // `--slurp` wraps every page into one outer array; `.flat()` merges that
+  // down to a single flat comment list (and is a no-op for the single-page
+  // shape too, so it's safe regardless of comment count).
+  const r = runGh([
+    "api",
+    `repos/${repoSlug}/issues/${targetNumber}/comments`,
+    "--paginate",
+    "--slurp"
+  ]);
   if (!r.ok) return null;
   try {
-    const comments = JSON.parse(r.stdout) as Array<{ id: number; body: string }>;
+    const pages = JSON.parse(r.stdout) as Array<{ id: number; body: string }[]>;
+    const comments = pages.flat();
     const found = comments.find((c) => containsReportMarker(c.body ?? ""));
     return found ? found.id : null;
   } catch {
@@ -173,21 +200,72 @@ function findExistingCommentId(
 
 // ── Disk fallback ────────────────────────────────────────────────────────────
 
+const MAX_FALLBACK_WRITE_ATTEMPTS = 20;
+
+/**
+ * Write the disk-fallback report under a name that cannot collide across
+ * concurrent calls, even when `now()` is fixed/mocked or two real calls land
+ * in the same wall-clock millisecond (the exact scenario a `gh` outage with
+ * many concurrent builders produces — dev-team PR #231 review, CRITICAL
+ * finding).
+ *
+ * Uniqueness does not depend on `now()` at all: `process.pid` +
+ * `process.hrtime.bigint()` (monotonic, nanosecond resolution, per-process)
+ * + a random suffix. `now()` still seeds the human-readable timestamp
+ * prefix (millisecond precision preserved, never stripped) purely for
+ * sortability/readability.
+ *
+ * `wx` (exclusive create) is the hard backstop: a collision FAILS LOUDLY
+ * (EEXIST) instead of silently overwriting a prior report via a plain
+ * writeFileSync, and is retried with fresh entropy. A collision must never
+ * be able to destroy a report.
+ */
 function writeDiskFallback(
   repoPath: string,
   body: string,
   reason: string,
   now: () => Date
-): { path: string } {
+): { path?: string; writeError?: string } {
   const dir = join(repoPath, ".claude", "artifacts", "crew", "handoffs");
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  const ts = now()
-    .toISOString()
-    .replace(/[-:]/g, "")
-    .replace(/\.\d{3}Z$/, "Z");
-  const path = join(dir, `${ts}-report-fallback.md`);
-  writeFileSync(path, `<!-- report-to-pr fallback reason: ${reason} -->\n\n${body}\n`, "utf8");
-  return { path };
+  const ts = now().toISOString().replace(/[-:]/g, "");
+  const content = `<!-- report-to-pr fallback reason: ${reason} -->\n\n${body}\n`;
+
+  let lastError: unknown;
+  for (let attempt = 0; attempt < MAX_FALLBACK_WRITE_ATTEMPTS; attempt += 1) {
+    const unique = `${process.pid}-${process.hrtime.bigint()}-${randomBytes(4).toString("hex")}`;
+    const path = join(dir, `${ts}-${unique}-report-fallback.md`);
+    try {
+      writeFileSync(path, content, { encoding: "utf8", flag: "wx" });
+      return { path };
+    } catch (err) {
+      lastError = err;
+      if ((err as NodeJS.ErrnoException)?.code !== "EEXIST") break;
+      // EEXIST — genuinely unexpected given the entropy above, but retry
+      // with fresh randomness rather than falling through to an overwrite.
+    }
+  }
+  return { writeError: lastError instanceof Error ? lastError.message : String(lastError) };
+}
+
+/**
+ * Build the "disk" PostReportResult, folding in a write failure (should be
+ * effectively unreachable given writeDiskFallback's entropy, but never
+ * throws or blocks the build even if it happens).
+ */
+function diskFallbackResult(
+  repoPath: string,
+  body: string,
+  reason: string,
+  now: () => Date
+): PostReportResult {
+  const { path, writeError } = writeDiskFallback(repoPath, body, reason, now);
+  return {
+    mode: "disk",
+    updated: false,
+    reason: writeError ? `${reason}; disk fallback write also failed: ${writeError}` : reason,
+    ...(path ? { path } : {})
+  };
 }
 
 function ensureBodyFile(repoPath: string, body: string): string {
@@ -229,7 +307,7 @@ export interface PostReportResult {
 }
 
 /**
- * Post or idempotently update the `<!-- crew:report -->` marker comment.
+ * Post or idempotently update the `<!-- dev-team:report -->` marker comment.
  * Never throws — every failure path degrades to the disk fallback.
  */
 export function postReportToPr(opts: PostReportOpts): PostReportResult {
@@ -240,8 +318,7 @@ export function postReportToPr(opts: PostReportOpts): PostReportResult {
   const repoSlug = opts.repo ?? resolveRepoSlug(runGh);
   if (!repoSlug) {
     const reason = "gh unavailable, unauthenticated, or repo not resolvable";
-    const { path } = writeDiskFallback(opts.repoPath, body, reason, now);
-    return { mode: "disk", updated: false, path, reason };
+    return diskFallbackResult(opts.repoPath, body, reason, now);
   }
 
   let targetNumber = opts.prNumber ?? resolveCurrentPrNumber(runGh);
@@ -253,8 +330,7 @@ export function postReportToPr(opts: PostReportOpts): PostReportResult {
 
   if (!targetNumber) {
     const reason = "no PR found for the current branch and no issue fallback given";
-    const { path } = writeDiskFallback(opts.repoPath, body, reason, now);
-    return { mode: "disk", updated: false, path, reason };
+    return diskFallbackResult(opts.repoPath, body, reason, now);
   }
 
   const bodyFile = ensureBodyFile(opts.repoPath, body);
@@ -277,8 +353,7 @@ export function postReportToPr(opts: PostReportOpts): PostReportResult {
     ]);
     if (!r.ok) {
       const reason = `gh api PATCH failed: ${r.stderr.slice(0, 200)}`;
-      const { path } = writeDiskFallback(opts.repoPath, body, reason, now);
-      return { mode: "disk", updated: false, path, reason };
+      return diskFallbackResult(opts.repoPath, body, reason, now);
     }
     return { mode, updated: true, target: String(targetNumber), commentId: existingId };
   }
@@ -291,8 +366,7 @@ export function postReportToPr(opts: PostReportOpts): PostReportResult {
   ]);
   if (!createR.ok) {
     const reason = `gh api POST comment failed: ${createR.stderr.slice(0, 200)}`;
-    const { path } = writeDiskFallback(opts.repoPath, body, reason, now);
-    return { mode: "disk", updated: false, path, reason };
+    return diskFallbackResult(opts.repoPath, body, reason, now);
   }
 
   let commentId: number | undefined;
