@@ -3,6 +3,25 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [v0.62.0] — 2026-07-12 — model routing disabled; agent frontmatter governs
+
+Minor: model-tier routing is now off in this repo, and the disabled path has
+correct semantics — dispatches omit the Agent-tool `model:` argument so each
+agent's own `model:` frontmatter (`agents/*.md`) governs, instead of pinning
+everything to the opus fallback.
+
+- **Disable model routing** (#219): `crew.json features["model-routing"].enabled:
+  false` + `.claude/loop.json loop.modelRouting: { "enabled": false }` (new
+  config kill-switch, mirrored in runner-plugin's model-router).
+  `resolveDispatchModel` returns `null` when disabled; `crew resolve-model`
+  prints the sentinel `inherit`; the `pre-tool-use-model-enforce` hook stands
+  down; `build.md` / `fix.md` / `orchestrate-slice.md` instruct the dispatcher
+  to omit `model:` on `inherit`. Re-enable = flip either toggle back — routed
+  tier semantics are unchanged when enabled.
+- **`crew:refactor` model pin** (#219): `fable` → `opus` (last non-standard pin;
+  fleet is now opus for architecture tier, haiku for doc/locator tier, sonnet
+  elsewhere).
+
 ## [v0.61.0] — 2026-07-10 — MemoryProvider extraction + consume (W3)
 
 Minor: the generic memory-provider layer moves to the shared
