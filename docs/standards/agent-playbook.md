@@ -57,6 +57,26 @@ Required body sections:
 
 Optional but recommended: `## Custom instructions`, `## Delegation map`, `## Workflow badges`.
 
+### The STATUS line is enforced at runtime for builder-tier agents, not advisory prose
+
+Since dev-team#187/#174 (Wave 3 Guard 1, "deliver-before-die"), the `## Report contract`'s
+`STATUS ∈ {DONE, BLOCKED, HELP, IN-PROGRESS}` line is a runtime-enforced contract for
+builder-tier agents (`fullstack-dev`, `backend-dev`, `frontend-dev`, `aiplugin-dev`, `dev-lite`
+— `hooks/lib/model-routing-enforce.ts`'s `BUILDER_TIER_AGENTS`), not just prompt-body prose a
+builder might skip under a truncated dispatch. A `SubagentStop` hook
+(`hooks/check-builder-terminal-state.ts` / `hooks/lib/check-builder-terminal-state.ts`) blocks
+once when a builder-tier subagent is about to go idle with neither a recognized `DONE:` /
+`BLOCKED:` / `HELP:` / `IN-PROGRESS:` line nor a completion-artifact path
+(`.claude/artifacts/crew/{handoffs,reviews,validations,deployments,runs,cost,cost-insights,agents}/*.md`)
+in its last message — directing the agent to either finish the STATUS line or commit WIP and
+report `BLOCKED: <what's left>`. `BLOCKED` is itself a valid terminal state and is never
+blocked by this guard — forcing completion on a legitimate stop would convert it into a stuck
+loop. One retry only (`stop_hook_active` re-entry guard): a second consecutive stop with no
+signal passes through so the dispatcher-level watchdog takes over. Fails open on malformed
+input, non-builder-tier agents, and a runtime that doesn't populate `last_assistant_message`.
+Opt out per-repo via `crew.json features["builder-terminal-state-guard"].enabled=false`
+(default `true`).
+
 ## Required frontmatter (3rdparty)
 
 3rdparty agents are NOT validated. Keep them shaped roughly like first-party for parity, but the schema is whatever upstream ships. Carve-out: bias-prone description blocks (fake numbers, example dialogues with hallucinated metrics) should be stripped before checking in — see `agents/cloud-architect.md` history for the contract-first pattern we expect.
