@@ -15,9 +15,12 @@
 
 ## In flight — NEXT SESSION PICK UP HERE
 
-1. **W2-b slice 1 (runner#393)**: builder agent was running in worktree
-   `C:\work\mega\runner-plugin-worktrees\w2b-slice-size` (branch `fix/393-slice-size-policy`, base 1a6d9592).
-   Scope: `MAX_SLICE_POINTS` 5→2 (`src/scripts/lib/proposed-slices.mts`), pm.md landmine-pre-split + no-bundling policy, test/fixture updates. Builder told: verify (targeted tests + typecheck + biome), do NOT commit, report live-backlog entries >2pts without editing them. **Check that worktree's `git status` first** — work may sit uncommitted. Then: review → commit → PR → merge (user pre-approved cap 2).
+1. **W2-b slice 1 (runner#393)**: DONE before cutoff — builder finished green
+   (24+23 targeted tests, tsc, biome), committed `2d88fc98`, pushed, **PR #482 open**
+   (cap 5→2 + landmine/no-bundle policy). Watch CI → auto-merge on gate green.
+   Note: independent review was skipped at session cutoff (builder self-verified;
+   standard-gate CI is on the PR) — next session may run a review pass on #482
+   before/after merge if it lands red or looks off.
 2. **W2-b slice 2 (pending)**: estimated-token field + ~200k auto-split heuristic at triage. After slice 1.
 3. **#393 close-out**: after both slices, close issue (point at #414 + slice PRs).
 4. **Wave 2 exit ceremony**: per plan — cut one release per repo (runner: #392+#393 work; dev-team: #221/#222/#223 already on main, unreleased).
