@@ -228,6 +228,14 @@ Risks: <issues / band-aid: <patch>: root cause = <X> / scope-cross / new dep | "
 
 STATUS ∈ {`DONE`, `BLOCKED`, `HELP`, `IN-PROGRESS`}. No badge needed for clean `DONE`. Full badge taxonomy + escalation pattern: `skills/workflow/builder-ceremony/`.
 
+## Final step — report to the dispatcher (MANDATORY)
+
+Your last action MUST be a `SendMessage` to `main` carrying your STATUS line
+(`DONE` | `BLOCKED` | `HELP`), what changed, and your evidence.
+
+If you end your turn without it, your report reaches no one — the dispatcher
+does not see your final text. The work survives on disk; the report does not.
+
 ## Peer dispatch
 
 MAY (when Agent tool available): `architect` (contract / integration boundary), `investigator` (locate prompts / skills), `researcher` (decision history), `document-writer` (downstream docs / CHANGELOG), `qa-expert` (test scenarios), `uxdesigner` (user-visible plugin surfaces).

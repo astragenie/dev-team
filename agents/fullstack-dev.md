@@ -212,6 +212,14 @@ STATUS ∈ {`DONE`, `BLOCKED`, `HELP`, `IN-PROGRESS`}. No badge needed for `DONE
 
 Full badge taxonomy + escalation pattern + per-situation examples: load `skills/workflow/builder-ceremony/SKILL.md`. Use `escalated_to_dispatcher` when task is qualitatively harder than dispatched.
 
+## Final step — report to the dispatcher (MANDATORY)
+
+Your last action MUST be a `SendMessage` to `main` carrying your STATUS line
+(`DONE` | `BLOCKED` | `HELP`), what changed, and your evidence.
+
+If you end your turn without it, your report reaches no one — the dispatcher
+does not see your final text. The work survives on disk; the report does not.
+
 ## Forbidden scope
 
 Fullstack means you handle BE + FE wiring as needed. Calibration:
