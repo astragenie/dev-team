@@ -15,16 +15,23 @@
 
 ## In flight — NEXT SESSION PICK UP HERE
 
-1. **W2-b slice 1 (runner#393)**: DONE before cutoff — builder finished green
-   (24+23 targeted tests, tsc, biome), committed `2d88fc98`, pushed, **PR #482 open**
-   (cap 5→2 + landmine/no-bundle policy). Watch CI → auto-merge on gate green.
-   Note: independent review was skipped at session cutoff (builder self-verified;
-   standard-gate CI is on the PR) — next session may run a review pass on #482
-   before/after merge if it lands red or looks off.
-2. **W2-b slice 2 (pending)**: estimated-token field + ~200k auto-split heuristic at triage. After slice 1.
-3. **#393 close-out**: after both slices, close issue (point at #414 + slice PRs).
-4. **Wave 2 exit ceremony**: per plan — cut one release per repo (runner: #392+#393 work; dev-team: #221/#222/#223 already on main, unreleased).
-5. **Wave 3**: design committed; needs human answers to design doc §6 (staleness TTL, SubagentStop stacking smoke test, cwd-assertion reversal sign-off) before builds.
+1. **W2-b slice 1 (runner#393)**: **MERGED as PR #482** (auto-merge on gate green;
+   slow-tests red = known flake #481, both #480 and #482 hit it). Cap 5→2 +
+   landmine/no-bundle policy live on runner main. Independent review was skipped
+   at cutoff (builder self-verified + CI gate) — optional post-merge review pass
+   if anything looks off. Both runner feature worktrees pruned; runner main
+   synced past #480+#482.
+2. **W2-b slice 2 (NEXT UP)**: estimated-token field + ~200k auto-split heuristic
+   at triage (issue #393 proposal 4). Fresh worktree off runner main.
+3. **#393 close-out**: after slice 2, close issue pointing at #414 + #482 + slice-2 PR
+   (+ #479 for the carved-out review-split half).
+4. **Wave 2 exit ceremony**: per plan — cut one release per repo
+   (runner: #392 #393 #404 work; dev-team: #221/#222/#223 on main, unreleased).
+5. **Wave 3**: design committed (`designs/2026-07-12-subagent-lifecycle-guards.md`);
+   needs human answers to §6 (staleness TTL, SubagentStop stacking smoke test,
+   cwd-assertion reversal sign-off) before builds.
+6. **Flake fix worth queueing**: runner#481 (connect.test.mts TDZ) — slow-tests job
+   is red noise on every PR until fixed.
 
 ## Awaiting user decision
 
@@ -35,6 +42,6 @@
 
 ## Confidence / risks
 
-- High on shipped items (all CI-verified + merged).
-- W2-b builder state unknown at cutoff — inspect worktree before re-dispatching (avoid #162-style dup completion).
+- High on shipped items (all CI-verified + merged: dev-team #221/#222/#223, runner #477/#478/#480/#482).
 - runner slow-tests job untrustworthy until #481 fixed; `gate` is the blocking signal.
+- Wave 2 exit blocked only on slice 2 + releases — no open builders, no dirty feature worktrees.
