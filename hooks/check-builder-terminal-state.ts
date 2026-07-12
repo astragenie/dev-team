@@ -2,11 +2,13 @@
 // SubagentStop hook — builder-tier terminal-state guard (dev-team#187, #174 —
 // Wave 3 Guard 1, "deliver-before-die"). Default-on; opt out via crew.json
 // features["builder-terminal-state-guard"].enabled=false.
-// Blocks (decision:"block") a builder-tier subagent (crew:fullstack-dev,
-// crew:backend-dev, crew:frontend-dev, crew:aiplugin-dev, crew:dev-lite) that
-// is about to go idle without ever delivering a terminal state (a
-// STATUS: DONE|BLOCKED|HELP|IN-PROGRESS line, or a completion-artifact path).
-// Fail-open on malformed input, non-builder agents, stop_hook_active
+// Blocks (decision:"block") a STATUS-line builder-tier subagent
+// (crew:fullstack-dev, crew:backend-dev, crew:frontend-dev, crew:aiplugin-dev
+// — crew:dev-lite is deliberately OUT of scope, see
+// hooks/lib/check-builder-terminal-state.ts's RECEIPT_ONLY_AGENTS comment +
+// dev-team#226) that is about to go idle without ever delivering a terminal
+// state (a DONE:/BLOCKED:/HELP:/IN-PROGRESS: line, or a completion-artifact
+// path). Fail-open on malformed input, out-of-scope agents, stop_hook_active
 // re-entry, or a runtime that doesn't populate last_assistant_message — see
 // hooks/lib/check-builder-terminal-state.ts header for the documented
 // residual gap.
