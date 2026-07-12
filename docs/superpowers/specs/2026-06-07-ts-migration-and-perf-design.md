@@ -190,6 +190,18 @@ Applied per-file at migration time inside each leaf slice.
 
 Every JSON read from disk validates via Zod schema in `lib/schemas.ts`. After parse, the typed object flows inward; no re-validation. Matches standards §Runtime validation with Zod.
 
+**Exception (dev-team#185, #194, 2026-07-12):** schemas reachable from `scripts/crew.ts`'s
+top-level static import chain must NOT depend on `zod` (or any other bare-specifier
+package). A marketplace plugin-cache install ships source only — no `node_modules`,
+no install step — so a static `import "zod"` anywhere on that chain throws
+`ERR_MODULE_NOT_FOUND` on every invocation, regardless of which command runs or
+whether that command needs the schema. `ReviewArtifactSchema` / `ValidationArtifactSchema`
+(the only schemas crew.ts actually `.safeParse()`s at runtime) moved to
+`scripts/lib/artifact-schemas.ts`, hand-rolled with a zod-compatible `safeParse`
+result shape and zero dependencies. `WorkflowStateSchema` stays Zod-based in
+`lib/schemas.ts` because it is test-only (never imported by crew.ts). Same failure
+shape as the `@opentelemetry/api` top-level-import bug fixed in v0.37.2.
+
 ## Top-10 perf wins (parallel track)
 
 Each scored: Win (rough latency saving), Effort (S/M/L), Risk (L/M/H). Ranked by Win/Effort.

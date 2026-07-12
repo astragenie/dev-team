@@ -12,7 +12,7 @@ import {
   normalizeValidationDecision,
   ReviewArtifactSchema,
   ValidationArtifactSchema
-} from "./lib/schemas.ts";
+} from "./lib/artifact-schemas.ts";
 
 // Flag schema. Each entry maps a CLI flag to the flags-object key and the
 // arity (whether it consumes a value). Aliases (e.g. `--verdict` → `decision`)
