@@ -4,7 +4,7 @@ prompt_id: dispatcher-routing
 version: 1.0.0
 tier: workflow
 description: Agent quick reference table and specialist routing rules for the dispatcher orchestrator — which crew agent to dispatch for each need, architect-mandatory triggers, and multi-need split rule.
-owner: sergeymilashico
+owner: astra
 last_reviewed: 2026-06-13
 triggers: ["dispatch", "route", "which agent", "agent quick reference", "specialist", "routing"]
 ---

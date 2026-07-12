@@ -4,7 +4,7 @@ prompt_id: risk-tier
 version: 1.0.0
 tier: workflow
 description: Risk-based tier lookup table (dispatch budget, artifact set, gate ladder), SLA caps for re-dispatch loops, and confidence aggregation formula for slice-close synthesis.
-owner: sergeymilashico
+owner: astra
 last_reviewed: 2026-06-13
 triggers: ["risk tier", "dispatch budget", "SLA cap", "confidence aggregation", "HIGH", "MEDIUM", "LOW tier"]
 ---

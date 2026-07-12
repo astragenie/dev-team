@@ -4,7 +4,7 @@ prompt_id: using-crew
 version: 1.0.0
 tier: workflow
 description: Use at the start of real software work to choose the right mode, define pace, enforce ownership boundaries, and keep handoffs inspectable.
-owner: sergeymilashico
+owner: astra
 last_reviewed: 2026-05-22
 triggers: ["crew:build", "crew:fix", "crew:review", "crew:ship", "new task"]
 ---

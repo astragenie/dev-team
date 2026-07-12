@@ -59,7 +59,7 @@ Pre-1.0 semver-ish:
 
 ## Companion plugin (loop)
 
-Separate repo: `sergeymilashico/loop`.
+Separate repo: `astragenie/runner-plugin`.
 Referenced here by version only in `marketplace.json → plugins[name=loop].version`.
 To pick up a loop release: bump that version and commit under `chore(marketplace): bump loop to <ver>`.
 

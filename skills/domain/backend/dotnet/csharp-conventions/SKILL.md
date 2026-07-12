@@ -5,7 +5,7 @@ version: 1.0.0
 tier: domain
 stack: dotnet
 description: C# .NET 10 conventions — architecture, SOLID idioms, approved libraries, and code shapes. Use when touching *.cs files.
-owner: sergeymilashico
+owner: astra
 last_reviewed: 2026-05-22
 triggers: ["*.cs", "*.csproj", ".sln", "dotnet", "csharp"]
 ---

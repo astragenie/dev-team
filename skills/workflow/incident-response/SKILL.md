@@ -4,7 +4,7 @@ prompt_id: incident-response
 version: 1.0.0
 tier: workflow
 description: Triage a live production incident — root-cause diagnosis via logs/metrics/traces, rollback decision tree (code vs config vs traffic), a common prod failure-mode catalogue, and a post-mortem template. Sibling of skills/workflow/release-recovery/ (release-ceremony mechanics); this skill covers runtime incident diagnosis and recovery decisions.
-owner: sergeymilashico
+owner: astra
 last_reviewed: 2026-07-07
 triggers: ["production incident", "prod is down", "500s in prod", "rollback decision", "read logs for incident", "post-mortem", "incident diagnosis", "OOM", "slow query incident", "traffic spike", "data corruption incident"]
 ---

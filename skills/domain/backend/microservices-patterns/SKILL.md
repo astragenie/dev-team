@@ -4,7 +4,7 @@ prompt_id: microservices-patterns
 version: 1.0.0
 tier: domain
 description: Microservices design patterns — circuit breaker, saga, service discovery, distributed tracing, message queue integration. Use when a FEAT involves inter-service communication, async messaging, or distributed transaction design.
-owner: sergeymilashico
+owner: astra
 last_reviewed: 2026-06-09
 triggers: ["microservice", "kafka", "rabbitmq", "service mesh", "saga", "circuit breaker", "dead letter", "distributed tracing"]
 ---

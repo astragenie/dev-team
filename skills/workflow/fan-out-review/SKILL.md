@@ -4,7 +4,7 @@ prompt_id: fan-out-review
 version: 1.0.0
 tier: workflow
 description: Fan-out review procedure for HIGH-risk or security/performance-tagged slices — how many reviewers to dispatch, how to aggregate findings, and how to resolve reviewer disagreement.
-owner: sergeymilashico
+owner: astra
 last_reviewed: 2026-06-13
 triggers: ["fan-out", "fan-out review", "multiple reviewers", "reviewer disagreement", "HIGH risk review", "concern:security", "concern:performance"]
 ---
