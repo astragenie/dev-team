@@ -1,16 +1,35 @@
 name: Auto-merge on green
 
-# Hands-off merge policy. Every non-draft PR is armed for auto-merge, so
-# GitHub squash-merges it the instant the branch's required status checks
-# (enforced by the `main` ruleset) pass — no manual review click needed.
+# Policy: armed by default, disarmed on draft, on a `hold`/`do-not-merge`
+# label, or when the PR touches a sensitivity-gated path. GitHub squash-merges
+# an armed PR the instant the branch's required status checks (enforced by
+# the `main` ruleset) pass — no manual review click needed for routine PRs
+# (tests, scripts, deps, ordinary docs).
 #
-# Escape hatch: add a `hold` or `do-not-merge` label to block a PR; the
-# workflow disarms auto-merge when it sees the label and re-arms when it's
-# removed.
+# Sensitivity gate: hooks/**, agents/**, commands/**, and .github/workflows/**
+# changes disarm auto-merge unconditionally, because a bug in any of these
+# has fleet-wide or self-protecting blast radius (see PR #225 — a hooks/
+# regression blocked 100% of crew:dev-lite completions across every consumer
+# repo — and PR #224 — a commands/ doc prescribed a nonexistent API that
+# would have silently dropped a tracked worktree). These paths require a
+# human merge decision; the workflow disarms auto-merge, logs which path(s)
+# matched, and posts (or updates) a single PR comment explaining why, so a
+# disarmed PR doesn't just sit there unexplained.
+#
+# The path check is stateless: it re-evaluates the current diff on every
+# run, not just the first one. If a PR is later force-pushed to no longer
+# touch a sensitive path, it re-arms automatically — same as removing a
+# `hold` label. Deliberate choice: sensitivity should track what the PR
+# *currently* does, not what it once touched.
+#
+# Escape hatch: add a `hold` or `do-not-merge` label to block any PR
+# regardless of paths touched; the workflow disarms auto-merge when it sees
+# the label and re-arms when it's removed (again, re-evaluated statelessly).
 #
 # Runs on the self-hosted runner so it never consumes GitHub-hosted Actions
 # minutes on this private repo (org runs a $0 hosted-spend budget). Uses
-# actions/github-script (GraphQL) so no `gh` binary is required on the host.
+# actions/github-script (GraphQL/REST) so no `gh` binary is required on the
+# host.
 
 on:
   pull_request:
@@ -33,10 +52,11 @@ jobs:
         with:
           script: |
             const pr = context.payload.pull_request;
+            const { owner, repo } = context.repo;
             const held = pr.labels.some(l => ['hold', 'do-not-merge'].includes(l.name));
 
-            if (pr.draft || held) {
-              core.info(`#${pr.number} is ${pr.draft ? 'draft' : 'held'} — disabling auto-merge.`);
+            const disable = async (reason) => {
+              core.info(`#${pr.number}: ${reason} — disabling auto-merge.`);
               try {
                 await github.graphql(
                   `mutation($id: ID!) {
@@ -47,7 +67,53 @@ jobs:
               } catch (e) {
                 core.info(`disable no-op: ${e.message}`);
               }
+            };
+
+            if (pr.draft || held) {
+              await disable(pr.draft ? 'draft' : 'held');
               return;
+            }
+
+            // Sensitivity gate: paginate ALL changed files — a PR can exceed
+            // one page of listFiles results, and a missed page means a
+            // sensitive file slips through undetected.
+            const SENSITIVE = [/^hooks\//, /^agents\//, /^commands\//, /^\.github\/workflows\//];
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner, repo, pull_number: pr.number, per_page: 100,
+            });
+            const matched = files
+              .map(f => f.filename)
+              .filter(name => SENSITIVE.some(re => re.test(name)));
+
+            const MARKER = '<!-- auto-merge-path-disarm -->';
+            const existing = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number: pr.number, per_page: 100,
+            });
+            const botComment = existing.find(c => c.body && c.body.includes(MARKER));
+
+            if (matched.length > 0) {
+              await disable(`sensitive path(s) matched: ${matched.join(', ')}`);
+              const body = `${MARKER}\nAuto-merge is disarmed — this PR touches a sensitivity-gated path ` +
+                `(${matched.map(m => `\`${m}\``).join(', ')}) and needs a human merge decision. ` +
+                `This is re-evaluated on every push; if the sensitive change is removed, auto-merge re-arms automatically.`;
+              if (botComment) {
+                if (botComment.body !== body) {
+                  await github.rest.issues.updateComment({ owner, repo, comment_id: botComment.id, body });
+                }
+              } else {
+                await github.rest.issues.createComment({ owner, repo, issue_number: pr.number, body });
+              }
+              return;
+            }
+
+            // No longer sensitive (e.g. force-pushed to drop the matched
+            // change) — leave the historical comment in place as an audit
+            // trail but note that auto-merge has re-armed.
+            if (botComment && !botComment.body.includes('re-armed')) {
+              await github.rest.issues.updateComment({
+                owner, repo, comment_id: botComment.id,
+                body: `${botComment.body}\n\n_Update: no sensitive paths remain in the current diff — auto-merge has re-armed._`,
+              });
             }
 
             core.info(`Arming squash auto-merge on #${pr.number}.`);
