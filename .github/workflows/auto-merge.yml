@@ -77,11 +77,32 @@ jobs:
                   { id: pr.node_id }
                 );
               } catch (e) {
-                const notEnabled = /not enabled|no auto-?merge|Auto-merge is not/i.test(e.message || '');
-                if (notEnabled) {
-                  core.info(`disable no-op (auto-merge was not armed): ${e.message}`);
+                // Do NOT classify by error string. GitHub returns "Can't disable
+                // auto-merge for this pull request." for the benign not-armed case,
+                // and error prose is not a stable contract — the previous regex
+                // missed that exact string and turned every draft/held PR into a red
+                // run. Ask for the STATE instead: if auto-merge is not enabled, there
+                // was nothing to disable and the failure is a no-op. If it IS enabled
+                // and we could not turn it off, that is the dangerous case (the PR can
+                // still merge on green) and it must be loud.
+                let stillArmed = null; // null = unknown
+                try {
+                  const q = await github.graphql(
+                    `query($id: ID!) {
+                       node(id: $id) { ... on PullRequest { autoMergeRequest { enabledAt } } }
+                     }`,
+                    { id: pr.node_id }
+                  );
+                  stillArmed = !!q?.node?.autoMergeRequest;
+                } catch (probeErr) {
+                  core.warning(`could not read auto-merge state: ${probeErr.message}`);
+                }
+
+                if (stillArmed === false) {
+                  core.info(`disable no-op — auto-merge was not armed on #${pr.number}.`);
                   return;
                 }
+                // Armed, or state unknown → fail closed and loud.
                 core.setFailed(
                   `#${pr.number}: FAILED to disable auto-merge (${reason}): ${e.message}. ` +
                   `This PR may still merge on green — disarm it by hand or add a 'hold' label NOW.`
