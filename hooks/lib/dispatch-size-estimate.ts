@@ -38,6 +38,9 @@ export interface ParsedDispatchSizeInput {
   cwd: string;
   subagentType: string;
   prompt: string;
+  /** Correlation keys for joining the calibration log to dispatch-timing.jsonl. Empty string when absent. */
+  sessionId: string;
+  toolUseId: string;
 }
 
 /** Bare agent name (namespace prefix like "crew:" stripped), lowercased. */
@@ -141,7 +144,17 @@ export function parseAgentDispatchSizeInput(raw: string): ParsedDispatchSizeInpu
     if (subagentType === "") return null;
     const prompt = typeof ti["prompt"] === "string" ? ti["prompt"] : "";
     const cwd = typeof obj["cwd"] === "string" ? obj["cwd"] : process.cwd();
-    return { cwd, subagentType, prompt };
+    // Correlation keys for the later calibration join against dispatch-timing.jsonl
+    // (which records real tokenIn/tokenOut per dispatch). WITHOUT these, the join can
+    // only match on name + nearest-timestamp — ambiguous under concurrent same-tier
+    // dispatches, which this repo's parallel-worktree workflow produces routinely.
+    // The estimator's constants are designed, not fitted; this key is what makes the
+    // warn-phase actually convertible into a calibrated block-phase. Availability
+    // confirmed by the sibling hook lib/dispatch-timing-pre-tap.ts, which extracts
+    // session_id from this identical PreToolUse/Agent payload.
+    const sessionId = typeof obj["session_id"] === "string" ? obj["session_id"] : "";
+    const toolUseId = typeof obj["tool_use_id"] === "string" ? obj["tool_use_id"] : "";
+    return { cwd, subagentType, prompt, sessionId, toolUseId };
   } catch {
     return null;
   }
@@ -215,7 +228,8 @@ export function buildDispatchSizeOutput(decision: DispatchSizeDecision): string 
 async function logDispatchSizeEstimate(
   cwd: string,
   estimate: DispatchSizeEstimate,
-  action: DispatchSizeAction
+  action: DispatchSizeAction,
+  correlation: { sessionId: string; toolUseId: string }
 ): Promise<void> {
   try {
     const dir = path.join(cwd, ".claude", "logs");
@@ -224,6 +238,11 @@ async function logDispatchSizeEstimate(
       ts: new Date().toISOString(),
       event: "dispatch-size-gate",
       action,
+      // Join keys → dispatch-timing.jsonl's real tokenIn/tokenOut. Without these the
+      // calibration pass could only match name + nearest-timestamp, which is ambiguous
+      // under the concurrent same-tier dispatches this repo runs routinely.
+      sessionId: correlation.sessionId,
+      toolUseId: correlation.toolUseId,
       subagentType: estimate.subagentType,
       estimatedTokens: estimate.estimatedTokens,
       promptLength: estimate.promptLength,
@@ -257,7 +276,10 @@ export async function runDispatchSizeGateHook(raw: string): Promise<string | nul
     const blockMode = isEnabled(DISPATCH_SIZE_FEATURE, crewConfig);
     const estimate = estimateDispatchSize(dispatch);
     const decision = decideDispatchSizeAction(estimate, blockMode);
-    await logDispatchSizeEstimate(dispatch.cwd, estimate, decision.action);
+    await logDispatchSizeEstimate(dispatch.cwd, estimate, decision.action, {
+      sessionId: dispatch.sessionId,
+      toolUseId: dispatch.toolUseId
+    });
     return buildDispatchSizeOutput(decision);
   } catch {
     // Fail-open: a config-read/estimate/log failure must never block a
