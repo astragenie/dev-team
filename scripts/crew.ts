@@ -83,6 +83,7 @@ const FLAG_SPEC = {
   "--pace": { key: "pace" },
   "--phase": { key: "phase" },
   "--preset": { key: "preset" },
+  "--project": { key: "project" },
   "--reason": { key: "reason" },
   "--refresh-when": { key: "refreshWhen" },
   "--repo": { key: "repo" },
@@ -203,6 +204,7 @@ function buildDefaultFlags(): Flags {
     revision: null,
     badge: null,
     preset: null,
+    project: null,
     commitPattern: null,
     triggerFilename: null,
     reviewerLabel: null,
@@ -465,7 +467,9 @@ function usage(target: string | null = null) {
     "gepa-revert": "  node scripts/crew.ts gepa-revert --agent <name> [--repo <path>]",
     "gepa-thaw": "  node scripts/crew.ts gepa-thaw <agent> [--repo <path>]",
     "recall-block":
-      "  node scripts/crew.ts recall-block --repo <path> [--agent <name>] [--tags <a,b>]",
+      "  node scripts/crew.ts recall-block --repo <path> [--agent <name>] [--tags <a,b>] [--project <a,b>]\n" +
+      "    --project accepts a comma-list (OR-composed, FEAT-423); omitted falls back\n" +
+      "    to the configured memory.project in .claude/loop.json.",
     "memory-drift-check":
       "  node scripts/crew.ts memory-drift-check --repo <path> [--window <days>]\n" +
       "    Read-only: compares learnings.jsonl entries in the window against astramem's\n" +
@@ -1594,10 +1598,17 @@ const COMMANDS = {
   "recall-block": async ({ repoPath, flags }: CommandContext) => {
     const { buildRecallBlock } = await import("./lib/memory/inject-recall.ts");
     const tags = splitCsv(flags.tags);
+    // #159: --project accepts a comma-list (OR-composed, FEAT-423), same
+    // convention as --tags. Omitted -> buildRecallBlock falls back to the
+    // configured memory.project in .claude/loop.json.
+    const projects = splitCsv(flags.project);
+    const project: string | string[] | undefined =
+      projects.length > 1 ? projects : (projects[0] ?? undefined);
     const block = await buildRecallBlock({
       repoPath,
       ...(typeof flags.agent === "string" && flags.agent ? { agent: flags.agent } : {}),
-      ...(tags.length > 0 ? { tags } : {})
+      ...(tags.length > 0 ? { tags } : {}),
+      ...(project !== undefined ? { project } : {})
     });
     return { block };
   },
