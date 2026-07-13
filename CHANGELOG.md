@@ -3,6 +3,39 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [v0.63.0] — 2026-07-13 — subagent survival: deliver before you die
+
+Seven agents died mid-session at the token ceiling. Their *work* survived every
+time — their *reports* did not, and four had to be recovered by grepping disk.
+This release makes the report land before the risky tail, estimates dispatch
+size before an agent is spawned into a doomed context, and stops the auto-merge
+gate from shipping unreviewed changes to sensitive paths.
+
+- **Report-to-PR contract** (#227, `e85778e5`): builders post their report to the
+  PR **before** the risky tail of a long task, not after. `scripts/lib/report-to-pr.ts`
+  upserts an idempotent marker comment (`<!-- dev-team:report -->`) with a disk
+  fallback when GitHub is unreachable. Wired into the four `*-dev` builder prompts.
+- **Dispatch size gate** (#232, `1109ae4a`): a `PreToolUse` hook estimates the
+  token cost of a dispatch and warns at 200k. **Ships warn-only** — the
+  `dispatch-size-gate` flag defaults to `false`. It logs
+  `{sessionId, toolUseId, subagentType, estimatedTokens, ...}` so the threshold can
+  be calibrated against real deaths before anything is blocked. Fail-open by design.
+- **Auto-merge fail-closed** (#230 + #233, `537fd4d5`, `664f7e0c`): the gate now
+  disarms auto-merge on sensitive paths (`hooks/`, `agents/`, `commands/`,
+  `.github/workflows/`) and classifies disarm success by **querying PR state**, not
+  by regex-matching GitHub's error prose. The prose approach shipped and broke —
+  GitHub's real message did not match the guessed pattern, turning every draft PR
+  red. If the state cannot be determined, the job fails closed.
+- **Builder terminal-state guard** (#225 + #228, `26c466b3`, `0b6ce2a3`): warns when
+  a builder-tier agent ends without a terminal status. `dev-lite` is excluded — it
+  does not share the other builders' status vocabulary, and including it would have
+  blocked 100% of `dev-lite` completions in every consumer repo.
+- **`isolation:` docs corrected** (#169, #224 + #229, `da3319dd`, `c3b6fa02`):
+  `commands/parallel.md` prescribed a nonexistent API — it described `isolation:` as
+  taking a worktree *path*. It is a bare `"worktree" | "remote"` enum that always
+  creates a **new** tree. Agents following the old text would have abandoned tracked
+  worktrees and silently lost work.
+
 ## [v0.62.1] — 2026-07-12 — single-toggle model routing
 
 Patch: drops the redundant `crew.json features["model-routing"]` off-switch
