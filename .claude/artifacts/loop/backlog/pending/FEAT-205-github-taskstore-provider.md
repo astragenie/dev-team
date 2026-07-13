@@ -104,20 +104,32 @@ Publish **only** non-`done` FEATs (pending / triaged / in-progress). `done` FEAT
 are skipped. Reuse the reconcile command's publish path; do not fork it. Idempotent
 — a re-run must not create duplicates.
 
-### S3 — Ingest: GitHub issue → FEAT (**the new capability**)
-A `loop github intake` path that turns a tracker issue into a local FEAT the loop
-can score and dispatch.
+### S3 — Ingest: GitHub issue → FEAT (**smaller than it looks — half exists**)
 
-- Read-only against the tracker; **writes only the new local FEAT file**.
-- **Idempotency is the crux:** an issue already linked to a FEAT must never produce
-  a second one. Key on the issue number, stamped into FEAT frontmatter.
-- Must not ingest issues the loop itself published (no self-ingest loop). Use the
-  same linkage `checkSyncDrift()` uses to classify "linked" vs "tracker-only."
-- Ingested FEATs are **unscored** (`status: pending`) — they enter the normal PM
-  triage path, they do not jump the queue.
-- **Selective, not bulk-by-default:** `--issue N`, `--label X`, or an explicit
-  `--all` with a dry-run plan first. Auto-ingesting 30 issues unasked is a footgun.
-- `--dry-run` is the default.
+**⚠️ CORRECTION (verified against code 2026-07-12): the single-issue ingest path
+ALREADY EXISTS.** `loop backlog add --from-issue <url>` fetches a GitHub issue via
+`src/scripts/lib/from-issue.mts` (`fetchIssue` → title/body/number/url) and
+pre-fills FEAT frontmatter. It is wired at `loop.mts:861`. **Do not rebuild it.**
+
+What is genuinely missing is narrower:
+
+- **Discovery** — *which* issues need ingesting. `checkSyncDrift()`'s `trackerOnly`
+  list already answers this exactly (runner: 13 genuinely-open ad-hoc issues;
+  dev-team: 30). Wire the existing detector to the existing fetcher.
+- **Idempotency / linkage (the crux)** — an issue already linked to a FEAT must
+  never produce a second one. Stamp the issue number into FEAT frontmatter and key
+  on it. **Must not ingest issues the loop itself published** (publish → ingest →
+  duplicate FEAT is a real self-loop). Reuse the linkage `checkSyncDrift()` already
+  uses to classify "linked" vs "tracker-only."
+- **Selective and bulk modes** — `--issue N`, `--label X`, or an explicit `--all`.
+  Auto-ingesting 30 issues unasked is a footgun.
+- **`--dry-run` by default**, printing the plan.
+
+Ingested FEATs are **unscored** (`status: pending`) — they enter the normal PM
+triage path and do not jump the queue.
+
+Read-only against the tracker; **writes only new local FEAT files**, never modifies
+existing ones.
 
 ### S4 — Standing drift gate
 Schedule `loop github drift` in CI; alert on non-zero drift. This is the immune
