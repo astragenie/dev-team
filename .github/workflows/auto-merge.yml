@@ -93,7 +93,11 @@ jobs:
                      }`,
                     { id: pr.node_id }
                   );
-                  stillArmed = !!q?.node?.autoMergeRequest;
+                  // Distinguish "node resolved, auto-merge is null" (confirmed NOT armed,
+                  // safe) from "node itself did not resolve" (unknown — we learned nothing,
+                  // so fail closed). Collapsing both to false would let an unexpected
+                  // response shape read as "safe" and silently skip the alarm.
+                  stillArmed = q?.node ? !!q.node.autoMergeRequest : null;
                 } catch (probeErr) {
                   core.warning(`could not read auto-merge state: ${probeErr.message}`);
                 }
