@@ -197,15 +197,17 @@ test("builder.md points at builder-ceremony skill (which carries self-verify ref
   );
 });
 
-// FEAT-170 SLICE-D follow-up: builders MUST NOT invoke write-handoff. The
-// follow-up IS the badge + 2-5 line structured response. Prohibitive
-// "Builders do NOT write handoff artifacts" + "NEVER invoke write-handoff"
-// language stays as the protective guardrail; any constructive "write the
-// handoff" pattern would regress the new contract.
-test("builder.md prohibits write-handoff CLI invocation (FEAT-170 SLICE-D)", () => {
+// FEAT-170 SLICE-D follow-up, superseded by dev-team#227: builders MUST NOT
+// invoke write-handoff. Originally guarded by the "Builders do NOT write
+// handoff artifacts" declaration; #227's AC explicitly REMOVES that exact
+// declaration (report channel moved to a PR comment posted before the risky
+// tail) and replaces it with the "report dies with you if truncated" framing
+// + "Narration without a posted PR report = contract violation" guardrail.
+// "NEVER invoke write-handoff" stays as the protective guardrail unchanged.
+test("builder.md prohibits write-handoff CLI invocation (FEAT-170 SLICE-D / dev-team#227)", () => {
   assert.ok(
-    builder.includes("do NOT write handoff") || builder.includes("DO NOT write handoff"),
-    "fullstack-dev.md must contain the prohibitive 'Builders do NOT write handoff artifacts' guardrail"
+    builder.includes("Narration without a posted PR report = contract violation"),
+    "fullstack-dev.md must contain the report-to-PR contract-violation guardrail"
   );
   assert.ok(
     builder.includes("NEVER invoke `write-handoff`") ||
