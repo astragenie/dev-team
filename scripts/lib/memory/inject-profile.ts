@@ -5,7 +5,8 @@
 // its atom id in an HTML-comment marker so the feedback step can attribute use.
 // Fail-silent + byte-identical-when-disabled is enforced in buildProfileBlock
 // (Task 3); this module is a pure formatter.
-import type { AgentProfile } from "./profile-types.ts";
+import { loadMemoryConfig } from "./inject-recall.ts";
+import type { AgentProfile, ProfileCapableProvider } from "./profile-types.ts";
 
 /** Trailing marker carrying an atom id — invisible in rendered Markdown,
  *  machine-readable by the feedback step (Task 5). */
@@ -82,4 +83,66 @@ export function parseProfileConfig(rawMemory: unknown): ProfileConfig {
     maxTokens: num(o.maxTokens, PROFILE_DEFAULTS.maxTokens),
     minFeedbackSample: num(o.minFeedbackSample, PROFILE_DEFAULTS.minFeedbackSample)
   };
+}
+
+export interface BuildProfileOptions {
+  repoPath: string;
+  agent: string;
+  /** Raw `memory` config; when omitted, loaded from <repoPath>/.claude/loop.json. */
+  rawConfig?: unknown;
+  /** Test seam / explicit provider; when omitted, resolveProvider() is used. */
+  provider?: ProfileCapableProvider;
+}
+
+/** True once at least `minSample` lessons carry a moved usefulness signal
+ *  (!= the Laplace-neutral 0.5). Below that, the ranking is effectively
+ *  importance-ordered and must be labelled so. */
+function usefulnessIsWarm(profile: AgentProfile, minSample: number): boolean {
+  const moved = profile.top_lessons.filter((l) => l.usefulness !== 0.5).length;
+  return moved >= minSample;
+}
+
+/**
+ * Resolve the configured provider, gate on `memory.profile.enabled`, fetch
+ * the agent's profile, and format it into the `## Your track record` block.
+ * Fail-silent: config errors, provider errors, a throwing provider, a
+ * provider lacking `profile()`, or a null profile all resolve to
+ * `{ block: "", injectedIds: [] }` — never a throw.
+ */
+export async function buildProfileBlock(opts: BuildProfileOptions): Promise<{ block: string; injectedIds: string[] }> {
+  const empty = { block: "", injectedIds: [] as string[] };
+  try {
+    const rawConfig = opts.rawConfig !== undefined ? opts.rawConfig : await loadMemoryConfig(opts.repoPath);
+    const cfg = parseProfileConfig(rawConfig);
+    if (!cfg.enabled) return empty;
+
+    let provider = opts.provider;
+    if (!provider) {
+      const { resolveProvider } = await import("@astragenie/memory-provider");
+      provider = resolveProvider(rawConfig, opts.repoPath) as unknown as ProfileCapableProvider;
+    }
+    if (typeof provider.profile !== "function") return empty; // package hasn't shipped it yet
+
+    const profile = await provider.profile(opts.agent);
+    if (!profile) return empty;
+
+    // Enforce topLessons cap before formatting (daemon already caps at 10; be defensive).
+    profile.top_lessons = profile.top_lessons.slice(0, cfg.topLessons);
+
+    const block = formatProfileBlock(profile, {
+      agent: opts.agent,
+      maxChars: cfg.maxTokens * 4,
+      usefulnessWarm: usefulnessIsWarm(profile, cfg.minFeedbackSample)
+    });
+    if (!block) return empty;
+
+    const injectedIds = [
+      ...profile.corrections.map((c) => c.id),
+      ...profile.recent_decisions.map((d) => d.id),
+      ...profile.top_lessons.map((l) => l.id)
+    ];
+    return { block, injectedIds };
+  } catch {
+    return empty; // fail-silent: never block or alter dispatch
+  }
 }

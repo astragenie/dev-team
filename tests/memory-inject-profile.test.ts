@@ -1,7 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatProfileBlock, parseProfileConfig } from "../scripts/lib/memory/inject-profile.ts";
-import type { AgentProfile } from "../scripts/lib/memory/profile-types.ts";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { formatProfileBlock, parseProfileConfig, buildProfileBlock } from "../scripts/lib/memory/inject-profile.ts";
+import type { AgentProfile, ProfileCapableProvider } from "../scripts/lib/memory/profile-types.ts";
 
 function emptyProfile(agent: string): AgentProfile {
   return { agent, counts: {}, total: 0, first_seen: null, last_active: null,
@@ -59,4 +62,62 @@ test("parseProfileConfig reads memory.profile overrides and coerces types", () =
 test("parseProfileConfig treats malformed profile block as disabled defaults (never throws)", () => {
   const c = parseProfileConfig({ profile: "nonsense" });
   assert.equal(c.enabled, false);
+});
+
+async function tmpRepo(p: string) { return fs.mkdtemp(path.join(os.tmpdir(), p)); }
+
+function fakeProvider(profile: AgentProfile | null): ProfileCapableProvider {
+  return { async profile() { return profile; }, async feedback() { return true; } };
+}
+function warmProfile(agent: string): AgentProfile {
+  return { agent, counts: {}, total: 1, first_seen: 1, last_active: 2,
+    corrections: [{ id: "c1", type: "lesson", text: "Do not skip the null check", action: "superseded", reason: null, superseded_by: null, superseding_text: null, corrected_at: 1 }],
+    recent_decisions: [], top_lessons: [{ id: "l1", text: "Fail-silent recall is the rule", importance: 0.8, usefulness: 0.9, created_at: 3 }] };
+}
+
+test("buildProfileBlock returns empty block + [] when profile.enabled is false (default)", async () => {
+  const repo = await tmpRepo("profile-off-");
+  try {
+    const r = await buildProfileBlock({ repoPath: repo, agent: "crew:reviewer", rawConfig: {}, provider: fakeProvider(warmProfile("crew:reviewer")) });
+    assert.equal(r.block, "");
+    assert.deepEqual(r.injectedIds, []);
+  } finally { await fs.rm(repo, { recursive: true, force: true }); }
+});
+
+test("buildProfileBlock returns block + injectedIds when enabled and provider yields a profile", async () => {
+  const repo = await tmpRepo("profile-on-");
+  try {
+    const r = await buildProfileBlock({ repoPath: repo, agent: "crew:reviewer",
+      rawConfig: { profile: { enabled: true } }, provider: fakeProvider(warmProfile("crew:reviewer")) });
+    assert.match(r.block, /## Your track record \(crew:reviewer\)/);
+    assert.deepEqual(r.injectedIds.sort(), ["c1", "l1"]);
+  } finally { await fs.rm(repo, { recursive: true, force: true }); }
+});
+
+test("buildProfileBlock is fail-silent: provider without profile() method yields empty block", async () => {
+  const repo = await tmpRepo("profile-nomethod-");
+  try {
+    const r = await buildProfileBlock({ repoPath: repo, agent: "a", rawConfig: { profile: { enabled: true } }, provider: {} });
+    assert.equal(r.block, "");
+    assert.deepEqual(r.injectedIds, []);
+  } finally { await fs.rm(repo, { recursive: true, force: true }); }
+});
+
+test("buildProfileBlock is fail-silent: a throwing provider yields empty block, never rejects", async () => {
+  const repo = await tmpRepo("profile-throw-");
+  try {
+    const throwing: ProfileCapableProvider = { async profile() { throw new Error("daemon down"); } };
+    const r = await buildProfileBlock({ repoPath: repo, agent: "a", rawConfig: { profile: { enabled: true } }, provider: throwing });
+    assert.equal(r.block, "");
+  } finally { await fs.rm(repo, { recursive: true, force: true }); }
+});
+
+test("buildProfileBlock labels lessons importance-ranked until minFeedbackSample lessons carry usefulness != 0.5", async () => {
+  const repo = await tmpRepo("profile-cold-");
+  try {
+    const cold = warmProfile("a"); cold.top_lessons = [{ id: "l1", text: "cold lesson text here", importance: 0.8, usefulness: 0.5, created_at: 3 }];
+    const r = await buildProfileBlock({ repoPath: repo, agent: "a",
+      rawConfig: { profile: { enabled: true, minFeedbackSample: 5 } }, provider: fakeProvider(cold) });
+    assert.match(r.block, /importance-ranked/i);
+  } finally { await fs.rm(repo, { recursive: true, force: true }); }
 });
