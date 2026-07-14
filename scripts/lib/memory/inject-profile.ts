@@ -52,3 +52,34 @@ export function formatProfileBlock(profile: AgentProfile, opts: FormatProfileOpt
   }
   return block;
 }
+
+export interface ProfileConfig {
+  enabled: boolean;
+  topLessons: number;
+  maxTokens: number;
+  minFeedbackSample: number;
+}
+
+const PROFILE_DEFAULTS: ProfileConfig = { enabled: false, topLessons: 10, maxTokens: 400, minFeedbackSample: 5 };
+
+function num(v: unknown, fallback: number): number {
+  return typeof v === "number" && Number.isFinite(v) ? v : fallback;
+}
+
+/**
+ * Parse the `memory.profile.*` block. Disabled-by-default: absent/malformed
+ * `memory` or `profile` (or a non-object `profile`) resolves to safe
+ * defaults with `enabled: false`. Never throws.
+ */
+export function parseProfileConfig(rawMemory: unknown): ProfileConfig {
+  if (typeof rawMemory !== "object" || rawMemory === null) return { ...PROFILE_DEFAULTS };
+  const p = (rawMemory as Record<string, unknown>).profile;
+  if (typeof p !== "object" || p === null) return { ...PROFILE_DEFAULTS };
+  const o = p as Record<string, unknown>;
+  return {
+    enabled: o.enabled === true,
+    topLessons: num(o.topLessons, PROFILE_DEFAULTS.topLessons),
+    maxTokens: num(o.maxTokens, PROFILE_DEFAULTS.maxTokens),
+    minFeedbackSample: num(o.minFeedbackSample, PROFILE_DEFAULTS.minFeedbackSample)
+  };
+}

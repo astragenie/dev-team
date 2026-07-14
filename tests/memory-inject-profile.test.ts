@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatProfileBlock } from "../scripts/lib/memory/inject-profile.ts";
+import { formatProfileBlock, parseProfileConfig } from "../scripts/lib/memory/inject-profile.ts";
 import type { AgentProfile } from "../scripts/lib/memory/profile-types.ts";
 
 function emptyProfile(agent: string): AgentProfile {
@@ -41,4 +41,22 @@ test("formatProfileBlock truncates to maxChars deterministically (keeps correcti
   const out = formatProfileBlock(p, { agent: "a", maxChars: 120, usefulnessWarm: false });
   assert.ok(out.length <= 120, `len ${out.length}`);
   assert.match(out, /KEEP-CORRECTION/);
+});
+
+test("parseProfileConfig defaults to disabled with safe values when memory/profile absent", () => {
+  const c = parseProfileConfig(undefined);
+  assert.equal(c.enabled, false);
+  assert.equal(c.topLessons, 10);
+  assert.equal(c.maxTokens, 400);
+  assert.equal(c.minFeedbackSample, 5);
+});
+
+test("parseProfileConfig reads memory.profile overrides and coerces types", () => {
+  const c = parseProfileConfig({ profile: { enabled: true, topLessons: 3, maxTokens: 200, minFeedbackSample: 2 } });
+  assert.deepEqual(c, { enabled: true, topLessons: 3, maxTokens: 200, minFeedbackSample: 2 });
+});
+
+test("parseProfileConfig treats malformed profile block as disabled defaults (never throws)", () => {
+  const c = parseProfileConfig({ profile: "nonsense" });
+  assert.equal(c.enabled, false);
 });
