@@ -71,6 +71,10 @@ qa_decision = passed AND verifier_decision = passed
    ```bash
    node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge validation_passed --note "qa-expert + verifier both passed"
    ```
+   **Profile feedback (agent-profile-load-feedback):** if a retry dispatch fetched a profile block in Step 3, record the pass outcome, best-effort, using the SAME `<runId>` (no-op — empty `credited` — when no retry occurred, since no atoms were injected under that run):
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" profile-feedback --repo "$PWD" --run-id <runId> --outcome pass
+   ```
 2. File PR:
    ```bash
    gh pr create --title "<title>" --body "<summary>"
@@ -95,6 +99,9 @@ qa_decision = passed AND verifier_decision = passed
 3. **Recall injection (FEAT-188 S3a):** before dispatching, fetch a recall block:
    `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" recall-block --repo "$PWD" --agent <specialist-builder-agent-name> --tags "<FEAT tags csv>"`
    If `.block` is non-empty, prepend it verbatim (it is already the `## Prior context (from astramem)` block) to the retry dispatch instruction, ahead of the aggregated FAIL findings. If empty (memory not configured, or nothing recalled), omit — do not add any placeholder text.
+3a. **Profile injection (agent-profile-load-feedback):** immediately after the recall block, fetch the specialist builder's track record (best-effort, empty when disabled). Resolve `<runId>` from `.claude/state/crew/workflow-state.json` (`currentRun.slice`) — reuse this SAME value for the profile-feedback calls in Step 3 (Both PASS path) and Step 4 below:
+   `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" profile-block --repo "$PWD" --agent <specialist-builder-agent-name> --run-id <runId>`
+   If `.block` is non-empty, append it (it is already the `## Your track record (<agent>)` block) to the retry dispatch instruction, after the recall block. If empty (profile disabled, or no track record yet), omit — do not add any placeholder text.
 4. Dispatch the specialist builder with the aggregated FAIL findings as fix scope. Builder produces
    a fix + handoff artifact.
 5. Increment retry counter.
@@ -119,6 +126,11 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" \
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-deployment-check --repo "$PWD" \
   --title "Ship: blocked after <N> retries" \
   --decision blocked
+```
+
+**Profile feedback (agent-profile-load-feedback):** record the fail outcome for the last retry's profile block, best-effort, using the SAME `<runId>` from Step 3a:
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" profile-feedback --repo "$PWD" --run-id <runId> --outcome fail
 ```
 
 Halt and escalate to the user with:

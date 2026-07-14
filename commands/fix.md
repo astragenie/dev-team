@@ -165,6 +165,9 @@ Pass the printed value (e.g. `sonnet`) as the Agent-tool dispatch's `model:` arg
    - **Recall injection (FEAT-188 S3a):** before dispatching, fetch a recall block:
      `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" recall-block --repo "$PWD" --agent <specialist-agent-name> --tags "<FEAT tags csv>"`
      If `.block` is non-empty, prepend it verbatim (it is already the `## Prior context (from astramem)` block) to the builder's dispatch instruction. If empty (memory not configured, or nothing recalled), omit — do not add any placeholder text.
+   - **Profile injection (agent-profile-load-feedback):** immediately after the recall block, fetch the specialist's track record (best-effort, empty when disabled). Resolve `<runId>` from `.claude/state/crew/workflow-state.json` (`currentRun.slice`) — reuse this SAME value for the profile-feedback call in step 13a below:
+     `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" profile-block --repo "$PWD" --agent <specialist-agent-name> --run-id <runId>`
+     If `.block` is non-empty, append it (it is already the `## Your track record (<agent>)` block) to the dispatch instruction, after the recall block. If empty (profile disabled, or no track record yet), omit — do not add any placeholder text.
    - Set `size: standard` for substantive changes (requires `write-handoff` artifact).
    - Set `size: light` only for trivial one-line fixups (skips artifact, but builder still returns structured completion).
    - If this run references a design doc, pass the design doc path to the builder.
@@ -179,9 +182,13 @@ Pass the printed value (e.g. `sonnet`) as the Agent-tool dispatch's `model:` arg
     - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-review-result --repo "$PWD" --title "<short title>" --decision <approved|approved_with_notes|rejected> --author-id <builder-agent> --judge-id <reviewer-agent> --summary "<verdict>" --evidence "<files checked>" --files "<files in diff>" --test-summary "<test coverage>" --risks "<risks or none>" --next "<follow-up or none>"`
     - If `--summary` (or any prose flag) contains apostrophes/backticks, shell argv quoting can mangle or drop it (dev-team#152). Write the body to a temp file and pass `--summary-file <path>` (or any `--<flag>-file <path>`) instead.
 11. If either reviewer returns `rejected`, stop. Surface the findings to the user. Do not emit `review_passed`.
+    - **Profile feedback (agent-profile-load-feedback):** record the fail outcome, best-effort, using the SAME `<runId>` from step 7's profile injection:
+      `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" profile-feedback --repo "$PWD" --run-id <runId> --outcome fail`
 12. If Reviewer A is skipped, `review_passed` requires only Reviewer B to approve.
 13. If both approved (or `approved_with_notes`), emit the completion badge:
     - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" mark-badge --repo "$PWD" --badge review_passed`
+13a. **Profile feedback (agent-profile-load-feedback):** record the pass outcome, best-effort, using the SAME `<runId>` from step 7's profile injection:
+    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" profile-feedback --repo "$PWD" --run-id <runId> --outcome pass`
 14. Check Reviewer B's `next` field. If it names a tests-adequacy gap, dispatch `crew:qa-expert`:
     - Pass the finding artifact and the changed files list.
     - Wait for `crew:qa-expert` to return before closing the run.
