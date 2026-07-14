@@ -126,20 +126,23 @@ export async function buildProfileBlock(opts: BuildProfileOptions): Promise<{ bl
     const profile = await provider.profile(opts.agent);
     if (!profile) return empty;
 
-    // Enforce topLessons cap before formatting (daemon already caps at 10; be defensive).
-    profile.top_lessons = profile.top_lessons.slice(0, cfg.topLessons);
+    // Enforce topLessons cap before formatting (daemon already caps at 10; be
+    // defensive) — kept as a local const, never reassigned onto the provider's
+    // returned profile object, which callers may hold references to.
+    const cappedLessons = profile.top_lessons.slice(0, cfg.topLessons);
+    const cappedProfile: AgentProfile = { ...profile, top_lessons: cappedLessons };
 
-    const block = formatProfileBlock(profile, {
+    const block = formatProfileBlock(cappedProfile, {
       agent: opts.agent,
       maxChars: cfg.maxTokens * 4,
-      usefulnessWarm: usefulnessIsWarm(profile, cfg.minFeedbackSample)
+      usefulnessWarm: usefulnessIsWarm(cappedProfile, cfg.minFeedbackSample)
     });
     if (!block) return empty;
 
     const injectedIds = [
       ...profile.corrections.map((c) => c.id),
       ...profile.recent_decisions.map((d) => d.id),
-      ...profile.top_lessons.map((l) => l.id)
+      ...cappedLessons.map((l) => l.id)
     ];
     return { block, injectedIds };
   } catch {

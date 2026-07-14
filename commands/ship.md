@@ -43,6 +43,8 @@ the auto-fix retries below.
 
 ## Step 3 — Auto-fix loop
 
+**RunId resolution (agent-profile-load-feedback).** Resolve `<runId>` once, up front, from `.claude/state/crew/workflow-state.json` (`currentRun.slice`) — mirrors `build.md` step 12b. Reuse this SAME value for every `profile-block` / `profile-feedback` call below (Step 3a, Both PASS path, and Step 4), including the immediate-pass case where no retry iteration occurs.
+
 ### Iteration 0 (and each retry)
 
 Dispatch both agents **in a single Agent-tool message** (parallel fan-out):

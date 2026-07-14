@@ -31,3 +31,23 @@ test("writeInjectedAtoms is fire-and-forget: [] writes an empty list, never thro
     assert.deepEqual(await readInjectedAtoms(repo, "run-2"), []);
   } finally { await fs.rm(repo, { recursive: true, force: true }); }
 });
+
+test("writeInjectedAtoms merges across split-builder calls under the same runId (no clobber)", async () => {
+  const repo = await tmp("inj-atoms-merge-");
+  try {
+    await writeInjectedAtoms(repo, "SLICE-NN", ["fe-1", "fe-2"]);
+    await writeInjectedAtoms(repo, "SLICE-NN", ["be-1", "be-2"]);
+    const ids = await readInjectedAtoms(repo, "SLICE-NN");
+    assert.deepEqual([...ids].sort(), ["be-1", "be-2", "fe-1", "fe-2"]);
+  } finally { await fs.rm(repo, { recursive: true, force: true }); }
+});
+
+test("writeInjectedAtoms does not duplicate a repeated id across calls", async () => {
+  const repo = await tmp("inj-atoms-dedupe-");
+  try {
+    await writeInjectedAtoms(repo, "run-3", ["a", "b"]);
+    await writeInjectedAtoms(repo, "run-3", ["b", "c"]);
+    const ids = await readInjectedAtoms(repo, "run-3");
+    assert.deepEqual([...ids].sort(), ["a", "b", "c"]);
+  } finally { await fs.rm(repo, { recursive: true, force: true }); }
+});
