@@ -15,7 +15,15 @@ const MIN_MINOR = 3;
 
 export function assertBunPresent(opts: BunPreflightOptions = {}): BunPresentResult {
   const env = opts.env ?? process.env;
-  const res = spawnSync("bun", ["--version"], { env, encoding: "utf8" });
+  // Windows: `bun` resolves via a .cmd/.ps1 shim that Node's spawn only finds
+  // with shell:true (bare-name spawn returns ENOENT otherwise). Mirrors the
+  // win32-shell pattern already used in scripts/lib/gepa/eval.ts. Args are a
+  // fixed literal, so the shell:true arg-escaping caveat (DEP0190) is moot.
+  const res = spawnSync("bun", ["--version"], {
+    env,
+    encoding: "utf8",
+    shell: process.platform === "win32"
+  });
   if (res.error || res.status !== 0) {
     throw new Error(
       `crew install requires Bun >= ${MIN_MAJOR}.${MIN_MINOR}. ` +

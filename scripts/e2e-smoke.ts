@@ -584,9 +584,13 @@ function normalizeForScopeMatch(text: string): string {
 }
 
 async function execLoopCli(args: string[]): Promise<any> {
+  // Windows: `bun` needs shell:true so its .cmd/.ps1 shim resolves (bare-name
+  // spawn is ENOENT otherwise) — same win32-shell pattern as bun-preflight.ts
+  // and scripts/lib/gepa/eval.ts.
   const { stdout } = await execFile("bun", [loopCliPath, ...args], {
     cwd: loopCliRoot,
-    maxBuffer: 20 * 1024 * 1024
+    maxBuffer: 20 * 1024 * 1024,
+    shell: process.platform === "win32"
   });
   return JSON.parse(stdout);
 }
