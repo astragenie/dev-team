@@ -79,6 +79,7 @@ const FLAG_SPEC = {
   "--note": { key: "note" },
   "--out-of-scope": { key: "outOfScope" },
   "--out": { key: "out" },
+  "--outcome": { key: "outcome" },
   "--owner": { key: "owner" },
   "--pace": { key: "pace" },
   "--phase": { key: "phase" },
@@ -94,6 +95,7 @@ const FLAG_SPEC = {
   "--reviewer-label": { key: "reviewerLabel" },
   "--risks": { key: "risks" },
   "--run": { key: "run" },
+  "--run-id": { key: "runId" },
   "--run-steps": { key: "runSteps" },
   "--run-title": { key: "runTitle" },
   "--source": { key: "gepaSource" },
@@ -260,7 +262,9 @@ function buildDefaultFlags(): Flags {
     tag: null,
     tags: null,
     skipReason: null,
-    date: null
+    date: null,
+    runId: null,
+    outcome: null
   };
 }
 
@@ -1597,6 +1601,29 @@ const COMMANDS = {
       ...(tags.length > 0 ? { tags } : {})
     });
     return { block };
+  },
+
+  // Agent-profile load: returns the `## Your track record (<agent>)` block and,
+  // when --run-id is given, records the injected atom ids for later feedback.
+  "profile-block": async ({ repoPath, flags }: CommandContext) => {
+    const { buildProfileBlock } = await import("./lib/memory/inject-profile.ts");
+    const { writeInjectedAtoms } = await import("./lib/memory/injected-atoms.ts");
+    const agent = typeof flags.agent === "string" ? flags.agent : "";
+    if (!agent) return { block: "", injectedIds: [] };
+    const { block, injectedIds } = await buildProfileBlock({ repoPath, agent });
+    if (typeof flags.runId === "string" && flags.runId) {
+      await writeInjectedAtoms(repoPath, flags.runId, injectedIds);
+    }
+    return { block, injectedIds };
+  },
+
+  // Outcome-gated positive-only feedback for a run's profile-injected atoms.
+  "profile-feedback": async ({ repoPath, flags }: CommandContext) => {
+    const { submitOutcomeFeedback } = await import("./lib/memory/profile-feedback.ts");
+    const runId = typeof flags.runId === "string" ? flags.runId : "";
+    const outcome = flags.outcome === "pass" ? "pass" : "fail";
+    if (!runId) return { credited: [] };
+    return submitOutcomeFeedback({ repoPath, runId, outcome });
   },
 
   // FEAT-188 S5 — read-only diagnostic comparing JSONL entries within a

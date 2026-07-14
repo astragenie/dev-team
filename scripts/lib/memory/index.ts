@@ -33,3 +33,13 @@ export {
   injectRecall,
   loadMemoryConfig
 } from "./inject-recall.ts";
+export type { AgentProfile, ProfileCapableProvider } from "./profile-types.ts";
+export {
+  buildProfileBlock,
+  formatProfileBlock,
+  parseProfileConfig,
+  type BuildProfileOptions,
+  type ProfileConfig
+} from "./inject-profile.ts";
+export { writeInjectedAtoms, readInjectedAtoms } from "./injected-atoms.ts";
+export { submitOutcomeFeedback } from "./profile-feedback.ts";
