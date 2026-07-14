@@ -1603,10 +1603,18 @@ const COMMANDS = {
     return { block };
   },
 
-  // Agent-profile load: returns the `## Your track record (<agent>)` block and,
-  // when --run-id is given, records the injected atom ids for later feedback.
+  // Agent-profile load: records the injected atom ids for later feedback
+  // (when --run-id is given) and returns the `## Your track record (<agent>)`
+  // block. Injection responsibility is governed by memory.profile.injectVia:
+  //   - "hook" (DEFAULT): the SubagentStart hook injects the block
+  //     deterministically, so this CLI returns an EMPTY block — the command-md
+  //     dispatch paths omit an empty block, avoiding a double-injection while
+  //     the sidecar is still recorded for outcome-feedback.
+  //   - "command": returns the real block, for clients WITHOUT the dispatch
+  //     hook (the orchestrator appends it itself).
   "profile-block": async ({ repoPath, flags }: CommandContext) => {
     const { buildProfileBlock } = await import("./lib/memory/inject-profile.ts");
+    const { loadMemoryConfig } = await import("./lib/memory/inject-recall.ts");
     const { writeInjectedAtoms } = await import("./lib/memory/injected-atoms.ts");
     const agent = typeof flags.agent === "string" ? flags.agent : "";
     if (!agent) return { block: "", injectedIds: [] };
@@ -1614,7 +1622,10 @@ const COMMANDS = {
     if (typeof flags.runId === "string" && flags.runId) {
       await writeInjectedAtoms(repoPath, flags.runId, injectedIds);
     }
-    return { block, injectedIds };
+    const rawMemory = await loadMemoryConfig(repoPath);
+    const injectVia =
+      (rawMemory as { profile?: { injectVia?: unknown } } | undefined)?.profile?.injectVia;
+    return { block: injectVia === "command" ? block : "", injectedIds };
   },
 
   // Outcome-gated positive-only feedback for a run's profile-injected atoms.

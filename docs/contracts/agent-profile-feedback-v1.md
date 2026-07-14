@@ -185,3 +185,27 @@ then swap dev-team's local `profile-types.ts` import for the package export.
 - `docs/contracts/recall-injection-v1.md` — sibling recall-block contract
   (per-slice/task, not per-agent).
 - FEAT-188 backlog item (agent-profile-load-feedback slices).
+
+## Deterministic injection — the SubagentStart hook (dev-team #235)
+
+Injection is **hook-driven by default**, not orchestrator-discretionary. The
+`SubagentStart` hook (`hooks/subagent-start-profile.ts` → `hooks/lib/subagent-profile-core.ts`)
+fires when any subagent begins execution, reads its `agent_type`, loads that
+agent's profile via the same tested `buildProfileBlock`, and emits it as
+`hookSpecificOutput.additionalContext` — a system reminder injected into the
+subagent's context that the orchestrator cannot skip. It records the injected
+atom ids to an agent-keyed sidecar for the feedback step. Fail-silent: any
+failure (bad payload, no agent, disabled config, unpaired daemon, empty
+profile) emits nothing → byte-identical dispatch.
+
+`memory.profile.injectVia` governs who injects:
+- `"hook"` (**default**): the SubagentStart hook injects; the `crew profile-block`
+  CLI returns an **empty** block (the command-md paths omit it) so the block is
+  never double-injected, while still recording the run-id sidecar for feedback.
+- `"command"`: the CLI returns the real block for the orchestrator to append —
+  for clients WITHOUT the dispatch hook.
+
+The `crew profile-block` command-md path and a manual `/recall-my-lessons`-style
+skill remain as the non-hook fallback / escape hatch, but the hook is the
+primary path (#235: "a skill is an instruction to remember; injection must be
+deterministic at dispatch").
