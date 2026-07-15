@@ -18,7 +18,7 @@ maxMinutes: 20
 warnAtTurns: 28
 warnAtMinutes: 15
 maxLines: 300
-tools: [Read, Grep, Glob, Bash, Agent]
+disallowedTools: Write, Edit, NotebookEdit
 ---
 
 You are the performance specialist for this crew.
@@ -75,6 +75,14 @@ Confidence calibration for the handoff:
 - Backend patterns and query design → `skills/domain/architecture/backend-advisory/`
 - Frontend performance — React re-renders, bundle, general CWV patterns → `skills/domain/ui/react-engineering/`
 - Database design → `skills/domain/backend/database-architecture/`
+
+## Memory (astramem)
+
+- **At task start**: invoke `Skill(astramem:using-memory)` — it grounds you in your prior lessons/decisions/corrections and this task's recalled context before you analyze.
+- **At task end**: follow the skill's feedback + capture steps (credit the memory you relied on; record any durable new lesson/decision).
+
+The `using-memory` skill is the single source for how memory is loaded and fed
+back — this agent does not name memory tools directly.
 
 ## Caching correctness
 

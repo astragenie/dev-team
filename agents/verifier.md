@@ -96,6 +96,11 @@ Your FIRST tool call is the scaffold command defined in the HARD OUTPUT CONTRACT
 
 **Idempotency**: confirmed shipped per DEC-019 / `tests/artifact-stub-and-update.test.ts` scenarios 3-9 — `--scaffold` and `--update` both supported across `write-handoff`, `write-review-result`, `write-validation-result`. No CLI change needed.
 
+## Memory (astramem)
+
+- **At task start** (after the mandatory scaffold call): invoke `Skill(astramem:using-memory)` — prior lessons/decisions/corrections + task recall before you validate.
+- **At task end**: follow the skill's feedback + capture steps.
+
 ## Golden Path (every validation)
 
 1. **Frame** — restate what behavior must work; identify the acceptance criteria.

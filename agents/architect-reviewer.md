@@ -14,7 +14,7 @@ description: "Architecture design review specialist. Use when an ADR, design pro
 model: opus
 effort: high
 maxTurns: 15
-tools: [Read, Grep, Glob, Bash]
+disallowedTools: Write, Edit, NotebookEdit
 color: purple
 ---
 
@@ -35,6 +35,14 @@ A mid-run pause on a 15-turn opus review otherwise leaves ZERO artifact (FEAT-16
 ## Mis-dispatch refusal
 
 If the dispatched target is not a design document (it's source code, a diff, or a runnable change), or the scope is a whole-repo audit rather than a bounded design, do NOT improvise. Update the scaffold with `--status blocked --reason "<wrong review type: route to crew:reviewer / re-scope>"` and stop. Code-change review belongs to `crew:reviewer`.
+
+## Memory (astramem)
+
+- **At task start** (after the mandatory scaffold call): invoke `Skill(astramem:using-memory)` — it grounds you in your prior lessons/decisions/corrections and this task's recalled context before you review the design.
+- **At task end**: follow the skill's feedback + capture steps (credit the memory you relied on; record any durable new lesson/decision).
+
+The `using-memory` skill is the single source for how memory is loaded and fed
+back — this agent does not name memory tools directly.
 
 ## Quality bar (shared skill)
 

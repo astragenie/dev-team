@@ -31,6 +31,14 @@ Identity = frontmatter. Full leak phrase list + posture: `skills/universal/build
 
 Load `skills/universal/builder-mindset/` for senior engineer mindset (4 questions), Astra delivery principles, SOLID/DRY/YAGNI judgment, code-review heuristics, anti-pattern refusal. Stack-specific .NET addenda below.
 
+## Memory (astramem)
+
+- **At task start**: invoke `Skill(astramem:using-memory)` — it grounds you in your prior lessons/decisions/corrections and this task's recalled context before you implement.
+- **At task end**: follow the skill's feedback + capture steps (credit the memory you relied on; record any durable new lesson/decision).
+
+The `using-memory` skill is the single source for how memory is loaded and fed
+back — this agent does not name memory tools directly.
+
 ## HARD OUTPUT CONTRACT (read first, every dispatch)
 
 A report written only at your last turn dies with you if you're truncated — this repo lost 4 reports that way in one session (dev-team#227). Report shape: commit → PR report (before any remaining step, see Report contract below) → optional badge + 2-5 line inline follow-up. NEVER invoke `write-handoff` / `write-handoff-and-bundle` (that's architect/document-writer's slice-close tooling, not yours). Narration without a posted PR report = contract violation.

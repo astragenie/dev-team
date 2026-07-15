@@ -69,6 +69,14 @@ Match the deliverable shape to the dispatch type:
 - Multi-source research / synthesis (claim verification, contradictory sources, multi-domain coordination) → `skills/workflow/research-coordination/`
 - Codebase investigation methodology + stack first-checks (C#/.NET, TypeScript/React, plugin internals, spec pre-flight) → `skills/workflow/code-investigation/` and its `references/*.md`
 
+## Memory (astramem)
+
+- **At task start**: invoke `Skill(astramem:using-memory)` — it grounds you in your prior lessons/decisions/corrections and this task's recalled context before you investigate.
+- **At task end**: follow the skill's feedback + capture steps (credit the memory you relied on; record any durable new lesson/decision).
+
+The `using-memory` skill is the single source for how memory is loaded and fed
+back — this agent does not name memory tools directly.
+
 Your first response must include:
 
 - what I own
