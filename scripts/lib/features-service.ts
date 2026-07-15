@@ -119,7 +119,7 @@ export const FEATURES: Readonly<Record<string, FeatureMeta>> = {
     version: "1.0.0",
     default: true,
     description:
-      "Gates model-tier routing for the `crew resolve-model` CLI (interactive /crew:build /crew:fix /crew:orchestrate-slice dispatch). Enabled (default): resolves .claude/loop.json loop.modelRouting as today (build -> sonnet). Disabled: resolve-model always returns the opus fallback regardless of loop.json, so an operator can turn routing off for audit/rollback without deleting the loop.json config.",
+      "Gates model-tier routing for the `crew resolve-model` CLI (interactive /crew:build /crew:fix /crew:orchestrate-slice dispatch) and the pre-tool-use-model-enforce hook. Enabled (default): resolves .claude/loop.json loop.modelRouting as today (build -> sonnet). Disabled: resolve-model prints the sentinel 'inherit' and the hook stands down — dispatches omit the Agent-tool model: argument so each agent's own model: frontmatter (agents/*.md) governs.",
     scope: "crew",
     owner: "platform",
     since: "0.51.2"
@@ -132,6 +132,24 @@ export const FEATURES: Readonly<Record<string, FeatureMeta>> = {
     scope: "crew",
     owner: "safety",
     since: "0.59.0"
+  },
+  "builder-terminal-state-guard": {
+    version: "1.0.0",
+    default: true,
+    description:
+      "SubagentStop guard (dev-team#187, #174 — Wave 3 Guard 1, 'deliver-before-die'): blocks a STATUS-line builder-tier subagent (crew:fullstack-dev, crew:backend-dev, crew:frontend-dev, crew:aiplugin-dev — crew:dev-lite is deliberately excluded, its receipt contract uses a different vocabulary, see dev-team#226) from going idle with no delivered terminal state (a DONE|BLOCKED|HELP|IN-PROGRESS Report-contract line, or a written handoff/artifact path). BLOCKED is itself a valid terminal state and is never blocked. One retry only (stop_hook_active re-entry guard). Mitigates a builder clipping its report after risky work (commit/push/PR) but before the STATUS line the dispatcher's gates look for.",
+    scope: "crew",
+    owner: "safety",
+    since: "0.63.0"
+  },
+  "dispatch-size-gate": {
+    version: "1.0.0",
+    default: false,
+    description:
+      "A3 (8 agent deaths, all from oversized dispatches): enforcement level of the PreToolUse/Agent dispatch-size gate (hooks/pre-tool-use-dispatch-size.ts). The hook estimates a dispatch's token cost from tier + file/dir mentions + wide-scope markers in the prompt against a 150k warn line (deliberate headroom below the 200k hard cap) and always emits an advisory systemMessage on over-threshold dispatches regardless of this flag. Default false = warn-only bake period, mirroring the git-gate-block precedent; flips to true only after warn-phase estimates are joined against real scripts/lib/dispatch-timing.ts telemetry and the threshold is confirmed well-calibrated — this repo has not run that calibration pass yet (no historical dispatch-timing.jsonl in this checkout to join against). Guardrail: this flag may only soften block->warn, never silence the gate — the warn nudge fires unconditionally regardless of flag state.",
+    scope: "crew",
+    owner: "safety",
+    since: "0.63.0"
   }
 } as const;
 

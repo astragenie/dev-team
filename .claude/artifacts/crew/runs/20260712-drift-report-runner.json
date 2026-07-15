@@ -1,0 +1,1878 @@
+{
+  "supported": true,
+  "reason": null,
+  "checked": 134,
+  "trackerOnly": [
+    {
+      "number": 481,
+      "title": "slow-tests flake: connect.test.mts TDZ — \"Cannot access '_internals' before initialization\" under --parallel"
+    },
+    {
+      "number": 479,
+      "title": "Review dispatch should split large diffs by dimension/file — whole-surface reviews die at token ceiling"
+    },
+    {
+      "number": 449,
+      "title": "W2b: adopt @astragenie/plugin-std helpers (frontmatter/git/jsonl/result) — mirror dev-team P4"
+    },
+    {
+      "number": 440,
+      "title": "model-routing PreToolUse hook: duplicate warning per dispatch + cannot verify updatedInput was honored (silent Opus/Fable fallback risk)"
+    },
+    {
+      "number": 439,
+      "title": "SLICE-158: COND-C warning-stubs + config seeding + IssueBroker-reusable ops + manual smoke"
+    },
+    {
+      "number": 437,
+      "title": "SLICE-157: Core GraphQL write methods: issueCreate + parentId, state transition, commentCreate"
+    },
+    {
+      "number": 436,
+      "title": "FEAT-252: Tracker-provider program Phase 3 — real LinearProvider (watcher plan C2; fills the composition slot FEAT-245 IssueBroker explicitly defers). STEP 1 per review COND-B, before any code: architect DEC on the id-stamping + composite contract — publi…"
+    },
+    {
+      "number": 435,
+      "title": "SLICE-156: COND-B stamping DEC + auth (LINEAR_API_KEY/token-store) + taskStore.linear config schema"
+    },
+    {
+      "number": 434,
+      "title": "FEAT-252: Tracker-provider program Phase 3 — real LinearProvider (watcher plan C2; fills the composition slot FEAT-245 IssueBroker explicitly defers). STEP 1 per review COND-B, before any code: architect DEC on the id-stamping + composite contract — publi…"
+    },
+    {
+      "number": 433,
+      "title": "SLICE-155: Implement FEAT-251"
+    },
+    {
+      "number": 429,
+      "title": "SLICE-148: Implement FEAT-256"
+    },
+    {
+      "number": 428,
+      "title": "FEAT-256: Tracker-provider program Phase 0 — hygiene: reconcile FEAT-102 (marked done with unsatisfied AC: Linear webhook receiver never built, LinearProvider still stub, no round-trip) by superseding it with this program's Linear work; record a DEC. Deci…"
+    },
+    {
+      "number": 427,
+      "title": "runner:close pr.merged emit is instruction-driven — code-enforce the DORA merge signal"
+    },
+    {
+      "number": 426,
+      "title": "SLICE-154: Implement FEAT-256"
+    },
+    {
+      "number": 424,
+      "title": "SLICE-153: CI allowlist guard + CLAUDE.md CI-list registration + DORA A2 parity test"
+    },
+    {
+      "number": 422,
+      "title": "SLICE-152: Slice-side new construction: consolidate complete-slice/feature-lifecycle/failure-pivot writes"
+    },
+    {
+      "number": 421,
+      "title": "FEAT-250: Tracker-provider program Phase 1 — BacklogStore storage seam. Architect designs BacklogStore interface (createFeature, updateFeatureFrontmatter, moveFeature, createSlice, updateSliceFrontmatter, moveSlice, listByState, getById) with DEC before c…"
+    },
+    {
+      "number": 420,
+      "title": "SLICE-151: Feature-side delegate conversion across 11 backlog-writer callers"
+    },
+    {
+      "number": 419,
+      "title": "FEAT-250: Tracker-provider program Phase 1 — BacklogStore storage seam. Architect designs BacklogStore interface (createFeature, updateFeatureFrontmatter, moveFeature, createSlice, updateSliceFrontmatter, moveSlice, listByState, getById) with DEC before c…"
+    },
+    {
+      "number": 418,
+      "title": "SLICE-150: Architect DEC: BacklogStore interface + doctor.mts classification + failure-pivot regex decision"
+    },
+    {
+      "number": 417,
+      "title": "FEAT-250: Tracker-provider program Phase 1 — BacklogStore storage seam. Architect designs BacklogStore interface (createFeature, updateFeatureFrontmatter, moveFeature, createSlice, updateSliceFrontmatter, moveSlice, listByState, getById) with DEC before c…"
+    },
+    {
+      "number": 410,
+      "title": "SLICE-147: Implement FEAT-247"
+    },
+    {
+      "number": 404,
+      "title": "guard-feat-dispatch hook blocks read-only reviewers (crew:architect-reviewer / csharp-reviewer / typescript-reviewer) on FEAT-tagged prompts"
+    },
+    {
+      "number": 402,
+      "title": "intake/triage: runner:pm emits featId (contract says featureId) → pm-apply rejects 4/4; no apply path for compositePriority=needs-review"
+    },
+    {
+      "number": 399,
+      "title": "SDD framework steal-list: 5 recommendations to strengthen the runner/crew loop"
+    },
+    {
+      "number": 394,
+      "title": "Wire SubagentStop/session_end hook to capture-at-close (astramem-local capture claude) — fixes ingest starvation"
+    },
+    {
+      "number": 393,
+      "title": "Triage/decomposition should cap slice size (~2 pts / ~200k tokens) and pre-split on flagged landmines — oversized slices die mid-dispatch"
+    },
+    {
+      "number": 392,
+      "title": "runner:start re-dispatches already-shipped slices — backlog state drifts from git reality (no per-slice / git-anchored completion tracking)"
+    },
+    {
+      "number": 390,
+      "title": "feat: batch/mass intake — decompose a list of mixed asks into N scored FEATs"
+    },
+    {
+      "number": 389,
+      "title": "runner CLI unusable via node: ERR_MODULE_NOT_FOUND (deps not shipped + 478 .mjs imports resolve only under bun)"
+    },
+    {
+      "number": 387,
+      "title": "SLICE-142: Implement FEAT-239"
+    },
+    {
+      "number": 385,
+      "title": "SLICE-141: Implement FEAT-238"
+    },
+    {
+      "number": 381,
+      "title": "pm-apply: concurrent-write conflict detection + accept 'needs-review' priority (FEAT-168 gate escape hatch)"
+    },
+    {
+      "number": 379,
+      "title": "Stamp agent identity on dispatches so astramem per-agent memory activates (agent_profile injection + agent-scoped recall)"
+    },
+    {
+      "number": 371,
+      "title": "HIGH: installed loop rules dispatch phantom 'crew:builder' agent → breaks consumer repos (+ no agent-ref validator)"
+    },
+    {
+      "number": 370,
+      "title": "slice start AC parser rejects PM's '## Acceptance criteria (Given-When-Then)' heading — blocks slicing of triaged FEATs"
+    },
+    {
+      "number": 368,
+      "title": "FEAT-188 S3b — recall injection at runner dispatch sites (adopt frozen recall-injection v1)"
+    },
+    {
+      "number": 365,
+      "title": "Cross-repo consolidation plan (2026-07-07): runner-plugin legs — astramem-client adoption, frontmatter, loop-config, B3 cleanup"
+    },
+    {
+      "number": 364,
+      "title": "install cannot bootstrap a fresh repo — dispatcher resolves config for every command before the install handler (0.63.0)"
+    },
+    {
+      "number": 363,
+      "title": "Memory: adopt shared @astragenie/astramem-client + retire bridge + finish S3b recall (FEAT-188 S1b/S3b follow-through)"
+    },
+    {
+      "number": 360,
+      "title": "FEAT-193 S1 follow-up: capture tee/trial guard doesn't bound OS-process wall-time (unguarded fireCaptureTeeSilent on hot artifact-write path)"
+    },
+    {
+      "number": 359,
+      "title": "FEAT-188: migrate memory capture/recall transport CLI-shell → MCP/plugin (unblocked by dev-team#172)"
+    },
+    {
+      "number": 358,
+      "title": "FEAT-188 S3b — runner-plugin recall injection (unified helper + retire duplicate runRecallHook)"
+    },
+    {
+      "number": 357,
+      "title": "FEAT-188 S1b — runner-plugin capture repair (runner:close / pr-fix / retro learnings auto-capture)"
+    },
+    {
+      "number": 355,
+      "title": "CI reliability: worktree-merge tests deadlock the self-hosted runner; split fast/slow gates + add capacity"
+    },
+    {
+      "number": 326,
+      "title": "grades.jsonl has the same worktree-cwd bug as learnings.jsonl — grade records written to pruned worktree copies"
+    },
+    {
+      "number": 325,
+      "title": "FEAT-188 S1b — capture repair (runner-plugin): fix dormant slice_close capture + add pr-fix / retrospective capture"
+    },
+    {
+      "number": 324,
+      "title": "memory-bridge stale: assumes astramem 'dormant until v0.4' + shells the CLI; astramem is live at plugin v0.6 (use plugin/MCP routing)"
+    },
+    {
+      "number": 322,
+      "title": "sliceFromFeature stamps placeholder ACs for FEATs with per-slice (### SN) Given-When-Then criteria"
+    },
+    {
+      "number": 310,
+      "title": "MEMO: project/agent recall shipped + released (astramem-local v0.7.0 / plugin v0.6.0)"
+    },
+    {
+      "number": 309,
+      "title": "Integrate project/agent-scoped recall (astramem-local #56 / FEAT-423 shipped)"
+    },
+    {
+      "number": 297,
+      "title": "halt-events v1 contract — plugin-side adoption (schemaVersion + resolved envelope)"
+    },
+    {
+      "number": 295,
+      "title": "plugin: emit per-run costUsd + inputTokens + outputTokens on agent-completed envelope"
+    },
+    {
+      "number": 294,
+      "title": "plugin: emit dispatchKind on agent-dispatch envelope (auto|manual|wave|hierarchical)"
+    },
+    {
+      "number": 293,
+      "title": "plugin: emit parentAgentRunId + iterationIndex in agent-dispatch envelope"
+    },
+    {
+      "number": 292,
+      "title": "feat(memory): doctor integration in runner:status — surface astramem health"
+    },
+    {
+      "number": 291,
+      "title": "feat(memory): recall before slice start — inject prior failures into builder prompt"
+    },
+    {
+      "number": 290,
+      "title": "feat(memory): expand capture surface — reviewer/qa/start/triage + parallel phase-gate FAIL"
+    },
+    {
+      "number": 289,
+      "title": "Use astramem CLI for slice-event memory capture (replaces #287)"
+    },
+    {
+      "number": 288,
+      "title": "feat(memory): bridge shim consuming astramem CLI (supersedes #287)"
+    },
+    {
+      "number": 287,
+      "title": "Integrate with astramemory-local for local-first memory capture"
+    },
+    {
+      "number": 275,
+      "title": "SLICE-132: Pre-compute slice risk at `slice from-feature` time — remove manual classification from lead"
+    },
+    {
+      "number": 273,
+      "title": "SLICE-131: BUG: dispatch result.json path is relative — child worktree CWD breaks finalize finder"
+    },
+    {
+      "number": 271,
+      "title": "SLICE-130: Decay-ranked, citation-tracked learnings retrieval injected at builder dispatch"
+    },
+    {
+      "number": 269,
+      "title": "SLICE-129: Agent Merge -- closed-loop PR follow-through that fixes failing checks and addresses review comments"
+    },
+    {
+      "number": 268,
+      "title": "SLICE-128: GitHub `@crew` PR-comment teammate"
+    },
+    {
+      "number": 267,
+      "title": "SLICE-127: Auto-PR mode for parallel worktree dispatch - inferred title/description via gh instead of direct merge to main"
+    },
+    {
+      "number": 266,
+      "title": "SLICE-126: loop backlog audit — auto-flag likely-already-satisfied FEATs with evidence"
+    },
+    {
+      "number": 264,
+      "title": "SLICE-125: Artifact link-integrity checker and graph emitter for FEAT/SPEC/DEC/slice cross-links"
+    },
+    {
+      "number": 263,
+      "title": "SLICE-124: Error-pattern registry with automatic recovery for specialist dispatch failures"
+    },
+    {
+      "number": 262,
+      "title": "SLICE-123: Linear teammate flow (assign-to-Crew)"
+    },
+    {
+      "number": 261,
+      "title": "SLICE-122: Promotion ratchet for grade lessons — promote-or-archive gate at slice close"
+    },
+    {
+      "number": 260,
+      "title": "FEAT-178: "
+    },
+    {
+      "number": 259,
+      "title": "SLICE-121: Keyword-triggered skills (auto-inject prompt fragments by conversation content)"
+    },
+    {
+      "number": 258,
+      "title": "SLICE-120: Loop event notifications - OS notification / webhook / custom command on slice complete, halt-badge, cost alert"
+    },
+    {
+      "number": 257,
+      "title": "SLICE-119: Runtime stuck-detector + iterative-refinement primitive"
+    },
+    {
+      "number": 256,
+      "title": "SLICE-118: Pause / resume conversation lifecycle for async waits"
+    },
+    {
+      "number": 255,
+      "title": "SLICE-117: Markdown Workflow recipes with frontmatter + slash invocation"
+    },
+    {
+      "number": 254,
+      "title": "SLICE-117: Cross-session learnings with automatic recall"
+    },
+    {
+      "number": 253,
+      "title": "SLICE-117: SessionStart hook that injects bootstrap context before any user turn"
+    },
+    {
+      "number": 252,
+      "title": "SLICE-117: Confidence reporting per slice (traffic-light signal)"
+    },
+    {
+      "number": 251,
+      "title": "SLICE-116: Derive-only discipline: generated artifacts get do-not-edit headers + regen --check drift gate"
+    },
+    {
+      "number": 249,
+      "title": "SLICE-116: Code-quality pivot leftovers — Result<T,E>, branded IDs, discriminated-union state + snapshot/memoization perf wins"
+    },
+    {
+      "number": 248,
+      "title": "SLICE-115: Review verdict schema: not_checked[] field + author/judge separation"
+    },
+    {
+      "number": 246,
+      "title": "SLICE-115: Per-skill cost attribution"
+    },
+    {
+      "number": 245,
+      "title": "SLICE-115: Named sub-agents with stable user-facing identity (brainstorm / plan / repair)"
+    },
+    {
+      "number": 244,
+      "title": "SLICE-115: One-click platform-native task ingress from Issue / PR"
+    },
+    {
+      "number": 243,
+      "title": "SLICE-114: PM frontmatter needs model+maxTurns to surface deferred Agent"
+    },
+    {
+      "number": 241,
+      "title": "SLICE-113: PM tools list needs ToolSearch to load deferred Agent"
+    },
+    {
+      "number": 239,
+      "title": "FEAT-197: (describe the feature in PM-friendly language)"
+    },
+    {
+      "number": 238,
+      "title": "SLICE-112: PM agent must ToolSearch for Agent before spec-writer dispatch"
+    },
+    {
+      "number": 236,
+      "title": "SLICE-111: Grant PM Agent tool to enable retriage spec-writer dispatch"
+    },
+    {
+      "number": 234,
+      "title": "SLICE-110: Add --include-triaged flag to triage + retriage"
+    },
+    {
+      "number": 232,
+      "title": "SLICE-109: PM orchestrates spec-writer pre-flight before scoring"
+    },
+    {
+      "number": 230,
+      "title": "SLICE-108: Drop _crewVersionOverride + version-pinned tests"
+    },
+    {
+      "number": 228,
+      "title": "SLICE-107: Drop lead and direct-builder orchestrator modes"
+    },
+    {
+      "number": 226,
+      "title": "SLICE-106: slice-build orchestrator mode — pick builder variant from slice tags"
+    },
+    {
+      "number": 225,
+      "title": "SLICE-105: slice-build orchestrator mode — pick builder variant from slice tags"
+    },
+    {
+      "number": 224,
+      "title": "SLICE-104: slice-build orchestrator mode — pick builder variant from slice tags"
+    },
+    {
+      "number": 222,
+      "title": "SLICE-103: Merge triage and backlog-enrich into single intake command"
+    },
+    {
+      "number": 220,
+      "title": "SLICE-102: Merge slice complete + grade into single close command"
+    },
+    {
+      "number": 218,
+      "title": "SLICE-101: Story-point sizing on FEATs with expected-cost regression formula"
+    },
+    {
+      "number": 217,
+      "title": "SLICE-100: Slice decomposition gate when effort_points >= 8"
+    },
+    {
+      "number": 216,
+      "title": "SLICE-99: Slice decomposition gate when effort_points >= 8"
+    },
+    {
+      "number": 215,
+      "title": "SLICE-98: Slice decomposition gate when effort_points >= 8"
+    },
+    {
+      "number": 214,
+      "title": "SLICE-97: Story-point sizing on FEATs with expected-cost regression formula"
+    },
+    {
+      "number": 213,
+      "title": "SLICE-96: Unified report filename pattern for memory-engine tag parsing"
+    },
+    {
+      "number": 211,
+      "title": "SLICE-95: Marathon session-scope checkpoint — mandatory retrospective every N slices"
+    },
+    {
+      "number": 209,
+      "title": "SLICE-94: Wire classify-slice-shape into slice ceremony (inline-path hint)"
+    },
+    {
+      "number": 207,
+      "title": "SLICE-93: Wire post-builder-fanout into slice ceremony"
+    },
+    {
+      "number": 205,
+      "title": "SLICE-92: Telemetry writer — populate grade.timing.* + grade.shape.* fields"
+    },
+    {
+      "number": 203,
+      "title": "SLICE-91: Per-repo cost attribution in regression check"
+    },
+    {
+      "number": 202,
+      "title": "SLICE-91: Per-repo cost attribution in regression check"
+    },
+    {
+      "number": 198,
+      "title": "SLICE-89: Trajectory JSON -- machine-parseable step log per run"
+    },
+    {
+      "number": 195,
+      "title": "FEAT-176: Tracking FEAT for the upstream-request `docs/upstream-requests/2026-06-10-hero-crew-specialist-pause-completion-enforcement.md`. This FEAT does NOT implement a fix — the fix lives in hero-crew (the agent-dispatch loop / specialist agent prompts)…"
+    },
+    {
+      "number": 194,
+      "title": "SLICE-87: Add a small `featuresService` to the loop plugin: a simple set of named feature toggles, each `{ feature: <name>, enabled: <bool> }`, so behavior can be turned on/off by name instead of scattering magic constants and ad-hoc nullish-chaining acro…"
+    },
+    {
+      "number": 187,
+      "title": "SLICE-84: Skills in `skills/**/SKILL.md` declare a `trigger` field in YAML frontmatter controlling when the loop installer renders invocation instructions into MASTER_PROMPT. Default `always_on` preserves backward compatibility. `manual` renders a note th…"
+    },
+    {
+      "number": 173,
+      "title": "FEAT-092: Tasks define function-based or LLM-based validators that run on output; on failure the agent retries up to guardrail_max_retries times automatically. loop/crew validation is a manual human-gated step with no auto-retry loop."
+    },
+    {
+      "number": 171,
+      "title": "SLICE-85: Extend `skills/verification-before-completion/SKILL.md` with two missing evidence rows (`typecheck` and `function-exists`) and make the `trigger` field explicit, closing FEAT-089's remaining gap over the SLICE-09 baseline."
+    },
+    {
+      "number": 165,
+      "title": "SLICE-86: Add glob-scoped rule auto-attachment to the loop installer. Users declare rule"
+    },
+    {
+      "number": 163,
+      "title": "SLICE-80: Close the asymmetry between architect-wiring (done in v0.28.0) and PM-wiring (not done). Then sweep the five Minor/Important follow-ups flagged during v0.27.0 final review."
+    },
+    {
+      "number": 161,
+      "title": "SLICE-78: Ship the resolver primitive + preset schema v1 in `loop` plugin so per-FEAT `architect`-classification of stack identity can be retired. Multi-axis preset (`projectType`, `frontend`, `backend`, `contract`, `deployment`, `skills` / `fe.skills` / …"
+    },
+    {
+      "number": 158,
+      "title": "SLICE-77: Enable `noUncheckedIndexedAccess` in tsconfig.json. Deferred from SLICE-74 (DEC-027 escape-hatch). Dry-run shows 130 errors across 27 files — all mechanical fixes (null-guard, `??` coalescing, `!` assertion where invariant holds, early return). …"
+    },
+    {
+      "number": 156,
+      "title": "SLICE-74: Enable two more graduated tsconfig flags: `exactOptionalPropertyTypes: true` (B4) and `noUncheckedIndexedAccess: true` (B5). Escape hatch: if B5 dry-run reports > 80 errors, ship B4 alone and file a new FEAT for B5."
+    },
+    {
+      "number": 154,
+      "title": "SLICE-73: Enable four additional graduated tsconfig flags following B1 (noImplicitAny). Two flag pairs:"
+    },
+    {
+      "number": 152,
+      "title": "SLICE-76: Ship perf wins 6-10: hoisted regex, decisions/grade read memo, structuredClone over JSON round-trip,"
+    },
+    {
+      "number": 151,
+      "title": "SLICE-75: Land a `node:test`-compatible bench harness that records baseline timings and gates on 10% regression,"
+    },
+    {
+      "number": 149,
+      "title": "SLICE-72: Add `\"noImplicitAny\": true` and `\"noImplicitAny\": true, \"useUnknownInCatchVariables\": true` to `tsconfig.json`"
+    },
+    {
+      "number": 147,
+      "title": "SLICE-71: Delete four one-shot migrator source modules and their test files, then remove"
+    },
+    {
+      "number": 146,
+      "title": "SLICE-70: Remove the deprecated marker-write code path from `src/scripts/lib/auto-dispatch.mts`"
+    },
+    {
+      "number": 145,
+      "title": "SLICE-69: Delete `src/scripts/lib/marker-drain.mts` plus its paired test"
+    },
+    {
+      "number": 143,
+      "title": "SLICE-68: On Windows Git Bash / MSYS, the natural path syntax for chained `cd` is `cd /c/work/mega/loopobserver && <cmd>`. The PreToolUse:Bash hook today calls `fs.existsSync` against the raw string and reports `chained cd target does not exist: /c/work/m…"
+    },
+    {
+      "number": 141,
+      "title": "SLICE-66: `src/scripts/lib/auto-merge.mts::runAutoMerge` is 208 lines with cyclomatic complexity 56 — over CLAUDE.md cap of 15. Shipped this way in v0.24.0 (SLICE-64) because builder ran out of budget mid-refactor. GRADE-SLICE-64 lessons + SLICE-64 review…"
+    },
+    {
+      "number": 139,
+      "title": "SLICE-62: Add a schema regression test that asserts: every halt-badge field listed in `HALT_BADGES` (FEAT-065) has a corresponding section in `docs/halt-badges.md` (FEAT-063), AND every halt-badge field emitted by `stop-conditions.mts::assembleStopResult`…"
+    },
+    {
+      "number": 137,
+      "title": "SLICE-61: Add `--explain-halts` flag to `node scripts/loop.mjs brief`. When non-null halt-badge fields are present in the snapshot, emit a human-readable section after the JSON (or as a separate render mode) summarizing each fired halt with: gate name + k…"
+    },
+    {
+      "number": 135,
+      "title": "SLICE-65: File an upstream-request markdown doc against the hero-crew plugin asking for `brief-me` to render an explicit Blocked/Missing section for every halt-badge field loop emits (`costRegression`, `sessionDrift`, `sliceCostCeiling`, `gradeTrend`, `me…"
+    },
+    {
+      "number": 133,
+      "title": "SLICE-60: Publish `docs/halt-badges.md` — the canonical registry for every halt-badge field loop emits in `stop-check.snapshot.*` and `brief.*`. Drives the cross-plugin contract referenced in SPEC-003: future crew brief-me renderer (FEAT-064), loop `--exp…"
+    },
+    {
+      "number": 131,
+      "title": "SLICE-64: After FEAT-A + FEAT-B ship, slices run isolated in a worktree but the operator still has to manually merge back to main. FEAT-C closes the loop: slice-complete reads the validation badge; on PASS it squash-merges the slice branch into main, push…"
+    },
+    {
+      "number": 129,
+      "title": "SLICE-63: FEAT-A (worktree creation) sets up the worktree but the rest of the slice ceremony still runs against the original repo cwd. FEAT-B makes loop + crew CLI calls and subagent dispatches operate inside the slice worktree so all artifacts, edits, an…"
+    },
+    {
+      "number": 127,
+      "title": "SLICE-56: Slices currently share the repo working tree. If one slice's edits break the build mid-way, subsequent slices cannot proceed in parallel and the operator's editor is held hostage by the active slice. Worktrees fix this."
+    },
+    {
+      "number": 126,
+      "title": "SLICE-55: Slices currently share the repo working tree. If one slice's edits break the build mid-way, subsequent slices cannot proceed in parallel and the operator's editor is held hostage by the active slice. Worktrees fix this."
+    },
+    {
+      "number": 124,
+      "title": "SLICE-57: Two surgical edits to let autonomous-mode marathons continue when grade-trend warn fires."
+    },
+    {
+      "number": 122,
+      "title": "SLICE-59: Upstream-request against hero-crew: hooks/check-redundant-read.mjs currently emits decision: approve with a warning systemMessage. Should emit decision: block (deny verdict) at configurable threshold so the assistant cannot continue re-reading t…"
+    },
+    {
+      "number": 120,
+      "title": "SLICE-67: Loop-side surrogate halt-badge for redundant Read calls. The upstream `check-redundant-read` hook (hero-crew) only warns; loop cannot modify the hook itself. This slice reads the hook's per-session state file at `.claude/state/cost-hygiene/<sess…"
+    },
+    {
+      "number": 118,
+      "title": "SLICE-54: Walker has no session affinity. Slice work spread across 6 Claude sessions fragments cache + hides cost in many-sources alerts. Walker should pin to the sessionId of the slice-start ceremony and refuse re-entry from a different session without -…"
+    },
+    {
+      "number": 116,
+      "title": "SLICE-52: Walker currently honors costStopThreshold per-session. Cross-session work (slice spanning 6 Claude sessions) blew past gate at ~$1,550 vs $81 median. Walker must load cost-advise with aggregate-all, compute rolling median over last N slices, hal…"
+    },
+    {
+      "number": 114,
+      "title": "SLICE-81: /crew:orchestrate-slice's Step 4 (reviewer) → Step 5 (validator) order assumes reviewer reliably produces an artifact. Observed in SLICE-51: reviewer paused twice mid-investigation without writing the review-result."
+    },
+    {
+      "number": 112,
+      "title": "SLICE-53: Currently /loop:slice from-feature produces a slice scaffold with placeholder ACs:"
+    },
+    {
+      "number": 110,
+      "title": "SLICE-58: During SLICE-51 ceremony, the crew:reviewer agent was dispatched twice. Both dispatches paused mid-investigation (returning interim chat text about contracts-architect-prompt.md auto-registration) without writing a review-result artifact to .cla…"
+    },
+    {
+      "number": 107,
+      "title": "SLICE-51: `/crew:orchestrate-slice` Step 1 currently dispatches `crew:architect` for every slice that has `needs_contract: true`, creating or extending `.claude/artifacts/crew/designs/<FEAT>-contracts.md`. That's one architect dispatch per slice, even tho…"
+    },
+    {
+      "number": 104,
+      "title": "SLICE-46: Acceptance criteria: AC-1: sliceFromFeature auto-dispatches loop:architect to classify the new slice and writes tags, needs_contract, needs_ux to slice frontmatter before returning. AC-2: /loop:backlog-enrich command iterates all triaged feature…"
+    },
+    {
+      "number": 101,
+      "title": "SLICE-49: computeConfidence fires only at slice-start. After builder completes and before reviewer dispatches, loop has new evidence (builder pass/fail, files changed, test output) that could update the confidence signal. This was SLICE-B of FEAT-010 whic…"
+    },
+    {
+      "number": 99,
+      "title": "SLICE-48: auto-walker.mts is 487 lines, near the 400-line module convention. Gate helpers (compareWalkerOrder, checkDependsOn, evaluateCandidate, evaluateRiskGate) are ~100 lines with no dependency on walker I/O — clean extraction to walker-gates.mts. wal…"
+    },
+    {
+      "number": 97,
+      "title": "SLICE-47: loop-installer.mts is 533 lines, 33% over the 400-line module convention. Has 18 functions with two clear split points: (1) template/token helpers (readTemplate, renderTemplate, resolveLoopPath, buildMandatoryDocsList, buildContextRulesList, bui…"
+    },
+    {
+      "number": 95,
+      "title": "SLICE-45: PM triage flow is broken: /loop:pm-triage skill calls 'node scripts/loop.mjs backlog pm-write --id FEAT-NNN --scores ...' but that subcommand does not exist in loop.mts. PM agent scores (customer_impact, effort_estimate, strategic_alignment, tec…"
+    },
+    {
+      "number": 93,
+      "title": "SLICE-42: Clamp out-of-range composite scores in the walker so legacy raw 0-9 scores cannot outrank current 0.0-1.0 PM formula scores."
+    },
+    {
+      "number": 88,
+      "title": "FEAT-171: "
+    },
+    {
+      "number": 85,
+      "title": "SLICE-41: Three related bugs in src/scripts/lib/auto-walker.mts, all sharing the same root cause: every gate check lives inside the autonomous_safe=false branch, so autonomous_safe=true entries bypass everything."
+    },
+    {
+      "number": 83,
+      "title": "SLICE-37: Reduce per-slice Opus spend via two levers: (a) a PreToolUse hook that warns on post-Edit re-reads of the same file, and (b) a research doc + ADR that audits every Agent dispatch site, recommends Sonnet/Haiku routing for non-Opus work, and updates `loop.json::modelRouting` accordingly."
+    },
+    {
+      "number": 81,
+      "title": "SLICE-40: "
+    },
+    {
+      "number": 79,
+      "title": "SLICE-35: Add test coverage for two underspecified paths in `src/scripts/lib/pr-fixer.mts`:"
+    },
+    {
+      "number": 77,
+      "title": "SLICE-33: Two foundation fixes from SPEC-002 Theme C:"
+    },
+    {
+      "number": 75,
+      "title": "SLICE-32: Two-part fix:"
+    },
+    {
+      "number": 73,
+      "title": "SLICE-31: `auto-dispatch.mjs::appendAuditLog` hardcodes the audit log path to `<repoRoot>/.claude/artifacts/loop/auto-dispatch.jsonl`. This blocks multi-workspace deployments + makes the path untestable across fixtures sharing a workspace. Read the path from `loop.json::auditLogPath` (new key) with fallback to the current default. Same fallback applies when no config is provided."
+    },
+    {
+      "number": 72,
+      "title": "SLICE-30: Marker files at `.claude/artifacts/loop/pending-dispatch/` accumulate with no cleanup. SLICE-23 / SLICE-27 / SLICE-29 grades all flagged this. Add a drain step that runs at the END of `slice-complete` ceremony: remove marker files older than a configurable TTL (default 24h). Async / non-blocking (fire-and-forget pattern, mirrors document-writer dispatch from SLICE-27). Auditable via existing audit log."
+    },
+    {
+      "number": 70,
+      "title": "SLICE-29: Wire `backlog-triage` to always set `autonomous_safe` (boolean) on every FEAT it processes. Use a deterministic heuristic — no LLM call this slice. Migrate legacy competitor-audit FEATs (FEAT-007/-010/-012/-020) that use old PM dimension names to the new schema in-place. Result: auto-walker no longer skips items with reason `not_autonomous_safe` after triage runs."
+    },
+    {
+      "number": 68,
+      "title": "SLICE-34: Confirm or reject the three root-cause hypotheses for the crew:builder mid-cleanup stop pattern observed across SLICE-23/25/26/27 (and likely SLICE-29/30 per v0.7.2 CHANGELOG). Output: one-page research artifact at `docs/research/2026-06-04-builder-mid-cleanup-stop.md`."
+    },
+    {
+      "number": 66,
+      "title": "SLICE-28: Agent-report artifacts collapse to `agent_count: 0` when `subagent_stop` events are missing or delayed. 18 of 31 reports affected; most recent four slices (SLICE-24..27) zero. Two-pronged fix: harden the writer to count from `subagent_start` payloads when stops are missing, and diagnose why stops stopped firing after 2026-06-04T14:04Z."
+    },
+    {
+      "number": 64,
+      "title": "SLICE-27: Hook `loop:document-writer` dispatch into the `slice-complete` ceremony. Async / background — close ceremony does NOT block on doc-writer. Multi-output prompt provides slice + grade + FEAT context; doc-writer decides which outputs to produce. `--no-doc-writer` opt-out via standard flag mechanism."
+    },
+    {
+      "number": 62,
+      "title": "SLICE-24: State-gate the `decomposition` pattern alert in `pattern-alerts.mts` so DONE features emit `severity: \"info\"` (observability preserved) while active features (`pending`, `triaged`, `in-progress`) keep emitting `severity: \"warn\"` (gate preserved). Marathon loop unblocks for shipped-historical FEATs without losing the scope-creep early warning on live work."
+    },
+    {
+      "number": 60,
+      "title": "SLICE-26: Auto-dispatch the `loop:architect` agent inside `/loop:spec-decompose` when the caller does not supply `--features`. Architect produces a structured decomposition artifact (FEAT titles + scope + out-of-scope + technical_risk hint + autonomous_safe hint) which the CLI consumes as `--features-file`. Always-on with `--no-architect` opt-out. Incomplete-SPEC (missing objective / scope frontmatter) emits warning + proceeds with architect best-effort decomposition."
+    },
+    {
+      "number": 59,
+      "title": "SLICE-25: Auto-dispatch the `loop:researcher` agent inside the `backlog add` CLI command so every new FEAT lands with citation-backed body content, not the placeholder template. Uses the `dispatchAgent` primitive from SLICE-A. Always-on with `--no-research` opt-out per FEAT-028 design decision (no skip heuristics; cost-warn proceeds anyway)."
+    },
+    {
+      "number": 58,
+      "title": "SLICE-23: Land a single shared `auto-dispatch` module that downstream slices use to spawn role agents from inside loop CLI commands. The module owns: agent dispatch invocation, opt-out flag parsing, audit logging, try-catch isolation, and cost-warn logging. Zero behavior change to existing commands in this slice — pure scaffolding + tests."
+    },
+    {
+      "number": 56,
+      "title": "SLICE-16: Clear the score-trend stop alert by addressing observability gaps in the"
+    },
+    {
+      "number": 54,
+      "title": "SLICE-12: Today `slice complete` unconditionally rolls the parent FEAT from in-progress/ to done/ unless --keep-feature-open is passed. For multi-slice FEATs this is wrong: shipping SLICE-A of a 3-slice FEAT also marks the FEAT done, hiding SLICE-B+C work from the backlog."
+    },
+    {
+      "number": 52,
+      "title": "SLICE-20: Wire cost cap enforcement into runAutoWalker, add orchConfig hints in return,"
+    },
+    {
+      "number": 51,
+      "title": "SLICE-19: Extend `runAutoWalker` to process `autonomous_safe=false` items via risk gate"
+    },
+    {
+      "number": 50,
+      "title": "SLICE-11: **SLICE-A of FEAT-025:** ship the backlog-walker primitive that picks the next triaged FEAT, surfaces a structured dispatch instruction (mimicking `slice from-feature` + `slice start`), and reports stop-condition state. Walker is read-only at this slice — emits the dispatch plan but does NOT actually dispatch the builder. Proves the walker logic + iteration boundary + stop conditions without risking unattended builder execution. SLICE-B will wire actual dispatch + auto-commit; SLICE-C will flip default to ship autonomous_safe=false items."
+    },
+    {
+      "number": 48,
+      "title": "SLICE-15: Wire `loop github sync` and `loop github bootstrap` through `getProvider`, add"
+    },
+    {
+      "number": 47,
+      "title": "SLICE-14: Add NoopProvider (silent no-ops), LinearProvider stub (not-implemented throws), and"
+    },
+    {
+      "number": 46,
+      "title": "SLICE-13: Decouple task/plan/brainstorm persistence from any single vendor. Current github-sync layer is hardcoded to gh CLI + GitHub REST. Refactor into a provider-shaped interface so loop can switch to Linear, Jira, native filesystem, or any future tracker without touching ceremony code."
+    },
+    {
+      "number": 44,
+      "title": "SLICE-09: Ship a named loop skill `verification-before-completion` that enforces an **Iron Law** — _\"NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE\"_ — backed by a lookup table mapping each claim type to the command output that proves it. Triggers on any pre-completion claim, requiring fresh command output (not memory)."
+    },
+    {
+      "number": 43,
+      "title": "SLICE-38: Add a `checkpointCommit(repoPath, ctx)` primitive that writes a structured WIP commit when"
+    },
+    {
+      "number": 42,
+      "title": "SLICE-36: Add a `confidence: \"green\" | \"yellow\" | \"red\"` field to the `slice start` ceremony output. Computed deterministically from already-available signals — NO LLM call. Helps the user (and downstream tooling like LoopObserver) see whether the loop is on solid ground before dispatching the builder."
+    },
+    {
+      "number": 41,
+      "title": "SLICE-22: New `loop pr-fix --pr N` command: poll PR via gh CLI, categorize issues"
+    },
+    {
+      "number": 40,
+      "title": "SLICE-21: Add machine-parseable step log per slice. Each ceremony event (slice_start,"
+    },
+    {
+      "number": 39,
+      "title": "SLICE-39: Add a `contextRules` array to `.claude/loop.json` so users can declare glob-to-docs mappings."
+    },
+    {
+      "number": 38,
+      "title": "SLICE-18: Wire `runPlanPreflight` into `startSlice` ceremony and add a conditional"
+    },
+    {
+      "number": 37,
+      "title": "SLICE-10: **SLICE-A of FEAT-006:** ship the bare pre-flight ceremony primitive — codebase research pass + editable plan artifact — with no approval gate. Proves the loop primitive that FEAT-006 SLICE-B (conditional gate) and FEAT-025 (loop:auto) both depend on."
+    },
+    {
+      "number": 36,
+      "title": "SLICE-17: Add `loop architect --id SLICE-NN` CLI command that runs the codebase"
+    },
+    {
+      "number": 35,
+      "title": "SLICE-83: Competitor analysis 2026-06-08 — Archon `.archon/maintainer-standup/direction.md` pattern. Every P4 polite-decline cites an explicit clause from policy doc (e.g. \"single-developer-tool clause\"). Loop's `loop:pm` currently emits free-text reasoning that drifts across sessions and is not auditable against policy."
+    },
+    {
+      "number": 33,
+      "title": "SLICE-82: Competitor analysis 2026-06-08 — Archon `.archon/commands/maintainer-review-*.md` pattern. 6 narrow review-dimension commands (code-review, test-coverage, error-handling, docs-impact, comment-quality, synthesize) dispatched in parallel via DAG `depends_on`, results fed to `maintainer-review-synthesize.md` that produces final verdict."
+    },
+    {
+      "number": 29,
+      "title": "SLICE-03: `agent-report-writer.mjs` writes files as `<slug>-agent-report.md` (no"
+    },
+    {
+      "number": 28,
+      "title": "SLICE-02: Preventive cleanup of code smells identified in the 2026-05-27 performance audit. No critical issues — codebase is structurally healthy (315 tests, 4s suite, no circular deps, no swallowed errors). This is hygiene to keep technical debt from accumulating."
+    },
+    {
+      "number": 27,
+      "title": "SLICE-06: Harden the TypeScript migration with integration-level tests for gate interaction sequences, cross-module data flow, and known regression scenarios. Add ESLint sub-module boundary enforcement. Wire typecheck into PR CI."
+    },
+    {
+      "number": 24,
+      "title": "SLICE-05: Migrate all `.mjs` source files to `.mts` TypeScript with strict mode. Zero logic changes."
+    },
+    {
+      "number": 20,
+      "title": "SLICE-07: Wrap every non-negotiable behavioral rule in loop skill Markdown files with `<HARD-GATE>` XML tags, matching the superpowers convention that makes violations self-documenting and explicit to the model."
+    },
+    {
+      "number": 17,
+      "title": "SLICE-08: Add a persistent JSONL operational learnings store and surface the top 3 most-recent entries automatically at `/loop:start`, so the agent inherits session-to-session observations without manual recall."
+    },
+    {
+      "number": 9,
+      "title": "SLICE-01: Grade files currently named SLICE-NN-grade.md (bare, no timestamp or context). Should follow the same naming convention as other artifacts: timestamp-phase-feat-slice-grade.md."
+    },
+    {
+      "number": 7,
+      "title": "SLICE-04: Every loop-owned artifact body must open with an identification line in the"
+    },
+    {
+      "number": 5,
+      "title": "SLICE-03: `agent-report-writer.mjs` writes files as `<slug>-agent-report.md` (no"
+    },
+    {
+      "number": 3,
+      "title": "SLICE-02: Preventive cleanup of code smells identified in the 2026-05-27 performance audit. No critical issues — codebase is structurally healthy (315 tests, 4s suite, no circular deps, no swallowed errors). This is hygiene to keep technical debt from accumulating."
+    },
+    {
+      "number": 1,
+      "title": "install is not idempotent: appends a new marker block when MARKER_END is absent (stacks duplicate start markers in CLAUDE.md)"
+    }
+  ],
+  "localOnly": [
+    {
+      "id": "FEAT-092",
+      "title": "FEAT-092"
+    },
+    {
+      "id": "FEAT-177",
+      "title": "FEAT-177"
+    },
+    {
+      "id": "FEAT-201",
+      "title": "FEAT-201"
+    },
+    {
+      "id": "FEAT-202",
+      "title": "FEAT-202"
+    },
+    {
+      "id": "FEAT-203",
+      "title": "FEAT-203"
+    },
+    {
+      "id": "FEAT-204",
+      "title": "FEAT-204"
+    },
+    {
+      "id": "FEAT-205",
+      "title": "FEAT-205"
+    },
+    {
+      "id": "FEAT-206",
+      "title": "FEAT-206"
+    },
+    {
+      "id": "FEAT-207",
+      "title": "FEAT-207"
+    },
+    {
+      "id": "FEAT-208",
+      "title": "FEAT-208"
+    },
+    {
+      "id": "FEAT-209",
+      "title": "FEAT-209"
+    },
+    {
+      "id": "FEAT-210",
+      "title": "FEAT-210"
+    },
+    {
+      "id": "FEAT-211",
+      "title": "FEAT-211"
+    },
+    {
+      "id": "FEAT-212",
+      "title": "FEAT-212"
+    },
+    {
+      "id": "FEAT-213",
+      "title": "FEAT-213"
+    },
+    {
+      "id": "FEAT-214",
+      "title": "FEAT-214"
+    },
+    {
+      "id": "FEAT-215",
+      "title": "FEAT-215"
+    },
+    {
+      "id": "FEAT-216",
+      "title": "FEAT-216"
+    },
+    {
+      "id": "FEAT-217",
+      "title": "FEAT-217"
+    },
+    {
+      "id": "FEAT-218",
+      "title": "FEAT-218"
+    },
+    {
+      "id": "FEAT-219",
+      "title": "FEAT-219"
+    },
+    {
+      "id": "FEAT-219",
+      "title": "FEAT-219"
+    },
+    {
+      "id": "FEAT-220",
+      "title": "FEAT-220"
+    },
+    {
+      "id": "FEAT-220",
+      "title": "FEAT-220"
+    },
+    {
+      "id": "FEAT-221",
+      "title": "FEAT-221"
+    },
+    {
+      "id": "FEAT-222",
+      "title": "FEAT-222"
+    },
+    {
+      "id": "FEAT-223",
+      "title": "FEAT-223"
+    },
+    {
+      "id": "FEAT-224",
+      "title": "FEAT-224"
+    },
+    {
+      "id": "FEAT-225",
+      "title": "FEAT-225"
+    },
+    {
+      "id": "FEAT-226",
+      "title": "FEAT-226"
+    },
+    {
+      "id": "FEAT-227",
+      "title": "FEAT-227"
+    },
+    {
+      "id": "FEAT-228",
+      "title": "FEAT-228"
+    },
+    {
+      "id": "FEAT-229",
+      "title": "FEAT-229"
+    },
+    {
+      "id": "FEAT-230",
+      "title": "FEAT-230"
+    },
+    {
+      "id": "FEAT-231",
+      "title": "FEAT-231"
+    },
+    {
+      "id": "FEAT-232",
+      "title": "FEAT-232"
+    },
+    {
+      "id": "FEAT-233",
+      "title": "FEAT-233"
+    },
+    {
+      "id": "FEAT-234",
+      "title": "FEAT-234"
+    },
+    {
+      "id": "FEAT-235",
+      "title": "FEAT-235"
+    },
+    {
+      "id": "FEAT-236",
+      "title": "FEAT-236"
+    },
+    {
+      "id": "FEAT-237",
+      "title": "FEAT-237"
+    },
+    {
+      "id": "FEAT-240",
+      "title": "FEAT-240"
+    },
+    {
+      "id": "FEAT-240",
+      "title": "FEAT-240"
+    },
+    {
+      "id": "FEAT-241",
+      "title": "FEAT-241"
+    },
+    {
+      "id": "FEAT-242",
+      "title": "FEAT-242"
+    },
+    {
+      "id": "FEAT-243",
+      "title": "FEAT-243"
+    },
+    {
+      "id": "FEAT-244",
+      "title": "FEAT-244"
+    },
+    {
+      "id": "FEAT-245",
+      "title": "FEAT-245"
+    },
+    {
+      "id": "FEAT-246",
+      "title": "FEAT-246"
+    },
+    {
+      "id": "FEAT-248",
+      "title": "FEAT-248"
+    },
+    {
+      "id": "FEAT-249",
+      "title": "FEAT-249"
+    },
+    {
+      "id": "FEAT-253",
+      "title": "FEAT-253"
+    },
+    {
+      "id": "FEAT-254",
+      "title": "FEAT-254"
+    },
+    {
+      "id": "FEAT-255",
+      "title": "FEAT-255"
+    },
+    {
+      "id": "FEAT-257",
+      "title": "FEAT-257"
+    },
+    {
+      "id": "FEAT-258",
+      "title": "FEAT-258"
+    },
+    {
+      "id": "FEAT-259",
+      "title": "FEAT-259"
+    },
+    {
+      "id": "FEAT-260",
+      "title": "FEAT-260"
+    },
+    {
+      "id": "FEAT-261",
+      "title": "FEAT-261"
+    },
+    {
+      "id": "FEAT-262",
+      "title": "FEAT-262"
+    }
+  ],
+  "statusMismatches": [
+    {
+      "id": "FEAT-252",
+      "number": 438,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-251",
+      "number": 432,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-256",
+      "number": 425,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-250",
+      "number": 423,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-247",
+      "number": 409,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-239",
+      "number": 386,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-238",
+      "number": 384,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-200",
+      "number": 274,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-197",
+      "number": 272,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-179",
+      "number": 270,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-182",
+      "number": 265,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-183",
+      "number": 250,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-180",
+      "number": 247,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-199",
+      "number": 242,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-198",
+      "number": 240,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-196",
+      "number": 237,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-195",
+      "number": 235,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-194",
+      "number": 233,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-193",
+      "number": 231,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-192",
+      "number": 229,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-191",
+      "number": 227,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-190",
+      "number": 223,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-189",
+      "number": 221,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-188",
+      "number": 219,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-187",
+      "number": 212,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-181",
+      "number": 210,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-186",
+      "number": 208,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-185",
+      "number": 206,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-184",
+      "number": 204,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-176",
+      "number": 196,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-170",
+      "number": 193,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-169",
+      "number": 192,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-168",
+      "number": 191,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-167",
+      "number": 190,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-166",
+      "number": 189,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-165",
+      "number": 188,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-134",
+      "number": 186,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-130",
+      "number": 185,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-129",
+      "number": 184,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-128",
+      "number": 183,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-117",
+      "number": 182,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-112",
+      "number": 181,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-111",
+      "number": 180,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-110",
+      "number": 179,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-102",
+      "number": 178,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-101",
+      "number": 177,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-100",
+      "number": 176,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-097",
+      "number": 175,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-094",
+      "number": 174,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-090",
+      "number": 172,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-089",
+      "number": 170,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-088",
+      "number": 169,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-086",
+      "number": 168,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-085",
+      "number": 167,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-083",
+      "number": 166,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-082",
+      "number": 164,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-077",
+      "number": 162,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-076",
+      "number": 160,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-075",
+      "number": 159,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-074",
+      "number": 157,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-073",
+      "number": 155,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-072",
+      "number": 153,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-071",
+      "number": 150,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-070",
+      "number": 148,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-069",
+      "number": 144,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-068",
+      "number": 142,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-067",
+      "number": 140,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-066",
+      "number": 138,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-065",
+      "number": 136,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-064",
+      "number": 134,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-063",
+      "number": 132,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-062",
+      "number": 130,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-061",
+      "number": 128,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-060",
+      "number": 125,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-059",
+      "number": 123,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-058",
+      "number": 121,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-057",
+      "number": 119,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-056",
+      "number": 117,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-055",
+      "number": 115,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-054",
+      "number": 113,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-053",
+      "number": 111,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-052",
+      "number": 109,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-051",
+      "number": 108,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-050",
+      "number": 106,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-049",
+      "number": 105,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-048",
+      "number": 103,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-047",
+      "number": 102,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-046",
+      "number": 100,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-045",
+      "number": 98,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-044",
+      "number": 96,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-043",
+      "number": 94,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-175",
+      "number": 92,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-174",
+      "number": 91,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-173",
+      "number": 90,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-172",
+      "number": 89,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-042",
+      "number": 87,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-041",
+      "number": 86,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-040",
+      "number": 84,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-039",
+      "number": 82,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-038",
+      "number": 80,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-037",
+      "number": 78,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-036",
+      "number": 76,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-035",
+      "number": 74,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-034",
+      "number": 71,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-033",
+      "number": 69,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-032",
+      "number": 67,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-031",
+      "number": 65,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-030",
+      "number": 63,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-029",
+      "number": 61,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-028",
+      "number": 57,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-027",
+      "number": 55,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-026",
+      "number": 53,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-025",
+      "number": 49,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-024",
+      "number": 45,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-078",
+      "number": 34,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-079",
+      "number": 32,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-020",
+      "number": 22,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-014",
+      "number": 21,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-012",
+      "number": 18,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-010",
+      "number": 15,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-009",
+      "number": 14,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-008",
+      "number": 13,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-007",
+      "number": 12,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-006",
+      "number": 11,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    },
+    {
+      "id": "FEAT-005",
+      "number": 10,
+      "localStatus": "done",
+      "trackerState": "OPEN"
+    }
+  ],
+  "bodyDrift": [
+    {
+      "id": "FEAT-199",
+      "number": 242,
+      "changes": [
+        "description"
+      ]
+    },
+    {
+      "id": "FEAT-198",
+      "number": 240,
+      "changes": [
+        "description"
+      ]
+    },
+    {
+      "id": "FEAT-196",
+      "number": 237,
+      "changes": [
+        "description"
+      ]
+    },
+    {
+      "id": "FEAT-195",
+      "number": 235,
+      "changes": [
+        "description"
+      ]
+    },
+    {
+      "id": "FEAT-192",
+      "number": 229,
+      "changes": [
+        "description"
+      ]
+    },
+    {
+      "id": "FEAT-190",
+      "number": 223,
+      "changes": [
+        "description"
+      ]
+    },
+    {
+      "id": "FEAT-189",
+      "number": 221,
+      "changes": [
+        "description"
+      ]
+    },
+    {
+      "id": "FEAT-188",
+      "number": 219,
+      "changes": [
+        "description"
+      ]
+    },
+    {
+      "id": "FEAT-020",
+      "number": 22,
+      "changes": [
+        "description"
+      ]
+    }
+  ]
+}

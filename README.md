@@ -73,7 +73,7 @@ The companion plugins live in the same marketplace:
 /plugin install cortex@astra
 ```
 
-Verify locally with `bun run test`. Pinned release: `v0.61.0`.
+Verify locally with `bun run test`. Pinned release: `v0.62.1`.
 
 > **Runtime dependency:** Bun ≥ 1.3 is required at install time. The Crew hook entries (`hooks/check-*.ts`, `hooks/preflight-shell.ts`, `hooks/record-read-content.ts`) run under Bun for fast cold start (~40 ms vs ~180 ms on Node). The installer fails loud if Bun is missing — install from <https://bun.sh>.
 

@@ -67,6 +67,12 @@ fi
   3. Re-verify the workspace: `pwd` inside the new worktree, then re-run step 2 of the Workflow below (`crew.ts wake-up --repo "<new-worktree-path>"`) so the rest of this run's `--repo` / `$PWD` references point at the isolated worktree, not the original directory.
   4. Continue the rest of this workflow (framing, `write-run-brief`, builder dispatch, review, etc.) entirely inside the isolated worktree. Do not flip any global `worktreeMode`-style default for the repo — this isolation applies to this run only.
 
+### Peer-dispatch isolation (distinct from the self-isolation above — dev-team#169)
+
+The collision pre-flight above is this dispatcher session isolating **itself** into a worktree on branch collision. That is a different problem from this dispatcher **peer-dispatching a builder** into a separate tree — e.g. a background/parallel builder dispatch during a `team run` whose work should land in a worktree distinct from this dispatcher's own cwd.
+
+When this ladder dispatches such a peer, the `Agent`-tool call MUST carry `isolation: "worktree"` — never a prompt-text instruction like "operate in `<path>`" alone. Prompt text cannot pin a subagent's cwd; only the harness's own `isolation:` parameter can. Note `isolation: "worktree"` is a bare enum: it takes no path argument and always creates a **fresh** temporary worktree for that dispatch — it cannot attach a subagent to a worktree that already exists. This ladder has no pre-existing worktree to attach to, so that's not a gap here; if a future ladder needs "attach to a specific pre-created tree," see `commands/parallel.md`'s "Attaching to a pre-created worktree" note — the mechanism is different (`EnterWorktree`, called by the dispatched subagent itself, not a dispatcher-side parameter). If the dispatch does not need a separate tree — the common case, most builder dispatches in this ladder run in the dispatcher's own cwd — omit `isolation:` entirely; do not add it defensively where it isn't needed.
+
 ## Standard ladder (FEAT-tag routing)
 
 Builder routing: see `docs/routing-table.md` → "Builder routing matrix" (generated from `docs/routing-table.yaml` — the authoritative source; do not hand-copy the table here, edit the yaml and re-run `node scripts/render-routing-table.ts` instead). `commands/orchestrate-slice.md` "Builder routing" carries the full signal-level decision detail (`FE_ONLY`/`BE_ONLY`/`SPLIT_BUILD`/`TS_TOOLING_ONLY`) this matrix summarizes.
@@ -79,7 +85,7 @@ Builder routing: see `docs/routing-table.md` → "Builder routing matrix" (gener
 node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" resolve-model --repo "$PWD" --phase build
 ```
 
-Pass the printed value (e.g. `sonnet`) as the Agent-tool dispatch's `model:` argument. If the slice classifies as a trivial shape (`doc-update` / `config-tweak` / `test-only` / `single-module-edit`), pass `--shape <shape>` too — it overrides the phase tier. This mirrors the autonomous wave path's `resolveWaveDispatchModel`, which sets the model programmatically; here the resolution is honored by the orchestrator LLM, not enforced by a hook — see "Honest limitation" below.
+Pass the printed value (e.g. `sonnet`) as the Agent-tool dispatch's `model:` argument. **If it prints `inherit` (model routing disabled), OMIT the `model:` argument entirely** — the dispatched agent's own `model:` frontmatter (`agents/*.md`) then governs; do not substitute a model yourself. If the slice classifies as a trivial shape (`doc-update` / `config-tweak` / `test-only` / `single-module-edit`), pass `--shape <shape>` too — it overrides the phase tier. This mirrors the autonomous wave path's `resolveWaveDispatchModel`, which sets the model programmatically; here the resolution is honored by the orchestrator LLM, not enforced by a hook — see "Honest limitation" below.
 
 **Honest limitation:** this instruction has no hard hook enforcement. The autonomous wave path (`runner-plugin`'s `model-router`) sets the dispatch model programmatically before the subagent spawns; the interactive path here relies on the dispatcher LLM (you) actually running `resolve-model` and actually passing its output as `model:`. A `PreToolUse` hook on `Agent` that injects the resolved model when `model:` is absent (S2b) would close this gap — not built in this slice.
 

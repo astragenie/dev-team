@@ -57,6 +57,35 @@ Required body sections:
 
 Optional but recommended: `## Custom instructions`, `## Delegation map`, `## Workflow badges`.
 
+### The STATUS line is enforced at runtime for builder-tier agents, not advisory prose
+
+Since dev-team#187/#174 (Wave 3 Guard 1, "deliver-before-die"), the `## Report contract`'s
+`STATUS ∈ {DONE, BLOCKED, HELP, IN-PROGRESS}` line is a runtime-enforced contract for the
+four STATUS-line builder-tier agents (`fullstack-dev`, `backend-dev`, `frontend-dev`,
+`aiplugin-dev`), not just prompt-body prose a builder might skip under a truncated dispatch.
+A `SubagentStop` hook (`hooks/check-builder-terminal-state.ts` /
+`hooks/lib/check-builder-terminal-state.ts`) blocks once when one of those agents is about to
+go idle with neither a recognized `DONE:` / `BLOCKED:` / `HELP:` / `IN-PROGRESS:` line nor a
+completion-artifact path
+(`.claude/artifacts/crew/{handoffs,reviews,validations,deployments,runs,cost,cost-insights,agents}/*.md`)
+in its last message — directing the agent to either finish the STATUS line or commit WIP and
+report `BLOCKED: <what's left>`. `BLOCKED` is itself a valid terminal state and is never
+blocked by this guard — forcing completion on a legitimate stop would convert it into a stuck
+loop. One retry only (`stop_hook_active` re-entry guard): a second consecutive stop with no
+signal passes through so the dispatcher-level watchdog takes over. Fails open on malformed
+input, out-of-scope agents, and a runtime that doesn't populate `last_assistant_message`.
+Opt out per-repo via `crew.json features["builder-terminal-state-guard"].enabled=false`
+(default `true`).
+
+`dev-lite` is one of `hooks/lib/model-routing-enforce.ts`'s five `BUILDER_TIER_AGENTS` but is
+deliberately **excluded** from this guard's scope (`TERMINAL_STATE_GUARD_AGENTS` in
+`hooks/lib/check-builder-terminal-state.ts`) — its `## Report contract` ("Receipt IS the
+artifact") uses a different, maximally compressed vocabulary that doesn't match the
+`DONE:`/`BLOCKED:`/`HELP:`/`IN-PROGRESS:` convention and never writes an artifact path either.
+Teaching this hook a second agent's prose format would be fragile; dev-lite's `<=2 files / <=50
+LOC` bound also keeps it well clear of the dispatch-death ceiling this guard exists to catch.
+Tracked as a low-severity gap in dev-team#226 (receipt-shaped check, not built).
+
 ## Required frontmatter (3rdparty)
 
 3rdparty agents are NOT validated. Keep them shaped roughly like first-party for parity, but the schema is whatever upstream ships. Carve-out: bias-prone description blocks (fake numbers, example dialogues with hallucinated metrics) should be stripped before checking in — see `agents/cloud-architect.md` history for the contract-first pattern we expect.

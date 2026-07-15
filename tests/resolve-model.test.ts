@@ -89,11 +89,19 @@ test("resolveDispatchModel: toggle explicitly true — routing on, same as defau
   assert.equal(resolveDispatchModel("build", null, COMMITTED_ROUTING, true), "sonnet");
 });
 
-test("resolveDispatchModel: toggle false — always returns the opus fallback, ignoring modelRouting", () => {
-  assert.equal(resolveDispatchModel("build", null, COMMITTED_ROUTING, false), "opus");
-  assert.equal(resolveDispatchModel("architect", null, COMMITTED_ROUTING, false), "opus");
+test("resolveDispatchModel: toggle false — returns null (omit model:, agent frontmatter governs)", () => {
+  assert.equal(resolveDispatchModel("build", null, COMMITTED_ROUTING, false), null);
+  assert.equal(resolveDispatchModel("architect", null, COMMITTED_ROUTING, false), null);
 });
 
 test("resolveDispatchModel: toggle false — bypasses the trivial-shape override too", () => {
-  assert.equal(resolveDispatchModel("build", "doc-update", COMMITTED_ROUTING, false), "opus");
+  assert.equal(resolveDispatchModel("build", "doc-update", COMMITTED_ROUTING, false), null);
+});
+
+test("resolveDispatchModel: loop.modelRouting.enabled false — returns null even with toggle on", () => {
+  const disabledConfig = {
+    loop: { modelRouting: { enabled: false, build: "sonnet", default: "sonnet" } }
+  };
+  assert.equal(resolveDispatchModel("build", null, disabledConfig), null);
+  assert.equal(resolveDispatchModel("build", "doc-update", disabledConfig), null);
 });

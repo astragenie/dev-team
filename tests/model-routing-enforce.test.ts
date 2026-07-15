@@ -135,6 +135,17 @@ test("decideModelEnforcement: no modelRouting configured (null config) → fail-
   assert.equal(decideModelEnforcement(dispatch, { loop: {} }).action, "none");
 });
 
+test("decideModelEnforcement: loop.modelRouting.enabled false → stand down (agent frontmatter governs)", () => {
+  const dispatch = {
+    subagentType: "crew:fullstack-dev",
+    toolInput: { subagent_type: "crew:fullstack-dev" }
+  };
+  const disabledConfig = {
+    loop: { modelRouting: { enabled: false, build: "sonnet", default: "sonnet" } }
+  };
+  assert.equal(decideModelEnforcement(dispatch, disabledConfig).action, "none");
+});
+
 test("decideModelEnforcement: malformed/empty-string explicit model is treated as absent → inject", () => {
   const dispatch = {
     subagentType: "crew:backend-dev",

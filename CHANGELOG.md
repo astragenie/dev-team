@@ -51,6 +51,64 @@ cut release (docs/verification-only landing).
   `@astragenie/memory-provider` contract, kept local until the package ships
   `profile()`/`feedback()` (tracked as follow-on work — see
   `docs/contracts/agent-profile-feedback-v1.md`).
+## [v0.63.0] — 2026-07-13 — subagent survival: deliver before you die
+
+Seven agents died mid-session at the token ceiling. Their *work* survived every
+time — their *reports* did not, and four had to be recovered by grepping disk.
+This release makes the report land before the risky tail, estimates dispatch
+size before an agent is spawned into a doomed context, and stops the auto-merge
+gate from shipping unreviewed changes to sensitive paths.
+
+- **Report-to-PR contract** (#227, `e85778e5`): builders post their report to the
+  PR **before** the risky tail of a long task, not after. `scripts/lib/report-to-pr.ts`
+  upserts an idempotent marker comment (`<!-- dev-team:report -->`) with a disk
+  fallback when GitHub is unreachable. Wired into the four `*-dev` builder prompts.
+- **Dispatch size gate** (#232, `1109ae4a`): a `PreToolUse` hook estimates the
+  token cost of a dispatch and warns at 200k. **Ships warn-only** — the
+  `dispatch-size-gate` flag defaults to `false`. It logs
+  `{sessionId, toolUseId, subagentType, estimatedTokens, ...}` so the threshold can
+  be calibrated against real deaths before anything is blocked. Fail-open by design.
+- **Auto-merge fail-closed** (#230 + #233, `537fd4d5`, `664f7e0c`): the gate now
+  disarms auto-merge on sensitive paths (`hooks/`, `agents/`, `commands/`,
+  `.github/workflows/`) and classifies disarm success by **querying PR state**, not
+  by regex-matching GitHub's error prose. The prose approach shipped and broke —
+  GitHub's real message did not match the guessed pattern, turning every draft PR
+  red. If the state cannot be determined, the job fails closed.
+- **Builder terminal-state guard** (#225 + #228, `26c466b3`, `0b6ce2a3`): warns when
+  a builder-tier agent ends without a terminal status. `dev-lite` is excluded — it
+  does not share the other builders' status vocabulary, and including it would have
+  blocked 100% of `dev-lite` completions in every consumer repo.
+- **`isolation:` docs corrected** (#169, #224 + #229, `da3319dd`, `c3b6fa02`):
+  `commands/parallel.md` prescribed a nonexistent API — it described `isolation:` as
+  taking a worktree *path*. It is a bare `"worktree" | "remote"` enum that always
+  creates a **new** tree. Agents following the old text would have abandoned tracked
+  worktrees and silently lost work.
+
+## [v0.62.1] — 2026-07-12 — single-toggle model routing
+
+Patch: drops the redundant `crew.json features["model-routing"]` off-switch
+(it could drift from loop.json — interactive path off while wave path on).
+`.claude/loop.json → loop.modelRouting.enabled` is now the sole authority
+for turning model routing on/off; one file per repo, no other change needed.
+
+## [v0.62.0] — 2026-07-12 — model routing disabled; agent frontmatter governs
+
+Minor: model-tier routing is now off in this repo, and the disabled path has
+correct semantics — dispatches omit the Agent-tool `model:` argument so each
+agent's own `model:` frontmatter (`agents/*.md`) governs, instead of pinning
+everything to the opus fallback.
+
+- **Disable model routing** (#219): `crew.json features["model-routing"].enabled:
+  false` + `.claude/loop.json loop.modelRouting: { "enabled": false }` (new
+  config kill-switch, mirrored in runner-plugin's model-router).
+  `resolveDispatchModel` returns `null` when disabled; `crew resolve-model`
+  prints the sentinel `inherit`; the `pre-tool-use-model-enforce` hook stands
+  down; `build.md` / `fix.md` / `orchestrate-slice.md` instruct the dispatcher
+  to omit `model:` on `inherit`. Re-enable = flip either toggle back — routed
+  tier semantics are unchanged when enabled.
+- **`crew:refactor` model pin** (#219): `fable` → `opus` (last non-standard pin;
+  fleet is now opus for architecture tier, haiku for doc/locator tier, sonnet
+  elsewhere).
 
 ## [v0.61.0] — 2026-07-10 — MemoryProvider extraction + consume (W3)
 
@@ -686,8 +744,7 @@ enforcement flags may only soften block→warn, never block→silent.
 - **`agents/3rdparty/test-automator.md`** — removed (superseded; duplicate
   `name: test-automator` would collide in the capability router).
 - Follow-up: seed `evals/agents/crew-test-automator.yaml` GEPA eval suite —
-  frontmatter `evals:` key intentionally omitted until the suite exists.>>>>>>> origin/main
-
+  frontmatter `evals:` key intentionally omitted until the suite exists.
 ## [0.49.0] — 2026-07-04 — reviewer rename + routing externalization + model profiles (architecture review execution)
 
 ### Breaking
