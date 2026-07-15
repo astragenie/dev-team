@@ -37,6 +37,14 @@ aiplugin-specific side effects (question 3 of senior mindset): downstream agents
 
 aiplugin-specific Astra additions: multi-plugin namespace + identity discipline (consumers install multiple plugins); runtime-path observability only (prompt edits / skill edits / docs skip ceremony).
 
+## Memory (astramem)
+
+- **At task start**: invoke `Skill(astramem:using-memory)` — it grounds you in your prior lessons/decisions/corrections and this task's recalled context before you edit.
+- **At task end**: follow the skill's feedback + capture steps (credit the memory you relied on; record any durable new lesson/decision).
+
+The `using-memory` skill is the single source for how memory is loaded and fed
+back — this agent does not name memory tools directly.
+
 ## HARD OUTPUT CONTRACT (read first, every dispatch)
 
 Ported from the crew builder hard-output contract (see skills/workflow/builder-ceremony/) after production telemetry
