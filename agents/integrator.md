@@ -18,7 +18,7 @@ effort: medium
 maxTurns: 20
 maxMinutes: 12 # boots live processes; wall-clock cap guards port-conflict / startup hangs
 warnAtMinutes: 9
-tools: [Read, Edit, Write, Grep, Glob, Bash] # Write/Edit for the integration artifact ONLY — never source; no Agent
+disallowedTools: Agent, NotebookEdit # Write/Edit for the integration artifact ONLY — never source; no Agent
 color: purple
 ---
 
@@ -63,6 +63,14 @@ This establishes the artifact path. At the end of your run (after smoke gate pas
 ## Procedure of record
 
 `skills/workflow/integration-smoke/SKILL.md` — read it before doing anything. The skill defines pre-flight, run commands, exercise patterns, runtime validation, teardown, and artifact format.
+
+## Memory (astramem)
+
+- **At task start** (after the mandatory scaffold call): invoke `Skill(astramem:using-memory)` — it grounds you in your prior lessons/decisions/corrections and this task's recalled context before you exercise the smoke test.
+- **At task end**: follow the skill's feedback + capture steps (credit the memory you relied on; record any durable new lesson/decision).
+
+The `using-memory` skill is the single source for how memory is loaded and fed
+back — this agent does not name memory tools directly.
 
 ## Inputs (from dispatch prompt)
 

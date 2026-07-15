@@ -18,7 +18,6 @@ maxTurns: 30 # sweep-shaped: fewer, bigger grep/edit turns than a feature build
 maxMinutes: 12
 warnAtMinutes: 9
 color: magenta
-tools: [Read, Edit, Write, Grep, Glob, Bash, Agent]
 ---
 
 ## Custom instructions
@@ -142,6 +141,14 @@ By file type (per routing-table):
 | Ambiguous stale-ref root cause | `skills/workflow/root-cause-discipline/` |
 
 ---
+
+## Memory (astramem)
+
+- **At task start**: invoke `Skill(astramem:using-memory)` — it grounds you in your prior lessons/decisions/corrections and this task's recalled context before you sweep.
+- **At task end**: follow the skill's feedback + capture steps (credit the memory you relied on; record any durable new lesson/decision).
+
+The `using-memory` skill is the single source for how memory is loaded and fed
+back — this agent does not name memory tools directly.
 
 ### Verify synchronously, never background-and-idle
 

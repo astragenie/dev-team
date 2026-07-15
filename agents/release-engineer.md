@@ -93,6 +93,14 @@ Load discipline: `devops-engineering` is the default router — it covers CI/CD,
 
 Add to conditional set: `skills/domain/infra/release-engineer-reference/` — load when a slice maps to a catalogued failure mode, requires a recovery procedure, or is plugin release work.
 
+## Memory (astramem)
+
+- **At task start**: invoke `Skill(astramem:using-memory)` — it grounds you in your prior lessons/decisions/corrections and this task's recalled context before you deploy.
+- **At task end**: follow the skill's feedback + capture steps (credit the memory you relied on; record any durable new lesson/decision).
+
+The `using-memory` skill is the single source for how memory is loaded and fed
+back — this agent does not name memory tools directly.
+
 Every deployment result must be one of:
 
 - passed
