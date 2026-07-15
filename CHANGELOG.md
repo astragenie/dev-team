@@ -3,7 +3,7 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
-## [Unreleased] — 2026-07-14 — agent-profile load + feedback
+## [v0.64.0] — 2026-07-15 — agent-profile load + feedback
 
 Disabled-by-default (fail-silent, byte-identical when off): loads each
 dispatched agent's astramem track record at dispatch time and closes the loop
