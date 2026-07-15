@@ -274,6 +274,22 @@ To opt out, delete the `context7` entry from `.mcp.json` (or remove the file). T
 
 The server is invoked via `npx -y` on first use; no global install required. Cost is the upstream service's free / rate-limited tier — no Anthropic billing change.
 
+The same `.mcp.json` also declares [**astramem**](https://github.com/astragenie/astramem-plugin), an HTTP MCP server that gives every agent active memory — recall its own track record (recurring lessons, decisions, past corrections) and task-scoped memory, and feed back which memory actually helped. It powers the [`skills/universal/using-memory`](skills/universal/using-memory/SKILL.md) skill and complements the deterministic `SubagentStart` profile hook (which loads each agent's track record at dispatch regardless).
+
+Tools exposed:
+
+- `agent_profile` — the agent's ranked track record (corrections / decisions / lessons)
+- `recall_memory` / `search_memory` — task-scoped memory retrieval
+- `submit_feedback` (`mark_memory_used`) — credit a memory that changed the work
+- `remember` — store a new durable lesson / decision
+
+Required environment variables (absent env = the tools simply don't resolve; the plugin stays byte-identical and fail-silent):
+
+- `MEMORY_API_URL` — base URL of the astramem daemon, e.g. `http://127.0.0.1:7777` (the MCP posts to `${MEMORY_API_URL}/mcp`). Use `https://` for any non-loopback / hosted daemon.
+- `MEMORY_BEARER` — bearer token sent as `Authorization: Bearer …`. Never hardcode it; keep it in your shell env.
+
+To opt out, delete the `astramem` entry from `.mcp.json`. To actually load/store memory, also enable the flags in `.claude/loop.json` (`memory.profile.enabled` / `memory.feedback.enabled`, both default off).
+
 ## What to commit
 
 Commit the stable operating layer:
