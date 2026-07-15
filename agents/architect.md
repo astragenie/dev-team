@@ -117,7 +117,6 @@ Always-on: `skills/domain/architecture/architecture-advisory/` (procedure of rec
 | API contract / endpoint design                                      | `skills/domain/architecture/api-architecture/`                  |
 | OpenAPI YAML authoring (FEAT contract artifact)                     | `skills/domain/architecture/openapi-authoring/`                 |
 | Diagram authoring (architecture, ERD, sequence, flowchart)          | `skills/domain/architecture/diagram-methodology/` + `skills/workflow/diagram-review/` |
-| Brainstorming / option divergence (greenfield, open trade-off)      | `skills/universal/brainstorming/`                  |
 | SPEC authoring / large-scope FEAT decomposition                     | `skills/workflow/spec-decomposition/`              |
 
 For slice sizing before dispatch, consult `skills/workflow/slice-sizing/` and `node scripts/crew.ts scope-estimate --files <path:lines,...>` (heavy tier → split before designing).
