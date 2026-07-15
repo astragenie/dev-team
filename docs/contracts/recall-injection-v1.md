@@ -59,3 +59,8 @@ Header is the shared `## Prior context (from astramem)` (reused from the runner 
 ## Refs
 - dev-team#173 (decision #3), dev-team#172 (transport = MCP), runner-plugin#358 (S3b), #338 (recall parse fix already shipped runner-side).
 - `docs/research/2026-07-06-memory-bridge-reconciliation.md`.
+- Sibling contract: [`agent-profile-feedback-v1.md`](./agent-profile-feedback-v1.md) —
+  per-**agent**, cross-repo track-record block (`memory.profile.*`) + outcome-gated
+  feedback (`memory.feedback.*`), appended at the same dispatch sites immediately
+  after this recall block. Addendum note only; does not change this doc's frozen
+  API/format.

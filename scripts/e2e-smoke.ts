@@ -481,6 +481,84 @@ async function scenarioRecallInjectionContract(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Scenario: profile injection disabled/absent (agent-profile-load-feedback,
+// Task 7). Mirrors the recall-injection scenarios' isolated-tmp-repo pattern
+// above, but only proves the disabled/absent byte-identical property.
+//
+// IMPORTANT REALITY: no shipped provider implements `profile()` yet — the
+// package's `fileProvider` has no such method — so an enabled + real-provider
+// call ALSO yields an empty block via buildProfileBlock's own fail-silent
+// guard (`typeof provider.profile !== "function"`). That means there is no
+// real-provider path today that can produce a NON-empty block for this smoke
+// to assert against; the non-empty-block formatting path (corrections /
+// decisions / lessons ordering, atom markers, truncation) is already covered
+// by Task 3's unit tests with a fake provider
+// (tests/memory-inject-profile.test.ts). This scenario intentionally does
+// NOT attempt to assert a non-empty block.
+// ---------------------------------------------------------------------------
+
+async function scenarioProfileInjectionDisabled(
+  buildProfileBlock: typeof import("./lib/memory/inject-profile.ts").buildProfileBlock,
+  dispatchBaseline: string
+): Promise<void> {
+  // Case 1: memory.profile absent entirely -> disabled by default.
+  const repoAbsent = await fs.mkdtemp(path.join(os.tmpdir(), "smoke-profile-absent-"));
+  await writeMemoryLoopConfig(repoAbsent, { provider: "file" });
+  const resultAbsent = await buildProfileBlock({ repoPath: repoAbsent, agent: "crew:reviewer" });
+  assert.equal(resultAbsent.block, "", "profile block must be empty when memory.profile is absent");
+  assert.deepEqual(resultAbsent.injectedIds, []);
+  assert.equal(
+    `${dispatchBaseline}${resultAbsent.block}`,
+    dispatchBaseline,
+    "absent profile config must not alter dispatch text"
+  );
+
+  // Case 2: memory.profile.enabled:false explicitly -> same guarantee.
+  const repoDisabled = await fs.mkdtemp(path.join(os.tmpdir(), "smoke-profile-disabled-"));
+  await writeMemoryLoopConfig(repoDisabled, { provider: "file", profile: { enabled: false } });
+  const resultDisabled = await buildProfileBlock({
+    repoPath: repoDisabled,
+    agent: "crew:reviewer"
+  });
+  assert.equal(
+    resultDisabled.block,
+    "",
+    "profile block must be empty when memory.profile.enabled is false"
+  );
+  assert.equal(
+    `${dispatchBaseline}${resultDisabled.block}`,
+    dispatchBaseline,
+    "disabled profile config must not alter dispatch text"
+  );
+
+  // Case 3: memory.profile.enabled:true but the configured provider has no
+  // profile() method (today's real fileProvider) -> still an empty block,
+  // via the REAL resolveProvider() path (no fake/provider override).
+  const repoEnabledNoImpl = await fs.mkdtemp(
+    path.join(os.tmpdir(), "smoke-profile-enabled-noimpl-")
+  );
+  await writeMemoryLoopConfig(repoEnabledNoImpl, { provider: "file", profile: { enabled: true } });
+  const resultEnabledNoImpl = await buildProfileBlock({
+    repoPath: repoEnabledNoImpl,
+    agent: "crew:reviewer"
+  });
+  assert.equal(
+    resultEnabledNoImpl.block,
+    "",
+    "profile block must be empty when the configured provider has no profile() method yet"
+  );
+
+  console.log("[scenario] profile-injection-disabled (agent-profile-load-feedback): PASS");
+}
+
+async function scenarioProfileInjectionContract(): Promise<void> {
+  const { buildProfileBlock } = await import("./lib/memory/inject-profile.ts");
+  const dispatchBaseline =
+    "Dispatch crew:reviewer to SLICE-XXX -- review the profile-injection wiring.\n";
+  await scenarioProfileInjectionDisabled(buildProfileBlock, dispatchBaseline);
+}
+
+// ---------------------------------------------------------------------------
 // Scenario: slice-ceremony e2e (FEAT-197 / SLICE-111)
 //
 // Drives the loop plugin's ceremony CLI (../runner-plugin/src/scripts/
@@ -516,9 +594,13 @@ function normalizeForScopeMatch(text: string): string {
 }
 
 async function execLoopCli(args: string[]): Promise<any> {
+  // Windows: `bun` needs shell:true so its .cmd/.ps1 shim resolves (bare-name
+  // spawn is ENOENT otherwise) — same win32-shell pattern as bun-preflight.ts
+  // and scripts/lib/gepa/eval.ts.
   const { stdout } = await execFile("bun", [loopCliPath, ...args], {
     cwd: loopCliRoot,
-    maxBuffer: 20 * 1024 * 1024
+    maxBuffer: 20 * 1024 * 1024,
+    shell: process.platform === "win32"
   });
   return JSON.parse(stdout);
 }
@@ -930,6 +1012,9 @@ async function main() {
 
   console.log("\nScenario: recall-injection-contract (FEAT-196)");
   await scenarioRecallInjectionContract();
+
+  console.log("\nScenario: profile-injection-disabled (agent-profile-load-feedback)");
+  await scenarioProfileInjectionContract();
 
   console.log("\nScenario: slice-ceremony e2e (FEAT-197)");
   await scenarioSliceCeremony();

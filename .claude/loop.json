@@ -111,6 +111,16 @@
       "timeoutMs": 5000,
       "maxTokens": 800
     },
+    "profile": {
+      "enabled": true,
+      "topLessons": 10,
+      "maxTokens": 400,
+      "minFeedbackSample": 5
+    },
+    "feedback": {
+      "enabled": true,
+      "mode": "outcome"
+    },
     "capture": {
       "events": [
         "slice_close",

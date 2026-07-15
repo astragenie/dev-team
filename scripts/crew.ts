@@ -79,6 +79,7 @@ const FLAG_SPEC = {
   "--note": { key: "note" },
   "--out-of-scope": { key: "outOfScope" },
   "--out": { key: "out" },
+  "--outcome": { key: "outcome" },
   "--owner": { key: "owner" },
   "--pace": { key: "pace" },
   "--phase": { key: "phase" },
@@ -95,6 +96,7 @@ const FLAG_SPEC = {
   "--reviewer-label": { key: "reviewerLabel" },
   "--risks": { key: "risks" },
   "--run": { key: "run" },
+  "--run-id": { key: "runId" },
   "--run-steps": { key: "runSteps" },
   "--run-title": { key: "runTitle" },
   "--source": { key: "gepaSource" },
@@ -262,7 +264,9 @@ function buildDefaultFlags(): Flags {
     tag: null,
     tags: null,
     skipReason: null,
-    date: null
+    date: null,
+    runId: null,
+    outcome: null
   };
 }
 
@@ -1611,6 +1615,40 @@ const COMMANDS = {
       ...(project !== undefined ? { project } : {})
     });
     return { block };
+  },
+
+  // Agent-profile load: records the injected atom ids for later feedback
+  // (when --run-id is given) and returns the `## Your track record (<agent>)`
+  // block. Injection responsibility is governed by memory.profile.injectVia:
+  //   - "hook" (DEFAULT): the SubagentStart hook injects the block
+  //     deterministically, so this CLI returns an EMPTY block — the command-md
+  //     dispatch paths omit an empty block, avoiding a double-injection while
+  //     the sidecar is still recorded for outcome-feedback.
+  //   - "command": returns the real block, for clients WITHOUT the dispatch
+  //     hook (the orchestrator appends it itself).
+  "profile-block": async ({ repoPath, flags }: CommandContext) => {
+    const { buildProfileBlock } = await import("./lib/memory/inject-profile.ts");
+    const { loadMemoryConfig } = await import("./lib/memory/inject-recall.ts");
+    const { writeInjectedAtoms } = await import("./lib/memory/injected-atoms.ts");
+    const agent = typeof flags.agent === "string" ? flags.agent : "";
+    if (!agent) return { block: "", injectedIds: [] };
+    const { block, injectedIds } = await buildProfileBlock({ repoPath, agent });
+    if (typeof flags.runId === "string" && flags.runId) {
+      await writeInjectedAtoms(repoPath, flags.runId, injectedIds);
+    }
+    const rawMemory = await loadMemoryConfig(repoPath);
+    const injectVia = (rawMemory as { profile?: { injectVia?: unknown } } | undefined)?.profile
+      ?.injectVia;
+    return { block: injectVia === "command" ? block : "", injectedIds };
+  },
+
+  // Outcome-gated positive-only feedback for a run's profile-injected atoms.
+  "profile-feedback": async ({ repoPath, flags }: CommandContext) => {
+    const { submitOutcomeFeedback } = await import("./lib/memory/profile-feedback.ts");
+    const runId = typeof flags.runId === "string" ? flags.runId : "";
+    const outcome = flags.outcome === "pass" ? "pass" : "fail";
+    if (!runId) return { credited: [] };
+    return submitOutcomeFeedback({ repoPath, runId, outcome });
   },
 
   // FEAT-188 S5 — read-only diagnostic comparing JSONL entries within a

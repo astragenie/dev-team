@@ -221,6 +221,35 @@ in Step 3 / 3a / 3b prepend the block (already the shared
 
 ---
 
+### Step 2.7a — Profile injection (agent-profile-load-feedback)
+
+Immediately after the Step 2.7 recall blocks, fetch each builder variant's track record
+(best-effort, empty when disabled), passing the current slice id as the run-id so the
+later profile-feedback call (Conflict-rule section, Step 4 & 5) can attribute atoms back
+to this run:
+
+```bash
+# SPLIT_BUILD = true
+FE_PROFILE_BLOCK=$(node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" profile-block \
+  --repo "$PWD" --agent crew:frontend-dev --run-id "<SLICE-NN>" 2>/dev/null | jq -r '.block // empty')
+
+BE_PROFILE_BLOCK=$(node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" profile-block \
+  --repo "$PWD" --agent crew:backend-dev --run-id "<SLICE-NN>" 2>/dev/null | jq -r '.block // empty')
+
+# SPLIT_BUILD = false
+SINGLE_PROFILE_BLOCK=$(node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" profile-block \
+  --repo "$PWD" --agent <resolved single-variant builder agent> --run-id "<SLICE-NN>" 2>/dev/null | jq -r '.block // empty')
+```
+
+Each block is `""` when `memory.profile.enabled` is not `true`, the configured provider
+has no `profile()` method (today's shipped `fileProvider` — see the CLI's own fail-silent
+guard in `scripts/lib/memory/inject-profile.ts`), nothing matched, or the CLI call fails.
+Treat empty as "no block — proceed without it". The builder dispatch prompts in Step 3 /
+3a / 3b append the block (already the `## Your track record (<agent>)` format) after the
+Step 2.7 recall block, when non-empty, omit otherwise.
+
+---
+
 ### Steps 2 + 3 — UX designer + Builder (parallel when both fire)
 
 `crew:uxdesigner` and `crew:fullstack-dev` both consume the FEAT-scoped contracts artifact (Step 1's `CONTRACT_YAML_PATH` + `CONTRACT_MD_PATH`) but NOT each other's output. Builder works from contracts + slice ACs; uxdesigner produces UX spec for reviewer to check separately. Both fire concurrently.
@@ -284,7 +313,7 @@ Store the returned path as `UX_SPEC_PATH`.
 
 #### Step 3 prompt — `crew:fullstack-dev`
 
-Prepend `${SINGLE_BLOCK}` from Step 2.5 when non-empty, then `${SINGLE_RECALL_BLOCK}` from Step 2.6 when non-empty. Omit either when empty.
+Prepend `${SINGLE_BLOCK}` from Step 2.5 when non-empty, then `${SINGLE_RECALL_BLOCK}` from Step 2.6 when non-empty, then `${SINGLE_PROFILE_BLOCK}` from Step 2.7a when non-empty. Omit any when empty.
 
 **Agent-tool dispatch: pass `model: ${BUILD_MODEL}`** (from Step 2.6) explicitly — do not inherit the session model.
 
@@ -292,6 +321,8 @@ Prepend `${SINGLE_BLOCK}` from Step 2.5 when non-empty, then `${SINGLE_RECALL_BL
 <SINGLE_BLOCK from Step 2.5 — omit when empty>
 
 <SINGLE_RECALL_BLOCK from Step 2.6 — omit when empty>
+
+<SINGLE_PROFILE_BLOCK from Step 2.7a — omit when empty>
 
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
@@ -313,7 +344,7 @@ When both branches fire, the orchestrator collects `UX_SPEC_PATH` AND `BUILDER_H
 
 ##### Step 3a — `crew:frontend-dev`
 
-Prepend `${FE_BLOCK}` from Step 2.5 when non-empty, then `${FE_RECALL_BLOCK}` from Step 2.6 when non-empty. Omit either when empty.
+Prepend `${FE_BLOCK}` from Step 2.5 when non-empty, then `${FE_RECALL_BLOCK}` from Step 2.6 when non-empty, then `${FE_PROFILE_BLOCK}` from Step 2.7a when non-empty. Omit any when empty.
 
 **Agent-tool dispatch: pass `model: ${BUILD_MODEL}`** (from Step 2.6) explicitly — do not inherit the session model.
 
@@ -321,6 +352,8 @@ Prepend `${FE_BLOCK}` from Step 2.5 when non-empty, then `${FE_RECALL_BLOCK}` fr
 <FE_BLOCK from Step 2.5 — omit when empty>
 
 <FE_RECALL_BLOCK from Step 2.6 — omit when empty>
+
+<FE_PROFILE_BLOCK from Step 2.7a — omit when empty>
 
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
@@ -343,7 +376,7 @@ Store the returned path as `BUILDER_FE_HANDOFF_PATH`.
 
 ##### Step 3b — `crew:backend-dev`
 
-Prepend `${BE_BLOCK}` from Step 2.5 when non-empty, then `${BE_RECALL_BLOCK}` from Step 2.6 when non-empty. Omit either when empty.
+Prepend `${BE_BLOCK}` from Step 2.5 when non-empty, then `${BE_RECALL_BLOCK}` from Step 2.6 when non-empty, then `${BE_PROFILE_BLOCK}` from Step 2.7a when non-empty. Omit any when empty.
 
 **Agent-tool dispatch: pass `model: ${BUILD_MODEL}`** (from Step 2.6) explicitly — do not inherit the session model.
 
@@ -351,6 +384,8 @@ Prepend `${BE_BLOCK}` from Step 2.5 when non-empty, then `${BE_RECALL_BLOCK}` fr
 <BE_BLOCK from Step 2.5 — omit when empty>
 
 <BE_RECALL_BLOCK from Step 2.6 — omit when empty>
+
+<BE_PROFILE_BLOCK from Step 2.7a — omit when empty>
 
 Slice: <SLICE-NN title>
 Slice file: <absolute path>
@@ -536,11 +571,13 @@ Store the returned path as `VALIDATION_PATH`.
 If any dispatched reviewer returns `needs_fix`:
 
 1. If `RISK_GATE = true` and a `VALIDATION_PATH` was produced: mark it stale — `node scripts/crew.ts mark-badge --repo "$PWD" --badge validation_stale --note "invalidated by review needs_fix"`. When `RISK_GATE = false` (no dedicated verifier ran), skip this sub-step — there is no separate validation artifact to invalidate; the reviewer's own `needs_fix` result is the signal.
-2. Re-dispatch builder with review findings (run `/crew:fix` flow).
-3. After builder PASS on the fix bounce: re-dispatch the same gate composition selected in Step 4.5 (single reviewer on `RISK_GATE = false`; reviewer + 2nd reviewer/verifier on `RISK_GATE = true`).
-4. Proceed to Step 6 after all dispatched gates PASS.
+2. **Profile feedback (agent-profile-load-feedback):** record the fail outcome for the builder(s) profile-blocked in Step 2.7a, best-effort, using the SAME `<SLICE-NN>` run-id:
+   `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" profile-feedback --repo "$PWD" --run-id "<SLICE-NN>" --outcome fail`
+3. Re-dispatch builder with review findings (run `/crew:fix` flow).
+4. After builder PASS on the fix bounce: re-dispatch the same gate composition selected in Step 4.5 (single reviewer on `RISK_GATE = false`; reviewer + 2nd reviewer/verifier on `RISK_GATE = true`).
+5. Proceed to Step 6 after all dispatched gates PASS.
 
-If all dispatched gates return PASS (or approved_with_notes / passed_with_notes): proceed to Step 6.
+If all dispatched gates return PASS (or approved_with_notes / passed_with_notes): record the pass outcome the same way (`--outcome pass`, same `<SLICE-NN>` run-id), then proceed to Step 6.
 
 ---
 

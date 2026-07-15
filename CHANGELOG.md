@@ -3,6 +3,54 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [Unreleased] — 2026-07-14 — agent-profile load + feedback
+
+Disabled-by-default (fail-silent, byte-identical when off): loads each
+dispatched agent's astramem track record at dispatch time and closes the loop
+with outcome-gated usefulness feedback. Version bump deferred to the next
+cut release (docs/verification-only landing).
+
+- **`## Your track record (<agent>)` block** (`scripts/lib/memory/inject-profile.ts`):
+  fetches the agent's `AgentProfile` (corrections, recent decisions, top
+  lessons) via the resolved provider's optional `profile()` method and formats
+  it into a Markdown block appended alongside the existing recall block.
+  Corrections lead (deterministic, immediately useful even before any
+  usefulness signal exists), then recent decisions, then top lessons. Each
+  line carries an invisible `<!--atom:<id>-->` marker for feedback
+  attribution. Below `memory.profile.minFeedbackSample` moved-usefulness
+  observations, lessons are labelled `lesson · importance-ranked` rather than
+  implying a live ranking. Gated by `memory.profile.enabled` (default
+  `false`); config parse errors, provider errors, a provider lacking
+  `profile()`, or a null profile all resolve to an empty block — never throw,
+  never alter dispatch text.
+- **Per-run injected-atoms sidecar** (`scripts/lib/memory/injected-atoms.ts`):
+  fire-and-forget JSON sidecar under `.claude/state/crew/injected-atoms/<runId>.json`
+  (machine-local, gitignored) recording which atom ids were injected into a
+  given dispatch, so the feedback step can attribute usefulness back to the
+  same run without re-deriving the block.
+- **Outcome-gated, positive-only feedback** (`scripts/lib/memory/profile-feedback.ts`):
+  on a `pass` outcome, credits every atom injected into that run via the
+  provider's optional `feedback(id, { used: true })`; `fail` outcomes are a
+  no-op (v1 tracks only positive signal — penalizing on fail would blame
+  atoms for an unrelated failure). Gated by `memory.feedback.enabled`
+  (default `false`); per-id and whole-call failures are swallowed silently.
+  Reference-detection (crediting only atoms actually cited in the transcript)
+  is deferred to a later phase — v1's outcome backstop credits every
+  injected atom on PASS.
+- **CLI surface** (`scripts/crew.ts`): `crew profile-block --repo <path> --agent
+  <name> [--run-id <id>]` returns `{ block, injectedIds }` and writes the
+  injected-atoms sidecar when `--run-id` is given; `crew profile-feedback
+  --repo <path> --run-id <id> --outcome <pass|fail>` returns `{ credited }`.
+- **Dispatch wiring**: `commands/build.md`, `fix.md`, `ship.md`, and
+  `orchestrate-slice.md` all fetch the profile block immediately after the
+  existing recall block at dispatch time and call `profile-feedback` with the
+  matching `runId` once the dispatched agent's outcome is known (reusing the
+  same run id end-to-end so attribution lines up).
+- **Local `AgentProfile`/`ProfileCapableProvider` types**
+  (`scripts/lib/memory/profile-types.ts`): a local mirror of the upstream
+  `@astragenie/memory-provider` contract, kept local until the package ships
+  `profile()`/`feedback()` (tracked as follow-on work — see
+  `docs/contracts/agent-profile-feedback-v1.md`).
 ## [v0.63.0] — 2026-07-13 — subagent survival: deliver before you die
 
 Seven agents died mid-session at the token ceiling. Their *work* survived every
@@ -696,8 +744,7 @@ enforcement flags may only soften block→warn, never block→silent.
 - **`agents/3rdparty/test-automator.md`** — removed (superseded; duplicate
   `name: test-automator` would collide in the capability router).
 - Follow-up: seed `evals/agents/crew-test-automator.yaml` GEPA eval suite —
-  frontmatter `evals:` key intentionally omitted until the suite exists.>>>>>>> origin/main
-
+  frontmatter `evals:` key intentionally omitted until the suite exists.
 ## [0.49.0] — 2026-07-04 — reviewer rename + routing externalization + model profiles (architecture review execution)
 
 ### Breaking

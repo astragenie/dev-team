@@ -159,6 +159,10 @@ Workflow:
 12a. **Recall injection (FEAT-188 S3a).** Before dispatching the builder, fetch a recall block:
    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" recall-block --repo "$PWD" --agent <builder-agent-name> --tags "<FEAT tags csv>"`
    - If `.block` is non-empty, prepend it verbatim (it is already the `## Prior context (from astramem)` block) to the builder's dispatch instruction. If empty (memory not configured, or nothing recalled), omit — do not add any placeholder text.
+12b. **Profile injection (agent-profile-load-feedback).** Immediately after the recall block, fetch the builder's track record (best-effort, empty when disabled):
+   - Resolve `<runId>` from `.claude/state/crew/workflow-state.json` (`currentRun.slice`) — reuse this SAME value for the profile-feedback call in step 24a below.
+   - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" profile-block --repo "$PWD" --agent <builder-agent-name> --run-id <runId>`
+   - If `.block` is non-empty, append it (it is already the `## Your track record (<agent>)` block) to the builder's dispatch instruction, after the recall block. If empty (profile disabled, or no track record yet), omit — do not add any placeholder text.
 13. Keep ownership explicit and avoid same-file parallel editing.
    - Set a `size` on each dispatched task: use `size: light` for trivial tasks (one-line fixes, typo corrections, variable renames) — a light-close skips the `write-handoff` artifact but the teammate still returns the structured completion message. Use `size: standard` (default) for anything substantive — these REQUIRE a `write-handoff` artifact. Light is for noise reduction on trivial work; do not use it to skip audit trail on substantive changes.
 14. Require structured acknowledgements and completion reports from every teammate or helper.
@@ -184,6 +188,9 @@ Workflow:
 24. When a validator materially checks behavior, write a validation artifact immediately before you move on:
    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-validation-result --repo "$PWD" --title "<short title>" ...`
 24a. **Auto-continue to dev ship (opt-in).** After review and validation are both resolved, check `.claude/crew/deployment.md` for a `dev.stable: true` setting. If present AND all build gates are green (review PASS or `review_skipped` with reason, validation PASS or `validation_skipped` with reason, no open `help_request`) AND the target environment is dev (not production), continue into the `/crew:ship` flow in this same session — do not return to the user at the review boundary. Production promotion still requires explicit user approval per `agents/release-engineer.md` rule 11. If `dev.stable: true` is absent or any gate is not green, stop at synthesis (step 25) as today and surface the unresolved gate.
+   - **Profile feedback (agent-profile-load-feedback).** Also at this point (review and validation both resolved, one way or the other), record outcome-gated feedback for any track-record atoms injected in step 12b, best-effort — never blocks the synthesis or ship continuation:
+     `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" profile-feedback --repo "$PWD" --run-id <runId> --outcome <pass|fail>`
+     Use the SAME `<runId>` from step 12b. `--outcome pass` when review is approved/approved_with_notes (or explicitly skipped with reason) AND validation passed (or explicitly skipped with reason); `--outcome fail` when review was rejected or validation failed.
 25. End with a clear synthesis for the user:
    - what changed
    - what was reviewed

@@ -485,7 +485,10 @@ async function getExpectedUniversalsHash(): Promise<string> {
     path.dirname(fileURLToPath(import.meta.url)),
     "render-universal-skills.ts"
   );
-  const res = spawnSync("bun", [scriptPath, "--print-hash"], { encoding: "utf8" });
+  const res = spawnSync("bun", [scriptPath, "--print-hash"], {
+    encoding: "utf8",
+    shell: process.platform === "win32" // win32: resolve bun's .cmd/.ps1 shim (bare-name spawn is ENOENT)
+  });
   if (res.status !== 0) {
     cachedExpectedHash = ""; // CI / source-cache absent → skip drift check
     return cachedExpectedHash;

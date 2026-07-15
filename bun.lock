@@ -5,10 +5,10 @@
     "": {
       "name": "crew-plugin",
       "dependencies": {
-        "@astragenie/astramem-client": "^0.2.0",
+        "@astragenie/astramem-client": "^0.3.0",
         "@astragenie/astramem-plugin": "git+https://github.com/astragenie/astramem-plugin.git#e851f19c7a8d89bd88c62d392918aa78aebf2184",
         "@astragenie/gepa-core": "0.10.1",
-        "@astragenie/memory-provider": "^0.1.0",
+        "@astragenie/memory-provider": "^0.2.1",
         "@astragenie/plugin-std": "^0.5.0",
         "@aws-sdk/client-bedrock-runtime": "^3",
         "@opentelemetry/api": "^1.9.0",
@@ -28,13 +28,13 @@
     },
   },
   "packages": {
-    "@astragenie/astramem-client": ["@astragenie/astramem-client@0.2.0", "", { "peerDependencies": { "@astragenie/astramem-plugin": ">=0.6.0" }, "optionalPeers": ["@astragenie/astramem-plugin"] }, "sha512-5cmiPMgHKeudFQN0TmHAv4ybcZX7SWsKo12UrfThiKbTK7Nx/JjPtr7aFcpWkABc8/n5Jil1YQ+vf72mfzmKcg=="],
+    "@astragenie/astramem-client": ["@astragenie/astramem-client@0.3.0", "", { "peerDependencies": { "@astragenie/astramem-plugin": ">=0.6.0" }, "optionalPeers": ["@astragenie/astramem-plugin"] }, "sha512-bdrBVUt53MbalthyhyH4tYUbw2Q7RQ2S2so5s5VXHuxR36Q2s5ui+bm+ZcZGVNY2demOJfPY82ge0viDuKjkbQ=="],
 
     "@astragenie/astramem-plugin": ["@astragenie/astramem-plugin@github:astragenie/astramem-plugin#e851f19", { "dependencies": { "zod": "^3.23.0" }, "bin": { "memory-login": "./bin/memory-login.ts", "memory-refresh": "./bin/memory-refresh.ts", "memory-token": "./bin/memory-token.ts", "memory-connect": "./bin/memory-connect.ts", "astramem-login": "./bin/astramem-login.ts", "astramem-refresh": "./bin/astramem-refresh.ts", "astramem-token": "./bin/astramem-token.ts", "astramem-connect": "./bin/astramem-connect.ts", "astramem": "./bin/astramem" } }, "astragenie-astramem-plugin-e851f19", "sha512-7LDMS6KMQ8FCfE2P11FxKtXEaV2G+KQlLfqy6js7dQe+nOAB33mdIUIikza9+N9CCFnWMxHrgD+K1a/Bz2JcOg=="],
 
     "@astragenie/gepa-core": ["@astragenie/gepa-core@0.10.1", "", { "dependencies": { "@astragenie/plugin-std": "^0.5.0", "zod": "^3.23.0" }, "peerDependencies": { "@azure/openai": "*", "@google/generative-ai": "*" }, "optionalPeers": ["@azure/openai", "@google/generative-ai"] }, "sha512-SAhmhTjZs/+RP9mE9v5KBOTjWkANb8/kZ44k7DDhNP3rye5pYL9SYD3EbMRSGzScg0mxL1+OlVUKqpoBhk+vZQ=="],
 
-    "@astragenie/memory-provider": ["@astragenie/memory-provider@0.1.0", "", { "dependencies": { "@astragenie/astramem-client": "^0.2.0", "zod": "^3.25.76" } }, "sha512-xhPileHbeFA+z3F98gNgMv7bsDlcqh4dv6yiFAXHFORaiHBUk3tphhxi1h5w1r1RB/n+uTVFNFSQ8oogAp7XpQ=="],
+    "@astragenie/memory-provider": ["@astragenie/memory-provider@0.2.1", "", { "dependencies": { "@astragenie/astramem-client": "^0.3.0", "zod": "^3.25.76" } }, "sha512-0vWEwzmmXpeQ/WORZfPanrNewfYAVS7s1XRYL+JnfykCr3E45nT+UDBfqi4+292hljL9B2d1XaqoGumUdn/W4w=="],
 
     "@astragenie/plugin-std": ["@astragenie/plugin-std@0.5.0", "", { "dependencies": { "yaml": "^2.6.0" } }, "sha512-Ymk8BfQvnZZybZtJfwsPuV0IUTnFOSsPfm9eyf9SeKHNLyllSyppF/QyJSueLopaAin/zIkHrMrKEfYu8exbHw=="],
 
