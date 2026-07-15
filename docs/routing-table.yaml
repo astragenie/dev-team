@@ -89,10 +89,6 @@ rows:
     route_to: dispatcher via **gstack `/office-hours`** + **`/plan-ceo-review`**
     notes: Dispatcher uses `/office-hours` (6 forcing questions) then `/plan-ceo-review` (CEO scope challenge) before writing the slice or dispatching fullstack-dev. Reduces scope drift before implementation starts.
   - section: workflow-signals
-    signal: "**Brainstorming / discovery before new feature** (exploring options, divergent ideation before a FEAT or slice is written)"
-    route_to: dispatcher
-    notes: Load `skills/universal/brainstorming/` for structured ideation technique. Pair with gstack `/office-hours` for forcing questions before scoping.
-  - section: workflow-signals
     signal: "**Pre-compaction or multi-agent handoff context prep** (≥3 compactions observed, agent handoff with heavy context, session checkpoint at milestone)"
     route_to: dispatcher
     notes: Load `skills/workflow/context-curation/`. Use Quick / Full / Archived formats per the skill's size budgets. Pair with `/loop:snapshot-memory` for durable cross-session memory.
