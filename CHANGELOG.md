@@ -3,6 +3,26 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [v0.65.0] — 2026-07-15 — universal memory skill + astramem MCP
+
+Makes agent memory usable across **every** crew agent, not just the
+deterministic dispatch hook — and cuts the first tagged release carrying the
+v0.64.0 agent-profile load+feedback feature.
+
+- **`skills/universal/using-memory`** (FEAT — #237): a universal skill giving
+  every agent active mid-task memory — load your track record + task recall at
+  the start of real work, feed back which memory actually helped. Complements
+  the `SubagentStart` profile hook (load-at-dispatch) with active recall +
+  usefulness feedback via the astramem MCP tools. Opt-in; fail-silent when the
+  MCP is unconfigured.
+- **astramem MCP** wired into `.mcp.json` (`agent_profile`, `recall_memory`,
+  `search_memory`, `remember`, `submit_feedback`). Resolves off `MEMORY_API_URL`
+  + `MEMORY_BEARER`; absent env = tools simply don't resolve (no error).
+- **Removed** `skills/universal/brainstorming` and its routing pointers — the
+  globally-available `superpowers:brainstorming` supersedes it.
+- Carries the deferred **v0.64.0** agent-profile load + outcome-gated feedback
+  (disabled-by-default, byte-identical when off) into its first tagged cut.
+
 ## [v0.64.0] — 2026-07-15 — agent-profile load + feedback
 
 Disabled-by-default (fail-silent, byte-identical when off): loads each
