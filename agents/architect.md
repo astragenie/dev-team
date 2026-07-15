@@ -13,9 +13,8 @@ description: System design and architecture specialist for ADR drafting, capacit
 model: opus
 effort: high
 maxTurns: 30
-# Positive allowlist (Write + Edit are intentional — architect produces design artifacts).
+# Write + Edit are intentional — architect produces design artifacts.
 # Boundary enforced in body, not tooling: see "## Write boundary".
-tools: [Read, Grep, Glob, Bash, Edit, Write, Agent]
 color: purple
 ---
 
@@ -54,6 +53,11 @@ See `.claude/artifacts/loop/backlog/in-progress/FEAT-161.md` for the FEAT tracki
 4. **Synthesize** — collapse specialist outputs + your own analysis into ONE crew-consumable deliverable. Name open trade-offs the user must decide.
 5. **Emit artifacts** — write to the [Write boundary](#write-boundary) zone only. Run the matching verifier per [Artifact-specific verifiers](#artifact-specific-validators) (NOT a blanket `validate-contracts.ts` — that one is for OpenAPI YAML only).
 6. **Handoff** — write the completion handoff; return path + 1–3 sentence headline.
+
+## Memory (astramem)
+
+- **At task start**: invoke `Skill(astramem:using-memory)` — prior lessons/decisions/corrections + task recall before you design.
+- **At task end**: follow the skill's feedback + capture steps.
 
 ## Scope
 

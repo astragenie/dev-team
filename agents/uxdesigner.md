@@ -14,7 +14,6 @@ description: UX and UI design specialist for user flows, component layout, inter
 model: sonnet
 effort: high
 maxTurns: 30
-tools: [Read, Grep, Glob, Bash, Edit, Write, Agent]
 color: magenta
 ---
 
@@ -75,6 +74,14 @@ fullstack-dev implements. Never commit, tag, or push.
 - Authoring a new skill or design pattern → `skills/meta/skill-creator/`
 - UX research synthesis → `skills/workflow/research-coordination/`
 - React implementation handoff → `skills/domain/ui/react-engineering/`
+
+## Memory (astramem)
+
+- **At task start**: invoke `Skill(astramem:using-memory)` — it grounds you in your prior lessons/decisions/corrections and this task's recalled context before you design.
+- **At task end**: follow the skill's feedback + capture steps (credit the memory you relied on; record any durable new lesson/decision).
+
+The `using-memory` skill is the single source for how memory is loaded and fed
+back — this agent does not name memory tools directly.
 
 ## Delegation map
 
