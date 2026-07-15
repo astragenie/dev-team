@@ -24,6 +24,14 @@ mistakes. Two mechanisms give you memory here — use both:
 The astramem MCP is opt-in (`MEMORY_API_URL` / `MEMORY_BEARER` in env). If its
 tools aren't available, skip silently — memory is grounding, never a gate.
 
+## When to Use
+
+At the **start** of any substantial task — build, review, validate, design,
+debug, research — before you write code, make a decision, or answer. Once per
+task. Skip for trivial acknowledgements or pure chit-chat. Also trigger on an
+explicit ask: "recall", "what did we decide", "have we hit this before", "load
+my memory", "submit feedback".
+
 ## Step 1 — Load (at the start of real work)
 
 - **Your track record** — call `agent_profile` with your agent/role name (e.g.
@@ -62,3 +70,15 @@ standalone sentence per item; skip transient detail.
 
 Any unavailable tool, empty result, or error means "proceed without it" — never
 surface an error or pause work because memory was unreachable.
+
+## Done
+
+You have satisfied this skill when, for the current task, you have either:
+
+- loaded your profile + task recall, folded any `corrections`/`decisions` into
+  your approach, and called `submit_feedback` for each memory that genuinely
+  changed what you did; or
+- confirmed the astramem tools are unavailable (opt-in env absent) and proceeded
+  without them.
+
+No feedback is owed when nothing loaded actually influenced the work.
