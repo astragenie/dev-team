@@ -5,6 +5,14 @@
       "_comment": "Live, version-correct library docs (Upstash context7). Tools: resolve-library-id, get-library-docs. Used by researcher/builder/reviewer to avoid stale-knowledge bias. See FEAT-016 + docs/routing-table.md.",
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp@3.0.0"]
+    },
+    "astramem": {
+      "_comment": "AstraMemory MCP. Tools: agent_profile, recall_memory, search_memory, remember, submit_feedback. Powers the skills/universal/using-memory skill so every agent can actively recall its track record + task memory and feed back what helped. Set MEMORY_API_URL (e.g. http://127.0.0.1:7777) + MEMORY_BEARER; absent env = fail-silent (tools just won't resolve). The SubagentStart profile hook still loads each agent's track record deterministically at dispatch regardless.",
+      "type": "http",
+      "url": "${MEMORY_API_URL}/mcp",
+      "headers": {
+        "Authorization": "Bearer ${MEMORY_BEARER}"
+      }
     }
   }
 }

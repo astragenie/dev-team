@@ -72,7 +72,6 @@ fullstack-dev implements. Never commit, tag, or push.
 - Tailwind CSS change → `skills/domain/ui/tailwind-patterns/`
 - Mobile app design (iOS/Android UX, React Native, Flutter, touch targets) → `skills/domain/mobile/mobile-design/`
 - UX research, persona work, interaction design, accessibility audit → `skills/domain/ui/ux-methodology/`
-- Brainstorming / option divergence → `skills/universal/brainstorming/`
 - Authoring a new skill or design pattern → `skills/meta/skill-creator/`
 - UX research synthesis → `skills/workflow/research-coordination/`
 - React implementation handoff → `skills/domain/ui/react-engineering/`
