@@ -16,7 +16,6 @@ maxMinutes: 12
 warnAtTurns: 32
 warnAtMinutes: 9
 color: yellow
-tools: [Read, Edit, Write, Grep, Glob, Agent, Bash, ToolSearch]
 ---
 
 # Document Writer Agent — crew:document-writer
@@ -81,7 +80,14 @@ After writing, print a summary block:
 - `skills/domain/architecture/diagram-methodology/` — when authoring or editing diagram captions, Mermaid prose, PlantUML, ERDs
 - `skills/domain/architecture/backend-advisory/` — when API design concerns arise during API reference authoring
 - `skills/domain/architecture/architecture-advisory/` — when writing architecture narrative or context for ADRs and design docs
-- `skills/universal/memory-keeper/SKILL.md` — durable-memory shape + discipline for the slice-close deliberate-`remember` step below
+
+## Memory (astramem)
+
+- **At task start**: invoke `Skill(astramem:using-memory)` — it grounds you in your prior lessons/decisions/corrections and this task's recalled context before you draft.
+- **At task end**: follow the skill's feedback + capture steps (credit the memory you relied on; record any durable new lesson/decision). This is also the deliberate-capture path for the slice-close ceremony below.
+
+The `using-memory` skill is the single source for how memory is loaded and fed
+back — this agent does not name memory tools directly.
 
 ## 3rdparty delegation map
 
@@ -126,12 +132,11 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-final-synthesis --repo "$PWD"
 
 **Then capture a deliberate memory** — do not rely on the astramem auto-distiller,
 which emits low-signal fragments (status snapshots, git trivia, vacuous negatives).
-Per `skills/universal/memory-keeper/SKILL.md`, write the slice's one load-bearing
-decision or lesson on purpose:
-
-1. `ToolSearch({ query: "select:mcp__plugin_astramem_astramem__remember" })` to fetch the tool (or use `/astramem:remember` if the MCP tool is unavailable).
-2. Call it with the durable shape: `type` in `{decision, lesson, fact}`, `text` carrying non-empty *why* + *how-to-apply* (not just what changed — code/diff already shows that), and `metadata { project, repo, agent, importance >= 0.6, confidence }`.
-3. If astramem is unpaired or the tool is unreachable, degrade silently — note the skip in the synthesis summary and continue. This step is best-effort and never blocks the close.
+Follow the `astramem:using-memory` skill's Step 4 (Store what's new): write the
+slice's one load-bearing decision or lesson on purpose — non-empty *why* +
+*how-to-apply*, not just what changed (code/diff already shows that). Best-effort:
+if astramem is unpaired or unreachable, note the skip in the synthesis summary and
+continue — this step never blocks the close.
 
 This is the dev-team-side deliberate-capture path; the equivalent `runner:close`
 ceremony lives in the runner-plugin repo and is out of scope here.
