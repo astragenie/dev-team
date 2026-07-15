@@ -1637,8 +1637,8 @@ const COMMANDS = {
       await writeInjectedAtoms(repoPath, flags.runId, injectedIds);
     }
     const rawMemory = await loadMemoryConfig(repoPath);
-    const injectVia =
-      (rawMemory as { profile?: { injectVia?: unknown } } | undefined)?.profile?.injectVia;
+    const injectVia = (rawMemory as { profile?: { injectVia?: unknown } } | undefined)?.profile
+      ?.injectVia;
     return { block: injectVia === "command" ? block : "", injectedIds };
   },
 

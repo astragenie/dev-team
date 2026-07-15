@@ -15,19 +15,31 @@ function sidecarPath(repoPath: string, runId: string): string {
 // the same runId (once per specialist, e.g. crew:frontend-dev then
 // crew:backend-dev in commands/orchestrate-slice.md) don't clobber each
 // other's injected atom ids.
-export async function writeInjectedAtoms(repoPath: string, runId: string, ids: string[]): Promise<void> {
+export async function writeInjectedAtoms(
+  repoPath: string,
+  runId: string,
+  ids: string[]
+): Promise<void> {
   try {
     const target = sidecarPath(repoPath, runId);
     await mkdir(path.dirname(target), { recursive: true });
     const existing = await readInjectedAtoms(repoPath, runId);
     const merged = Array.from(new Set([...existing, ...ids]));
     await writeFile(target, JSON.stringify({ runId, ids: merged }), "utf8");
-  } catch { /* fire-and-forget */ }
+  } catch {
+    /* fire-and-forget */
+  }
 }
 
 export async function readInjectedAtoms(repoPath: string, runId: string): Promise<string[]> {
   try {
-    const parsed = JSON.parse(await readFile(sidecarPath(repoPath, runId), "utf8")) as { ids?: unknown };
-    return Array.isArray(parsed.ids) ? parsed.ids.filter((x): x is string => typeof x === "string") : [];
-  } catch { return []; }
+    const parsed = JSON.parse(await readFile(sidecarPath(repoPath, runId), "utf8")) as {
+      ids?: unknown;
+    };
+    return Array.isArray(parsed.ids)
+      ? parsed.ids.filter((x): x is string => typeof x === "string")
+      : [];
+  } catch {
+    return [];
+  }
 }

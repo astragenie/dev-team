@@ -19,13 +19,16 @@ function feedbackEnabled(rawConfig: unknown): boolean {
   return typeof f === "object" && f !== null && (f as Record<string, unknown>).enabled === true;
 }
 
-export async function submitOutcomeFeedback(opts: SubmitOutcomeFeedbackOptions): Promise<{ credited: string[] }> {
+export async function submitOutcomeFeedback(
+  opts: SubmitOutcomeFeedbackOptions
+): Promise<{ credited: string[] }> {
   const credited: string[] = [];
   try {
     if (opts.outcome !== "pass") return { credited };
 
     const { loadMemoryConfig } = await import("./inject-recall.ts");
-    const rawConfig = opts.rawConfig !== undefined ? opts.rawConfig : await loadMemoryConfig(opts.repoPath);
+    const rawConfig =
+      opts.rawConfig !== undefined ? opts.rawConfig : await loadMemoryConfig(opts.repoPath);
     if (!feedbackEnabled(rawConfig)) return { credited };
 
     let provider = opts.provider;
@@ -40,7 +43,9 @@ export async function submitOutcomeFeedback(opts: SubmitOutcomeFeedbackOptions):
       try {
         const ok = await provider.feedback(id, { used: true });
         if (ok) credited.push(id);
-      } catch { /* per-id fail-silent */ }
+      } catch {
+        /* per-id fail-silent */
+      }
     }
     return { credited };
   } catch {

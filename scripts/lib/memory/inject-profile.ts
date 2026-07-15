@@ -61,7 +61,12 @@ export interface ProfileConfig {
   minFeedbackSample: number;
 }
 
-const PROFILE_DEFAULTS: ProfileConfig = { enabled: false, topLessons: 10, maxTokens: 400, minFeedbackSample: 5 };
+const PROFILE_DEFAULTS: ProfileConfig = {
+  enabled: false,
+  topLessons: 10,
+  maxTokens: 400,
+  minFeedbackSample: 5
+};
 
 function num(v: unknown, fallback: number): number {
   return typeof v === "number" && Number.isFinite(v) ? v : fallback;
@@ -109,10 +114,13 @@ function usefulnessIsWarm(profile: AgentProfile, minSample: number): boolean {
  * provider lacking `profile()`, or a null profile all resolve to
  * `{ block: "", injectedIds: [] }` — never a throw.
  */
-export async function buildProfileBlock(opts: BuildProfileOptions): Promise<{ block: string; injectedIds: string[] }> {
+export async function buildProfileBlock(
+  opts: BuildProfileOptions
+): Promise<{ block: string; injectedIds: string[] }> {
   const empty = { block: "", injectedIds: [] as string[] };
   try {
-    const rawConfig = opts.rawConfig !== undefined ? opts.rawConfig : await loadMemoryConfig(opts.repoPath);
+    const rawConfig =
+      opts.rawConfig !== undefined ? opts.rawConfig : await loadMemoryConfig(opts.repoPath);
     const cfg = parseProfileConfig(rawConfig);
     if (!cfg.enabled) return empty;
 

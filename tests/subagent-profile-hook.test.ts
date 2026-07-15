@@ -20,7 +20,11 @@ function deps(block: string, ids: string[], writes: Array<[string, string, strin
 test("emits additionalContext + records the agent-keyed sidecar for a valid payload", async () => {
   const writes: Array<[string, string, string[]]> = [];
   const raw = JSON.stringify({ agent_type: "crew:reviewer", cwd: "/repo" });
-  const out = await runSubagentProfileInjection(raw, {}, deps("## Your track record (crew:reviewer)\n- x", ["c1", "l1"], writes));
+  const out = await runSubagentProfileInjection(
+    raw,
+    {},
+    deps("## Your track record (crew:reviewer)\n- x", ["c1", "l1"], writes)
+  );
   assert.notEqual(out, null);
   const parsed = JSON.parse(out as string);
   assert.equal(parsed.hookSpecificOutput.hookEventName, "SubagentStart");
@@ -30,7 +34,11 @@ test("emits additionalContext + records the agent-keyed sidecar for a valid payl
 
 test("returns null (emit nothing) when the payload has no agent_type", async () => {
   const writes: Array<[string, string, string[]]> = [];
-  const out = await runSubagentProfileInjection(JSON.stringify({ cwd: "/repo" }), {}, deps("block", ["c1"], writes));
+  const out = await runSubagentProfileInjection(
+    JSON.stringify({ cwd: "/repo" }),
+    {},
+    deps("block", ["c1"], writes)
+  );
   assert.equal(out, null);
   assert.equal(writes.length, 0);
 });
@@ -50,11 +58,15 @@ test("returns null on malformed JSON — never throws", async () => {
 
 test("returns null when buildProfileBlock throws — never throws", async () => {
   const raw = JSON.stringify({ agent_type: "crew:reviewer", cwd: "/repo" });
-  const out = await runSubagentProfileInjection(raw, {}, {
-    buildProfileBlock: async () => {
-      throw new Error("provider blew up");
+  const out = await runSubagentProfileInjection(
+    raw,
+    {},
+    {
+      buildProfileBlock: async () => {
+        throw new Error("provider blew up");
+      }
     }
-  });
+  );
   assert.equal(out, null);
 });
 

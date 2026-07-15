@@ -516,8 +516,15 @@ async function scenarioProfileInjectionDisabled(
   // Case 2: memory.profile.enabled:false explicitly -> same guarantee.
   const repoDisabled = await fs.mkdtemp(path.join(os.tmpdir(), "smoke-profile-disabled-"));
   await writeMemoryLoopConfig(repoDisabled, { provider: "file", profile: { enabled: false } });
-  const resultDisabled = await buildProfileBlock({ repoPath: repoDisabled, agent: "crew:reviewer" });
-  assert.equal(resultDisabled.block, "", "profile block must be empty when memory.profile.enabled is false");
+  const resultDisabled = await buildProfileBlock({
+    repoPath: repoDisabled,
+    agent: "crew:reviewer"
+  });
+  assert.equal(
+    resultDisabled.block,
+    "",
+    "profile block must be empty when memory.profile.enabled is false"
+  );
   assert.equal(
     `${dispatchBaseline}${resultDisabled.block}`,
     dispatchBaseline,
@@ -527,18 +534,21 @@ async function scenarioProfileInjectionDisabled(
   // Case 3: memory.profile.enabled:true but the configured provider has no
   // profile() method (today's real fileProvider) -> still an empty block,
   // via the REAL resolveProvider() path (no fake/provider override).
-  const repoEnabledNoImpl = await fs.mkdtemp(path.join(os.tmpdir(), "smoke-profile-enabled-noimpl-"));
+  const repoEnabledNoImpl = await fs.mkdtemp(
+    path.join(os.tmpdir(), "smoke-profile-enabled-noimpl-")
+  );
   await writeMemoryLoopConfig(repoEnabledNoImpl, { provider: "file", profile: { enabled: true } });
-  const resultEnabledNoImpl = await buildProfileBlock({ repoPath: repoEnabledNoImpl, agent: "crew:reviewer" });
+  const resultEnabledNoImpl = await buildProfileBlock({
+    repoPath: repoEnabledNoImpl,
+    agent: "crew:reviewer"
+  });
   assert.equal(
     resultEnabledNoImpl.block,
     "",
     "profile block must be empty when the configured provider has no profile() method yet"
   );
 
-  console.log(
-    "[scenario] profile-injection-disabled (agent-profile-load-feedback): PASS"
-  );
+  console.log("[scenario] profile-injection-disabled (agent-profile-load-feedback): PASS");
 }
 
 async function scenarioProfileInjectionContract(): Promise<void> {

@@ -1,12 +1,27 @@
 // scripts/lib/memory/profile-types.ts — local mirror of the @astragenie/memory-provider
 // AgentProfile contract (Task 0). Kept local so dev-team builds before the package
 // ships profile()/feedback(); swap the import once the package exports these.
-export interface AgentProfileLesson { id: string; text: string; importance: number; usefulness: number; created_at: number; }
-export interface AgentProfileDecision { id: string; text: string; importance: number; created_at: number; }
+export interface AgentProfileLesson {
+  id: string;
+  text: string;
+  importance: number;
+  usefulness: number;
+  created_at: number;
+}
+export interface AgentProfileDecision {
+  id: string;
+  text: string;
+  importance: number;
+  created_at: number;
+}
 export interface AgentProfileCorrection {
-  id: string; type: string; text: string;
+  id: string;
+  type: string;
+  text: string;
   action: "invalidated" | "superseded";
-  reason: string | null; superseded_by: string | null; superseding_text: string | null;
+  reason: string | null;
+  superseded_by: string | null;
+  superseding_text: string | null;
   corrected_at: number;
 }
 export interface AgentProfile {
