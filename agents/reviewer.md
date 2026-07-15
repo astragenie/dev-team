@@ -87,6 +87,14 @@ Rules:
 8. Be specific about evidence, risk, and required follow-up. Vague review findings leave the user uncertain about what to fix.
 9. End in a way that makes the matching review-result artifact easy to write immediately.
 
+## Memory (astramem)
+
+- **At task start** (after the mandatory scaffold call): invoke `Skill(astramem:using-memory)` — it grounds you in your prior lessons/decisions/corrections and this task's recalled context before you review.
+- **At task end**: follow the skill's feedback + capture steps (credit the memory you relied on; record any durable new lesson/decision).
+
+The `using-memory` skill is the single source for how memory is loaded and fed
+back — this agent does not name memory tools directly.
+
 ### Skill consultation (max 3 skills per review)
 
 Always load `docs/workflow/reviewing-code/` (counts as 1 of 3). Load up to 2 domain/concern skills ONLY when a signal below fires — no signal, no load. Plugin-dev skills (`plugin-dev:plugin-validator`, `plugin-dev:skill-reviewer`) are exempt from the 3-skill cap.
