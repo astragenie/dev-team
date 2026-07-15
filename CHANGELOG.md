@@ -3,6 +3,32 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [v0.66.0] — 2026-07-15 — 17 owned agents wired to astramem memory
+
+Wires all 17 owned crew agents to astramem memory via the registered
+`astramem:using-memory` skill (#238), and clears the tools-allowlist blocker
+that was silently starving several agents of `Skill` + MCP access.
+
+- **17 owned agents** (`aiplugin-dev`, `architect`, `architect-reviewer`,
+  `backend-dev`, `document-writer`, `frontend-dev`, `fullstack-dev`,
+  `integrator`, `performance-engineer`, `qa-expert`, `refactor`,
+  `release-engineer`, `researcher`, `reviewer`, `test-automator`,
+  `uxdesigner`, `verifier`) now reference the registered
+  `astramem:using-memory` skill instead of the nested/unregistered
+  `memory-keeper` / `builder-mindset` skills those agents previously
+  pointed at.
+- Converted restrictive `tools:` allowlists to a `disallowedTools:`
+  denylist (or dropped the field entirely for inherit-all) across the
+  same agent set, so agents actually receive `Skill` + MCP tool access
+  instead of being silently scoped out of it by an allowlist that
+  predated the skill/MCP tool surface.
+- No MCP tool names are referenced directly in any agent file — agents
+  route through the skill, not through hardcoded `mcp__...` tool names.
+- **Known gap**: live memory recall is gated on daemon-side fixes
+  tracked upstream in astramem-local #341 / #343 / #347 — the skill
+  wiring in this release is fail-silent when the daemon can't serve
+  recall, so agents degrade gracefully rather than erroring.
+
 ## [v0.65.0] — 2026-07-15 — universal memory skill + astramem MCP
 
 Makes agent memory usable across **every** crew agent, not just the
