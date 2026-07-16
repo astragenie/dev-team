@@ -1,9 +1,8 @@
+import { test, expect } from "bun:test";
 // tests/memory-profile-feedback.test.ts
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
-import assert from "node:assert/strict";
 import { submitOutcomeFeedback } from "../scripts/lib/memory/profile-feedback.ts";
 import { writeInjectedAtoms } from "../scripts/lib/memory/injected-atoms.ts";
 import type { ProfileCapableProvider } from "../scripts/lib/memory/profile-types.ts";
@@ -32,8 +31,8 @@ test("credits every injected atom with used:true on PASS", async () => {
       rawConfig: { feedback: { enabled: true } },
       provider: recordingProvider(sink)
     });
-    assert.deepEqual(r.credited.sort(), ["a", "b"]);
-    assert.deepEqual(sink.sort(), [
+    expect(r.credited.sort()).toEqual(["a", "b"]);
+    expect(sink.sort()).toEqual([
       ["a", true],
       ["b", true]
     ]);
@@ -54,8 +53,8 @@ test("credits nothing on FAIL (positive-only signal)", async () => {
       rawConfig: { feedback: { enabled: true } },
       provider: recordingProvider(sink)
     });
-    assert.deepEqual(r.credited, []);
-    assert.deepEqual(sink, []);
+    expect(r.credited).toEqual([]);
+    expect(sink).toEqual([]);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
@@ -73,8 +72,8 @@ test("no-ops when feedback.enabled is false (default)", async () => {
       rawConfig: {},
       provider: recordingProvider(sink)
     });
-    assert.deepEqual(r.credited, []);
-    assert.deepEqual(sink, []);
+    expect(r.credited).toEqual([]);
+    expect(sink).toEqual([]);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
@@ -96,7 +95,7 @@ test("fail-silent: a throwing feedback() never rejects", async () => {
       rawConfig: { feedback: { enabled: true } },
       provider: throwing
     });
-    assert.deepEqual(r.credited, []);
+    expect(r.credited).toEqual([]);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }

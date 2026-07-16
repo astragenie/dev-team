@@ -1,10 +1,9 @@
+import { test, expect } from "bun:test";
 // TDD tests for SLICE-06: regression trend detectors in cost-advisor.
 //
 // Written BEFORE the implementation. All tests should fail initially until
 // detectTrends is exported from cost-advisor.mjs.
 
-import test from "node:test";
-import assert from "node:assert/strict";
 import { detectTrends } from "../scripts/lib/cost-advisor.ts";
 import type { SummaryRecord } from "../scripts/lib/cost-advisor-rules.ts";
 
@@ -67,7 +66,10 @@ test("detectTrends: compaction-drift fires when compactionCount increases across
   ];
   const trends = detectTrends(reports);
   const ids = trends.map((t) => t.id);
-  assert.ok(ids.includes("compaction-drift"), `Expected compaction-drift, got: ${ids.join(", ")}`);
+  expect(
+    ids.includes("compaction-drift"),
+    `Expected compaction-drift, got: ${ids.join(", ")}`
+  ).toBeTruthy();
 });
 
 test("detectTrends: compaction-drift does NOT fire when compactionCount is stable", () => {
@@ -78,7 +80,10 @@ test("detectTrends: compaction-drift does NOT fire when compactionCount is stabl
   ];
   const trends = detectTrends(reports);
   const ids = trends.map((t) => t.id);
-  assert.ok(!ids.includes("compaction-drift"), "Should not fire on stable compaction counts");
+  expect(
+    !ids.includes("compaction-drift"),
+    "Should not fire on stable compaction counts"
+  ).toBeTruthy();
 });
 
 test("detectTrends: compaction-drift does NOT fire when compactionCount decreases", () => {
@@ -89,7 +94,10 @@ test("detectTrends: compaction-drift does NOT fire when compactionCount decrease
   ];
   const trends = detectTrends(reports);
   const ids = trends.map((t) => t.id);
-  assert.ok(!ids.includes("compaction-drift"), "Should not fire on decreasing compaction counts");
+  expect(
+    !ids.includes("compaction-drift"),
+    "Should not fire on decreasing compaction counts"
+  ).toBeTruthy();
 });
 
 // ---------------------------------------------------------------------------
@@ -105,7 +113,10 @@ test("detectTrends: subagent-creep fires when subagentDispatches increases acros
   ];
   const trends = detectTrends(reports);
   const ids = trends.map((t) => t.id);
-  assert.ok(ids.includes("subagent-creep"), `Expected subagent-creep, got: ${ids.join(", ")}`);
+  expect(
+    ids.includes("subagent-creep"),
+    `Expected subagent-creep, got: ${ids.join(", ")}`
+  ).toBeTruthy();
 });
 
 test("detectTrends: subagent-creep does NOT fire when subagentDispatches is stable", () => {
@@ -116,7 +127,10 @@ test("detectTrends: subagent-creep does NOT fire when subagentDispatches is stab
   ];
   const trends = detectTrends(reports);
   const ids = trends.map((t) => t.id);
-  assert.ok(!ids.includes("subagent-creep"), "Should not fire on stable subagent dispatch counts");
+  expect(
+    !ids.includes("subagent-creep"),
+    "Should not fire on stable subagent dispatch counts"
+  ).toBeTruthy();
 });
 
 // ---------------------------------------------------------------------------
@@ -132,7 +146,10 @@ test("detectTrends: cost-regression fires when current usd is >20% above median 
   ];
   const trends = detectTrends(reports);
   const ids = trends.map((t) => t.id);
-  assert.ok(ids.includes("cost-regression"), `Expected cost-regression, got: ${ids.join(", ")}`);
+  expect(
+    ids.includes("cost-regression"),
+    `Expected cost-regression, got: ${ids.join(", ")}`
+  ).toBeTruthy();
 });
 
 test("detectTrends: cost-regression does NOT fire when current usd is within 20% of median", () => {
@@ -144,7 +161,7 @@ test("detectTrends: cost-regression does NOT fire when current usd is within 20%
   ];
   const trends = detectTrends(reports);
   const ids = trends.map((t) => t.id);
-  assert.ok(!ids.includes("cost-regression"), "Should not fire when increase is <=20%");
+  expect(!ids.includes("cost-regression"), "Should not fire when increase is <=20%").toBeTruthy();
 });
 
 test("detectTrends: cost-regression does NOT fire when current usd is cheaper than median", () => {
@@ -155,7 +172,7 @@ test("detectTrends: cost-regression does NOT fire when current usd is cheaper th
   ];
   const trends = detectTrends(reports);
   const ids = trends.map((t) => t.id);
-  assert.ok(!ids.includes("cost-regression"), "Should not fire when cost decreases");
+  expect(!ids.includes("cost-regression"), "Should not fire when cost decreases").toBeTruthy();
 });
 
 // ---------------------------------------------------------------------------
@@ -169,7 +186,7 @@ test("detectTrends: returns empty array when all metrics are stable and cost is 
     makeReport({ compactionCount: 1, subagentDispatches: 2, usd: 10 })
   ];
   const trends = detectTrends(reports);
-  assert.equal(trends.length, 0, `Expected no trends, got: ${trends.map((t) => t.id).join(", ")}`);
+  expect(trends.length, `Expected no trends, got: ${trends.map((t) => t.id).join(", ")}`).toBe(0);
 });
 
 // ---------------------------------------------------------------------------
@@ -177,9 +194,9 @@ test("detectTrends: returns empty array when all metrics are stable and cost is 
 // ---------------------------------------------------------------------------
 
 test("detectTrends: returns empty array when fewer than 3 reports provided", () => {
-  assert.deepEqual(detectTrends([]), []);
-  assert.deepEqual(detectTrends([makeReport()]), []);
-  assert.deepEqual(detectTrends([makeReport(), makeReport()]), []);
+  expect(detectTrends([])).toEqual([]);
+  expect(detectTrends([makeReport()])).toEqual([]);
+  expect(detectTrends([makeReport(), makeReport()])).toEqual([]);
 });
 
 // ---------------------------------------------------------------------------
@@ -193,21 +210,21 @@ test("detectTrends: each finding has id, severity, message, suggestion fields", 
     makeReport({ compactionCount: 1 })
   ];
   const trends = detectTrends(reports);
-  assert.ok(trends.length > 0, "Expected at least one trend finding");
+  expect(trends.length > 0, "Expected at least one trend finding").toBeTruthy();
   for (const t of trends) {
-    assert.ok(typeof t.id === "string" && t.id.length > 0, "id must be non-empty string");
-    assert.ok(
+    expect(typeof t.id === "string" && t.id.length > 0, "id must be non-empty string").toBeTruthy();
+    expect(
       ["low", "medium", "high"].includes(t.severity),
       `severity must be low/medium/high, got ${t.severity}`
-    );
-    assert.ok(
+    ).toBeTruthy();
+    expect(
       typeof t.message === "string" && t.message.length > 0,
       "message must be non-empty string"
-    );
-    assert.ok(
+    ).toBeTruthy();
+    expect(
       typeof t.suggestion === "string" && t.suggestion.length > 0,
       "suggestion must be non-empty string"
-    );
+    ).toBeTruthy();
   }
 });
 
@@ -223,8 +240,8 @@ test("detectTrends: compaction-drift has severity medium", () => {
   ];
   const trends = detectTrends(reports);
   const drift = trends.find((t) => t.id === "compaction-drift");
-  assert.ok(drift, "Expected compaction-drift finding");
-  assert.equal(drift.severity, "medium");
+  expect(drift, "Expected compaction-drift finding").toBeTruthy();
+  expect(drift!.severity).toBe("medium");
 });
 
 test("detectTrends: subagent-creep has severity medium", () => {
@@ -235,14 +252,14 @@ test("detectTrends: subagent-creep has severity medium", () => {
   ];
   const trends = detectTrends(reports);
   const creep = trends.find((t) => t.id === "subagent-creep");
-  assert.ok(creep, "Expected subagent-creep finding");
-  assert.equal(creep.severity, "medium");
+  expect(creep, "Expected subagent-creep finding").toBeTruthy();
+  expect(creep!.severity).toBe("medium");
 });
 
 test("detectTrends: cost-regression has severity high", () => {
   const reports = [makeReport({ usd: 25 }), makeReport({ usd: 10 }), makeReport({ usd: 10 })];
   const trends = detectTrends(reports);
   const reg = trends.find((t) => t.id === "cost-regression");
-  assert.ok(reg, "Expected cost-regression finding");
-  assert.equal(reg.severity, "high");
+  expect(reg, "Expected cost-regression finding").toBeTruthy();
+  expect(reg!.severity).toBe("high");
 });

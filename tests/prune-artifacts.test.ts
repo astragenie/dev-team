@@ -1,11 +1,10 @@
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { execFile as execFileCallback } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import { test } from "node:test";
-import assert from "node:assert/strict";
 
 import { isOlderThan, validateDays } from "../scripts/prune-artifacts.ts";
 
@@ -20,61 +19,61 @@ const NOW = 1_000_000 * DAY_MS; // arbitrary fixed "now"
 
 test("isOlderThan: returns true when file is exactly one day older than threshold", () => {
   const mtime = NOW - 91 * DAY_MS; // 91 days old, threshold 90
-  assert.equal(isOlderThan(mtime, NOW, 90), true);
+  expect(isOlderThan(mtime, NOW, 90)).toBe(true);
 });
 
 test("isOlderThan: returns false when file is newer than threshold", () => {
   const mtime = NOW - 30 * DAY_MS; // 30 days old, threshold 90
-  assert.equal(isOlderThan(mtime, NOW, 90), false);
+  expect(isOlderThan(mtime, NOW, 90)).toBe(false);
 });
 
 test("isOlderThan: returns false when file mtime equals the threshold boundary", () => {
   const mtime = NOW - 90 * DAY_MS; // exactly at the boundary — not older
-  assert.equal(isOlderThan(mtime, NOW, 90), false);
+  expect(isOlderThan(mtime, NOW, 90)).toBe(false);
 });
 
 test("isOlderThan: returns true for very old files (mtime = 0)", () => {
-  assert.equal(isOlderThan(0, NOW, 90), true);
+  expect(isOlderThan(0, NOW, 90)).toBe(true);
 });
 
 test("isOlderThan: returns false when mtime equals nowMs (file from now)", () => {
-  assert.equal(isOlderThan(NOW, NOW, 1), false);
+  expect(isOlderThan(NOW, NOW, 1)).toBe(false);
 });
 
 test("isOlderThan: works with threshold of 1 day", () => {
   const mtime = NOW - 2 * DAY_MS; // 2 days old, threshold 1
-  assert.equal(isOlderThan(mtime, NOW, 1), true);
+  expect(isOlderThan(mtime, NOW, 1)).toBe(true);
 });
 
 test("isOlderThan: works with large threshold (365 days)", () => {
   const mtime = NOW - 364 * DAY_MS; // 364 days old, threshold 365
-  assert.equal(isOlderThan(mtime, NOW, 365), false);
+  expect(isOlderThan(mtime, NOW, 365)).toBe(false);
 });
 
 test("isOlderThan: works with large threshold when file is past it", () => {
   const mtime = NOW - 366 * DAY_MS; // 366 days old, threshold 365
-  assert.equal(isOlderThan(mtime, NOW, 365), true);
+  expect(isOlderThan(mtime, NOW, 365)).toBe(true);
 });
 
 // validateDays — float and invalid input rejection
 test("validateDays: accepts positive integer", () => {
-  assert.equal(validateDays(90), null);
+  expect(validateDays(90)).toBe(null);
 });
 
 test("validateDays: rejects float (1.5)", () => {
-  assert.notEqual(validateDays(1.5), null);
+  expect(validateDays(1.5)).not.toBe(null);
 });
 
 test("validateDays: rejects zero", () => {
-  assert.notEqual(validateDays(0), null);
+  expect(validateDays(0)).not.toBe(null);
 });
 
 test("validateDays: rejects negative", () => {
-  assert.notEqual(validateDays(-5), null);
+  expect(validateDays(-5)).not.toBe(null);
 });
 
 test("validateDays: rejects NaN", () => {
-  assert.notEqual(validateDays(NaN), null);
+  expect(validateDays(NaN)).not.toBe(null);
 });
 
 // ---------------------------------------------------------------------------
@@ -112,14 +111,14 @@ test("--dry-run: prints would-delete list and does NOT delete the file", async (
   );
 
   // Should mention the file path
-  assert.match(stdout, /would delete/, "--dry-run output should contain 'would delete'");
-  assert.match(stdout, /old-handoff\.md/, "--dry-run output should list the file name");
+  expect(stdout, "--dry-run output should contain 'would delete'").toMatch(/would delete/);
+  expect(stdout, "--dry-run output should list the file name").toMatch(/old-handoff\.md/);
   // Summary line
-  assert.match(stdout, /dry-run.*1 file/, "--dry-run summary should report 1 file");
+  expect(stdout, "--dry-run summary should report 1 file").toMatch(/dry-run.*1 file/);
 
   // File must still exist
   const stat = await fs.stat(oldFile);
-  assert.ok(stat.isFile(), "--dry-run must NOT delete the file");
+  expect(stat.isFile(), "--dry-run must NOT delete the file").toBeTruthy();
 });
 
 test("--dry-run: exits 0 even when files are found", async () => {
@@ -140,7 +139,7 @@ test("--dry-run: exits 0 even when files are found", async () => {
   );
 
   // execFile resolves (does not throw) only when exit code is 0
-  assert.ok(result, "process should exit 0 in --dry-run mode");
+  expect(result, "process should exit 0 in --dry-run mode").toBeTruthy();
 });
 
 test("without --dry-run: actually deletes old files", async () => {
@@ -152,12 +151,14 @@ test("without --dry-run: actually deletes old files", async () => {
     { encoding: "utf8" }
   );
 
-  assert.match(stdout, /deleted.*1 file/, "destructive run should report 1 deleted file");
+  expect(stdout, "destructive run should report 1 deleted file").toMatch(/deleted.*1 file/);
 
   // File must be gone
-  await assert.rejects(
-    () => fs.stat(oldFile),
-    (err: NodeJS.ErrnoException) => err.code === "ENOENT",
-    "file should have been deleted"
-  );
+  let caughtErr: NodeJS.ErrnoException | undefined;
+  try {
+    await fs.stat(oldFile);
+  } catch (err) {
+    caughtErr = err as NodeJS.ErrnoException;
+  }
+  expect(caughtErr?.code, "file should have been deleted").toBe("ENOENT");
 });

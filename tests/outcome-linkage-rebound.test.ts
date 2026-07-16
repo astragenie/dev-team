@@ -1,5 +1,4 @@
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
@@ -46,14 +45,14 @@ async function makeRepoWithGrade(gradeBody: string): Promise<string> {
 test("collectOutcomeLinkage: surfaces review_rebound_count when present", async () => {
   const repo = await makeRepoWithGrade(MINIMAL_GRADE);
   const result = await collectOutcomeLinkage(repo, "FEAT-999 SLICE-99");
-  assert.equal(result.sliceId, "SLICE-99");
-  assert.equal(result.reviewReboundCount, 3);
+  expect(result.sliceId).toBe("SLICE-99");
+  expect(result.reviewReboundCount).toBe(3);
 });
 
 test("collectOutcomeLinkage: review_rebound_count null when absent from grade frontmatter", async () => {
   const repo = await makeRepoWithGrade(GRADE_NO_REBOUND);
   const result = await collectOutcomeLinkage(repo, "FEAT-999 SLICE-99");
-  assert.equal(result.reviewReboundCount, null);
+  expect(result.reviewReboundCount).toBe(null);
 });
 
 test("collectOutcomeLinkage: review_rebound_count is zero on first-try pass", async () => {
@@ -61,7 +60,7 @@ test("collectOutcomeLinkage: review_rebound_count is zero on first-try pass", as
     MINIMAL_GRADE.replace("review_rebound_count: 3", "review_rebound_count: 0")
   );
   const result = await collectOutcomeLinkage(repo, "FEAT-999 SLICE-99");
-  assert.equal(result.reviewReboundCount, 0);
+  expect(result.reviewReboundCount).toBe(0);
 });
 
 test("collectOutcomeLinkage: rejects negative or non-numeric rebound counts", async () => {
@@ -69,5 +68,5 @@ test("collectOutcomeLinkage: rejects negative or non-numeric rebound counts", as
     MINIMAL_GRADE.replace("review_rebound_count: 3", "review_rebound_count: notanumber")
   );
   const result = await collectOutcomeLinkage(repo, "FEAT-999 SLICE-99");
-  assert.equal(result.reviewReboundCount, null);
+  expect(result.reviewReboundCount).toBe(null);
 });
