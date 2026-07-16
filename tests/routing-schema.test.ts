@@ -1,6 +1,5 @@
+import { test, expect } from "bun:test";
 // tests/routing-schema.test.ts — FEAT-crew-architecture-review Section 7
-import { test } from "node:test";
-import assert from "node:assert/strict";
 import { parseRoutingTable, RoutingTableSchema } from "../scripts/lib/routing/schema.ts";
 
 const VALID_ROW = {
@@ -12,36 +11,36 @@ const VALID_ROW = {
 
 test("accepts a well-formed routing table", () => {
   const table = parseRoutingTable({ version: "1.0.0", rows: [VALID_ROW] });
-  assert.equal(table.version, "1.0.0");
-  assert.equal(table.rows.length, 1);
+  expect(table.version).toBe("1.0.0");
+  expect(table.rows.length).toBe(1);
 });
 
 test("notes is optional", () => {
   const { notes: _notes, ...rowWithoutNotes } = VALID_ROW;
   const table = parseRoutingTable({ version: "1.0.0", rows: [rowWithoutNotes] });
-  assert.equal(table.rows[0]?.notes, undefined);
+  expect(table.rows[0]?.notes).toBe(undefined);
 });
 
 test("rejects an unknown section enum value", () => {
-  assert.throws(() =>
+  expect(() =>
     parseRoutingTable({
       version: "1.0.0",
       rows: [{ ...VALID_ROW, section: "not-a-real-section" }]
     })
-  );
+  ).toThrow();
 });
 
 test("rejects a malformed version string", () => {
-  assert.throws(() => parseRoutingTable({ version: "not-semver", rows: [VALID_ROW] }));
+  expect(() => parseRoutingTable({ version: "not-semver", rows: [VALID_ROW] })).toThrow();
 });
 
 test("rejects an empty rows array", () => {
-  assert.throws(() => parseRoutingTable({ version: "1.0.0", rows: [] }));
+  expect(() => parseRoutingTable({ version: "1.0.0", rows: [] })).toThrow();
 });
 
 test("rejects a row missing route_to", () => {
   const { route_to: _routeTo, ...rowMissingRouteTo } = VALID_ROW;
-  assert.throws(() => parseRoutingTable({ version: "1.0.0", rows: [rowMissingRouteTo] }));
+  expect(() => parseRoutingTable({ version: "1.0.0", rows: [rowMissingRouteTo] })).toThrow();
 });
 
 test("RoutingTableSchema exposes all 10 section ids", () => {
@@ -60,5 +59,5 @@ test("RoutingTableSchema exposes all 10 section ids", () => {
       "crew-internals"
     ].map((section) => ({ ...VALID_ROW, section }))
   });
-  assert.equal(table.rows.length, 10);
+  expect(table.rows.length).toBe(10);
 });

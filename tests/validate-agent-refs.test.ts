@@ -1,6 +1,5 @@
+import { test, expect } from "bun:test";
 // tests/validate-agent-refs.test.ts — crew-architecture-review 2026-07-04 quick win
-import { test } from "node:test";
-import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -26,7 +25,7 @@ test("passes when crew: tokens resolve to real agents or commands", async () => 
       "---\n---\nDispatch the **`crew:reviewer`** agent. Pair with `/crew:build`.\n"
   });
   const result = await validateAgentRefs(root);
-  assert.equal(result.ok, true, `unexpected findings: ${JSON.stringify(result.findings)}`);
+  expect(result.ok, `unexpected findings: ${JSON.stringify(result.findings)}`).toBe(true);
 });
 
 test("fails on a phantom agent reference", async () => {
@@ -35,9 +34,9 @@ test("fails on a phantom agent reference", async () => {
     "commands/parallel.md": "---\n---\nDispatch `crew:builder` then `crew:validator`.\n"
   });
   const result = await validateAgentRefs(root);
-  assert.equal(result.ok, false);
+  expect(result.ok).toBe(false);
   const tokens = result.findings.map((f) => f.token).sort();
-  assert.deepEqual(tokens, ["crew:builder", "crew:validator"]);
+  expect(tokens).toEqual(["crew:builder", "crew:validator"]);
 });
 
 test("fails on a phantom 3rdparty reference", async () => {
@@ -46,8 +45,8 @@ test("fails on a phantom 3rdparty reference", async () => {
     "skills/workflow/foo/SKILL.md": "Route to `crew:3rdparty:nonexistent-agent`.\n"
   });
   const result = await validateAgentRefs(root);
-  assert.equal(result.ok, false);
-  assert.ok(result.findings.some((f) => f.token === "crew:3rdparty:nonexistent-agent"));
+  expect(result.ok).toBe(false);
+  expect(result.findings.some((f) => f.token === "crew:3rdparty:nonexistent-agent")).toBeTruthy();
 });
 
 test("allows forward references declared in docs/routing-table.yaml", async () => {
@@ -61,7 +60,7 @@ test("allows forward references declared in docs/routing-table.yaml", async () =
       "Registry fallback: if `crew:reviewer-verifier` is unregistered, fall back to the full ladder.\n"
   });
   const result = await validateAgentRefs(root);
-  assert.equal(result.ok, true, `unexpected findings: ${JSON.stringify(result.findings)}`);
+  expect(result.ok, `unexpected findings: ${JSON.stringify(result.findings)}`).toBe(true);
 });
 
 test("forward references NOT in routing-table.yaml are findings (allowlist is data, not code)", async () => {
@@ -69,8 +68,8 @@ test("forward references NOT in routing-table.yaml are findings (allowlist is da
     "commands/foo.md": "---\n---\nDispatch `crew:reviewer-validator`.\n"
   });
   const result = await validateAgentRefs(root);
-  assert.equal(result.ok, false);
-  assert.ok(result.findings.some((f) => f.token === "crew:reviewer-validator"));
+  expect(result.ok).toBe(false);
+  expect(result.findings.some((f) => f.token === "crew:reviewer-validator")).toBeTruthy();
 });
 
 test("resolves crew: tokens that name a skill directory", async () => {
@@ -79,7 +78,7 @@ test("resolves crew: tokens that name a skill directory", async () => {
     "commands/foo.md": "---\n---\nConsult `crew:risk-tier` guidance.\n"
   });
   const result = await validateAgentRefs(root);
-  assert.equal(result.ok, true, `unexpected findings: ${JSON.stringify(result.findings)}`);
+  expect(result.ok, `unexpected findings: ${JSON.stringify(result.findings)}`).toBe(true);
 });
 
 test("fails on a phantom agent reference inside .claude/loop/rules.md", async () => {
@@ -92,10 +91,10 @@ test("fails on a phantom agent reference inside .claude/loop/rules.md", async ()
       "# Autonomous Loop — HARD RULES\n\nDispatch implementation via `crew:builder`.\n"
   });
   const result = await validateAgentRefs(root);
-  assert.equal(result.ok, false);
-  assert.ok(
+  expect(result.ok).toBe(false);
+  expect(
     result.findings.some((f) => f.token === "crew:builder" && f.file === ".claude/loop/rules.md")
-  );
+  ).toBeTruthy();
 });
 
 test("passes on a real agent reference inside .claude/loop/rules.md", async () => {
@@ -105,5 +104,5 @@ test("passes on a real agent reference inside .claude/loop/rules.md", async () =
       "# Autonomous Loop — HARD RULES\n\nDispatch implementation via `crew:fullstack-dev`.\n"
   });
   const result = await validateAgentRefs(root);
-  assert.equal(result.ok, true, `unexpected findings: ${JSON.stringify(result.findings)}`);
+  expect(result.ok, `unexpected findings: ${JSON.stringify(result.findings)}`).toBe(true);
 });

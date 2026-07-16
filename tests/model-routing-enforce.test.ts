@@ -1,3 +1,4 @@
+import { test, expect } from "bun:test";
 // tests/model-routing-enforce.test.ts
 // FEAT-194 S2b — PreToolUse Agent-tool hook that HARD-enforces the resolved
 // builder-tier model when an interactive dispatch omits `model:`.
@@ -5,8 +6,6 @@
 // model-enforce.ts) owns stdin/stdout/process.exit and is exercised only by
 // the "malformed payload" pass-through cases here, matching the split used
 // by tests/dispatch-timing-pre-tap.test.ts.
-import { test } from "node:test";
-import assert from "node:assert/strict";
 import {
   BUILDER_TIER_AGENTS,
   isBuilderTierAgent,
@@ -31,29 +30,28 @@ const COMMITTED_ROUTING = {
 // ── isBuilderTierAgent / BUILDER_TIER_AGENTS ────────────────────────────────
 
 test("BUILDER_TIER_AGENTS: covers the five builder-tier agents named in FEAT-194 S2b scope", () => {
-  assert.deepEqual(
-    [...BUILDER_TIER_AGENTS].sort(),
+  expect([...BUILDER_TIER_AGENTS].sort()).toEqual(
     ["aiplugin-dev", "backend-dev", "dev-lite", "frontend-dev", "fullstack-dev"].sort()
   );
 });
 
 test("isBuilderTierAgent: crew-prefixed builder tier names match", () => {
-  assert.equal(isBuilderTierAgent("crew:fullstack-dev"), true);
-  assert.equal(isBuilderTierAgent("crew:backend-dev"), true);
-  assert.equal(isBuilderTierAgent("crew:frontend-dev"), true);
-  assert.equal(isBuilderTierAgent("crew:aiplugin-dev"), true);
-  assert.equal(isBuilderTierAgent("crew:dev-lite"), true);
+  expect(isBuilderTierAgent("crew:fullstack-dev")).toBe(true);
+  expect(isBuilderTierAgent("crew:backend-dev")).toBe(true);
+  expect(isBuilderTierAgent("crew:frontend-dev")).toBe(true);
+  expect(isBuilderTierAgent("crew:aiplugin-dev")).toBe(true);
+  expect(isBuilderTierAgent("crew:dev-lite")).toBe(true);
 });
 
 test("isBuilderTierAgent: bare (non-prefixed) builder tier names match", () => {
-  assert.equal(isBuilderTierAgent("fullstack-dev"), true);
+  expect(isBuilderTierAgent("fullstack-dev")).toBe(true);
 });
 
 test("isBuilderTierAgent: non-builder agents do not match", () => {
-  assert.equal(isBuilderTierAgent("crew:reviewer"), false);
-  assert.equal(isBuilderTierAgent("crew:investigator"), false);
-  assert.equal(isBuilderTierAgent("crew:verifier"), false);
-  assert.equal(isBuilderTierAgent("general-purpose"), false);
+  expect(isBuilderTierAgent("crew:reviewer")).toBe(false);
+  expect(isBuilderTierAgent("crew:investigator")).toBe(false);
+  expect(isBuilderTierAgent("crew:verifier")).toBe(false);
+  expect(isBuilderTierAgent("general-purpose")).toBe(false);
 });
 
 // ── parseAgentDispatchInput ──────────────────────────────────────────────────
@@ -64,30 +62,31 @@ test("parseAgentDispatchInput: valid Agent payload with subagent_type → parsed
     tool_input: { subagent_type: "crew:fullstack-dev", description: "build the thing" }
   });
   const result = parseAgentDispatchInput(payload);
-  assert.ok(result !== null);
-  assert.equal(result.subagentType, "crew:fullstack-dev");
-  assert.equal(result.toolInput["description"], "build the thing");
+  expect(result !== null).toBeTruthy();
+  if (result === null) return;
+  expect(result.subagentType).toBe("crew:fullstack-dev");
+  expect(result.toolInput["description"]).toBe("build the thing");
 });
 
 test("parseAgentDispatchInput: non-Agent tool_name → null (pass through)", () => {
   const payload = JSON.stringify({ tool_name: "Bash", tool_input: { command: "ls" } });
-  assert.equal(parseAgentDispatchInput(payload), null);
+  expect(parseAgentDispatchInput(payload)).toBe(null);
 });
 
 test("parseAgentDispatchInput: malformed JSON → null (fail-open pass through)", () => {
-  assert.equal(parseAgentDispatchInput("not json"), null);
-  assert.equal(parseAgentDispatchInput("{broken:"), null);
-  assert.equal(parseAgentDispatchInput(""), null);
+  expect(parseAgentDispatchInput("not json")).toBe(null);
+  expect(parseAgentDispatchInput("{broken:")).toBe(null);
+  expect(parseAgentDispatchInput("")).toBe(null);
 });
 
 test("parseAgentDispatchInput: missing subagent_type → null", () => {
   const payload = JSON.stringify({ tool_name: "Agent", tool_input: { description: "x" } });
-  assert.equal(parseAgentDispatchInput(payload), null);
+  expect(parseAgentDispatchInput(payload)).toBe(null);
 });
 
 test("parseAgentDispatchInput: missing tool_input → null", () => {
   const payload = JSON.stringify({ tool_name: "Agent" });
-  assert.equal(parseAgentDispatchInput(payload), null);
+  expect(parseAgentDispatchInput(payload)).toBe(null);
 });
 
 // ── decideModelEnforcement ───────────────────────────────────────────────────
@@ -98,11 +97,11 @@ test("decideModelEnforcement: builder-tier + no model + modelRouting configured 
     toolInput: { subagent_type: "crew:fullstack-dev", description: "build the thing" }
   };
   const decision = decideModelEnforcement(dispatch, COMMITTED_ROUTING);
-  assert.equal(decision.action, "inject");
-  assert.equal(decision.model, "sonnet");
-  assert.equal(decision.updatedInput?.["model"], "sonnet");
+  expect(decision.action).toBe("inject");
+  expect(decision.model).toBe("sonnet");
+  expect(decision.updatedInput?.["model"]).toBe("sonnet");
   // Original fields preserved alongside the injected model.
-  assert.equal(decision.updatedInput?.["description"], "build the thing");
+  expect(decision.updatedInput?.["description"]).toBe("build the thing");
 });
 
 test("decideModelEnforcement: explicit model already set → untouched (none)", () => {
@@ -111,9 +110,9 @@ test("decideModelEnforcement: explicit model already set → untouched (none)", 
     toolInput: { subagent_type: "crew:fullstack-dev", model: "opus" }
   };
   const decision = decideModelEnforcement(dispatch, COMMITTED_ROUTING);
-  assert.equal(decision.action, "none");
-  assert.equal(decision.model, undefined);
-  assert.equal(decision.updatedInput, undefined);
+  expect(decision.action).toBe("none");
+  expect(decision.model).toBe(undefined);
+  expect(decision.updatedInput).toBe(undefined);
 });
 
 test("decideModelEnforcement: non-builder agent → untouched (none)", () => {
@@ -122,7 +121,7 @@ test("decideModelEnforcement: non-builder agent → untouched (none)", () => {
     toolInput: { subagent_type: "crew:reviewer" }
   };
   const decision = decideModelEnforcement(dispatch, COMMITTED_ROUTING);
-  assert.equal(decision.action, "none");
+  expect(decision.action).toBe("none");
 });
 
 test("decideModelEnforcement: no modelRouting configured (null config) → fail-open none", () => {
@@ -130,9 +129,9 @@ test("decideModelEnforcement: no modelRouting configured (null config) → fail-
     subagentType: "crew:fullstack-dev",
     toolInput: { subagent_type: "crew:fullstack-dev" }
   };
-  assert.equal(decideModelEnforcement(dispatch, null).action, "none");
-  assert.equal(decideModelEnforcement(dispatch, {}).action, "none");
-  assert.equal(decideModelEnforcement(dispatch, { loop: {} }).action, "none");
+  expect(decideModelEnforcement(dispatch, null).action).toBe("none");
+  expect(decideModelEnforcement(dispatch, {}).action).toBe("none");
+  expect(decideModelEnforcement(dispatch, { loop: {} }).action).toBe("none");
 });
 
 test("decideModelEnforcement: loop.modelRouting.enabled false → stand down (agent frontmatter governs)", () => {
@@ -143,7 +142,7 @@ test("decideModelEnforcement: loop.modelRouting.enabled false → stand down (ag
   const disabledConfig = {
     loop: { modelRouting: { enabled: false, build: "sonnet", default: "sonnet" } }
   };
-  assert.equal(decideModelEnforcement(dispatch, disabledConfig).action, "none");
+  expect(decideModelEnforcement(dispatch, disabledConfig).action).toBe("none");
 });
 
 test("decideModelEnforcement: malformed/empty-string explicit model is treated as absent → inject", () => {
@@ -152,15 +151,15 @@ test("decideModelEnforcement: malformed/empty-string explicit model is treated a
     toolInput: { subagent_type: "crew:backend-dev", model: "" }
   };
   const decision = decideModelEnforcement(dispatch, COMMITTED_ROUTING);
-  assert.equal(decision.action, "inject");
-  assert.equal(decision.model, "sonnet");
+  expect(decision.action).toBe("inject");
+  expect(decision.model).toBe("sonnet");
 });
 
 test("decideModelEnforcement: dev-lite (bare, no crew: prefix) → inject", () => {
   const dispatch = { subagentType: "dev-lite", toolInput: { subagent_type: "dev-lite" } };
   const decision = decideModelEnforcement(dispatch, COMMITTED_ROUTING);
-  assert.equal(decision.action, "inject");
-  assert.equal(decision.model, "sonnet");
+  expect(decision.action).toBe("inject");
+  expect(decision.model).toBe("sonnet");
 });
 
 // ── buildHookOutput ───────────────────────────────────────────────────────
@@ -172,20 +171,21 @@ test("buildHookOutput: inject decision → JSON with hookSpecificOutput.updatedI
   };
   const decision = decideModelEnforcement(dispatch, COMMITTED_ROUTING);
   const out = buildHookOutput(dispatch, decision);
-  assert.ok(out !== null);
+  expect(out !== null).toBeTruthy();
+  if (out === null) return;
   const parsed = JSON.parse(out);
   // Required by the PreToolUse hookSpecificOutput schema — without it the
   // harness rejects the whole payload and the model injection silently no-ops
   // (dev-team#176). Assert it so the field can't regress.
-  assert.equal(parsed.hookSpecificOutput.hookEventName, "PreToolUse");
-  assert.equal(parsed.hookSpecificOutput.permissionDecision, "allow");
-  assert.equal(parsed.hookSpecificOutput.updatedInput.model, "sonnet");
-  assert.match(parsed.systemMessage, /crew:aiplugin-dev/);
-  assert.match(parsed.systemMessage, /sonnet/);
+  expect(parsed.hookSpecificOutput.hookEventName).toBe("PreToolUse");
+  expect(parsed.hookSpecificOutput.permissionDecision).toBe("allow");
+  expect(parsed.hookSpecificOutput.updatedInput.model).toBe("sonnet");
+  expect(parsed.systemMessage).toMatch(/crew:aiplugin-dev/);
+  expect(parsed.systemMessage).toMatch(/sonnet/);
 });
 
 test("buildHookOutput: none decision → null (no stdout output, pure pass-through)", () => {
   const dispatch = { subagentType: "crew:reviewer", toolInput: { subagent_type: "crew:reviewer" } };
   const decision = decideModelEnforcement(dispatch, COMMITTED_ROUTING);
-  assert.equal(buildHookOutput(dispatch, decision), null);
+  expect(buildHookOutput(dispatch, decision)).toBe(null);
 });
