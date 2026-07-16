@@ -1,8 +1,7 @@
+import { test, expect } from "bun:test";
 // tests/memory-provider-schema.test.ts
 // FEAT-188 S2 AC coverage: MemoryEntry Zod schema (kind | severity | tags |
 // summary<=280 | source-provenance | supersedes).
-import test from "node:test";
-import assert from "node:assert/strict";
 import { MemoryEntrySchema } from "@astragenie/memory-provider";
 
 function validEntry(overrides: Record<string, unknown> = {}) {
@@ -20,56 +19,56 @@ function validEntry(overrides: Record<string, unknown> = {}) {
 
 test("MemoryEntrySchema accepts a well-formed entry", () => {
   const parsed = MemoryEntrySchema.parse(validEntry());
-  assert.equal(parsed.kind, "failure");
-  assert.equal(parsed.severity, "high");
-  assert.deepEqual(parsed.tags, ["stack:typescript"]);
-  assert.equal(parsed.source, "review_fail");
+  expect(parsed.kind).toBe("failure");
+  expect(parsed.severity).toBe("high");
+  expect(parsed.tags).toEqual(["stack:typescript"]);
+  expect(parsed.source).toBe("review_fail");
 });
 
 test("MemoryEntrySchema accepts all four kinds", () => {
   for (const kind of ["failure", "lesson", "decision", "standard_violation"]) {
-    assert.doesNotThrow(() => MemoryEntrySchema.parse(validEntry({ kind })));
+    expect(() => MemoryEntrySchema.parse(validEntry({ kind }))).not.toThrow();
   }
 });
 
 test("MemoryEntrySchema rejects an unknown kind", () => {
-  assert.throws(() => MemoryEntrySchema.parse(validEntry({ kind: "bogus" })));
+  expect(() => MemoryEntrySchema.parse(validEntry({ kind: "bogus" }))).toThrow();
 });
 
 test("MemoryEntrySchema accepts all four severities", () => {
   for (const severity of ["critical", "high", "medium", "low"]) {
-    assert.doesNotThrow(() => MemoryEntrySchema.parse(validEntry({ severity })));
+    expect(() => MemoryEntrySchema.parse(validEntry({ severity }))).not.toThrow();
   }
 });
 
 test("MemoryEntrySchema rejects an unknown severity", () => {
-  assert.throws(() => MemoryEntrySchema.parse(validEntry({ severity: "urgent" })));
+  expect(() => MemoryEntrySchema.parse(validEntry({ severity: "urgent" }))).toThrow();
 });
 
 test("MemoryEntrySchema rejects a summary over 280 chars", () => {
-  assert.throws(() => MemoryEntrySchema.parse(validEntry({ summary: "x".repeat(281) })));
+  expect(() => MemoryEntrySchema.parse(validEntry({ summary: "x".repeat(281) }))).toThrow();
 });
 
 test("MemoryEntrySchema accepts a summary at exactly 280 chars", () => {
-  assert.doesNotThrow(() => MemoryEntrySchema.parse(validEntry({ summary: "x".repeat(280) })));
+  expect(() => MemoryEntrySchema.parse(validEntry({ summary: "x".repeat(280) }))).not.toThrow();
 });
 
 test("MemoryEntrySchema requires source (provenance) to be a non-empty string", () => {
-  assert.throws(() => MemoryEntrySchema.parse(validEntry({ source: "" })));
-  assert.throws(() => MemoryEntrySchema.parse(validEntry({ source: undefined })));
+  expect(() => MemoryEntrySchema.parse(validEntry({ source: "" }))).toThrow();
+  expect(() => MemoryEntrySchema.parse(validEntry({ source: undefined }))).toThrow();
 });
 
 test("MemoryEntrySchema accepts an optional supersedes id", () => {
   const parsed = MemoryEntrySchema.parse(validEntry({ supersedes: "entry-0" }));
-  assert.equal(parsed.supersedes, "entry-0");
+  expect(parsed.supersedes).toBe("entry-0");
 });
 
 test("MemoryEntrySchema defaults tags to an empty array when omitted", () => {
   const { tags: _tags, ...rest } = validEntry();
   const parsed = MemoryEntrySchema.parse(rest);
-  assert.deepEqual(parsed.tags, []);
+  expect(parsed.tags).toEqual([]);
 });
 
 test("MemoryEntrySchema rejects a non-ISO timestamp", () => {
-  assert.throws(() => MemoryEntrySchema.parse(validEntry({ ts: "not-a-date" })));
+  expect(() => MemoryEntrySchema.parse(validEntry({ ts: "not-a-date" }))).toThrow();
 });

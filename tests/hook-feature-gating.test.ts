@@ -1,7 +1,6 @@
+import { test, expect } from "bun:test";
 // tests/hook-feature-gating.test.ts
 // Test suite for feature-flag gating in hooks
-import { test } from "node:test";
-import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -104,14 +103,14 @@ test("check-redundant-read: feature disabled in crew.json → no warn/no state",
       })
     );
 
-    assert.equal(result.exitCode, 0);
+    expect(result.exitCode).toBe(0);
     // No stdout output when feature is disabled
-    assert.equal(result.stdout, "");
+    expect(result.stdout).toBe("");
     // State should NOT be created
     const stateFile = path.join(repo, ".claude", "state", "cost-hygiene", "test_disabled.json");
     try {
       await fs.stat(stateFile);
-      assert.fail("State file should not exist when feature is disabled");
+      throw new Error("State file should not exist when feature is disabled");
     } catch (err) {
       // Expected: file does not exist
     }
@@ -149,12 +148,12 @@ test("check-redundant-read: feature enabled (default or explicit) → fires norm
       })
     );
 
-    assert.equal(result.exitCode, 0);
+    expect(result.exitCode).toBe(0);
     // State should be created when feature is enabled
     const stateFile = path.join(repo, ".claude", "state", "cost-hygiene", "test_enabled.json");
     const raw = await fs.readFile(stateFile, "utf8");
     const state = JSON.parse(raw);
-    assert.equal(state.entries[file].read_count, 1);
+    expect(state.entries[file].read_count).toBe(1);
   } finally {
     await cleanup(repo);
   }
@@ -177,12 +176,12 @@ test("check-redundant-read: missing crew.json → feature defaults to enabled", 
       })
     );
 
-    assert.equal(result.exitCode, 0);
+    expect(result.exitCode).toBe(0);
     // State should be created (feature defaults to enabled)
     const stateFile = path.join(repo, ".claude", "state", "cost-hygiene", "test_default.json");
     const raw = await fs.readFile(stateFile, "utf8");
     const state = JSON.parse(raw);
-    assert.equal(state.entries[file].read_count, 1);
+    expect(state.entries[file].read_count).toBe(1);
   } finally {
     await cleanup(repo);
   }
@@ -221,9 +220,9 @@ test("check-subagent-return: feature disabled in crew.json → no warn output", 
       })
     );
 
-    assert.equal(result.exitCode, 0);
+    expect(result.exitCode).toBe(0);
     // No stdout output when feature is disabled
-    assert.equal(result.stdout, "");
+    expect(result.stdout).toBe("");
   } finally {
     await cleanup(repo);
   }
@@ -258,12 +257,12 @@ test("check-subagent-return: feature enabled → warns on large inline return", 
       })
     );
 
-    assert.equal(result.exitCode, 0);
+    expect(result.exitCode).toBe(0);
     // Should emit warning when feature is enabled
-    assert.notEqual(result.stdout, "");
+    expect(result.stdout).not.toBe("");
     const parsed = JSON.parse(result.stdout);
-    assert.equal(parsed.decision, "approve");
-    assert.match(parsed.systemMessage, /inline|subagent/i);
+    expect(parsed.decision).toBe("approve");
+    expect(parsed.systemMessage).toMatch(/inline|subagent/i);
   } finally {
     await cleanup(repo);
   }
@@ -285,11 +284,11 @@ test("check-subagent-return: missing crew.json → feature defaults to enabled",
       })
     );
 
-    assert.equal(result.exitCode, 0);
+    expect(result.exitCode).toBe(0);
     // Should emit warning (feature defaults to enabled)
-    assert.notEqual(result.stdout, "");
+    expect(result.stdout).not.toBe("");
     const parsed = JSON.parse(result.stdout);
-    assert.equal(parsed.decision, "approve");
+    expect(parsed.decision).toBe("approve");
   } finally {
     await cleanup(repo);
   }
@@ -326,9 +325,9 @@ test("preflight-shell: feature disabled in crew.json → no preflight output", a
       })
     );
 
-    assert.equal(result.exitCode, 0);
+    expect(result.exitCode).toBe(0);
     // No stdout output when feature is disabled
-    assert.equal(result.stdout, "");
+    expect(result.stdout).toBe("");
   } finally {
     await cleanup(repo);
   }
@@ -361,12 +360,12 @@ test("preflight-shell: feature enabled → runs preflight checks", async () => {
       })
     );
 
-    assert.equal(result.exitCode, 0);
+    expect(result.exitCode).toBe(0);
     // Should emit warning when feature is enabled
-    assert.notEqual(result.stdout, "");
+    expect(result.stdout).not.toBe("");
     const parsed = JSON.parse(result.stdout);
-    assert.equal(parsed.decision, "approve");
-    assert.match(parsed.systemMessage, /\$env:/);
+    expect(parsed.decision).toBe("approve");
+    expect(parsed.systemMessage).toMatch(/\$env:/);
   } finally {
     await cleanup(repo);
   }
@@ -388,11 +387,11 @@ test("preflight-shell: missing crew.json → feature defaults to enabled", async
       })
     );
 
-    assert.equal(result.exitCode, 0);
+    expect(result.exitCode).toBe(0);
     // Should emit warning (feature defaults to enabled)
-    assert.notEqual(result.stdout, "");
+    expect(result.stdout).not.toBe("");
     const parsed = JSON.parse(result.stdout);
-    assert.equal(parsed.decision, "approve");
+    expect(parsed.decision).toBe("approve");
   } finally {
     await cleanup(repo);
   }
@@ -432,12 +431,12 @@ test("check-redundant-read: cost-hygiene feature disabled → no warn/no state (
       })
     );
 
-    assert.equal(result.exitCode, 0);
-    assert.equal(result.stdout, "");
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("");
     const stateFile = path.join(repo, ".claude", "state", "cost-hygiene", "test_umbrella_off.json");
     try {
       await fs.stat(stateFile);
-      assert.fail("State file should not exist when cost-hygiene feature is disabled");
+      throw new Error("State file should not exist when cost-hygiene feature is disabled");
     } catch (err) {
       // Expected: file does not exist
     }
@@ -460,8 +459,8 @@ test("pre-push-verifier: feature disabled (default, no crew.json) → push allow
       cwd: repo
     });
     const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
-    assert.equal(result.exitCode, 0);
-    assert.equal(result.stdout, "");
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("");
   } finally {
     await cleanup(repo);
   }
@@ -484,8 +483,8 @@ test("pre-push-verifier: feature disabled explicitly in crew.json → push allow
       cwd: repo
     });
     const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
-    assert.equal(result.exitCode, 0);
-    assert.equal(result.stdout, "");
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("");
   } finally {
     await cleanup(repo);
   }
@@ -508,10 +507,10 @@ test("pre-push-verifier: feature enabled + no PASS artifact → push blocked", a
       cwd: repo
     });
     const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
-    assert.equal(result.exitCode, 0);
-    assert.notEqual(result.stdout, "");
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).not.toBe("");
     const parsed = JSON.parse(result.stdout);
-    assert.equal(parsed.decision, "block");
+    expect(parsed.decision).toBe("block");
   } finally {
     await cleanup(repo);
   }
@@ -541,8 +540,8 @@ test("pre-push-verifier: feature enabled + PASS artifact within 1h → push allo
       cwd: repo
     });
     const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
-    assert.equal(result.exitCode, 0);
-    assert.equal(result.stdout, "");
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("");
   } finally {
     await cleanup(repo);
   }
@@ -572,8 +571,8 @@ test("pre-push-verifier: feature enabled + deployment.md push.verify:false → p
       cwd: repo
     });
     const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
-    assert.equal(result.exitCode, 0);
-    assert.equal(result.stdout, "");
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("");
   } finally {
     await cleanup(repo);
   }
@@ -612,8 +611,8 @@ test("pre-push-verifier: cd-prefixed command resolves the worktree's own PASS ar
       cwd: sessionCwd
     });
     const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
-    assert.equal(result.exitCode, 0);
-    assert.equal(result.stdout, "");
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("");
   } finally {
     await cleanup(sessionCwd);
     await cleanup(worktree);
@@ -657,17 +656,17 @@ test("pre-push-verifier: cd-prefixed command does not leak a PASS artifact from 
       cwd: sessionCwd
     });
     const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
-    assert.equal(result.exitCode, 0);
-    assert.notEqual(result.stdout, "");
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).not.toBe("");
     const parsed = JSON.parse(result.stdout);
-    assert.equal(parsed.decision, "block");
+    expect(parsed.decision).toBe("block");
     // Defect #3: the message must report the dir actually scanned (the
     // worktree's own validations dir), proving defect #1 is fixed too.
     const expectedScannedDir = path.join(worktree, ".claude", "artifacts", "crew", "validations");
-    assert.ok(
+    expect(
       parsed.reason.includes(expectedScannedDir),
       `expected block reason to reference ${expectedScannedDir}, got: ${parsed.reason}`
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(sessionCwd);
     await cleanup(worktree);
@@ -701,12 +700,15 @@ test("pre-push-verifier: not-found message reports scanned dir, window count, an
       cwd: repo
     });
     const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
-    assert.equal(result.exitCode, 0);
+    expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout);
-    assert.equal(parsed.decision, "block");
-    assert.ok(parsed.reason.includes(validationsDir), "reason should include the scanned dir");
-    assert.match(parsed.reason, /1 validation artifact\(s\) found within the last hour/);
-    assert.match(parsed.reason, /decision=fail/);
+    expect(parsed.decision).toBe("block");
+    expect(
+      parsed.reason.includes(validationsDir),
+      "reason should include the scanned dir"
+    ).toBeTruthy();
+    expect(parsed.reason).toMatch(/1 validation artifact\(s\) found within the last hour/);
+    expect(parsed.reason).toMatch(/decision=fail/);
   } finally {
     await cleanup(repo);
   }
@@ -736,11 +738,11 @@ test("check-task-update-burst: task-update-burst-warn disabled → no burst rows
 
     for (let i = 0; i < 3; i++) {
       const result = await runHook(CHECK_TASK_UPDATE_BURST_PATH, payload("burst-off"));
-      assert.equal(result.exitCode, 0);
+      expect(result.exitCode).toBe(0);
     }
 
     const burstLog = path.join(repo, ".claude", "logs", "task-update-bursts.jsonl");
-    await assert.rejects(fs.access(burstLog), "burst log should not exist when flag disabled");
+    await expect(fs.access(burstLog)).rejects.toThrow();
   } finally {
     await cleanup(repo);
   }
@@ -758,12 +760,12 @@ test("check-task-update-burst: missing crew.json → task-update-burst-warn defa
 
     for (let i = 0; i < 3; i++) {
       const result = await runHook(CHECK_TASK_UPDATE_BURST_PATH, payload("burst-on"));
-      assert.equal(result.exitCode, 0);
+      expect(result.exitCode).toBe(0);
     }
 
     const burstLog = path.join(repo, ".claude", "logs", "task-update-bursts.jsonl");
     const raw = await fs.readFile(burstLog, "utf8");
-    assert.match(raw, /"consecutive_count":3/);
+    expect(raw).toMatch(/"consecutive_count":3/);
   } finally {
     await cleanup(repo);
   }
@@ -789,8 +791,8 @@ test("pre-tool-use-bash-gate: bash-gate-telemetry disabled → stderr diagnostic
       tool_input: { command: "bun run lint" }
     });
     const result = await runHook(PRE_TOOL_USE_BASH_GATE_PATH, payload);
-    assert.equal(result.exitCode, 0);
-    assert.match(result.stderr, /\[features\] bash-gate-telemetry: disabled/);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toMatch(/\[features\] bash-gate-telemetry: disabled/);
   } finally {
     await cleanup(repo);
   }
@@ -805,8 +807,8 @@ test("pre-tool-use-bash-gate: missing crew.json → bash-gate-telemetry defaults
       tool_input: { command: "bun run lint" }
     });
     const result = await runHook(PRE_TOOL_USE_BASH_GATE_PATH, payload);
-    assert.equal(result.exitCode, 0);
-    assert.match(result.stderr, /\[features\] bash-gate-telemetry: enabled/);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toMatch(/\[features\] bash-gate-telemetry: enabled/);
   } finally {
     await cleanup(repo);
   }
@@ -829,8 +831,8 @@ test("post-tool-use-bash-gate: bash-gate-telemetry disabled → stderr diagnosti
       tool_response: { exitCode: 0 }
     });
     const result = await runHook(POST_TOOL_USE_BASH_GATE_PATH, payload);
-    assert.equal(result.exitCode, 0);
-    assert.match(result.stderr, /\[features\] bash-gate-telemetry: disabled/);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toMatch(/\[features\] bash-gate-telemetry: disabled/);
   } finally {
     await cleanup(repo);
   }
@@ -859,8 +861,8 @@ test("otel-post-tool-use: otel-telemetry disabled → stderr diagnostic reports 
     const result = await runHook(OTEL_POST_TOOL_USE_PATH, payload, {
       CREW_OTEL_ENABLED: "1"
     });
-    assert.equal(result.exitCode, 0);
-    assert.match(result.stderr, /\[features\] otel-telemetry: disabled/);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toMatch(/\[features\] otel-telemetry: disabled/);
   } finally {
     await cleanup(repo);
   }
@@ -876,8 +878,8 @@ test("otel-post-tool-use: missing crew.json → otel-telemetry defaults enabled 
       tool_input: { file_path: "x.ts" }
     });
     const result = await runHook(OTEL_POST_TOOL_USE_PATH, payload);
-    assert.equal(result.exitCode, 0);
-    assert.match(result.stderr, /\[features\] otel-telemetry: enabled/);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toMatch(/\[features\] otel-telemetry: enabled/);
   } finally {
     await cleanup(repo);
   }
@@ -950,10 +952,10 @@ test("pre-push-verifier: docs-only push is allowed without a PASS artifact (#163
       cwd: work
     });
     const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
-    assert.equal(result.exitCode, 0);
+    expect(result.exitCode).toBe(0);
     // No block decision on stdout, and the docs-only skip note on stderr.
-    assert.equal(result.stdout, "");
-    assert.match(result.stderr, /docs-only push — validation skipped/);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toMatch(/docs-only push — validation skipped/);
   } finally {
     await cleanup(work);
     await cleanup(remote);
@@ -975,9 +977,9 @@ test("pre-push-verifier: a push mixing code with docs still blocks without a PAS
       cwd: work
     });
     const result = await runHook(PRE_PUSH_VERIFIER_PATH, payload);
-    assert.equal(result.exitCode, 0);
+    expect(result.exitCode).toBe(0);
     // Non-docs file in range → normal gate applies → blocked.
-    assert.match(result.stdout, /"decision":"block"/);
+    expect(result.stdout).toMatch(/"decision":"block"/);
   } finally {
     await cleanup(work);
     await cleanup(remote);

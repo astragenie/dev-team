@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { decide } from "../scripts/lib/cost-hygiene/decide.ts";
 
 const T0 = "2026-05-28T18:00:00.000Z";
@@ -14,8 +13,8 @@ test("first read of path (no stored entry) → pass", () => {
     currentSize: 1000,
     now: NOW
   });
-  assert.equal(result.action, "pass");
-  assert.equal(result.message, null);
+  expect(result.action).toBe("pass");
+  expect(result.message).toBe(null);
 });
 
 test("reread, mtime unchanged, content stored → warn with quoted content", () => {
@@ -34,14 +33,14 @@ test("reread, mtime unchanged, content stored → warn with quoted content", () 
     currentSize: 100,
     now: NOW
   });
-  assert.equal(result.action, "warn");
-  assert.match(result.message!, /<system-reminder>/);
-  assert.match(result.message!, /already loaded/);
-  assert.match(result.message!, /1 time/);
-  assert.match(result.message!, /Prior content:/);
-  assert.match(result.message!, /hello world/);
-  assert.match(result.message!, /Do not re-issue the Read/);
-  assert.match(result.message!, /<\/system-reminder>/);
+  expect(result.action).toBe("warn");
+  expect(result.message!).toMatch(/<system-reminder>/);
+  expect(result.message!).toMatch(/already loaded/);
+  expect(result.message!).toMatch(/1 time/);
+  expect(result.message!).toMatch(/Prior content:/);
+  expect(result.message!).toMatch(/hello world/);
+  expect(result.message!).toMatch(/Do not re-issue the Read/);
+  expect(result.message!).toMatch(/<\/system-reminder>/);
 });
 
 test("reread, mtime newer than stored → pass (Q7 edit exception)", () => {
@@ -60,8 +59,8 @@ test("reread, mtime newer than stored → pass (Q7 edit exception)", () => {
     currentSize: 200,
     now: NOW
   });
-  assert.equal(result.action, "pass");
-  assert.equal(result.message, null);
+  expect(result.action).toBe("pass");
+  expect(result.message).toBe(null);
 });
 
 test("5th reread, content stored → warn with read_count 4 in message", () => {
@@ -80,8 +79,8 @@ test("5th reread, content stored → warn with read_count 4 in message", () => {
     currentSize: 100,
     now: NOW
   });
-  assert.equal(result.action, "warn");
-  assert.match(result.message!, /4 times/);
+  expect(result.action).toBe("warn");
+  expect(result.message!).toMatch(/4 times/);
 });
 
 test("reread with content omitted (>50KB) → warn says content omitted with KB", () => {
@@ -100,8 +99,8 @@ test("reread with content omitted (>50KB) → warn says content omitted with KB"
     currentSize: 87234,
     now: NOW
   });
-  assert.equal(result.action, "warn");
-  assert.match(result.message!, /content omitted, file size 87 KB/);
+  expect(result.action).toBe("warn");
+  expect(result.message!).toMatch(/content omitted, file size 87 KB/);
 });
 
 test("reread, mtime unchanged + size changed → warn (mtime is the gate)", () => {
@@ -120,7 +119,7 @@ test("reread, mtime unchanged + size changed → warn (mtime is the gate)", () =
     currentSize: 150,
     now: NOW
   });
-  assert.equal(result.action, "warn");
+  expect(result.action).toBe("warn");
 });
 
 // ─── FEAT-156: Edit verify-loop checks ──────────────────────────────────────
@@ -147,9 +146,9 @@ test("FEAT-156: Read within 30s of successful Edit (unchanged mtime) → warn (v
     currentSize: 100,
     now: READ_WITHIN_WINDOW
   });
-  assert.equal(result.action, "warn");
-  assert.match(result.message!, /Edit\/Write'd/);
-  assert.match(result.message!, /force.*true/);
+  expect(result.action).toBe("warn");
+  expect(result.message!).toMatch(/Edit\/Write'd/);
+  expect(result.message!).toMatch(/force.*true/);
 });
 
 test("FEAT-156: Read with mtime newer than last edit → pass (file modified externally)", () => {
@@ -170,7 +169,7 @@ test("FEAT-156: Read with mtime newer than last edit → pass (file modified ext
     currentSize: 100,
     now: READ_WITHIN_WINDOW
   });
-  assert.equal(result.action, "pass");
+  expect(result.action).toBe("pass");
 });
 
 test("FEAT-156: Read with force: true → pass (override)", () => {
@@ -192,7 +191,7 @@ test("FEAT-156: Read with force: true → pass (override)", () => {
     now: READ_WITHIN_WINDOW,
     force: true
   });
-  assert.equal(result.action, "pass");
+  expect(result.action).toBe("pass");
 });
 
 test("FEAT-156: Read after window elapsed → pass (no verify-loop warn)", () => {
@@ -213,7 +212,7 @@ test("FEAT-156: Read after window elapsed → pass (no verify-loop warn)", () =>
     currentSize: 100,
     now: READ_OUTSIDE_WINDOW
   });
-  assert.equal(result.action, "pass");
+  expect(result.action).toBe("pass");
 });
 
 test("FEAT-156: Read of file with prior read + recent edit → verify-loop wins (more specific)", () => {
@@ -234,6 +233,6 @@ test("FEAT-156: Read of file with prior read + recent edit → verify-loop wins 
     currentSize: 100,
     now: READ_WITHIN_WINDOW
   });
-  assert.equal(result.action, "warn");
-  assert.match(result.message!, /Edit\/Write'd/);
+  expect(result.action).toBe("warn");
+  expect(result.message!).toMatch(/Edit\/Write'd/);
 });

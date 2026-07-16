@@ -1,3 +1,4 @@
+import { test, expect } from "bun:test";
 // tests/memory-write-handoff-credit.test.ts — writeArtifact's
 // "credit on receipt" hook (dispatch-memory-credit-loop, runner-plugin
 // upstream request 2026-07-16). write-handoff is the one chokepoint where
@@ -8,8 +9,6 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
-import assert from "node:assert/strict";
 import { __drainPendingCaptures, writeArtifact } from "../scripts/lib/artifacts/write.ts";
 import type { ArtifactFields } from "../scripts/lib/artifacts/types.ts";
 
@@ -34,9 +33,9 @@ test("fires a detached, bounded credit call when kind:handoff carries memoriesUs
         }
       })
     });
-    assert.equal(result.ok, true);
+    expect(result.ok).toBe(true);
     await __drainPendingCaptures();
-    assert.deepEqual(calls, [["a", "b"]]);
+    expect(calls).toEqual([["a", "b"]]);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
@@ -59,9 +58,9 @@ test("does not fire the credit loader when memoriesUsed is absent", async () => 
         })
       }
     );
-    assert.equal(result.ok, true);
+    expect(result.ok).toBe(true);
     await __drainPendingCaptures();
-    assert.equal(called, false);
+    expect(called).toBe(false);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
@@ -84,9 +83,9 @@ test("does not fire the credit loader when memoriesUsed is an empty array", asyn
         })
       }
     );
-    assert.equal(result.ok, true);
+    expect(result.ok).toBe(true);
     await __drainPendingCaptures();
-    assert.equal(called, false);
+    expect(called).toBe(false);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
@@ -109,9 +108,9 @@ test("never fires for a non-handoff artifact kind, even with memoriesUsed presen
         })
       }
     );
-    assert.equal(result.ok, true);
+    expect(result.ok).toBe(true);
     await __drainPendingCaptures();
-    assert.equal(called, false);
+    expect(called).toBe(false);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
@@ -136,8 +135,8 @@ test("writeArtifact returns promptly even when the credit loader is slow (detach
     );
     const elapsed = performance.now() - t0;
 
-    assert.equal(result.ok, true);
-    assert.ok(elapsed < 300, `expected a prompt return, took ${elapsed}ms`);
+    expect(result.ok).toBe(true);
+    expect(elapsed < 300, `expected a prompt return, took ${elapsed}ms`).toBeTruthy();
   } finally {
     await __drainPendingCaptures();
     await fs.rm(repo, { recursive: true, force: true });
