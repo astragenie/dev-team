@@ -11,8 +11,7 @@
 //   (e) qa-expert ↔ performance-engineer bidirectional pair PASSES (allowlisted exception)
 //   (f) parseWhitelistEntries extracts entries only from whitelist region
 
-import { test, describe } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect, describe } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -29,13 +28,13 @@ describe("detectCycles — 0-cycle graph", () => {
   test("empty graph has no cycles", () => {
     const graph = new Map<string, string[]>();
     const cycles = detectCycles(graph);
-    assert.equal(cycles.length, 0, "Empty graph should have no cycles");
+    expect(cycles.length, "Empty graph should have no cycles").toBe(0);
   });
 
   test("single node with no edges has no cycles", () => {
     const graph = new Map([["a", []]]);
     const cycles = detectCycles(graph);
-    assert.equal(cycles.length, 0, "Single node with no edges should have no cycles");
+    expect(cycles.length, "Single node with no edges should have no cycles").toBe(0);
   });
 
   test("linear chain A → B → C has no cycles", () => {
@@ -45,7 +44,7 @@ describe("detectCycles — 0-cycle graph", () => {
       ["c", []]
     ]);
     const cycles = detectCycles(graph);
-    assert.equal(cycles.length, 0, "Linear chain should have no cycles");
+    expect(cycles.length, "Linear chain should have no cycles").toBe(0);
   });
 });
 
@@ -56,11 +55,11 @@ describe("detectCycles — 2-node cycle", () => {
       ["b", ["a"]]
     ]);
     const cycles = detectCycles(graph);
-    assert.ok(cycles.length > 0, "Expected at least one cycle for A → B → A");
+    expect(cycles.length > 0, "Expected at least one cycle for A → B → A").toBeTruthy();
     // The cycle must contain both 'a' and 'b'
     const cycleNodes = cycles.flat();
-    assert.ok(cycleNodes.includes("a"), "Cycle should mention node 'a'");
-    assert.ok(cycleNodes.includes("b"), "Cycle should mention node 'b'");
+    expect(cycleNodes.includes("a"), "Cycle should mention node 'a'").toBeTruthy();
+    expect(cycleNodes.includes("b"), "Cycle should mention node 'b'").toBeTruthy();
   });
 });
 
@@ -72,11 +71,11 @@ describe("detectCycles — 3-node cycle", () => {
       ["c", ["a"]]
     ]);
     const cycles = detectCycles(graph);
-    assert.ok(cycles.length > 0, "Expected at least one cycle for A → B → C → A");
+    expect(cycles.length > 0, "Expected at least one cycle for A → B → C → A").toBeTruthy();
     const cycleNodes = cycles.flat();
-    assert.ok(cycleNodes.includes("a"), "Cycle should mention node 'a'");
-    assert.ok(cycleNodes.includes("b"), "Cycle should mention node 'b'");
-    assert.ok(cycleNodes.includes("c"), "Cycle should mention node 'c'");
+    expect(cycleNodes.includes("a"), "Cycle should mention node 'a'").toBeTruthy();
+    expect(cycleNodes.includes("b"), "Cycle should mention node 'b'").toBeTruthy();
+    expect(cycleNodes.includes("c"), "Cycle should mention node 'c'").toBeTruthy();
   });
 });
 
@@ -88,7 +87,7 @@ describe("detectCycles — valid DAG with shared dependency", () => {
       ["c", []]
     ]);
     const cycles = detectCycles(graph);
-    assert.equal(cycles.length, 0, "Diamond DAG should have no cycles");
+    expect(cycles.length, "Diamond DAG should have no cycles").toBe(0);
   });
 
   test("two independent chains with a shared leaf have no cycles", () => {
@@ -100,7 +99,7 @@ describe("detectCycles — valid DAG with shared dependency", () => {
       ["researcher", []]
     ]);
     const cycles = detectCycles(graph);
-    assert.equal(cycles.length, 0, "Shared-leaf DAG should have no cycles");
+    expect(cycles.length, "Shared-leaf DAG should have no cycles").toBe(0);
   });
 });
 
@@ -113,10 +112,10 @@ describe("BIDIRECTIONAL_ALLOWED constant", () => {
         (a === "qa-expert" && b === "performance-engineer") ||
         (a === "performance-engineer" && b === "qa-expert")
     );
-    assert.ok(
+    expect(
       hasQaPerfPair,
       "qa-expert ↔ performance-engineer must be in BIDIRECTIONAL_ALLOWED (FEAT-163 line 50)"
-    );
+    ).toBeTruthy();
   });
 });
 
@@ -137,25 +136,24 @@ describe("buildDispatchGraph — qa-expert ↔ performance-engineer bidirectiona
     }
 
     const cycles = detectCycles(graph);
-    assert.equal(
+    expect(
       cycles.length,
-      0,
       `Real agent graph should have no cycles. Found: ${cycles.map((c) => c.join(" → ")).join("; ")}`
-    );
+    ).toBe(0);
 
     // Verify qa-expert and performance-engineer are present in the graph.
     // Their bidirectional edges are filtered out by buildDispatchGraph.
     const qaEdges = graph.get("qa-expert") ?? [];
     const perfEdges = graph.get("performance-engineer") ?? [];
     // After filtering the bidirectional pair, neither should point to the other
-    assert.ok(
+    expect(
       !qaEdges.includes("performance-engineer"),
       "qa-expert → performance-engineer edge should be filtered (bidirectional exception)"
-    );
-    assert.ok(
+    ).toBeTruthy();
+    expect(
       !perfEdges.includes("qa-expert"),
       "performance-engineer → qa-expert edge should be filtered (bidirectional exception)"
-    );
+    ).toBeTruthy();
   });
 });
 
@@ -177,7 +175,7 @@ You MUST NOT dispatch:
 - \`frontend-dev\`: implementers; never.
 `;
     const entries = parseWhitelistEntries(text);
-    assert.deepEqual(entries, ["researcher", "investigator"]);
+    expect(entries).toEqual(["researcher", "investigator"]);
   });
 
   test("does NOT include backtick entries from blacklist region", () => {
@@ -192,7 +190,7 @@ You MUST NOT dispatch:
 - \`frontend-dev\`: implementers.
 `;
     const entries = parseWhitelistEntries(text);
-    assert.equal(entries.length, 0, "Blacklist backtick entries must not appear in whitelist");
+    expect(entries.length, "Blacklist backtick entries must not appear in whitelist").toBe(0);
   });
 
   test("returns empty array when no Peer dispatch heading present", () => {
@@ -202,7 +200,7 @@ You MUST NOT dispatch:
 - Receive scope from lead.
 `;
     const entries = parseWhitelistEntries(text);
-    assert.equal(entries.length, 0, "No Peer dispatch section → empty entries");
+    expect(entries.length, "No Peer dispatch section → empty entries").toBe(0);
   });
 
   test("handles section with no MUST NOT boundary (entire section is whitelist region)", () => {
@@ -212,7 +210,7 @@ You MUST NOT dispatch:
 - \`architect\`: for design context.
 `;
     const entries = parseWhitelistEntries(text);
-    assert.deepEqual(entries, ["architect"]);
+    expect(entries).toEqual(["architect"]);
   });
 });
 
@@ -245,7 +243,7 @@ name: researcher
 
     const graph = await buildDispatchGraph(root);
     const cycles = detectCycles(graph);
-    assert.equal(cycles.length, 0, "Linear graph should have no cycles");
+    expect(cycles.length, "Linear graph should have no cycles").toBe(0);
   });
 
   test("graph with 2-node cycle fails detectCycles", async () => {
@@ -272,7 +270,7 @@ You MUST NOT dispatch backend-dev.
 
     const graph = await buildDispatchGraph(root);
     const cycles = detectCycles(graph);
-    assert.ok(cycles.length > 0, "2-node cycle must be detected");
+    expect(cycles.length > 0, "2-node cycle must be detected").toBeTruthy();
   });
 
   test("qa-expert ↔ performance-engineer bidirectional pair does NOT produce a cycle", async () => {
@@ -299,10 +297,9 @@ You MUST NOT dispatch backend-dev.
 
     const graph = await buildDispatchGraph(root);
     const cycles = detectCycles(graph);
-    assert.equal(
+    expect(
       cycles.length,
-      0,
       "qa-expert ↔ performance-engineer is an allowlisted bidirectional pair — must NOT be flagged as a cycle"
-    );
+    ).toBe(0);
   });
 });

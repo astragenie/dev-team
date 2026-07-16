@@ -7,8 +7,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { fileProvider } from "@astragenie/memory-provider";
 
 async function makeTempRepo(prefix: string) {
@@ -37,10 +36,10 @@ test("recall() excludes a non-critical entry older than 45 days", async () => {
     });
 
     const results = await provider.recall({ k: 10 });
-    assert.ok(
+    expect(
       !results.some((r) => r.id === "stale-high"),
       "an entry older than 45 days and not critical must be excluded from recall()"
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(repo);
   }
@@ -60,10 +59,10 @@ test("recall() includes a non-critical entry that is exactly within the 45-day w
     });
 
     const results = await provider.recall({ k: 10 });
-    assert.ok(
+    expect(
       results.some((r) => r.id === "fresh-enough"),
       "an entry within the 45-day window must still be recallable"
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(repo);
   }
@@ -83,10 +82,10 @@ test("recall() never decays a `critical` entry regardless of age", async () => {
     });
 
     const results = await provider.recall({ k: 10 });
-    assert.ok(
+    expect(
       results.some((r) => r.id === "ancient-critical"),
       "a `critical` entry must never be excluded by decay, no matter how old"
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(repo);
   }
@@ -113,8 +112,11 @@ test("recall() never returns a superseded entry even when it is fresh (age is no
 
     const results = await provider.recall({ k: 10 });
     const ids = results.map((r) => r.id);
-    assert.ok(!ids.includes("v1"), "superseded entries are excluded even when fresh + critical");
-    assert.ok(ids.includes("v2"));
+    expect(
+      !ids.includes("v1"),
+      "superseded entries are excluded even when fresh + critical"
+    ).toBeTruthy();
+    expect(ids.includes("v2")).toBeTruthy();
   } finally {
     await cleanup(repo);
   }
@@ -135,10 +137,10 @@ test("recall() never returns an invalidated entry even when it is `critical` and
     await provider.invalidate("ancient-critical-bad");
 
     const results = await provider.recall({ k: 10 });
-    assert.ok(
+    expect(
       !results.some((r) => r.id === "ancient-critical-bad"),
       "invalidate() must exclude an entry regardless of severity or age"
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(repo);
   }

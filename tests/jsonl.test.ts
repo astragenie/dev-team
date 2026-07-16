@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -22,7 +21,7 @@ test("tailReadJsonl: returns last N records from multi-line file", async () => {
   const { dir, filePath } = await writeTmpJsonl(records);
   try {
     const result = await tailReadJsonl(filePath, 3);
-    assert.deepEqual(result, [{ id: 3 }, { id: 4 }, { id: 5 }]);
+    expect(result).toEqual([{ id: 3 }, { id: 4 }, { id: 5 }]);
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }
@@ -34,10 +33,10 @@ test("tailReadJsonl: discards partial leading line at tail boundary", async () =
   try {
     // Use a small maxBytes to force a mid-file start; truncated first line must be dropped
     const result = await tailReadJsonl(filePath, 5, { maxBytes: 800 });
-    assert.ok(result.length > 0 && result.length <= 5, "should return 1-5 records");
+    expect(result.length > 0 && result.length <= 5, "should return 1-5 records").toBeTruthy();
     // All returned records must be fully parseable (no partial data)
     for (const r of result) {
-      assert.ok(typeof r.seq === "number", "each record must have numeric seq");
+      expect(typeof r.seq === "number", "each record must have numeric seq").toBeTruthy();
     }
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
@@ -50,7 +49,7 @@ test("tailReadJsonl: file smaller than tail-window reads in full", async () => {
   try {
     // maxBytes much larger than file — should read all records
     const result = await tailReadJsonl(filePath, 100, { maxBytes: 1024 * 1024 });
-    assert.deepEqual(result, records);
+    expect(result).toEqual(records);
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }
@@ -58,7 +57,7 @@ test("tailReadJsonl: file smaller than tail-window reads in full", async () => {
 
 test("tailReadJsonl: returns empty array for missing file", async () => {
   const result = await tailReadJsonl("/nonexistent/path/data.jsonl", 10);
-  assert.deepEqual(result, []);
+  expect(result).toEqual([]);
 });
 
 test("tailReadJsonl: returns empty array for empty file", async () => {
@@ -67,7 +66,7 @@ test("tailReadJsonl: returns empty array for empty file", async () => {
   await fs.writeFile(filePath, "", "utf8");
   try {
     const result = await tailReadJsonl(filePath, 5);
-    assert.deepEqual(result, []);
+    expect(result).toEqual([]);
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }
