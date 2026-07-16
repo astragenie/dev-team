@@ -19,10 +19,19 @@
 //
 // Idempotent: re-running with the same --pr updates the existing marker
 // comment instead of spamming a new one per retry.
+//
+// OPTIONAL --memories-used <csv> (dispatch-memory-credit-loop, runner-plugin
+// upstream request 2026-07-16): atom ids this agent self-reports it relied
+// on. Included in the posted report body for audit, AND credited via the
+// resolved provider's feedback() — bounded (fireGuarded's ~1.5s ceiling) and
+// fail-silent, so a slow/unreachable daemon can never add unbounded latency
+// to this CLI or change its exit code. Absent/empty -> no-op, same as every
+// other memory touchpoint in this repo.
 
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { postReportToPr, type ReportStatus } from "./lib/report-to-pr.ts";
+import { fireGuarded } from "./lib/gepa/guarded-fire.ts";
 
 const VALID_STATUSES: readonly ReportStatus[] = ["DONE", "BLOCKED", "HELP", "IN-PROGRESS"];
 
@@ -51,7 +60,16 @@ function parseFiles(raw: string | undefined): string[] {
     .filter(Boolean);
 }
 
+function parseMemoriesUsed(raw: string | undefined): string[] {
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((m) => m.trim())
+    .filter(Boolean);
+}
+
 function buildPostOpts(flags: Record<string, string>, status: ReportStatus) {
+  const memoriesUsed = parseMemoriesUsed(flags["memories-used"]);
   return {
     repoPath: flags.repo ?? process.cwd(),
     fields: {
@@ -60,7 +78,8 @@ function buildPostOpts(flags: Record<string, string>, status: ReportStatus) {
       files: parseFiles(flags.files),
       risks: flags.risks ?? "none",
       ...(flags.next ? { next: flags.next } : {}),
-      ...(flags.agent ? { agent: flags.agent } : {})
+      ...(flags.agent ? { agent: flags.agent } : {}),
+      ...(memoriesUsed.length > 0 ? { memoriesUsed } : {})
     },
     ...(flags.pr ? { prNumber: Number(flags.pr) } : {}),
     ...(flags.issue ? { issueNumber: Number(flags.issue) } : {})
@@ -78,6 +97,20 @@ function printResult(result: ReturnType<typeof postReportToPr>): void {
   );
 }
 
+/**
+ * Credit the reported `memories_used` ids, bounded + fail-silent. Never
+ * throws, never changes this CLI's exit code, adds at most fireGuarded's
+ * ceiling (~1.5s) to a short-lived process that has no long-running loop to
+ * detach into (unlike writeArtifact's fire-and-forget siblings).
+ */
+async function creditReportedMemories(repoPath: string, memoriesUsed: string[]): Promise<void> {
+  if (memoriesUsed.length === 0) return;
+  await fireGuarded(async () => {
+    const { creditMemoriesUsed } = await import("./lib/memory/handoff-credit.ts");
+    await creditMemoriesUsed({ repoPath, ids: memoriesUsed });
+  });
+}
+
 export async function main(argv: string[]): Promise<number> {
   const flags = parseArgs(argv);
   const status = (flags.status ?? "").toUpperCase() as ReportStatus;
@@ -88,8 +121,10 @@ export async function main(argv: string[]): Promise<number> {
     return 1;
   }
 
-  const result = postReportToPr(buildPostOpts(flags, status));
+  const postOpts = buildPostOpts(flags, status);
+  const result = postReportToPr(postOpts);
   printResult(result);
+  await creditReportedMemories(postOpts.repoPath, postOpts.fields.memoriesUsed ?? []);
   return 0;
 }
 

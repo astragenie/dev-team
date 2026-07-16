@@ -175,39 +175,55 @@ async function tryProjectScopedRecall(
 }
 
 /**
+ * Resolve the configured provider and recall entries scoped by agent/tags
+ * (and, when astramem is paired, project) within the configured token
+ * budget. Returns `[]` when memory/recall is disabled, no entries match, or
+ * anything fails — same fail-silent contract as `buildRecallBlock`, just
+ * without the formatting step.
+ *
+ * Extracted from `buildRecallBlock`'s body (additive — `buildRecallBlock`'s
+ * own signature/behavior/format is unchanged, see the frozen contract at
+ * `docs/contracts/recall-injection-v1.md`) so a second caller that needs the
+ * raw, id-carrying entries (the dispatch-memory-credit-loop digest — see
+ * `handoff-digest.ts`) doesn't have to re-implement provider resolution or
+ * fork a second recall path.
+ */
+export async function recallEntries(opts: InjectRecallOptions): Promise<MemoryEntry[]> {
+  try {
+    const rawConfig =
+      opts.rawConfig !== undefined ? opts.rawConfig : await loadMemoryConfig(opts.repoPath);
+    const config = parseMemoryConfig(rawConfig);
+    const effective = resolveEffectiveConfig(config);
+    if (!effective.recallEnabled) return [];
+
+    const project = opts.project ?? effective.project;
+    if (effective.provider === "astramem" && project !== undefined) {
+      const scoped = await tryProjectScopedRecall(opts, effective, project);
+      if (scoped !== null) return scoped;
+    }
+
+    const provider = resolveProvider(rawConfig, opts.repoPath);
+    return await provider.recall({
+      ...(opts.agent !== undefined ? { agent: opts.agent } : {}),
+      ...(opts.tags !== undefined ? { tags: opts.tags } : {}),
+      k: effective.recall.k,
+      maxTokens: effective.recall.maxTokens
+    });
+  } catch {
+    // Best-effort: recall must never block or alter dispatch beyond
+    // returning no entries.
+    return [];
+  }
+}
+
+/**
  * Resolve the configured provider, recall entries scoped by agent/tags
  * (and, when astramem is paired, project) within the configured token
  * budget, and format them. Returns "" when memory/recall is disabled, no
  * entries match, or anything fails.
  */
 export async function buildRecallBlock(opts: InjectRecallOptions): Promise<string> {
-  try {
-    const rawConfig =
-      opts.rawConfig !== undefined ? opts.rawConfig : await loadMemoryConfig(opts.repoPath);
-    const config = parseMemoryConfig(rawConfig);
-    const effective = resolveEffectiveConfig(config);
-    if (!effective.recallEnabled) return "";
-
-    const project = opts.project ?? effective.project;
-    if (effective.provider === "astramem" && project !== undefined) {
-      const scoped = await tryProjectScopedRecall(opts, effective, project);
-      if (scoped !== null) return formatRecallBlock(scoped);
-    }
-
-    const provider = resolveProvider(rawConfig, opts.repoPath);
-    const entries = await provider.recall({
-      ...(opts.agent !== undefined ? { agent: opts.agent } : {}),
-      ...(opts.tags !== undefined ? { tags: opts.tags } : {}),
-      k: effective.recall.k,
-      maxTokens: effective.recall.maxTokens
-    });
-
-    return formatRecallBlock(entries);
-  } catch {
-    // Best-effort: recall must never block or alter dispatch beyond
-    // omitting the block.
-    return "";
-  }
+  return formatRecallBlock(await recallEntries(opts));
 }
 
 /**

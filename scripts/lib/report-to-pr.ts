@@ -48,6 +48,15 @@ export interface ReportFields {
   files: string[];
   risks: string;
   next?: string;
+  /**
+   * OPTIONAL dispatch-memory-credit-loop field (runner-plugin upstream
+   * request 2026-07-16): atom ids this agent self-reports it relied on.
+   * Never validated, never gated — absent/empty credits nothing. See
+   * docs/contracts/dispatch-memory-credit-loop-v1.md. Builder-tier agents
+   * (fullstack-dev/backend-dev/frontend-dev) report via this PR-comment
+   * contract rather than `write-handoff`, so crediting rides here too.
+   */
+  memoriesUsed?: string[];
 }
 
 /** True when `body` carries the report marker (used to find the report comment to update). */
@@ -61,13 +70,16 @@ export function buildReportBody(fields: ReportFields): string {
   lines.push(`FILES: ${fields.files.length > 0 ? fields.files.join(", ") : "(none)"}`);
   lines.push(`RISKS: ${fields.risks || "none"}`);
   if (fields.next) lines.push(`NEXT: ${fields.next}`);
+  if (fields.memoriesUsed && fields.memoriesUsed.length > 0) {
+    lines.push(`MEMORIES: ${fields.memoriesUsed.join(", ")}`);
+  }
   lines.push("");
   lines.push(fields.headline);
   lines.push(REPORT_MARKER_END);
   return lines.join("\n");
 }
 
-const FIELD_KEYS = ["STATUS", "AGENT", "FILES", "RISKS", "NEXT"] as const;
+const FIELD_KEYS = ["STATUS", "AGENT", "FILES", "RISKS", "NEXT", "MEMORIES"] as const;
 
 /** Inverse of buildReportBody. Returns null when `body` carries no marker. */
 export function parseReportBody(body: string): ReportFields | null {
@@ -94,6 +106,13 @@ export function parseReportBody(body: string): ReportFields | null {
   const risks = get("RISKS") ?? "none";
   const agent = get("AGENT");
   const next = get("NEXT");
+  const memoriesRaw = get("MEMORIES");
+  const memoriesUsed = memoriesRaw
+    ? memoriesRaw
+        .split(",")
+        .map((m) => m.trim())
+        .filter(Boolean)
+    : undefined;
 
   const headlineLine = lines.find(
     (l) => l.length > 0 && !FIELD_KEYS.some((k) => l.startsWith(`${k}: `))
@@ -105,7 +124,8 @@ export function parseReportBody(body: string): ReportFields | null {
     files,
     risks,
     ...(agent ? { agent } : {}),
-    ...(next ? { next } : {})
+    ...(next ? { next } : {}),
+    ...(memoriesUsed && memoriesUsed.length > 0 ? { memoriesUsed } : {})
   };
 }
 

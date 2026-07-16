@@ -174,11 +174,13 @@ Pass the printed value (e.g. `sonnet`) as the Agent-tool dispatch's `model:` arg
    - **Profile injection (agent-profile-load-feedback):** immediately after the recall block, fetch the specialist's track record (best-effort, empty when disabled). Resolve `<runId>` from `.claude/state/crew/workflow-state.json` (`currentRun.slice`) — reuse this SAME value for the profile-feedback call in step 13a below:
      `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" profile-block --repo "$PWD" --agent <specialist-agent-name> --run-id <runId>`
      If `.block` is non-empty, append it (it is already the `## Your track record (<agent>)` block) to the dispatch instruction, after the recall block. If empty (profile disabled, or no track record yet), omit — do not add any placeholder text.
+     **Dispatch-memory-credit-loop (opt-in, `memory.feedback.creditLoop.enabled`):** when enabled, this block also carries a `## Recall (memory credit loop)` section with `<!--atom:id-->` markers — candidate ids for the specialist's OPTIONAL `memories_used` report at step 8. See `docs/contracts/dispatch-memory-credit-loop-v1.md`.
    - Set `size: standard` for substantive changes (requires `write-handoff` artifact).
    - Set `size: light` only for trivial one-line fixups (skips artifact, but builder still returns structured completion).
    - If this run references a design doc, pass the design doc path to the builder.
 8. After the builder returns PASS, write a handoff artifact if the run is substantial:
    - `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" write-handoff --repo "$PWD" --title "<short title>" --from builder --to dispatcher --summary "<headline>" --scope "<in scope>" --deliverable "<what shipped>" --files "<changed files>" --confidence "<high|medium|low>" --risks "<risks or none>" --next "reviewer fan-out"`
+   - Optional `--memories-used <id1,id2>` when the builder's report names ids it relied on — credits usefulness feedback best-effort; omit when none. See `docs/contracts/dispatch-memory-credit-loop-v1.md`.
 9. Fan out two reviewers in a **single Agent-tool message** (parallel dispatch):
    - **Reviewer A** — stack-specific reviewer (see phase order diagram above for routing; skip A if no stack match).
    - **Reviewer B** — `crew:reviewer` with lens from FEAT concern tag (default: `correctness`).

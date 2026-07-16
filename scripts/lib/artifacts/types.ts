@@ -67,6 +67,13 @@ export interface ArtifactFields {
   judgeId?: string | undefined;
   /** Derived: `authorId != null && authorId === judgeId`. Not settable via CLI flag. */
   selfApproval?: boolean | undefined;
+  /**
+   * OPTIONAL dispatch-memory-credit-loop field (runner-plugin upstream
+   * request 2026-07-16): atom ids a specialist self-reported it relied on in
+   * this handoff. Never validated, never gated — absent/empty credits
+   * nothing. See docs/contracts/dispatch-memory-credit-loop-v1.md.
+   */
+  memoriesUsed?: string[] | undefined;
 }
 
 /** Aggregated telemetry for the ## Per-dispatch breakdown cost-report section (FEAT-151). */
