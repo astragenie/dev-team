@@ -1,8 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { execFile as execFileCallback } from "node:child_process";
@@ -64,9 +63,9 @@ test("write-review-result: approved code-bearing review without test flags exits
       "--summary",
       "looks good"
     ]);
-    assert.equal(status, 2, "expected exit code 2 when approved + no test flags");
-    assert.match(stderr, /refused/, "stderr must mention 'refused'");
-    assert.match(stderr, /--test-summary/, "stderr must mention '--test-summary'");
+    expect(status, "expected exit code 2 when approved + no test flags").toBe(2);
+    expect(stderr, "stderr must mention 'refused'").toMatch(/refused/);
+    expect(stderr, "stderr must mention '--test-summary'").toMatch(/--test-summary/);
   } finally {
     await cleanup(repoPath);
   }
@@ -88,10 +87,10 @@ test("write-review-result: approved + --non-code exits 0 and writes Non-Code Rev
       "doc change only",
       "--non-code"
     ]);
-    assert.equal(status, 0, "expected exit 0 with --non-code");
+    expect(status, "expected exit 0 with --non-code").toBe(0);
     const result = JSON.parse(stdout);
     const body = await fs.readFile(result.path, "utf8");
-    assert.match(body, /Non-Code Review: yes/, "artifact must contain 'Non-Code Review: yes'");
+    expect(body, "artifact must contain 'Non-Code Review: yes'").toMatch(/Non-Code Review: yes/);
   } finally {
     await cleanup(repoPath);
   }
@@ -115,13 +114,11 @@ test("write-review-result: approved + --test-summary exits 0 and writes Test Ade
       "--test-summary",
       summaryText
     ]);
-    assert.equal(status, 0, "expected exit 0 with --test-summary");
+    expect(status, "expected exit 0 with --test-summary").toBe(0);
     const result = JSON.parse(stdout);
     const body = await fs.readFile(result.path, "utf8");
-    assert.match(
-      body,
-      /Test Adequacy: covered by N tests/,
-      "artifact must contain Test Adequacy field"
+    expect(body, "artifact must contain Test Adequacy field").toMatch(
+      /Test Adequacy: covered by N tests/
     );
   } finally {
     await cleanup(repoPath);
@@ -143,9 +140,9 @@ test("write-review-result: rejected decision bypasses the test-adequacy gate", a
       "--summary",
       "missing null guard"
     ]);
-    assert.equal(status, 0, "expected exit 0 for rejected decision");
+    expect(status, "expected exit 0 for rejected decision").toBe(0);
     const result = JSON.parse(stdout);
-    assert.ok(result.path, "artifact path must be present");
+    expect(result.path, "artifact path must be present").toBeTruthy();
   } finally {
     await cleanup(repoPath);
   }
@@ -169,7 +166,7 @@ test("write-review-result: rejected decision captures a failure entry in learnin
       "--summary",
       "missing null guard"
     ]);
-    assert.equal(status, 0);
+    expect(status).toBe(0);
     const raw = await fs.readFile(
       path.join(repoPath, ".claude", "artifacts", "loop", "learnings.jsonl"),
       "utf8"
@@ -178,11 +175,11 @@ test("write-review-result: rejected decision captures a failure entry in learnin
       .split("\n")
       .filter((l) => l.trim().length > 0)
       .map((l) => JSON.parse(l));
-    assert.equal(lines.length, 1);
-    assert.equal(lines[0].kind, "failure");
-    assert.equal(lines[0].agent, "reviewer");
-    assert.equal(lines[0].source, "review_fail");
-    assert.match(lines[0].summary, /missing null guard/);
+    expect(lines.length).toBe(1);
+    expect(lines[0].kind).toBe("failure");
+    expect(lines[0].agent).toBe("reviewer");
+    expect(lines[0].source).toBe("review_fail");
+    expect(lines[0].summary).toMatch(/missing null guard/);
   } finally {
     await cleanup(repoPath);
   }
@@ -229,7 +226,7 @@ test("write-review-result: rejected decision also dual-writes a failing GEPA tri
     ]);
     // Regression guard: the CLI must always succeed, cold-gepa-core-load or
     // not (this is what timed out / exited non-zero pre-fix).
-    assert.equal(status, 0);
+    expect(status).toBe(0);
 
     const trialPath = path.join(
       repoPath,
@@ -251,14 +248,14 @@ test("write-review-result: rejected decision also dual-writes a failing GEPA tri
       .catch(() => []); // guard legitimately dropped the trial under a slow/cold load — acceptable.
 
     if (trialLines.length > 0) {
-      assert.equal(trialLines.length, 1);
-      assert.equal(trialLines[0].agent, "reviewer");
-      assert.equal(trialLines[0].phase, "review");
-      assert.equal(trialLines[0].source, "captured");
-      assert.equal(trialLines[0].score.pass, false);
-      assert.equal(trialLines[0].score.score, 0);
-      assert.match(trialLines[0].score.rationale, /missing null guard/);
-      assert.equal(trialLines[0].input.capture_origin, "production_failure");
+      expect(trialLines.length).toBe(1);
+      expect(trialLines[0].agent).toBe("reviewer");
+      expect(trialLines[0].phase).toBe("review");
+      expect(trialLines[0].source).toBe("captured");
+      expect(trialLines[0].score.pass).toBe(false);
+      expect(trialLines[0].score.score).toBe(0);
+      expect(trialLines[0].score.rationale).toMatch(/missing null guard/);
+      expect(trialLines[0].input.capture_origin).toBe("production_failure");
     }
   } finally {
     await cleanup(repoPath);
@@ -282,10 +279,10 @@ test("write-review-result: approved decision does not write learnings.jsonl", as
       "--test-summary",
       "covered"
     ]);
-    assert.equal(status, 0);
-    await assert.rejects(
+    expect(status).toBe(0);
+    await expect(
       fs.readFile(path.join(repoPath, ".claude", "artifacts", "loop", "learnings.jsonl"), "utf8")
-    );
+    ).rejects.toThrow();
   } finally {
     await cleanup(repoPath);
   }
@@ -306,8 +303,8 @@ test("write-review-result: approved_with_notes without test flags also exits 2",
       "--summary",
       "minor nits"
     ]);
-    assert.equal(status, 2, "expected exit 2 for approved_with_notes without test flags");
-    assert.match(stderr, /refused/, "stderr must mention 'refused'");
+    expect(status, "expected exit 2 for approved_with_notes without test flags").toBe(2);
+    expect(stderr, "stderr must mention 'refused'").toMatch(/refused/);
   } finally {
     await cleanup(repoPath);
   }
@@ -330,9 +327,9 @@ test("write-review-result: unknown decision exits 2", async () => {
       "--test-summary",
       "n/a"
     ]);
-    assert.equal(status, 2, "expected exit 2 for unknown decision");
-    assert.match(stderr, /unknown.*decision/i, "stderr must mention unknown decision");
-    assert.match(stderr, /approved/, "stderr must list valid decisions");
+    expect(status, "expected exit 2 for unknown decision").toBe(2);
+    expect(stderr, "stderr must mention unknown decision").toMatch(/unknown.*decision/i);
+    expect(stderr, "stderr must list valid decisions").toMatch(/approved/);
   } finally {
     await cleanup(repoPath);
   }
@@ -355,13 +352,11 @@ test("write-review-result: approved + --test-summary-skip-reason exits 0 and wri
       "--test-summary-skip-reason",
       "doc-only refactor"
     ]);
-    assert.equal(status, 0, "expected exit 0 with --test-summary-skip-reason");
+    expect(status, "expected exit 0 with --test-summary-skip-reason").toBe(0);
     const result = JSON.parse(stdout);
     const body = await fs.readFile(result.path, "utf8");
-    assert.match(
-      body,
-      /Test Adequacy Skip Reason: doc-only refactor/,
-      "artifact must contain 'Test Adequacy Skip Reason: doc-only refactor'"
+    expect(body, "artifact must contain 'Test Adequacy Skip Reason: doc-only refactor'").toMatch(
+      /Test Adequacy Skip Reason: doc-only refactor/
     );
   } finally {
     await cleanup(repoPath);
@@ -387,10 +382,10 @@ test("write-review-result: --findings persisted in artifact frontmatter", async 
       "--findings",
       "🔴:1,🟡:2,❓:0"
     ]);
-    assert.equal(status, 0, "expected exit 0 with --findings");
+    expect(status, "expected exit 0 with --findings").toBe(0);
     const result = JSON.parse(stdout);
     const body = await fs.readFile(result.path, "utf8");
-    assert.match(body, /findings:.*🔴:1,🟡:2,❓:0/, "artifact must contain findings frontmatter");
+    expect(body, "artifact must contain findings frontmatter").toMatch(/findings:.*🔴:1,🟡:2,❓:0/);
   } finally {
     await cleanup(repoPath);
   }
@@ -420,19 +415,17 @@ test("write-review-result: --not-checked / --author-id / --judge-id round-trip i
       "--judge-id",
       "reviewer-1"
     ]);
-    assert.equal(status, 0, "expected exit 0 with the new optional flags");
+    expect(status, "expected exit 0 with the new optional flags").toBe(0);
     const result = JSON.parse(stdout);
     const body = await fs.readFile(result.path, "utf8");
-    assert.match(
-      body,
-      /not_checked:.*\["perf","i18n","a11y"\]/,
-      "frontmatter must list not_checked"
+    expect(body, "frontmatter must list not_checked").toMatch(
+      /not_checked:.*\["perf","i18n","a11y"\]/
     );
-    assert.match(body, /author_id: builder-1/, "frontmatter must contain author_id");
-    assert.match(body, /judge_id: reviewer-1/, "frontmatter must contain judge_id");
-    assert.match(body, /Not Checked:/, "body must surface a Not Checked section");
-    assert.match(body, /Author: builder-1/, "body must surface Author");
-    assert.match(body, /Judge: reviewer-1/, "body must surface Judge");
+    expect(body, "frontmatter must contain author_id").toMatch(/author_id: builder-1/);
+    expect(body, "frontmatter must contain judge_id").toMatch(/judge_id: reviewer-1/);
+    expect(body, "body must surface a Not Checked section").toMatch(/Not Checked:/);
+    expect(body, "body must surface Author").toMatch(/Author: builder-1/);
+    expect(body, "body must surface Judge").toMatch(/Judge: reviewer-1/);
   } finally {
     await cleanup(repoPath);
   }
@@ -459,11 +452,11 @@ test("write-review-result: self_approval derives true when author-id equals judg
       "--judge-id",
       "same-agent"
     ]);
-    assert.equal(status, 0);
+    expect(status).toBe(0);
     const result = JSON.parse(stdout);
     const body = await fs.readFile(result.path, "utf8");
-    assert.match(body, /self_approval: true/, "frontmatter must record self_approval: true");
-    assert.match(body, /self-approval/i, "body must surface the self-approval marker");
+    expect(body, "frontmatter must record self_approval: true").toMatch(/self_approval: true/);
+    expect(body, "body must surface the self-approval marker").toMatch(/self-approval/i);
   } finally {
     await cleanup(repoPath);
   }
@@ -491,11 +484,11 @@ test("write-review-result: self_approval derives false when author-id and judge-
       "--judge-id",
       "reviewer-1"
     ]);
-    assert.equal(status, 0);
+    expect(status).toBe(0);
     const result = JSON.parse(stdout);
     const body = await fs.readFile(result.path, "utf8");
-    assert.match(body, /self_approval: false/, "frontmatter must record self_approval: false");
-    assert.doesNotMatch(body, /⚠/, "body must NOT surface the self-approval warning marker");
+    expect(body, "frontmatter must record self_approval: false").toMatch(/self_approval: false/);
+    expect(body, "body must NOT surface the self-approval warning marker").not.toMatch(/⚠/);
   } finally {
     await cleanup(repoPath);
   }
@@ -520,21 +513,17 @@ test("write-review-result: self_approval is absent when neither author-id nor ju
       "--test-summary",
       "all pass"
     ]);
-    assert.equal(status, 0);
+    expect(status).toBe(0);
     const result = JSON.parse(stdout);
     const body = await fs.readFile(result.path, "utf8");
-    assert.doesNotMatch(
-      body,
-      /self_approval:/,
-      "self_approval must not appear when author-id is absent"
+    expect(body, "self_approval must not appear when author-id is absent").not.toMatch(
+      /self_approval:/
     );
-    assert.doesNotMatch(
-      body,
-      /not_checked:/,
-      "not_checked must not appear when --not-checked is absent"
+    expect(body, "not_checked must not appear when --not-checked is absent").not.toMatch(
+      /not_checked:/
     );
-    assert.doesNotMatch(body, /author_id:/, "author_id must not appear when --author-id is absent");
-    assert.doesNotMatch(body, /judge_id:/, "judge_id must not appear when --judge-id is absent");
+    expect(body, "author_id must not appear when --author-id is absent").not.toMatch(/author_id:/);
+    expect(body, "judge_id must not appear when --judge-id is absent").not.toMatch(/judge_id:/);
   } finally {
     await cleanup(repoPath);
   }
@@ -566,13 +555,13 @@ test("write-review-result: --summary-file round-trips apostrophes, backticks, an
       "--test-summary",
       "all pass"
     ]);
-    assert.equal(status, 0, `expected exit 0 with --summary-file, stderr: ${stderr}`);
+    expect(status, `expected exit 0 with --summary-file, stderr: ${stderr}`).toBe(0);
     const result = JSON.parse(stdout);
     const artifactBody = await fs.readFile(result.path, "utf8");
-    assert.ok(
+    expect(
       artifactBody.includes(bodyText),
       `artifact must contain the exact file-sourced body verbatim, got:\n${artifactBody}`
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(repoPath);
   }
@@ -603,13 +592,13 @@ test("write-review-result: --summary-file - reads the body from stdin", async ()
       ],
       { encoding: "utf8", timeout: 30_000, input: `${bodyText}\n` }
     );
-    assert.equal(result.status, 0, `expected exit 0 reading stdin, stderr: ${result.stderr}`);
+    expect(result.status, `expected exit 0 reading stdin, stderr: ${result.stderr}`).toBe(0);
     const parsed = JSON.parse(result.stdout);
     const artifactBody = await fs.readFile(parsed.path, "utf8");
-    assert.ok(
+    expect(
       artifactBody.includes(bodyText),
       `artifact must contain the exact stdin-sourced body verbatim, got:\n${artifactBody}`
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(repoPath);
   }
@@ -637,25 +626,23 @@ test("write-review-result: backward compat — no new flags leaves output byte-i
     ];
     const first = runCli(argsFor(repoA));
     const second = runCli(argsFor(repoB));
-    assert.equal(first.status, 0);
-    assert.equal(second.status, 0);
+    expect(first.status).toBe(0);
+    expect(second.status).toBe(0);
     const bodyA = await fs.readFile(JSON.parse(first.stdout).path, "utf8");
     const bodyB = await fs.readFile(JSON.parse(second.stdout).path, "utf8");
     // Strip the one field that legitimately varies run-to-run (Created: <iso>).
     const normalize = (body: string) => body.replace(/- Created: .*/g, "- Created: <ts>");
-    assert.equal(
-      normalize(bodyA),
-      normalize(bodyB),
-      "identical inputs must produce identical shape"
+    expect(normalize(bodyA), "identical inputs must produce identical shape").toBe(
+      normalize(bodyB)
     );
     for (const body of [bodyA, bodyB]) {
-      assert.doesNotMatch(body, /not_checked:/);
-      assert.doesNotMatch(body, /author_id:/);
-      assert.doesNotMatch(body, /judge_id:/);
-      assert.doesNotMatch(body, /self_approval:/);
-      assert.doesNotMatch(body, /Not Checked:/);
-      assert.doesNotMatch(body, /^Author:/m);
-      assert.doesNotMatch(body, /^Judge:/m);
+      expect(body).not.toMatch(/not_checked:/);
+      expect(body).not.toMatch(/author_id:/);
+      expect(body).not.toMatch(/judge_id:/);
+      expect(body).not.toMatch(/self_approval:/);
+      expect(body).not.toMatch(/Not Checked:/);
+      expect(body).not.toMatch(/^Author:/m);
+      expect(body).not.toMatch(/^Judge:/m);
     }
   } finally {
     await cleanup(repoA);

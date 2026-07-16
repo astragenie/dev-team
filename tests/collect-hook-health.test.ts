@@ -1,6 +1,5 @@
 // tests/collect-hook-health.test.mjs
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -19,10 +18,7 @@ import { collectHookHealth } from "../scripts/lib/briefing/collect.ts";
 test("collectHookHealth returns empty hooks array when no events.jsonl", async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "hook-health-empty-"));
   const result = await collectHookHealth(dir);
-  assert.deepEqual(
-    result.hooks.map((h) => h.errorCount24h),
-    [0, 0, 0, 0]
-  );
+  expect(result.hooks.map((h) => h.errorCount24h)).toEqual([0, 0, 0, 0]);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -38,10 +34,10 @@ test("collectHookHealth counts hook_error events per hook in last 24h", async ()
   ]);
   const result = await collectHookHealth(dir);
   const ps = result.hooks.find((h) => h.name === "preflight-shell");
-  assert.ok(ps, "must include preflight-shell");
-  assert.equal(ps.errorCount24h, 2);
+  expect(ps, "must include preflight-shell").toBeTruthy();
+  expect(ps!.errorCount24h).toBe(2);
   const crr = result.hooks.find((h) => h.name === "check-redundant-read");
-  assert.ok(!crr || crr.errorCount24h === 0, "old events must be excluded");
+  expect(!crr || crr.errorCount24h === 0, "old events must be excluded").toBeTruthy();
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -52,8 +48,8 @@ test("collectHookHealth marks hooks with errors as yellow", async () => {
   ]);
   const result = await collectHookHealth(dir);
   const h = result.hooks.find((h) => h.name === "record-read-content");
-  assert.ok(h, "must find hook");
-  assert.equal(h.status, "yellow");
+  expect(h, "must find hook").toBeTruthy();
+  expect(h!.status).toBe("yellow");
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -64,6 +60,6 @@ test("collectHookHealth returns green status for hooks with no errors", async ()
   ]);
   const result = await collectHookHealth(dir);
   const noErrors = result.hooks.filter((h) => h.errorCount24h === 0);
-  noErrors.forEach((h) => assert.equal(h.status, "green"));
+  noErrors.forEach((h) => expect(h.status).toBe("green"));
   await fs.rm(dir, { recursive: true, force: true });
 });

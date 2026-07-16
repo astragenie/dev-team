@@ -1,6 +1,5 @@
 // FEAT-193 S3 (report half) — gepa-corpus-report AC coverage (AC-6/7/8).
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -59,10 +58,10 @@ test("AC-6: clusters failure modes and ranks by frequency", async () => {
     });
 
     const ar = report.agents[0]!;
-    assert.equal(ar.totalFailures, 3);
-    assert.equal(ar.clusters.length, 2, "casing/whitespace variants collapse to one mode");
-    assert.equal(ar.clusters[0]!.count, 2, "most frequent mode ranked first");
-    assert.equal(ar.clusters[1]!.count, 1);
+    expect(ar.totalFailures).toBe(3);
+    expect(ar.clusters.length, "casing/whitespace variants collapse to one mode").toBe(2);
+    expect(ar.clusters[0]!.count, "most frequent mode ranked first").toBe(2);
+    expect(ar.clusters[1]!.count).toBe(1);
   } finally {
     await cleanup(repo);
   }
@@ -76,13 +75,12 @@ test("AC-7: with no agent arg, enumerates EVERY agent with >=1 failure (and only
     await writeTrials(repo, "frontend-dev", [trial("canary", false)]); // no failures → excluded
     const report = await reportCorpus({ hubRepo: repo, recallLessons: noLessons });
 
-    assert.deepEqual(
+    expect(
       report.agents.map((a) => a.agent).sort(),
-      ["backend-dev", "fullstack-dev"],
       "only agents with production-failures, all of them"
-    );
+    ).toEqual(["backend-dev", "fullstack-dev"]);
     // Ranked by failure count desc.
-    assert.equal(report.agents[0]!.agent, "backend-dev");
+    expect(report.agents[0]!.agent).toBe("backend-dev");
   } finally {
     await cleanup(repo);
   }
@@ -100,10 +98,7 @@ test("AC-8: cites the agent's FEAT-188 astramem lessons by id", async () => {
       recallLessons: fakeRecall
     });
 
-    assert.deepEqual(
-      report.agents[0]!.lessons.map((l) => l.id),
-      ["lesson-42"]
-    );
+    expect(report.agents[0]!.lessons.map((l) => l.id)).toEqual(["lesson-42"]);
   } finally {
     await cleanup(repo);
   }
@@ -113,7 +108,7 @@ test("empty hub → no agents, no throw", async () => {
   const repo = await makeRepo();
   try {
     const report = await reportCorpus({ hubRepo: repo, recallLessons: noLessons });
-    assert.deepEqual(report.agents, []);
+    expect(report.agents).toEqual([]);
   } finally {
     await cleanup(repo);
   }

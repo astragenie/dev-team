@@ -1,5 +1,4 @@
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 
 import {
   extractACs,
@@ -16,15 +15,15 @@ test("integration: full pipeline passes on clean evidence", async () => {
 - [ ] AC-2: see welcome banner
 `;
   const acs = extractACs(sliceContent);
-  assert.equal(acs.length, 2);
+  expect(acs.length).toBe(2);
 
   const scenarios = acs.map((ac) => ({
     id: ac.id,
     category: classifyScenario(ac.text),
     text: ac.text
   }));
-  assert.equal(scenarios[0]!.category, "interaction");
-  assert.equal(scenarios[1]!.category, "visibility");
+  expect(scenarios[0]!.category).toBe("interaction");
+  expect(scenarios[1]!.category).toBe("visibility");
 
   // Mock /qa output (all pass)
   const evidence = {
@@ -35,7 +34,7 @@ test("integration: full pipeline passes on clean evidence", async () => {
     visual: { diffs: [] }
   };
 
-  assert.equal(computeVerdict(evidence), "passed");
+  expect(computeVerdict(evidence)).toBe("passed");
 });
 
 test("integration: full pipeline fails on AC fail + serious a11y", async () => {
@@ -45,7 +44,7 @@ test("integration: full pipeline fails on AC fail + serious a11y", async () => {
 - [ ] AC-2: see image
 `;
   const acs = extractACs(sliceContent);
-  assert.equal(acs.length, 2);
+  expect(acs.length).toBe(2);
 
   const evidence = {
     ac_results: [
@@ -58,7 +57,7 @@ test("integration: full pipeline fails on AC fail + serious a11y", async () => {
     visual: { diffs: [] }
   };
 
-  assert.equal(computeVerdict(evidence), "failed");
+  expect(computeVerdict(evidence)).toBe("failed");
 });
 
 test("integration: qa invocation contains all required flags", () => {
@@ -77,6 +76,6 @@ test("integration: qa invocation contains all required flags", () => {
     "--visual-baseline",
     "--output"
   ]) {
-    assert.match(cmd, new RegExp(flag));
+    expect(cmd).toMatch(new RegExp(flag));
   }
 });

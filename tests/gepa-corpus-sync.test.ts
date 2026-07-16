@@ -1,6 +1,5 @@
 // FEAT-193 S2 — gepa-corpus-sync AC coverage (AC-1..5).
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -67,10 +66,10 @@ test("AC-1: production-failure trials from a sibling are merged into the hub per
     ]);
     const report = await syncCorpus({ hubRepo: hub, siblingRepos: [sib] });
 
-    assert.equal(report.totalEligible, 2);
-    assert.equal(report.totalAdded, 2);
-    assert.equal(report.perAgent["fullstack-dev"]?.added, 2);
-    assert.equal((await readHubTrials(hub, "fullstack-dev")).length, 2);
+    expect(report.totalEligible).toBe(2);
+    expect(report.totalAdded).toBe(2);
+    expect(report.perAgent["fullstack-dev"]?.added).toBe(2);
+    expect((await readHubTrials(hub, "fullstack-dev")).length).toBe(2);
   } finally {
     await cleanup(hub, sib);
   }
@@ -86,16 +85,16 @@ test("AC-2: dedup by (agent, rationale-hash) across siblings + idempotent re-run
     await writeTrials(sibB, "backend-dev", [makeTrial("backend-dev", "null deref in mapper")]);
 
     const first = await syncCorpus({ hubRepo: hub, siblingRepos: [sibA, sibB] });
-    assert.equal(first.totalEligible, 2);
-    assert.equal(first.totalAdded, 1, "cross-sibling duplicate must add once");
-    assert.equal(first.totalSkipped, 1);
-    assert.equal((await readHubTrials(hub, "backend-dev")).length, 1);
+    expect(first.totalEligible).toBe(2);
+    expect(first.totalAdded, "cross-sibling duplicate must add once").toBe(1);
+    expect(first.totalSkipped).toBe(1);
+    expect((await readHubTrials(hub, "backend-dev")).length).toBe(1);
 
     // Idempotent: re-run adds nothing.
     const second = await syncCorpus({ hubRepo: hub, siblingRepos: [sibA, sibB] });
-    assert.equal(second.totalAdded, 0, "re-run must add zero rows");
-    assert.equal(second.totalSkipped, 2);
-    assert.equal((await readHubTrials(hub, "backend-dev")).length, 1);
+    expect(second.totalAdded, "re-run must add zero rows").toBe(0);
+    expect(second.totalSkipped).toBe(2);
+    expect((await readHubTrials(hub, "backend-dev")).length).toBe(1);
   } finally {
     await cleanup(hub, sibA, sibB);
   }
@@ -112,17 +111,14 @@ test("AC-3: completeness — added+skipped===eligible AND every contributing age
     await writeTrials(sib, "frontend-dev", [makeTrial("frontend-dev", "b")]);
     const report = await syncCorpus({ hubRepo: hub, siblingRepos: [sib] });
 
-    assert.equal(
-      report.totalAdded + report.totalSkipped,
-      report.totalEligible,
-      "no eligible trial silently dropped"
+    expect(report.totalAdded + report.totalSkipped, "no eligible trial silently dropped").toBe(
+      report.totalEligible
     );
-    assert.deepEqual(
+    expect(
       Object.keys(report.perAgent).sort(),
-      ["frontend-dev", "fullstack-dev"],
       "every agent with >=1 contributed trial must be enumerated"
-    );
-    assert.equal(report.perAgent["fullstack-dev"]?.contributed, 2);
+    ).toEqual(["frontend-dev", "fullstack-dev"]);
+    expect(report.perAgent["fullstack-dev"]?.contributed).toBe(2);
   } finally {
     await cleanup(hub, sib);
   }
@@ -137,9 +133,9 @@ test("AC-4: non-production-failure trials are NOT aggregated", async () => {
     ]);
     const report = await syncCorpus({ hubRepo: hub, siblingRepos: [sib] });
 
-    assert.equal(report.totalEligible, 0, "eval/canary trials must not be eligible");
-    assert.equal(report.totalAdded, 0);
-    assert.equal((await readHubTrials(hub, "fullstack-dev")).length, 0);
+    expect(report.totalEligible, "eval/canary trials must not be eligible").toBe(0);
+    expect(report.totalAdded).toBe(0);
+    expect((await readHubTrials(hub, "fullstack-dev")).length).toBe(0);
   } finally {
     await cleanup(hub, sib);
   }
@@ -155,11 +151,11 @@ test("AC-5: read-only on siblings; missing trials dir skipped without error", as
 
     const report = await syncCorpus({ hubRepo: hub, siblingRepos: [sibWith, sibBare] });
 
-    assert.equal(report.siblingsScanned, 1);
-    assert.deepEqual(report.siblingsSkipped, [sibBare], "bare sibling skipped without error");
+    expect(report.siblingsScanned).toBe(1);
+    expect(report.siblingsSkipped, "bare sibling skipped without error").toEqual([sibBare]);
     // Sibling file untouched.
     const after = await fs.readFile(path.join(sibWith, ...TRIALS, "fullstack-dev.jsonl"), "utf8");
-    assert.equal(after, before, "sync must never mutate a sibling");
+    expect(after, "sync must never mutate a sibling").toBe(before);
   } finally {
     await cleanup(hub, sibWith, sibBare);
   }
@@ -179,9 +175,9 @@ test("corrupt + schema-drifted rows are skipped, valid ones still aggregate (no 
     await fs.writeFile(path.join(dir, "backend-dev.jsonl"), lines.join("\n") + "\n", "utf8");
 
     const report = await syncCorpus({ hubRepo: hub, siblingRepos: [sib] });
-    assert.equal(report.totalEligible, 1, "only the schema-valid production-failure counts");
-    assert.equal(report.totalAdded, 1);
-    assert.equal((await readHubTrials(hub, "backend-dev")).length, 1);
+    expect(report.totalEligible, "only the schema-valid production-failure counts").toBe(1);
+    expect(report.totalAdded).toBe(1);
+    expect((await readHubTrials(hub, "backend-dev")).length).toBe(1);
   } finally {
     await cleanup(hub, sib);
   }
@@ -208,10 +204,10 @@ test("CLI: --sibling + --json flags are wired (no 'Unknown argument')", async ()
       ],
       { encoding: "utf8", timeout: 60_000 }
     );
-    assert.equal(res.status, 0, `CLI failed: ${res.stderr}`);
-    assert.doesNotMatch(res.stderr ?? "", /Unknown argument/, "flags must be registered");
+    expect(res.status, `CLI failed: ${res.stderr}`).toBe(0);
+    expect(res.stderr ?? "", "flags must be registered").not.toMatch(/Unknown argument/);
     const report = JSON.parse(res.stdout);
-    assert.equal(report.totalAdded, 1, "CLI --sibling path must aggregate");
+    expect(report.totalAdded, "CLI --sibling path must aggregate").toBe(1);
   } finally {
     await cleanup(hub, sib);
   }
