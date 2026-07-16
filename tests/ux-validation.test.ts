@@ -1,14 +1,13 @@
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { extractACs } from "../scripts/lib/ux-validation/index.ts";
 
 test("extractACs returns empty array on empty input", () => {
-  assert.deepEqual(extractACs(""), []);
+  expect(extractACs("")).toEqual([]);
 });
 
 test("extractACs returns empty array when no acceptance criteria header", () => {
   const content = "# Title\n\nNo ACs here.";
-  assert.deepEqual(extractACs(content), []);
+  expect(extractACs(content)).toEqual([]);
 });
 
 test("extractACs parses well-formed AC list", () => {
@@ -18,7 +17,7 @@ test("extractACs parses well-formed AC list", () => {
 - [ ] AC-1: user can click submit
 - [ ] AC-2: form validates email
 `;
-  assert.deepEqual(extractACs(content), [
+  expect(extractACs(content)).toEqual([
     { id: "AC-1", text: "user can click submit" },
     { id: "AC-2", text: "form validates email" }
   ]);
@@ -31,7 +30,7 @@ test("extractACs ignores nested checkboxes", () => {
   - [ ] sub-bullet should be ignored
 - [ ] AC-2: another criterion
 `;
-  assert.deepEqual(extractACs(content), [
+  expect(extractACs(content)).toEqual([
     { id: "AC-1", text: "parent criterion" },
     { id: "AC-2", text: "another criterion" }
   ]);
@@ -46,69 +45,69 @@ test("extractACs stops at next ## header", () => {
 
 - [ ] not-an-ac: ignored
 `;
-  assert.deepEqual(extractACs(content), [{ id: "AC-1", text: "first" }]);
+  expect(extractACs(content)).toEqual([{ id: "AC-1", text: "first" }]);
 });
 
 import { classifyScenario } from "../scripts/lib/ux-validation/index.ts";
 
 test("classifyScenario detects interaction verbs", () => {
-  assert.equal(classifyScenario("user can click submit"), "interaction");
-  assert.equal(classifyScenario("tap the button"), "interaction");
-  assert.equal(classifyScenario("press enter to submit"), "interaction");
-  assert.equal(classifyScenario("submit the form"), "interaction");
+  expect(classifyScenario("user can click submit")).toBe("interaction");
+  expect(classifyScenario("tap the button")).toBe("interaction");
+  expect(classifyScenario("press enter to submit")).toBe("interaction");
+  expect(classifyScenario("submit the form")).toBe("interaction");
 });
 
 test("classifyScenario detects visibility verbs", () => {
-  assert.equal(classifyScenario("see the welcome banner"), "visibility");
-  assert.equal(classifyScenario("renders product list"), "visibility");
-  assert.equal(classifyScenario("displays error message"), "visibility");
-  assert.equal(classifyScenario("shows loading spinner"), "visibility");
+  expect(classifyScenario("see the welcome banner")).toBe("visibility");
+  expect(classifyScenario("renders product list")).toBe("visibility");
+  expect(classifyScenario("displays error message")).toBe("visibility");
+  expect(classifyScenario("shows loading spinner")).toBe("visibility");
 });
 
 test("classifyScenario detects navigation verbs", () => {
-  assert.equal(classifyScenario("navigate to /dashboard"), "navigation");
-  assert.equal(classifyScenario("go to settings page"), "navigation");
-  assert.equal(classifyScenario("route to /profile"), "navigation");
+  expect(classifyScenario("navigate to /dashboard")).toBe("navigation");
+  expect(classifyScenario("go to settings page")).toBe("navigation");
+  expect(classifyScenario("route to /profile")).toBe("navigation");
 });
 
 test("classifyScenario detects input verbs", () => {
-  assert.equal(classifyScenario("type email address"), "input");
-  assert.equal(classifyScenario("fill username field"), "input");
-  assert.equal(classifyScenario("enter password"), "input");
+  expect(classifyScenario("type email address")).toBe("input");
+  expect(classifyScenario("fill username field")).toBe("input");
+  expect(classifyScenario("enter password")).toBe("input");
 });
 
 test("classifyScenario falls back to non_ui_ac on no match", () => {
-  assert.equal(classifyScenario("total cost equals sum"), "non_ui_ac");
-  assert.equal(classifyScenario("database row count is 3"), "non_ui_ac");
-  assert.equal(classifyScenario(""), "non_ui_ac");
+  expect(classifyScenario("total cost equals sum")).toBe("non_ui_ac");
+  expect(classifyScenario("database row count is 3")).toBe("non_ui_ac");
+  expect(classifyScenario("")).toBe("non_ui_ac");
 });
 
 test("classifyScenario matches inflected verb forms", () => {
-  assert.equal(classifyScenario("user navigates to /home"), "navigation");
-  assert.equal(classifyScenario("user clicks the submit button"), "interaction");
-  assert.equal(classifyScenario("user fills the username field"), "input");
-  assert.equal(classifyScenario("form submits successfully"), "interaction");
+  expect(classifyScenario("user navigates to /home")).toBe("navigation");
+  expect(classifyScenario("user clicks the submit button")).toBe("interaction");
+  expect(classifyScenario("user fills the username field")).toBe("input");
+  expect(classifyScenario("form submits successfully")).toBe("interaction");
 });
 
 test("classifyScenario does not over-match compound words", () => {
-  assert.equal(classifyScenario("showcase the portfolio"), "non_ui_ac");
-  assert.equal(classifyScenario("element is clickable"), "non_ui_ac");
-  assert.equal(classifyScenario("pressing concern"), "non_ui_ac");
+  expect(classifyScenario("showcase the portfolio")).toBe("non_ui_ac");
+  expect(classifyScenario("element is clickable")).toBe("non_ui_ac");
+  expect(classifyScenario("pressing concern")).toBe("non_ui_ac");
 });
 
 test("classifyScenario does not over-match derived visibility words", () => {
-  assert.equal(classifyScenario("renderable content is available"), "non_ui_ac");
-  assert.equal(classifyScenario("content was displayed successfully"), "non_ui_ac");
+  expect(classifyScenario("renderable content is available")).toBe("non_ui_ac");
+  expect(classifyScenario("content was displayed successfully")).toBe("non_ui_ac");
 });
 
 test("classifyScenario does not over-match derived navigation words", () => {
-  assert.equal(classifyScenario("navigational menu is accessible"), "non_ui_ac");
-  assert.equal(classifyScenario("router configuration loaded"), "non_ui_ac");
+  expect(classifyScenario("navigational menu is accessible")).toBe("non_ui_ac");
+  expect(classifyScenario("router configuration loaded")).toBe("non_ui_ac");
 });
 
 test("classifyScenario does not over-match derived input words", () => {
-  assert.equal(classifyScenario("typecheck passes without errors"), "non_ui_ac");
-  assert.equal(classifyScenario("fillable field is present"), "non_ui_ac");
+  expect(classifyScenario("typecheck passes without errors")).toBe("non_ui_ac");
+  expect(classifyScenario("fillable field is present")).toBe("non_ui_ac");
 });
 
 import { computeVerdict } from "../scripts/lib/ux-validation/index.ts";
@@ -122,12 +121,12 @@ const EMPTY_EVIDENCE = {
 };
 
 test("computeVerdict returns passed on empty evidence", () => {
-  assert.equal(computeVerdict(EMPTY_EVIDENCE), "passed");
+  expect(computeVerdict(EMPTY_EVIDENCE)).toBe("passed");
 });
 
 test("computeVerdict returns failed when any AC fails", () => {
   const ev = { ...EMPTY_EVIDENCE, ac_results: [{ id: "AC-1", status: "fail" }] };
-  assert.equal(computeVerdict(ev), "failed");
+  expect(computeVerdict(ev)).toBe("failed");
 });
 
 test("computeVerdict returns failed on serious a11y violation", () => {
@@ -135,7 +134,7 @@ test("computeVerdict returns failed on serious a11y violation", () => {
     ...EMPTY_EVIDENCE,
     a11y: { violations: [{ severity: "serious", rule: "x" }], passes_count: 0 }
   };
-  assert.equal(computeVerdict(ev), "failed");
+  expect(computeVerdict(ev)).toBe("failed");
 });
 
 test("computeVerdict returns failed on critical a11y violation", () => {
@@ -143,7 +142,7 @@ test("computeVerdict returns failed on critical a11y violation", () => {
     ...EMPTY_EVIDENCE,
     a11y: { violations: [{ severity: "critical", rule: "x" }], passes_count: 0 }
   };
-  assert.equal(computeVerdict(ev), "failed");
+  expect(computeVerdict(ev)).toBe("failed");
 });
 
 test("computeVerdict returns failed on console errors", () => {
@@ -151,7 +150,7 @@ test("computeVerdict returns failed on console errors", () => {
     ...EMPTY_EVIDENCE,
     console: { errors: ["TypeError"], warnings: [] }
   };
-  assert.equal(computeVerdict(ev), "failed");
+  expect(computeVerdict(ev)).toBe("failed");
 });
 
 test("computeVerdict returns failed on visual diff over tolerance", () => {
@@ -159,7 +158,7 @@ test("computeVerdict returns failed on visual diff over tolerance", () => {
     ...EMPTY_EVIDENCE,
     visual: { diffs: [{ route: "/", pct: 5.0, tolerance: 0.5 }] }
   };
-  assert.equal(computeVerdict(ev), "failed");
+  expect(computeVerdict(ev)).toBe("failed");
 });
 
 test("computeVerdict returns passed_with_notes on minor a11y", () => {
@@ -167,7 +166,7 @@ test("computeVerdict returns passed_with_notes on minor a11y", () => {
     ...EMPTY_EVIDENCE,
     a11y: { violations: [{ severity: "minor", rule: "x" }], passes_count: 0 }
   };
-  assert.equal(computeVerdict(ev), "passed_with_notes");
+  expect(computeVerdict(ev)).toBe("passed_with_notes");
 });
 
 test("computeVerdict returns passed_with_notes on console warnings", () => {
@@ -175,7 +174,7 @@ test("computeVerdict returns passed_with_notes on console warnings", () => {
     ...EMPTY_EVIDENCE,
     console: { errors: [], warnings: ["React: ..."] }
   };
-  assert.equal(computeVerdict(ev), "passed_with_notes");
+  expect(computeVerdict(ev)).toBe("passed_with_notes");
 });
 
 test("computeVerdict returns passed_with_notes on network failures", () => {
@@ -183,7 +182,7 @@ test("computeVerdict returns passed_with_notes on network failures", () => {
     ...EMPTY_EVIDENCE,
     network: { failures: [{ url: "/x.png", status: 404 }] }
   };
-  assert.equal(computeVerdict(ev), "passed_with_notes");
+  expect(computeVerdict(ev)).toBe("passed_with_notes");
 });
 
 test("computeVerdict returns failed when both fail and warn signals present", () => {
@@ -192,7 +191,7 @@ test("computeVerdict returns failed when both fail and warn signals present", ()
     ac_results: [{ id: "AC-1", status: "fail" }],
     console: { errors: [], warnings: ["minor"] }
   };
-  assert.equal(computeVerdict(ev), "failed");
+  expect(computeVerdict(ev)).toBe("failed");
 });
 
 test("computeVerdict returns passed when visual diff under tolerance", () => {
@@ -200,7 +199,7 @@ test("computeVerdict returns passed when visual diff under tolerance", () => {
     ...EMPTY_EVIDENCE,
     visual: { diffs: [{ route: "/", pct: 0.2, tolerance: 0.5 }] }
   };
-  assert.equal(computeVerdict(ev), "passed");
+  expect(computeVerdict(ev)).toBe("passed");
 });
 
 import fs from "node:fs/promises";
@@ -214,7 +213,7 @@ async function tmpRepo(prefix: string) {
 
 test("discoverPlaywrightConfig returns null when no config present", async () => {
   const repo = await tmpRepo("ux-disc-none-");
-  assert.equal(await discoverPlaywrightConfig(repo), null);
+  expect(await discoverPlaywrightConfig(repo)).toBe(null);
 });
 
 test("discoverPlaywrightConfig reads URL from playwright.config.ts", async () => {
@@ -224,7 +223,7 @@ test("discoverPlaywrightConfig reads URL from playwright.config.ts", async () =>
     `export default { use: { baseURL: "http://localhost:4321" } };`
   );
   const result = await discoverPlaywrightConfig(repo);
-  assert.equal(result!.url, "http://localhost:4321");
+  expect(result!.url).toBe("http://localhost:4321");
 });
 
 test("discoverPlaywrightConfig reads URL from playwright.config.js", async () => {
@@ -234,7 +233,7 @@ test("discoverPlaywrightConfig reads URL from playwright.config.js", async () =>
     `module.exports = { use: { baseURL: "http://localhost:5555" } };`
   );
   const result = await discoverPlaywrightConfig(repo);
-  assert.equal(result!.url, "http://localhost:5555");
+  expect(result!.url).toBe("http://localhost:5555");
 });
 
 test("discoverPlaywrightConfig falls back to package.json scripts when no config file", async () => {
@@ -247,13 +246,13 @@ test("discoverPlaywrightConfig falls back to package.json scripts when no config
     })
   );
   const result = await discoverPlaywrightConfig(repo);
-  assert.equal(result!.url, "http://localhost:3000");
+  expect(result!.url).toBe("http://localhost:3000");
 });
 
 test("discoverPlaywrightConfig returns null when config file lacks baseURL", async () => {
   const repo = await tmpRepo("ux-disc-no-url-");
   await fs.writeFile(path.join(repo, "playwright.config.ts"), `export default { use: {} };`);
-  assert.equal(await discoverPlaywrightConfig(repo), null);
+  expect(await discoverPlaywrightConfig(repo)).toBe(null);
 });
 
 import { buildQaInvocation } from "../scripts/lib/ux-validation/index.ts";
@@ -265,14 +264,14 @@ test("buildQaInvocation emits all 4 check flags", () => {
     baselineDir: "tests/playwright/baselines/",
     outputPath: ".claude/artifacts/crew/validations/ux.json"
   });
-  assert.match(cmd, /gstack:\/qa/);
-  assert.match(cmd, /--url http:\/\/localhost:3000/);
-  assert.match(cmd, /--scenarios /);
-  assert.match(cmd, /--accessibility-scan/);
-  assert.match(cmd, /--capture-console/);
-  assert.match(cmd, /--capture-network/);
-  assert.match(cmd, /--visual-baseline tests\/playwright\/baselines\//);
-  assert.match(cmd, /--output \.claude\/artifacts\/crew\/validations\/ux\.json/);
+  expect(cmd).toMatch(/gstack:\/qa/);
+  expect(cmd).toMatch(/--url http:\/\/localhost:3000/);
+  expect(cmd).toMatch(/--scenarios /);
+  expect(cmd).toMatch(/--accessibility-scan/);
+  expect(cmd).toMatch(/--capture-console/);
+  expect(cmd).toMatch(/--capture-network/);
+  expect(cmd).toMatch(/--visual-baseline tests\/playwright\/baselines\//);
+  expect(cmd).toMatch(/--output \.claude\/artifacts\/crew\/validations\/ux\.json/);
 });
 
 test("buildQaInvocation embeds scenarios as JSON", () => {
@@ -282,6 +281,6 @@ test("buildQaInvocation embeds scenarios as JSON", () => {
     baselineDir: "b/",
     outputPath: "o.json"
   });
-  assert.match(cmd, /"AC-1"/);
-  assert.match(cmd, /"AC-2"/);
+  expect(cmd).toMatch(/"AC-1"/);
+  expect(cmd).toMatch(/"AC-2"/);
 });

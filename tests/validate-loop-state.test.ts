@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -11,7 +10,7 @@ test("clean single tree passes", async () => {
     const dir = path.join(repo, ".claude/artifacts/loop/backlog/pending");
     await fs.mkdir(dir, { recursive: true });
     await fs.writeFile(path.join(dir, "FEAT-001.md"), "---\nid: FEAT-001\n---\n");
-    assert.deepEqual(await checkLoopState(repo), []);
+    expect(await checkLoopState(repo)).toEqual([]);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
@@ -30,14 +29,14 @@ test("flags a second populated tree and duplicate ids", async () => {
     await fs.mkdir(doneDir, { recursive: true });
     await fs.writeFile(path.join(doneDir, "FEAT-001.md"), "---\nid: FEAT-001\n---\n");
     const errors = await checkLoopState(repo);
-    assert.ok(
+    expect(
       errors.some((e) => e.includes("docs/backlog")),
       errors.join("; ")
-    );
-    assert.ok(
+    ).toBeTruthy();
+    expect(
       errors.some((e) => e.includes("FEAT-001")),
       errors.join("; ")
-    );
+    ).toBeTruthy();
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
@@ -50,7 +49,7 @@ test("picks up suffixed FEAT ids (e.g. FEAT-123a) for uniqueness checking", asyn
     await fs.mkdir(dir, { recursive: true });
     await fs.writeFile(path.join(dir, "FEAT-123a.md"), "---\nid: FEAT-123a\n---\n");
     // suffixed id should be picked up and pass uniqueness check
-    assert.deepEqual(await checkLoopState(repo), []);
+    expect(await checkLoopState(repo)).toEqual([]);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
@@ -68,10 +67,10 @@ test("detects collision between suffixed ids in two trees", async () => {
     await fs.mkdir(doneDir, { recursive: true });
     await fs.writeFile(path.join(doneDir, "FEAT-123a.md"), "---\nid: FEAT-123a\n---\n");
     const errors = await checkLoopState(repo);
-    assert.ok(
+    expect(
       errors.some((e) => e.includes("FEAT-123a")),
       errors.join("; ")
-    );
+    ).toBeTruthy();
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }

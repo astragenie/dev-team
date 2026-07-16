@@ -1,6 +1,5 @@
 import path from "node:path";
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -22,15 +21,15 @@ function runValidateAll(cwd = repoRoot) {
 
 test("validate-all: exits 0 on clean repo and reports all validators passed", () => {
   const { status, stdout } = runValidateAll();
-  assert.equal(status, 0, `expected exit 0 but got ${status}`);
-  assert.match(stdout, /All 4 validators passed\./);
+  expect(status, `expected exit 0 but got ${status}`).toBe(0);
+  expect(stdout).toMatch(/All 4 validators passed\./);
 });
 
 test("validate-all: stdout contains a check mark for each validator on success", () => {
   const { status, stdout } = runValidateAll();
-  assert.equal(status, 0);
-  assert.match(stdout, /✓ validate-manifests\.ts/);
-  assert.match(stdout, /✓ validate-skills\.ts/);
-  assert.match(stdout, /✓ validate-agents\.ts/);
-  assert.match(stdout, /✓ validate-slices\.ts/);
+  expect(status).toBe(0);
+  expect(stdout).toMatch(/✓ validate-manifests\.ts/);
+  expect(stdout).toMatch(/✓ validate-skills\.ts/);
+  expect(stdout).toMatch(/✓ validate-agents\.ts/);
+  expect(stdout).toMatch(/✓ validate-slices\.ts/);
 });

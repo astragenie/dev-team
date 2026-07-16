@@ -7,8 +7,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { creditMemoriesUsed } from "../scripts/lib/memory/handoff-credit.ts";
 import type { ProfileCapableProvider } from "../scripts/lib/memory/profile-types.ts";
 
@@ -35,8 +34,8 @@ test("credits every reported id via feedback(id, {used:true}) when creditLoop.en
       rawConfig: { feedback: { creditLoop: { enabled: true } } },
       provider: recordingProvider(sink)
     });
-    assert.deepEqual(r.credited.sort(), ["a", "b"]);
-    assert.deepEqual(sink.sort(), [
+    expect(r.credited.sort()).toEqual(["a", "b"]);
+    expect(sink.sort()).toEqual([
       ["a", true],
       ["b", true]
     ]);
@@ -55,8 +54,8 @@ test("no-ops when memory.creditLoop.enabled is false (default) — the dedicated
       rawConfig: {},
       provider: recordingProvider(sink)
     });
-    assert.deepEqual(r.credited, []);
-    assert.deepEqual(sink, []);
+    expect(r.credited).toEqual([]);
+    expect(sink).toEqual([]);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
@@ -73,7 +72,7 @@ test("global memory.enabled:'never' wins even when creditLoop.enabled is true", 
       // which resolves to noopProvider() (no feedback() method) when
       // captureEnabled is false.
     });
-    assert.deepEqual(r.credited, []);
+    expect(r.credited).toEqual([]);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
@@ -86,9 +85,9 @@ test("absent/empty ids credit nothing, never throw", async () => {
     const provider = recordingProvider(sink);
     const r1 = await creditMemoriesUsed({ repoPath: repo, ids: undefined, provider });
     const r2 = await creditMemoriesUsed({ repoPath: repo, ids: [], provider });
-    assert.deepEqual(r1.credited, []);
-    assert.deepEqual(r2.credited, []);
-    assert.deepEqual(sink, []);
+    expect(r1.credited).toEqual([]);
+    expect(r2.credited).toEqual([]);
+    expect(sink).toEqual([]);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
@@ -104,7 +103,7 @@ test("malformed ids (non-string entries, blanks) are dropped silently, valid one
       rawConfig: { feedback: { creditLoop: { enabled: true } } },
       provider: recordingProvider(sink)
     });
-    assert.deepEqual(r.credited.sort(), ["a", "b"]);
+    expect(r.credited.sort()).toEqual(["a", "b"]);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
@@ -121,7 +120,7 @@ test("bounds the credit batch at 20 ids even when more are reported", async () =
       rawConfig: { feedback: { creditLoop: { enabled: true } } },
       provider: recordingProvider(sink)
     });
-    assert.equal(r.credited.length, 20);
+    expect(r.credited.length).toBe(20);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
@@ -136,7 +135,7 @@ test("provider lacking feedback() resolves to a no-op, never throws", async () =
       rawConfig: { feedback: { creditLoop: { enabled: true } } },
       provider: {}
     });
-    assert.deepEqual(r.credited, []);
+    expect(r.credited).toEqual([]);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
@@ -157,7 +156,7 @@ test("fail-silent: a throwing feedback() for one id never rejects and does not b
       rawConfig: { feedback: { creditLoop: { enabled: true } } },
       provider: flaky
     });
-    assert.deepEqual(r.credited, ["good"]);
+    expect(r.credited).toEqual(["good"]);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }

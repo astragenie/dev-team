@@ -14,8 +14,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import {
   buildRecallBlock,
   injectRecall,
@@ -44,14 +43,14 @@ async function writeLoopConfig(repo: string, memory: unknown) {
 }
 
 test("formatRecallBlock returns empty string for zero entries (no header, no whitespace)", () => {
-  assert.equal(formatRecallBlock([]), "");
+  expect(formatRecallBlock([])).toBe("");
 });
 
 test("loadMemoryConfig returns undefined when .claude/loop.json is missing", async () => {
   const repo = await makeTempRepo("inject-recall-no-config-");
   try {
     const config = await loadMemoryConfig(repo);
-    assert.equal(config, undefined);
+    expect(config).toBe(undefined);
   } finally {
     await cleanup(repo);
   }
@@ -64,7 +63,7 @@ test("loadMemoryConfig returns undefined on malformed JSON (never throws)", asyn
     await fs.mkdir(path.dirname(target), { recursive: true });
     await fs.writeFile(target, "{ not json", "utf8");
     const config = await loadMemoryConfig(repo);
-    assert.equal(config, undefined);
+    expect(config).toBe(undefined);
   } finally {
     await cleanup(repo);
   }
@@ -75,7 +74,7 @@ test("injectRecall is byte-identical to input when no memory config exists (prov
   try {
     const dispatchText = "Build the thing. Do the work.";
     const result = await injectRecall(dispatchText, { repoPath: repo });
-    assert.equal(result, dispatchText);
+    expect(result).toBe(dispatchText);
   } finally {
     await cleanup(repo);
   }
@@ -96,7 +95,7 @@ test("injectRecall is byte-identical to input when recall.enabled:false (even wi
 
     const dispatchText = "Fix the bug.";
     const result = await injectRecall(dispatchText, { repoPath: repo });
-    assert.equal(result, dispatchText);
+    expect(result).toBe(dispatchText);
   } finally {
     await cleanup(repo);
   }
@@ -117,12 +116,15 @@ test("injectRecall appends the bridge-format block when provider:file and entrie
     const dispatchText = "Implement the feature.";
     const result = await injectRecall(dispatchText, { repoPath: repo, tags: ["stack:typescript"] });
 
-    assert.ok(result.startsWith(dispatchText), "original dispatch text is preserved verbatim");
-    assert.ok(
+    expect(
+      result.startsWith(dispatchText),
+      "original dispatch text is preserved verbatim"
+    ).toBeTruthy();
+    expect(
       result.includes("## Prior context (from astramem)"),
       "reuses the bridge's existing header, not a rival format"
-    );
-    assert.ok(result.includes("review rejected: missing null guard"));
+    ).toBeTruthy();
+    expect(result.includes("review rejected: missing null guard")).toBeTruthy();
   } finally {
     await cleanup(repo);
   }
@@ -141,7 +143,7 @@ test("buildRecallBlock scopes by agent — entries for a different agent are exc
     await writeLoopConfig(repo, { provider: "file" });
 
     const block = await buildRecallBlock({ repoPath: repo, agent: "crew:frontend-dev" });
-    assert.equal(block, "", "entry scoped to a different agent must not leak into this recall");
+    expect(block, "entry scoped to a different agent must not leak into this recall").toBe("");
   } finally {
     await cleanup(repo);
   }
@@ -163,10 +165,10 @@ test("buildRecallBlock respects recall.maxTokens (token-budget truncation)", asy
 
     const block = await buildRecallBlock({ repoPath: repo });
     const lineCount = block.length === 0 ? 0 : block.split("\n").length - 1; // minus header line
-    assert.ok(
+    expect(
       lineCount <= 1,
       `expected <=1 recalled line under a tight token budget, got ${lineCount}`
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(repo);
   }
@@ -181,7 +183,7 @@ test("injectRecall degrades to the input text unchanged when the provider throws
 
     const dispatchText = "Ship it.";
     const result = await injectRecall(dispatchText, { repoPath: repo });
-    assert.equal(result, dispatchText);
+    expect(result).toBe(dispatchText);
   } finally {
     await cleanup(repo);
   }
@@ -209,19 +211,15 @@ test("buildRecallBlock forwards the configured project to the wire provider when
 
     try {
       const block = await buildRecallBlock({ repoPath: repo, agent: "crew:fullstack-dev" });
-      assert.ok(capturedReq, "wire provider recall() must have been called directly");
-      assert.equal(
-        capturedReq?.project,
-        "dev-team",
-        "project falls back from config.memory.project"
+      expect(capturedReq, "wire provider recall() must have been called directly").toBeTruthy();
+      expect(capturedReq?.project, "project falls back from config.memory.project").toBe(
+        "dev-team"
       );
-      assert.equal(
-        capturedReq?.agent,
-        "crew:fullstack-dev",
-        "agent scope still reaches the wire call"
+      expect(capturedReq?.agent, "agent scope still reaches the wire call").toBe(
+        "crew:fullstack-dev"
       );
-      assert.match(block, /## Prior context \(from astramem\)/);
-      assert.match(block, /scoped memory hit/);
+      expect(block).toMatch(/## Prior context \(from astramem\)/);
+      expect(block).toMatch(/scoped memory hit/);
     } finally {
       _setWireProvider(null);
       _resetResolveCache();
@@ -253,7 +251,7 @@ test("buildRecallBlock prefers an explicit project override over the configured 
 
     try {
       await buildRecallBlock({ repoPath: repo, project: "runner-plugin" });
-      assert.equal(capturedReq?.project, "runner-plugin");
+      expect(capturedReq?.project).toBe("runner-plugin");
     } finally {
       _setWireProvider(null);
       _resetResolveCache();
@@ -281,11 +279,10 @@ test("buildRecallBlock falls back to the standard agent/tag path when astramem i
 
     try {
       const block = await buildRecallBlock({ repoPath: repo });
-      assert.match(
+      expect(
         block,
-        /fallback lesson visible without project scoping/,
         "project scoping being unavailable must not suppress the standard recall path"
-      );
+      ).toMatch(/fallback lesson visible without project scoping/);
     } finally {
       _resetResolveCache();
     }
@@ -320,12 +317,11 @@ test("buildRecallBlock does not forward a project filter when none is configured
       // dualWrite:false) still reaches the wire for agent/tag scoping, but
       // must never leak an implicit project filter onto that request.
       await buildRecallBlock({ repoPath: repo });
-      assert.ok(capturedReq, "generic recall path still reaches the wire when paired");
-      assert.equal(
+      expect(capturedReq, "generic recall path still reaches the wire when paired").toBeTruthy();
+      expect(
         capturedReq?.project,
-        undefined,
         "no project scope should be present on the wire request when unconfigured"
-      );
+      ).toBe(undefined);
     } finally {
       _setWireProvider(null);
       _resetResolveCache();

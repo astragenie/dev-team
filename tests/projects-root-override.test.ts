@@ -3,8 +3,7 @@
 // AC: listActiveProjectDirs respects CREW_PROJECTS_ROOT environment variable instead of
 // scanning the user's real ~/.claude/projects directory.
 
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
@@ -73,12 +72,10 @@ test("listActiveProjectDirs respects CREW_PROJECTS_ROOT environment variable", a
     });
 
     // Verify only our fixture project is found
-    assert.equal(active.length, 1, "Expected exactly one active project");
-    assert.equal(active[0]?.slug, "test-project-1", "Expected fixture slug");
-    assert.equal(
-      active[0]?.dir,
-      path.join(fixtureRoot, "test-project-1"),
-      "Expected dir to point to fixture"
+    expect(active.length, "Expected exactly one active project").toBe(1);
+    expect(active[0]?.slug, "Expected fixture slug").toBe("test-project-1");
+    expect(active[0]?.dir, "Expected dir to point to fixture").toBe(
+      path.join(fixtureRoot, "test-project-1")
     );
   } finally {
     // Restore env var and cleanup
@@ -116,7 +113,7 @@ test("listActiveProjectDirs falls back to ~/.claude/projects when CREW_PROJECTS_
 
     // Confirm the fallback branch actually resolved against the fake home,
     // proving CREW_PROJECTS_ROOT-unset really took the ~/.claude/projects path.
-    assert.equal(getProjectsRoot(), path.join(fakeHome, ".claude", "projects"));
+    expect(getProjectsRoot()).toBe(path.join(fakeHome, ".claude", "projects"));
 
     // Query with a window guaranteed to have no activity anywhere
     // (far past and future times that won't match real sessions)
@@ -130,8 +127,8 @@ test("listActiveProjectDirs falls back to ~/.claude/projects when CREW_PROJECTS_
       endMs: veryOldEnd
     });
 
-    assert.ok(Array.isArray(active), "Should return an array even without env var");
-    assert.equal(active.length, 0, "Should have no activity when home has no .claude/projects");
+    expect(Array.isArray(active), "Should return an array even without env var").toBeTruthy();
+    expect(active.length, "Should have no activity when home has no .claude/projects").toBe(0);
   } finally {
     // Restore env vars
     if (originalEnv !== undefined) {

@@ -1,29 +1,28 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { ok, err, map, flatMap, type Result } from "../scripts/lib/result.ts";
 
 test("ok wraps a value", () => {
   const r = ok(42);
-  assert.equal(r.ok, true);
-  if (r.ok) assert.equal(r.value, 42);
+  expect(r.ok).toBe(true);
+  if (r.ok) expect(r.value).toBe(42);
 });
 
 test("err wraps an error", () => {
   const r = err({ code: "oops" as const });
-  assert.equal(r.ok, false);
-  if (!r.ok) assert.deepEqual(r.error, { code: "oops" });
+  expect(r.ok).toBe(false);
+  if (!r.ok) expect(r.error).toEqual({ code: "oops" });
 });
 
 test("map transforms ok value, leaves err unchanged", () => {
   const okIn: Result<number, { code: "x" }> = ok(2);
   const mapped = map(okIn, (n) => n * 5);
-  assert.equal(mapped.ok, true);
-  if (mapped.ok) assert.equal(mapped.value, 10);
+  expect(mapped.ok).toBe(true);
+  if (mapped.ok) expect(mapped.value).toBe(10);
 
   const errIn: Result<number, { code: "x" }> = err({ code: "x" });
   const mappedErr = map(errIn, (n) => n * 5);
-  assert.equal(mappedErr.ok, false);
-  if (!mappedErr.ok) assert.deepEqual(mappedErr.error, { code: "x" });
+  expect(mappedErr.ok).toBe(false);
+  if (!mappedErr.ok) expect(mappedErr.error).toEqual({ code: "x" });
 });
 
 test("flatMap chains Result-returning functions", () => {
@@ -33,11 +32,11 @@ test("flatMap chains Result-returning functions", () => {
   };
   const startOk = ok("7") as Result<string, { code: "parse"; raw: string }>;
   const chained = flatMap(startOk, parse);
-  assert.equal(chained.ok, true);
-  if (chained.ok) assert.equal(chained.value, 7);
+  expect(chained.ok).toBe(true);
+  if (chained.ok) expect(chained.value).toBe(7);
 
   const startBad = ok("not-a-number") as Result<string, { code: "parse"; raw: string }>;
   const chainedBad = flatMap(startBad, parse);
-  assert.equal(chainedBad.ok, false);
-  if (!chainedBad.ok) assert.deepEqual(chainedBad.error, { code: "parse", raw: "not-a-number" });
+  expect(chainedBad.ok).toBe(false);
+  if (!chainedBad.ok) expect(chainedBad.error).toEqual({ code: "parse", raw: "not-a-number" });
 });

@@ -1,6 +1,5 @@
 // tests/cost-hygiene-hook.test.mjs
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -58,8 +57,8 @@ test("hook exits 0 silently on missing file (default-on)", async () => {
         cwd: repo
       })
     );
-    assert.equal(result.exitCode, 0);
-    assert.equal(result.stdout, "");
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("");
   } finally {
     await cleanup(repo);
   }
@@ -78,11 +77,11 @@ test("hook fires and writes state (default-on)", async () => {
         cwd: repo
       })
     );
-    assert.equal(result.exitCode, 0);
+    expect(result.exitCode).toBe(0);
     const stateFile = path.join(repo, ".claude", "state", "cost-hygiene", "s_default.json");
     const raw = await fs.readFile(stateFile, "utf8");
     const state = JSON.parse(raw);
-    assert.equal(state.entries[file].read_count, 1);
+    expect(state.entries[file].read_count).toBe(1);
   } finally {
     await cleanup(repo);
   }
@@ -101,12 +100,12 @@ test("hook with first-read stdin emits empty stdout, writes state", async () => 
         cwd: repo
       })
     );
-    assert.equal(result.exitCode, 0);
-    assert.equal(result.stdout, "");
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("");
     const stateFile = path.join(repo, ".claude", "state", "cost-hygiene", "s2.json");
     const raw = await fs.readFile(stateFile, "utf8");
     const state = JSON.parse(raw);
-    assert.equal(state.entries[file].read_count, 1);
+    expect(state.entries[file].read_count).toBe(1);
   } finally {
     await cleanup(repo);
   }
@@ -136,11 +135,11 @@ test("smoke: hook with reread stdin emits decision + systemMessage with content"
 
     // Second read attempt → should warn
     const result = await runHookSpawn(stdin);
-    assert.equal(result.exitCode, 0);
+    expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout);
-    assert.equal(parsed.decision, "approve");
-    assert.match(parsed.systemMessage, /<system-reminder>/);
-    assert.match(parsed.systemMessage, /snowflake/);
+    expect(parsed.decision).toBe("approve");
+    expect(parsed.systemMessage).toMatch(/<system-reminder>/);
+    expect(parsed.systemMessage).toMatch(/snowflake/);
   } finally {
     await cleanup(repo);
   }
@@ -148,8 +147,8 @@ test("smoke: hook with reread stdin emits decision + systemMessage with content"
 
 test("hook with malformed stdin exits 0 silently", async () => {
   const result = await runHook("not json at all");
-  assert.equal(result.exitCode, 0);
-  assert.equal(result.stdout, "");
+  expect(result.exitCode).toBe(0);
+  expect(result.stdout).toBe("");
 });
 
 const POST_HOOK_PATH = path.join(__dirname, "..", "hooks", "record-read-content.ts");
@@ -190,12 +189,12 @@ test("post-hook captures Read tool result content into state", async () => {
       cwd: repo
     });
     const result = await runPostHook(postStdin);
-    assert.equal(result.exitCode, 0);
-    assert.equal(result.stdout, "");
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("");
     const state = JSON.parse(
       await fs.readFile(path.join(repo, ".claude", "state", "cost-hygiene", "s4.json"), "utf8")
     );
-    assert.equal(state.entries[file].content, "wisp");
+    expect(state.entries[file].content).toBe("wisp");
   } finally {
     await cleanup(repo);
   }
@@ -222,11 +221,11 @@ test("post-hook fires by default and writes state", async () => {
       cwd: repo
     });
     const result = await runPostHook(postStdin);
-    assert.equal(result.exitCode, 0);
+    expect(result.exitCode).toBe(0);
     const state = JSON.parse(
       await fs.readFile(path.join(repo, ".claude", "state", "cost-hygiene", "s5.json"), "utf8")
     );
-    assert.equal(state.entries[file].content, "bloom");
+    expect(state.entries[file].content).toBe("bloom");
   } finally {
     await cleanup(repo);
   }

@@ -1,7 +1,6 @@
 // tests/validate-skills.test.mjs — FEAT-043
 // Covers: last_reviewed warning (AC-3) + basic error/pass paths.
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -59,16 +58,19 @@ Stop when the task is complete.
 test("passes on a well-formed skill", async () => {
   const root = await makeSkillsDir({ "my-skill": WELL_FORMED });
   const result = await validateSkills(root);
-  assert.equal(result.ok, true, `unexpected errors: ${result.errors.join("; ")}`);
-  assert.equal(result.skillCount, 1);
+  expect(result.ok, `unexpected errors: ${result.errors.join("; ")}`).toBe(true);
+  expect(result.skillCount).toBe(1);
 });
 
 test("warns when last_reviewed is absent", async () => {
   const root = await makeSkillsDir({ "my-skill": MISSING_LAST_REVIEWED });
   const result = await validateSkills(root);
-  assert.equal(result.ok, true, "missing last_reviewed should warn, not error");
+  expect(result.ok, "missing last_reviewed should warn, not error").toBe(true);
   const hasWarning = result.warnings.some((w) => w.includes("last_reviewed"));
-  assert.ok(hasWarning, `expected last_reviewed warning, got: ${result.warnings.join("; ")}`);
+  expect(
+    hasWarning,
+    `expected last_reviewed warning, got: ${result.warnings.join("; ")}`
+  ).toBeTruthy();
 });
 
 test("errors on missing required frontmatter", async () => {
@@ -87,5 +89,5 @@ Stop here.
 `;
   const root = await makeSkillsDir({ "my-skill": noTier });
   const result = await validateSkills(root);
-  assert.equal(result.ok, false, "missing tier should error");
+  expect(result.ok, "missing tier should error").toBe(false);
 });
