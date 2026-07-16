@@ -12,8 +12,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { buildHandoffDigest, parseCreditLoopConfig } from "../scripts/lib/memory/handoff-digest.ts";
 import { buildProfileBlock } from "../scripts/lib/memory/inject-profile.ts";
 import { fileProvider } from "@astragenie/memory-provider";
@@ -71,22 +70,22 @@ function fakeProvider(profile: AgentProfile | null): ProfileCapableProvider {
 }
 
 test("parseCreditLoopConfig defaults to disabled, k=5, on absent/malformed config", () => {
-  assert.deepEqual(parseCreditLoopConfig(undefined), { enabled: false, k: 5 });
-  assert.deepEqual(parseCreditLoopConfig({ feedback: { creditLoop: "nonsense" } }), {
+  expect(parseCreditLoopConfig(undefined)).toEqual({ enabled: false, k: 5 });
+  expect(parseCreditLoopConfig({ feedback: { creditLoop: "nonsense" } })).toEqual({
     enabled: false,
     k: 5
   });
   // A bare top-level `creditLoop` (not nested under `feedback`) is ignored,
   // not honored — proves the nesting requirement is load-bearing, not
   // incidental.
-  assert.deepEqual(parseCreditLoopConfig({ creditLoop: { enabled: true } }), {
+  expect(parseCreditLoopConfig({ creditLoop: { enabled: true } })).toEqual({
     enabled: false,
     k: 5
   });
 });
 
 test("parseCreditLoopConfig hard-caps k at 5 even when a larger value is configured", () => {
-  assert.deepEqual(parseCreditLoopConfig({ feedback: { creditLoop: { enabled: true, k: 100 } } }), {
+  expect(parseCreditLoopConfig({ feedback: { creditLoop: { enabled: true, k: 100 } } })).toEqual({
     enabled: true,
     k: 5
   });
@@ -111,9 +110,9 @@ test("buildHandoffDigest is byte-identical to buildProfileBlock when creditLoop.
       provider
     });
 
-    assert.equal(digest.block, direct.block);
-    assert.deepEqual(digest.ids.sort(), direct.injectedIds.sort());
-    assert.doesNotMatch(digest.block, /Recall \(memory credit loop\)/);
+    expect(digest.block).toBe(direct.block);
+    expect(digest.ids.sort()).toEqual(direct.injectedIds.sort());
+    expect(digest.block).not.toMatch(/Recall \(memory credit loop\)/);
   } finally {
     await cleanup(repo);
   }
@@ -136,10 +135,10 @@ test("buildHandoffDigest appends an id-carrying recall block when creditLoop.ena
       rawConfig
     });
 
-    assert.match(digest.block, /## Recall \(memory credit loop\)/);
-    assert.match(digest.block, /credit-loop recall hit/);
-    assert.match(digest.block, /<!--atom:[^>]+-->/);
-    assert.ok(digest.ids.length > 0, "recall hit id must be surfaced in ids");
+    expect(digest.block).toMatch(/## Recall \(memory credit loop\)/);
+    expect(digest.block).toMatch(/credit-loop recall hit/);
+    expect(digest.block).toMatch(/<!--atom:[^>]+-->/);
+    expect(digest.ids.length > 0, "recall hit id must be surfaced in ids").toBeTruthy();
   } finally {
     await cleanup(repo);
   }
@@ -162,7 +161,10 @@ test("buildHandoffDigest hard-caps recall hits at 5 even when more entries match
     const recallLines = digest.block
       .split("\n")
       .filter((l) => l.startsWith("- **[") && l.includes("hit-"));
-    assert.ok(recallLines.length <= 5, `expected <=5 recall lines, got ${recallLines.length}`);
+    expect(
+      recallLines.length <= 5,
+      `expected <=5 recall lines, got ${recallLines.length}`
+    ).toBeTruthy();
   } finally {
     await cleanup(repo);
   }
@@ -187,8 +189,8 @@ test("global memory.enabled:'never' wins over profile.enabled + creditLoop.enabl
     // No provider override here: exercise the real resolveProvider() gate
     // (noopProvider lacks profile()/feedback ()), not a test double.
     const digest = await buildHandoffDigest({ repoPath: repo, agent: "crew:reviewer", rawConfig });
-    assert.equal(digest.block, "");
-    assert.deepEqual(digest.ids, []);
+    expect(digest.block).toBe("");
+    expect(digest.ids).toEqual([]);
   } finally {
     await cleanup(repo);
   }
@@ -216,8 +218,8 @@ test("buildHandoffDigest is fail-silent when recall fails to parse — profile h
       provider
     });
 
-    assert.match(digest.block, /## Your track record \(crew:reviewer\)/);
-    assert.doesNotMatch(digest.block, /Recall \(memory credit loop\)/);
+    expect(digest.block).toMatch(/## Your track record \(crew:reviewer\)/);
+    expect(digest.block).not.toMatch(/Recall \(memory credit loop\)/);
   } finally {
     await cleanup(repo);
   }

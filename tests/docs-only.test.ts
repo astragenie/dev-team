@@ -4,8 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 
 import { isDocsOnlyDiff, pushedFileset, isDocsOnlyPush } from "../scripts/lib/docs-only.ts";
 
@@ -25,22 +24,22 @@ function git(args: string[], cwd: string): string {
 
 test("isDocsOnlyDiff — pure path classification", () => {
   // All-docs sets → true.
-  assert.equal(isDocsOnlyDiff(["README.md", "docs/architecture/x.md"]), true);
-  assert.equal(isDocsOnlyDiff(["CHANGELOG.md", "LICENSE"]), true);
-  assert.equal(isDocsOnlyDiff([".claude/artifacts/crew/reviews/r.md"]), true);
-  assert.equal(isDocsOnlyDiff(["notes.txt", "docs/guide.mdx"]), true);
+  expect(isDocsOnlyDiff(["README.md", "docs/architecture/x.md"])).toBe(true);
+  expect(isDocsOnlyDiff(["CHANGELOG.md", "LICENSE"])).toBe(true);
+  expect(isDocsOnlyDiff([".claude/artifacts/crew/reviews/r.md"])).toBe(true);
+  expect(isDocsOnlyDiff(["notes.txt", "docs/guide.mdx"])).toBe(true);
   // Backslash paths (Windows-style) normalize.
-  assert.equal(isDocsOnlyDiff(["docs\\a.md"]), true);
+  expect(isDocsOnlyDiff(["docs\\a.md"])).toBe(true);
 
   // Any non-docs path → false.
-  assert.equal(isDocsOnlyDiff(["README.md", "scripts/lib/x.ts"]), false);
-  assert.equal(isDocsOnlyDiff(["package.json"]), false);
-  assert.equal(isDocsOnlyDiff(["docs.ts"]), false); // not under docs/, .ts extension
-  assert.equal(isDocsOnlyDiff(["src/readme.md.ts"]), false);
+  expect(isDocsOnlyDiff(["README.md", "scripts/lib/x.ts"])).toBe(false);
+  expect(isDocsOnlyDiff(["package.json"])).toBe(false);
+  expect(isDocsOnlyDiff(["docs.ts"])).toBe(false); // not under docs/, .ts extension
+  expect(isDocsOnlyDiff(["src/readme.md.ts"])).toBe(false);
 
   // Empty → false (nothing to reason about).
-  assert.equal(isDocsOnlyDiff([]), false);
-  assert.equal(isDocsOnlyDiff(["  "]), false);
+  expect(isDocsOnlyDiff([])).toBe(false);
+  expect(isDocsOnlyDiff(["  "])).toBe(false);
 });
 
 async function makeRepoWithUpstream(label: string): Promise<string> {
@@ -72,8 +71,8 @@ test("pushedFileset resolves the branch's added files against upstream", async (
   git(["branch", "--set-upstream-to=origin/main", "chore/lane"], work);
 
   const files = await pushedFileset(work);
-  assert.notEqual(files, null);
-  assert.deepEqual((files ?? []).sort(), ["docs.md", "docs/guide.md"]);
+  expect(files).not.toBe(null);
+  expect((files ?? []).sort()).toEqual(["docs.md", "docs/guide.md"]);
 });
 
 test("isDocsOnlyPush — true for a docs-only branch, false when code is mixed in", async () => {
@@ -83,13 +82,13 @@ test("isDocsOnlyPush — true for a docs-only branch, false when code is mixed i
   git(["add", "-A"], work);
   git(["commit", "-q", "-m", "docs"], work);
   git(["branch", "--set-upstream-to=origin/main", "chore/lane"], work);
-  assert.equal(await isDocsOnlyPush(work), true);
+  expect(await isDocsOnlyPush(work)).toBe(true);
 
   // Add a code file → no longer docs-only.
   await fs.writeFile(path.join(work, "index.ts"), "export const x = 1;\n");
   git(["add", "-A"], work);
   git(["commit", "-q", "-m", "code"], work);
-  assert.equal(await isDocsOnlyPush(work), false);
+  expect(await isDocsOnlyPush(work)).toBe(false);
 });
 
 test("isDocsOnlyPush — false (indeterminate) when no upstream can be resolved", async () => {
@@ -101,6 +100,6 @@ test("isDocsOnlyPush — false (indeterminate) when no upstream can be resolved"
   git(["add", "-A"], solo);
   git(["commit", "-q", "-m", "init"], solo);
   // No remote, no upstream → indeterminate → false (normal gate applies).
-  assert.equal(await pushedFileset(solo), null);
-  assert.equal(await isDocsOnlyPush(solo), false);
+  expect(await pushedFileset(solo)).toBe(null);
+  expect(await isDocsOnlyPush(solo)).toBe(false);
 });

@@ -1,7 +1,6 @@
 // FEAT-193 AC-10 — a champion-provenance-written agent must still pass
 // validate-agents (the leading `gepa:` block must not hide name/description).
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -35,20 +34,19 @@ test("AC-10: validate-agents passes on a champion-provenance-written agent", asy
 
     // Baseline: clean file validates.
     const before = await validateAgents(root);
-    assert.equal(before.ok, true, `baseline errors: ${before.errors.join("; ")}`);
+    expect(before.ok, `baseline errors: ${before.errors.join("; ")}`).toBe(true);
 
     // Promote: prepends a leading `gepa:` frontmatter block.
     writeChampionProvenance({ agentPath, trialUuid: randomUUID() });
     const promoted = await fs.readFile(agentPath, "utf8");
-    assert.ok(promoted.startsWith("---\ngepa:\n"), "provenance block must be prepended");
+    expect(promoted.startsWith("---\ngepa:\n"), "provenance block must be prepended").toBeTruthy();
 
     // The provenance-written agent must STILL validate — no missing name/description.
     const after = await validateAgents(root);
-    assert.equal(
+    expect(
       after.ok,
-      true,
       `provenance-written agent must validate; errors: ${after.errors.join("; ")}`
-    );
+    ).toBe(true);
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }
@@ -64,9 +62,12 @@ test("AC-10: idempotent — re-promoting replaces the block, still validates", a
 
     const twice = await fs.readFile(agentPath, "utf8");
     // Exactly one gepa block: stripping it once yields a body with no `gepa:` left.
-    assert.ok(!stripGepafrontmatter(twice).includes("gepa:"), "must not stack gepa blocks");
+    expect(
+      !stripGepafrontmatter(twice).includes("gepa:"),
+      "must not stack gepa blocks"
+    ).toBeTruthy();
     const after = await validateAgents(root);
-    assert.equal(after.ok, true, `errors: ${after.errors.join("; ")}`);
+    expect(after.ok, `errors: ${after.errors.join("; ")}`).toBe(true);
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }
