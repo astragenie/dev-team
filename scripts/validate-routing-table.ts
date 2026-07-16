@@ -29,8 +29,10 @@ const CARVEOUT_PLUGIN = /^context7/;
 const CARVEOUT_EXT = /\.(tf|mjs|md|js|ts|json|yaml|yml|sh)$/;
 
 // Cross-check constants (Pass 2)
+// "lead" role token removed (Slice B, lead -> dispatcher wire rename):
+// docs/routing-table.md carries zero live "lead" role hits post-v0.41 sweep,
+// confirmed by grep before removal.
 const KNOWN_CREW_ROLES = new Set([
-  "lead",
   "fullstack-dev",
   "reviewer",
   "verifier",
@@ -42,7 +44,7 @@ const KNOWN_CREW_ROLES = new Set([
 ]);
 /** Matches any crew role token in the Route-to column. */
 const CREW_ROLE_IN_CELL_RE =
-  /\b(lead|fullstack-dev|backend-dev|frontend-dev|reviewer|verifier|release-engineer|researcher|architect|uxdesigner|copywriter)\b/gi;
+  /\b(fullstack-dev|backend-dev|frontend-dev|reviewer|verifier|release-engineer|researcher|architect|uxdesigner|copywriter)\b/gi;
 /** Matches skills/<tier>/<name> paths in the Notes column. */
 const SKILL_PATH_IN_NOTES_RE = /skills\/(universal|workflow|domain|meta)\/([a-z0-9-]+)\/?/g;
 

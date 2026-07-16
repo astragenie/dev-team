@@ -95,7 +95,17 @@ async function approvalLogExists(repoPath: string): Promise<boolean> {
 }
 
 function defaultApprover(kind: string): string {
-  return USER_APPROVAL_KINDS.has(kind) ? "user" : "lead";
+  return USER_APPROVAL_KINDS.has(kind) ? "user" : "dispatcher";
+}
+
+// Slice B (lead -> dispatcher wire rename): approval records written before
+// this change persist "lead" as the approver. Normalize both sides of an
+// approver comparison so a `--approver dispatcher` filter still matches
+// pre-rename records (and a stale `--approver lead` filter still matches
+// post-rename ones) instead of records silently falling out of view.
+const APPROVER_ALIASES: Record<string, string> = { lead: "dispatcher" };
+function normalizeApprover(value: string): string {
+  return APPROVER_ALIASES[value] ?? value;
 }
 
 function normalizeStatusFilter(status: string | undefined): string {
@@ -209,7 +219,7 @@ export async function requestApproval(
     severity: options.severity || "medium",
     summary: options.summary || "Approval requested",
     reason: options.reason || "",
-    requester: options.requester || "lead-session",
+    requester: options.requester || "dispatcher-session",
     approver: options.approver || defaultApprover(kind)
   };
 
@@ -237,7 +247,7 @@ export async function listApprovals(
   const approvals = replayApprovals(events);
 
   return approvals.filter((approval) => {
-    if (approver && approval.approver !== approver) {
+    if (approver && normalizeApprover(approval.approver) !== normalizeApprover(approver)) {
       return false;
     }
     if (status === "all") {
@@ -277,7 +287,7 @@ export async function resolveApproval(
     const resolution = {
       id,
       decision: decision as string,
-      resolver: options.resolver || "lead-session",
+      resolver: options.resolver || "dispatcher-session",
       note: options.note || ""
     };
 

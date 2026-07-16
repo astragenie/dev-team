@@ -242,13 +242,23 @@ export async function loadClaimsState(
 // Claim / release mutations
 // ---------------------------------------------------------------------------
 
+// Slice B (lead -> dispatcher wire rename): a session that claimed files
+// under the old default owner "lead-session" before this change is still
+// running under that identity in claims.json after the rename ships. Treat
+// "lead-session" and "dispatcher-session" as the same owner for comparison
+// purposes so that session's later release/inspect calls (which now default
+// to "dispatcher-session") don't read its own claims as owned-by-other.
+function normalizeOwnerAlias(owner: string): string {
+  return owner === "lead-session" ? "dispatcher-session" : owner;
+}
+
 export async function claimFiles(
   repoPath: string,
   filePaths: string[],
   options: { owner?: string; note?: string } = {}
 ): Promise<Result<ClaimResult, Error>> {
   try {
-    const owner = options.owner || "lead-session";
+    const owner = options.owner || "dispatcher-session";
     const note = options.note || "";
     const storageRoot = await resolveCanonicalRepoRoot(repoPath);
 
@@ -272,7 +282,7 @@ export async function claimFiles(
           continue;
         }
 
-        if (existing.owner === owner) {
+        if (normalizeOwnerAlias(existing.owner) === normalizeOwnerAlias(owner)) {
           alreadyOwned.push(repoRelativePath);
           continue;
         }
@@ -323,7 +333,7 @@ export async function releaseFiles(
           skipped.push({ path: repoRelativePath, reason: "not_claimed" });
           continue;
         }
-        if (owner && existing.owner !== owner) {
+        if (owner && normalizeOwnerAlias(existing.owner) !== normalizeOwnerAlias(owner)) {
           skipped.push({ path: repoRelativePath, reason: "owned_by_other", owner: existing.owner });
           continue;
         }
@@ -375,7 +385,7 @@ function inspectAllClaims(claims: ClaimRecord[], owner: string | null): InspectR
   const owned: ClaimRecord[] = [];
   const conflicts: ClaimRecord[] = [];
   for (const claim of claims) {
-    if (claim.owner === owner) owned.push(claim);
+    if (normalizeOwnerAlias(claim.owner) === normalizeOwnerAlias(owner)) owned.push(claim);
     else conflicts.push(claim);
   }
   return { owner, owned, conflicts, available: [] };
@@ -396,7 +406,7 @@ function classifyRequestedPaths(
       available.push({ path: requestedPath });
       continue;
     }
-    if (owner && claim.owner === owner) {
+    if (owner && normalizeOwnerAlias(claim.owner) === normalizeOwnerAlias(owner)) {
       owned.push(claim);
       continue;
     }

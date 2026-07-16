@@ -767,7 +767,7 @@ async function writeHandoffAndBundle({ repoPath, flags, positionals }: CommandCo
   const r = await writeArtifact(repoPath, "handoff", {
     title: flags.title || positionals.join(" ") || "Task Handoff",
     from: flags.from || flags.owner || "fullstack-dev",
-    to: flags.to ?? "lead",
+    to: flags.to ?? "dispatcher",
     status: flags.status !== "open" ? (flags.status ?? undefined) : undefined,
     repoContext: flags.repoContext,
     ...pickFlags(flags, [
@@ -849,7 +849,7 @@ const COMMANDS = {
   claim: async ({ repoPath, flags, positionals }: CommandContext) => {
     const { claimFiles } = await import("./lib/claims.ts");
     const result = await claimFiles(repoPath, positionals, {
-      owner: flags.owner || "lead-session"
+      owner: flags.owner || "dispatcher-session"
     });
     if (!result.ok) {
       console.error(result.error.message);
@@ -876,7 +876,7 @@ const COMMANDS = {
   },
   "show-conflicts": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { inspectClaims } = await import("./lib/claims.ts");
-    return inspectClaims(repoPath, positionals, { owner: flags.owner || "lead-session" });
+    return inspectClaims(repoPath, positionals, { owner: flags.owner || "dispatcher-session" });
   },
 
   "claim-check": async ({ repoPath, flags, positionals }: CommandContext) => {
@@ -913,7 +913,7 @@ const COMMANDS = {
   "request-approval": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { requestApproval } = await import("./lib/approvals.ts");
     return requestApproval(repoPath, {
-      requester: flags.requester || "lead-session",
+      requester: flags.requester || "dispatcher-session",
       approver: flags.approver ?? undefined,
       kind: flags.kind || "scope_change",
       severity: flags.severity || "medium",
@@ -935,7 +935,7 @@ const COMMANDS = {
     const result = await resolveApproval(repoPath, {
       id: flags.id ?? undefined,
       decision: flags.decision ?? undefined,
-      resolver: flags.resolver || "lead-session",
+      resolver: flags.resolver || "dispatcher-session",
       note: flags.note || ""
     });
     if (!result.ok) {
@@ -981,7 +981,7 @@ const COMMANDS = {
     const { writeDeploymentGuidance } = await import("./lib/deployment-guidance/write.ts");
     const r = await writeDeploymentGuidance(repoPath, {
       title: flags.title || positionals.join(" ") || "Repo Deployment Model",
-      owner: flags.owner || "lead-session",
+      owner: flags.owner || "dispatcher-session",
       ...pickFlags(flags, [
         "summary",
         "build",
@@ -1031,7 +1031,7 @@ const COMMANDS = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fields: any = {
       title: flags.title || positionals.join(" ") || "Run Brief",
-      owner: flags.owner || "lead-session",
+      owner: flags.owner || "dispatcher-session",
       status: flags.status === "open" ? "active" : (flags.status ?? undefined),
       ...pickFlags(flags, [
         "goal",
@@ -1108,7 +1108,7 @@ const COMMANDS = {
     const memoriesUsed = splitCsv(flags.memoriesUsed);
     const r = await writeArtifact(repoPath, "handoff", {
       title: flags.title || positionals.join(" ") || "Task Handoff",
-      from: flags.from || flags.owner || "lead-session",
+      from: flags.from || flags.owner || "dispatcher-session",
       // Only pass status if it's not the default "open" value from parseArgs
       // (the default "open" is for issue creation, not for artifacts).
       status: flags.status !== "open" ? (flags.status ?? undefined) : undefined,
@@ -1195,7 +1195,7 @@ const COMMANDS = {
     const r = await writeArtifact(repoPath, "validation-plan", {
       title: flags.title || positionals.join(" ") || "Validation Plan",
       validator: flags.validator || flags.owner || "verifier",
-      owner: flags.owner || "lead-session",
+      owner: flags.owner || "dispatcher-session",
       ...pickFlags(flags, [
         "environment",
         "goal",
@@ -1295,7 +1295,7 @@ const COMMANDS = {
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
     const synthResult = await writeArtifact(repoPath, "final-synthesis", {
       title: flags.title || positionals.join(" ") || "Final Synthesis",
-      owner: flags.owner || "lead-session",
+      owner: flags.owner || "dispatcher-session",
       status: flags.status === "open" ? "completed" : (flags.status ?? undefined),
       force: flags.force ?? undefined,
       ...pickFlags(flags, [
