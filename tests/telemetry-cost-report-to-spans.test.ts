@@ -1,9 +1,8 @@
+import { test, expect } from "bun:test";
 /**
  * Tests for scripts/lib/telemetry/cost-report-to-spans.ts
  * AC-4: Span builder produces the correct trace tree.
  */
-import test from "node:test";
-import assert from "node:assert/strict";
 import path from "node:path";
 import { loadCostReport } from "../scripts/lib/telemetry/cost-report-loader.ts";
 import { costReportToSpans } from "../scripts/lib/telemetry/cost-report-to-spans.ts";
@@ -21,32 +20,32 @@ test("costReportToSpans: real FEAT113/SLICE37 report produces 3 spans with corre
   const report = await loadCostReport(REAL_FIXTURE);
   const spans = costReportToSpans(report);
 
-  assert.equal(spans.length, 3, "Must produce exactly 3 spans: root + phase + agent");
+  expect(spans.length, "Must produce exactly 3 spans: root + phase + agent").toBe(3);
 
   const root = spans.find((s) => s.name === "slice.run");
   const phase = spans.find((s) => s.name === "phase.build");
   const agent = spans.find((s) => s.name === "agent.dispatch");
 
-  assert.ok(root, "Must have a slice.run span");
-  assert.ok(phase, "Must have a phase.build span");
-  assert.ok(agent, "Must have an agent.dispatch span");
+  expect(root, "Must have a slice.run span").toBeTruthy();
+  expect(phase, "Must have a phase.build span").toBeTruthy();
+  expect(agent, "Must have an agent.dispatch span").toBeTruthy();
 
   // All share same traceId
-  assert.equal(root.traceId, phase.traceId, "root and phase must share traceId");
-  assert.equal(phase.traceId, agent.traceId, "phase and agent must share traceId");
+  expect(root!.traceId, "root and phase must share traceId").toBe(phase!.traceId);
+  expect(phase!.traceId, "phase and agent must share traceId").toBe(agent!.traceId);
 
   // Parent-child links
-  assert.equal(root.parentSpanId, undefined, "root must have no parentSpanId");
-  assert.equal(phase.parentSpanId, root.spanId, "phase.parentSpanId must === root.spanId");
-  assert.equal(agent.parentSpanId, phase.spanId, "agent.parentSpanId must === phase.spanId");
+  expect(root!.parentSpanId, "root must have no parentSpanId").toBe(undefined);
+  expect(phase!.parentSpanId, "phase.parentSpanId must === root.spanId").toBe(root!.spanId);
+  expect(agent!.parentSpanId, "agent.parentSpanId must === phase.spanId").toBe(phase!.spanId);
 
   // Root attrs
-  assert.equal(root.attributes["feat_id"], "FEAT-113", "feat_id must be FEAT-113");
-  assert.equal(root.attributes["slice_id"], "SLICE-37", "slice_id must be SLICE-37");
-  assert.equal(root.attributes["run_id"], "20260607T122544Z", "run_id must match");
+  expect(root!.attributes["feat_id"], "feat_id must be FEAT-113").toBe("FEAT-113");
+  expect(root!.attributes["slice_id"], "slice_id must be SLICE-37").toBe("SLICE-37");
+  expect(root!.attributes["run_id"], "run_id must match").toBe("20260607T122544Z");
 
   // Agent model attr
-  assert.equal(agent.attributes["model"], "claude-sonnet-4-6", "model must be claude-sonnet-4-6");
+  expect(agent!.attributes["model"], "model must be claude-sonnet-4-6").toBe("claude-sonnet-4-6");
 });
 
 // ---------------------------------------------------------------------------
@@ -81,13 +80,13 @@ test("costReportToSpans: two-model report produces 4 spans", () => {
   };
 
   const spans = costReportToSpans(twoModelReport);
-  assert.equal(spans.length, 4, "Must produce 4 spans for 2 models");
+  expect(spans.length, "Must produce 4 spans for 2 models").toBe(4);
 
   const agentSpans = spans.filter((s) => s.name === "agent.dispatch");
-  assert.equal(agentSpans.length, 2, "Must have 2 agent spans");
+  expect(agentSpans.length, "Must have 2 agent spans").toBe(2);
 
   const models = agentSpans.map((s) => s.attributes["model"]).sort();
-  assert.deepEqual(models, ["claude-opus-4-7", "claude-sonnet-4-6"]);
+  expect(models).toEqual(["claude-opus-4-7", "claude-sonnet-4-6"]);
 });
 
 // ---------------------------------------------------------------------------
@@ -99,17 +98,15 @@ test("costReportToSpans: re-running produces identical spans (determinism)", asy
   const spans1 = costReportToSpans(report);
   const spans2 = costReportToSpans(report);
 
-  assert.equal(spans1.length, spans2.length, "span count must match");
+  expect(spans1.length, "span count must match").toBe(spans2.length);
   for (let i = 0; i < spans1.length; i++) {
     const s1 = spans1[i]!;
     const s2 = spans2[i]!;
-    assert.equal(s1.traceId, s2.traceId, `traceId must match for span ${i}`);
-    assert.equal(s1.spanId, s2.spanId, `spanId must match for span ${i}`);
-    assert.equal(s1.parentSpanId, s2.parentSpanId, `parentSpanId must match for span ${i}`);
-    assert.equal(
-      JSON.stringify(s1),
-      JSON.stringify(s2),
-      `span ${i} must be byte-identical across re-runs`
+    expect(s1.traceId, `traceId must match for span ${i}`).toBe(s2.traceId);
+    expect(s1.spanId, `spanId must match for span ${i}`).toBe(s2.spanId);
+    expect(s1.parentSpanId, `parentSpanId must match for span ${i}`).toBe(s2.parentSpanId);
+    expect(JSON.stringify(s1), `span ${i} must be byte-identical across re-runs`).toBe(
+      JSON.stringify(s2)
     );
   }
 });
@@ -144,10 +141,9 @@ test("costReportToSpans: cache_create_5m + cacheCreate1h are both summed into ca
 
   const spans = costReportToSpans(report);
   const agentSpan = spans.find((s) => s.name === "agent.dispatch");
-  assert.ok(agentSpan, "Must have an agent.dispatch span");
-  assert.equal(
-    agentSpan.attributes["usage.cache_creation_tokens"],
-    3000,
+  expect(agentSpan, "Must have an agent.dispatch span").toBeTruthy();
+  expect(
+    agentSpan!.attributes["usage.cache_creation_tokens"],
     "cache_creation_tokens must equal cacheCreate1h (2000) + cacheCreate5m (1000) = 3000"
-  );
+  ).toBe(3000);
 });

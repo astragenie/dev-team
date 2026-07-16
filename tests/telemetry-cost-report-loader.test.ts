@@ -1,9 +1,8 @@
+import { test, expect } from "bun:test";
 /**
  * Tests for scripts/lib/telemetry/cost-report-loader.ts
  * AC-3: Cost-report loader reads real FEAT113/SLICE37 fixture correctly.
  */
-import test from "node:test";
-import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
@@ -31,15 +30,15 @@ const AGGREGATE_FIXTURE = path.resolve(
 test("loadCostReport: real FEAT113/SLICE37 fixture loads with correct fields", async () => {
   const report = await loadCostReport(REAL_FIXTURE);
 
-  assert.equal(report.runId, "20260607T122544Z", "runId must match leading timestamp");
-  assert.equal(derivedFeatureId(report), "FEAT-113", "derivedFeatureId must be FEAT-113");
-  assert.equal(derivedSliceId(report), "SLICE-37", "derivedSliceId must be SLICE-37");
-  assert.equal(report.usd, 1.9962, "usd must be 1.9962");
-  assert.equal(report.totalTokens, 4947801, "totalTokens must be 4947801");
-  assert.equal(report.modelMix.length, 1, "modelMix must have 1 entry");
-  assert.equal(report.modelMix[0]?.model, "claude-sonnet-4-6", "model must be claude-sonnet-4-6");
-  assert.equal(report.subagentDispatches, 5, "subagentDispatches must be 5");
-  assert.equal(report.aggregateAll, false, "aggregateAll must be false");
+  expect(report.runId, "runId must match leading timestamp").toBe("20260607T122544Z");
+  expect(derivedFeatureId(report), "derivedFeatureId must be FEAT-113").toBe("FEAT-113");
+  expect(derivedSliceId(report), "derivedSliceId must be SLICE-37").toBe("SLICE-37");
+  expect(report.usd, "usd must be 1.9962").toBe(1.9962);
+  expect(report.totalTokens, "totalTokens must be 4947801").toBe(4947801);
+  expect(report.modelMix.length, "modelMix must have 1 entry").toBe(1);
+  expect(report.modelMix[0]?.model, "model must be claude-sonnet-4-6").toBe("claude-sonnet-4-6");
+  expect(report.subagentDispatches, "subagentDispatches must be 5").toBe(5);
+  expect(report.aggregateAll, "aggregateAll must be false").toBe(false);
 });
 
 // ---------------------------------------------------------------------------
@@ -47,18 +46,12 @@ test("loadCostReport: real FEAT113/SLICE37 fixture loads with correct fields", a
 // ---------------------------------------------------------------------------
 
 test("loadCostReport: aggregate file throws AggregateReportSkipped", async () => {
-  await assert.rejects(
-    () => loadCostReport(AGGREGATE_FIXTURE),
-    (err: unknown) => {
-      assert.ok(err instanceof AggregateReportSkipped, "expected AggregateReportSkipped");
-      return true;
-    }
-  );
+  await expect(loadCostReport(AGGREGATE_FIXTURE)).rejects.toBeInstanceOf(AggregateReportSkipped);
 });
 
 test("loadCostReportSafe: aggregate file returns null", async () => {
   const result = await loadCostReportSafe(AGGREGATE_FIXTURE);
-  assert.equal(result, null, "loadCostReportSafe must return null for aggregate file");
+  expect(result, "loadCostReportSafe must return null for aggregate file").toBe(null);
 });
 
 // ---------------------------------------------------------------------------
@@ -83,13 +76,7 @@ usd: 0.5
       "utf8"
     );
 
-    await assert.rejects(
-      () => loadCostReport(malformedPath),
-      (err: unknown) => {
-        assert.ok(err instanceof Error, "expected Error");
-        return true;
-      }
-    );
+    await expect(loadCostReport(malformedPath)).rejects.toBeInstanceOf(Error);
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });
   }

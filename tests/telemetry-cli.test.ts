@@ -1,9 +1,8 @@
+import { test, expect } from "bun:test";
 /**
  * Tests for scripts/cost-report-to-spans.ts (CLI end-to-end).
  * AC-5, AC-6, AC-7.
  */
-import test from "node:test";
-import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
@@ -68,22 +67,20 @@ test("telemetry-cli: writes valid JSONL for real FEAT113/SLICE37 fixture", async
 
     const result = runCli(["--cost-dir", costDir, "--out-dir", outDir, "--only", "*feat113*"]);
 
-    assert.equal(
-      result.status,
-      0,
-      `CLI must exit 0, got ${result.status}. stderr: ${result.stderr}`
+    expect(result.status, `CLI must exit 0, got ${result.status}. stderr: ${result.stderr}`).toBe(
+      0
     );
 
     const outFile = path.join(outDir, "20260607T122544Z.jsonl");
     const content = await fs.readFile(outFile, "utf8");
     const lines = content.trim().split("\n").filter(Boolean);
 
-    assert.equal(lines.length, 3, "Output file must have exactly 3 lines (3 spans)");
+    expect(lines.length, "Output file must have exactly 3 lines (3 spans)").toBe(3);
 
     for (const line of lines) {
       const parsed = JSON.parse(line);
       const span = SpanRecordSchema.parse(parsed);
-      assert.ok(span.traceId, "each span must have a traceId");
+      expect(span.traceId, "each span must have a traceId").toBeTruthy();
     }
   } finally {
     await cleanup(tmpRoot);
@@ -107,16 +104,16 @@ test("telemetry-cli: two runs produce byte-identical output", async () => {
     const cliArgs = ["--cost-dir", costDir, "--out-dir", outDir, "--only", "*feat113*"];
 
     const r1 = runCli(cliArgs);
-    assert.equal(r1.status, 0, `First run must exit 0. stderr: ${r1.stderr}`);
+    expect(r1.status, `First run must exit 0. stderr: ${r1.stderr}`).toBe(0);
 
     const outFile = path.join(outDir, "20260607T122544Z.jsonl");
     const content1 = await fs.readFile(outFile, "utf8");
 
     const r2 = runCli(cliArgs);
-    assert.equal(r2.status, 0, `Second run must exit 0. stderr: ${r2.stderr}`);
+    expect(r2.status, `Second run must exit 0. stderr: ${r2.stderr}`).toBe(0);
 
     const content2 = await fs.readFile(outFile, "utf8");
-    assert.equal(content1, content2, "Output must be byte-identical across two runs");
+    expect(content1, "Output must be byte-identical across two runs").toBe(content2);
   } finally {
     await cleanup(tmpRoot);
   }
@@ -138,31 +135,25 @@ test("telemetry-cli: --emit-observability emits exactly one grep-able stderr lin
 
     // With --emit-observability: stderr must have exactly one matching line.
     const withFlag = runCli(["--cost-dir", costDir, "--out-dir", outDir, "--emit-observability"]);
-    assert.equal(withFlag.status, 0, `Exit 0 expected. stderr: ${withFlag.stderr}`);
+    expect(withFlag.status, `Exit 0 expected. stderr: ${withFlag.stderr}`).toBe(0);
     const stderrLines = withFlag.stderr.trim().split("\n").filter(Boolean);
-    assert.equal(
+    expect(
       stderrLines.length,
-      1,
       `Expected exactly 1 stderr line, got: ${JSON.stringify(stderrLines)}`
-    );
-    assert.match(
-      stderrLines[0]!,
-      /^OTEL-BACKFILL wrote \d+ spans across \d+ runs$/,
-      "stderr line must match pattern"
+    ).toBe(1);
+    expect(stderrLines[0]!, "stderr line must match pattern").toMatch(
+      /^OTEL-BACKFILL wrote \d+ spans across \d+ runs$/
     );
 
     // Without flag: stderr must be empty for a clean run.
     const withoutFlag = runCli(["--cost-dir", costDir, "--out-dir", outDir]);
-    assert.equal(
-      withoutFlag.status,
-      0,
-      `Exit 0 expected without flag. stderr: ${withoutFlag.stderr}`
+    expect(withoutFlag.status, `Exit 0 expected without flag. stderr: ${withoutFlag.stderr}`).toBe(
+      0
     );
-    assert.equal(
+    expect(
       withoutFlag.stderr.trim(),
-      "",
       "stderr must be empty when --emit-observability is not passed"
-    );
+    ).toBe("");
   } finally {
     await cleanup(tmpRoot);
   }
@@ -191,15 +182,13 @@ test("telemetry-cli: aggregate files are skipped and produce no output", async (
     );
 
     const result = runCli(["--cost-dir", costDir, "--out-dir", outDir]);
-    assert.equal(result.status, 0, `Exit 0 expected. stderr: ${result.stderr}`);
+    expect(result.status, `Exit 0 expected. stderr: ${result.stderr}`).toBe(0);
 
     const outEntries = await fs.readdir(outDir).catch(() => [] as string[]);
     // Only one JSONL file for the slice; aggregate should be skipped.
-    assert.equal(outEntries.length, 1, "Only one JSONL file should be produced");
-    assert.equal(
-      outEntries[0],
-      "20260607T122544Z.jsonl",
-      "JSONL file must match slice run id, not aggregate"
+    expect(outEntries.length, "Only one JSONL file should be produced").toBe(1);
+    expect(outEntries[0], "JSONL file must match slice run id, not aggregate").toBe(
+      "20260607T122544Z.jsonl"
     );
   } finally {
     await cleanup(tmpRoot);
