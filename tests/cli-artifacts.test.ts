@@ -310,6 +310,31 @@ test("write-handoff without --repo-context has no ## Repo Layout section", async
   assert.ok(!content.includes("## Repo Layout"), "should not contain Repo Layout without flag");
 });
 
+// Slice B (lead -> dispatcher wire rename): write-handoff-and-bundle's `to:`
+// default (scripts/crew.ts's writeHandoffAndBundle helper) flipped from
+// "lead" to "dispatcher". Plain write-handoff has no default of its own
+// (pickFlags only forwards --to when explicitly passed), so this default
+// only fires through the *-and-bundle command. No live code path parses the
+// "To" field back out of a generated handoff, so there is no dual-read
+// comparison to protect here — this only pins the new default.
+test("write-handoff-and-bundle --to defaults to 'dispatcher' when omitted", async () => {
+  const repoPath = await makeTempDir("crew-handoff-to-default-");
+  await runCrew(["init", "--repo", repoPath]);
+  const result = await runCrew([
+    "write-handoff-and-bundle",
+    "--repo",
+    repoPath,
+    "--title",
+    "Default to field",
+    "--from",
+    "fullstack-dev"
+  ]);
+  assert.equal(result.code, 0, "write-handoff-and-bundle should exit with code 0");
+  const output = JSON.parse(result.output);
+  const content = await fs.readFile(output.handoff, "utf8");
+  assert.match(content, /^- To: dispatcher$/m);
+});
+
 test("write-review-result with --validation-evidence emits frontmatter field and body section", async () => {
   const repoPath = await makeTempDir("crew-validation-evidence-present-");
   await runCrew(["init", "--repo", repoPath]);

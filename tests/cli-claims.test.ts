@@ -89,3 +89,59 @@ test("CLI claim and release manage repo-local claims", async () => {
   const releaseResult = JSON.parse(releaseResponse.output);
   assert.deepEqual(releaseResult.released, ["src/example.ts"]);
 });
+
+// Slice B (lead -> dispatcher wire rename): scripts/lib/claims.ts's default
+// owner flipped from "lead-session" to "dispatcher-session". These assert
+// the new default and the dual-read alias that keeps a session's claims
+// filed under the legacy name readable after the rename ships.
+
+test("claim without --owner defaults to 'dispatcher-session'", async () => {
+  const repoPath = await makeTempDir("crew-cli-claims-default-owner-");
+  await runCrew(["init", "--repo", repoPath]);
+
+  const claimResponse = await runCrew(["claim", "--repo", repoPath, "src/default-owner.ts"]);
+  assert.equal(claimResponse.code, 0, "claim should exit with code 0");
+  const claimResult = JSON.parse(claimResponse.output);
+  assert.equal(claimResult.owner, "dispatcher-session");
+});
+
+test("claim/release treat legacy 'lead-session' owner as alias of 'dispatcher-session' (dual-read)", async () => {
+  const repoPath = await makeTempDir("crew-cli-claims-alias-");
+  await runCrew(["init", "--repo", repoPath]);
+
+  const claimResponse = await runCrew([
+    "claim",
+    "--repo",
+    repoPath,
+    "--owner",
+    "lead-session",
+    "src/legacy.ts"
+  ]);
+  assert.equal(claimResponse.code, 0, "claim should exit with code 0");
+
+  // A caller relying on the new default owner (no --owner flag) should see
+  // its own prior claim as owned, not as a conflict from "another" owner.
+  const conflictsResponse = await runCrew(["show-conflicts", "--repo", repoPath, "src/legacy.ts"]);
+  assert.equal(conflictsResponse.code, 0, "show-conflicts should exit with code 0");
+  const conflictsResult = JSON.parse(conflictsResponse.output);
+  assert.equal(
+    conflictsResult.owned.length,
+    1,
+    "legacy 'lead-session' claim should read as owned under the new default 'dispatcher-session'"
+  );
+  assert.equal(conflictsResult.conflicts.length, 0);
+
+  // Releasing with the explicit new-default owner name must still match the
+  // claim recorded under the legacy owner name.
+  const releaseResponse = await runCrew([
+    "release",
+    "--repo",
+    repoPath,
+    "--owner",
+    "dispatcher-session",
+    "src/legacy.ts"
+  ]);
+  assert.equal(releaseResponse.code, 0, "release should exit with code 0");
+  const releaseResult = JSON.parse(releaseResponse.output);
+  assert.deepEqual(releaseResult.released, ["src/legacy.ts"]);
+});

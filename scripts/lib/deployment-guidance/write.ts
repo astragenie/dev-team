@@ -81,7 +81,7 @@ export async function writeDeploymentGuidance(
       `# Deployment Guidance: ${fields.title || "Repo Deployment Model"}`,
       "",
       renderField("Updated", nowIso()),
-      renderField("Owner", fields.owner || "lead-session"),
+      renderField("Owner", fields.owner || "dispatcher-session"),
       renderField("Discovery Status", fields.discoveryStatus || "repo-derived"),
       renderListField("Verified From", fields.verifiedFrom),
       renderField("Summary", fields.summary),
