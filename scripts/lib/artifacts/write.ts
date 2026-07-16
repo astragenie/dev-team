@@ -803,12 +803,19 @@ export interface WriteArtifactTestOverrides {
    * captureTee — lets tests inject a slow/fake module instead of racing a
    * real (possibly cold) @astragenie/gepa-core parse. */
   __captureTeeLoader?: () => Promise<{ captureTee: typeof CaptureTeeFn }>;
+  /** Overrides the dynamic-import loader fireMemoriesUsedCreditSilent uses
+   * to reach creditMemoriesUsed — lets tests inject a spy instead of
+   * resolving a real provider. */
+  __creditMemoriesUsedLoader?: () => Promise<{
+    creditMemoriesUsed: typeof import("../memory/handoff-credit.ts")["creditMemoriesUsed"];
+  }>;
   /** Shrinks the fireGuarded race ceiling below the production default so
    * tests don't have to wait out the real timeout to observe it winning. */
   __guardTimeoutMs?: number;
 }
 
 const defaultCaptureTeeLoader = () => import("../gepa/capture-tee.ts");
+const defaultCreditMemoriesUsedLoader = () => import("../memory/handoff-credit.ts");
 
 // Fire-and-forget GEPA capture tee. Guarded (Wave 1.5 / issue #360): races
 // the dynamic import + write against a bounded ceiling so a cold
@@ -915,6 +922,30 @@ async function fireFailureCaptureSilent(
   }
 }
 
+// Dispatch-memory-credit-loop, "credit on receipt" half (runner-plugin
+// upstream request 2026-07-16): `write-handoff` is the one chokepoint where
+// the orchestrator consumes a specialist's handoff for most specialist
+// types (docs/contracts/agent-profile-feedback-v1.md's sibling contract).
+// When the handoff carries the OPTIONAL `memoriesUsed` field, credit those
+// ids via the resolved provider — fire-and-forget, guarded, mirrors
+// fireCaptureTeeSilent/fireFailureCaptureSilent above. Absent/empty field,
+// `memory.feedback.creditLoop.enabled: false` (default), or any daemon error all
+// resolve to a silent no-op; never blocks or delays this write's return.
+async function fireMemoriesUsedCreditSilent(
+  repoPath: string,
+  kind: string,
+  fields: ArtifactFields,
+  overrides: WriteArtifactTestOverrides = {}
+): Promise<void> {
+  if (kind !== "handoff") return;
+  if (!fields.memoriesUsed || fields.memoriesUsed.length === 0) return;
+  await fireGuarded(async () => {
+    const loader = overrides.__creditMemoriesUsedLoader ?? defaultCreditMemoriesUsedLoader;
+    const { creditMemoriesUsed } = await loader();
+    await creditMemoriesUsed({ repoPath, ids: fields.memoriesUsed });
+  }, overrides.__guardTimeoutMs);
+}
+
 export async function writeArtifact(
   repoPath: string,
   kind: string,
@@ -950,6 +981,7 @@ export async function writeArtifact(
     // write's return. See fireCaptureTeeSilent + guarded-fire.ts headers.
     trackDetached(fireCaptureTeeSilent(repoPath, artifact, fields, overrides));
     trackDetached(fireFailureCaptureSilent(repoPath, kind, fields));
+    trackDetached(fireMemoriesUsedCreditSilent(repoPath, kind, fields, overrides));
 
     return ok(artifact);
   } catch (e) {

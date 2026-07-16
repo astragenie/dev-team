@@ -72,6 +72,7 @@ const FLAG_SPEC = {
   "--k": { key: "gepaK" },
   "--kind": { key: "kind" },
   "--logs": { key: "logs" },
+  "--memories-used": { key: "memoriesUsed" },
   "--metrics": { key: "metrics" },
   "--missing": { key: "missing" },
   "--mode": { key: "mode" },
@@ -266,7 +267,8 @@ function buildDefaultFlags(): Flags {
     skipReason: null,
     date: null,
     runId: null,
-    outcome: null
+    outcome: null,
+    memoriesUsed: null
   };
 }
 
@@ -1098,6 +1100,12 @@ const COMMANDS = {
   },
   "write-handoff": async ({ repoPath, flags, positionals }: CommandContext) => {
     const { writeArtifact } = await import("./lib/artifacts/write.ts");
+    // OPTIONAL dispatch-memory-credit-loop field (runner-plugin upstream
+    // request 2026-07-16): --memories-used <csv> is the ids a specialist
+    // self-reported it relied on. Absent/empty -> no key -> writeArtifact's
+    // fireMemoriesUsedCreditSilent no-ops. See
+    // docs/contracts/dispatch-memory-credit-loop-v1.md.
+    const memoriesUsed = splitCsv(flags.memoriesUsed);
     const r = await writeArtifact(repoPath, "handoff", {
       title: flags.title || positionals.join(" ") || "Task Handoff",
       from: flags.from || flags.owner || "lead-session",
@@ -1105,6 +1113,7 @@ const COMMANDS = {
       // (the default "open" is for issue creation, not for artifacts).
       status: flags.status !== "open" ? (flags.status ?? undefined) : undefined,
       repoContext: flags.repoContext,
+      ...(memoriesUsed.length > 0 ? { memoriesUsed } : {}),
       ...pickFlags(flags, [
         "to",
         "goal",
@@ -1626,13 +1635,27 @@ const COMMANDS = {
   //     the sidecar is still recorded for outcome-feedback.
   //   - "command": returns the real block, for clients WITHOUT the dispatch
   //     hook (the orchestrator appends it itself).
+  //
+  // Dispatch-memory-credit-loop (runner-plugin upstream request 2026-07-16):
+  // resolves through buildHandoffDigest, not buildProfileBlock directly, so
+  // this CLI surface gets the same recall-with-ids extension the SubagentStart
+  // hook gets (extending the seam, not forking a parallel one). Byte-identical
+  // to the pre-existing behavior when `memory.feedback.creditLoop.enabled` is false
+  // (default) — see handoff-digest.ts.
   "profile-block": async ({ repoPath, flags }: CommandContext) => {
-    const { buildProfileBlock } = await import("./lib/memory/inject-profile.ts");
+    const { buildHandoffDigest } = await import("./lib/memory/handoff-digest.ts");
     const { loadMemoryConfig } = await import("./lib/memory/inject-recall.ts");
     const { writeInjectedAtoms } = await import("./lib/memory/injected-atoms.ts");
     const agent = typeof flags.agent === "string" ? flags.agent : "";
     if (!agent) return { block: "", injectedIds: [] };
-    const { block, injectedIds } = await buildProfileBlock({ repoPath, agent });
+    const projects = splitCsv(flags.project);
+    const project: string | string[] | undefined =
+      projects.length > 1 ? projects : (projects[0] ?? undefined);
+    const { block, ids: injectedIds } = await buildHandoffDigest({
+      repoPath,
+      agent,
+      ...(project !== undefined ? { project } : {})
+    });
     if (typeof flags.runId === "string" && flags.runId) {
       await writeInjectedAtoms(repoPath, flags.runId, injectedIds);
     }

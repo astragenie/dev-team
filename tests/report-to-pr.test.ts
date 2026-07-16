@@ -85,6 +85,22 @@ describe("buildReportBody / parseReportBody round-trip", () => {
   it("returns null when the body carries no marker", () => {
     expect(parseReportBody("just a regular PR comment, no marker here")).toBeNull();
   });
+
+  // Dispatch-memory-credit-loop (runner-plugin upstream request 2026-07-16):
+  // the OPTIONAL memoriesUsed field round-trips through the MEMORIES: line.
+  it("round-trips the optional memoriesUsed field", () => {
+    const fields: ReportFields = { ...FIELDS, memoriesUsed: ["atom-1", "atom-2"] };
+    const body = buildReportBody(fields);
+    expect(body).toContain("MEMORIES: atom-1, atom-2");
+    expect(parseReportBody(body)).toEqual(fields);
+  });
+
+  it("omits the MEMORIES line entirely when memoriesUsed is absent or empty (byte-identical to today)", () => {
+    const withoutField = buildReportBody(FIELDS);
+    const withEmptyArray = buildReportBody({ ...FIELDS, memoriesUsed: [] });
+    expect(withoutField).not.toContain("MEMORIES:");
+    expect(withEmptyArray).toBe(withoutField);
+  });
 });
 
 // ── Fresh post ────────────────────────────────────────────────────────────────

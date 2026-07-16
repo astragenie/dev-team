@@ -248,6 +248,14 @@ Treat empty as "no block — proceed without it". The builder dispatch prompts i
 3a / 3b append the block (already the `## Your track record (<agent>)` format) after the
 Step 2.7 recall block, when non-empty, omit otherwise.
 
+**Dispatch-memory-credit-loop (opt-in, `memory.feedback.creditLoop.enabled`):** when
+enabled, `profile-block`'s returned block additionally carries a `## Recall (memory
+credit loop)` section — recall hits with `<!--atom:id-->` markers, k≤5. Each id is a
+candidate for the specialist's OPTIONAL `memories_used` report; when a `write-handoff`
+call in a later step names ids the specialist relied on, pass
+`--memories-used <id1,id2>` to credit them. Never required, never gated. See
+`docs/contracts/dispatch-memory-credit-loop-v1.md`.
+
 ---
 
 ### Steps 2 + 3 — UX designer + Builder (parallel when both fire)

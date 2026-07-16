@@ -1,6 +1,9 @@
 // hooks/lib/subagent-profile-core.ts — SubagentStart deterministic profile
 // injection. Uses injected deps (fake buildProfileBlock + spy
 // writeInjectedAtoms) so no daemon/provider is touched.
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { runSubagentProfileInjection } from "../hooks/lib/subagent-profile-core.ts";
@@ -79,4 +82,30 @@ test("falls back to CLAUDE_PROJECT_DIR when the payload omits cwd", async () => 
   );
   assert.notEqual(out, null);
   assert.deepEqual(writes, [["/env-repo", "crew:backend-dev", ["l9"]]]);
+});
+
+// Dispatch-memory-credit-loop (runner-plugin upstream request 2026-07-16):
+// with NO deps.buildProfileBlock override, the hook's default loader now
+// resolves handoff-digest.ts's buildHandoffDigest instead of
+// inject-profile.ts's buildProfileBlock directly (extending the seam — see
+// subagent-profile-core.ts's file header). A repo with no memory config at
+// all must still resolve cleanly to "emit nothing", proving the default
+// loader wires up without needing a live daemon.
+test("default loader (buildHandoffDigest, no deps override) resolves to null on an unconfigured repo", async () => {
+  const repo = await fs.mkdtemp(path.join(os.tmpdir(), "subagent-hook-default-loader-"));
+  try {
+    const raw = JSON.stringify({ agent_type: "crew:reviewer", cwd: repo });
+    const out = await runSubagentProfileInjection(
+      raw,
+      {},
+      {
+        writeInjectedAtoms: async () => {
+          /* not asserted here — only proving the default buildProfileBlock loader runs */
+        }
+      }
+    );
+    assert.equal(out, null);
+  } finally {
+    await fs.rm(repo, { recursive: true, force: true });
+  }
 });

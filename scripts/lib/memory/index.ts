@@ -43,3 +43,12 @@ export {
 } from "./inject-profile.ts";
 export { writeInjectedAtoms, readInjectedAtoms } from "./injected-atoms.ts";
 export { submitOutcomeFeedback } from "./profile-feedback.ts";
+export { recallEntries } from "./inject-recall.ts";
+export {
+  buildHandoffDigest,
+  parseCreditLoopConfig,
+  type BuildHandoffDigestOptions,
+  type CreditLoopConfig,
+  type HandoffDigest
+} from "./handoff-digest.ts";
+export { creditMemoriesUsed, type CreditMemoriesUsedOptions } from "./handoff-credit.ts";
