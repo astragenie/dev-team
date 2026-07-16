@@ -1,7 +1,6 @@
+import { describe, expect, test } from "bun:test";
 import fs from "node:fs/promises";
 import path from "node:path";
-import test from "node:test";
-import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 
 // Slice B (lead -> dispatcher wire rename) regression guard.
@@ -17,6 +16,12 @@ import { fileURLToPath } from "node:url";
 // expression (`?? "lead"`, `|| "lead-session"`, the role-classification
 // return), not the bare substring "lead" — legacy-alias comments and the
 // dual-read normalization helpers themselves legitimately mention "lead".
+//
+// Uses bun:test (not node:test): CI runs `bun test`, and generating test()
+// calls from a loop under node:test's compat shim trips Bun's "test()
+// inside another test()" NotImplementedError (bun#5090). describe()/test()
+// from bun:test handle this correctly — see the same loop-of-it() pattern
+// in tests/gepa/auto-merge-gate-five-conditions.test.ts:218-219.
 
 const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
@@ -58,29 +63,26 @@ const GUARDED_SURFACES: Array<{ file: string; forbidden: RegExp; label: string }
   }
 ];
 
-for (const { file, forbidden, label } of GUARDED_SURFACES) {
-  test(`${file}: no regression of ${label} to a legacy 'lead' wire default`, async () => {
-    const content = await fs.readFile(path.join(repoRoot, file), "utf8");
-    assert.doesNotMatch(
-      content,
-      forbidden,
-      `${file} appears to have regressed ${label} back to a "lead"-based default (Slice B rename)`
-    );
+describe("Slice B: no regression of migrated wire defaults back to 'lead'", () => {
+  for (const { file, forbidden, label } of GUARDED_SURFACES) {
+    test(`${file}: ${label}`, async () => {
+      const content = await fs.readFile(path.join(repoRoot, file), "utf8");
+      expect(
+        content,
+        `${file} appears to have regressed ${label} back to a "lead"-based default (Slice B rename)`
+      ).not.toMatch(forbidden);
+    });
+  }
+});
+
+describe("Slice B: dual-read alias normalization stays in place", () => {
+  test("claims.ts keeps the lead-session/dispatcher-session alias normalization", async () => {
+    const claims = await fs.readFile(path.join(repoRoot, "scripts/lib/claims.ts"), "utf8");
+    expect(claims).toMatch(/normalizeOwnerAlias/);
   });
-}
 
-test("claims.ts and approvals.ts still carry dual-read alias normalization for the legacy names", async () => {
-  const claims = await fs.readFile(path.join(repoRoot, "scripts/lib/claims.ts"), "utf8");
-  assert.match(
-    claims,
-    /normalizeOwnerAlias/,
-    "claims.ts must keep the lead-session/dispatcher-session alias normalization"
-  );
-
-  const approvals = await fs.readFile(path.join(repoRoot, "scripts/lib/approvals.ts"), "utf8");
-  assert.match(
-    approvals,
-    /normalizeApprover/,
-    "approvals.ts must keep the lead/dispatcher approver alias normalization"
-  );
+  test("approvals.ts keeps the lead/dispatcher approver alias normalization", async () => {
+    const approvals = await fs.readFile(path.join(repoRoot, "scripts/lib/approvals.ts"), "utf8");
+    expect(approvals).toMatch(/normalizeApprover/);
+  });
 });

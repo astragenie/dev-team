@@ -142,5 +142,9 @@ test("show-approvals --approver dispatcher matches a legacy 'lead' approver reco
   ]);
   assert.equal(leadFilterResult.code, 0);
   const leadFilterOutput = JSON.parse(leadFilterResult.output);
-  assert.equal(leadFilterOutput.approvals.length, 2, "legacy 'lead' filter should match both records");
+  assert.equal(
+    leadFilterOutput.approvals.length,
+    2,
+    "legacy 'lead' filter should match both records"
+  );
 });
