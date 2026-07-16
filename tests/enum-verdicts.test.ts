@@ -7,8 +7,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { runCrew } from "../scripts/crew.ts";
 import { registerWorkflowArtifact } from "../scripts/lib/workflow-state.ts";
 import type { ArtifactRef } from "../scripts/lib/workflow-state.ts";
@@ -46,7 +45,7 @@ async function cleanup(dir: string) {
 
 test("normalizeReviewDecision: needs_fix normalizes to rejected (aliasOf recorded)", () => {
   const result = normalizeReviewDecision("needs_fix");
-  assert.deepEqual(result, { canonical: "rejected", aliasOf: "needs_fix" });
+  expect(result).toEqual({ canonical: "rejected", aliasOf: "needs_fix" });
 });
 
 // FIX-0: architect-reviewer.md emits approved_with_conditions / needs_revision,
@@ -55,7 +54,7 @@ test("normalizeReviewDecision: needs_fix normalizes to rejected (aliasOf recorde
 // before anything was written. Widen the alias map, not the canonical enum.
 test("normalizeReviewDecision: approved_with_conditions normalizes to approved_with_notes (aliasOf recorded)", () => {
   const result = normalizeReviewDecision("approved_with_conditions");
-  assert.deepEqual(result, {
+  expect(result).toEqual({
     canonical: "approved_with_notes",
     aliasOf: "approved_with_conditions"
   });
@@ -63,33 +62,33 @@ test("normalizeReviewDecision: approved_with_conditions normalizes to approved_w
 
 test("normalizeReviewDecision: needs_revision normalizes to rejected (aliasOf recorded)", () => {
   const result = normalizeReviewDecision("needs_revision");
-  assert.deepEqual(result, { canonical: "rejected", aliasOf: "needs_revision" });
+  expect(result).toEqual({ canonical: "rejected", aliasOf: "needs_revision" });
 });
 
 test("normalizeReviewDecision: canonical values pass through with no aliasOf", () => {
   for (const value of ["approved", "approved_with_notes", "rejected"] as const) {
     const result = normalizeReviewDecision(value);
-    assert.deepEqual(result, { canonical: value });
+    expect(result).toEqual({ canonical: value });
   }
 });
 
 test("normalizeReviewDecision: unrecognized value returns null (fail closed, not open)", () => {
-  assert.equal(normalizeReviewDecision("lgtm"), null);
-  assert.equal(normalizeReviewDecision(undefined), null);
-  assert.equal(normalizeReviewDecision(""), null);
+  expect(normalizeReviewDecision("lgtm")).toBe(null);
+  expect(normalizeReviewDecision(undefined)).toBe(null);
+  expect(normalizeReviewDecision("")).toBe(null);
 });
 
 test("normalizeValidationDecision: legacy passed/passed_with_notes/failed normalize to canonical", () => {
-  assert.deepEqual(normalizeValidationDecision("passed"), { canonical: "pass", aliasOf: "passed" });
-  assert.deepEqual(normalizeValidationDecision("passed_with_notes"), {
+  expect(normalizeValidationDecision("passed")).toEqual({ canonical: "pass", aliasOf: "passed" });
+  expect(normalizeValidationDecision("passed_with_notes")).toEqual({
     canonical: "pass",
     aliasOf: "passed_with_notes"
   });
-  assert.deepEqual(normalizeValidationDecision("failed"), { canonical: "fail", aliasOf: "failed" });
+  expect(normalizeValidationDecision("failed")).toEqual({ canonical: "fail", aliasOf: "failed" });
 });
 
 test("normalizeValidationDecision: unrecognized value returns null", () => {
-  assert.equal(normalizeValidationDecision("banana"), null);
+  expect(normalizeValidationDecision("banana")).toBe(null);
 });
 
 // ---------------------------------------------------------------------------
@@ -110,20 +109,19 @@ test("write-review-result: needs_fix input is accepted, normalized to rejected i
       "--summary",
       "missing null guard"
     ]);
-    assert.equal(status, 0, "needs_fix must be accepted, not refused");
+    expect(status, "needs_fix must be accepted, not refused").toBe(0);
     const result = JSON.parse(stdout);
     const body = await fs.readFile(result.path, "utf8");
     // Canonical value lands in frontmatter; the alias is documented in code,
     // not necessarily preserved in the artifact (needs_fix has no pre-P1.3
     // callers, so there's no back-compat body-prose burden here).
-    assert.match(body, /^decision: rejected$/m, "frontmatter must carry the canonical value");
+    expect(body, "frontmatter must carry the canonical value").toMatch(/^decision: rejected$/m);
 
     const state = await loadState(repoPath);
-    assert.equal(
+    expect(
       state.currentRun.gates.review.status,
-      "failed",
       "needs_fix must fail the review gate exactly like rejected"
-    );
+    ).toBe("failed");
   } finally {
     await cleanup(repoPath);
   }
@@ -145,13 +143,13 @@ test("write-review-result: approved_with_notes (with test-summary) writes canoni
       "--test-summary",
       "covered"
     ]);
-    assert.equal(status, 0);
+    expect(status).toBe(0);
     const result = JSON.parse(stdout);
     const body = await fs.readFile(result.path, "utf8");
-    assert.match(body, /^decision: approved_with_notes$/m);
+    expect(body).toMatch(/^decision: approved_with_notes$/m);
 
     const state = await loadState(repoPath);
-    assert.equal(state.currentRun.gates.review.status, "passed");
+    expect(state.currentRun.gates.review.status).toBe("passed");
   } finally {
     await cleanup(repoPath);
   }
@@ -173,17 +171,15 @@ test("write-review-result: approved_with_conditions (architect-reviewer.md verdi
       "--test-summary",
       "covered"
     ]);
-    assert.equal(status, 0, "approved_with_conditions must be accepted, not refused");
+    expect(status, "approved_with_conditions must be accepted, not refused").toBe(0);
     const result = JSON.parse(stdout);
     const body = await fs.readFile(result.path, "utf8");
-    assert.match(
-      body,
-      /^decision: approved_with_notes$/m,
-      "frontmatter must carry the canonical value"
+    expect(body, "frontmatter must carry the canonical value").toMatch(
+      /^decision: approved_with_notes$/m
     );
 
     const state = await loadState(repoPath);
-    assert.equal(state.currentRun.gates.review.status, "passed");
+    expect(state.currentRun.gates.review.status).toBe("passed");
   } finally {
     await cleanup(repoPath);
   }
@@ -203,17 +199,16 @@ test("write-review-result: needs_revision (architect-reviewer.md verdict) is acc
       "--summary",
       "service boundary unclear"
     ]);
-    assert.equal(status, 0, "needs_revision must be accepted, not refused");
+    expect(status, "needs_revision must be accepted, not refused").toBe(0);
     const result = JSON.parse(stdout);
     const body = await fs.readFile(result.path, "utf8");
-    assert.match(body, /^decision: rejected$/m, "frontmatter must carry the canonical value");
+    expect(body, "frontmatter must carry the canonical value").toMatch(/^decision: rejected$/m);
 
     const state = await loadState(repoPath);
-    assert.equal(
+    expect(
       state.currentRun.gates.review.status,
-      "failed",
       "needs_revision must fail the review gate exactly like rejected"
-    );
+    ).toBe("failed");
   } finally {
     await cleanup(repoPath);
   }
@@ -233,8 +228,8 @@ test("write-review-result: unrecognized decision (not an alias) still exits 2", 
       "--summary",
       "x"
     ]);
-    assert.equal(status, 2);
-    assert.match(stderr, /unknown decision/i);
+    expect(status).toBe(2);
+    expect(stderr).toMatch(/unknown decision/i);
   } finally {
     await cleanup(repoPath);
   }
@@ -258,22 +253,18 @@ test("write-validation-result: legacy 'passed_with_notes' normalizes to canonica
       "--summary",
       "all good"
     ]);
-    assert.equal(status, 0);
+    expect(status).toBe(0);
     const result = JSON.parse(stdout);
     const body = await fs.readFile(result.path, "utf8");
-    assert.match(
-      body,
-      /^decision: pass$/m,
-      "frontmatter carries the canonical value, not the legacy alias"
+    expect(body, "frontmatter carries the canonical value, not the legacy alias").toMatch(
+      /^decision: pass$/m
     );
-    assert.match(
-      body,
-      /Decision: passed_with_notes/,
-      "body prose keeps the raw legacy value for back-compat"
+    expect(body, "body prose keeps the raw legacy value for back-compat").toMatch(
+      /Decision: passed_with_notes/
     );
 
     const state = await loadState(repoPath);
-    assert.equal(state.currentRun.gates.validation.status, "passed");
+    expect(state.currentRun.gates.validation.status).toBe("passed");
   } finally {
     await cleanup(repoPath);
   }
@@ -293,8 +284,8 @@ test("write-validation-result: skipped without --skip-reason is refused (exit 2)
       "--summary",
       "env unavailable"
     ]);
-    assert.equal(status, 2);
-    assert.match(stderr, /skip_reason/);
+    expect(status).toBe(2);
+    expect(stderr).toMatch(/skip_reason/);
   } finally {
     await cleanup(repoPath);
   }
@@ -314,15 +305,15 @@ test("write-validation-result: skipped with --skip-reason succeeds, sets validat
       "--skip-reason",
       "staging environment unavailable"
     ]);
-    assert.equal(status, 0);
+    expect(status).toBe(0);
     const result = JSON.parse(stdout);
     const body = await fs.readFile(result.path, "utf8");
-    assert.match(body, /^decision: skipped$/m);
-    assert.match(body, /^skip_reason: "staging environment unavailable"$/m);
+    expect(body).toMatch(/^decision: skipped$/m);
+    expect(body).toMatch(/^skip_reason: "staging environment unavailable"$/m);
 
     const state = await loadState(repoPath);
-    assert.equal(state.currentRun.gates.validation.status, "skipped");
-    assert.match(state.currentRun.gates.validation.note, /staging environment unavailable/);
+    expect(state.currentRun.gates.validation.status).toBe("skipped");
+    expect(state.currentRun.gates.validation.note).toMatch(/staging environment unavailable/);
   } finally {
     await cleanup(repoPath);
   }
@@ -340,8 +331,8 @@ test("write-validation-result: unrecognized decision exits 2", async () => {
       "--decision",
       "banana"
     ]);
-    assert.equal(status, 2);
-    assert.match(stderr, /unknown decision/i);
+    expect(status).toBe(2);
+    expect(stderr).toMatch(/unknown decision/i);
   } finally {
     await cleanup(repoPath);
   }
@@ -365,7 +356,7 @@ test("write-validation-result: fail decision captures a failure entry in learnin
       "--summary",
       "build broke on clean checkout"
     ]);
-    assert.equal(status, 0);
+    expect(status).toBe(0);
     const raw = await fs.readFile(
       path.join(repoPath, ".claude", "artifacts", "loop", "learnings.jsonl"),
       "utf8"
@@ -374,11 +365,11 @@ test("write-validation-result: fail decision captures a failure entry in learnin
       .split("\n")
       .filter((l) => l.trim().length > 0)
       .map((l) => JSON.parse(l));
-    assert.equal(lines.length, 1);
-    assert.equal(lines[0].kind, "failure");
-    assert.equal(lines[0].agent, "verifier");
-    assert.equal(lines[0].source, "validation_fail");
-    assert.match(lines[0].summary, /build broke on clean checkout/);
+    expect(lines.length).toBe(1);
+    expect(lines[0].kind).toBe("failure");
+    expect(lines[0].agent).toBe("verifier");
+    expect(lines[0].source).toBe("validation_fail");
+    expect(lines[0].summary).toMatch(/build broke on clean checkout/);
   } finally {
     await cleanup(repoPath);
   }
@@ -399,10 +390,10 @@ test("write-validation-result: pass decision does not write learnings.jsonl", as
       "--summary",
       "all good"
     ]);
-    assert.equal(status, 0);
-    await assert.rejects(
+    expect(status).toBe(0);
+    await expect(
       fs.readFile(path.join(repoPath, ".claude", "artifacts", "loop", "learnings.jsonl"), "utf8")
-    );
+    ).rejects.toThrow();
   } finally {
     await cleanup(repoPath);
   }
@@ -416,10 +407,9 @@ test("registerWorkflowArtifact: unrecognized review verdict throws instead of fa
   const repoPath = await makeTempDir("enum-verdicts-handler-review-");
   try {
     const artifact: ArtifactRef = { kind: "review-result", path: "fake-path.md", title: "t" };
-    await assert.rejects(
-      () => registerWorkflowArtifact(repoPath, artifact, { verdict: "lgtm", summary: "bad" }),
-      /unrecognized review verdict/
-    );
+    await expect(
+      registerWorkflowArtifact(repoPath, artifact, { verdict: "lgtm", summary: "bad" })
+    ).rejects.toThrow(/unrecognized review verdict/);
   } finally {
     await cleanup(repoPath);
   }
@@ -429,10 +419,9 @@ test("registerWorkflowArtifact: unrecognized validation verdict throws instead o
   const repoPath = await makeTempDir("enum-verdicts-handler-validation-");
   try {
     const artifact: ArtifactRef = { kind: "validation-result", path: "fake-path.md", title: "t" };
-    await assert.rejects(
-      () => registerWorkflowArtifact(repoPath, artifact, { verdict: "kinda", summary: "bad" }),
-      /unrecognized validation verdict/
-    );
+    await expect(
+      registerWorkflowArtifact(repoPath, artifact, { verdict: "kinda", summary: "bad" })
+    ).rejects.toThrow(/unrecognized validation verdict/);
   } finally {
     await cleanup(repoPath);
   }
@@ -447,7 +436,7 @@ test("registerWorkflowArtifact: absent verdict (legacy artifact / caller never s
     const run = await registerWorkflowArtifact(repoPath, artifact, {
       summary: "no decision given"
     });
-    assert.equal(run?.gates.review?.status, "passed");
+    expect(run?.gates.review?.status).toBe("passed");
   } finally {
     await cleanup(repoPath);
   }
@@ -477,11 +466,11 @@ test("ReviewArtifactSchema / ValidationArtifactSchema round-trip write-review-re
       "--slice",
       "SLICE-1"
     ]);
-    assert.equal(reviewResult.code, 0);
+    expect(reviewResult.code).toBe(0);
     const reviewPath = JSON.parse(reviewResult.output).path;
     const reviewBody = await fs.readFile(reviewPath, "utf8");
     const reviewFm = parseFrontmatterBlock(reviewBody);
-    assert.equal(ReviewArtifactSchema.safeParse(reviewFm).success, true);
+    expect(ReviewArtifactSchema.safeParse(reviewFm).success).toBe(true);
 
     const validationResult = await runCrew([
       "write-validation-result",
@@ -496,18 +485,18 @@ test("ReviewArtifactSchema / ValidationArtifactSchema round-trip write-review-re
       "--feature",
       "FEAT-999"
     ]);
-    assert.equal(validationResult.code, 0);
+    expect(validationResult.code).toBe(0);
     const validationPath = JSON.parse(validationResult.output).path;
     const validationBody = await fs.readFile(validationPath, "utf8");
     const validationFm = parseFrontmatterBlock(validationBody);
     // parseFrontmatterBlock doesn't JSON-unescape quoted values; skip_reason
     // is JSON.stringify'd in the artifact so it round-trips as a quoted,
     // still-non-empty string — sufficient for the schema's truthiness check.
-    assert.equal(ValidationArtifactSchema.safeParse(validationFm).success, true);
+    expect(ValidationArtifactSchema.safeParse(validationFm).success).toBe(true);
 
     // And the schema still catches the invalid case: skipped with no skip_reason.
     const invalid = ValidationArtifactSchema.safeParse({ decision: "skipped" });
-    assert.equal(invalid.success, false);
+    expect(invalid.success).toBe(false);
   } finally {
     await cleanup(repoPath);
   }

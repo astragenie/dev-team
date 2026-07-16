@@ -3,8 +3,7 @@
 // Written BEFORE the implementation. All tests should fail initially until
 // computeGrade is exported and grade is wired into buildCostAdvisor.
 
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { computeGrade } from "../scripts/lib/cost-advisor.ts";
 
 // Grade thresholds (from SLICE-05 spec):
@@ -27,7 +26,7 @@ test("computeGrade returns A when all metrics are excellent", () => {
     fileRereadCount: 2,
     toolFailureRate: 0.01 // 1%
   };
-  assert.equal(computeGrade(target), "A");
+  expect(computeGrade(target)).toBe("A");
 });
 
 test("computeGrade returns A at exact A-band boundaries", () => {
@@ -38,7 +37,7 @@ test("computeGrade returns A at exact A-band boundaries", () => {
     fileRereadCount: 3,
     toolFailureRate: 0.03 // 3%
   };
-  assert.equal(computeGrade(target), "A");
+  expect(computeGrade(target)).toBe("A");
 });
 
 // ---------------------------------------------------------------------------
@@ -52,7 +51,7 @@ test("computeGrade returns B when cache hit is in B band (95-97%)", () => {
     fileRereadCount: 2,
     toolFailureRate: 0.01
   };
-  assert.equal(computeGrade(target), "B");
+  expect(computeGrade(target)).toBe("B");
 });
 
 test("computeGrade returns B at exact B-band boundaries", () => {
@@ -63,7 +62,7 @@ test("computeGrade returns B at exact B-band boundaries", () => {
     fileRereadCount: 8,
     toolFailureRate: 0.05 // 5%
   };
-  assert.equal(computeGrade(target), "B");
+  expect(computeGrade(target)).toBe("B");
 });
 
 // ---------------------------------------------------------------------------
@@ -77,7 +76,7 @@ test("computeGrade returns C when good cache but compactions in C band", () => {
     fileRereadCount: 2, // A
     toolFailureRate: 0.01 // A
   };
-  assert.equal(computeGrade(target), "C");
+  expect(computeGrade(target)).toBe("C");
 });
 
 test("computeGrade returns C at exact C-band boundaries", () => {
@@ -88,7 +87,7 @@ test("computeGrade returns C at exact C-band boundaries", () => {
     fileRereadCount: 15,
     toolFailureRate: 0.08 // 8%
   };
-  assert.equal(computeGrade(target), "C");
+  expect(computeGrade(target)).toBe("C");
 });
 
 // ---------------------------------------------------------------------------
@@ -102,7 +101,7 @@ test("computeGrade returns D when cache hit is in D band", () => {
     fileRereadCount: 2,
     toolFailureRate: 0.01
   };
-  assert.equal(computeGrade(target), "D");
+  expect(computeGrade(target)).toBe("D");
 });
 
 test("computeGrade returns D at exact D-band boundaries", () => {
@@ -113,7 +112,7 @@ test("computeGrade returns D at exact D-band boundaries", () => {
     fileRereadCount: 30,
     toolFailureRate: 0.15 // 15%
   };
-  assert.equal(computeGrade(target), "D");
+  expect(computeGrade(target)).toBe("D");
 });
 
 // ---------------------------------------------------------------------------
@@ -127,7 +126,7 @@ test("computeGrade returns F when all metrics are terrible", () => {
     fileRereadCount: 50, // above D max of 30
     toolFailureRate: 0.3 // 30%, above D max of 15%
   };
-  assert.equal(computeGrade(target), "F");
+  expect(computeGrade(target)).toBe("F");
 });
 
 test("computeGrade returns F when cache hit is just below D threshold", () => {
@@ -138,7 +137,7 @@ test("computeGrade returns F when cache hit is just below D threshold", () => {
     fileRereadCount: 2,
     toolFailureRate: 0.01
   };
-  assert.equal(computeGrade(target), "F");
+  expect(computeGrade(target)).toBe("F");
 });
 
 // ---------------------------------------------------------------------------
@@ -152,7 +151,7 @@ test("worst band wins: single F metric downgrades A-level everything else to F",
     fileRereadCount: 0, // A
     toolFailureRate: 0.5 // F (50%)
   };
-  assert.equal(computeGrade(target), "F");
+  expect(computeGrade(target)).toBe("F");
 });
 
 test("worst band wins: single D metric downgrades otherwise-A grade to D", () => {
@@ -163,7 +162,7 @@ test("worst band wins: single D metric downgrades otherwise-A grade to D", () =>
     fileRereadCount: 1, // A
     toolFailureRate: 0.01 // A
   };
-  assert.equal(computeGrade(target), "D");
+  expect(computeGrade(target)).toBe("D");
 });
 
 test("worst band wins: B cache + C subagents = C overall", () => {
@@ -174,7 +173,7 @@ test("worst band wins: B cache + C subagents = C overall", () => {
     fileRereadCount: 2, // A
     toolFailureRate: 0.02 // A
   };
-  assert.equal(computeGrade(target), "C");
+  expect(computeGrade(target)).toBe("C");
 });
 
 // ---------------------------------------------------------------------------
@@ -189,7 +188,7 @@ test("computeGrade handles zero cacheHitPct (no data) as F", () => {
     toolFailureRate: 0
   };
   // cacheHitPct=0 is below the D threshold of 80%, so should grade F
-  assert.equal(computeGrade(target), "F");
+  expect(computeGrade(target)).toBe("F");
 });
 
 test("computeGrade handles missing optional fields without throwing", () => {
@@ -201,5 +200,5 @@ test("computeGrade handles missing optional fields without throwing", () => {
     fileRereadCount: 0
     // toolFailureRate absent
   };
-  assert.doesNotThrow(() => computeGrade(target));
+  expect(() => computeGrade(target)).not.toThrow();
 });
