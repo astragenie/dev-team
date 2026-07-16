@@ -119,7 +119,11 @@
     },
     "feedback": {
       "enabled": true,
-      "mode": "outcome"
+      "mode": "outcome",
+      "creditLoop": {
+        "enabled": true,
+        "k": 5
+      }
     },
     "capture": {
       "events": [
