@@ -10,8 +10,7 @@
 // silently skipping recall injection.
 import fs from "node:fs/promises";
 import path from "node:path";
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "..");
 
@@ -40,14 +39,13 @@ test("every known dispatch-assembly module references the recall-injection helpe
   for (const mod of ASSEMBLY_MODULES) {
     const targetPath = path.join(REPO_ROOT, mod.relPath);
     const content = await fs.readFile(targetPath, "utf8");
-    assert.match(
+    expect(
       content,
-      mod.marker,
       `${mod.relPath} is a declared dispatch-assembly site but does not reference the ` +
         `recall-injection helper (FEAT-188 S3a) — wire it via \`recall-block\` (CLI) or the ` +
         `\`memory\` DispatchMemoryHint (dispatch.mts), or remove it from ASSEMBLY_MODULES if it ` +
         `no longer assembles a dispatch instruction.`
-    );
+    ).toMatch(mod.marker);
   }
 });
 
@@ -55,5 +53,5 @@ test("the canonical assembly-module list matches FEAT-188 S3a's declared scope (
   // Sanity guard: catches someone quietly shrinking ASSEMBLY_MODULES to
   // dodge the completeness check above, rather than actually wiring a new
   // or existing site.
-  assert.equal(ASSEMBLY_MODULES.length, 5);
+  expect(ASSEMBLY_MODULES.length).toBe(5);
 });

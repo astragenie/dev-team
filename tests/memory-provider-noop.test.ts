@@ -4,8 +4,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { noopProvider, resolveProvider } from "@astragenie/memory-provider";
 
 async function makeTempRepo(prefix: string) {
@@ -17,45 +16,41 @@ async function cleanup(dir: string) {
 }
 
 test("noopProvider describes itself as noop", () => {
-  assert.deepEqual(noopProvider().describe(), { provider: "noop" });
+  expect(noopProvider().describe()).toEqual({ provider: "noop" });
 });
 
 test("noopProvider.capture resolves without throwing and without writing anything", async () => {
   const provider = noopProvider();
-  await assert.doesNotReject(
-    provider.capture({
-      kind: "failure",
-      severity: "high",
-      summary: "should not be persisted",
-      source: "test"
-    })
-  );
+  await provider.capture({
+    kind: "failure",
+    severity: "high",
+    summary: "should not be persisted",
+    source: "test"
+  });
 });
 
 test("noopProvider.recall always returns an empty array", async () => {
   const provider = noopProvider();
-  assert.deepEqual(await provider.recall({}), []);
-  assert.deepEqual(await provider.recall({ agent: "reviewer", k: 5 }), []);
+  expect(await provider.recall({})).toEqual([]);
+  expect(await provider.recall({ agent: "reviewer", k: 5 })).toEqual([]);
 });
 
 test("noopProvider.supersede and .invalidate resolve without throwing", async () => {
   const provider = noopProvider();
-  await assert.doesNotReject(
-    provider.supersede("some-id", {
-      kind: "lesson",
-      severity: "low",
-      summary: "replacement",
-      source: "test"
-    })
-  );
-  await assert.doesNotReject(provider.invalidate("some-id"));
+  await provider.supersede("some-id", {
+    kind: "lesson",
+    severity: "low",
+    summary: "replacement",
+    source: "test"
+  });
+  await provider.invalidate("some-id");
 });
 
 test("golden: resolveProvider(undefined, repo) selects noop and never touches disk", async () => {
   const repo = await makeTempRepo("memory-noop-golden-");
   try {
     const provider = resolveProvider(undefined, repo);
-    assert.deepEqual(provider.describe(), { provider: "noop" });
+    expect(provider.describe()).toEqual({ provider: "noop" });
 
     await provider.capture({
       kind: "failure",
@@ -65,7 +60,10 @@ test("golden: resolveProvider(undefined, repo) selects noop and never touches di
     });
 
     const learningsPath = path.join(repo, ".claude", "artifacts", "loop", "learnings.jsonl");
-    await assert.rejects(fs.access(learningsPath), "no learnings.jsonl should be created by noop");
+    await expect(
+      fs.access(learningsPath),
+      "no learnings.jsonl should be created by noop"
+    ).rejects.toThrow();
   } finally {
     await cleanup(repo);
   }
@@ -75,7 +73,7 @@ test("golden: an empty memory block ({}) also resolves to disabled/noop behavior
   const repo = await makeTempRepo("memory-noop-empty-block-");
   try {
     const provider = resolveProvider({}, repo);
-    assert.deepEqual(provider.describe(), { provider: "noop" });
+    expect(provider.describe()).toEqual({ provider: "noop" });
   } finally {
     await cleanup(repo);
   }

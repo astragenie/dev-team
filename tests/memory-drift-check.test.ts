@@ -10,8 +10,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { checkDrift } from "../scripts/lib/memory/drift-check.ts";
 import { fileProvider, type RemoteHandle } from "@astragenie/memory-provider";
 import type { RecallHit } from "@astragenie/astramem-plugin/contracts";
@@ -60,11 +59,11 @@ test("checkDrift reports a JSONL entry that astramem does not know about", async
     const remote = makeFakeRemote(new Set()); // astramem knows nothing
     const report = await checkDrift(repo, remote);
 
-    assert.equal(report.checked, 1);
-    assert.ok(
+    expect(report.checked).toBe(1);
+    expect(
       report.missingFromAstramem.some((e) => e.id === "only-local-marker"),
       "an entry astramem cannot confirm must be reported as drift"
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(repo);
   }
@@ -85,11 +84,11 @@ test("checkDrift does not report an entry astramem confirms present", async () =
     const remote = makeFakeRemote(new Set(["present-marker"]));
     const report = await checkDrift(repo, remote);
 
-    assert.equal(report.checked, 1);
-    assert.ok(
+    expect(report.checked).toBe(1);
+    expect(
       !report.missingFromAstramem.some((e) => e.id === "present-marker"),
       "an entry astramem confirms present must not be reported as drift"
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(repo);
   }
@@ -112,8 +111,8 @@ test("checkDrift only considers entries inside the configured window", async () 
     const remote = makeFakeRemote(new Set());
     const report = await checkDrift(repo, remote, { windowDays: 45 });
 
-    assert.equal(report.checked, 0, "an entry older than the window should not be checked at all");
-    assert.ok(!report.missingFromAstramem.some((e) => e.id === "outside-window"));
+    expect(report.checked, "an entry older than the window should not be checked at all").toBe(0);
+    expect(!report.missingFromAstramem.some((e) => e.id === "outside-window")).toBeTruthy();
   } finally {
     await cleanup(repo);
   }
@@ -148,7 +147,7 @@ test("checkDrift never writes to astramem — it is a read-only diagnostic", asy
     };
 
     await checkDrift(repo, remote);
-    assert.equal(rememberCalls, 0, "checkDrift must never call remember() — diagnostic only");
+    expect(rememberCalls, "checkDrift must never call remember() — diagnostic only").toBe(0);
   } finally {
     await cleanup(repo);
   }

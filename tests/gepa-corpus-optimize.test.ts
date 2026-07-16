@@ -1,6 +1,5 @@
 // FEAT-193 S3 — gepa-corpus-optimize feed-to-optimize bridge (AC-9 human gate).
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -40,19 +39,19 @@ function spyDeps(): {
 test("missing agent → exit 2, never touches delegates", async () => {
   const { deps, reportCalls, optimizeCalls } = spyDeps();
   const res = await runCorpusOptimizeCmd("/tmp", ["--budget", "5"], deps);
-  assert.equal(res.exitCode, 2);
-  assert.match(res.stderr, /usage: gepa-corpus-optimize/);
-  assert.equal(reportCalls.length, 0);
-  assert.equal(optimizeCalls.length, 0);
+  expect(res.exitCode).toBe(2);
+  expect(res.stderr).toMatch(/usage: gepa-corpus-optimize/);
+  expect(reportCalls.length).toBe(0);
+  expect(optimizeCalls.length).toBe(0);
 });
 
 test("missing --budget → exit 2 (spends real judge tokens); neither delegate runs", async () => {
   const { deps, reportCalls, optimizeCalls } = spyDeps();
   const res = await runCorpusOptimizeCmd("/tmp", ["fullstack-dev"], deps);
-  assert.equal(res.exitCode, 2);
-  assert.match(res.stderr, /--budget is required/);
-  assert.equal(reportCalls.length, 0, "no analyze/digest before the budget guard");
-  assert.equal(optimizeCalls.length, 0);
+  expect(res.exitCode).toBe(2);
+  expect(res.stderr).toMatch(/--budget is required/);
+  expect(reportCalls.length, "no analyze/digest before the budget guard").toBe(0);
+  expect(optimizeCalls.length).toBe(0);
 });
 
 test("happy path: renders digest THEN optimizes the aggregated corpus", async () => {
@@ -62,26 +61,26 @@ test("happy path: renders digest THEN optimizes the aggregated corpus", async ()
     ["backend-dev", "--budget", "5", "--k", "3"],
     deps
   );
-  assert.equal(res.exitCode, 0);
+  expect(res.exitCode).toBe(0);
   // Digest rendered first, optimize body after — analyze-before-adjust order.
   const digestIdx = res.stdout.indexOf("DIGEST-BODY");
   const optIdx = res.stdout.indexOf("OPTIMIZE-BODY");
-  assert.ok(digestIdx >= 0 && optIdx >= 0, "both sections present");
-  assert.ok(digestIdx < optIdx, "digest must render before the optimize cycle");
+  expect(digestIdx >= 0 && optIdx >= 0, "both sections present").toBeTruthy();
+  expect(digestIdx < optIdx, "digest must render before the optimize cycle").toBeTruthy();
   // Report scoped to the one agent; optimize got agent + budget + k.
-  assert.deepEqual(reportCalls[0], ["backend-dev"]);
-  assert.deepEqual(optimizeCalls[0]?.slice(0, 4), ["backend-dev", "--budget", "5", "--k"]);
+  expect(reportCalls[0]).toEqual(["backend-dev"]);
+  expect(optimizeCalls[0]?.slice(0, 4)).toEqual(["backend-dev", "--budget", "5", "--k"]);
 });
 
 test("AC-9 gate: bridge ALWAYS forces --artifact-only, never a promote flag", async () => {
   const { deps, optimizeCalls } = spyDeps();
   await runCorpusOptimizeCmd("/tmp", ["frontend-dev", "--budget", "2"], deps);
   const args = optimizeCalls[0] ?? [];
-  assert.ok(args.includes("--artifact-only"), "artifact-only must be forced");
-  assert.ok(
+  expect(args.includes("--artifact-only"), "artifact-only must be forced").toBeTruthy();
+  expect(
     !args.some((a) => /promote|no-artifact-only/.test(a)),
     "no promote / no-artifact-only flag may ever be threaded"
-  );
+  ).toBeTruthy();
 });
 
 test("optimize exit code propagates; digest is advisory", async () => {
@@ -90,8 +89,8 @@ test("optimize exit code propagates; digest is advisory", async () => {
     optimize: async () => ({ stdout: "", stderr: "boom\n", exitCode: 3 })
   };
   const res = await runCorpusOptimizeCmd("/tmp", ["a", "--budget", "5"], deps);
-  assert.equal(res.exitCode, 3, "bridge exit == optimize exit");
-  assert.match(res.stderr, /boom/);
+  expect(res.exitCode, "bridge exit == optimize exit").toBe(3);
+  expect(res.stderr).toMatch(/boom/);
 });
 
 test("never throws: a delegate that rejects surfaces as exit 1 + stderr", async () => {
@@ -102,8 +101,8 @@ test("never throws: a delegate that rejects surfaces as exit 1 + stderr", async 
     optimize: async () => ({ stdout: "", stderr: "", exitCode: 0 })
   };
   const res = await runCorpusOptimizeCmd("/tmp", ["a", "--budget", "5"], deps);
-  assert.equal(res.exitCode, 1, "rejection must not propagate as an unhandled error");
-  assert.match(res.stderr, /gepa-corpus-optimize failed: trial store unreadable/);
+  expect(res.exitCode, "rejection must not propagate as an unhandled error").toBe(1);
+  expect(res.stderr).toMatch(/gepa-corpus-optimize failed: trial store unreadable/);
 });
 
 test("CLI: gepa-corpus-optimize is wired (no 'Unknown argument'); guards budget", async () => {
@@ -121,7 +120,7 @@ test("CLI: gepa-corpus-optimize is wired (no 'Unknown argument'); guards budget"
     ],
     { encoding: "utf8", timeout: 60_000 }
   );
-  assert.doesNotMatch(res.stderr ?? "", /Unknown argument/, "flags must be registered");
-  assert.match(res.stderr ?? "", /--budget is required/, "budget guard reached via CLI");
-  assert.equal(res.status, 2);
+  expect(res.stderr ?? "", "flags must be registered").not.toMatch(/Unknown argument/);
+  expect(res.stderr ?? "", "budget guard reached via CLI").toMatch(/--budget is required/);
+  expect(res.status).toBe(2);
 });

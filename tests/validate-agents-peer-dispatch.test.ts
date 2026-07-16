@@ -8,8 +8,7 @@
 //
 // Uses the same temp-fixture pattern as tests/validate-agents.test.ts.
 
-import { test, describe } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect, describe } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -82,11 +81,10 @@ ${WELL_FORMED_PEER_DISPATCH_SECTION}`;
 
     const root = await makeAgentsDir({ "refactor.md": content });
     const result = await validateAgents(root);
-    assert.equal(
+    expect(
       result.ok,
-      true,
       `Unexpected errors for allowlisted agent with correct Peer dispatch: ${result.errors.join("; ")}`
-    );
+    ).toBe(true);
   });
 
   test("allowlisted agent document-writer with Agent tool and full Peer dispatch section passes", async () => {
@@ -113,11 +111,10 @@ ${WELL_FORMED_PEER_DISPATCH_SECTION}`;
 
     const root = await makeAgentsDir({ "document-writer.md": content });
     const result = await validateAgents(root);
-    assert.equal(
+    expect(
       result.ok,
-      true,
       `Unexpected errors for document-writer with correct Peer dispatch: ${result.errors.join("; ")}`
-    );
+    ).toBe(true);
   });
 });
 
@@ -151,15 +148,14 @@ Write your handoff via write-handoff.
 `;
     const root = await makeAgentsDir({ "refactor.md": content });
     const result = await validateAgents(root);
-    assert.equal(
+    expect(
       result.ok,
-      false,
       "Expected validation failure when Peer dispatch section is absent for allowlisted agent"
-    );
-    assert.ok(
+    ).toBe(false);
+    expect(
       result.errors.some((e) => /missing "## Peer dispatch" section/.test(e)),
       `Expected missing Peer dispatch error, got: ${result.errors.join("; ")}`
-    );
+    ).toBeTruthy();
   });
 
   test("allowlisted agent with Agent tool but missing whitelist entry fails", async () => {
@@ -199,15 +195,14 @@ Write your handoff.
 `;
     const root = await makeAgentsDir({ "document-writer.md": content });
     const result = await validateAgents(root);
-    assert.equal(
+    expect(
       result.ok,
-      false,
       "Expected validation failure when Peer dispatch section has no whitelist bullet"
-    );
-    assert.ok(
+    ).toBe(false);
+    expect(
       result.errors.some((e) => /missing whitelist entry/.test(e)),
       `Expected whitelist error, got: ${result.errors.join("; ")}`
-    );
+    ).toBeTruthy();
   });
 
   test("allowlisted agent with Agent tool but missing blacklist fails", async () => {
@@ -242,15 +237,14 @@ Write your handoff.
 `;
     const root = await makeAgentsDir({ "refactor.md": content });
     const result = await validateAgents(root);
-    assert.equal(
+    expect(
       result.ok,
-      false,
       "Expected validation failure when Peer dispatch section has no blacklist"
-    );
-    assert.ok(
+    ).toBe(false);
+    expect(
       result.errors.some((e) => /missing blacklist/.test(e)),
       `Expected blacklist error, got: ${result.errors.join("; ")}`
-    );
+    ).toBeTruthy();
   });
 
   test("allowlisted agent with Agent tool but missing budget line fails", async () => {
@@ -283,15 +277,14 @@ Write your handoff.
 `;
     const root = await makeAgentsDir({ "document-writer.md": content });
     const result = await validateAgents(root);
-    assert.equal(
+    expect(
       result.ok,
-      false,
       "Expected validation failure when Peer dispatch section has no budget line"
-    );
-    assert.ok(
+    ).toBe(false);
+    expect(
       result.errors.some((e) => /missing dispatch budget line/.test(e)),
       `Expected budget error, got: ${result.errors.join("; ")}`
-    );
+    ).toBeTruthy();
   });
 });
 
@@ -339,15 +332,14 @@ Write your handoff via write-handoff.
 `;
     const root = await makeAgentsDir({ "refactor.md": content });
     const result = await validateAgents(root);
-    assert.equal(
+    expect(
       result.ok,
-      false,
       "Expected validation failure: backtick entries only in blacklist region should NOT satisfy whitelist-entry check"
-    );
-    assert.ok(
+    ).toBe(false);
+    expect(
       result.errors.some((e) => /missing whitelist entry/.test(e)),
       `Expected whitelist error, got: ${result.errors.join("; ")}`
-    );
+    ).toBeTruthy();
   });
 
   test("section with whitelist bullet BEFORE blacklist and blacklist backticks after passes", async () => {
@@ -385,11 +377,10 @@ Write your handoff via write-handoff.
 `;
     const root = await makeAgentsDir({ "refactor.md": content });
     const result = await validateAgents(root);
-    assert.equal(
+    expect(
       result.ok,
-      true,
       `Whitelist bullet before blacklist should pass. Errors: ${result.errors.join("; ")}`
-    );
+    ).toBe(true);
   });
 });
 
@@ -482,11 +473,10 @@ See the project peer-dispatch design notes.
 `;
       const root = await makeAgentsDir({ [`${name}.md`]: content });
       const result = await validateAgents(root);
-      assert.equal(
+      expect(
         result.ok,
-        true,
         `Advisory agent "${name}" with correct Peer dispatch section should pass. Errors: ${result.errors.join("; ")}`
-      );
+      ).toBe(true);
     });
   }
 });
@@ -548,11 +538,10 @@ See the project peer-dispatch design notes.
 `;
     const root = await makeAgentsDir({ "architect.md": content });
     const result = await validateAgents(root);
-    assert.equal(
+    expect(
       result.ok,
-      true,
       `architect with inline tools and correct Peer dispatch should pass. Errors: ${result.errors.join("; ")}`
-    );
+    ).toBe(true);
   });
 
   test("allowlisted agent with inline tools: [Agent] but missing Peer dispatch section fails", async () => {
@@ -580,15 +569,14 @@ Write your design artifact.
 `;
     const root = await makeAgentsDir({ "architect.md": content });
     const result = await validateAgents(root);
-    assert.equal(
+    expect(
       result.ok,
-      false,
       "Expected validation failure: inline tools: [Agent] without Peer dispatch section should fail"
-    );
-    assert.ok(
+    ).toBe(false);
+    expect(
       result.errors.some((e) => /missing "## Peer dispatch" section/.test(e)),
       `Expected missing Peer dispatch error, got: ${result.errors.join("; ")}`
-    );
+    ).toBeTruthy();
   });
 });
 
@@ -699,11 +687,10 @@ See the project peer-dispatch design notes.
 `;
       const root = await makeAgentsDir({ [`${name}.md`]: content });
       const result = await validateAgents(root);
-      assert.equal(
+      expect(
         result.ok,
-        true,
         `Implementer agent "${name}" with correct Peer dispatch section should pass. Errors: ${result.errors.join("; ")}`
-      );
+      ).toBe(true);
     });
   }
 
@@ -735,11 +722,10 @@ Write your handoff via write-handoff.
 `;
     const root = await makeAgentsDir({ "backend-dev.md": content });
     const result = await validateAgents(root);
-    assert.equal(
+    expect(
       result.ok,
-      true,
       `backend-dev with disallowedTools (no tools: block) should pass without Peer dispatch section. Errors: ${result.errors.join("; ")}`
-    );
+    ).toBe(true);
   });
 });
 
@@ -776,11 +762,10 @@ Write your handoff via write-handoff.
 `;
     const root = await makeAgentsDir({ "investigator.md": content });
     const result = await validateAgents(root);
-    assert.equal(
+    expect(
       result.ok,
-      true,
       `Non-allowlisted agent should pass even without Peer dispatch section. Errors: ${result.errors.join("; ")}`
-    );
+    ).toBe(true);
   });
 
   test("allowlisted agent WITHOUT Agent in tools also passes (rule only fires when Agent explicit)", async () => {
@@ -811,10 +796,9 @@ Write your handoff.
 `;
     const root = await makeAgentsDir({ "document-writer.md": content });
     const result = await validateAgents(root);
-    assert.equal(
+    expect(
       result.ok,
-      true,
       `Allowlisted agent without Agent tool should pass without Peer dispatch section. Errors: ${result.errors.join("; ")}`
-    );
+    ).toBe(true);
   });
 });
