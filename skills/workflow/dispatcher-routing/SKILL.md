@@ -9,7 +9,7 @@ last_reviewed: 2026-06-13
 triggers: ["dispatch", "route", "which agent", "agent quick reference", "specialist", "routing"]
 ---
 
-# Lead Routing
+# Dispatcher Routing
 
 ## Trigger
 

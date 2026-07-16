@@ -2,7 +2,7 @@
 description: Design a feature or service before build.
 ---
 
-# Design In The Lead Workflow
+# Design — Dispatcher Workflow
 
 This is the preferred short entry point for the design phase.
 

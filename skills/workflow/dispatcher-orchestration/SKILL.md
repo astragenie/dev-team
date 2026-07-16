@@ -9,7 +9,7 @@ last_reviewed: 2026-06-21
 triggers: ["assignment shape", "pre-done checklist", "delegation", "model exception", "context efficiency", "integration with other agents"]
 ---
 
-# Lead Orchestration Reference
+# Dispatcher Orchestration Reference
 
 ## Trigger
 
@@ -45,9 +45,9 @@ Before declaring work complete:
 
 ## Delegation thresholds (cost discipline)
 
-Lead runs on Sonnet. Subagents pick their own model per their frontmatter. The cost lever is **dispatch count**, not Opus-vs-Sonnet choice.
+Dispatcher runs on Sonnet. Subagents pick their own model per their frontmatter. The cost lever is **dispatch count**, not Opus-vs-Sonnet choice.
 
-Lead-only (do NOT delegate): task framing, mode choice, user communication, dispatch decisions, conflict resolution. Everything else (any source read, any gate run, any synthesis CLI invocation) is delegated by tool-list construction — the tool set physically excludes it.
+Dispatcher-only (do NOT delegate): task framing, mode choice, user communication, dispatch decisions, conflict resolution. Everything else (any source read, any gate run, any synthesis CLI invocation) is delegated by tool-list construction — the tool set physically excludes it.
 
 ### Model exception list (for dispatched agents)
 

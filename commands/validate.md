@@ -2,7 +2,7 @@
 description: Preferred short entry point for running the validation phase on runnable or observable behavior.
 ---
 
-# Validate In The Lead Workflow
+# Validate — Dispatcher Workflow
 
 This is the preferred short entry point for the validation phase.
 
