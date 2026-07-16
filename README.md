@@ -103,8 +103,8 @@ Everything else should be treated as internal, advanced, or debugging-oriented w
 - claims / approvals commands
 - direct artifact-writing commands
 
-The user should mostly talk to the lead. The lead should infer `build`, `fix`, `review`, `validate`, and `ship` from normal conversation when the intent is clear.
-The lead should also notice when work is ready to move into shipping stages and recommend `ship` without waiting for the user to remember the command.
+The user should mostly talk to the dispatcher. The dispatcher should infer `build`, `fix`, `review`, `validate`, and `ship` from normal conversation when the intent is clear.
+The dispatcher should also notice when work is ready to move into shipping stages and recommend `ship` without waiting for the user to remember the command.
 `/crew:brief-me` should be the normal first command when the user wants a crisp situational report before continuing.
 
 ## Install
@@ -191,7 +191,7 @@ Good uses:
 - tell the reviewer which extra standards or skills to apply
 - tell the builder about repo-specific coding expectations
 - tell the deployer about environment-specific safety rules
-- tell the lead about project habits you want it to remember
+- tell the dispatcher about project habits you want it to remember
 
 The framework keeps the baseline behavior.
 Your agent instruction files define the repo- or team-specific extensions.
@@ -212,7 +212,7 @@ That means you should put your review program in:
 - `~/.claude/crew/reviewer.md` for machine-wide defaults
 - `.claude/crew/reviewer.md` for repo-specific review behavior
 
-The reviewer will read those files before review, and the lead should dispatch review using them as the source of truth for extra review standards.
+The reviewer will read those files before review, and the dispatcher should route review using them as the source of truth for extra review standards.
 
 ### Examples
 
@@ -239,7 +239,7 @@ The reviewer will read those files before review, and the lead should dispatch r
 - Call out blockers, suggestions, and nits separately.
 ```
 
-If you want to change how Crew behaves in a repo, you can also ask the lead to help write or update these files for you.
+If you want to change how Crew behaves in a repo, you can also ask the dispatcher to help write or update these files for you.
 For example:
 
 ```text
@@ -248,16 +248,13 @@ Update our reviewer instructions so Go reviews always apply our internal Go stan
 
 ## Agent models
 
-Default model assignments:
+Default model assignments (frontmatter `model:` field, current 23-agent roster):
 
-| Agent      | Model  |
-| ---------- | ------ |
-| lead       | opus   |
-| builder    | opus   |
-| reviewer   | opus   |
-| validator  | opus   |
-| deployer   | opus   |
-| researcher | sonnet |
+| Tier                    | Model  | Agents                                                                                                                                                                     |
+| ----------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Design / architecture   | opus   | architect, architect-reviewer, cloud-architect, refactor                                                                                                                  |
+| Implementation & review | sonnet | fullstack-dev, backend-dev, frontend-dev, aiplugin-dev, dev-lite, reviewer, reviewer-lite, csharp-reviewer, typescript-reviewer, verifier, integrator, qa-expert, uxdesigner, performance-engineer, release-engineer, researcher, test-automator |
+| Lightweight / high-volume | haiku  | document-writer, investigator                                                                                                                                             |
 
 ## Optional integrations
 
@@ -310,7 +307,7 @@ Do **not** commit transient coordination state:
 ## Project structure
 
 ```
-agents/          — 12 first-party agents: lead, builder, builder-fe, builder-be, reviewer, validator, deployer, integrator, researcher, architect, uxdesigner, refactor
+agents/          — 23 first-party agents across implementation, review/validate, and specialist tiers (see "What it does" above)
 agents/3rdparty/ — vendored specialist agents (delegated to by architect, uxdesigner, copywriter)
 commands/        — small public surface plus internal/debug commands
 skills/          — 34 skills across universal/, workflow/, domain/, meta/ tiers
