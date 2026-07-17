@@ -39,6 +39,7 @@ on:
 jobs:
   drift-check:
     runs-on: [self-hosted, astragenie, aws]
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       # Bun baked into runner image (devops#64) — no setup-bun, no ETXTBSY race.

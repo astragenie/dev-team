@@ -6,12 +6,17 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # Docs-only fast-path: docs/markdown/backlog-only PRs skip checks+test and
   # pass via the always-running `gate` job below. Fail-safe: unknown diff => code=true.
   changes:
     name: detect changes
     runs-on: self-hosted
+    timeout-minutes: 10
     outputs:
       code: ${{ steps.filter.outputs.code }}
     steps:
@@ -104,6 +109,7 @@ jobs:
     needs: [changes, checks, test]
     if: always()
     runs-on: self-hosted
+    timeout-minutes: 10
     steps:
       - name: Evaluate gate
         shell: bash
