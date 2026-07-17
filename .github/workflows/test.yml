@@ -41,7 +41,7 @@ jobs:
   checks:
     needs: changes
     if: ${{ needs.changes.outputs.code == 'true' }}
-    uses: astragenie/common/.github/workflows/reusable-plugin-ci.yml@main
+    uses: astragenie/common/.github/workflows/reusable-plugin-ci.yml@v1
     with:
       validators: |
         echo '{}' | bun "$GITHUB_WORKSPACE/hooks/check-redundant-read.ts"
@@ -91,7 +91,7 @@ jobs:
       fail-fast: false
       matrix:
         shard: [0, 1, 2]
-    uses: astragenie/common/.github/workflows/reusable-plugin-ci.yml@main
+    uses: astragenie/common/.github/workflows/reusable-plugin-ci.yml@v1
     with:
       bun-commands: |
         SHARD_TOTAL=3 SHARD_INDEX=${{ matrix.shard }} bun run test:shard
