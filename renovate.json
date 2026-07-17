@@ -1,0 +1,21 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "dependencyDashboard": true,
+  "schedule": ["before 6am on monday"],
+  "vulnerabilityAlerts": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "matchManagers": ["nuget"],
+      "groupName": "nuget minor/patch",
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "matchManagers": ["npm"],
+      "groupName": "npm minor/patch",
+      "matchUpdateTypes": ["minor", "patch"]
+    }
+  ]
+}
