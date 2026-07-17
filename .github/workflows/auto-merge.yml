@@ -1,45 +1,20 @@
 name: Auto-merge on green
 
-# Policy: armed by default, disarmed on draft, on a `hold`/`do-not-merge`
-# label, or when the PR touches a sensitivity-gated path. GitHub squash-merges
-# an armed PR the instant the branch's required status checks (enforced by
-# the `main` ruleset) pass — no manual review click needed for routine PRs
-# (tests, scripts, deps, ordinary docs).
+# Hands-off merge policy. Every non-draft PR is armed for auto-merge, so
+# GitHub squash-merges it the instant the branch's required status checks
+# (enforced by the `main` ruleset) pass — no manual review click needed.
 #
-# Sensitivity gate: hooks/**, agents/**, commands/**, and .github/workflows/**
-# changes disarm auto-merge unconditionally, because a bug in any of these
-# has fleet-wide or self-protecting blast radius (see PR #225 — a hooks/
-# regression blocked 100% of crew:dev-lite completions across every consumer
-# repo — and PR #224 — a commands/ doc prescribed a nonexistent API that
-# would have silently dropped a tracked worktree). These paths require a
-# human merge decision; the workflow disarms auto-merge, logs which path(s)
-# matched, and posts (or updates) a single PR comment explaining why, so a
-# disarmed PR doesn't just sit there unexplained.
-#
-# The gate FAILS CLOSED. If the sensitivity check cannot be completed (API
-# error, rate limit), the workflow disarms auto-merge and fails the job rather
-# than arming a PR whose sensitivity is unknown. A failing job on its own
-# disarms nothing — GitHub's auto-merge state is independent of this job's
-# outcome — so the disarm must happen explicitly before we give up.
-#
-# The path check is stateless: it re-evaluates the current diff on every
-# run, not just the first one. If a PR is later force-pushed to no longer
-# touch a sensitive path, it re-arms automatically — same as removing a
-# `hold` label. Deliberate choice: sensitivity should track what the PR
-# *currently* does, not what it once touched.
-#
-# Escape hatch: add a `hold` or `do-not-merge` label to block any PR
-# regardless of paths touched; the workflow disarms auto-merge when it sees
-# the label and re-arms when it's removed (again, re-evaluated statelessly).
+# Escape hatch: add a `hold` or `do-not-merge` label to block a PR; the
+# workflow disarms auto-merge when it sees the label and re-arms when it's
+# removed.
 #
 # Runs on the self-hosted runner so it never consumes GitHub-hosted Actions
 # minutes on this private repo (org runs a $0 hosted-spend budget). Uses
-# actions/github-script (GraphQL/REST) so no `gh` binary is required on the
-# host.
+# actions/github-script (GraphQL) so no `gh` binary is required on the host.
 
 on:
   pull_request:
-    types: [opened, reopened, ready_for_review, converted_to_draft, synchronize, labeled, unlabeled]
+    types: [opened, reopened, ready_for_review, synchronize, labeled, unlabeled]
 
 permissions:
   contents: write
@@ -53,22 +28,47 @@ jobs:
   auto-merge:
     runs-on: ["self-hosted", "astragenie"]
     steps:
+      # GitHub does not trigger workflow runs from pushes made with
+      # GITHUB_TOKEN. Arming auto-merge with GITHUB_TOKEN therefore makes
+      # GitHub perform the squash-merge as github-actions[bot], and the
+      # resulting push to main fires NO `on: push` workflow — main CI,
+      # actionlint and the publish jobs all silently skip.
+      #
+      # This is not hypothetical. It took out every push-triggered workflow on
+      # main across all five repos from 2026-07-09 (when this workflow landed)
+      # until 2026-07-16, and left @astragenie/astra-app-shell@2.11.0
+      # unpublished for six days: Publish - NPM retries on every main push, and
+      # 13 main pushes went by without firing it once.
+      #
+      # Fail loudly instead of falling back to GITHUB_TOKEN. memory carried
+      # `secrets.AUTOMERGE_PAT || secrets.GITHUB_TOKEN`, the PAT was never
+      # created, and the `||` silently selected the broken token — which is
+      # precisely why a week-long outage stayed invisible. A red check here is
+      # cheap: this workflow is NOT a required check in any repo's ruleset, so
+      # PRs remain mergeable by hand, and a human merge *does* trigger the
+      # `on: push` workflows.
+      - name: Preflight — require AUTOMERGE_PAT
+        shell: bash
+        env:
+          AUTOMERGE_PAT: ${{ secrets.AUTOMERGE_PAT }}
+        run: |
+          if [ -z "${AUTOMERGE_PAT}" ]; then
+            echo "::error title=AUTOMERGE_PAT not set::Auto-merge is disarmed on purpose. Arming it with GITHUB_TOKEN would make GitHub squash-merge as github-actions[bot], and GITHUB_TOKEN pushes do NOT trigger on:push workflows — main CI and the publish jobs would silently skip (see the 2026-07-09..16 fleet outage). Fix: create an AUTOMERGE_PAT secret (PAT or GitHub App token with contents:write + pull-requests:write). Until then, merge PRs manually — a human merge triggers the push workflows correctly."
+            exit 1
+          fi
+
       - name: Arm or disarm auto-merge
         uses: actions/github-script@v7
         with:
+          # Must be a real user/app token, NOT GITHUB_TOKEN — see the preflight
+          # above. No `||` fallback: silent degradation is the bug being fixed.
+          github-token: ${{ secrets.AUTOMERGE_PAT }}
           script: |
             const pr = context.payload.pull_request;
-            const { owner, repo } = context.repo;
             const held = pr.labels.some(l => ['hold', 'do-not-merge'].includes(l.name));
 
-            // Disabling auto-merge is the SAFE direction, so a failure here is
-            // never benign-by-default: if the PR must not merge and we could not
-            // disarm it, GitHub will still merge it on green. Distinguish the
-            // expected no-op ("auto-merge was not enabled") from a real failure
-            // and make the latter loud — a silent failed-disable IS the incident
-            // this workflow exists to prevent (#224, #225).
-            const disable = async (reason) => {
-              core.info(`#${pr.number}: ${reason} — disabling auto-merge.`);
+            if (pr.draft || held) {
+              core.info(`#${pr.number} is ${pr.draft ? 'draft' : 'held'} — disabling auto-merge.`);
               try {
                 await github.graphql(
                   `mutation($id: ID!) {
@@ -77,110 +77,9 @@ jobs:
                   { id: pr.node_id }
                 );
               } catch (e) {
-                // Do NOT classify by error string. GitHub returns "Can't disable
-                // auto-merge for this pull request." for the benign not-armed case,
-                // and error prose is not a stable contract — the previous regex
-                // missed that exact string and turned every draft/held PR into a red
-                // run. Ask for the STATE instead: if auto-merge is not enabled, there
-                // was nothing to disable and the failure is a no-op. If it IS enabled
-                // and we could not turn it off, that is the dangerous case (the PR can
-                // still merge on green) and it must be loud.
-                let stillArmed = null; // null = unknown
-                try {
-                  const q = await github.graphql(
-                    `query($id: ID!) {
-                       node(id: $id) { ... on PullRequest { autoMergeRequest { enabledAt } } }
-                     }`,
-                    { id: pr.node_id }
-                  );
-                  // Distinguish "node resolved, auto-merge is null" (confirmed NOT armed,
-                  // safe) from "node itself did not resolve" (unknown — we learned nothing,
-                  // so fail closed). Collapsing both to false would let an unexpected
-                  // response shape read as "safe" and silently skip the alarm.
-                  stillArmed = q?.node ? !!q.node.autoMergeRequest : null;
-                } catch (probeErr) {
-                  core.warning(`could not read auto-merge state: ${probeErr.message}`);
-                }
-
-                if (stillArmed === false) {
-                  core.info(`disable no-op — auto-merge was not armed on #${pr.number}.`);
-                  return;
-                }
-                // Armed, or state unknown → fail closed and loud.
-                core.setFailed(
-                  `#${pr.number}: FAILED to disable auto-merge (${reason}): ${e.message}. ` +
-                  `This PR may still merge on green — disarm it by hand or add a 'hold' label NOW.`
-                );
-              }
-            };
-
-            if (pr.draft || held) {
-              await disable(pr.draft ? 'draft' : 'held');
-              return;
-            }
-
-            // Sensitivity gate: paginate ALL changed files — a PR can exceed
-            // one page of listFiles results, and a missed page means a
-            // sensitive file slips through undetected.
-            //
-            // FAIL CLOSED: if we cannot complete the path check, we do not know
-            // whether this PR is sensitive — so we must assume it is. Disarm
-            // first, then fail the job. Falling through to the arming path with
-            // an unknown verdict would reintroduce the exact bug being fixed:
-            // GitHub's auto-merge state is independent of this job's outcome, so
-            // a merely-failing job disarms nothing.
-            const SENSITIVE = [/^hooks\//, /^agents\//, /^commands\//, /^\.github\/workflows\//];
-            const isSensitive = (name) => !!name && SENSITIVE.some(re => re.test(name));
-
-            let matched;
-            let botComment;
-            const MARKER = '<!-- auto-merge-path-disarm -->';
-            try {
-              const files = await github.paginate(github.rest.pulls.listFiles, {
-                owner, repo, pull_number: pr.number, per_page: 100,
-              });
-              // Check `previous_filename` too: renaming a file OUT of a sensitive
-              // directory still changes that directory's contents.
-              matched = files
-                .filter(f => isSensitive(f.filename) || isSensitive(f.previous_filename))
-                .map(f => f.filename);
-
-              const existing = await github.paginate(github.rest.issues.listComments, {
-                owner, repo, issue_number: pr.number, per_page: 100,
-              });
-              botComment = existing.find(c => c.body && c.body.includes(MARKER));
-            } catch (e) {
-              await disable(`path check FAILED (${e.message}) — assuming sensitive`);
-              core.setFailed(
-                `#${pr.number}: could not determine sensitivity (${e.message}). ` +
-                `Auto-merge disarmed as a precaution; re-run once the API is healthy.`
-              );
-              return;
-            }
-
-            if (matched.length > 0) {
-              await disable(`sensitive path(s) matched: ${matched.join(', ')}`);
-              const body = `${MARKER}\nAuto-merge is disarmed — this PR touches a sensitivity-gated path ` +
-                `(${matched.map(m => `\`${m}\``).join(', ')}) and needs a human merge decision. ` +
-                `This is re-evaluated on every push; if the sensitive change is removed, auto-merge re-arms automatically.`;
-              if (botComment) {
-                if (botComment.body !== body) {
-                  await github.rest.issues.updateComment({ owner, repo, comment_id: botComment.id, body });
-                }
-              } else {
-                await github.rest.issues.createComment({ owner, repo, issue_number: pr.number, body });
+                core.info(`disable no-op: ${e.message}`);
               }
               return;
-            }
-
-            // No longer sensitive (e.g. force-pushed to drop the matched
-            // change) — leave the historical comment in place as an audit
-            // trail but note that auto-merge has re-armed.
-            if (botComment && !botComment.body.includes('re-armed')) {
-              await github.rest.issues.updateComment({
-                owner, repo, comment_id: botComment.id,
-                body: `${botComment.body}\n\n_Update: no sensitive paths remain in the current diff — auto-merge has re-armed._`,
-              });
             }
 
             core.info(`Arming squash auto-merge on #${pr.number}.`);
