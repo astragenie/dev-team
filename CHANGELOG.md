@@ -3,6 +3,34 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [Unreleased]
+
+- **Gate-guard + artifact-lock enforcement hooks** (#257 pieces 1+2, warn-first):
+  - `hooks/subagent-gate-guard.ts` — SubagentStop guard: blocks (once the
+    `gate-guard` feature flag flips from warn to block) a builder-tier
+    subagent from reporting a DONE-shaped completion while the current run's
+    review or validation gate is recorded `"failed"` in
+    `.claude/state/crew/workflow-state.json`. An honest `BLOCKED:`/`HELP:`
+    report is never blocked. Default warn-only (`systemMessage`, never
+    blocks the stop).
+  - `hooks/pre-tool-use-artifact-lock.ts` — PreToolUse `Write|Edit` guard:
+    denies (once the `artifact-lock` feature flag flips from warn to block)
+    an edit to a path declared locked by a consumer repo under
+    `.claude/state/loop/artifact-locks/<sliceId>.json`. Contract mirrored
+    from runner-plugin's
+    `docs/upstream-requests/2026-07-18-crew-artifact-lock-hook-contract.md`
+    (option A — state file). Locks past `expiresAt`, or older than a 48h
+    default TTL, are treated as orphaned and ignored. Default warn-only.
+  - Both hooks are fail-open by construction (malformed/missing state,
+    unreadable dirs, or any internal error → allow/pass) and resolve their
+    warn-vs-block flag via a new local helper,
+    `hooks/lib/warn-first-flag.ts`, rather than the central
+    `scripts/lib/features-service.ts` FEATURES registry (out of this
+    slice's file scope — see the landing PR for the deviation note).
+  - Halt-badge surfacing of a gate-guard/artifact-lock event on the
+    consumer (loop) side is tracked separately by runner-plugin
+    FEAT-264/W1 and is **not** implemented here.
+
 ## [v0.66.0] — 2026-07-15 — 17 owned agents wired to astramem memory
 
 Wires all 17 owned crew agents to astramem memory via the registered
