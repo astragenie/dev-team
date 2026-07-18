@@ -5,6 +5,38 @@ semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
 ## [Unreleased]
 
+- **Gate-guard + artifact-lock enforcement hooks** (#257 pieces 1+2, warn-first):
+  - `hooks/subagent-gate-guard.ts` — SubagentStop guard: blocks (once the
+    `gate-guard` feature flag flips from warn to block) a builder-tier
+    subagent whose last message contains an explicit `DONE:` completion
+    claim while the current run's review or validation gate is recorded
+    `"failed"` in `.claude/state/crew/workflow-state.json`. A
+    `BLOCKED:`/`HELP:`/`HELP-REQUEST:`/`IN-PROGRESS:` report, or a message
+    with no recognized STATUS marker at all, is always allowed regardless
+    of gate state — this guard only fires on a completion *claim*, not on
+    the absence of an honest-report marker. Default warn-only
+    (`systemMessage`, never blocks the stop).
+  - `hooks/pre-tool-use-artifact-lock.ts` — PreToolUse `Write|Edit` guard:
+    denies (once the `artifact-lock` feature flag flips from warn to block)
+    an edit to a path declared locked by a consumer repo under
+    `.claude/state/loop/artifact-locks/<sliceId>.json`. Contract mirrored
+    from runner-plugin's
+    `docs/upstream-requests/2026-07-18-crew-artifact-lock-hook-contract.md`
+    (option A — state file). Locks past `expiresAt`, older than a 48h
+    default TTL, or with an unparseable `createdAt` and no usable
+    `expiresAt`, are treated as orphaned/expired and ignored. Default
+    warn-only, using the `hookSpecificOutput.permissionDecision:"allow"` +
+    `systemMessage` shape (matching `dispatch-size-estimate.ts`'s warn
+    precedent).
+  - Both hooks are fail-open by construction (malformed/missing state,
+    unreadable dirs, or any internal error → allow/pass) and resolve their
+    warn-vs-block flag via a new local helper,
+    `hooks/lib/warn-first-flag.ts`, rather than the central
+    `scripts/lib/features-service.ts` FEATURES registry (out of this
+    slice's file scope — see the landing PR for the deviation note).
+  - Halt-badge surfacing of a gate-guard/artifact-lock event on the
+    consumer (loop) side is tracked separately by runner-plugin
+    FEAT-264/W1 and is **not** implemented here.
 - **`scripts/lib/repair-signature.ts`** (#257): pure, no-I/O helper for
   bounded retry loops — normalizes a failure result into a stable signature
   (first non-empty line, whitespace-collapsed, paths and line:column noise
