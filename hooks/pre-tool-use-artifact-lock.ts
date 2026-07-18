@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// PreToolUse hook on Write | Edit — declarative artifact-lock enforcement
-// (dev-team#257 piece 2; contract mirrored from runner-plugin's
+// PreToolUse hook on Write | Edit | MultiEdit | NotebookEdit — declarative
+// artifact-lock enforcement (dev-team#257 piece 2; contract mirrored from
+// runner-plugin's
 // docs/upstream-requests/2026-07-18-crew-artifact-lock-hook-contract.md).
 //
 // Lock file shape (one JSON file per active slice under

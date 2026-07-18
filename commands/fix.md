@@ -118,10 +118,17 @@ No verifier dispatch. Verifier defers to `/crew:ship`.
 Symmetric with `/crew:ship`'s auto-fix loop. When either Reviewer A or Reviewer B returns `rejected`:
 
 1. Read both review-result artifacts for the aggregated FAIL findings.
-2. Re-dispatch the same specialist builder with the findings as fix scope.
-3. Increment retry counter.
-4. Re-run the parallel reviewer fan-out.
-5. Retry < N (default 2 from `.claude/crew/deployment.md` `fix.retry_limit`)? Loop. Else halt.
+2. **Repair-signature dedup check (dev-team#257/#259):** before retrying, run `repair-check` with the aggregated FAIL findings as `--failure-output`, passing the previous iteration's `--prev-signature` (omit on the first iteration):
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" repair-check --repo "$PWD" \
+     --failure-output "<aggregated FAIL findings>" \
+     --prev-signature "<signature from the previous iteration's repair-check call, if any>"
+   ```
+   Hold the returned `.signature` to pass as `--prev-signature` on the NEXT iteration. If `.shouldStop` is `true`, the same failure repeated and retrying isn't changing the outcome — skip the rest of this loop and go straight to "On N exhausted" below instead of burning another retry.
+3. Re-dispatch the same specialist builder with the findings as fix scope.
+4. Increment retry counter.
+5. Re-run the parallel reviewer fan-out.
+6. Retry < N (default 2 from `.claude/crew/deployment.md` `fix.retry_limit`) AND repair-check did not report `shouldStop: true`? Loop. Else halt.
 
 On N exhausted:
 

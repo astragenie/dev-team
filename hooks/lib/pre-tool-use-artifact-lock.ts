@@ -1,7 +1,8 @@
-// Core flow for the PreToolUse Write|Edit artifact-lock hook (dev-team#257
-// piece 2). No stdin/stdout/process.exit here — hooks/pre-tool-use-artifact-lock.ts
-// owns process I/O, matching the shim/lib split used throughout this hooks
-// tree (hooks/lib/dispatch-size-estimate.ts, hooks/lib/model-routing-enforce.ts).
+// Core flow for the PreToolUse Write|Edit|MultiEdit|NotebookEdit artifact-lock
+// hook (dev-team#257 piece 2, matcher widened dev-team#A1). No
+// stdin/stdout/process.exit here — hooks/pre-tool-use-artifact-lock.ts owns
+// process I/O, matching the shim/lib split used throughout this hooks tree
+// (hooks/lib/dispatch-size-estimate.ts, hooks/lib/model-routing-enforce.ts).
 //
 // Contract (mirrored from runner-plugin's cross-plugin request doc:
 // docs/upstream-requests/2026-07-18-crew-artifact-lock-hook-contract.md,
@@ -16,9 +17,14 @@
 //     "expiresAt": "<ISO, optional TTL guard>"
 //   }
 //
-// On PreToolUse Write|Edit, glob .claude/state/loop/artifact-locks/*.json;
-// if tool_input.file_path (normalized, made repo-relative) matches any
-// lockedPaths entry, deny with the lock's lockedBy + sliceId in the reason.
+// On PreToolUse Write|Edit|MultiEdit|NotebookEdit, glob
+// .claude/state/loop/artifact-locks/*.json; if the tool's target path
+// (normalized, made repo-relative) matches any lockedPaths entry, deny with
+// the lock's lockedBy + sliceId in the reason. Write/Edit/MultiEdit all carry
+// the target path as tool_input.file_path (MultiEdit's edits[] batch multiple
+// edits against that one file_path, so no separate handling is needed);
+// NotebookEdit carries it as tool_input.notebook_path instead — the original
+// Write|Edit-only matcher let both slip through unlocked.
 //
 // Fail-open by construction: an unreadable lock dir returns no locks; a
 // malformed individual lock file (missing/wrong-typed field) is skipped —
@@ -150,14 +156,26 @@ interface ParsedInput {
   filePath: string;
 }
 
+const FILE_PATH_TOOLS = new Set(["Write", "Edit", "MultiEdit"]);
+
 function parseInput(raw: string): ParsedInput | null {
   try {
     const obj = JSON.parse(raw) as Record<string, unknown>;
-    if (obj["tool_name"] !== "Write" && obj["tool_name"] !== "Edit") return null;
+    const toolName = obj["tool_name"];
     const toolInput = obj["tool_input"];
     if (typeof toolInput !== "object" || toolInput === null) return null;
-    const filePath = (toolInput as Record<string, unknown>)["file_path"];
+    const inputRecord = toolInput as Record<string, unknown>;
+
+    let filePath: unknown;
+    if (typeof toolName === "string" && FILE_PATH_TOOLS.has(toolName)) {
+      filePath = inputRecord["file_path"];
+    } else if (toolName === "NotebookEdit") {
+      filePath = inputRecord["notebook_path"];
+    } else {
+      return null;
+    }
     if (typeof filePath !== "string" || filePath === "") return null;
+
     const cwd = typeof obj["cwd"] === "string" ? obj["cwd"] : process.cwd();
     const sessionId = typeof obj["session_id"] === "string" ? obj["session_id"] : "";
     return { sessionId, cwd, filePath };
