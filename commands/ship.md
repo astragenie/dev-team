@@ -90,28 +90,35 @@ qa_decision = passed AND verifier_decision = passed
 
 ### Either FAIL path
 
-1. Read the FEAT tag from the current slice context.
-2. Map tag to specialist builder using the same FEAT-tag → builder routing as `/crew:build`:
+1. **Repair-signature dedup check (dev-team#257/#259):** before retrying, run `repair-check` with the aggregated qa-expert + verifier FAIL findings as `--failure-output`, passing the previous iteration's `--prev-signature` (omit on the first iteration):
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" repair-check --repo "$PWD" \
+     --failure-output "<aggregated FAIL findings>" \
+     --prev-signature "<signature from the previous iteration's repair-check call, if any>"
+   ```
+   Hold the returned `.signature` to pass as `--prev-signature` on the NEXT iteration. If `.shouldStop` is `true`, the same failure repeated and retrying isn't changing the outcome — skip the rest of this path and go straight to Step 4 (blocked) instead of dispatching another retry.
+2. Read the FEAT tag from the current slice context.
+3. Map tag to specialist builder using the same FEAT-tag → builder routing as `/crew:build`:
    - `.cs` diff → `crew:backend-dev`
    - `.ts` + `surface:ui` → `crew:frontend-dev`
    - `.ts` + `surface:backend` → `crew:backend-dev`
    - `.ts` + `surface:cross-layer` → `crew:fullstack-dev`
    - `.ts` + `surface:plugin` → `crew:aiplugin-dev`
    - no clear tag → `crew:fullstack-dev`
-3. **Recall injection (FEAT-188 S3a):** before dispatching, fetch a recall block:
+4. **Recall injection (FEAT-188 S3a):** before dispatching, fetch a recall block:
    `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" recall-block --repo "$PWD" --agent <specialist-builder-agent-name> --tags "<FEAT tags csv>"`
    If `.block` is non-empty, prepend it verbatim (it is already the `## Prior context (from astramem)` block) to the retry dispatch instruction, ahead of the aggregated FAIL findings. If empty (memory not configured, or nothing recalled), omit — do not add any placeholder text.
-3a. **Profile injection (agent-profile-load-feedback):** immediately after the recall block, fetch the specialist builder's track record (best-effort, empty when disabled). Resolve `<runId>` from `.claude/state/crew/workflow-state.json` (`currentRun.slice`) — reuse this SAME value for the profile-feedback calls in Step 3 (Both PASS path) and Step 4 below:
+4a. **Profile injection (agent-profile-load-feedback):** immediately after the recall block, fetch the specialist builder's track record (best-effort, empty when disabled). Resolve `<runId>` from `.claude/state/crew/workflow-state.json` (`currentRun.slice`) — reuse this SAME value for the profile-feedback calls in Step 3 (Both PASS path) and Step 4 below:
    `node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" profile-block --repo "$PWD" --agent <specialist-builder-agent-name> --run-id <runId>`
    If `.block` is non-empty, append it (it is already the `## Your track record (<agent>)` block) to the retry dispatch instruction, after the recall block. If empty (profile disabled, or no track record yet), omit — do not add any placeholder text.
-4. Dispatch the specialist builder with the aggregated FAIL findings as fix scope. Builder produces
+5. Dispatch the specialist builder with the aggregated FAIL findings as fix scope. Builder produces
    a fix + handoff artifact.
-5. Increment retry counter.
+6. Increment retry counter.
 
 ### Retry gate
 
 ```
-retry_counter < ship.fix_retry_limit (default 2)?
+retry_counter < ship.fix_retry_limit (default 2) AND repair-check did not report shouldStop=true?
   yes → return to Step 3, iteration N
   no  → goto Step 4 (blocked)
 ```

@@ -54,6 +54,40 @@ function payload(opts: {
   return JSON.stringify(obj);
 }
 
+// MultiEdit's tool_input carries the same top-level file_path as Write/Edit,
+// plus an edits[] batch — the hook only needs the path, so edits[] content
+// is irrelevant to the lock check itself.
+function multiEditPayload(opts: { session_id?: string; cwd: string; file_path: string }): string {
+  const obj: Record<string, unknown> = {
+    session_id: opts.session_id ?? "sess-1",
+    cwd: opts.cwd,
+    tool_name: "MultiEdit",
+    tool_input: {
+      file_path: opts.file_path,
+      edits: [{ old_string: "a", new_string: "b" }]
+    }
+  };
+  return JSON.stringify(obj);
+}
+
+// NotebookEdit carries its target path as notebook_path, not file_path.
+function notebookEditPayload(opts: {
+  session_id?: string;
+  cwd: string;
+  notebook_path?: string;
+}): string {
+  const obj: Record<string, unknown> = {
+    session_id: opts.session_id ?? "sess-1",
+    cwd: opts.cwd,
+    tool_name: "NotebookEdit",
+    tool_input:
+      opts.notebook_path === undefined
+        ? { new_source: "print(1)" }
+        : { notebook_path: opts.notebook_path, new_source: "print(1)" }
+  };
+  return JSON.stringify(obj);
+}
+
 const LOCKED_REL_PATH = ".claude/artifacts/crew/validations/plan-slice-4.md";
 
 // (a) lock present, path matches → warn (default warn-only mode)
@@ -241,6 +275,102 @@ test("non-Write/Edit tool_name → pass through, untouched", async () => {
 test("malformed JSON input → pass, no throw", async () => {
   const out = await runArtifactLockHook("not json");
   expect(out).toBeNull();
+});
+
+// (k) MultiEdit against a locked path → warn (dev-team#A1: MultiEdit bypass)
+test("MultiEdit against locked path → warn (default warn-only mode)", async () => {
+  const repo = await makeRepo();
+  try {
+    await writeLock(repo, "SLICE-4", {
+      sliceId: "SLICE-4",
+      lockedPaths: [LOCKED_REL_PATH],
+      lockedBy: "qa-gate",
+      createdAt: new Date().toISOString()
+    });
+    const filePath = path.join(repo, LOCKED_REL_PATH);
+    const raw = multiEditPayload({ cwd: repo, file_path: filePath });
+    const out = await runArtifactLockHook(raw);
+    expect(out).not.toBeNull();
+    const parsed = JSON.parse(out as string);
+    expect(parsed.hookSpecificOutput.permissionDecision).toBe("allow");
+    expect(parsed.systemMessage).toMatch(/qa-gate/);
+    expect(parsed.systemMessage).toMatch(/SLICE-4/);
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+// (l) MultiEdit against an unlocked path → pass through silently
+test("MultiEdit against unlocked path → allow, silent", async () => {
+  const repo = await makeRepo();
+  try {
+    await writeLock(repo, "SLICE-4", {
+      sliceId: "SLICE-4",
+      lockedPaths: [LOCKED_REL_PATH],
+      lockedBy: "qa-gate",
+      createdAt: new Date().toISOString()
+    });
+    const filePath = path.join(repo, "src", "unrelated.ts");
+    const raw = multiEditPayload({ cwd: repo, file_path: filePath });
+    const out = await runArtifactLockHook(raw);
+    expect(out).toBeNull();
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+// (m) NotebookEdit against a locked notebook_path → warn (dev-team#A1)
+test("NotebookEdit against locked notebook_path → warn (default warn-only mode)", async () => {
+  const repo = await makeRepo();
+  try {
+    await writeLock(repo, "SLICE-4", {
+      sliceId: "SLICE-4",
+      lockedPaths: [LOCKED_REL_PATH],
+      lockedBy: "qa-gate",
+      createdAt: new Date().toISOString()
+    });
+    const notebookPath = path.join(repo, LOCKED_REL_PATH);
+    const raw = notebookEditPayload({ cwd: repo, notebook_path: notebookPath });
+    const out = await runArtifactLockHook(raw);
+    expect(out).not.toBeNull();
+    const parsed = JSON.parse(out as string);
+    expect(parsed.hookSpecificOutput.permissionDecision).toBe("allow");
+    expect(parsed.systemMessage).toMatch(/qa-gate/);
+    expect(parsed.systemMessage).toMatch(/SLICE-4/);
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+// (n) NotebookEdit against an unlocked notebook_path → pass through silently
+test("NotebookEdit against unlocked notebook_path → allow, silent", async () => {
+  const repo = await makeRepo();
+  try {
+    await writeLock(repo, "SLICE-4", {
+      sliceId: "SLICE-4",
+      lockedPaths: [LOCKED_REL_PATH],
+      lockedBy: "qa-gate",
+      createdAt: new Date().toISOString()
+    });
+    const notebookPath = path.join(repo, "notebooks", "unrelated.ipynb");
+    const raw = notebookEditPayload({ cwd: repo, notebook_path: notebookPath });
+    const out = await runArtifactLockHook(raw);
+    expect(out).toBeNull();
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+// (o) NotebookEdit missing notebook_path entirely → pass through, no throw
+test("NotebookEdit with missing notebook_path → allow, no throw", async () => {
+  const repo = await makeRepo();
+  try {
+    const raw = notebookEditPayload({ cwd: repo });
+    const out = await runArtifactLockHook(raw);
+    expect(out).toBeNull();
+  } finally {
+    await cleanup(repo);
+  }
 });
 
 // Pure-function unit coverage
