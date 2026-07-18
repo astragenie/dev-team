@@ -55,6 +55,7 @@ function makeOptResult(overrides: Partial<OptimizationResult> = {}): Optimizatio
       prompt_path: "" // filled in per-test
     },
     trials: [],
+    generator_mode: "synthetic",
     started_at: "2026-07-02T10:00:00.000Z",
     finished_at: "2026-07-02T10:05:00.000Z",
     ...overrides
