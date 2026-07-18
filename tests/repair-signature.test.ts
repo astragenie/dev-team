@@ -6,7 +6,10 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { createRepairSignatureTracker, normalizeSignature } from "../scripts/lib/repair-signature.ts";
+import {
+  createRepairSignatureTracker,
+  normalizeSignature
+} from "../scripts/lib/repair-signature.ts";
 
 describe("normalizeSignature", () => {
   test("returns '' for undefined/null/empty input", () => {
@@ -33,12 +36,8 @@ describe("normalizeSignature", () => {
   });
 
   test("normalizes absolute paths (posix and windows) to <path>", () => {
-    expect(normalizeSignature("Error in /home/user/repo/src/foo.ts")).toBe(
-      "Error in <path>"
-    );
-    expect(normalizeSignature("Error in C:\\work\\repo\\src\\foo.ts")).toBe(
-      "Error in <path>"
-    );
+    expect(normalizeSignature("Error in /home/user/repo/src/foo.ts")).toBe("Error in <path>");
+    expect(normalizeSignature("Error in C:\\work\\repo\\src\\foo.ts")).toBe("Error in <path>");
   });
 
   test("two retries hitting the same failure at a different line/path compare equal", () => {
