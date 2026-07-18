@@ -32,9 +32,9 @@ Two fixes closing the gap between what GEPA claims and what it actually does.
   (`tests/gepa/champion-provenance-validator-compat.test.ts`). The legacy
   leading-block shape is still recognized and stripped by
   `stripGepafrontmatter` for backward compatibility (no-op on the new
-  shape). Note: `tests/gepa-provenance-validate.test.ts` (top-level, outside
-  this pass's `tests/gepa/**` scope) still asserts the old shape and needs a
-  follow-up update.
+  shape). The old-shape fixture `tests/gepa-provenance-validate.test.ts` is
+  retired in this same change — both of its assertions are duplicated against
+  the current shape in the validator-compat suite.
 - **Synthetic-mode honesty.** Default candidate generation is deterministic
   string mutation — no LLM call, no reflective rewrite — unless
   `GEPA_LIVE_GENERATOR=1`. That default was silent: nothing in a run's
