@@ -25,10 +25,13 @@ const AGENTS_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const MAX_LINES = 350;
 
 function parseFrontmatter(text: string): Record<string, string> | null {
-  // FEAT-193 AC-10: champion-provenance-writer prepends a leading `gepa:`
-  // frontmatter block above the agent's own `name:`/`description:` block. The
-  // field-read must skip that block or it reads {gepa:…} (no name) and fails a
-  // legitimately-promoted agent. stripGepafrontmatter is a no-op when absent.
+  // champion-provenance-writer now merges flat `gepa_*` keys into the agent's
+  // single frontmatter block (W5 honesty pass), but files written by the old
+  // writer (FEAT-193 era) carried a SEPARATE leading `gepa:` block above the
+  // agent's own `name:`/`description:` block. The field-read must still skip
+  // that legacy block or it reads {gepa:…} (no name) and fails a
+  // legitimately-promoted agent. stripGepafrontmatter is a no-op on the
+  // current single-block shape.
   const body = stripGepafrontmatter(text);
   const match = body.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!match || match[1] === undefined) return null;
