@@ -77,6 +77,7 @@ function makeResult(gates: {
       prompt_path: ""
     },
     trials: [],
+    generator_mode: "synthetic",
     started_at: "2026-07-01T10:00:00.000Z",
     finished_at: "2026-07-01T10:05:00.000Z"
   };

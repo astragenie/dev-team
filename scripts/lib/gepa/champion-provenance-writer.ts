@@ -1,26 +1,60 @@
 /**
- * scripts/lib/gepa/champion-provenance-writer.ts — SLICE-105
+ * scripts/lib/gepa/champion-provenance-writer.ts — SLICE-105 (W5 honesty pass,
+ * astragenie/runner-plugin#525 §4.3)
  *
- * Writes the `gepa:` YAML frontmatter block at the top of an agent prompt file
- * to record which trial promoted this champion, the hash of the body before
- * promotion, and the promotion timestamp.
+ * Writes GEPA promotion provenance onto an agent prompt file: which trial
+ * promoted this champion, the hash of the content before promotion, and the
+ * promotion timestamp.
  *
- * Frontmatter shape (written):
+ * Frontmatter shape (written) — flat `gepa_*` keys MERGED into the agent's
+ * own single frontmatter block, appended after every existing field so
+ * `name:` (and every other required field a consumer reads) is always
+ * encountered first, in the SAME block:
  *
  *   ---
- *   gepa:
- *     champion_from_trial: <trial-uuid>
- *     prior_prompt_hash: <sha256-hex-of-body-without-gepa-block>
- *     promoted_at: <iso-datetime>
+ *   name: <agent-name>
+ *   description: ...
+ *   model: ...
+ *   ...
+ *   gepa_champion_from_trial: <trial-uuid>
+ *   gepa_prior_prompt_hash: <sha256-hex-of-file-without-gepa_* keys>
+ *   gepa_promoted_at: <iso-datetime>
  *   ---
  *   <original prompt body>
  *
- * Idempotency: if a `gepa:` block already exists at the top, it is replaced
- * in place (not duplicated). Other frontmatter blocks below are preserved.
+ * Root cause of the prior (SUPERSEDED) shape: it prepended a SEPARATE leading
+ * `---\ngepa:\n  ...\n---` block ABOVE the agent's own frontmatter, producing
+ * two adjacent `---...---` blocks. Any consumer that reads only the FIRST
+ * frontmatter block as ground truth — which is the standard frontmatter
+ * contract, and is what Claude Code's own agent loader does — would see only
+ * `{gepa: {...}}` with no `name`/`description`/`model` and silently mis-load
+ * the agent. This repo's own `validate-agents.ts` was patched around it
+ * (FEAT-193 AC-10: its `parseFrontmatter` special-cased stripping a leading
+ * `gepa:` block via `stripGepafrontmatter` before reading fields), but that
+ * only fixed this repo's own CI gate — it did nothing for the actual
+ * downstream frontmatter contract every other consumer relies on. As a
+ * result the writer was never actually run against a real agent file: zero
+ * `gepa_*`-tagged agents existed repo-wide, and the one real promotion
+ * (CHANGELOG 0.51.1) was done by hand with the provenance block omitted
+ * entirely and the provenance tracked in CHANGELOG prose instead.
  *
- * Hash semantics: `prior_prompt_hash` is computed from the prompt body WITHOUT
- * any existing `gepa:` frontmatter block, so subsequent promotions produce a
- * chain of deterministic hashes over the actual prompt content.
+ * The new shape needs no special-casing anywhere: it is a single, ordinary
+ * frontmatter block, so every existing frontmatter consumer — field-read,
+ * line-count, section checks — sees exactly what it already expects to see.
+ *
+ * `stripGepafrontmatter` is kept below for backward compatibility only: it
+ * still recognizes and strips the old leading-block shape if one is ever
+ * encountered (e.g. a promotion made before this fix), and is a no-op on
+ * every file written under the new shape — `validate-agents.ts`'s existing
+ * import of it stays safe.
+ *
+ * Idempotency: if `gepa_*` keys already exist in the frontmatter block, they
+ * are replaced in place (not duplicated).
+ *
+ * Hash semantics: `prior_prompt_hash` is computed over the full file content
+ * with any existing `gepa_*` frontmatter keys (and any legacy leading
+ * `gepa:` block) stripped first, so subsequent promotions produce a chain of
+ * deterministic hashes over the actual prompt content (frontmatter + body).
  *
  * Atomicity: writes via a tmp file + `fs.renameSync` which on Windows maps to
  * `MoveFileEx(MOVEFILE_REPLACE_EXISTING)` via Node's libuv — safe against
@@ -46,25 +80,28 @@ export interface ProvenanceOpts {
 }
 
 export interface ProvenanceResult {
-  /** SHA-256 hex of the prompt body (without any gepa: frontmatter). */
+  /** SHA-256 hex of the file content (without any gepa provenance). */
   priorPromptHash: string;
   /** ISO datetime written to `promoted_at`. */
   promotedAt: string;
 }
 
-// ── Parsing helpers ──────────────────────────────────────────────────────────
+// ── Legacy shape support (SUPERSEDED — backward-compat only) ──────────────────
 
 /**
- * Strip the leading `gepa:` frontmatter block (if present) and return the
- * remaining content.
+ * Strip the legacy leading `gepa:` frontmatter block (if present) and return
+ * the remaining content. SUPERSEDED by the flat `gepa_*`-key shape below —
+ * kept only so a file promoted before this fix (or `validate-agents.ts`'s
+ * existing import of this function) still behaves correctly. No-op on any
+ * file written under the current shape.
  *
- * A `gepa:` frontmatter block is defined as:
+ * A legacy `gepa:` frontmatter block is defined as:
  *   - File starts with `---\n`
  *   - The first non-dashes content line starts with `gepa:`
  *   - Followed by indented `  key: value` lines
  *   - Closed by a `---\n` line
  *
- * Any other leading frontmatter blocks (with different keys) are NOT stripped.
+ * Any other leading frontmatter block (with different keys) is NOT stripped.
  */
 export function stripGepafrontmatter(content: string): string {
   const lines = content.split("\n");
@@ -89,29 +126,78 @@ export function stripGepafrontmatter(content: string): string {
   return lines.slice(closeIdx + 1).join("\n");
 }
 
+// ── Frontmatter-block helpers (current shape) ──────────────────────────────────
+
+const GEPA_KEY_RE = /^gepa_(champion_from_trial|prior_prompt_hash|promoted_at):/;
+
+/** Locate the leading `---\n...\n---` frontmatter block. Null if absent/malformed. */
+function findFrontmatterBlock(content: string): { lines: string[]; closeIdx: number } | null {
+  const lines = content.split("\n");
+  if (lines[0]?.trimEnd() !== "---") return null;
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i]?.trimEnd() === "---") return { lines, closeIdx: i };
+  }
+  return null;
+}
+
+/**
+ * Strip any existing `gepa_champion_from_trial` / `gepa_prior_prompt_hash` /
+ * `gepa_promoted_at` lines from within the leading frontmatter block, so a
+ * re-promotion replaces them in place instead of duplicating. No-op when the
+ * block is absent or carries none of those keys. Exported for testability.
+ */
+export function stripGepaKeys(content: string): string {
+  const block = findFrontmatterBlock(content);
+  if (!block) return content;
+  const { lines, closeIdx } = block;
+  const kept = lines.slice(1, closeIdx).filter((line) => !GEPA_KEY_RE.test(line.trim()));
+  return [lines[0] as string, ...kept, ...lines.slice(closeIdx)].join("\n");
+}
+
+/**
+ * Insert the three `gepa_*` provenance lines at the END of the leading
+ * frontmatter block — after every existing field, so `name:` and every other
+ * required field are always read first, in the same block. Falls back to
+ * prepending a minimal frontmatter block only when no leading block exists
+ * at all (should not happen for a real agent file, which always carries its
+ * own frontmatter; kept so the writer stays total rather than throwing).
+ */
+function injectGepaKeys(
+  content: string,
+  trialUuid: string,
+  priorHash: string,
+  promotedAt: string
+): string {
+  const newFields = [
+    `gepa_champion_from_trial: ${trialUuid}`,
+    `gepa_prior_prompt_hash: ${priorHash}`,
+    `gepa_promoted_at: ${promotedAt}`
+  ];
+  const block = findFrontmatterBlock(content);
+  if (!block) {
+    return `---\n${newFields.join("\n")}\n---\n${content}`;
+  }
+  const { lines, closeIdx } = block;
+  return [...lines.slice(0, closeIdx), ...newFields, ...lines.slice(closeIdx)].join("\n");
+}
+
 // ── Hash ─────────────────────────────────────────────────────────────────────
 
 /**
- * Compute SHA-256 of the prompt body (without gepa frontmatter).
- * The hash is stable regardless of trailing newline normalization — we hash
- * the raw string returned by stripGepafrontmatter.
+ * Compute SHA-256 of the given content. Stable regardless of trailing
+ * newline normalization — hashes the raw string passed in.
  */
 export function hashPromptBody(body: string): string {
   return createHash("sha256").update(body, "utf8").digest("hex");
 }
 
-// ── Frontmatter builder ──────────────────────────────────────────────────────
-
-function buildGepafrontmatter(trialUuid: string, priorHash: string, promotedAt: string): string {
-  return `---\ngepa:\n  champion_from_trial: ${trialUuid}\n  prior_prompt_hash: ${priorHash}\n  promoted_at: ${promotedAt}\n---\n`;
-}
-
 // ── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * Write the `gepa:` YAML frontmatter block to the top of the agent prompt file.
+ * Write GEPA promotion provenance onto the agent prompt file, merged into its
+ * existing frontmatter block.
  *
- * Idempotent: if a `gepa:` block already exists, it is replaced in place.
+ * Idempotent: if `gepa_*` keys already exist, they are replaced in place.
  * Atomic: writes via tmp file + renameSync.
  *
  * Returns the hash and timestamp written so the caller can record them in
@@ -124,14 +210,16 @@ export function writeChampionProvenance(opts: ProvenanceOpts): ProvenanceResult 
   // Read the current file.
   const current = readFileSync(agentPath, "utf8");
 
-  // Strip any existing gepa: block to get the clean body.
-  const body = stripGepafrontmatter(current);
+  // Recover from the legacy leading `gepa:` block shape if ever encountered,
+  // then strip any existing flat gepa_* keys — together these give the clean
+  // prior content this promotion's hash is measured against.
+  const clean = stripGepaKeys(stripGepafrontmatter(current));
 
-  // Hash the body (without gepa frontmatter).
-  const priorPromptHash = hashPromptBody(body);
+  // Hash the clean content (no gepa provenance of any shape).
+  const priorPromptHash = hashPromptBody(clean);
 
-  // Build the new content.
-  const newContent = buildGepafrontmatter(trialUuid, priorPromptHash, promotedAt) + body;
+  // Build the new content: gepa_* keys merged into the existing frontmatter block.
+  const newContent = injectGepaKeys(clean, trialUuid, priorPromptHash, promotedAt);
 
   // Atomic write: tmp sibling + rename.
   const dir = dirname(agentPath);
