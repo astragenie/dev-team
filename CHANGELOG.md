@@ -3,7 +3,21 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
-## [Unreleased] — GEPA honesty pass (W5, astragenie/runner-plugin#525 §4.3)
+## [Unreleased]
+
+- **`scripts/lib/repair-signature.ts`** (#257): pure, no-I/O helper for
+  bounded retry loops — normalizes a failure result into a stable signature
+  (first non-empty line, whitespace-collapsed, paths and line:column noise
+  stripped) and tracks consecutive repeats so a caller can stop early once
+  retrying stops changing the outcome. Ported from the otta-plugin
+  `workflows/repair-policy.mjs` pattern. Adopted as the new `crew.ts
+  repair-check --failure-output <text> [--prev-signature <text>]`
+  subcommand — a stateless-per-call dedup check the auto-fix retry loops
+  (`ship.md` / `fix.md` / `incident.md`'s "Retry < N? Loop. Else halt."
+  step) can call to detect a failure repeating and stop burning retries on
+  it, logging a distinct one-line reason when it does.
+
+### GEPA honesty pass (W5, astragenie/runner-plugin#525 §4.3)
 
 Two fixes closing the gap between what GEPA claims and what it actually does.
 
