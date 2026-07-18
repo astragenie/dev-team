@@ -270,7 +270,9 @@ function buildDefaultFlags(): Flags {
     date: null,
     runId: null,
     outcome: null,
-    memoriesUsed: null
+    memoriesUsed: null,
+    failureOutput: null,
+    prevSignature: null
   };
 }
 
