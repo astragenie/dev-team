@@ -1,7 +1,19 @@
 {
   "features": {
-    "redundant-read-stop": { "enabled": false },
-    "subagent-inline-warn": { "enabled": true },
-    "shell-preflight": { "enabled": true }
+    "redundant-read-stop": {
+      "enabled": false
+    },
+    "subagent-inline-warn": {
+      "enabled": true
+    },
+    "shell-preflight": {
+      "enabled": true
+    },
+    "gate-guard": {
+      "enabled": true
+    },
+    "artifact-lock": {
+      "enabled": true
+    }
   }
 }
