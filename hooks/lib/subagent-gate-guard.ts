@@ -11,9 +11,14 @@
 // gate the dispatcher already knows is red. This guard is the "cannot
 // report done past a failing gate" half: on SubagentStop for an in-scope
 // builder-tier agent, if the current run's review or validation gate status
-// is "failed" AND the agent's last message does not honestly acknowledge
-// that (a BLOCKED:/HELP:/HELP-REQUEST: marker), block the stop and echo the
-// gate reason.
+// is "failed" AND the agent's last message contains a DONE: completion
+// claim, block the stop and echo the gate reason. It fires ONLY on a DONE
+// claim — a BLOCKED:/HELP:/HELP-REQUEST:/IN-PROGRESS: report (the shared
+// scripts/lib/subagent-return/incomplete-detector.ts STATUS vocabulary
+// minus DONE) or a message with no recognized STATUS marker at all is
+// always allowed here; this guard is not a second terminal-state-presence
+// check (check-builder-terminal-state.ts already owns that), it only cares
+// whether a completion CLAIM was made while the gate disagrees.
 //
 // SCOPE / HONEST LIMITATION: same residual gap as check-reviewer-decision.ts
 // and check-builder-terminal-state.ts — SubagentStop's `last_assistant_message`
@@ -29,20 +34,25 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { isBuilderTierAgent } from "./model-routing-enforce.ts";
+import { hasTerminalStatusMarker } from "../../scripts/lib/subagent-return/incomplete-detector.ts";
 import { loadWorkflowState, type WorkflowRun } from "../../scripts/lib/workflow-state.ts";
 import { readCrewConfig } from "../../scripts/lib/features-service.ts";
 import { resolveBlockMode } from "./warn-first-flag.ts";
 
 export const GATE_GUARD_FEATURE = "gate-guard";
 
-// A builder claiming BLOCKED/HELP is being honest about not being done —
-// never block that; forcing completion would convert a legitimate stop into
-// a stuck loop, same guardrail check-builder-terminal-state.ts applies to
-// its own STATUS-line vocabulary.
-const HONEST_NOT_DONE_RE = /^(BLOCKED|HELP|HELP-REQUEST)\s*:/im;
+// incomplete-detector.ts's hasTerminalStatusMarker only answers "is ANY
+// recognized STATUS marker present" (DONE|BLOCKED|HELP|HELP-REQUEST|
+// IN-PROGRESS) — it doesn't say which one. This guard needs specifically
+// "is it DONE", so it layers its own DONE-only regex (same anchored,
+// case-insensitive, optional-whitespace-before-colon shape as that shared
+// module's TERMINAL_STATUS_RE) on top of the shared presence check rather
+// than re-deriving the whole vocabulary here.
+const DONE_MARKER_RE = /^DONE\s*:/im;
 
-export function hasHonestNotDoneMarker(message: string): boolean {
-  return HONEST_NOT_DONE_RE.test(message);
+/** True only when `message` contains an explicit DONE: completion claim. */
+export function hasDoneClaim(message: string): boolean {
+  return hasTerminalStatusMarker(message) && DONE_MARKER_RE.test(message);
 }
 
 export interface RedGateInfo {
@@ -135,12 +145,16 @@ export async function runSubagentGateGuardHook(raw: string): Promise<string | nu
         "no-message",
         session_id,
         `builder "${agent_name}" stopped with a red ${gateInfo.gate} gate but no ` +
-          `last_assistant_message available to check for an honest BLOCKED/HELP report`
+          `last_assistant_message available to check for a DONE claim`
       );
       return null;
     }
 
-    if (hasHonestNotDoneMarker(message)) return null;
+    // Only a DONE claim trips this guard — BLOCKED/HELP/HELP-REQUEST/
+    // IN-PROGRESS reports, and messages with no recognized STATUS marker at
+    // all, are always allowed here regardless of gate state (see module
+    // header — this is not a second terminal-state-presence check).
+    if (!hasDoneClaim(message)) return null;
 
     const config = await readCrewConfig(cwd);
     const blockMode = resolveBlockMode(config, GATE_GUARD_FEATURE);

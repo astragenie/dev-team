@@ -72,6 +72,8 @@ test("locked path matched → warn (default warn-only mode)", async () => {
     expect(out).not.toBeNull();
     const parsed = JSON.parse(out as string);
     expect(parsed.decision).toBeUndefined();
+    expect(parsed.hookSpecificOutput.hookEventName).toBe("PreToolUse");
+    expect(parsed.hookSpecificOutput.permissionDecision).toBe("allow");
     expect(parsed.systemMessage).toMatch(/qa-gate/);
     expect(parsed.systemMessage).toMatch(/SLICE-4/);
   } finally {
@@ -263,6 +265,32 @@ test("isLockExpired: no expiresAt, fresh createdAt → not expired", () => {
     createdAt: new Date().toISOString()
   };
   expect(isLockExpired(lock, Date.now())).toBe(false);
+});
+
+test("isLockExpired: unparseable createdAt (and no usable expiresAt) → treated as expired", () => {
+  const lock = {
+    sliceId: "S",
+    lockedPaths: [],
+    lockedBy: "x",
+    createdAt: "not-a-date"
+  };
+  expect(isLockExpired(lock, Date.now())).toBe(true);
+});
+
+test("readActiveLocks skips a lock with unparseable createdAt as expired/orphaned", async () => {
+  const repo = await makeRepo();
+  try {
+    await writeLock(repo, "SLICE-9", {
+      sliceId: "SLICE-9",
+      lockedPaths: [LOCKED_REL_PATH],
+      lockedBy: "qa-gate",
+      createdAt: "not-a-date"
+    });
+    const locks = await readActiveLocks(repo);
+    expect(locks).toEqual([]);
+  } finally {
+    await cleanup(repo);
+  }
 });
 
 test("findMatchingLock matches on normalized path across multiple locks", () => {

@@ -85,7 +85,11 @@ export function isLockExpired(lock: ArtifactLock, nowMs: number): boolean {
     if (!Number.isNaN(exp)) return exp < nowMs;
   }
   const created = Date.parse(lock.createdAt);
-  if (Number.isNaN(created)) return false; // unparseable createdAt — don't reap on a guess
+  // Unparseable createdAt (and no usable expiresAt above) means this lock's
+  // age can never be established — treat it as expired rather than
+  // immortal. An un-reapable lock that silently outlives its slice forever
+  // is a worse failure mode than an edit falling through to warn/allow.
+  if (Number.isNaN(created)) return true;
   return nowMs - created > DEFAULT_TTL_MS;
 }
 
@@ -209,7 +213,16 @@ export async function runArtifactLockHook(raw: string): Promise<string | null> {
     await logEvent(cwd, blockMode ? "denied" : "warned", sessionId, reason);
 
     if (!blockMode) {
-      return JSON.stringify({ systemMessage: reason });
+      // Warn-only: PreToolUse shape per hooks/lib/dispatch-size-estimate.ts's
+      // buildDispatchSizeOutput precedent — hookSpecificOutput.permissionDecision
+      // explicitly "allow" (not just an omitted decision) + systemMessage.
+      return JSON.stringify({
+        hookSpecificOutput: {
+          hookEventName: "PreToolUse",
+          permissionDecision: "allow"
+        },
+        systemMessage: reason
+      });
     }
     return JSON.stringify({ decision: "block", reason });
   } catch (err) {

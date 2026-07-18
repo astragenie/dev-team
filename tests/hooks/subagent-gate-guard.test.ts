@@ -11,7 +11,7 @@ import os from "node:os";
 import path from "node:path";
 import {
   runSubagentGateGuardHook,
-  hasHonestNotDoneMarker,
+  hasDoneClaim,
   detectRedGate
 } from "../../hooks/lib/subagent-gate-guard.ts";
 
@@ -155,6 +155,40 @@ test("red validation gate + BLOCKED: report → pass (honest report is never blo
   }
 });
 
+// (c2) red gate + IN-PROGRESS: report → pass (not a DONE claim)
+test("red review gate + IN-PROGRESS: report → pass (not a DONE claim)", async () => {
+  const repo = await makeRepo();
+  try {
+    await writeWorkflowState(repo, makeRun("failed"));
+    const raw = payload({
+      cwd: repo,
+      agent_name: "crew:fullstack-dev",
+      last_assistant_message: "IN-PROGRESS: still working through the review feedback."
+    });
+    const out = await runSubagentGateGuardHook(raw);
+    expect(out).toBeNull();
+  } finally {
+    await cleanup(repo);
+  }
+});
+
+// (c3) red gate + no recognized STATUS marker at all → pass (out of scope for this guard)
+test("red review gate + no STATUS marker at all → pass (out of scope for this guard)", async () => {
+  const repo = await makeRepo();
+  try {
+    await writeWorkflowState(repo, makeRun("failed"));
+    const raw = payload({
+      cwd: repo,
+      agent_name: "crew:fullstack-dev",
+      last_assistant_message: "Now let's open the PR."
+    });
+    const out = await runSubagentGateGuardHook(raw);
+    expect(out).toBeNull();
+  } finally {
+    await cleanup(repo);
+  }
+});
+
 // (d) green gates (passed) + DONE message → pass
 test("passed gates + DONE message → pass", async () => {
   const repo = await makeRepo();
@@ -262,12 +296,13 @@ test("malformed JSON input → pass, no throw", async () => {
 });
 
 // Pure-function unit coverage
-test("hasHonestNotDoneMarker recognizes BLOCKED/HELP/HELP-REQUEST, not DONE", () => {
-  expect(hasHonestNotDoneMarker("BLOCKED: waiting on creds.")).toBe(true);
-  expect(hasHonestNotDoneMarker("HELP: need a human.")).toBe(true);
-  expect(hasHonestNotDoneMarker("HELP-REQUEST: escalating.")).toBe(true);
-  expect(hasHonestNotDoneMarker("DONE: shipped it.")).toBe(false);
-  expect(hasHonestNotDoneMarker("Now let's open the PR.")).toBe(false);
+test("hasDoneClaim recognizes only an explicit DONE: line", () => {
+  expect(hasDoneClaim("DONE: shipped it.")).toBe(true);
+  expect(hasDoneClaim("BLOCKED: waiting on creds.")).toBe(false);
+  expect(hasDoneClaim("HELP: need a human.")).toBe(false);
+  expect(hasDoneClaim("HELP-REQUEST: escalating.")).toBe(false);
+  expect(hasDoneClaim("IN-PROGRESS: still working.")).toBe(false);
+  expect(hasDoneClaim("Now let's open the PR.")).toBe(false);
 });
 
 test("detectRedGate prefers review over validation and reports status", () => {
