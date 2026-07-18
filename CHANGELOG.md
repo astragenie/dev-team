@@ -3,8 +3,18 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
-## [Unreleased]
+## [v0.67.0] — 2026-07-18 — enforcement hooks, repair dedup, GEPA honesty, QA-gate agent modes
 
+- **Artifact-lock matcher widened to MultiEdit/NotebookEdit** (#264): the
+  PreToolUse artifact-lock hook's matcher now covers `MultiEdit` (reads
+  `tool_input.file_path`, same single-target semantics as Edit) and
+  `NotebookEdit` (reads `tool_input.notebook_path`), closing the bypass
+  where a locked path could be edited through either tool without the hook
+  firing. Fail-open semantics unchanged.
+- **repair-check wired into SOP retry loops** (#264): `commands/ship.md`,
+  `fix.md`, and `incident.md` auto-fix loops now call
+  `crew.ts repair-check` before each retry and stop early (escalate
+  instead of re-dispatching) when the failure signature repeats.
 - **Gate-guard + artifact-lock enforcement hooks** (#257 pieces 1+2, warn-first):
   - `hooks/subagent-gate-guard.ts` — SubagentStop guard: blocks (once the
     `gate-guard` feature flag flips from warn to block) a builder-tier
