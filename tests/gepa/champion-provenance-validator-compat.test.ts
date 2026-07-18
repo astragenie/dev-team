@@ -10,13 +10,14 @@
  *   (b) running the repo's full agent validation (`validateAgents`) over a
  *       fixture directory containing the new-shape file.
  *
- * This supersedes the now-out-of-scope `tests/gepa-provenance-validate.test.ts`
- * top-level fixture (FEAT-193 AC-10), which hardcodes assertions against the
- * SUPERSEDED leading-`gepa:`-block shape (`promoted.startsWith("---\ngepa:\n")`)
- * and is no longer accurate — see champion-provenance-writer.ts's header for
- * the full root-cause writeup. That file lives outside this pass's allowed
- * edit scope (tests/gepa/**) and needs a companion follow-up to update or
- * retire it; flagged separately in the PR description.
+ * This supersedes and RETIRES `tests/gepa-provenance-validate.test.ts`
+ * (FEAT-193 AC-10, top-level `tests/`), which hardcoded assertions against
+ * the SUPERSEDED leading-`gepa:`-block shape
+ * (`promoted.startsWith("---\ngepa:\n")`) — see champion-provenance-writer.ts's
+ * header for the full root-cause writeup. Both of that file's tests (baseline
+ * validates → promote → still validates; idempotent re-promotion still
+ * validates) are fully duplicated here against the current shape, so it was
+ * deleted rather than patched.
  */
 
 import { describe, expect, it, beforeEach, afterEach } from "bun:test";
