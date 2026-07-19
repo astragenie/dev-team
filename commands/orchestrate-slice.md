@@ -135,42 +135,48 @@ Store the returned path as `CONTRACT_YAML_PATH`. Derive `CONTRACT_MD_PATH` and `
 ### Step 2.5 — Resolve builder skills (optional, when loop plugin is installed)
 
 If the `loop` plugin is installed at >= v0.27.0, resolve the builder skill
-loadout from the repo preset BEFORE dispatching builder(s). The resolved
-`## Required skills (resolved)` Markdown block is prepended to each builder
-dispatch prompt so the builder invokes the right `Skill` tools as Step 0
-before any code work. Falls back silently when loop is absent or returns no
-match — builder uses its own baked-in routing table.
+loadout from the repo's own config BEFORE dispatching builder(s). The
+resolved `## Required skills (resolved)` Markdown block is prepended to each
+builder dispatch prompt so the builder invokes the right `Skill` tools as
+Step 0 before any code work. Falls back silently when loop is absent or
+returns no match — builder uses its own baked-in routing table.
 
 Locate the loop plugin root:
 
 ```bash
 LOOP_ROOT="${LOOP_PLUGIN_ROOT:-$(find "${HOME}/.claude/plugins/cache/loop/loop" -maxdepth 1 -type d 2>/dev/null | sort -V | tail -1)}"
-PRESET_NAME=$(grep -oP '"preset"\s*:\s*"\K[^"]+' .claude/loop.json 2>/dev/null)
 ```
 
-If `LOOP_ROOT` is empty or `PRESET_NAME` is empty, SKIP this step — no
-resolved block; proceed to Step 3 with the existing prompt shape.
+If `LOOP_ROOT` is empty, SKIP this step — no resolved block; proceed to
+Step 3 with the existing prompt shape.
 
-Otherwise run, **per variant**:
+Otherwise run, **per variant**, against the repo's own `.claude/loop.json`.
+Since loop's FEAT-218 Phase 2 (DEC-069), `/runner:install` inlines the full
+preset content (`skills`/`fe`/`be`/`roles`, etc.) into that file at scaffold
+time, so it is now the self-contained, fully-resolved config — no
+`--override` merge needed:
 
 ```bash
 # SPLIT_BUILD = true
 FE_BLOCK=$(node "${LOOP_ROOT}/scripts/loop.mjs" resolve-skills \
   --variant fe \
-  --preset "${LOOP_ROOT}/scripts/presets/${PRESET_NAME}.json" \
-  --override .claude/loop.json 2>/dev/null | jq -r '.dispatchInstructionBlock // empty')
+  --preset .claude/loop.json 2>/dev/null | jq -r '.dispatchInstructionBlock // empty')
 
 BE_BLOCK=$(node "${LOOP_ROOT}/scripts/loop.mjs" resolve-skills \
   --variant be \
-  --preset "${LOOP_ROOT}/scripts/presets/${PRESET_NAME}.json" \
-  --override .claude/loop.json 2>/dev/null | jq -r '.dispatchInstructionBlock // empty')
+  --preset .claude/loop.json 2>/dev/null | jq -r '.dispatchInstructionBlock // empty')
 
 # SPLIT_BUILD = false
 SINGLE_BLOCK=$(node "${LOOP_ROOT}/scripts/loop.mjs" resolve-skills \
   --variant single \
-  --preset "${LOOP_ROOT}/scripts/presets/${PRESET_NAME}.json" \
-  --override .claude/loop.json 2>/dev/null | jq -r '.dispatchInstructionBlock // empty')
+  --preset .claude/loop.json 2>/dev/null | jq -r '.dispatchInstructionBlock // empty')
 ```
+
+A repo installed before loop's FEAT-218 (whose `.claude/loop.json` predates
+the `skills`/`fe`/`be`/`roles` backfill) simply resolves no block here — the
+CLI call returns empty rather than erroring. Re-run `/runner:install` in that
+repo to backfill the fields; there is no separate fallback path to maintain
+on the dev-team side.
 
 Each block is empty string when:
 - CLI exits 2 (split mismatch, empty skills, or no match)
