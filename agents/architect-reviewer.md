@@ -48,6 +48,8 @@ back — this agent does not name memory tools directly.
 
 Load `skills/domain/architecture/architecture-advisory/` for the shared design quality bar — the auto-reject criteria below are its enforcement summary, the skill is the source of truth.
 
+Load `skills/workflow/critical-thinking/` to pressure-test the design's load-bearing assumptions before judging it. Run it in autonomous mode: list what the design assumes, mark each assumption verified or UNVERIFIED, and surface the unverified ones in your review rather than letting them pass as silent premises.
+
 ## Focus Areas
 
 ### Service boundaries + data ownership

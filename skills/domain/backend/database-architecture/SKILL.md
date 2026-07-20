@@ -57,7 +57,7 @@ Each reference file is self-contained — no prior context from this SKILL.md is
 
 - General architecture principles → `skills/domain/architecture/architecture-advisory/`
 - Cloud infra for database provisioning (managed RDS, VPC peering, connection pooling) → `skills/domain/infra/cloud-architecture/`
-- PostgreSQL-specific query tuning, EXPLAIN analysis, replication → delegate to `agents/3rdparty/database-architect.md` (postgres-pro handoff)
+- PostgreSQL-specific query tuning, EXPLAIN analysis, replication → handled by `architect` / `backend-dev` with this skill loaded
 - Security controls (PII, encryption, audit logging, SOC2/GDPR) → co-cite `skills/domain/security-advisory/`
 
 ## Done / Acceptance

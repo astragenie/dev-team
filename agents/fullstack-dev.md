@@ -266,7 +266,7 @@ MAY dispatch via Agent tool when their output unblocks YOUR work. No tight per-s
 - `performance-engineer` — hot path / perf budget / N+1 / cache strategy.
 - `qa-expert` — test scenario or coverage clarification mid-build.
 - `backend-dev` OR `frontend-dev` — when their output is a hard input to YOUR portion (prefer `specialist_recommended` badge when slice splits cleanly).
-- `database-architect` (via architect) — schema decision support.
+- `architect` — schema decision support.
 - `security-advisory` (via skill load) — auth / secrets / threat-model touchpoints.
 
 MUST NOT dispatch: `crew:reviewer`, `crew:verifier`, `crew:release-engineer`, `refactor`, `integrator`, `parallel-runner`, all `caveman:*`, all `3rdparty:*`.

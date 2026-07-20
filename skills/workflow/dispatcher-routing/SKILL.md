@@ -38,11 +38,11 @@ For most slices, pick from the main crew:
 | Performance audit (latency, N+1, benchmarks) | `crew:performance-engineer` | agnostic |
 | QA / test coverage gap analysis | `crew:qa-expert` | agnostic |
 
-For specialist work (3rdparty agents, fan-out lenses, arbitration, scope-specific picks) rely on the Agent quick reference table above + the examples listed here; dispatch `crew:investigator` if you need a specific capability lookup. Specialist routing examples: LOW-tier slices run `crew:reviewer` + `crew:verifier` concurrently (there is no combined agent), `crew:csharp-reviewer` (stack:csharp lens), `crew:3rdparty:refactoring-specialist` (concern:refactor + scope:wide), `crew:test-automator` (concern:test-infra), `crew:3rdparty:critical-thinking` (ambiguity disambiguator), `crew:architect-reviewer` (reviewer disagreement tiebreaker). External caveman plugin agents (`caveman:cavecrew-builder` etc.) are NOT first-class crew specialists — do not route to them; they're owned by the caveman plugin and shipped with their own discipline.
+For specialist work (3rdparty agents, fan-out lenses, arbitration, scope-specific picks) rely on the Agent quick reference table above + the examples listed here; dispatch `crew:investigator` if you need a specific capability lookup. Specialist routing examples: LOW-tier slices run `crew:reviewer` + `crew:verifier` concurrently (there is no combined agent), `crew:csharp-reviewer` (stack:csharp lens), `crew:refactor` (concern:refactor), `crew:test-automator` (concern:test-infra), `crew:architect-reviewer` (reviewer disagreement tiebreaker). External caveman plugin agents (`caveman:cavecrew-builder` etc.) are NOT first-class crew specialists — do not route to them; they're owned by the caveman plugin and shipped with their own discipline.
 
 **Architect-mandatory:** `surface:schema`, `concern:governance` (enforcement / process / methodology) MUST route to architect, never to fullstack-dev. `concern:governance` (customer-facing docs) routes to `crew:document-writer`; (in-prompt policy edits) routes to architect.
 
-Multi-need slices → split into parallel bundles per Step 3; one agent per concern. No clear pick AND no obvious file pattern → dispatch `crew:3rdparty:critical-thinking` (read-only) to disambiguate intent before committing to a route.
+Multi-need slices → split into parallel bundles per Step 3; one agent per concern. No clear pick AND no obvious file pattern → load `skills/workflow/critical-thinking/` and disambiguate intent yourself before committing to a route.
 
 The dispatched subagent loads its own skills — you don't need to enumerate them. If a specific skill MUST be loaded (e.g. a security-advisory consultation), name it in the dispatch prompt under `required skills:`.
 
