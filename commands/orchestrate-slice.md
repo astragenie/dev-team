@@ -160,16 +160,16 @@ time, so it is now the self-contained, fully-resolved config — no
 # SPLIT_BUILD = true
 FE_BLOCK=$(node "${LOOP_ROOT}/scripts/loop.mjs" resolve-skills \
   --variant fe \
-  --preset .claude/loop.json 2>/dev/null | jq -r '.dispatchInstructionBlock // empty')
+  --preset .claude/loop.json 2>/dev/null | node -e 'let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{try{process.stdout.write(JSON.parse(s).dispatchInstructionBlock??"")}catch{}})')
 
 BE_BLOCK=$(node "${LOOP_ROOT}/scripts/loop.mjs" resolve-skills \
   --variant be \
-  --preset .claude/loop.json 2>/dev/null | jq -r '.dispatchInstructionBlock // empty')
+  --preset .claude/loop.json 2>/dev/null | node -e 'let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{try{process.stdout.write(JSON.parse(s).dispatchInstructionBlock??"")}catch{}})')
 
 # SPLIT_BUILD = false
 SINGLE_BLOCK=$(node "${LOOP_ROOT}/scripts/loop.mjs" resolve-skills \
   --variant single \
-  --preset .claude/loop.json 2>/dev/null | jq -r '.dispatchInstructionBlock // empty')
+  --preset .claude/loop.json 2>/dev/null | node -e 'let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{try{process.stdout.write(JSON.parse(s).dispatchInstructionBlock??"")}catch{}})')
 ```
 
 A repo installed before loop's FEAT-218 (whose `.claude/loop.json` predates
@@ -180,7 +180,7 @@ on the dev-team side.
 
 Each block is empty string when:
 - CLI exits 2 (split mismatch, empty skills, or no match)
-- jq cannot find `.dispatchInstructionBlock`
+- the JSON payload has no `.dispatchInstructionBlock` field
 
 Treat empty as "no block — proceed without it". The builder dispatch prompts
 in Step 3 / 3a / 3b prepend the block when non-empty, omit it otherwise.
@@ -207,14 +207,14 @@ Fetch a recall block per builder variant BEFORE dispatching (same CLI surface
 ```bash
 # SPLIT_BUILD = true
 FE_RECALL_BLOCK=$(node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" recall-block \
-  --repo "$PWD" --agent crew:frontend-dev --tags "<FEAT tags csv>" 2>/dev/null | jq -r '.block // empty')
+  --repo "$PWD" --agent crew:frontend-dev --tags "<FEAT tags csv>" 2>/dev/null | node -e 'let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{try{process.stdout.write(JSON.parse(s).block??"")}catch{}})')
 
 BE_RECALL_BLOCK=$(node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" recall-block \
-  --repo "$PWD" --agent crew:backend-dev --tags "<FEAT tags csv>" 2>/dev/null | jq -r '.block // empty')
+  --repo "$PWD" --agent crew:backend-dev --tags "<FEAT tags csv>" 2>/dev/null | node -e 'let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{try{process.stdout.write(JSON.parse(s).block??"")}catch{}})')
 
 # SPLIT_BUILD = false
 SINGLE_RECALL_BLOCK=$(node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" recall-block \
-  --repo "$PWD" --agent <resolved single-variant builder agent> --tags "<FEAT tags csv>" 2>/dev/null | jq -r '.block // empty')
+  --repo "$PWD" --agent <resolved single-variant builder agent> --tags "<FEAT tags csv>" 2>/dev/null | node -e 'let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{try{process.stdout.write(JSON.parse(s).block??"")}catch{}})')
 ```
 
 Each block is `""` when memory is not configured (`provider:none` or
@@ -237,14 +237,14 @@ to this run:
 ```bash
 # SPLIT_BUILD = true
 FE_PROFILE_BLOCK=$(node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" profile-block \
-  --repo "$PWD" --agent crew:frontend-dev --run-id "<SLICE-NN>" 2>/dev/null | jq -r '.block // empty')
+  --repo "$PWD" --agent crew:frontend-dev --run-id "<SLICE-NN>" 2>/dev/null | node -e 'let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{try{process.stdout.write(JSON.parse(s).block??"")}catch{}})')
 
 BE_PROFILE_BLOCK=$(node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" profile-block \
-  --repo "$PWD" --agent crew:backend-dev --run-id "<SLICE-NN>" 2>/dev/null | jq -r '.block // empty')
+  --repo "$PWD" --agent crew:backend-dev --run-id "<SLICE-NN>" 2>/dev/null | node -e 'let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{try{process.stdout.write(JSON.parse(s).block??"")}catch{}})')
 
 # SPLIT_BUILD = false
 SINGLE_PROFILE_BLOCK=$(node "${CLAUDE_PLUGIN_ROOT}/scripts/crew.ts" profile-block \
-  --repo "$PWD" --agent <resolved single-variant builder agent> --run-id "<SLICE-NN>" 2>/dev/null | jq -r '.block // empty')
+  --repo "$PWD" --agent <resolved single-variant builder agent> --run-id "<SLICE-NN>" 2>/dev/null | node -e 'let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{try{process.stdout.write(JSON.parse(s).block??"")}catch{}})')
 ```
 
 Each block is `""` when `memory.profile.enabled` is not `true`, the configured provider
