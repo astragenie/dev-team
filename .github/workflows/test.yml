@@ -53,6 +53,7 @@ jobs:
         node ./scripts/validate-manifests.ts
         node ./scripts/validate-skills.ts
         node ./scripts/validate-agents.ts
+        node ./scripts/validate-tool-baseline.ts
         node ./scripts/validate-agent-refs.ts
         node ./scripts/validate-dispatch-graph.ts
         node ./scripts/validate-workflows.ts

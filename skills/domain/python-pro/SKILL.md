@@ -85,10 +85,12 @@ Consult this skill when:
 
 ## Package Management
 
-- Prefer `uv` for new projects: `uv init`, `uv add`, `uv lock`
+<!-- tool-baseline:allow uv — guidance for the CONSUMER's Python repo, not a command this plugin's agents run. -->
+
+- Prefer `uv` for new projects: `uv init`, `uv add`, `uv lock` <!-- tool-baseline:allow -->
 - Single `pyproject.toml` as project config (no `setup.py`)
 - `uv.lock` for cross-platform reproducible installs
-- Docker images: base on `python:3.12-slim`, install deps via `uv sync --frozen`
+- Docker images: base on `python:3.12-slim`, install deps via `uv sync --frozen` <!-- tool-baseline:allow -->
 
 ## Performance
 
