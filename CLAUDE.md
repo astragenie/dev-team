@@ -1,197 +1,87 @@
-# Repo Instructions — hero-crew
+@AGENTS.md
 
-Claude Code plugin: the **Crew** harness. Lead-guided engineering
-workflow with bounded subagents, quality gates, and inspectable
-handoffs. The companion `loop` plugin sits on top of this one.
+> The include above is the tool-agnostic scaffold guide (commands, CI gates, release steps,
+> structure, style, never-do). Everything below is **dev-team-specific**: what this plugin is, the
+> decisions an agent must not re-litigate, and where to find volatile state. This file changes
+> rarely by design — volatile/dated facts live in `docs/memory.md`; the session protocol below makes
+> reading it non-optional.
 
-## Read first
+## Session protocol — memory + verification (mandatory, not advisory)
 
-1. `README.md` — what this plugin is, install instructions, pinned release.
-2. `docs/architecture/architecture.md` — Engineering OS design: composition formula, skill tiers, routing approach, memory tiers, anti-patterns, phased roadmap.
-3. `docs/standards/code-conventions.md` — ESM / Node conventions for this repo.
-4. `docs/backlog/product-backlog.md` — current Engineering OS backlog (FEAT-001…FEAT-010).
-5. `CHANGELOG.md` — recent releases.
+Before any non-trivial work (feature, fix, review, release):
+
+1. **Read `docs/memory.md` in full** (~80 lines, cheap). It is the source for current release
+   version, Phase-1 baseline state, open deferrals, and kb-drift notes — `CLAUDE.md` deliberately
+   contains none of that.
+2. **Re-verify before relying.** `docs/memory.md` is a cache, not the truth. Check `package.json` /
+   `.claude-plugin/plugin.json` versions and `CHANGELOG.md`'s top entry directly before quoting a
+   version number; check `git log` for a file before asserting its state is unchanged.
+3. **Write-back is part of the task.** Any fact you verify or change (a release cut, a deferred FEAT
+   picked up, a kb-drift item resolved) gets written back to `docs/memory.md` in the same
+   session — supersede the entry in place, refresh its date. Reviewers should flag a session that
+   learns something and doesn't write it back.
+
+## Cross-repo coordination
+
+- **`astra-marketplace`**: default rule is a plugin's `marketplace.json` version bump happens in
+  `astra-marketplace`'s own session — this repo gets a narrow, tightly-scoped exception; see the
+  HARD RULE section below, don't restate it elsewhere.
+- **`plugins-common`**: code shared across ≥2 astra plugins (`packages/gepa-core/`,
+  `packages/plugin-kernel/`) lives in `astragenie/plugins-common`, not duplicated here. Edit it from
+  **that repo's own session/worktree**, never cross-session from this one (see the HARD RULE below
+  + the `cross-repo-edits-require-worktree` memory). `scripts/lib/memory/` (MemoryProvider) is a
+  flagged extraction candidate so `dev-team` + `runner-plugin` converge on one provider
+  (FEAT-188 S1b/S3b).
+- **`loop` (`astragenie/runner-plugin`)**: separate repo, own standalone marketplace. To pick up a
+  `loop` release, bump its own `package.json` + its own `marketplace.json`, tag, push there, then
+  refresh the local install here.
+
+## Mission
+
+**Crew** is a Claude Code plugin: dispatcher-guided engineering workflow with bounded subagents,
+parallel quality gates, and inspectable handoffs. The slash commands (`/crew:build`, `/crew:fix`,
+`/crew:ship`, ...) ARE the dispatchers — they read inline routing tables and fan out specialists;
+there is no `lead` agent role. The companion `loop` plugin (Wiggin Loop methodology) sits on top of
+this one. Full command list + install flow: `README.md`.
+
+## Authority documents (read for any non-trivial work)
+
+- `README.md` — what this plugin is, install instructions, pinned release, agent/skill roster.
+- `docs/architecture/architecture.md` — Engineering OS design: composition formula, skill tiers,
+  routing approach, memory tiers, anti-patterns, phased roadmap.
+- `docs/governance.md` — ownership, prompt size bar, lessons-to-standards pipeline, three-test rule
+  for specialist agents.
+- `docs/routing-table.md` — authoritative skill/agent routing; `/crew:brief-me` flags staleness.
+- `docs/memory.md` — durable facts: current release, Phase-1 baseline, kb-drift notes.
+- `docs/README.md` — map of the whole `docs/` tree.
+- `CHANGELOG.md` — recent releases (source of truth for current version, not any prose summary).
 
 ## Engineering standards
 
 For language-agnostic patterns + SOLID + GoF guidance, consult
-[`Astragenie.Standards`](https://github.com/astragenie/standards)
-if it is installed at a sibling path. The ESM conventions are mirrored
-at `Astragenie.Standards/docs/javascript/coding-conventions.md`. The
-local `docs/standards/code-conventions.md` is self-contained and authoritative
-for this repo.
+[`Astragenie.Standards`](https://github.com/astragenie/standards) if installed at a sibling path.
+`docs/standards/code-conventions.md` is self-contained and authoritative for this repo's own ESM /
+Node conventions — it does not need the kb link duplicated.
 
-## Plugin shape
+## Decisions not to relitigate
 
-The plugin is intentionally content-heavy and runtime-light.
-
-- Durable behavior belongs in `agents/`, `skills/`, and `commands/`.
-- Hooks should stay small and auditable.
-- Scripts should be thin helpers, not a hidden framework runtime.
-- Agent prompts are capped at ≤350 lines per `docs/governance.md`, enforced by `scripts/validate-agents.ts` (FEAT-035). Specifics live in skills the agent invokes on demand.
-
-## Skill taxonomy
-
-Four tiers (see `docs/architecture/architecture.md` for details):
-
-- `skills/universal/` — always discoverable.
-- `skills/workflow/` — invoked per phase (build/review/validate/deploy).
-- `skills/domain/` — loaded only when stack matches.
-- `skills/meta/` — the OS itself (routing, escalation).
-
-Repo-local overrides live in each consumer repo's `.claude/skills/`.
-
-External-plugin skills (`context7`, `microsoft-docs:*`, `plugin-dev:*`, `terraform-code-generation:*`, `terraform-module-generation:*`) are wired into agent prompts via `docs/routing-table.md` rows — see FEAT-019 + the architecture doc's "External plugin skills as routed dependencies" subsection for the routing pattern.
-
-## Local commands
-
-Requires Node 22.6+ (strip-types runtime; see `docs/superpowers/specs/2026-06-07-ts-migration-and-perf-design.md`).
-
-- `bun run test` — full test suite via Bun (`bun test --timeout 60000 tests/`; requires Bun 1.3+). No `--parallel` — removed in `a20f9dd9` to work around Bun's `node:test` single-process scheduling bug (bun#5090); `bun run test:node` is the Node.js fallback.
-- `bun run lint` — Biome lint.
-- `bun run format` / `bun run format:check` — Biome format.
-- `bun run e2e:smoke` — end-to-end smoke against a temp sample repo.
-- `node ./scripts/validate-manifests.ts` — manifest sanity check (CLI scripts run on Node per ADR-002).
-
-## CI gates
-
-GitHub Actions (`.github/workflows/test.yml`) runs on every push to `main`
-and every PR. All steps are blocking; lint must stay zero-warning.
-
-1. `npm ci` (dependency install from `package-lock.json`)
-2. `node ./scripts/validate-manifests.ts`
-3. `node ./scripts/validate-skills.ts`
-4. `node ./scripts/validate-agents.ts`
-5. `node ./scripts/validate-slices.ts`
-6. `CREW_VALIDATE_ROUTING_TABLE=1 node ./scripts/validate-routing-table.ts` (advisory; `continue-on-error: true`)
-7. `bun run lint`
-8. `bun run format:check`
-9. `bun run typecheck`
-10. `bun run test` (Bun test runner — `bun test --timeout 60000 tests/`, no `--parallel`; see bun#5090 note above)
-11. `node ./scripts/e2e-smoke.ts`
-
-Node runs dependency install (`npm ci`) and all `./scripts/*.ts` CLI/validators
-(the consumer runtime, per ADR-002); Bun runs the test/lint/format/typecheck
-package scripts.
-
-The local validators are **hard** CI gates. During reviewer-phase work, the
-`plugin-dev:plugin-validator` and `plugin-dev:skill-reviewer` skills are
-consulted as **narrative** review aids on top of the CI gates — they catch
-triggering-effectiveness and best-practice issues that structural validators
-miss. Routing lives in `docs/routing-table.md` ("Plugin shape change",
-"Skill shape change") and is enforced by `agents/reviewer.md`.
-
-## Release & deployment
-
-This plugin has no server, no container, and no hosted runtime. "Deploying"
-means **cutting a versioned release that consumer installs can pin to**.
-Source of truth for what users actually receive is the marketplace manifest.
-
-### Release workflow
-
-1. CI green on `main` (all eight gates above).
-2. Update `CHANGELOG.md` — new top section, dated, grouped by FEAT.
-3. Bump `version` in **both** in-repo manifests — `validate-manifests.ts` enforces
-   `plugin.json` ↔ `package.json` parity as a HARD CI gate, so bumping only one
-   fails CI (this bit v0.52.0–v0.52.2):
-   - `.claude-plugin/plugin.json` → `version`
-   - `package.json` → `version`
-   - (`marketplace.json` is NOT in-repo — the registry lives in `astra-marketplace`;
-     bump it there as the paired cross-repo commit, see the astra-marketplace HARD RULE.)
-4. Commit: `chore(release): vX.Y.Z — <one-line summary>`.
-5. Tag annotated: `git tag -a vX.Y.Z -m "vX.Y.Z"`.
-6. Push both: `git push origin main --follow-tags`.
-7. Verify the tag appears on GitHub, **CI is green on the release commit**, and the
-   registry `marketplace.json` in `astra-marketplace` reflects the new version.
-
-### Versioning
-
-Pre-1.0 semver-ish (see `CHANGELOG.md` header):
-
-- **Minor** (`0.X.0`): closes a backlog phase or introduces new commands/skills.
-- **Patch** (`0.X.Y`): bugfix, doc polish, skill quality bar updates.
-- Bumping `package.json` without bumping `marketplace.json` is a release bug.
-
-### Companion plugin (`loop`)
-
-Lives in a separate repo
-(`https://github.com/astragenie/runner-plugin`) and ships from its **own
-standalone marketplace** (`loop/.claude-plugin/marketplace.json` in that
-repo) — this repo's `marketplace.json` no longer carries a loop entry.
-To pick up a `loop` release: bump version in the loop repo's
-`package.json` AND its `marketplace.json`, tag, push, then refresh the
-local plugin install.
-
-### Shared code (`astragenie/plugins-common`)
-
-Code reused across ≥2 astra plugins (crew/dev-team, runner-plugin,
-memory-plugin) lives in the **`astragenie/plugins-common`** Bun-workspaces
-monorepo — NOT duplicated per plugin. Today: `packages/gepa-core/`,
-`packages/plugin-kernel/`. Publish = push a per-package tag (`gepa-core-v*`)
-→ `.github/workflows/release.yml` → `npm publish --provenance` (needs an
-`@astragenie` Automation NPM_TOKEN + a `repository` field per package). Edit
-it from **that repo's own session/worktree**, never cross-session from here
-(see the astra-marketplace HARD RULE + `cross-repo-edits-require-worktree`
-memory). MemoryProvider (`scripts/lib/memory/`) is a flagged extraction
-candidate so dev-team + runner-plugin share ONE provider (FEAT-188 S1b/S3b).
-
-### Hard rules
-
-- Never force-push `main`. Never delete tags. Never skip hooks (`--no-verify`).
-- Never publish a release with failing CI, even locally green.
-- No auto-publish hook; releases are user-triggered.
-- Pinned-release callout in `README.md` must reference the latest tag.
-
-## Repo rules
-
-1. Validate plugin manifest changes with `node ./scripts/validate-manifests.ts`.
-2. Prefer additive changes over rewrites.
-3. Keep repo-specific guidance in this file and `docs/architecture/architecture.md`.
-4. Favor explicit files and artifacts over implicit memory.
-5. Lint output must stay clean. Zero warnings.
-6. No `process.exit(N)` from library functions.
-
-## Artifact direction
-
-When adding artifact-producing features, prefer:
-
-- `.claude/logs/events.jsonl` for append-only event logs.
-- `.claude/artifacts/crew/` for task handoffs, reviews, validations, deployments, and run summaries.
-
-### What is committed vs ignored
-
-`.claude/artifacts/` is **committed** as durable cross-machine history.
-A teammate who clones the repo gets the full record of cost reports,
-reviews, handoffs, deployments, validations, and run synthesis — the
-working memory of *why* a slice landed the way it did.
-
-Ignored (machine-local only):
-
-- `.claude/logs/` — runtime hook output
-- `.claude/state/` — per-session workflow state
-- `.claude/settings.local.json`, `.claude/scheduled_tasks.lock`,
-  `.claude/hooks/`, `.claude/worktrees/`, `.claude.backup.*`
-
-This policy applies repo-wide across the team's repos for consistency
-of `brief-me` and `crew fleet` output across machines.
-
-## Backlog discipline
-
-Active backlog under `.claude/artifacts/loop/backlog/{pending,triaged,in-progress,done}/`
-(single authoritative tree since 2026-06-10; the old `docs/backlog/` tree was
-merged via `loop doctor --fix` — see
-`docs/superpowers/specs/2026-06-10-loop-crew-state-contract-design.md`).
-`docs/backlog/` retains only non-state files (`product-backlog.md`, templates).
-Each FEAT has frontmatter declaring priority, status, and an
-`autonomous_safe` flag. Items tagged `autonomous_safe: false` (lead
-prompt edits, skill authorship) require a human-in-loop on review even
-when picked by the loop. State-file schema: loop repo `docs/state-contract.md`;
-`node ./scripts/validate-loop-state.ts` guards single-tree + unique ids in CI.
-
-## Safety
-
-Never commit secrets. Never disable hooks (`--no-verify`) without
-explicit user request. Never force-push to `main`.
+- **Plugin shape**: content-heavy, runtime-light. Durable behavior belongs in `agents/`, `skills/`,
+  `commands/`; hooks stay small and auditable; scripts are thin helpers, not a hidden framework
+  runtime. Agent prompts ≤350 lines (`docs/governance.md`, enforced by `scripts/validate-agents.ts`,
+  FEAT-035) — push specifics into a skill the agent loads on demand.
+- **Skill taxonomy** (four tiers — `universal/`, `workflow/`, `domain/`, `meta/`; see
+  `docs/architecture/architecture.md`) is fixed. Repo-local overrides live in each *consumer* repo's
+  `.claude/skills/`, not here. External-plugin skills (`context7`, `microsoft-docs:*`,
+  `plugin-dev:*`, `terraform-*`) are wired via `docs/routing-table.md` rows (FEAT-019).
+- **`.claude/artifacts/` is committed**, not ignored — durable cross-machine history (cost reports,
+  reviews, handoffs, deployments, run synthesis). Only `.claude/logs/`, `.claude/state/`,
+  `.claude/settings.local.json`, `.claude/scheduled_tasks.lock`, `.claude/hooks/`,
+  `.claude/worktrees/`, `.claude.backup.*` are machine-local/ignored. This policy is repo-wide across
+  the team's repos for consistent `brief-me` / `crew fleet` output.
+- **Backlog**: `.claude/artifacts/loop/backlog/{pending,triaged,in-progress,done}/` is the single
+  authoritative tree; `docs/backlog/` holds only non-state files. FEATs tagged `autonomous_safe: false`
+  (lead prompt edits, skill authorship) require human-in-loop review even when the loop picks them.
+- Everything in `@AGENTS.md`'s Never-do still applies.
 
 ## HARD RULE — astra-marketplace cross-repo writes
 
@@ -223,49 +113,28 @@ the release ceremony with no quality benefit — the version write is
 mechanical and deterministic, and the source plugin's repo is the
 authoritative version source.
 
-## v0.2.0 baseline addendum
+## Ecosystem canon (kb)
 
-Phase 1 (Engineering OS) is closed at `v0.2.0` (2026-05-22). Treat the
-following as the assumed baseline; consult `CHANGELOG.md` for full detail
-and `docs/routing-table.md` for current routing.
+`../kb/...` links are filesystem-relative — machine-local, work only on this box. Prefer stable
+GitHub URLs for anything an agent must fetch in CI/cloud.
 
-- **Skill taxonomy live.** Four tiers (`universal/`, `workflow/`, `domain/`,
-  `meta/`) enforced by `scripts/validate-skills.ts` (quality bar:
-  name/tier/description required; ≤200 lines; tier in enum). Add tier to
-  frontmatter on every new skill.
-- **Routing-table authoritative.** `docs/routing-table.md` is consulted by
-  the lead at session start. `brief-me` surfaces a stale-check reminder if
-  mtime exceeds 30 days. Builder routing matrix (FEAT-170 SLICE-C) at the top
-  of that file: `BE_ONLY` / `FE_ONLY` signals route tagged slices to specialists;
-  `TS_TOOLING_ONLY` (from `scripts/orchestrate-slice-classify.ts`) routes
-  untagged pure-TS-tooling slices to `backend-dev`; all other untagged slices
-  keep the `fullstack-dev` generalist path.
-- **Workflow badges.** `blocked` and `escalated_to_lead` are first-class
-  workflow states with `--note` / `--blocked-by` flags. `write-final-synthesis`
-  refuses to run while escalated unless `--force`.
-- **Crew Fleet.** `crew fleet` command surfaces parallel-worktree visibility
-  across sibling worktrees. Use before claiming files in multi-tree work.
-- **TDD policy on builder/reviewer.** FEAT-011 wired test-first guidance
-  into builder and reviewer agent prompts. Reviewer enforces test presence
-  on runnable changes.
-- **Governance.** `docs/governance.md` records decision tallies + revert
-  policy. Phase 1 governance applies to all new work until Phase 2 opens.
-- **Cost telemetry.** Cost reports land in `.claude/artifacts/crew/cost/`
-  per slice and feed `brief-me` cost tables. Historical baseline was ~$40/slice
-  on opus-4-7 at 99.9% cache hit.
-- **Model routing (v0.52.0, FEAT-194 / #167).** Builds route to **Sonnet**, not
-  Opus, via `loop.modelRouting` (`{architect:opus, build:sonnet, default:sonnet}`) —
-  the autonomous wave path honors it programmatically; interactive `/crew:build`
-  resolves + passes it via `crew resolve-model --phase build`; a PreToolUse hook
-  hard-enforces it on builder-tier dispatch. Toggle: `crew.json features["model-routing"]`.
-  Root cause of the prior Opus burn: no `modelRouting` block → router fell back to
-  Opus for every non-trivial build. Watch burn with **`crew cost-watch [--token-cap N]`**.
+- Agent/prompt-engineering rules: [agent-workflow](../kb/10-ai-rules/20-agent-workflow-standards.md),
+  [prompt-engineering](../kb/10-ai-rules/16-prompt-engineering-standards.md),
+  [AI evaluation](../kb/10-ai-rules/17-ai-evaluation-standards.md) (relevant to `evals/`, GEPA),
+  [memory quality](../kb/10-ai-rules/15-memory-quality-standards.md) (relevant to the astramem
+  integration)
+- [Security standards](../kb/security/12-security-standards.md) — secrets/token handling
+- [Definition of done](../kb/08-engineering/05-definition-of-done.md),
+  [minimal-change policy](../kb/08-engineering/07-minimal-change-policy.md)
+- Token vault (npm `NODE_AUTH_TOKEN`/`NPM_TOKEN` setup):
+  `../kb/12-research/productivity-2026-07/token-vault-setup.md`
 
-### Open Phase 1 deferrals
-
-- **FEAT-005** (snapshot telemetry beyond AL plugin) and **FEAT-009** are
-  intentionally deferred behind explicit "when X observed" triggers; do
-  not pick them up without the trigger.
+Not linked (checked, not applicable): kb's `04-decisions/cross-cutting.md` (Azure/Postgres/YARP/
+Aspire — this repo has no deployment or cloud surface), `05-patterns/{wiggin-loop,crew-harness,
+phase-gates}.md` (this repo *is* the canonical source those pages describe — linking back would be
+circular), `08-saas/*` (no SaaS frontend here), `08-engineering/{06,08,09,10,11,19,21}` (either no
+API/deployment surface, or this repo's own `docs/standards/code-conventions.md` + `docs/governance.md`
+are already the authoritative local equivalent).
 
 <!-- crew:start -->
 <!-- Crew framework memory. Run /crew:install after plugin updates that change framework memory. -->
