@@ -1,5 +1,11 @@
 # Deep Analysis: Crew Plugin Agent Architecture
 
+> **Historical — predates the current roster.** Moved from repo root to `docs/research/` 2026-07-21
+> (agentic-setup rebuild). Reviews the v0.1.0 `lead`/`builder`/`deployer` roster, which no longer
+> exists — today's roster is `fullstack-dev`/`backend-dev`/`frontend-dev`/.../`release-engineer`
+> (see `README.md`). Kept for provenance (it seeded the model-routing decision in
+> `docs/memory.md`), not as current guidance.
+
 **Date:** May 19, 2026
 **Scope:** Senior AI architect review of crew-dev/crew v0.1.0 agents (lead, builder, researcher, reviewer, validator, deployer)
 **Companion document:** `crew-optimization.md` (cost/model optimization)

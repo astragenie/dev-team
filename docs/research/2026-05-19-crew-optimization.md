@@ -1,5 +1,11 @@
 # Crew Plugin Model Optimization — Decision Record
 
+> **Historical — predates the current roster.** Moved from repo root to `docs/research/` 2026-07-21
+> (agentic-setup rebuild). The overrides below targeted the v0.1.0 `lead`/`builder`/`deployer`/
+> `validator` roster; today's model-routing decision is `.claude/loop.json`'s `modelRouting` block
+> plus `crew.json`'s `model-routing` feature flag (see `CLAUDE.md`'s memory pointer /
+> `docs/memory.md`). Kept for provenance, not as current config guidance.
+
 **Date:** May 19, 2026
 **Context:** Hit 77% of weekly Claude Code quota mid-week. Diagnostics showed `crew` plugin = 28% of usage, `code-simplifier` skill = 34%. Root cause: most agents configured with `model: opus` regardless of actual task complexity.
 

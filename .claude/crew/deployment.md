@@ -21,47 +21,30 @@ This plugin has no server, no container, and no hosted runtime.
   See `agents/release-engineer.md` → Deployment guidance schema for the authoritative field definition.
   Production promotion, tag pushes, and force-pushes are NEVER unlocked by `dev.stable`.
 
-## Prerequisites
+## Prerequisites and release steps
 
-All 9 CI gates must pass on `main`:
-
-1. `npm ci`
-2. `node ./scripts/validate-manifests.mjs`
-3. `node ./scripts/validate-skills.mjs`
-4. `node ./scripts/validate-slices.mjs`
-5. `npm run lint` (zero warnings)
-6. `npm run format:check`
-7. `npm run typecheck`
-8. `node --test`
-9. `node ./scripts/e2e-smoke.mjs`
-
-## Release steps
-
-1. Confirm CI green on `main`.
-2. Update `CHANGELOG.md` — new top section, dated, grouped by FEAT.
-3. Bump `version` in three places:
-   - `package.json`
-   - `.claude-plugin/plugin.json`
-   - `.claude-plugin/marketplace.json` → `plugins[name=crew].version`
-4. Update `README.md` pinned-release callout to the new tag.
-5. Commit: `chore(release): vX.Y.Z — <one-line summary>`.
-6. Tag annotated: `git tag -a vX.Y.Z -m "vX.Y.Z"`.
-7. Push both: `git push origin main --follow-tags`.
-8. Verify the tag appears on GitHub.
+**Superseded 2026-07-21** — this section previously listed `.mjs` CI scripts and a 3-manifest
+version bump including `.claude-plugin/marketplace.json`. Neither matches current reality: the repo
+has 32 `.ts` scripts and 0 `.mjs` (post-TS-migration), and `marketplace.json` is no longer in this
+repo (registry lives in `astragenie/astra-marketplace`). `AGENTS.md` ("CI gates" and "Release
+workflow" sections) is now the single source of truth for both — don't duplicate the list here
+where it can drift again; read it there.
 
 ## Versioning
 
-Pre-1.0 semver-ish:
+Pre-1.0 semver-ish (see `AGENTS.md` Release workflow for the authoritative rule and manifest list):
 
 - **Minor** (`0.X.0`): closes a backlog phase or introduces new commands/skills.
 - **Patch** (`0.X.Y`): bugfix, doc polish, skill quality bar updates.
-- Bumping `package.json` without bumping `plugin.json` or `marketplace.json` is a release bug.
+- Bumping `package.json` without bumping `.claude-plugin/plugin.json` is a release bug
+  (`validate-manifests.ts` hard-fails CI on the mismatch).
 
 ## Companion plugin (loop)
 
-Separate repo: `astragenie/runner-plugin`.
-Referenced here by version only in `marketplace.json → plugins[name=loop].version`.
-To pick up a loop release: bump that version and commit under `chore(marketplace): bump loop to <ver>`.
+Separate repo: `astragenie/runner-plugin`, with its **own standalone marketplace** — this repo's
+`marketplace.json` (which doesn't exist in-repo at all; see above) carries no `loop` entry. To pick
+up a `loop` release, bump version in the loop repo's own `package.json` and its own
+`marketplace.json`, tag and push there, then refresh the local plugin install.
 
 ## Hard rules
 

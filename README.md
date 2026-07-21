@@ -37,7 +37,7 @@ Crew gives Claude Code a dispatcher-guided workflow model with **23 first-party 
 - **researcher** / **investigator** — read-only investigation
 - **refactor** — quality-sweep scans
 
-Each agent has strict ownership rules, structured start/completion reports, and explicit handoffs. A library of **69 skills** across 4 tiers (`universal/`, `workflow/`, `domain/`, `meta/`) supplies the procedural knowledge agents load on demand. The `skills/universal/builder-mindset/` skill carries the cross-builder posture (senior engineer mindset, Astra principles, code-review heuristics, TDD policy) so builder prompts stay focused on stack-specific work.
+Each agent has strict ownership rules, structured start/completion reports, and explicit handoffs. A library of **49 skills** across 4 tiers (`universal/`, `workflow/`, `domain/`, `meta/`) supplies the procedural knowledge agents load on demand. The `skills/universal/builder-mindset/` skill carries the cross-builder posture (senior engineer mindset, Astra principles, code-review heuristics, TDD policy) so builder prompts stay focused on stack-specific work.
 
 In practice, the highest-value default mode is:
 
@@ -73,7 +73,7 @@ The companion plugins live in the same marketplace:
 /plugin install cortex@astra
 ```
 
-Verify locally with `bun run test`. Pinned release: `v0.65.0`.
+Verify locally with `bun run test`. Pinned release: `v0.67.0`.
 
 > **Runtime dependency:** Bun ≥ 1.3 is required at install time. The Crew hook entries (`hooks/check-*.ts`, `hooks/preflight-shell.ts`, `hooks/record-read-content.ts`) run under Bun for fast cold start (~40 ms vs ~180 ms on Node). The installer fails loud if Bun is missing — install from <https://bun.sh>.
 
@@ -107,15 +107,10 @@ The user should mostly talk to the dispatcher. The dispatcher should infer `buil
 The dispatcher should also notice when work is ready to move into shipping stages and recommend `ship` without waiting for the user to remember the command.
 `/crew:brief-me` should be the normal first command when the user wants a crisp situational report before continuing.
 
-## Install
+### Local development
 
-Install via the Claude Code plugin flow:
-
-```
-claude plugin install crew
-```
-
-For local development, clone and register as a directory marketplace:
+For local development instead of the astra-marketplace flow above, clone the repo and register it
+as a directory marketplace:
 
 ```
 git clone https://github.com/astragenie/dev-team.git
@@ -310,7 +305,7 @@ Do **not** commit transient coordination state:
 agents/          — 23 first-party agents across implementation, review/validate, and specialist tiers (see "What it does" above)
 agents/3rdparty/ — vendored specialist agents (delegated to by architect, uxdesigner, copywriter)
 commands/        — small public surface plus internal/debug commands
-skills/          — 34 skills across universal/, workflow/, domain/, meta/ tiers
+skills/          — 49 skills across universal/, workflow/, domain/, meta/ tiers
 hooks/           — event logging wiring
 scripts/         — CLI tooling and helpers
 docs/            — design docs and specs
