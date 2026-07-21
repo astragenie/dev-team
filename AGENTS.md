@@ -30,14 +30,16 @@ node ./scripts/e2e-smoke.ts                    # end-to-end smoke, temp sample r
 a changed-files fast path — `docs/ci-fast-path.md`). Both `checks` and `test` delegate to
 `astragenie/common/.github/workflows/reusable-plugin-ci.yml@v1`:
 
-- **`checks`** (once): ~14 hard validators (`check-redundant-read.ts` hook,
-  `validate-{manifests,skills,agents,tool-baseline,agent-refs,dispatch-graph,workflows,slices,
+- **`checks`** (once): ~13 hard validators (`check-redundant-read.ts` hook,
+  `validate-{manifests,skills,agents,agent-refs,dispatch-graph,workflows,slices,
   badges,loop-state,bundles,configs,org-refs}.ts`, `validate-routing-table.ts --coverage-only`) +
   2 fixture-loop checks (`validate-contracts.ts`, `validate-ux-spec.ts` against
   `tests/fixtures/{openapi,ux-specs}/`, each asserting a known-broken fixture correctly fails) +
   4 advisory validators (`validate-{syntheses,adr-template,backlog-drift}.ts`,
   `validate-routing-table.ts` full) + `bun run {lint,format:check,typecheck}` + Linux-only
-  `e2e:smoke` / `e2e:smoke:ux` (each retried 3x).
+  `e2e:smoke` / `e2e:smoke:ux` (each retried 3x). A sibling branch
+  (`chore/validate-tool-baseline`, not yet merged as of this writing) adds a 14th validator,
+  `validate-tool-baseline.ts` — re-check this list after that branch lands.
 - **`test`** (3-way matrix): `bun run test:shard` sharded via `scripts/test-shard.ts` — no
   `--parallel` inside a shard (bun#5090), parallelism comes from the file-list split across shards.
 - **`gate`** (always runs, the required check): passes if docs-only, or if `checks` + every `test`
