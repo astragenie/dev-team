@@ -22,6 +22,7 @@ One-screen guide to what lives where. Check here before adding a new top-level `
 | `operations/` | Operational runbooks and notes (3rdparty agent source list/role mapping, Windows workmode, consumer-crew bump log) | descriptive kebab-case or dated |
 | `prompts/` | Prompt-engineering notes for agent/skill authoring, incl. `agent-prompt-optimization.md` | descriptive kebab-case |
 | `governance.md` (repo root of `docs/`) | Decision tallies, revert policy, ownership, prompt size bar, three-test rule for specialist agents | — |
+| `ci-fast-path.md` (repo root of `docs/`) | One-liner: docs/markdown/backlog-only PRs skip `checks`+`test` in CI, merge on `gate` — see `AGENTS.md` CI gates | — |
 | `routing-table.md` / `routing-table.yaml` | Authoritative skill/agent routing table consulted at session start; `/crew:brief-me` flags if stale (>30 days) | — |
 | `memory.md` | Durable-facts index (release state, phase-baseline snapshot, kb-drift notes) — supersede in place | — |
 

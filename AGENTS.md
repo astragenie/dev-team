@@ -26,14 +26,25 @@ node ./scripts/e2e-smoke.ts                    # end-to-end smoke, temp sample r
 
 ## CI gates
 
-`.github/workflows/test.yml` (self-hosted; docs/markdown-only PRs skip via a changed-files fast
-path). The `checks` job delegates to `astragenie/common/.github/workflows/reusable-plugin-ci.yml@v1`
-and currently runs, in order: `hooks/check-redundant-read.ts`, `validate-manifests.ts`,
-`validate-skills.ts`, `validate-agents.ts`, `validate-tool-baseline.ts`, `validate-agent-refs.ts`,
-`validate-dispatch-graph.ts`, `validate-workflows.ts`, `validate-slices.ts`, then
-`lint` / `format:check` / `typecheck` / `test` / `e2e:smoke`. This list is re-verified against
-`.github/workflows/test.yml` on every audit pass — that workflow file is the source of truth, not
-this paragraph.
+`.github/workflows/test.yml` (self-hosted; docs/markdown/backlog-only PRs skip `checks`+`test` via
+a changed-files fast path — `docs/ci-fast-path.md`). Both `checks` and `test` delegate to
+`astragenie/common/.github/workflows/reusable-plugin-ci.yml@v1`:
+
+- **`checks`** (once): ~14 hard validators (`check-redundant-read.ts` hook,
+  `validate-{manifests,skills,agents,tool-baseline,agent-refs,dispatch-graph,workflows,slices,
+  badges,loop-state,bundles,configs,org-refs}.ts`, `validate-routing-table.ts --coverage-only`) +
+  2 fixture-loop checks (`validate-contracts.ts`, `validate-ux-spec.ts` against
+  `tests/fixtures/{openapi,ux-specs}/`, each asserting a known-broken fixture correctly fails) +
+  4 advisory validators (`validate-{syntheses,adr-template,backlog-drift}.ts`,
+  `validate-routing-table.ts` full) + `bun run {lint,format:check,typecheck}` + Linux-only
+  `e2e:smoke` / `e2e:smoke:ux` (each retried 3x).
+- **`test`** (3-way matrix): `bun run test:shard` sharded via `scripts/test-shard.ts` — no
+  `--parallel` inside a shard (bun#5090), parallelism comes from the file-list split across shards.
+- **`gate`** (always runs, the required check): passes if docs-only, or if `checks` + every `test`
+  shard succeeded.
+
+This list drifts fast — re-verify against `.github/workflows/test.yml` itself before trusting this
+paragraph on anything but the broad shape.
 
 ## Release workflow
 
