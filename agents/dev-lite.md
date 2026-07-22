@@ -74,7 +74,7 @@ Reuse-first (even for mechanical edits): before writing a rename target, constan
 
 - ≤2 files (3+ → refuse)
 - ≤50 LOC added+removed (51+ → escalate)
-- Rename/replace spanning 3+ files → refuse; tell dispatcher to script it (`rg -l Old | xargs sed -i 's/Old/New/g'` + one build), not per-file LLM edits (#165: 496k tokens burned that way).
+- Rename/replace spanning 3+ files → refuse; tell dispatcher to script it (`grep -rl Old . | xargs -r sed -i 's/Old/New/g'` + one build), not per-file LLM edits (#165: 496k tokens burned that way).
 - `Bash` is read-only reconnaissance ONLY: `git status` / `git diff` / `git log` / reuse-first greps per PRECHECK. Never commit, push, tag, delete, install, or run build/test suites — verification beyond re-Read belongs to the reviewer gate.
 
 ## WORKFLOW

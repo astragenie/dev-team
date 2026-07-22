@@ -50,7 +50,7 @@ if [ -n "$current_branch" ]; then
     [ -z "$wt_path" ] && continue
     state_file="$wt_path/.claude/state/crew/workflow-state.json"
     [ -f "$state_file" ] || continue
-    status=$(jq -r '.currentRun.status // empty' "$state_file" 2>/dev/null)
+    status=$(node -e 'try{const d=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));process.stdout.write(d.currentRun?.status??"")}catch{}' "$state_file" 2>/dev/null)
     if [ -n "$status" ] && [ "$status" != "completed" ]; then
       collision_worktree="$wt_path"
       break
@@ -61,7 +61,7 @@ fi
 ```
 
 - Each worktree owns its own `.claude/state/crew/workflow-state.json` — there is no shared lock, so detection means reading a candidate worktree's own state file directly. This also covers the common case where the CURRENT directory is the only worktree entry on this branch and it already has an unfinished `currentRun` (status not `completed`) from an earlier, not-yet-closed build/fix.
-- Fail-open: if `git`, `jq`, or the state file read fails for any reason, treat it as "no collision" and proceed normally — this is a collision *trigger*, not a hard gate.
+- Fail-open: if `git`, `node`, or the state file read fails for any reason, treat it as "no collision" and proceed normally — this is a collision *trigger*, not a hard gate.
 - If `collision_worktree` is empty → no collision, proceed with the workflow below unchanged.
 - If `collision_worktree` is non-empty → isolate THIS session into its own worktree before continuing:
   1. Pick (or reuse) a worktree path: `<parent-of-repo>/<repo-basename>-worktrees/<branch-name>` (same sibling convention the loop plugin's `worktree-manager` uses — keeps the two ceremonies consistent when both are installed in a repo).

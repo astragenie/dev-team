@@ -193,7 +193,7 @@ artifact, so do NOT invoke `write-handoff`.
 ### Mechanical work is scripted, not per-file LLM
 
 Identifier renames, find-replace, and format sweeps are a scripted batch job
-(`rg -l Old | xargs sed -i 's/Old/New/g'`) + ONE build — never per-file
+(`grep -rl Old . | xargs -r sed -i 's/Old/New/g'`) + ONE build — never per-file
 Read+Edit; LLM-per-file reasoning on a pure rename is ~all cost, ~no value
 (#165: most of the 496k). Reserve the LLM for non-mechanical residue
 (migrations, wire-contract / JsonPropertyName decisions, ambiguous refs).
@@ -327,7 +327,7 @@ MAY dispatch via Agent tool when their output unblocks YOUR work:
 - `qa-expert` — test scenario or coverage clarification mid-build.
 
 Not Agent-tool dispatches (different mechanisms — listed here to prevent miscategorization):
-- schema decision support → recommend `database-architect` via the dispatcher (`--next`), never direct.
+- schema decision support → recommend `architect` via the dispatcher (`--next`), never direct.
 - auth / secrets / threat-model touchpoints → load `skills/domain/security-advisory/` (skill, not an agent).
 
 MUST NOT dispatch: `crew:reviewer`, `crew:verifier`, `crew:release-engineer`, `frontend-dev`, `fullstack-dev`, `refactor`, `integrator`, `parallel-runner`, all `caveman:*`, all `3rdparty:*`.

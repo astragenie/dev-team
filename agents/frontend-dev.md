@@ -123,7 +123,7 @@ A "bug fix" without regression test is not a fix.
 ### Mechanical work is scripted, not per-file LLM
 
 Identifier renames, find-replace, and format sweeps are a scripted batch job
-(`rg -l Old | xargs sed -i 's/Old/New/g'`) + ONE build — never per-file
+(`grep -rl Old . | xargs -r sed -i 's/Old/New/g'`) + ONE build — never per-file
 Read+Edit; LLM-per-file reasoning on a pure rename is ~all cost, ~no value
 (#165: most of the 496k). Reserve the LLM for non-mechanical residue
 (ambiguous refs, wire-contract decisions). Decide wire-stable alias vs
