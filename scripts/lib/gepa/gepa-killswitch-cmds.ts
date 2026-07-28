@@ -13,8 +13,11 @@
  * Design constraints (design spec "Kill-switches" lines 705–722):
  *   - NEVER `git push --force`.
  *   - NEVER `git reset` on main — use `git revert` instead.
- *   - gepa-revert reads `prior_prompt_hash` from gepa: frontmatter to locate
- *     the promotion commit.
+ *   - The promotion commit itself is located via `git log` commit-message
+ *     matching (`chore(gepa): promote`), not via frontmatter. `gepa_*`
+ *     provenance fields (merged into the agent's own frontmatter block by
+ *     champion-provenance-writer.ts, W5 honesty pass) are read best-effort
+ *     only to correlate `trial_id` on the revert event.
  *   - gepa-thaw uses atomic tmp+rename write for champion_frozen update.
  *   - All kill-switch operations write an audit row to events.jsonl.
  */
@@ -69,24 +72,32 @@ function runGit(
 }
 
 /**
- * Read the `gepa:` frontmatter from an agent prompt file.
- * Returns null when no frontmatter is present.
+ * Read `gepa_*` provenance fields from an agent prompt file's leading
+ * frontmatter block (champion-provenance-writer.ts merges them in as flat
+ * keys alongside `name:`/`description:`/`model:` — W5 honesty pass, see that
+ * module's header for why the old separate-leading-block shape was dropped).
+ * Returns null when no frontmatter block is present. Best-effort: an agent
+ * file with no `gepa_*` keys yields `{}`, not null.
  */
 function readGepafrontmatter(agentPath: string): Record<string, string> | null {
   if (!existsSync(agentPath)) return null;
   const content = readFileSync(agentPath, "utf8");
   const lines = content.split("\n");
 
-  // Must start with `---` and have `gepa:` on the second line.
   if (lines[0]?.trimEnd() !== "---") return null;
-  if (!lines[1]?.trimStart().startsWith("gepa:")) return null;
+  let closeIdx = -1;
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i]?.trimEnd() === "---") {
+      closeIdx = i;
+      break;
+    }
+  }
+  if (closeIdx === -1) return null;
 
-  // Extract key:value pairs from the indented block.
   const fields: Record<string, string> = {};
-  for (let i = 2; i < lines.length; i++) {
+  for (let i = 1; i < closeIdx; i++) {
     const line = lines[i] ?? "";
-    if (line.trimEnd() === "---") break;
-    const m = line.match(/^\s+(\w+):\s*(.+)$/);
+    const m = line.match(/^(gepa_\w+):\s*(.+)$/);
     if (m?.[1] && m?.[2]) {
       fields[m[1]] = m[2].trim();
     }
@@ -275,7 +286,9 @@ function applyGitRevert(
     agent,
     reason: `manual kill-switch: gepa-revert reverted promotion commit ${promotionSha}`,
     ...(revertCommitSha !== undefined ? { revert_commit: revertCommitSha } : {}),
-    ...(frontmatter?.champion_from_trial ? { trial_id: frontmatter.champion_from_trial } : {})
+    ...(frontmatter?.gepa_champion_from_trial
+      ? { trial_id: frontmatter.gepa_champion_from_trial }
+      : {})
   });
   const suffix = revertCommitSha ? ` → ${revertCommitSha}` : "";
   return {

@@ -4,8 +4,7 @@
 // validate-agents.ts. Uses the same temp-fixture pattern as the existing
 // validate-agents.test.ts.
 
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -44,8 +43,8 @@ Write your handoff via write-handoff.
 test("AC-AT-1: passes on well-formed agent file with prompt_id and version", async () => {
   const root = await makeAgentsDir({ "foo.md": WELL_FORMED });
   const result = await validateAgents(root);
-  assert.equal(result.ok, true, `unexpected errors: ${result.errors.join("; ")}`);
-  assert.equal(result.agentCount, 1);
+  expect(result.ok, `unexpected errors: ${result.errors.join("; ")}`).toBe(true);
+  expect(result.agentCount).toBe(1);
 });
 
 // AC-AT-2: missing prompt_id → error
@@ -68,11 +67,11 @@ x
 `;
   const root = await makeAgentsDir({ "foo.md": body });
   const result = await validateAgents(root);
-  assert.equal(result.ok, false);
-  assert.ok(
+  expect(result.ok).toBe(false);
+  expect(
     result.errors.some((e) => /missing required frontmatter "prompt_id"/.test(e)),
     `expected missing prompt_id error, got: ${result.errors.join("; ")}`
-  );
+  ).toBeTruthy();
 });
 
 // AC-AT-3: version with only two segments → semver error
@@ -96,11 +95,11 @@ x
 `;
   const root = await makeAgentsDir({ "foo.md": body });
   const result = await validateAgents(root);
-  assert.equal(result.ok, false);
-  assert.ok(
+  expect(result.ok).toBe(false);
+  expect(
     result.errors.some((e) => /must be semver/.test(e)),
     `expected semver error, got: ${result.errors.join("; ")}`
-  );
+  ).toBeTruthy();
 });
 
 // AC-AT-4: prompt_id with uppercase and underscore → kebab error
@@ -124,11 +123,11 @@ x
 `;
   const root = await makeAgentsDir({ "foo.md": body });
   const result = await validateAgents(root);
-  assert.equal(result.ok, false);
-  assert.ok(
+  expect(result.ok).toBe(false);
+  expect(
     result.errors.some((e) => /must be kebab-slug/.test(e)),
     `expected kebab-slug error, got: ${result.errors.join("; ")}`
-  );
+  ).toBeTruthy();
 });
 
 // AC-AT-5: reviewer (EVALS_REQUIRED) without evals field → error
@@ -153,11 +152,11 @@ x
 `;
   const root = await makeAgentsDir({ "reviewer.md": body });
   const result = await validateAgents(root);
-  assert.equal(result.ok, false);
-  assert.ok(
+  expect(result.ok).toBe(false);
+  expect(
     result.errors.some((e) => /requires "evals" frontmatter field/.test(e)),
     `expected evals-required error, got: ${result.errors.join("; ")}`
-  );
+  ).toBeTruthy();
 });
 
 // AC-AT-6: architect (not in EVALS_REQUIRED) without evals → passes
@@ -180,10 +179,10 @@ x
   const result = await validateAgents(root);
   // Only check for the new fields; other existing checks (sections, etc.) may fire
   // but we assert that NO evals error is present.
-  assert.ok(
+  expect(
     !result.errors.some((e) => /requires "evals"/.test(e)),
     `should not require evals for architect, got: ${result.errors.join("; ")}`
-  );
+  ).toBeTruthy();
 });
 
 // AC-AT-7: maxLines: 300 — agent at exactly 300 lines passes
@@ -210,11 +209,11 @@ Write your handoff via write-handoff.`;
     .fill("x")
     .join("\n");
   const body = `${header}\n${padding}`;
-  assert.equal(body.split("\n").length, 300);
+  expect(body.split("\n").length).toBe(300);
 
   const root = await makeAgentsDir({ "foo.md": body });
   const result = await validateAgents(root);
-  assert.equal(result.ok, true, `unexpected errors: ${result.errors.join("; ")}`);
+  expect(result.ok, `unexpected errors: ${result.errors.join("; ")}`).toBe(true);
 });
 
 // AC-AT-8: maxLines: 300 — agent at 301 lines fails
@@ -241,13 +240,13 @@ Write your handoff via write-handoff.`;
     .fill("x")
     .join("\n");
   const body = `${header}\n${padding}`;
-  assert.equal(body.split("\n").length, 301);
+  expect(body.split("\n").length).toBe(301);
 
   const root = await makeAgentsDir({ "foo.md": body });
   const result = await validateAgents(root);
-  assert.equal(result.ok, false);
-  assert.ok(
+  expect(result.ok).toBe(false);
+  expect(
     result.errors.some((e) => /exceeds the 300-line agent prompt cap/.test(e)),
     `expected 300-line cap error, got: ${result.errors.join("; ")}`
-  );
+  ).toBeTruthy();
 });

@@ -2,15 +2,14 @@
 // FEAT-188 S2 AC coverage: the unified config schema/parser + enabled x
 // provider precedence rule. See docs/research/2026-07-06-memory-bridge-reconciliation.md
 // section 4 for the bridge-collision this schema resolves.
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { parseMemoryConfig, resolveEffectiveConfig } from "@astragenie/memory-provider";
 
 test("parseMemoryConfig defaults to provider:none when no memory block is given", () => {
   const config = parseMemoryConfig(undefined);
-  assert.equal(config.provider, "none");
-  assert.equal(config.enabled, "auto");
-  assert.equal(config.dualWrite, false);
+  expect(config.provider).toBe("none");
+  expect(config.enabled).toBe("auto");
+  expect(config.dualWrite).toBe(false);
 });
 
 test("parseMemoryConfig accepts the live bridge's existing keys (enabled, recall.k, recall.timeoutMs, project)", () => {
@@ -19,38 +18,38 @@ test("parseMemoryConfig accepts the live bridge's existing keys (enabled, recall
     project: "dev-team",
     recall: { k: 7, timeoutMs: 3000 }
   });
-  assert.equal(config.enabled, "auto");
-  assert.equal(config.project, "dev-team");
-  assert.equal(config.recall.k, 7);
-  assert.equal(config.recall.timeoutMs, 3000);
+  expect(config.enabled).toBe("auto");
+  expect(config.project).toBe("dev-team");
+  expect(config.recall.k).toBe(7);
+  expect(config.recall.timeoutMs).toBe(3000);
 });
 
 test("parseMemoryConfig rejects recall.topK as an unknown key", () => {
-  assert.throws(() =>
+  expect(() =>
     parseMemoryConfig({
       recall: { topK: 5 }
     })
-  );
+  ).toThrow();
 });
 
 test("parseMemoryConfig hard-errors on an unknown provider value", () => {
-  assert.throws(() => parseMemoryConfig({ provider: "redis" }));
+  expect(() => parseMemoryConfig({ provider: "redis" })).toThrow();
 });
 
 test("parseMemoryConfig accepts provider:file|astramem|none", () => {
   for (const provider of ["file", "astramem", "none"]) {
-    assert.doesNotThrow(() => parseMemoryConfig({ provider }));
+    expect(() => parseMemoryConfig({ provider })).not.toThrow();
   }
 });
 
 test("parseMemoryConfig parses and carries dualWrite", () => {
   const config = parseMemoryConfig({ provider: "astramem", dualWrite: true });
-  assert.equal(config.dualWrite, true);
+  expect(config.dualWrite).toBe(true);
 });
 
 test("parseMemoryConfig defaults dualWrite to false when absent", () => {
   const config = parseMemoryConfig({ provider: "astramem" });
-  assert.equal(config.dualWrite, false);
+  expect(config.dualWrite).toBe(false);
 });
 
 test("parseMemoryConfig accepts additive recall.maxTokens and capture.events", () => {
@@ -59,8 +58,8 @@ test("parseMemoryConfig accepts additive recall.maxTokens and capture.events", (
     recall: { maxTokens: 400 },
     capture: { events: ["slice_close"] }
   });
-  assert.equal(config.recall.maxTokens, 400);
-  assert.deepEqual(config.capture.events, ["slice_close"]);
+  expect(config.recall.maxTokens).toBe(400);
+  expect(config.capture.events).toEqual(["slice_close"]);
 });
 
 // --- enabled x provider precedence (AC-3) ---
@@ -68,22 +67,22 @@ test("parseMemoryConfig accepts additive recall.maxTokens and capture.events", (
 test("precedence: provider:none forces effective-disabled regardless of enabled", () => {
   const config = parseMemoryConfig({ provider: "none", enabled: "auto" });
   const effective = resolveEffectiveConfig(config);
-  assert.equal(effective.captureEnabled, false);
-  assert.equal(effective.recallEnabled, false);
+  expect(effective.captureEnabled).toBe(false);
+  expect(effective.recallEnabled).toBe(false);
 });
 
 test("precedence: enabled:never disables emit/recall regardless of provider", () => {
   const config = parseMemoryConfig({ provider: "file", enabled: "never" });
   const effective = resolveEffectiveConfig(config);
-  assert.equal(effective.captureEnabled, false);
-  assert.equal(effective.recallEnabled, false);
+  expect(effective.captureEnabled).toBe(false);
+  expect(effective.recallEnabled).toBe(false);
 });
 
 test("precedence: provider:file|astramem with enabled:auto is active", () => {
   for (const provider of ["file", "astramem"]) {
     const config = parseMemoryConfig({ provider, enabled: "auto" });
     const effective = resolveEffectiveConfig(config);
-    assert.equal(effective.captureEnabled, true, `provider=${provider} should be capture-enabled`);
+    expect(effective.captureEnabled, `provider=${provider} should be capture-enabled`).toBe(true);
   }
 });
 
@@ -94,12 +93,12 @@ test("precedence: recall.enabled:false disables recall only, capture stays enabl
     recall: { enabled: false }
   });
   const effective = resolveEffectiveConfig(config);
-  assert.equal(effective.captureEnabled, true);
-  assert.equal(effective.recallEnabled, false);
+  expect(effective.captureEnabled).toBe(true);
+  expect(effective.recallEnabled).toBe(false);
 });
 
 test("effective config carries dualWrite through untouched", () => {
   const config = parseMemoryConfig({ provider: "astramem", dualWrite: true });
   const effective = resolveEffectiveConfig(config);
-  assert.equal(effective.dualWrite, true);
+  expect(effective.dualWrite).toBe(true);
 });

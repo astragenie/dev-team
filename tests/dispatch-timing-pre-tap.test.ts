@@ -1,7 +1,6 @@
 // tests/dispatch-timing-pre-tap.test.ts
 // Unit tests for hooks/lib/dispatch-timing-pre-tap.ts (FEAT-149)
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -28,10 +27,10 @@ test("parseAgentPreInput: valid Agent PreToolUse payload → object", () => {
     }
   });
   const result = parseAgentPreInput(payload);
-  assert.ok(result !== null);
-  assert.equal(result.session_id, "s1");
-  assert.equal(result.subagent_type, "crew:fullstack-dev");
-  assert.equal(result.description, "implement the feature");
+  expect(result !== null).toBeTruthy();
+  expect(result!.session_id).toBe("s1");
+  expect(result!.subagent_type).toBe("crew:fullstack-dev");
+  expect(result!.description).toBe("implement the feature");
 });
 
 test("parseAgentPreInput: non-Agent tool_name → null", () => {
@@ -40,13 +39,13 @@ test("parseAgentPreInput: non-Agent tool_name → null", () => {
     tool_name: "Bash",
     tool_input: { command: "ls" }
   });
-  assert.equal(parseAgentPreInput(payload), null);
+  expect(parseAgentPreInput(payload)).toBe(null);
 });
 
 test("parseAgentPreInput: malformed JSON → null", () => {
-  assert.equal(parseAgentPreInput("not json at all"), null);
-  assert.equal(parseAgentPreInput("{broken:"), null);
-  assert.equal(parseAgentPreInput(""), null);
+  expect(parseAgentPreInput("not json at all")).toBe(null);
+  expect(parseAgentPreInput("{broken:")).toBe(null);
+  expect(parseAgentPreInput("")).toBe(null);
 });
 
 test("parseAgentPreInput: missing tool_name field → null", () => {
@@ -54,7 +53,7 @@ test("parseAgentPreInput: missing tool_name field → null", () => {
     session_id: "s1",
     tool_input: { subagent_type: "crew:fullstack-dev" }
   });
-  assert.equal(parseAgentPreInput(payload), null);
+  expect(parseAgentPreInput(payload)).toBe(null);
 });
 
 test("parseAgentPreInput: missing tool_input → null", () => {
@@ -62,7 +61,7 @@ test("parseAgentPreInput: missing tool_input → null", () => {
     session_id: "s1",
     tool_name: "Agent"
   });
-  assert.equal(parseAgentPreInput(payload), null);
+  expect(parseAgentPreInput(payload)).toBe(null);
 });
 
 test("parseAgentPreInput: minimal payload with only tool_name Agent and tool_input → defaults applied", () => {
@@ -71,10 +70,10 @@ test("parseAgentPreInput: minimal payload with only tool_name Agent and tool_inp
     tool_input: {}
   });
   const result = parseAgentPreInput(payload);
-  assert.ok(result !== null);
-  assert.equal(result.session_id, "");
-  assert.equal(result.subagent_type, "unknown");
-  assert.equal(result.description, "");
+  expect(result !== null).toBeTruthy();
+  expect(result!.session_id).toBe("");
+  expect(result!.subagent_type).toBe("unknown");
+  expect(result!.description).toBe("");
 });
 
 // ── lookupAgentModel ──────────────────────────────────────────────────────────
@@ -83,22 +82,22 @@ test("parseAgentPreInput: minimal payload with only tool_name Agent and tool_inp
 
 test("lookupAgentModel: crew:fullstack-dev → sonnet", async () => {
   const model = await lookupAgentModel("crew:fullstack-dev");
-  assert.equal(model, "sonnet");
+  expect(model).toBe("sonnet");
 });
 
 test("lookupAgentModel: crew:investigator → haiku", async () => {
   const model = await lookupAgentModel("crew:investigator");
-  assert.equal(model, "haiku");
+  expect(model).toBe("haiku");
 });
 
 test("lookupAgentModel: nonexistent agent → unknown", async () => {
   const model = await lookupAgentModel("crew:nonexistent-agent-xyz");
-  assert.equal(model, "unknown");
+  expect(model).toBe("unknown");
 });
 
 test("lookupAgentModel: plain name without colon → unknown when no file", async () => {
   const model = await lookupAgentModel("general-purpose");
-  assert.equal(model, "unknown");
+  expect(model).toBe("unknown");
 });
 
 // ── runDispatchTimingPreTap ───────────────────────────────────────────────────
@@ -114,7 +113,7 @@ test("runDispatchTimingPreTap: no-ops when CREW_DISPATCH_TIMING_LOG=0", async ()
     ...process.env,
     CREW_DISPATCH_TIMING_LOG: "0"
   });
-  assert.equal(result, null);
+  expect(result).toBe(null);
 });
 
 test("runDispatchTimingPreTap: registers a handle + JSONL row appears after end tap", async () => {
@@ -142,7 +141,7 @@ test("runDispatchTimingPreTap: registers a handle + JSONL row appears after end 
 
     try {
       const result = await runDispatchTimingPreTap(payload, process.env);
-      assert.equal(result, null);
+      expect(result).toBe(null);
 
       // Now simulate an end tap via the re-exported handle path
       // We directly call recordDispatchEnd with a manually-looked-up handle to verify
@@ -173,9 +172,9 @@ test("runDispatchTimingPreTap: registers a handle + JSONL row appears after end 
         .trim()
         .split("\n")
         .map((l) => JSON.parse(l) as Record<string, unknown>);
-      assert.equal(rows.length, 1);
-      assert.equal(rows[0]!["agent"], "crew:fullstack-dev");
-      assert.ok(typeof rows[0]!["wallMs"] === "number");
+      expect(rows.length).toBe(1);
+      expect(rows[0]!["agent"]).toBe("crew:fullstack-dev");
+      expect(typeof rows[0]!["wallMs"] === "number").toBeTruthy();
     } finally {
       process.env.CREW_DISPATCH_TIMING_LOG = origLog;
       if (origRoot !== undefined) {
@@ -199,7 +198,7 @@ test("runDispatchTimingPreTap: returns null on non-Agent tool event", async () =
     ...process.env,
     CREW_DISPATCH_TIMING_LOG: "/tmp/should-not-write.jsonl"
   });
-  assert.equal(result, null);
+  expect(result).toBe(null);
 });
 
 // ── parseUsageMetrics (end-tap improvement) ───────────────────────────────────
@@ -208,31 +207,31 @@ test("parseUsageMetrics: full usage block → all fields parsed", () => {
   const body =
     "Some result text\n<usage>total_tokens: 1234 tool_uses: 17 duration_ms: 45000</usage>\nMore text";
   const metrics = parseUsageMetrics(body);
-  assert.equal(metrics.totalTokens, 1234);
-  assert.equal(metrics.toolUses, 17);
-  assert.equal(metrics.durationMs, 45000);
+  expect(metrics.totalTokens).toBe(1234);
+  expect(metrics.toolUses).toBe(17);
+  expect(metrics.durationMs).toBe(45000);
 });
 
 test("parseUsageMetrics: no usage block → all zeros", () => {
   const body = "Plain subagent return without usage marker";
   const metrics = parseUsageMetrics(body);
-  assert.equal(metrics.totalTokens, 0);
-  assert.equal(metrics.toolUses, 0);
-  assert.equal(metrics.durationMs, 0);
+  expect(metrics.totalTokens).toBe(0);
+  expect(metrics.toolUses).toBe(0);
+  expect(metrics.durationMs).toBe(0);
 });
 
 test("parseUsageMetrics: partial block missing tool_uses → toolUses=0", () => {
   const body = "<usage>total_tokens: 500 duration_ms: 1000</usage>";
   const metrics = parseUsageMetrics(body);
-  assert.equal(metrics.totalTokens, 500);
-  assert.equal(metrics.toolUses, 0);
-  assert.equal(metrics.durationMs, 1000);
+  expect(metrics.totalTokens).toBe(500);
+  expect(metrics.toolUses).toBe(0);
+  expect(metrics.durationMs).toBe(1000);
 });
 
 test("parseUsageMetrics: multiline usage block → parsed correctly", () => {
   const body = "<usage>\ntotal_tokens: 999\ntool_uses: 5\nduration_ms: 12345\n</usage>";
   const metrics = parseUsageMetrics(body);
-  assert.equal(metrics.totalTokens, 999);
-  assert.equal(metrics.toolUses, 5);
-  assert.equal(metrics.durationMs, 12345);
+  expect(metrics.totalTokens).toBe(999);
+  expect(metrics.toolUses).toBe(5);
+  expect(metrics.durationMs).toBe(12345);
 });

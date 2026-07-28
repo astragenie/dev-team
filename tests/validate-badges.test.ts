@@ -1,8 +1,7 @@
 // tests/validate-badges.test.ts — FEAT-181 / SLICE-194
 // Covers: the real repo passes (AC-1/AC-2 aligned today) + an injected
 // drift (a badge in BADGE_TABLE absent from the catalog doc) is flagged.
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -52,8 +51,8 @@ test("passes when BADGE_TABLE, CLI help text, and catalog doc all agree", async 
     catalog: ALIGNED_CATALOG
   });
   const result = await validateBadges(paths);
-  assert.equal(result.ok, true, `unexpected errors: ${result.errors.join("; ")}`);
-  assert.equal(result.badgeCount, 2);
+  expect(result.ok, `unexpected errors: ${result.errors.join("; ")}`).toBe(true);
+  expect(result.badgeCount).toBe(2);
 });
 
 test("flags a badge present in BADGE_TABLE but missing from the catalog doc", async () => {
@@ -69,9 +68,12 @@ test("flags a badge present in BADGE_TABLE but missing from the catalog doc", as
     catalog: driftedCatalog
   });
   const result = await validateBadges(paths);
-  assert.equal(result.ok, false, "missing catalog row should fail validation");
+  expect(result.ok, "missing catalog row should fail validation").toBe(false);
   const flagged = result.errors.some((e) => e.includes("foo_b") && e.includes("badge-catalog.md"));
-  assert.ok(flagged, `expected a foo_b/catalog drift error, got: ${result.errors.join("; ")}`);
+  expect(
+    flagged,
+    `expected a foo_b/catalog drift error, got: ${result.errors.join("; ")}`
+  ).toBeTruthy();
 });
 
 test("flags a badge in the CLI accept-list with no BADGE_TABLE handler", async () => {
@@ -87,13 +89,16 @@ const HELP: Record<string, string> = {
     catalog: ALIGNED_CATALOG
   });
   const result = await validateBadges(paths);
-  assert.equal(result.ok, false, "a CLI-only badge with no handler should fail validation");
+  expect(result.ok, "a CLI-only badge with no handler should fail validation").toBe(false);
   const flagged = result.errors.some((e) => e.includes("foo_ghost"));
-  assert.ok(flagged, `expected a foo_ghost drift error, got: ${result.errors.join("; ")}`);
+  expect(
+    flagged,
+    `expected a foo_ghost drift error, got: ${result.errors.join("; ")}`
+  ).toBeTruthy();
 });
 
 test("passes against the real repo (BADGE_TABLE, mark-badge help, and badge-catalog.md aligned today)", async () => {
   const result = await validateBadges();
-  assert.equal(result.ok, true, `unexpected drift in the real repo: ${result.errors.join("; ")}`);
-  assert.ok(result.badgeCount > 0);
+  expect(result.ok, `unexpected drift in the real repo: ${result.errors.join("; ")}`).toBe(true);
+  expect(result.badgeCount > 0).toBeTruthy();
 });

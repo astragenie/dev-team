@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { estimateScope } from "../scripts/lib/scope-estimate.ts";
 
 // Tier rules:
@@ -9,8 +8,8 @@ import { estimateScope } from "../scripts/lib/scope-estimate.ts";
 
 test("estimateScope returns light for 1 file under 300 lines", () => {
   const result = estimateScope({ files: [{ path: "src/foo.mjs", lines: 150 }] });
-  assert.equal(result.tier, "light");
-  assert.ok(result.reason.length > 0, "must include reason");
+  expect(result.tier).toBe("light");
+  expect(result.reason.length > 0, "must include reason").toBeTruthy();
 });
 
 test("estimateScope returns light for 2 files, combined < 300", () => {
@@ -20,7 +19,7 @@ test("estimateScope returns light for 2 files, combined < 300", () => {
       { path: "b.mjs", lines: 150 }
     ]
   });
-  assert.equal(result.tier, "light");
+  expect(result.tier).toBe("light");
 });
 
 test("estimateScope returns standard for 3 files in 300-800 line range", () => {
@@ -31,7 +30,7 @@ test("estimateScope returns standard for 3 files in 300-800 line range", () => {
       { path: "c.mjs", lines: 100 }
     ]
   });
-  assert.equal(result.tier, "standard");
+  expect(result.tier).toBe("standard");
 });
 
 test("estimateScope returns heavy for total lines > 800", () => {
@@ -41,15 +40,15 @@ test("estimateScope returns heavy for total lines > 800", () => {
       { path: "b.mjs", lines: 400 }
     ]
   });
-  assert.equal(result.tier, "heavy");
-  assert.match(result.reason, /lines/i);
+  expect(result.tier).toBe("heavy");
+  expect(result.reason).toMatch(/lines/i);
 });
 
 test("estimateScope returns heavy for fileCount >= 6", () => {
   const files = Array.from({ length: 6 }, (_, i) => ({ path: `f${i}.mjs`, lines: 50 }));
   const result = estimateScope({ files });
-  assert.equal(result.tier, "heavy");
-  assert.match(result.reason, /file/i);
+  expect(result.tier).toBe("heavy");
+  expect(result.reason).toMatch(/file/i);
 });
 
 test("estimateScope escalates to heavy when any file has eslintDisable flag", () => {
@@ -59,8 +58,8 @@ test("estimateScope escalates to heavy when any file has eslintDisable flag", ()
       { path: "b.mjs", lines: 80 }
     ]
   });
-  assert.equal(result.tier, "heavy");
-  assert.match(result.reason, /eslint/i);
+  expect(result.tier).toBe("heavy");
+  expect(result.reason).toMatch(/eslint/i);
 });
 
 test("estimateScope returns standard for 2 files just over 300 lines", () => {
@@ -70,12 +69,12 @@ test("estimateScope returns standard for 2 files just over 300 lines", () => {
       { path: "b.mjs", lines: 120 }
     ]
   });
-  assert.equal(result.tier, "standard");
+  expect(result.tier).toBe("standard");
 });
 
 test("estimateScope returns { tier, reason } shape on empty files", () => {
   const result = estimateScope({ files: [] });
-  assert.ok("tier" in result, "must have tier");
-  assert.ok("reason" in result, "must have reason");
-  assert.ok(["light", "standard", "heavy"].includes(result.tier));
+  expect("tier" in result, "must have tier").toBeTruthy();
+  expect("reason" in result, "must have reason").toBeTruthy();
+  expect(["light", "standard", "heavy"].includes(result.tier)).toBeTruthy();
 });

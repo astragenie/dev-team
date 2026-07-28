@@ -1,3 +1,4 @@
+import { test, expect } from "bun:test";
 // tests/heavy-path-review-refinements.test.ts
 // FEAT-203 / SLICE-113 — heavy-path review refinements (stack-lens 2nd
 // reviewer + parallel-dispatch telemetry).
@@ -40,8 +41,6 @@
 // same boundary discipline as tests/validation-gate-delegation.test.ts.
 import fs from "node:fs/promises";
 import path from "node:path";
-import test from "node:test";
-import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -61,61 +60,61 @@ test("loop.json: reviewers.strictParallel is true", async () => {
   const config = (await readJson(".claude/loop.json")) as {
     reviewers?: { strictParallel?: unknown };
   };
-  assert.equal(config.reviewers?.strictParallel, true);
+  expect(config.reviewers?.strictParallel).toBe(true);
 });
 
 test("loop.json: reviewers.serialTimingThresholdMs is 90000 (matches runner-plugin default)", async () => {
   const config = (await readJson(".claude/loop.json")) as {
     reviewers?: { serialTimingThresholdMs?: unknown };
   };
-  assert.equal(config.reviewers?.serialTimingThresholdMs, 90000);
+  expect(config.reviewers?.serialTimingThresholdMs).toBe(90000);
 });
 
 test("loop.json: reviewers.ladder is undisturbed by the telemetry-activation change", async () => {
   const config = (await readJson(".claude/loop.json")) as {
     reviewers?: { ladder?: unknown };
   };
-  assert.deepEqual(config.reviewers?.ladder, ["A"]);
+  expect(config.reviewers?.ladder).toEqual(["A"]);
 });
 
 // ── AC-1: fan-out-review SKILL documents the stack-lens 2nd-reviewer rule ──
 
 test("fan-out-review SKILL: documents the stack-lens 2nd-reviewer selection rule", async () => {
   const text = await readText("skills/workflow/fan-out-review/SKILL.md");
-  assert.match(text, /Stack-lens 2nd-reviewer pick/);
-  assert.match(text, /`\.cs`[^\n]*≥\s*60%[^\n]*`crew:csharp-reviewer`/);
-  assert.match(text, /`\.ts`[^\n]*\/\s*`\.tsx`[^\n]*≥\s*60%[^\n]*`crew:typescript-reviewer`/);
-  assert.match(text, /fall back to a generic `crew:reviewer` 2nd lens/);
+  expect(text).toMatch(/Stack-lens 2nd-reviewer pick/);
+  expect(text).toMatch(/`\.cs`[^\n]*≥\s*60%[^\n]*`crew:csharp-reviewer`/);
+  expect(text).toMatch(/`\.ts`[^\n]*\/\s*`\.tsx`[^\n]*≥\s*60%[^\n]*`crew:typescript-reviewer`/);
+  expect(text).toMatch(/fall back to a generic `crew:reviewer` 2nd lens/);
 });
 
 test("fan-out-review SKILL: Done section includes the stack-lens rule check", async () => {
   const text = await readText("skills/workflow/fan-out-review/SKILL.md");
-  assert.match(text, /2nd reviewer was picked by stack-lens dominance/);
+  expect(text).toMatch(/2nd reviewer was picked by stack-lens dominance/);
 });
 
 // ── AC-1/AC-3: orchestrate-slice.md documents stack-lens + single-message contract ──
 
 test("orchestrate-slice.md: heavy path states reviewers + verifier are emitted in ONE parallel message", async () => {
   const text = await readText("commands/orchestrate-slice.md");
-  assert.match(text, /Single-message contract \(FEAT-203 \/ SLICE-113\)/);
-  assert.match(text, /MUST be emitted in that ONE parallel Agent-tool message/);
-  assert.match(text, /no message between dispatches/);
-  assert.match(text, /no wait-for-one-before-dispatching-the-next/);
+  expect(text).toMatch(/Single-message contract \(FEAT-203 \/ SLICE-113\)/);
+  expect(text).toMatch(/MUST be emitted in that ONE parallel Agent-tool message/);
+  expect(text).toMatch(/no message between dispatches/);
+  expect(text).toMatch(/no wait-for-one-before-dispatching-the-next/);
 });
 
 test("orchestrate-slice.md: heavy path documents the stack-lens 2nd-reviewer rule inline", async () => {
   const text = await readText("commands/orchestrate-slice.md");
-  assert.match(text, /Stack-lens 2nd reviewer \(FEAT-203 \/ SLICE-113\)/);
-  assert.match(text, /crew:csharp-reviewer/);
-  assert.match(text, /crew:typescript-reviewer/);
+  expect(text).toMatch(/Stack-lens 2nd reviewer \(FEAT-203 \/ SLICE-113\)/);
+  expect(text).toMatch(/crew:csharp-reviewer/);
+  expect(text).toMatch(/crew:typescript-reviewer/);
 });
 
 test("orchestrate-slice.md: heavy path documents serial-dispatch telemetry via reviewers.strictParallel", async () => {
   const text = await readText("commands/orchestrate-slice.md");
-  assert.match(text, /Parallel-dispatch telemetry \(FEAT-203 \/ SLICE-113\)/);
-  assert.match(text, /reviewers\.strictParallel/);
-  assert.match(text, /serialTimingThresholdMs/);
-  assert.match(text, /serial-reviewer-warning/);
+  expect(text).toMatch(/Parallel-dispatch telemetry \(FEAT-203 \/ SLICE-113\)/);
+  expect(text).toMatch(/reviewers\.strictParallel/);
+  expect(text).toMatch(/serialTimingThresholdMs/);
+  expect(text).toMatch(/serial-reviewer-warning/);
 });
 
 test("orchestrate-slice.md: states the strictParallel runtime-consumer boundary honestly", async () => {
@@ -123,5 +122,5 @@ test("orchestrate-slice.md: states the strictParallel runtime-consumer boundary 
   // Reviewer-facing honesty check (mirrors the boundary discipline in
   // tests/validation-gate-delegation.test.ts): strictParallel must not be
   // described as gating behavior it does not currently gate.
-  assert.match(text, /no runtime consumer branching on it yet/);
+  expect(text).toMatch(/no runtime consumer branching on it yet/);
 });

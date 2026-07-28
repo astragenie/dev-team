@@ -1,6 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
-
+import { test, expect } from "bun:test";
 import {
   addTotals,
   percentile,
@@ -62,124 +60,124 @@ test("addTotals: merges two records into target", () => {
   const target = emptyTotals();
   const source = { input: 10, cache_create_5m: 2, cache_create_1h: 3, cache_read: 4, output: 5 };
   addTotals(target, source);
-  assert.deepEqual(target, source);
+  expect(target).toEqual(source);
 });
 
 test("addTotals: accumulates on a non-empty target", () => {
   const target = { input: 1, cache_create_5m: 0, cache_create_1h: 0, cache_read: 0, output: 1 };
   const source = { input: 9, cache_create_5m: 0, cache_create_1h: 0, cache_read: 0, output: 4 };
   addTotals(target, source);
-  assert.equal(target["input"], 10);
-  assert.equal(target["output"], 5);
+  expect(target["input"]).toBe(10);
+  expect(target["output"]).toBe(5);
 });
 
 test("addTotals: missing keys in source treated as 0", () => {
   const target = emptyTotals();
   addTotals(target, {});
-  assert.deepEqual(target, emptyTotals());
+  expect(target).toEqual(emptyTotals());
 });
 
 // ── percentile ─────────────────────────────────────────────────────────────
 
 test("percentile: returns 0 for empty array", () => {
-  assert.equal(percentile([], 50), 0);
+  expect(percentile([], 50)).toBe(0);
 });
 
 test("percentile: p50 on sorted odd-length array", () => {
   const arr = [10, 20, 30, 40, 50];
-  assert.equal(percentile(arr, 50), 30);
+  expect(percentile(arr, 50)).toBe(30);
 });
 
 test("percentile: p90 on 10-element array", () => {
   const arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   // floor(0.9 * 10) = 9 → index 9 → value 10
-  assert.equal(percentile(arr, 90), 10);
+  expect(percentile(arr, 90)).toBe(10);
 });
 
 test("percentile: p0 returns first element", () => {
-  assert.equal(percentile([5, 10, 15], 0), 5);
+  expect(percentile([5, 10, 15], 0)).toBe(5);
 });
 
 test("percentile: p100 returns last element", () => {
-  assert.equal(percentile([5, 10, 15], 100), 15);
+  expect(percentile([5, 10, 15], 100)).toBe(15);
 });
 
 // ── isSyntheticModel ───────────────────────────────────────────────────────
 
 test("isSyntheticModel: returns true for <synthetic>", () => {
-  assert.equal(isSyntheticModel("<synthetic>"), true);
+  expect(isSyntheticModel("<synthetic>")).toBe(true);
 });
 
 test("isSyntheticModel: returns true for < (angle-bracket prefix)", () => {
-  assert.equal(isSyntheticModel("<whatever>"), true);
+  expect(isSyntheticModel("<whatever>")).toBe(true);
 });
 
 test("isSyntheticModel: returns true for synthetic prefix", () => {
-  assert.equal(isSyntheticModel("synthetic-model"), true);
+  expect(isSyntheticModel("synthetic-model")).toBe(true);
 });
 
 test("isSyntheticModel: returns false for real model name", () => {
-  assert.equal(isSyntheticModel("claude-sonnet-4-5"), false);
+  expect(isSyntheticModel("claude-sonnet-4-5")).toBe(false);
 });
 
 test("isSyntheticModel: returns false for empty string", () => {
-  assert.equal(isSyntheticModel(""), false);
+  expect(isSyntheticModel("")).toBe(false);
 });
 
 // ── approxSize ─────────────────────────────────────────────────────────────
 
 test("approxSize: null returns 0", () => {
-  assert.equal(approxSize(null), 0);
+  expect(approxSize(null)).toBe(0);
 });
 
 test("approxSize: undefined returns 0", () => {
-  assert.equal(approxSize(undefined), 0);
+  expect(approxSize(undefined)).toBe(0);
 });
 
 test("approxSize: string returns its length", () => {
-  assert.equal(approxSize("hello"), 5);
+  expect(approxSize("hello")).toBe(5);
 });
 
 test("approxSize: object returns JSON.stringify length", () => {
   const obj = { a: 1 };
-  assert.equal(approxSize(obj), JSON.stringify(obj).length);
+  expect(approxSize(obj)).toBe(JSON.stringify(obj).length);
 });
 
 test("approxSize: array returns JSON.stringify length", () => {
   const arr = [1, 2, 3];
-  assert.equal(approxSize(arr), JSON.stringify(arr).length);
+  expect(approxSize(arr)).toBe(JSON.stringify(arr).length);
 });
 
 // ── inspectContent ─────────────────────────────────────────────────────────
 
 test("inspectContent: plain string returns textLen, no tools", () => {
   const r = inspectContent("hello world");
-  assert.equal(r.textLen, 11);
-  assert.equal(r.toolUses.length, 0);
-  assert.equal(r.toolResults.length, 0);
+  expect(r.textLen).toBe(11);
+  expect(r.toolUses.length).toBe(0);
+  expect(r.toolResults.length).toBe(0);
 });
 
 test("inspectContent: null/undefined returns empty result", () => {
   const r = inspectContent(null);
-  assert.equal(r.textLen, 0);
-  assert.equal(r.toolUses.length, 0);
+  expect(r.textLen).toBe(0);
+  expect(r.toolUses.length).toBe(0);
 });
 
 test("inspectContent: extracts tool_use blocks", () => {
   const content = [{ type: "tool_use", id: "id1", name: "Read", input: { file_path: "/foo" } }];
   const r = inspectContent(content);
-  assert.equal(r.toolUses.length, 1);
-  assert.equal(r.toolUses[0]?.name, "Read");
-  assert.equal(r.toolUses[0]?.id, "id1");
+  expect(r.toolUses.length).toBe(1);
+  expect(r.toolUses[0]?.name).toBe("Read");
+  expect(r.toolUses[0]?.id).toBe("id1");
 });
 
 test("inspectContent: extracts tool_result blocks", () => {
   const content = [{ type: "tool_result", tool_use_id: "id1", content: "abc", is_error: false }];
   const r = inspectContent(content);
-  assert.equal(r.toolResults.length, 1);
-  assert.equal(r.toolResults[0]?.id, "id1");
-  assert.equal(r.toolResults[0]?.size, 3);
-  assert.equal(r.toolResults[0]?.isError, false);
+  expect(r.toolResults.length).toBe(1);
+  expect(r.toolResults[0]?.id).toBe("id1");
+  expect(r.toolResults[0]?.size).toBe(3);
+  expect(r.toolResults[0]?.isError).toBe(false);
 });
 
 test("inspectContent: accumulates text block lengths", () => {
@@ -188,7 +186,7 @@ test("inspectContent: accumulates text block lengths", () => {
     { type: "text", text: " world" }
   ];
   const r = inspectContent(content);
-  assert.equal(r.textLen, 11);
+  expect(r.textLen).toBe(11);
 });
 
 // ── tokensFromUsage ────────────────────────────────────────────────────────
@@ -201,11 +199,11 @@ test("tokensFromUsage: basic usage record", () => {
     cache_creation_input_tokens: 10
   };
   const t = tokensFromUsage(usage);
-  assert.equal(t["input"], 100);
-  assert.equal(t["output"], 50);
-  assert.equal(t["cache_read"], 20);
-  assert.equal(t["cache_create_5m"], 10);
-  assert.equal(t["cache_create_1h"], 0);
+  expect(t["input"]).toBe(100);
+  expect(t["output"]).toBe(50);
+  expect(t["cache_read"]).toBe(20);
+  expect(t["cache_create_5m"]).toBe(10);
+  expect(t["cache_create_1h"]).toBe(0);
 });
 
 test("tokensFromUsage: nested cache_creation object", () => {
@@ -215,13 +213,13 @@ test("tokensFromUsage: nested cache_creation object", () => {
     cache_creation: { ephemeral_5m_input_tokens: 8, ephemeral_1h_input_tokens: 4 }
   };
   const t = tokensFromUsage(usage);
-  assert.equal(t["cache_create_5m"], 8);
-  assert.equal(t["cache_create_1h"], 4);
+  expect(t["cache_create_5m"]).toBe(8);
+  expect(t["cache_create_1h"]).toBe(4);
 });
 
 test("tokensFromUsage: empty/null returns zeros", () => {
   const t = tokensFromUsage({});
-  assert.deepEqual(t, emptyTotals());
+  expect(t).toEqual(emptyTotals());
 });
 
 // ── handleUserTurn ─────────────────────────────────────────────────────────
@@ -229,7 +227,7 @@ test("tokensFromUsage: empty/null returns zeros", () => {
 test("handleUserTurn: isMeta increments compactionCount", () => {
   const ctx = makeCtx();
   handleUserTurn({ isMeta: true, type: "user" }, ctx);
-  assert.equal(ctx.counters.compactionCount, 1);
+  expect(ctx.counters.compactionCount).toBe(1);
 });
 
 test("handleUserTurn: plain text increments userMsgCount and userMsgTotalLen", () => {
@@ -241,8 +239,8 @@ test("handleUserTurn: plain text increments userMsgCount and userMsgTotalLen", (
     },
     ctx
   );
-  assert.equal(ctx.counters.userMsgCount, 1);
-  assert.equal(ctx.counters.userMsgTotalLen, 5);
+  expect(ctx.counters.userMsgCount).toBe(1);
+  expect(ctx.counters.userMsgTotalLen).toBe(5);
 });
 
 test("handleUserTurn: tool_result tracks size and calls", () => {
@@ -258,10 +256,10 @@ test("handleUserTurn: tool_result tracks size and calls", () => {
     },
     ctx
   );
-  assert.equal(ctx.toolResultSizes.length, 1);
-  assert.equal(ctx.toolResultSizes[0], 3);
-  assert.equal(ctx.toolCachePrime["Read"]?.calls, 1);
-  assert.equal(ctx.toolCachePrime["Read"]?.totalResultBytes, 3);
+  expect(ctx.toolResultSizes.length).toBe(1);
+  expect(ctx.toolResultSizes[0]).toBe(3);
+  expect(ctx.toolCachePrime["Read"]?.calls).toBe(1);
+  expect(ctx.toolCachePrime["Read"]?.totalResultBytes).toBe(3);
 });
 
 test("handleUserTurn: error tool_result increments toolFailureCounts", () => {
@@ -276,7 +274,7 @@ test("handleUserTurn: error tool_result increments toolFailureCounts", () => {
     },
     ctx
   );
-  assert.equal(ctx.toolFailureCounts["Bash"], 1);
+  expect(ctx.toolFailureCounts["Bash"]).toBe(1);
 });
 
 // ── recordToolUse ──────────────────────────────────────────────────────────
@@ -284,26 +282,26 @@ test("handleUserTurn: error tool_result increments toolFailureCounts", () => {
 test("recordToolUse: increments toolUseCounts and sets sawFirstTool", () => {
   const ctx = makeCtx();
   recordToolUse(ctx, { id: "i1", name: "Bash", input: {} });
-  assert.equal(ctx.toolUseCounts["Bash"], 1);
-  assert.equal(ctx.flags.sawFirstTool, true);
+  expect(ctx.toolUseCounts["Bash"]).toBe(1);
+  expect(ctx.flags.sawFirstTool).toBe(true);
 });
 
 test("recordToolUse: Read tool tracks file_path in filesRead", () => {
   const ctx = makeCtx();
   recordToolUse(ctx, { id: "i2", name: "Read", input: { file_path: "/some/file.ts" } });
-  assert.equal(ctx.filesRead["/some/file.ts"], 1);
+  expect(ctx.filesRead["/some/file.ts"]).toBe(1);
 });
 
 test("recordToolUse: Skill increments skillInvocations", () => {
   const ctx = makeCtx();
   recordToolUse(ctx, { id: "i3", name: "Skill", input: {} });
-  assert.equal(ctx.counters.skillInvocations, 1);
+  expect(ctx.counters.skillInvocations).toBe(1);
 });
 
 test("recordToolUse: Agent increments subagentDispatches", () => {
   const ctx = makeCtx();
   recordToolUse(ctx, { id: "i4", name: "Agent", input: {} });
-  assert.equal(ctx.counters.subagentDispatches, 1);
+  expect(ctx.counters.subagentDispatches).toBe(1);
 });
 
 // ── handleAssistantTurn ────────────────────────────────────────────────────
@@ -320,10 +318,10 @@ test("handleAssistantTurn: counts token usage via recordTokenUsage", () => {
     }
   };
   const touched = handleAssistantTurn(obj, "file.jsonl", new Map(), ctx);
-  assert.equal(touched, true);
-  assert.equal(ctx.counters.messagesCounted, 1);
-  assert.equal(ctx.totals["input"], 100);
-  assert.equal(ctx.totals["output"], 50);
+  expect(touched).toBe(true);
+  expect(ctx.counters.messagesCounted).toBe(1);
+  expect(ctx.totals["input"]).toBe(100);
+  expect(ctx.totals["output"]).toBe(50);
 });
 
 test("handleAssistantTurn: synthetic model skips token counting", () => {
@@ -338,8 +336,8 @@ test("handleAssistantTurn: synthetic model skips token counting", () => {
     }
   };
   handleAssistantTurn(obj, "file.jsonl", new Map(), ctx);
-  assert.equal(ctx.counters.messagesCounted, 0);
-  assert.equal(ctx.totals["input"], 0);
+  expect(ctx.counters.messagesCounted).toBe(0);
+  expect(ctx.totals["input"]).toBe(0);
 });
 
 test("handleAssistantTurn: no usage returns false (not touched)", () => {
@@ -349,7 +347,7 @@ test("handleAssistantTurn: no usage returns false (not touched)", () => {
     message: { model: "claude-sonnet-4-5", content: [] }
   };
   const touched = handleAssistantTurn(obj, "file.jsonl", new Map(), ctx);
-  assert.equal(touched, false);
+  expect(touched).toBe(false);
 });
 
 test("handleAssistantTurn: increments turnsBeforeFirstTool when no tool use yet", () => {
@@ -359,5 +357,5 @@ test("handleAssistantTurn: increments turnsBeforeFirstTool when no tool use yet"
     message: { model: "claude-sonnet-4-5", content: [{ type: "text", text: "hi" }] }
   };
   handleAssistantTurn(obj, "f", new Map(), ctx);
-  assert.equal(ctx.counters.turnsBeforeFirstTool, 1);
+  expect(ctx.counters.turnsBeforeFirstTool).toBe(1);
 });

@@ -1,3 +1,4 @@
+import { test, expect } from "bun:test";
 // tests/memory-provider-file.test.ts
 // FEAT-188 S2 AC coverage: fileProvider — atomic O_APPEND JSONL, torn-line
 // discard on read, legacy learnings.jsonl adapter, recency x severity
@@ -5,8 +6,6 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
-import assert from "node:assert/strict";
 import { fileProvider } from "@astragenie/memory-provider";
 import { captureFailureLearning } from "../scripts/lib/memory/capture-learning.ts";
 
@@ -23,7 +22,7 @@ function learningsPath(repo: string) {
 }
 
 test("fileProvider describes itself as file", () => {
-  assert.deepEqual(fileProvider("/tmp/whatever").describe(), { provider: "file" });
+  expect(fileProvider("/tmp/whatever").describe()).toEqual({ provider: "file" });
 });
 
 test("fileProvider.capture appends a JSONL row that recall() can read back", async () => {
@@ -38,10 +37,10 @@ test("fileProvider.capture appends a JSONL row that recall() can read back", asy
       source: "review_fail"
     });
     const results = await provider.recall({ k: 5 });
-    assert.equal(results.length, 1);
-    assert.equal(results[0]!.summary, "review rejected: missing null guard");
-    assert.equal(results[0]!.severity, "high");
-    assert.ok(results[0]!.id, "capture assigns an id when the caller omits one");
+    expect(results.length).toBe(1);
+    expect(results[0]!.summary).toBe("review rejected: missing null guard");
+    expect(results[0]!.severity).toBe("high");
+    expect(results[0]!.id, "capture assigns an id when the caller omits one").toBeTruthy();
   } finally {
     await cleanup(repo);
   }
@@ -60,7 +59,7 @@ test("fileProvider.capture writes into the SAME store S1a's captureFailureLearni
     });
     const raw = await fs.readFile(learningsPath(repo), "utf8");
     const lines = raw.split("\n").filter((l) => l.trim().length > 0);
-    assert.equal(lines.length, 2, "both writers append to the same file");
+    expect(lines.length, "both writers append to the same file").toBe(2);
   } finally {
     await cleanup(repo);
   }
@@ -75,8 +74,8 @@ test("fileProvider.recall discards a torn (corrupt) trailing line instead of thr
     await fs.appendFile(learningsPath(repo), '{"kind":"failure","ts":"2026-0', "utf8");
 
     const results = await provider.recall({ k: 5 });
-    assert.equal(results.length, 1);
-    assert.equal(results[0]!.summary, "good row");
+    expect(results.length).toBe(1);
+    expect(results[0]!.summary).toBe("good row");
   } finally {
     await cleanup(repo);
   }
@@ -93,9 +92,9 @@ test("fileProvider.recall includes legacy S1a-shape rows (kind/ts/agent/severity
     });
     const provider = fileProvider(repo);
     const results = await provider.recall({ k: 5 });
-    assert.equal(results.length, 1);
-    assert.equal(results[0]!.summary, "legacy S1a row");
-    assert.equal(results[0]!.kind, "failure");
+    expect(results.length).toBe(1);
+    expect(results[0]!.summary).toBe("legacy S1a row");
+    expect(results[0]!.kind).toBe("failure");
   } finally {
     await cleanup(repo);
   }
@@ -119,9 +118,9 @@ test("fileProvider.recall includes pre-S1a legacy rows (id/timestamp/key/insight
     );
     const provider = fileProvider(repo);
     const results = await provider.recall({ k: 5 });
-    assert.equal(results.length, 1);
-    assert.equal(results[0]!.summary, "grades kept the unfilled placeholder bullet");
-    assert.deepEqual(results[0]!.tags, ["grade-template-rot"]);
+    expect(results.length).toBe(1);
+    expect(results[0]!.summary).toBe("grades kept the unfilled placeholder bullet");
+    expect(results[0]!.tags).toEqual(["grade-template-rot"]);
   } finally {
     await cleanup(repo);
   }
@@ -153,7 +152,7 @@ test("fileProvider.recall ranks by recency x severity (higher severity + more re
     });
 
     const results = await provider.recall({ k: 5 });
-    assert.equal(results[0]!.id, "fresh-critical", "fresh+critical should outrank old+low");
+    expect(results[0]!.id, "fresh+critical should outrank old+low").toBe("fresh-critical");
   } finally {
     await cleanup(repo);
   }
@@ -175,10 +174,10 @@ test("fileProvider.recall truncates results to a token budget (recall.maxTokens)
     // Each ~200-char summary costs ~50 estimated tokens; a 60-token budget
     // should allow through at most one entry.
     const results = await provider.recall({ k: 5, maxTokens: 60 });
-    assert.ok(
+    expect(
       results.length <= 1,
       `expected <=1 entry under a tight token budget, got ${results.length}`
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(repo);
   }
@@ -205,8 +204,8 @@ test("fileProvider.recall resolves supersede chains — only the latest entry in
 
     const results = await provider.recall({ k: 5 });
     const ids = results.map((r) => r.id);
-    assert.ok(ids.includes("v2"), "the superseding entry should be present");
-    assert.ok(!ids.includes("v1"), "the superseded entry should be excluded");
+    expect(ids.includes("v2"), "the superseding entry should be present").toBeTruthy();
+    expect(!ids.includes("v1"), "the superseded entry should be excluded").toBeTruthy();
   } finally {
     await cleanup(repo);
   }
@@ -247,10 +246,10 @@ test("fileProvider.recall reads entries buried beyond the legacy 64KB tail windo
     }
 
     const results = await provider.recall({ k: 1000, maxTokens: 1_000_000 });
-    assert.ok(
+    expect(
       results.some((r) => r.id === "buried-critical"),
       "recall() must not silently drop an entry buried beyond the legacy 64KB tail window"
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(repo);
   }
@@ -268,11 +267,11 @@ test("fileProvider.invalidate excludes an entry from future recall() calls", asy
       source: "t"
     });
     let results = await provider.recall({ k: 5 });
-    assert.ok(results.some((r) => r.id === "bad-entry"));
+    expect(results.some((r) => r.id === "bad-entry")).toBeTruthy();
 
     await provider.invalidate("bad-entry");
     results = await provider.recall({ k: 5 });
-    assert.ok(!results.some((r) => r.id === "bad-entry"));
+    expect(!results.some((r) => r.id === "bad-entry")).toBeTruthy();
   } finally {
     await cleanup(repo);
   }

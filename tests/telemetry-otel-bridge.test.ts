@@ -1,3 +1,4 @@
+import { test, expect } from "bun:test";
 /**
  * Tests for scripts/lib/telemetry/otel-bridge.ts
  * AC-5: PostToolUse fixture round-trip → OTLP span.
@@ -14,8 +15,6 @@
  * - forceFlush() on the provider delegate drains BatchSpanProcessor into the
  *   InMemorySpanExporter without triggering the shutdown-and-clear path.
  */
-import test from "node:test";
-import assert from "node:assert/strict";
 import { trace } from "@opentelemetry/api";
 import { InMemorySpanExporter } from "@opentelemetry/sdk-trace-base";
 import {
@@ -99,8 +98,11 @@ test("initBridge: disabled cfg returns null without CREW_OTEL_ENABLED", async ()
     const t0 = performance.now();
     const sdk = await initBridge(cfg);
     const elapsed = performance.now() - t0;
-    assert.equal(sdk, null, "disabled bridge must return null");
-    assert.ok(elapsed < 50, `initBridge disabled should be < 50ms, was ${elapsed.toFixed(1)}ms`);
+    expect(sdk, "disabled bridge must return null").toBe(null);
+    expect(
+      elapsed < 50,
+      `initBridge disabled should be < 50ms, was ${elapsed.toFixed(1)}ms`
+    ).toBeTruthy();
   } finally {
     if (envBefore !== undefined) process.env["CREW_OTEL_ENABLED"] = envBefore;
   }
@@ -118,10 +120,10 @@ test("initBridge disabled-path: 100 iterations ≤ 500ms total (AC-6)", async ()
       parsePostToolUse(raw);
     }
     const elapsed = performance.now() - t0;
-    assert.ok(
+    expect(
       elapsed <= 500,
       `100 disabled iterations must be ≤500ms, was ${elapsed.toFixed(1)}ms`
-    );
+    ).toBeTruthy();
   } finally {
     if (envBefore !== undefined) process.env["CREW_OTEL_ENABLED"] = envBefore;
   }
@@ -136,18 +138,18 @@ test("emitPostToolUseSpan: fixture round-trip produces tool_call span", async ()
   const cfg = makeEnabledConfig();
 
   const payload = parsePostToolUse(JSON.stringify(postToolUseFixture));
-  assert.ok(payload !== null, "fixture must parse successfully");
+  expect(payload !== null, "fixture must parse successfully").toBeTruthy();
 
-  emitPostToolUseSpan(sdk, payload, cfg);
+  emitPostToolUseSpan(sdk, payload!, cfg);
 
   const spans = await flushSpans(exporter);
-  assert.ok(spans.length >= 1, `expected at least 1 span, got ${spans.length}`);
+  expect(spans.length >= 1, `expected at least 1 span, got ${spans.length}`).toBeTruthy();
 
   const toolCallSpan = spans.find((s) => s.name === "tool_call");
-  assert.ok(toolCallSpan !== undefined, "expected span named 'tool_call'");
-  assert.equal(toolCallSpan.attributes["tool.name"], "Bash");
-  assert.equal(toolCallSpan.attributes["session.id"], "test-session-001");
-  assert.ok("cwd" in toolCallSpan.attributes, "span must have cwd attr");
+  expect(toolCallSpan !== undefined, "expected span named 'tool_call'").toBeTruthy();
+  expect(toolCallSpan!.attributes["tool.name"]).toBe("Bash");
+  expect(toolCallSpan!.attributes["session.id"]).toBe("test-session-001");
+  expect("cwd" in toolCallSpan!.attributes, "span must have cwd attr").toBeTruthy();
 });
 
 // ---------------------------------------------------------------------------
@@ -156,40 +158,26 @@ test("emitPostToolUseSpan: fixture round-trip produces tool_call span", async ()
 
 test("sampleSpan: sample_rate=0.0 always false", () => {
   const cfg = makeEnabledConfig({ sample_rate: 0.0 });
-  assert.equal(
-    sampleSpan(cfg, () => 0.5),
-    false
-  );
-  assert.equal(
-    sampleSpan(cfg, () => 0.0),
-    false
-  );
+  expect(sampleSpan(cfg, () => 0.5)).toBe(false);
+  expect(sampleSpan(cfg, () => 0.0)).toBe(false);
 });
 
 test("sampleSpan: sample_rate=1.0 always true", () => {
   const cfg = makeEnabledConfig({ sample_rate: 1.0 });
-  assert.equal(
-    sampleSpan(cfg, () => 0.999),
-    true
-  );
-  assert.equal(
-    sampleSpan(cfg, () => 0.0),
-    true
-  );
+  expect(sampleSpan(cfg, () => 0.999)).toBe(true);
+  expect(sampleSpan(cfg, () => 0.0)).toBe(true);
 });
 
 test("sampleSpan: sample_rate=0.6 boundary", () => {
   const cfg = makeEnabledConfig({ sample_rate: 0.6 });
-  assert.equal(
+  expect(
     sampleSpan(cfg, () => 0.3),
-    true,
     "0.3 < 0.6 → true"
-  );
-  assert.equal(
+  ).toBe(true);
+  expect(
     sampleSpan(cfg, () => 0.9),
-    false,
     "0.9 >= 0.6 → false"
-  );
+  ).toBe(false);
 });
 
 // ---------------------------------------------------------------------------
@@ -201,9 +189,9 @@ test("emitStopSpan: Stop span flushed via forceFlush within 1.5s", async () => {
   const cfg = makeEnabledConfig();
 
   const payload = parseStop(JSON.stringify(stopFixture));
-  assert.ok(payload !== null, "stop fixture must parse");
+  expect(payload !== null, "stop fixture must parse").toBeTruthy();
 
-  emitStopSpan(sdk, payload, cfg);
+  emitStopSpan(sdk, payload!, cfg);
 
   // Production path: otel-stop.ts awaits sdk.shutdown() which drains a live
   // OTLP exporter. In tests we use forceFlush() to drain without clearing the
@@ -216,10 +204,13 @@ test("emitStopSpan: Stop span flushed via forceFlush within 1.5s", async () => {
     )
   ]);
   const elapsed = performance.now() - t0;
-  assert.ok(elapsed < 1500, `flush must complete within 1.5s, took ${elapsed.toFixed(0)}ms`);
+  expect(
+    elapsed < 1500,
+    `flush must complete within 1.5s, took ${elapsed.toFixed(0)}ms`
+  ).toBeTruthy();
 
   const stopSpan = spans.find((s) => s.name === "session.stop");
-  assert.ok(stopSpan !== undefined, "session.stop span must be flushed");
-  assert.equal(stopSpan.attributes["session.id"], "test-session-001");
-  assert.equal(stopSpan.attributes["reason"], "user_requested");
+  expect(stopSpan !== undefined, "session.stop span must be flushed").toBeTruthy();
+  expect(stopSpan!.attributes["session.id"]).toBe("test-session-001");
+  expect(stopSpan!.attributes["reason"]).toBe("user_requested");
 });

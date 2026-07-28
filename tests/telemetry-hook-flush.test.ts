@@ -16,8 +16,7 @@
  *   - hooks/otel-subagent-stop.ts:   shipped without flush — dropped spans
  *   - hooks/otel-stop.ts:            already correct, used as reference shape
  */
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { spawn } from "node:child_process";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { writeFile, mkdtemp, rm } from "node:fs/promises";
@@ -176,9 +175,12 @@ test("otel-post-tool-use.ts flushes BatchSpanProcessor before exit", async () =>
     hookPath: join(REPO_ROOT, "hooks", "otel-post-tool-use.ts"),
     stdinPayload: payload
   });
-  assert.equal(exitCode, 0, "hook must exit 0");
-  assert.equal(capture.authHeader, "Basic test-auth-token", "auth header forwarded");
-  assert.ok(capture.body.length > 0, "OTLP body non-empty (span flushed before process exit)");
+  expect(exitCode, "hook must exit 0").toBe(0);
+  expect(capture.authHeader, "auth header forwarded").toBe("Basic test-auth-token");
+  expect(
+    capture.body.length > 0,
+    "OTLP body non-empty (span flushed before process exit)"
+  ).toBeTruthy();
 });
 
 test("otel-stop.ts flushes BatchSpanProcessor before exit", async () => {
@@ -191,8 +193,11 @@ test("otel-stop.ts flushes BatchSpanProcessor before exit", async () => {
     hookPath: join(REPO_ROOT, "hooks", "otel-stop.ts"),
     stdinPayload: payload
   });
-  assert.equal(exitCode, 0, "hook must exit 0");
-  assert.ok(capture.body.length > 0, "OTLP body non-empty (span flushed before process exit)");
+  expect(exitCode, "hook must exit 0").toBe(0);
+  expect(
+    capture.body.length > 0,
+    "OTLP body non-empty (span flushed before process exit)"
+  ).toBeTruthy();
 });
 
 test("otel-subagent-stop.ts flushes BatchSpanProcessor before exit", async () => {
@@ -205,6 +210,9 @@ test("otel-subagent-stop.ts flushes BatchSpanProcessor before exit", async () =>
     hookPath: join(REPO_ROOT, "hooks", "otel-subagent-stop.ts"),
     stdinPayload: payload
   });
-  assert.equal(exitCode, 0, "hook must exit 0");
-  assert.ok(capture.body.length > 0, "OTLP body non-empty (span flushed before process exit)");
+  expect(exitCode, "hook must exit 0").toBe(0);
+  expect(
+    capture.body.length > 0,
+    "OTLP body non-empty (span flushed before process exit)"
+  ).toBeTruthy();
 });

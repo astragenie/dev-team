@@ -4,8 +4,7 @@
 // validate-skills.ts. Skills never require an evals: field in this slice.
 // Uses the same temp-fixture pattern as tests/validate-skills.test.ts.
 
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -44,8 +43,8 @@ Stop when the task is complete.
 `;
   const root = await makeSkillsDir({ "foo-skill": content });
   const result = await validateSkills(root);
-  assert.equal(result.ok, true, `unexpected errors: ${result.errors.join("; ")}`);
-  assert.equal(result.skillCount, 1);
+  expect(result.ok, `unexpected errors: ${result.errors.join("; ")}`).toBe(true);
+  expect(result.skillCount).toBe(1);
 });
 
 // AC-ST-2: missing version → error
@@ -70,11 +69,11 @@ Stop here.
 `;
   const root = await makeSkillsDir({ "foo-skill": content });
   const result = await validateSkills(root);
-  assert.equal(result.ok, false, "missing version should error");
-  assert.ok(
+  expect(result.ok, "missing version should error").toBe(false);
+  expect(
     result.errors.some((e) => /missing required frontmatter "version"/.test(e)),
     `expected missing-version error, got: ${result.errors.join("; ")}`
-  );
+  ).toBeTruthy();
 });
 
 // AC-ST-3: skills never require evals — even if name matches a reserved word
@@ -101,8 +100,8 @@ Stop here.
   // skill dir name must match name field to pass directory-name check
   const root = await makeSkillsDir({ lead: content });
   const result = await validateSkills(root);
-  assert.ok(
+  expect(
     !result.errors.some((e) => /requires "evals"/.test(e)),
     `skills should never require evals, got: ${result.errors.join("; ")}`
-  );
+  ).toBeTruthy();
 });

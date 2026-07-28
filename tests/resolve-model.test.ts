@@ -3,8 +3,7 @@
 // Covers scripts/lib/models/resolve-model.ts, the dev-team-local mirror of
 // runner-plugin's model-router (resolveModel / resolveShapeTier /
 // resolveWaveDispatchModel in runner-plugin/src/scripts/lib/model-router.mts).
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import {
   resolveModelForPhase,
   resolveShapeTier,
@@ -26,54 +25,54 @@ const COMMITTED_ROUTING = {
 };
 
 test("resolveModelForPhase: build resolves to sonnet under the committed routing", () => {
-  assert.equal(resolveModelForPhase("build", COMMITTED_ROUTING), "sonnet");
+  expect(resolveModelForPhase("build", COMMITTED_ROUTING)).toBe("sonnet");
 });
 
 test("resolveModelForPhase: architect resolves to opus under the committed routing", () => {
-  assert.equal(resolveModelForPhase("architect", COMMITTED_ROUTING), "opus");
+  expect(resolveModelForPhase("architect", COMMITTED_ROUTING)).toBe("opus");
 });
 
 test("resolveModelForPhase: falls back to opus when no modelRouting is configured", () => {
-  assert.equal(resolveModelForPhase("build", null), "opus");
-  assert.equal(resolveModelForPhase("build", {}), "opus");
-  assert.equal(resolveModelForPhase("build", { loop: {} }), "opus");
+  expect(resolveModelForPhase("build", null)).toBe("opus");
+  expect(resolveModelForPhase("build", {})).toBe("opus");
+  expect(resolveModelForPhase("build", { loop: {} })).toBe("opus");
 });
 
 test("resolveModelForPhase: falls back to routing.default when the phase key is absent", () => {
   const config = { loop: { modelRouting: { default: "sonnet" } } };
-  assert.equal(resolveModelForPhase("validate", config), "sonnet");
+  expect(resolveModelForPhase("validate", config)).toBe("sonnet");
 });
 
 test("TRIVIAL_SHAPE_TIER: routes every trivial shape to sonnet", () => {
-  assert.equal(TRIVIAL_SHAPE_TIER["doc-update"], "sonnet");
-  assert.equal(TRIVIAL_SHAPE_TIER["config-tweak"], "sonnet");
-  assert.equal(TRIVIAL_SHAPE_TIER["test-only"], "sonnet");
-  assert.equal(TRIVIAL_SHAPE_TIER["single-module-edit"], "sonnet");
+  expect(TRIVIAL_SHAPE_TIER["doc-update"]).toBe("sonnet");
+  expect(TRIVIAL_SHAPE_TIER["config-tweak"]).toBe("sonnet");
+  expect(TRIVIAL_SHAPE_TIER["test-only"]).toBe("sonnet");
+  expect(TRIVIAL_SHAPE_TIER["single-module-edit"]).toBe("sonnet");
 });
 
 test("resolveShapeTier: returns sonnet for a trivial shape regardless of config", () => {
-  assert.equal(resolveShapeTier("doc-update"), "sonnet");
+  expect(resolveShapeTier("doc-update")).toBe("sonnet");
 });
 
 test("resolveShapeTier: returns null for a non-trivial or unknown shape", () => {
-  assert.equal(resolveShapeTier("none"), null);
-  assert.equal(resolveShapeTier("unknown-shape"), null);
-  assert.equal(resolveShapeTier(null), null);
-  assert.equal(resolveShapeTier(undefined), null);
+  expect(resolveShapeTier("none")).toBe(null);
+  expect(resolveShapeTier("unknown-shape")).toBe(null);
+  expect(resolveShapeTier(null)).toBe(null);
+  expect(resolveShapeTier(undefined)).toBe(null);
 });
 
 test("resolveDispatchModel: trivial shape wins even when phase routing points elsewhere", () => {
   const config = { loop: { modelRouting: { build: "opus", default: "opus" } } };
-  assert.equal(resolveDispatchModel("build", "doc-update", config), "sonnet");
+  expect(resolveDispatchModel("build", "doc-update", config)).toBe("sonnet");
 });
 
 test("resolveDispatchModel: falls through to phase-based routing for a non-trivial shape", () => {
-  assert.equal(resolveDispatchModel("build", "none", COMMITTED_ROUTING), "sonnet");
-  assert.equal(resolveDispatchModel("architect", "none", COMMITTED_ROUTING), "opus");
+  expect(resolveDispatchModel("build", "none", COMMITTED_ROUTING)).toBe("sonnet");
+  expect(resolveDispatchModel("architect", "none", COMMITTED_ROUTING)).toBe("opus");
 });
 
 test("resolveDispatchModel: falls back to opus with no shape and no config", () => {
-  assert.equal(resolveDispatchModel("build", null, null), "opus");
+  expect(resolveDispatchModel("build", null, null)).toBe("opus");
 });
 
 // FEAT-194 S1 — crew.json features["model-routing"].enabled toggle. The
@@ -81,27 +80,27 @@ test("resolveDispatchModel: falls back to opus with no shape and no config", () 
 // isEnabled() and passes it in as the 4th arg; these tests exercise the
 // pure resolution behavior directly.
 test("resolveDispatchModel: toggle omitted (default) behaves exactly as before — routing on", () => {
-  assert.equal(resolveDispatchModel("build", null, COMMITTED_ROUTING), "sonnet");
-  assert.equal(resolveDispatchModel("architect", null, COMMITTED_ROUTING), "opus");
+  expect(resolveDispatchModel("build", null, COMMITTED_ROUTING)).toBe("sonnet");
+  expect(resolveDispatchModel("architect", null, COMMITTED_ROUTING)).toBe("opus");
 });
 
 test("resolveDispatchModel: toggle explicitly true — routing on, same as default", () => {
-  assert.equal(resolveDispatchModel("build", null, COMMITTED_ROUTING, true), "sonnet");
+  expect(resolveDispatchModel("build", null, COMMITTED_ROUTING, true)).toBe("sonnet");
 });
 
 test("resolveDispatchModel: toggle false — returns null (omit model:, agent frontmatter governs)", () => {
-  assert.equal(resolveDispatchModel("build", null, COMMITTED_ROUTING, false), null);
-  assert.equal(resolveDispatchModel("architect", null, COMMITTED_ROUTING, false), null);
+  expect(resolveDispatchModel("build", null, COMMITTED_ROUTING, false)).toBe(null);
+  expect(resolveDispatchModel("architect", null, COMMITTED_ROUTING, false)).toBe(null);
 });
 
 test("resolveDispatchModel: toggle false — bypasses the trivial-shape override too", () => {
-  assert.equal(resolveDispatchModel("build", "doc-update", COMMITTED_ROUTING, false), null);
+  expect(resolveDispatchModel("build", "doc-update", COMMITTED_ROUTING, false)).toBe(null);
 });
 
 test("resolveDispatchModel: loop.modelRouting.enabled false — returns null even with toggle on", () => {
   const disabledConfig = {
     loop: { modelRouting: { enabled: false, build: "sonnet", default: "sonnet" } }
   };
-  assert.equal(resolveDispatchModel("build", null, disabledConfig), null);
-  assert.equal(resolveDispatchModel("build", "doc-update", disabledConfig), null);
+  expect(resolveDispatchModel("build", null, disabledConfig)).toBe(null);
+  expect(resolveDispatchModel("build", "doc-update", disabledConfig)).toBe(null);
 });

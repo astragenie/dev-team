@@ -4,8 +4,7 @@
 // AC-2: cost-report artifact renders the role breakdown section
 // AC-3: briefing rollup aggregates role dispatches across recent slices
 
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
@@ -138,19 +137,20 @@ test("cost-report-slice: renders subagent_dispatches_by_role section when presen
     });
 
     const content = await readCostReport(tmpDir);
-    assert.ok(content, "Expected cost report to be written");
-    assert.ok(
+    expect(content, "Expected cost report to be written").toBeTruthy();
+    if (!content) throw new Error("Expected cost report to be written");
+    expect(
       content.includes("subagent_dispatches_by_role"),
       `Expected 'subagent_dispatches_by_role' section in body.\nContent:\n${content.slice(0, 800)}`
-    );
-    assert.ok(
+    ).toBeTruthy();
+    expect(
       content.includes("crew:fullstack-dev: 3"),
       `Expected 'crew:fullstack-dev: 3' in role breakdown.\nContent:\n${content.slice(0, 1000)}`
-    );
-    assert.ok(
+    ).toBeTruthy();
+    expect(
       content.includes("crew:reviewer: 1"),
       `Expected 'crew:reviewer: 1' in role breakdown.\nContent:\n${content.slice(0, 1000)}`
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(tmpDir);
   }
@@ -167,11 +167,12 @@ test("cost-report-slice: omits role breakdown section when subagentDispatchesByR
     });
 
     const content = await readCostReport(tmpDir);
-    assert.ok(content, "Expected cost report to be written");
-    assert.ok(
+    expect(content, "Expected cost report to be written").toBeTruthy();
+    if (!content) throw new Error("Expected cost report to be written");
+    expect(
       !content.includes("subagent_dispatches_by_role"),
       `Expected no role breakdown section when field absent.\nContent:\n${content.slice(0, 800)}`
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(tmpDir);
   }
@@ -188,15 +189,16 @@ test("cost-report-slice: renders entries sorted by count descending", async () =
     });
 
     const content = await readCostReport(tmpDir);
-    assert.ok(content, "Expected cost report to be written");
+    expect(content, "Expected cost report to be written").toBeTruthy();
+    if (!content) throw new Error("Expected cost report to be written");
 
     const builderIdx = content.indexOf("crew:fullstack-dev: 3");
     const reviewerIdx = content.indexOf("crew:reviewer: 1");
-    assert.ok(builderIdx > -1 && reviewerIdx > -1, "Expected both role entries");
-    assert.ok(
+    expect(builderIdx > -1 && reviewerIdx > -1, "Expected both role entries").toBeTruthy();
+    expect(
       builderIdx < reviewerIdx,
       `Expected crew:fullstack-dev (3) to appear before crew:reviewer (1) (sorted by count desc)`
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(tmpDir);
   }
@@ -323,22 +325,19 @@ test("collectRecentCosts: aggregates roleDispatches across recent slices", async
     const result = await collectRecentCosts(tmpDir, 5);
     const roleDispatches = result.roleDispatches;
 
-    assert.ok(roleDispatches, `Expected roleDispatches in rollup result`);
-    assert.equal(
+    expect(roleDispatches, `Expected roleDispatches in rollup result`).toBeTruthy();
+    expect(
       roleDispatches["crew:fullstack-dev"],
-      5,
       `Expected crew:fullstack-dev: 5 (3 + 2), got ${roleDispatches["crew:fullstack-dev"]}`
-    );
-    assert.equal(
+    ).toBe(5);
+    expect(
       roleDispatches["crew:reviewer"],
-      1,
       `Expected crew:reviewer: 1, got ${roleDispatches["crew:reviewer"]}`
-    );
-    assert.equal(
+    ).toBe(1);
+    expect(
       roleDispatches["crew:verifier"],
-      2,
       `Expected crew:verifier: 2, got ${roleDispatches["crew:verifier"]}`
-    );
+    ).toBe(2);
   } finally {
     await cleanup(tmpDir);
   }
@@ -361,8 +360,8 @@ test("collectRecentCosts: roleDispatches is empty object when no reports have ro
     const result = await collectRecentCosts(tmpDir, 5);
     const roleDispatches = result.roleDispatches;
 
-    assert.ok(roleDispatches !== undefined, `Expected roleDispatches field to exist`);
-    assert.deepEqual(roleDispatches, {}, `Expected empty object when no role data present`);
+    expect(roleDispatches !== undefined, `Expected roleDispatches field to exist`).toBeTruthy();
+    expect(roleDispatches, `Expected empty object when no role data present`).toEqual({});
   } finally {
     await cleanup(tmpDir);
   }

@@ -1,3 +1,4 @@
+import { test, expect } from "bun:test";
 // tests/dispatch-size-gate.test.ts
 // A3 — the dispatch size gate (8 agent deaths, all from oversized dispatches).
 // Unit tests on hooks/lib/dispatch-size-estimate.ts's pure functions and the
@@ -5,8 +6,6 @@
 // mirrors tests/check-builder-terminal-state.test.ts), plus a handful of
 // shim-level subprocess tests (mirroring tests/hook-feature-gating.test.ts's
 // runHook helper) for the env kill-switch and non-Agent/malformed pass-through.
-import { test } from "node:test";
-import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -97,42 +96,42 @@ function deathModePrompt(): string {
 // ── pure estimator ──────────────────────────────────────────────────────
 
 test("baseTokensForTier: light tier (investigator/dev-lite/reviewer-lite) → 15000", () => {
-  assert.equal(baseTokensForTier("crew:investigator"), 15_000);
-  assert.equal(baseTokensForTier("dev-lite"), 15_000);
-  assert.equal(baseTokensForTier("crew:reviewer-lite"), 15_000);
+  expect(baseTokensForTier("crew:investigator")).toBe(15_000);
+  expect(baseTokensForTier("dev-lite")).toBe(15_000);
+  expect(baseTokensForTier("crew:reviewer-lite")).toBe(15_000);
 });
 
 test("baseTokensForTier: mid tier (researcher/reviewer/architect) → 30000", () => {
-  assert.equal(baseTokensForTier("crew:researcher"), 30_000);
-  assert.equal(baseTokensForTier("crew:reviewer"), 30_000);
-  assert.equal(baseTokensForTier("architect"), 30_000);
+  expect(baseTokensForTier("crew:researcher")).toBe(30_000);
+  expect(baseTokensForTier("crew:reviewer")).toBe(30_000);
+  expect(baseTokensForTier("architect")).toBe(30_000);
 });
 
 test("baseTokensForTier: builder tier → 35000", () => {
-  assert.equal(baseTokensForTier("crew:fullstack-dev"), 35_000);
-  assert.equal(baseTokensForTier("crew:aiplugin-dev"), 35_000);
+  expect(baseTokensForTier("crew:fullstack-dev")).toBe(35_000);
+  expect(baseTokensForTier("crew:aiplugin-dev")).toBe(35_000);
 });
 
 test("baseTokensForTier: unknown subagent_type → 25000 default", () => {
-  assert.equal(baseTokensForTier("crew:some-new-agent"), 25_000);
+  expect(baseTokensForTier("crew:some-new-agent")).toBe(25_000);
 });
 
 test("fileMentionCount: counts file-path-like tokens and bare dir mentions (additively, no de-dup)", () => {
-  assert.equal(fileMentionCount("no files here"), 0);
+  expect(fileMentionCount("no files here")).toBe(0);
   // Each "<dir>/<file>.<ext>" mention fires BOTH regexes (a file-path match
   // and a bare-dir match) by design — the formula sums them rather than
   // de-duplicating overlaps, matching the architect's spec literally
   // (2026-07-12-reviewchannel-and-dispatch-gate.md Blocker 2): "hooks/hooks.json"
   // = 1 file match + 1 dir match, same for "agents/reviewer.md" → 4 total.
-  assert.equal(fileMentionCount("edit hooks/hooks.json and agents/reviewer.md"), 4);
-  assert.equal(fileMentionCount("scan commands/ and skills/ directories"), 2);
+  expect(fileMentionCount("edit hooks/hooks.json and agents/reviewer.md")).toBe(4);
+  expect(fileMentionCount("scan commands/ and skills/ directories")).toBe(2);
 });
 
 test("hasWideScopeMarker: matches the incident's over-broad review shape", () => {
-  assert.equal(hasWideScopeMarker("review all files in the repo"), true);
-  assert.equal(hasWideScopeMarker("review every file in the codebase"), true);
-  assert.equal(hasWideScopeMarker("read the entire whole repo directories"), true);
-  assert.equal(hasWideScopeMarker("fix the bug in hooks/foo.ts"), false);
+  expect(hasWideScopeMarker("review all files in the repo")).toBe(true);
+  expect(hasWideScopeMarker("review every file in the codebase")).toBe(true);
+  expect(hasWideScopeMarker("read the entire whole repo directories")).toBe(true);
+  expect(hasWideScopeMarker("fix the bug in hooks/foo.ts")).toBe(false);
 });
 
 test("estimateDispatchSize: under-cap, light tier, no mentions → well under threshold", () => {
@@ -140,19 +139,22 @@ test("estimateDispatchSize: under-cap, light tier, no mentions → well under th
     subagentType: "crew:investigator",
     prompt: "Find where parseAgentDispatchSizeInput is defined."
   });
-  assert.equal(est.estimatedTokens, 15_000);
-  assert.equal(est.overThreshold, false);
+  expect(est.estimatedTokens).toBe(15_000);
+  expect(est.overThreshold).toBe(false);
 });
 
 test("estimateDispatchSize: death-mode prompt (wide-scope + 40 file mentions) → over threshold", () => {
   const est = estimateDispatchSize({ subagentType: "crew:reviewer", prompt: deathModePrompt() });
-  assert.equal(est.wideScope, true);
-  assert.ok(est.fileMentions >= 27, `expected >=27 file mentions, got ${est.fileMentions}`);
-  assert.ok(
+  expect(est.wideScope).toBe(true);
+  expect(
+    est.fileMentions >= 27,
+    `expected >=27 file mentions, got ${est.fileMentions}`
+  ).toBeTruthy();
+  expect(
     est.estimatedTokens > DISPATCH_SIZE_THRESHOLD,
     `expected >${DISPATCH_SIZE_THRESHOLD}, got ${est.estimatedTokens}`
-  );
-  assert.equal(est.overThreshold, true);
+  ).toBeTruthy();
+  expect(est.overThreshold).toBe(true);
 });
 
 // ── parse ────────────────────────────────────────────────────────────────
@@ -161,10 +163,10 @@ test("parseAgentDispatchSizeInput: valid Agent payload → parsed", () => {
   const result = parseAgentDispatchSizeInput(
     agentPayload({ cwd: "/repo", subagentType: "crew:fullstack-dev", prompt: "do the thing" })
   );
-  assert.ok(result !== null);
-  assert.equal(result.subagentType, "crew:fullstack-dev");
-  assert.equal(result.prompt, "do the thing");
-  assert.equal(result.cwd, "/repo");
+  expect(result !== null).toBeTruthy();
+  expect(result!.subagentType).toBe("crew:fullstack-dev");
+  expect(result!.prompt).toBe("do the thing");
+  expect(result!.cwd).toBe("/repo");
 });
 
 test("parseAgentDispatchSizeInput: non-Agent tool_name → null (untouched)", () => {
@@ -174,62 +176,62 @@ test("parseAgentDispatchSizeInput: non-Agent tool_name → null (untouched)", ()
     tool_input: { command: "ls" },
     cwd: "/repo"
   });
-  assert.equal(parseAgentDispatchSizeInput(raw), null);
+  expect(parseAgentDispatchSizeInput(raw)).toBe(null);
 });
 
 test("parseAgentDispatchSizeInput: malformed JSON → null, no throw", () => {
-  assert.equal(parseAgentDispatchSizeInput("not json at all"), null);
-  assert.equal(parseAgentDispatchSizeInput("{broken:"), null);
-  assert.equal(parseAgentDispatchSizeInput(""), null);
+  expect(parseAgentDispatchSizeInput("not json at all")).toBe(null);
+  expect(parseAgentDispatchSizeInput("{broken:")).toBe(null);
+  expect(parseAgentDispatchSizeInput("")).toBe(null);
 });
 
 test("parseAgentDispatchSizeInput: missing subagent_type → null", () => {
   const raw = JSON.stringify({ tool_name: "Agent", tool_input: { prompt: "x" }, cwd: "/repo" });
-  assert.equal(parseAgentDispatchSizeInput(raw), null);
+  expect(parseAgentDispatchSizeInput(raw)).toBe(null);
 });
 
 // ── decide + build output ───────────────────────────────────────────────
 
 test("decideDispatchSizeAction: under threshold → none regardless of mode", () => {
   const est = estimateDispatchSize({ subagentType: "crew:investigator", prompt: "small task" });
-  assert.equal(decideDispatchSizeAction(est, false).action, "none");
-  assert.equal(decideDispatchSizeAction(est, true).action, "none");
+  expect(decideDispatchSizeAction(est, false).action).toBe("none");
+  expect(decideDispatchSizeAction(est, true).action).toBe("none");
 });
 
 test("decideDispatchSizeAction: over threshold + warn mode (flag off) → warn", () => {
   const est = estimateDispatchSize({ subagentType: "crew:reviewer", prompt: deathModePrompt() });
-  assert.equal(decideDispatchSizeAction(est, false).action, "warn");
+  expect(decideDispatchSizeAction(est, false).action).toBe("warn");
 });
 
 test("decideDispatchSizeAction: over threshold + block mode (flag on) → block", () => {
   const est = estimateDispatchSize({ subagentType: "crew:reviewer", prompt: deathModePrompt() });
-  assert.equal(decideDispatchSizeAction(est, true).action, "block");
+  expect(decideDispatchSizeAction(est, true).action).toBe("block");
 });
 
 test("buildDispatchSizeOutput: none → null", () => {
   const est = estimateDispatchSize({ subagentType: "crew:investigator", prompt: "small" });
-  assert.equal(buildDispatchSizeOutput(decideDispatchSizeAction(est, false)), null);
+  expect(buildDispatchSizeOutput(decideDispatchSizeAction(est, false))).toBe(null);
 });
 
 test("buildDispatchSizeOutput: warn → allow + systemMessage nudging a split", () => {
   const est = estimateDispatchSize({ subagentType: "crew:reviewer", prompt: deathModePrompt() });
   const out = buildDispatchSizeOutput(decideDispatchSizeAction(est, false));
-  assert.ok(out !== null);
+  expect(out !== null).toBeTruthy();
   const parsed = JSON.parse(out as string);
-  assert.equal(parsed.hookSpecificOutput.hookEventName, "PreToolUse");
-  assert.equal(parsed.hookSpecificOutput.permissionDecision, "allow");
-  assert.match(parsed.systemMessage, /split/i);
-  assert.match(parsed.systemMessage, /dispatch-size-gate/);
+  expect(parsed.hookSpecificOutput.hookEventName).toBe("PreToolUse");
+  expect(parsed.hookSpecificOutput.permissionDecision).toBe("allow");
+  expect(parsed.systemMessage).toMatch(/split/i);
+  expect(parsed.systemMessage).toMatch(/dispatch-size-gate/);
 });
 
 test("buildDispatchSizeOutput: block → {decision:'block'} with an actionable split message", () => {
   const est = estimateDispatchSize({ subagentType: "crew:reviewer", prompt: deathModePrompt() });
   const out = buildDispatchSizeOutput(decideDispatchSizeAction(est, true));
-  assert.ok(out !== null);
+  expect(out !== null).toBeTruthy();
   const parsed = JSON.parse(out as string);
-  assert.equal(parsed.decision, "block");
-  assert.match(parsed.reason, /split/i);
-  assert.match(parsed.reason, /8 agents have died/);
+  expect(parsed.decision).toBe("block");
+  expect(parsed.reason).toMatch(/split/i);
+  expect(parsed.reason).toMatch(/8 agents have died/);
 });
 
 // ── runDispatchSizeGateHook (full orchestration, in-process) ──────────────
@@ -242,7 +244,7 @@ test("runDispatchSizeGateHook: under-cap dispatch → pass (null)", async () => 
       subagentType: "crew:investigator",
       prompt: "Find where X is defined."
     });
-    assert.equal(await runDispatchSizeGateHook(raw), null);
+    expect(await runDispatchSizeGateHook(raw)).toBe(null);
   } finally {
     await cleanup(repo);
   }
@@ -257,10 +259,10 @@ test("runDispatchSizeGateHook: over-cap + no crew.json (default warn) → warn o
       prompt: deathModePrompt()
     });
     const out = await runDispatchSizeGateHook(raw);
-    assert.ok(out !== null);
+    expect(out !== null).toBeTruthy();
     const parsed = JSON.parse(out as string);
-    assert.equal(parsed.hookSpecificOutput.permissionDecision, "allow");
-    assert.ok(parsed.systemMessage);
+    expect(parsed.hookSpecificOutput.permissionDecision).toBe("allow");
+    expect(parsed.systemMessage).toBeTruthy();
   } finally {
     await cleanup(repo);
   }
@@ -276,9 +278,9 @@ test("runDispatchSizeGateHook: over-cap + dispatch-size-gate enabled → block o
       prompt: deathModePrompt()
     });
     const out = await runDispatchSizeGateHook(raw);
-    assert.ok(out !== null);
+    expect(out !== null).toBeTruthy();
     const parsed = JSON.parse(out as string);
-    assert.equal(parsed.decision, "block");
+    expect(parsed.decision).toBe("block");
   } finally {
     await cleanup(repo);
   }
@@ -294,9 +296,9 @@ test("runDispatchSizeGateHook: dispatch-size-gate explicitly disabled → still 
       prompt: deathModePrompt()
     });
     const out = await runDispatchSizeGateHook(raw);
-    assert.ok(out !== null);
+    expect(out !== null).toBeTruthy();
     const parsed = JSON.parse(out as string);
-    assert.equal(parsed.hookSpecificOutput.permissionDecision, "allow");
+    expect(parsed.hookSpecificOutput.permissionDecision).toBe("allow");
   } finally {
     await cleanup(repo);
   }
@@ -311,15 +313,15 @@ test("runDispatchSizeGateHook: non-Agent tool → untouched (null)", async () =>
       tool_input: { command: "ls" },
       cwd: repo
     });
-    assert.equal(await runDispatchSizeGateHook(raw), null);
+    expect(await runDispatchSizeGateHook(raw)).toBe(null);
   } finally {
     await cleanup(repo);
   }
 });
 
 test("runDispatchSizeGateHook: malformed payload → pass (null), no throw", async () => {
-  assert.equal(await runDispatchSizeGateHook("not json at all"), null);
-  assert.equal(await runDispatchSizeGateHook("{broken:"), null);
+  expect(await runDispatchSizeGateHook("not json at all")).toBe(null);
+  expect(await runDispatchSizeGateHook("{broken:")).toBe(null);
 });
 
 test("runDispatchSizeGateHook: every valid dispatch is logged to events.jsonl for calibration", async () => {
@@ -333,10 +335,10 @@ test("runDispatchSizeGateHook: every valid dispatch is logged to events.jsonl fo
     await runDispatchSizeGateHook(raw);
     const events = await readEvents(repo);
     const row = events.find((e) => e.event === "dispatch-size-gate");
-    assert.ok(row, "expected a dispatch-size-gate calibration row");
-    assert.equal(row?.action, "none");
-    assert.equal(row?.subagentType, "crew:investigator");
-    assert.equal(typeof row?.estimatedTokens, "number");
+    expect(row, "expected a dispatch-size-gate calibration row").toBeTruthy();
+    expect(row?.action).toBe("none");
+    expect(row?.subagentType).toBe("crew:investigator");
+    expect(typeof row?.estimatedTokens).toBe("number");
   } finally {
     await cleanup(repo);
   }
@@ -353,8 +355,8 @@ test("shim: CREW_DISPATCH_SIZE_GATE=0 → pass unconditionally, even over-cap", 
       prompt: deathModePrompt()
     });
     const result = await runHook(raw, { CREW_DISPATCH_SIZE_GATE: "0" });
-    assert.equal(result.exitCode, 0);
-    assert.equal(result.stdout, "");
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("");
   } finally {
     await cleanup(repo);
   }
@@ -362,8 +364,8 @@ test("shim: CREW_DISPATCH_SIZE_GATE=0 → pass unconditionally, even over-cap", 
 
 test("shim: malformed stdin → exit 0, no crash, no stdout", async () => {
   const result = await runHook("not json at all");
-  assert.equal(result.exitCode, 0);
-  assert.equal(result.stdout, "");
+  expect(result.exitCode).toBe(0);
+  expect(result.stdout).toBe("");
 });
 
 test("shim: non-Agent tool event → untouched, exit 0, no stdout", async () => {
@@ -376,8 +378,8 @@ test("shim: non-Agent tool event → untouched, exit 0, no stdout", async () => 
       cwd: repo
     });
     const result = await runHook(raw);
-    assert.equal(result.exitCode, 0);
-    assert.equal(result.stdout, "");
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("");
   } finally {
     await cleanup(repo);
   }
@@ -392,10 +394,10 @@ test("shim: over-cap dispatch via subprocess → warn JSON on stdout, exit 0", a
       prompt: deathModePrompt()
     });
     const result = await runHook(raw);
-    assert.equal(result.exitCode, 0);
-    assert.notEqual(result.stdout, "");
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).not.toBe("");
     const parsed = JSON.parse(result.stdout);
-    assert.equal(parsed.hookSpecificOutput.permissionDecision, "allow");
+    expect(parsed.hookSpecificOutput.permissionDecision).toBe("allow");
   } finally {
     await cleanup(repo);
   }

@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import {
   RepoPath,
   SliceId,
@@ -12,8 +11,8 @@ import {
 test("RepoPath constructor brands a string", () => {
   const p = RepoPath("C:\\work\\mega\\hero-crew");
   // structural type is still string at runtime
-  assert.equal(typeof p, "string");
-  assert.equal(p as unknown as string, "C:\\work\\mega\\hero-crew");
+  expect(typeof p).toBe("string");
+  expect(p as unknown as string).toBe("C:\\work\\mega\\hero-crew");
 });
 
 test("SliceId, FeatId, ArtifactPath, CostReportPath, BadgeName all brand strings", () => {
@@ -22,9 +21,9 @@ test("SliceId, FeatId, ArtifactPath, CostReportPath, BadgeName all brand strings
   const a = ArtifactPath(".claude/artifacts/crew/runs/foo.md");
   const c = CostReportPath(".claude/artifacts/crew/cost/bar.md");
   const b = BadgeName("review_required");
-  assert.equal(s as unknown as string, "SLICE-42");
-  assert.equal(f as unknown as string, "FEAT-100");
-  assert.equal(a as unknown as string, ".claude/artifacts/crew/runs/foo.md");
-  assert.equal(c as unknown as string, ".claude/artifacts/crew/cost/bar.md");
-  assert.equal(b as unknown as string, "review_required");
+  expect(s as unknown as string).toBe("SLICE-42");
+  expect(f as unknown as string).toBe("FEAT-100");
+  expect(a as unknown as string).toBe(".claude/artifacts/crew/runs/foo.md");
+  expect(c as unknown as string).toBe(".claude/artifacts/crew/cost/bar.md");
+  expect(b as unknown as string).toBe("review_required");
 });

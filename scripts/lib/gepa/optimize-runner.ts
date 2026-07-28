@@ -85,6 +85,16 @@ export interface OptimizationResult {
   no_op_promotion?: boolean;
   /** All trial results, with pareto_rank assigned. */
   trials: (Trial & { pareto_rank: number | null })[];
+  /**
+   * Which candidate generation mode this run used — `"live"` when
+   * `GEPA_LIVE_GENERATOR=1` dispatched a real aiplugin-dev rewrite,
+   * `"synthetic"` when it fell back to the default deterministic string
+   * mutation (no LLM call, no reflective rewrite). W5 honesty pass
+   * (astragenie/runner-plugin#525 §4.3) — makes the mode a durable, visible
+   * fact in run history instead of an env-var side effect nobody can see
+   * after the fact.
+   */
+  generator_mode: "synthetic" | "live";
   /** ISO timestamp of run start. */
   started_at: string;
   /** ISO timestamp of run end. */
@@ -205,6 +215,32 @@ export function noopScorer(): Scorer {
       };
     }
   };
+}
+
+// ── Generator-mode honesty (W5, astragenie/runner-plugin#525 §4.3) ─────────
+
+/**
+ * Read the SAME env var candidate-generator-aiplugin.ts gates its live
+ * dispatch path on, so the reported mode always matches what the default
+ * generator actually did. Read at call-time (not module load) so tests can
+ * toggle the flag freely.
+ */
+function currentGeneratorMode(): "synthetic" | "live" {
+  return process.env["GEPA_LIVE_GENERATOR"] === "1" ? "live" : "synthetic";
+}
+
+/**
+ * Print a loud, impossible-to-miss warning at run start when this cycle is
+ * about to run in synthetic mode, so a synthetic run is never mistaken for a
+ * real reflective-rewrite cycle from console output alone.
+ */
+function warnIfSynthetic(mode: "synthetic" | "live"): void {
+  if (mode !== "synthetic") return;
+  console.warn(
+    "[gepa-optimize] SYNTHETIC MODE: this run will NOT reflectively rewrite prompts " +
+      "(deterministic string mutation only, no LLM call). Set GEPA_LIVE_GENERATOR=1 " +
+      "for a real aiplugin-dev-dispatched rewrite."
+  );
 }
 
 // ── Core optimization run ───────────────────────────────────────────────────
@@ -382,6 +418,9 @@ export async function runOptimize(opts: RunOptimizeOpts): Promise<OptimizationRe
   if (lock === null) return null; // Another process holds the lock.
 
   try {
+    const generatorMode = currentGeneratorMode();
+    warnIfSynthetic(generatorMode);
+
     const meter = opts.meter ?? dailyCapMeter(budgetUsd, defaultBudgetPath(repoPath));
     const cases = opts.cases ?? [];
 
@@ -411,6 +450,7 @@ export async function runOptimize(opts: RunOptimizeOpts): Promise<OptimizationRe
       no_winner: noWinner,
       winner: partial ? null : winner,
       trials: trialResults,
+      generator_mode: generatorMode,
       started_at: startedAt,
       finished_at: new Date().toISOString()
     };

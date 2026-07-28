@@ -1,7 +1,6 @@
 // tests/dispatch-timing-reader.test.ts — FEAT-151 TDD (red phase).
 // Tests for aggregateDispatchTiming, aggregateBashGates, renderDispatchBreakdownSection.
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
@@ -51,10 +50,10 @@ test("aggregates top-3 slowest + top-3 token-heaviest per runId", async () => {
     ];
     await fs.writeFile(log, rows.map((r) => JSON.stringify(r)).join("\n"), "utf-8");
     const agg = await aggregateDispatchTiming(log, "r1");
-    assert.equal(agg.totalWallMs, 13000);
-    assert.equal(agg.rowCount, 2);
-    assert.equal(agg.topSlow[0]?.agent, "crew:reviewer");
-    assert.equal(agg.topTokens[0]?.agent, "crew:fullstack-dev");
+    expect(agg.totalWallMs).toBe(13000);
+    expect(agg.rowCount).toBe(2);
+    expect(agg.topSlow[0]?.agent).toBe("crew:reviewer");
+    expect(agg.topTokens[0]?.agent).toBe("crew:fullstack-dev");
   } finally {
     await fs.rm(tmp, { recursive: true, force: true });
   }
@@ -62,10 +61,10 @@ test("aggregates top-3 slowest + top-3 token-heaviest per runId", async () => {
 
 test("returns empty aggregate when log missing", async () => {
   const agg = await aggregateDispatchTiming("/nonexistent/path.jsonl", "r1");
-  assert.equal(agg.rowCount, 0);
-  assert.equal(agg.totalWallMs, 0);
-  assert.deepEqual(agg.topSlow, []);
-  assert.deepEqual(agg.topTokens, []);
+  expect(agg.rowCount).toBe(0);
+  expect(agg.totalWallMs).toBe(0);
+  expect(agg.topSlow).toEqual([]);
+  expect(agg.topTokens).toEqual([]);
 });
 
 test("returns empty aggregate when runId not present", async () => {
@@ -87,7 +86,7 @@ test("returns empty aggregate when runId not present", async () => {
       "utf-8"
     );
     const agg = await aggregateDispatchTiming(log, "missing");
-    assert.equal(agg.rowCount, 0);
+    expect(agg.rowCount).toBe(0);
   } finally {
     await fs.rm(tmp, { recursive: true, force: true });
   }
@@ -132,10 +131,10 @@ test("topTokens sorts by tokenIn + tokenOut descending", async () => {
     await fs.writeFile(log, rows.map((r) => JSON.stringify(r)).join("\n"), "utf-8");
     const agg = await aggregateDispatchTiming(log, "r1");
     // b: 700 total, c: 600 total, a: 150 total
-    assert.equal(agg.topTokens[0]?.agent, "b");
-    assert.equal(agg.topTokens[1]?.agent, "c");
-    assert.equal(agg.topTokens[2]?.agent, "a");
-    assert.equal(agg.topTokens[0]?.totalTokens, 700);
+    expect(agg.topTokens[0]?.agent).toBe("b");
+    expect(agg.topTokens[1]?.agent).toBe("c");
+    expect(agg.topTokens[2]?.agent).toBe("a");
+    expect(agg.topTokens[0]?.totalTokens).toBe(700);
   } finally {
     await fs.rm(tmp, { recursive: true, force: true });
   }
@@ -154,9 +153,9 @@ test("aggregateBashGates sums durations per gate", async () => {
     ];
     await fs.writeFile(log, rows.map((r) => JSON.stringify(r)).join("\n"), "utf-8");
     const agg = await aggregateBashGates(log);
-    assert.equal(agg.totalMs, 11500);
-    assert.equal(agg.byGate["lint"], 3500);
-    assert.equal(agg.byGate["typecheck"], 8000);
+    expect(agg.totalMs).toBe(11500);
+    expect(agg.byGate["lint"]).toBe(3500);
+    expect(agg.byGate["typecheck"]).toBe(8000);
   } finally {
     await fs.rm(tmp, { recursive: true, force: true });
   }
@@ -164,10 +163,10 @@ test("aggregateBashGates sums durations per gate", async () => {
 
 test("aggregateBashGates returns empty aggregate when log missing", async () => {
   const agg = await aggregateBashGates("/nonexistent/bash-gates.jsonl");
-  assert.equal(agg.rowCount, 0);
-  assert.equal(agg.totalMs, 0);
-  assert.equal(agg.timeoutCount, 0);
-  assert.deepEqual(agg.byGate, {});
+  expect(agg.rowCount).toBe(0);
+  expect(agg.totalMs).toBe(0);
+  expect(agg.timeoutCount).toBe(0);
+  expect(agg.byGate).toEqual({});
 });
 
 test("aggregateBashGates counts timeout exits (exitCode 124)", async () => {
@@ -180,8 +179,8 @@ test("aggregateBashGates counts timeout exits (exitCode 124)", async () => {
     ];
     await fs.writeFile(log, rows.map((r) => JSON.stringify(r)).join("\n"), "utf-8");
     const agg = await aggregateBashGates(log);
-    assert.equal(agg.timeoutCount, 1);
-    assert.equal(agg.rowCount, 2);
+    expect(agg.timeoutCount).toBe(1);
+    expect(agg.rowCount).toBe(2);
   } finally {
     await fs.rm(tmp, { recursive: true, force: true });
   }
@@ -194,7 +193,7 @@ test("renderDispatchBreakdownSection returns empty string when both aggregates e
     { rowCount: 0, totalWallMs: 0, topSlow: [], topTokens: [] },
     { rowCount: 0, totalMs: 0, timeoutCount: 0, byGate: {} }
   );
-  assert.equal(section, "");
+  expect(section).toBe("");
 });
 
 test("renderDispatchBreakdownSection includes section header and slow agent row", () => {
@@ -238,11 +237,11 @@ test("renderDispatchBreakdownSection includes section header and slow agent row"
     byGate: { typecheck: 8000 }
   };
   const section = renderDispatchBreakdownSection(dispatchAgg, bashAgg);
-  assert.match(section, /## Per-dispatch breakdown/);
-  assert.match(section, /crew:reviewer/);
-  assert.match(section, /crew:fullstack-dev/);
-  assert.match(section, /typecheck/);
-  assert.match(section, /13000ms/);
+  expect(section).toMatch(/## Per-dispatch breakdown/);
+  expect(section).toMatch(/crew:reviewer/);
+  expect(section).toMatch(/crew:fullstack-dev/);
+  expect(section).toMatch(/typecheck/);
+  expect(section).toMatch(/13000ms/);
 });
 
 test("renderDispatchBreakdownSection renders (no data) when topSlow empty but rowCount > 0 somehow", () => {
@@ -260,9 +259,9 @@ test("renderDispatchBreakdownSection renders (no data) when topSlow empty but ro
   };
   // bash data present but dispatch empty → still renders bash section
   const section = renderDispatchBreakdownSection(dispatchAgg, bashAgg);
-  assert.match(section, /## Per-dispatch breakdown/);
-  assert.match(section, /no data/);
-  assert.match(section, /lint/);
+  expect(section).toMatch(/## Per-dispatch breakdown/);
+  expect(section).toMatch(/no data/);
+  expect(section).toMatch(/lint/);
 });
 
 test("renderDispatchBreakdownSection handles missing toolCalls fields gracefully", () => {
@@ -286,5 +285,5 @@ test("renderDispatchBreakdownSection handles missing toolCalls fields gracefully
   const bashAgg = { rowCount: 0, totalMs: 0, timeoutCount: 0, byGate: {} };
   const section = renderDispatchBreakdownSection(dispatchAgg, bashAgg);
   // Should not throw; missing Read/Edit/Bash render as 0
-  assert.match(section, /0/);
+  expect(section).toMatch(/0/);
 });

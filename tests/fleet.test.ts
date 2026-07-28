@@ -1,8 +1,7 @@
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
-import assert from "node:assert/strict";
 
 import { collectFleetWorktrees, renderFleet, buildFleetReport } from "../scripts/lib/fleet.ts";
 
@@ -59,7 +58,7 @@ test("collectFleetWorktrees finds sibling repos", async () => {
 
   const items = await collectFleetWorktrees(repoA, { includeSelf: true });
   const names = items.map((i) => i.repoName).sort();
-  assert.deepEqual(names, ["repo-a", "repo-b"]);
+  expect(names).toEqual(["repo-a", "repo-b"]);
 });
 
 test("collectFleetWorktrees excludes self when --no-self", async () => {
@@ -72,9 +71,9 @@ test("collectFleetWorktrees excludes self when --no-self", async () => {
   await writeSliceProgress(repoB, PROGRESS_IN_FLIGHT);
 
   const items = await collectFleetWorktrees(repoA, { includeSelf: false });
-  assert.equal(items.length, 1);
-  assert.equal(items[0]!.repoName, "repo-b");
-  assert.equal(items[0]!.isSelf, false);
+  expect(items.length).toBe(1);
+  expect(items[0]!.repoName).toBe("repo-b");
+  expect(items[0]!.isSelf).toBe(false);
 });
 
 test("collectFleetWorktrees parses IN_PROGRESS slice", async () => {
@@ -84,12 +83,12 @@ test("collectFleetWorktrees parses IN_PROGRESS slice", async () => {
   await writeSliceProgress(repoA, PROGRESS_IN_FLIGHT);
 
   const items = await collectFleetWorktrees(repoA, { includeSelf: true });
-  assert.equal(items.length, 1);
+  expect(items.length).toBe(1);
   const item = items[0]!;
-  assert.equal(item.inProgressSlice, "SLICE-02");
-  assert.equal(item.inProgressTitle, "Second");
-  assert.equal(item.completedCount, 1);
-  assert.equal(item.totalCount, 3);
+  expect(item.inProgressSlice).toBe("SLICE-02");
+  expect(item.inProgressTitle).toBe("Second");
+  expect(item.completedCount).toBe(1);
+  expect(item.totalCount).toBe(3);
 });
 
 test("collectFleetWorktrees marks self correctly", async () => {
@@ -103,10 +102,10 @@ test("collectFleetWorktrees marks self correctly", async () => {
 
   const items = await collectFleetWorktrees(repoA, { includeSelf: true });
   const self = items.find((i) => i.isSelf);
-  assert.ok(self, "one item should be marked isSelf");
-  assert.equal(self.repoName, "repo-a");
+  expect(self, "one item should be marked isSelf").toBeTruthy();
+  expect(self!.repoName).toBe("repo-a");
   const sibling = items.find((i) => !i.isSelf);
-  assert.equal(sibling!.repoName, "repo-b");
+  expect(sibling!.repoName).toBe("repo-b");
 });
 
 test("renderFleet produces markdown table with correct columns", async () => {
@@ -131,19 +130,19 @@ test("renderFleet produces markdown table with correct columns", async () => {
     }
   ];
   const md = renderFleet(items);
-  assert.match(md, /# Fleet/);
-  assert.match(md, /\| Repo \|/);
-  assert.match(md, /repo-a.*this/);
-  assert.match(md, /SLICE-02/);
-  assert.match(md, /1\/3/);
-  assert.match(md, /repo-b/);
-  assert.match(md, /idle/);
-  assert.match(md, /3\/3/);
+  expect(md).toMatch(/# Fleet/);
+  expect(md).toMatch(/\| Repo \|/);
+  expect(md).toMatch(/repo-a.*this/);
+  expect(md).toMatch(/SLICE-02/);
+  expect(md).toMatch(/1\/3/);
+  expect(md).toMatch(/repo-b/);
+  expect(md).toMatch(/idle/);
+  expect(md).toMatch(/3\/3/);
 });
 
 test("renderFleet returns empty-fleet message when no items", () => {
   const md = renderFleet([]);
-  assert.match(md, /no active loops found/);
+  expect(md).toMatch(/no active loops found/);
 });
 
 test("buildFleetReport returns items + markdown", async () => {
@@ -153,9 +152,9 @@ test("buildFleetReport returns items + markdown", async () => {
   await writeSliceProgress(repoA, PROGRESS_IN_FLIGHT);
 
   const { items, markdown } = await buildFleetReport(repoA, { includeSelf: true });
-  assert.ok(Array.isArray(items));
-  assert.ok(typeof markdown === "string");
-  assert.match(markdown, /SLICE-02/);
+  expect(Array.isArray(items)).toBeTruthy();
+  expect(typeof markdown === "string").toBeTruthy();
+  expect(markdown).toMatch(/SLICE-02/);
 });
 
 test("collectFleetWorktrees supports extraRoots", async () => {
@@ -173,5 +172,5 @@ test("collectFleetWorktrees supports extraRoots", async () => {
     includeSelf: true
   });
   const names = items.map((i) => i.repoName).sort();
-  assert.ok(names.includes("repo-b"), "should find repo-b via extraRoots");
+  expect(names.includes("repo-b"), "should find repo-b via extraRoots").toBeTruthy();
 });

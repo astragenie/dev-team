@@ -6,12 +6,17 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # Docs-only fast-path: docs/markdown/backlog-only PRs skip checks+test and
   # pass via the always-running `gate` job below. Fail-safe: unknown diff => code=true.
   changes:
     name: detect changes
     runs-on: self-hosted
+    timeout-minutes: 10
     outputs:
       code: ${{ steps.filter.outputs.code }}
     steps:
@@ -41,7 +46,7 @@ jobs:
   checks:
     needs: changes
     if: ${{ needs.changes.outputs.code == 'true' }}
-    uses: astragenie/common/.github/workflows/reusable-plugin-ci.yml@main
+    uses: astragenie/common/.github/workflows/reusable-plugin-ci.yml@v1
     with:
       validators: |
         echo '{}' | bun "$GITHUB_WORKSPACE/hooks/check-redundant-read.ts"
@@ -91,7 +96,7 @@ jobs:
       fail-fast: false
       matrix:
         shard: [0, 1, 2]
-    uses: astragenie/common/.github/workflows/reusable-plugin-ci.yml@main
+    uses: astragenie/common/.github/workflows/reusable-plugin-ci.yml@v1
     with:
       bun-commands: |
         SHARD_TOTAL=3 SHARD_INDEX=${{ matrix.shard }} bun run test:shard
@@ -104,6 +109,7 @@ jobs:
     needs: [changes, checks, test]
     if: always()
     runs-on: self-hosted
+    timeout-minutes: 10
     steps:
       - name: Evaluate gate
         shell: bash

@@ -1,6 +1,5 @@
 // tests/cost-hygiene-state.test.mjs
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -24,11 +23,11 @@ test("loadSession returns empty shape when file absent", async () => {
   const repo = await makeRepo();
   try {
     const state = await loadSession(repo, "sess-abc");
-    assert.equal(state.session_id, "sess-abc");
-    assert.equal(state.total_bytes, 0);
-    assert.deepEqual(state.entries, {});
-    assert.ok(state.first_seen);
-    assert.ok(state.last_seen);
+    expect(state.session_id).toBe("sess-abc");
+    expect(state.total_bytes).toBe(0);
+    expect(state.entries).toEqual({});
+    expect(state.first_seen).toBeTruthy();
+    expect(state.last_seen).toBeTruthy();
   } finally {
     await cleanup(repo);
   }
@@ -50,9 +49,9 @@ test("saveSession then loadSession round-trip preserves entries", async () => {
     state.total_bytes = 5;
     await saveSession(repo, "sess-xyz", state);
     const reloaded = await loadSession(repo, "sess-xyz");
-    assert.equal(reloaded.entries["/abs/foo"]!.read_count, 2);
-    assert.equal(reloaded.entries["/abs/foo"]!.content, "hello");
-    assert.equal(reloaded.total_bytes, 5);
+    expect(reloaded.entries["/abs/foo"]!.read_count).toBe(2);
+    expect(reloaded.entries["/abs/foo"]!.content).toBe("hello");
+    expect(reloaded.total_bytes).toBe(5);
   } finally {
     await cleanup(repo);
   }
@@ -66,7 +65,7 @@ test("saveSession atomic — no .tmp.<pid> left on success", async () => {
     const dir = path.join(repo, ".claude", "state", "cost-hygiene");
     const files = await fs.readdir(dir);
     const tempFiles = files.filter((f) => f.includes(".tmp."));
-    assert.deepEqual(tempFiles, []);
+    expect(tempFiles).toEqual([]);
   } finally {
     await cleanup(repo);
   }
@@ -83,8 +82,8 @@ test("recordRead increments read_count, updates last_read_at, preserves first_re
       100,
       "2026-05-28T18:00:00.000Z"
     );
-    assert.equal(state.entries["/abs/p"]!.read_count, 1);
-    assert.equal(state.entries["/abs/p"]!.first_read_at, "2026-05-28T18:00:00.000Z");
+    expect(state.entries["/abs/p"]!.read_count).toBe(1);
+    expect(state.entries["/abs/p"]!.first_read_at).toBe("2026-05-28T18:00:00.000Z");
 
     state = recordRead(
       state,
@@ -93,9 +92,9 @@ test("recordRead increments read_count, updates last_read_at, preserves first_re
       100,
       "2026-05-28T18:05:00.000Z"
     );
-    assert.equal(state.entries["/abs/p"]!.read_count, 2);
-    assert.equal(state.entries["/abs/p"]!.first_read_at, "2026-05-28T18:00:00.000Z");
-    assert.equal(state.entries["/abs/p"]!.last_read_at, "2026-05-28T18:05:00.000Z");
+    expect(state.entries["/abs/p"]!.read_count).toBe(2);
+    expect(state.entries["/abs/p"]!.first_read_at).toBe("2026-05-28T18:00:00.000Z");
+    expect(state.entries["/abs/p"]!.last_read_at).toBe("2026-05-28T18:05:00.000Z");
   } finally {
     await cleanup(repo);
   }
@@ -107,9 +106,9 @@ test("recordReadContent stores content when <=50KB, updates total_bytes", async 
     let state = await loadSession(repo, "sess-cnt");
     state = recordRead(state, "/abs/p", "2026-05-28T17:00:00.000Z", 5, "2026-05-28T18:00:00.000Z");
     state = recordReadContent(state, "/abs/p", "hello");
-    assert.equal(state.entries["/abs/p"]!.content, "hello");
-    assert.equal(state.entries["/abs/p"]!.content_bytes, 5);
-    assert.equal(state.total_bytes, 5);
+    expect(state.entries["/abs/p"]!.content).toBe("hello");
+    expect(state.entries["/abs/p"]!.content_bytes).toBe(5);
+    expect(state.total_bytes).toBe(5);
   } finally {
     await cleanup(repo);
   }
@@ -128,9 +127,9 @@ test("recordReadContent caps content at 50KB, sets content:null when oversized",
       "2026-05-28T18:00:00.000Z"
     );
     state = recordReadContent(state, "/abs/p", big);
-    assert.equal(state.entries["/abs/p"]!.content, null);
-    assert.equal(state.entries["/abs/p"]!.content_bytes, 0); // noUncheckedIndexedAccess
-    assert.equal(state.total_bytes, 0);
+    expect(state.entries["/abs/p"]!.content).toBe(null);
+    expect(state.entries["/abs/p"]!.content_bytes).toBe(0); // noUncheckedIndexedAccess
+    expect(state.total_bytes).toBe(0);
   } finally {
     await cleanup(repo);
   }
@@ -174,9 +173,9 @@ test("evictLRU drops least-recently-read on session-cap overflow", () => {
   };
   const protectedPath = "/c";
   const result = evictLRU(state, protectedPath);
-  assert.ok(!("/a" in result.entries), "least-recently-read /a should be evicted");
-  assert.ok("/c" in result.entries, "currently-being-recorded /c must not be evicted");
-  assert.ok(result.total_bytes <= 2_000_000);
+  expect(!("/a" in result.entries), "least-recently-read /a should be evicted").toBeTruthy();
+  expect("/c" in result.entries, "currently-being-recorded /c must not be evicted").toBeTruthy();
+  expect(result.total_bytes <= 2_000_000).toBeTruthy();
 });
 
 test("evictLRU never drops the entry being recorded even if it is the LRU", () => {
@@ -207,7 +206,7 @@ test("evictLRU never drops the entry being recorded even if it is the LRU", () =
     }
   };
   const result = evictLRU(state, "/oldest");
-  assert.ok("/oldest" in result.entries, "protected /oldest must survive eviction");
+  expect("/oldest" in result.entries, "protected /oldest must survive eviction").toBeTruthy();
 });
 
 test("loadSession on corrupt JSON returns empty + does not throw", async () => {
@@ -217,8 +216,8 @@ test("loadSession on corrupt JSON returns empty + does not throw", async () => {
     await fs.mkdir(dir, { recursive: true });
     await fs.writeFile(path.join(dir, "sess-corrupt.json"), "{not valid json}", "utf8");
     const state = await loadSession(repo, "sess-corrupt");
-    assert.equal(state.session_id, "sess-corrupt");
-    assert.deepEqual(state.entries, {});
+    expect(state.session_id).toBe("sess-corrupt");
+    expect(state.entries).toEqual({});
   } finally {
     await cleanup(repo);
   }
@@ -237,8 +236,8 @@ test("loadSession cleans up stale .tmp.<pid> files older than 60s", async () => 
     await fs.writeFile(fresh, "{}", "utf8");
     await loadSession(repo, "sess-x");
     const after = await fs.readdir(dir);
-    assert.ok(!after.includes("sess-x.json.tmp.99999"), "stale tmp should be deleted");
-    assert.ok(after.includes("sess-x.json.tmp.88888"), "fresh tmp should remain");
+    expect(!after.includes("sess-x.json.tmp.99999"), "stale tmp should be deleted").toBeTruthy();
+    expect(after.includes("sess-x.json.tmp.88888"), "fresh tmp should remain").toBeTruthy();
   } finally {
     await cleanup(repo);
   }

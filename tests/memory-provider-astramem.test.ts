@@ -30,8 +30,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { _resetResolveCache } from "@astragenie/astramem-client";
 import { astramemProvider, fileProvider, type RemoteHandle } from "@astragenie/memory-provider";
 
@@ -67,7 +66,7 @@ async function withUnpairedEnv<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 test("astramemProvider describes itself as astramem", () => {
-  assert.deepEqual(astramemProvider("/tmp/whatever").describe(), { provider: "astramem" });
+  expect(astramemProvider("/tmp/whatever").describe()).toEqual({ provider: "astramem" });
 });
 
 test("astramemProvider falls back to fileProvider when unpaired (AC-2) — capture + recall never throw", async () => {
@@ -75,17 +74,15 @@ test("astramemProvider falls back to fileProvider when unpaired (AC-2) — captu
   try {
     await withUnpairedEnv(async () => {
       const provider = astramemProvider(repo);
-      await assert.doesNotReject(
-        provider.capture({
-          kind: "failure",
-          severity: "high",
-          summary: "unpaired capture should fall back to file",
-          source: "test"
-        })
-      );
+      await provider.capture({
+        kind: "failure",
+        severity: "high",
+        summary: "unpaired capture should fall back to file",
+        source: "test"
+      });
       const results = await provider.recall({ k: 5 });
-      assert.equal(results.length, 1);
-      assert.equal(results[0]!.summary, "unpaired capture should fall back to file");
+      expect(results.length).toBe(1);
+      expect(results[0]!.summary).toBe("unpaired capture should fall back to file");
     });
   } finally {
     await cleanup(repo);
@@ -128,12 +125,11 @@ test("astramemProvider contract-parity: recall() ranks/truncates identically to 
       const astramemResults = await astramem.recall({ k: 5 });
       const fileResults = await file.recall({ k: 5 });
 
-      assert.deepEqual(
+      expect(
         astramemResults.map((r) => r.id),
-        fileResults.map((r) => r.id),
         "unpaired astramemProvider ranking must match fileProvider exactly"
-      );
-      assert.equal(astramemResults[0]!.id, "fresh-critical");
+      ).toEqual(fileResults.map((r) => r.id));
+      expect(astramemResults[0]!.id).toBe("fresh-critical");
     });
   } finally {
     await cleanup(repoA);
@@ -154,11 +150,11 @@ test("astramemProvider.invalidate excludes an entry from future recall() calls (
         source: "t"
       });
       let results = await provider.recall({ k: 5 });
-      assert.ok(results.some((r) => r.id === "bad-entry"));
+      expect(results.some((r) => r.id === "bad-entry")).toBeTruthy();
 
       await provider.invalidate("bad-entry");
       results = await provider.recall({ k: 5 });
-      assert.ok(!results.some((r) => r.id === "bad-entry"));
+      expect(!results.some((r) => r.id === "bad-entry")).toBeTruthy();
     });
   } finally {
     await cleanup(repo);
@@ -187,8 +183,8 @@ test("astramemProvider.supersede resolves the chain when unpaired — only the l
 
       const results = await provider.recall({ k: 5 });
       const ids = results.map((r) => r.id);
-      assert.ok(ids.includes("v2"));
-      assert.ok(!ids.includes("v1"));
+      expect(ids.includes("v2")).toBeTruthy();
+      expect(!ids.includes("v1")).toBeTruthy();
     });
   } finally {
     await cleanup(repo);
@@ -201,15 +197,13 @@ test("resolveProvider wires provider:astramem to astramemProvider (S2 hand-off)"
   try {
     await withUnpairedEnv(async () => {
       const provider = resolveProvider({ provider: "astramem", enabled: "auto" }, repo);
-      assert.deepEqual(provider.describe(), { provider: "astramem" });
-      await assert.doesNotReject(
-        provider.capture({
-          kind: "lesson",
-          severity: "low",
-          summary: "wired via resolveProvider",
-          source: "t"
-        })
-      );
+      expect(provider.describe()).toEqual({ provider: "astramem" });
+      await provider.capture({
+        kind: "lesson",
+        severity: "low",
+        summary: "wired via resolveProvider",
+        source: "t"
+      });
     });
   } finally {
     await cleanup(repo);
@@ -270,11 +264,10 @@ async function waitForRememberCalls(
     if (daemon.rememberCalls >= expected) return;
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
-  assert.equal(
+  expect(
     daemon.rememberCalls,
-    expected,
     `remember() call count did not reach ${expected} within ${timeoutMs}ms`
-  );
+  ).toBe(expected);
 }
 
 test("astramemProvider (paired, dualWrite:true) writes BOTH the fake remote AND the local JSONL", async () => {
@@ -295,12 +288,11 @@ test("astramemProvider (paired, dualWrite:true) writes BOTH the fake remote AND 
     await waitForRememberCalls(daemon, 1);
 
     const fileResults = await fileProvider(repo).recall({ k: 5 });
-    assert.equal(
+    expect(
       fileResults.length,
-      1,
       "dualWrite:true must also mirror the entry into the local JSONL"
-    );
-    assert.equal(fileResults[0]!.summary, "paired dual-write capture");
+    ).toBe(1);
+    expect(fileResults[0]!.summary).toBe("paired dual-write capture");
   } finally {
     await cleanup(repo);
   }
@@ -321,7 +313,7 @@ test("astramemProvider (paired, dualWrite:false) writes ONLY the fake remote —
     await waitForRememberCalls(daemon, 1);
 
     const fileResults = await fileProvider(repo).recall({ k: 5 });
-    assert.equal(fileResults.length, 0, "dualWrite:false must NOT mirror into the local JSONL");
+    expect(fileResults.length, "dualWrite:false must NOT mirror into the local JSONL").toBe(0);
   } finally {
     await cleanup(repo);
   }

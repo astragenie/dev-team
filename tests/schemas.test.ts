@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -11,17 +10,23 @@ const fixture = (name: string): unknown =>
 
 test("WorkflowStateSchema accepts a valid empty state", () => {
   const result = WorkflowStateSchema.safeParse(fixture("workflow-state-valid.json"));
-  assert.equal(result.success, true);
+  expect(result.success).toBe(true);
 });
 
 test("WorkflowStateSchema rejects malformed state and reports issues", () => {
   const result = WorkflowStateSchema.safeParse(fixture("workflow-state-invalid.json"));
-  assert.equal(result.success, false);
+  expect(result.success).toBe(false);
   if (!result.success) {
     const codes = result.error.issues.map((i) => i.path.join(".")).sort();
     // version, updatedAt, currentRun, recentRuns all flagged
-    assert.ok(codes.includes("version"), `expected 'version' in issues: ${codes.join(", ")}`);
-    assert.ok(codes.includes("updatedAt"), `expected 'updatedAt' in issues: ${codes.join(", ")}`);
+    expect(
+      codes.includes("version"),
+      `expected 'version' in issues: ${codes.join(", ")}`
+    ).toBeTruthy();
+    expect(
+      codes.includes("updatedAt"),
+      `expected 'updatedAt' in issues: ${codes.join(", ")}`
+    ).toBeTruthy();
   }
 });
 
@@ -35,11 +40,10 @@ test("WorkflowStateSchema accepts the live repo workflow-state.json", () => {
     return;
   }
   const result = WorkflowStateSchema.safeParse(JSON.parse(raw));
-  assert.equal(
+  expect(
     result.success,
-    true,
     result.success
       ? ""
       : `live workflow-state.json failed schema: ${JSON.stringify(result.error.issues, null, 2)}`
-  );
+  ).toBe(true);
 });

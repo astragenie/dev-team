@@ -1,6 +1,5 @@
 // tests/validate-syntheses.test.mjs
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -53,7 +52,7 @@ import { validateSyntheses } from "../scripts/validate-syntheses.ts";
 test("validateSyntheses passes when no synthesis files exist", async () => {
   const dir = await makeRunsDir({});
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 0);
+  expect(result.errors.length).toBe(0);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -62,7 +61,7 @@ test("validateSyntheses passes on clean synthesis file", async () => {
     "foo-final-synthesis.md": "# Synthesis\n## Grade\ntest_confidence: 0.85\n"
   });
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 0);
+  expect(result.errors.length).toBe(0);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -71,8 +70,8 @@ test("validateSyntheses errors on Grade missing placeholder", async () => {
     "bad-final-synthesis.md": "# Synthesis\n- Grade missing — synthesis is incomplete\n"
   });
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 1);
-  assert.match(result.errors[0]!, /Grade missing/);
+  expect(result.errors.length).toBe(1);
+  expect(result.errors[0]!).toMatch(/Grade missing/);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -82,8 +81,8 @@ test("validateSyntheses errors on timestamp placeholder", async () => {
       "# Synthesis\n- Handoff: `.claude/artifacts/crew/handoffs/<timestamp>-complete.md`\n"
   });
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 1);
-  assert.match(result.errors[0]!, /<timestamp>/);
+  expect(result.errors.length).toBe(1);
+  expect(result.errors[0]!).toMatch(/<timestamp>/);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -93,7 +92,7 @@ test("validateSyntheses checks only final-synthesis files not other runs", async
     "2026-final-synthesis-clean.md": "# OK synthesis\nAll good.\n"
   });
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 0);
+  expect(result.errors.length).toBe(0);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -102,14 +101,14 @@ test("validateSyntheses checks only final-synthesis files not other runs", async
 test("validateSyntheses passes when no grades dir exists", async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "synth-val-nograde-"));
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 0);
+  expect(result.errors.length).toBe(0);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
 test("validateSyntheses passes on a filled-in grade file", async () => {
   const dir = await makeGradesDir({ "20260706T000000Z-slice99-grade.md": FILLED_GRADE });
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 0);
+  expect(result.errors.length).toBe(0);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -125,10 +124,10 @@ test("validateSyntheses rejects a grade file with '- bullet' placeholder lines",
   );
   const dir = await makeGradesDir({ "20260709T000000Z-slice98-grade.md": rotted });
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 1);
-  assert.match(result.errors[0]!, /grade_incomplete/);
-  assert.match(result.errors[0]!, /bullet/);
-  assert.equal(result.grandfatheredGradeRot.length, 0);
+  expect(result.errors.length).toBe(1);
+  expect(result.errors[0]!).toMatch(/grade_incomplete/);
+  expect(result.errors[0]!).toMatch(/bullet/);
+  expect(result.grandfatheredGradeRot.length).toBe(0);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -136,8 +135,8 @@ test("validateSyntheses rejects a grade file with a bare '- bullet' surprises/fo
   const rotted = `${FILLED_GRADE}\n## Surprises\n\n- bullet\n`;
   const dir = await makeGradesDir({ "20260709T000000Z-slice97-grade.md": rotted });
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 1);
-  assert.match(result.errors[0]!, /grade_incomplete/);
+  expect(result.errors.length).toBe(1);
+  expect(result.errors[0]!).toMatch(/grade_incomplete/);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -148,8 +147,8 @@ test("validateSyntheses rejects a grade file whose AC scores are all unfilled (0
   );
   const dir = await makeGradesDir({ "20260709T000000Z-slice96-grade.md": unfilled });
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 1);
-  assert.match(result.errors[0]!, /grade_incomplete/);
+  expect(result.errors.length).toBe(1);
+  expect(result.errors[0]!).toMatch(/grade_incomplete/);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -157,9 +156,9 @@ test("validateSyntheses rejects a grade file with an unrendered '<title>' headin
   const rotted = FILLED_GRADE.replace("# SLICE-99 — Grade", "# SLICE-99: <title> — Grade");
   const dir = await makeGradesDir({ "20260709T000000Z-slice93-grade.md": rotted });
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 1);
-  assert.match(result.errors[0]!, /grade_incomplete/);
-  assert.match(result.errors[0]!, /<title>/);
+  expect(result.errors.length).toBe(1);
+  expect(result.errors[0]!).toMatch(/grade_incomplete/);
+  expect(result.errors[0]!).toMatch(/<title>/);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -167,9 +166,9 @@ test("validateSyntheses rejects a grade file with an unfilled 'DEC-TBD: Short de
   const rotted = `${FILLED_GRADE}\n## Decisions\n\n### DEC-TBD: Short decision title\n\n**Rationale**: Why this decision was made.\n`;
   const dir = await makeGradesDir({ "20260709T000000Z-slice92-grade.md": rotted });
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 1);
-  assert.match(result.errors[0]!, /grade_incomplete/);
-  assert.match(result.errors[0]!, /DEC-TBD/);
+  expect(result.errors.length).toBe(1);
+  expect(result.errors[0]!).toMatch(/grade_incomplete/);
+  expect(result.errors[0]!).toMatch(/DEC-TBD/);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -177,7 +176,7 @@ test("validateSyntheses does NOT flag a real (id-pending) 'DEC-TBD:' decision wi
   const real = `${FILLED_GRADE}\n## Decisions\n\n### DEC-TBD: checkJs:false for migrate-first TS adoption\n\n**Rationale**: Real rationale text.\n`;
   const dir = await makeGradesDir({ "20260709T000000Z-slice91-grade.md": real });
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 0);
+  expect(result.errors.length).toBe(0);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -185,9 +184,9 @@ test("validateSyntheses rejects a grade file with an unfilled '(narrative)' sect
   const rotted = `${FILLED_GRADE}\n## What went well\n\n(narrative)\n`;
   const dir = await makeGradesDir({ "20260709T000000Z-slice90-grade.md": rotted });
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 1);
-  assert.match(result.errors[0]!, /grade_incomplete/);
-  assert.match(result.errors[0]!, /narrative/);
+  expect(result.errors.length).toBe(1);
+  expect(result.errors[0]!).toMatch(/grade_incomplete/);
+  expect(result.errors[0]!).toMatch(/narrative/);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -198,14 +197,14 @@ test("validateSyntheses does NOT flag '<title>'-shaped prose that isn't the unre
   const real = `${FILLED_GRADE}\n\nLegacy \`cost-report-<title>.md\` files continue to parse.\n`;
   const dir = await makeGradesDir({ "20260709T000000Z-slice89-grade.md": real });
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 0);
+  expect(result.errors.length).toBe(0);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
 test("validateSyntheses ignores non-grade files in the grades directory", async () => {
   const dir = await makeGradesDir({ "README.md": "- bullet\nnot a grade file" });
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 0);
+  expect(result.errors.length).toBe(0);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -218,10 +217,10 @@ test("validateSyntheses grandfathers rotted grade files dated before the FEAT-19
   );
   const dir = await makeGradesDir({ "20260706T000000Z-slice98-grade.md": rotted });
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 0);
-  assert.equal(result.grandfatheredGradeRot.length, 1);
-  assert.match(result.grandfatheredGradeRot[0]!, /grandfathered/);
-  assert.match(result.grandfatheredGradeRot[0]!, /FEAT-199b/);
+  expect(result.errors.length).toBe(0);
+  expect(result.grandfatheredGradeRot.length).toBe(1);
+  expect(result.grandfatheredGradeRot[0]!).toMatch(/grandfathered/);
+  expect(result.grandfatheredGradeRot[0]!).toMatch(/FEAT-199b/);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -234,8 +233,8 @@ test("validateSyntheses hard-fails a rotted grade file dated exactly at the gran
   // grade rot; a file AT the cutoff is still held to the full standard.
   const dir = await makeGradesDir({ "20260709T000000Z-slice98-grade.md": rotted });
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 1);
-  assert.equal(result.grandfatheredGradeRot.length, 0);
+  expect(result.errors.length).toBe(1);
+  expect(result.grandfatheredGradeRot.length).toBe(0);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -246,8 +245,8 @@ test("validateSyntheses treats a grade file with no parseable timestamp prefix a
   );
   const dir = await makeGradesDir({ "legacy-slice98-grade.md": rotted });
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 1);
-  assert.equal(result.grandfatheredGradeRot.length, 0);
+  expect(result.errors.length).toBe(1);
+  expect(result.grandfatheredGradeRot.length).toBe(0);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -260,9 +259,9 @@ test("validateSyntheses grandfathers a rotted synthesis whose basename is in the
     "slice79-final-synthesis.md": "# Synthesis\n- Grade missing — incomplete\n"
   });
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 0);
-  assert.equal(result.grandfatheredSynth.length, 1);
-  assert.match(result.grandfatheredSynth[0]!, /FEAT-199b/);
+  expect(result.errors.length).toBe(0);
+  expect(result.grandfatheredSynth.length).toBe(1);
+  expect(result.grandfatheredSynth[0]!).toMatch(/FEAT-199b/);
   await fs.rm(dir, { recursive: true, force: true });
 });
 
@@ -271,8 +270,8 @@ test("validateSyntheses still hard-fails a NEW rotted synthesis not in the grand
     "feat999-slice999-final-synthesis.md": "# Synthesis\n- Grade missing — incomplete\n"
   });
   const result = await validateSyntheses(dir);
-  assert.equal(result.errors.length, 1);
-  assert.equal(result.grandfatheredSynth.length, 0);
-  assert.match(result.errors[0]!, /Grade missing/);
+  expect(result.errors.length).toBe(1);
+  expect(result.grandfatheredSynth.length).toBe(0);
+  expect(result.errors[0]!).toMatch(/Grade missing/);
   await fs.rm(dir, { recursive: true, force: true });
 });

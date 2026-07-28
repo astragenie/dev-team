@@ -1,9 +1,8 @@
+import { test, expect } from "bun:test";
 // tests/validate-org-refs.test.ts — the stale-owner sweep guard.
 // Ported alongside astragenie/runner-plugin's equivalent after the
 // sergeymilashico -> astragenie transfer left stale owner refs in authored
 // docs + skill frontmatter that kept working via GitHub's redirect.
-import { test } from "node:test";
-import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -21,10 +20,10 @@ test("validateOrgRefs: flags a stale sergeymilashico owner ref in an authored fi
     "# x\n/plugin marketplace add sergeymilashico/astra-marketplace\n"
   );
   const result = await validateOrgRefs(repo);
-  assert.equal(result.ok, false);
-  assert.equal(result.findings.length, 1);
-  assert.equal(result.findings[0]?.file, "README.md");
-  assert.equal(result.findings[0]?.line, 2);
+  expect(result.ok).toBe(false);
+  expect(result.findings.length).toBe(1);
+  expect(result.findings[0]?.file).toBe("README.md");
+  expect(result.findings[0]?.line).toBe(2);
 });
 
 test("validateOrgRefs: flags a stale owner: sergeymilashico in skill frontmatter", async () => {
@@ -36,8 +35,8 @@ test("validateOrgRefs: flags a stale owner: sergeymilashico in skill frontmatter
     "---\nname: using-crew\nowner: sergeymilashico\n---\n"
   );
   const result = await validateOrgRefs(repo);
-  assert.equal(result.ok, false);
-  assert.equal(result.findings.length, 1);
+  expect(result.ok).toBe(false);
+  expect(result.findings.length).toBe(1);
 });
 
 test("validateOrgRefs: clean when the owner is astragenie / astra", async () => {
@@ -50,8 +49,8 @@ test("validateOrgRefs: clean when the owner is astragenie / astra", async () => 
   await mkdir(skillDir, { recursive: true });
   await writeFile(path.join(skillDir, "SKILL.md"), "---\nname: using-crew\nowner: astra\n---\n");
   const result = await validateOrgRefs(repo);
-  assert.equal(result.ok, true);
-  assert.deepEqual(result.findings, []);
+  expect(result.ok).toBe(true);
+  expect(result.findings).toEqual([]);
 });
 
 test("validateOrgRefs: does not scan 3rdparty (vendored) subtrees", async () => {
@@ -60,5 +59,5 @@ test("validateOrgRefs: does not scan 3rdparty (vendored) subtrees", async () => 
   await mkdir(vendored, { recursive: true });
   await writeFile(path.join(vendored, "vendored.md"), "see sergeymilashico/whatever\n");
   const result = await validateOrgRefs(repo);
-  assert.equal(result.ok, true, "3rdparty vendored files are out of scope");
+  expect(result.ok, "3rdparty vendored files are out of scope").toBe(true);
 });

@@ -1,5 +1,4 @@
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -24,14 +23,13 @@ function emptyProfile(agent: string): AgentProfile {
 }
 
 test("formatProfileBlock returns '' when profile has no lessons/decisions/corrections", () => {
-  assert.equal(
+  expect(
     formatProfileBlock(emptyProfile("crew:reviewer"), {
       agent: "crew:reviewer",
       maxChars: 1600,
       usefulnessWarm: true
-    }),
-    ""
-  );
+    })
+  ).toBe("");
 });
 
 test("formatProfileBlock orders corrections, then decisions, then lessons; each line carries an atom marker", () => {
@@ -59,13 +57,13 @@ test("formatProfileBlock orders corrections, then decisions, then lessons; each 
     maxChars: 1600,
     usefulnessWarm: true
   });
-  assert.match(out, /^## Your track record \(crew:reviewer\)/);
+  expect(out).toMatch(/^## Your track record \(crew:reviewer\)/);
   const iC = out.indexOf("Missed a null check"),
     iD = out.indexOf("Use single-id feedback"),
     iL = out.indexOf("Prefer fail-silent recall");
-  assert.ok(iC < iD && iD < iL, "corrections < decisions < lessons");
-  assert.match(out, /<!--atom:c1-->/);
-  assert.match(out, /<!--atom:l1-->/);
+  expect(iC < iD && iD < iL, "corrections < decisions < lessons").toBeTruthy();
+  expect(out).toMatch(/<!--atom:c1-->/);
+  expect(out).toMatch(/<!--atom:l1-->/);
 });
 
 test("formatProfileBlock labels lessons 'importance-ranked' when usefulness signal is cold", () => {
@@ -75,8 +73,8 @@ test("formatProfileBlock labels lessons 'importance-ranked' when usefulness sign
   ];
   const warm = formatProfileBlock(p, { agent: "a", maxChars: 1600, usefulnessWarm: true });
   const cold = formatProfileBlock(p, { agent: "a", maxChars: 1600, usefulnessWarm: false });
-  assert.match(cold, /importance-ranked/i);
-  assert.doesNotMatch(warm, /importance-ranked/i);
+  expect(cold).toMatch(/importance-ranked/i);
+  expect(warm).not.toMatch(/importance-ranked/i);
 });
 
 test("formatProfileBlock truncates to maxChars deterministically (keeps corrections first)", () => {
@@ -101,28 +99,28 @@ test("formatProfileBlock truncates to maxChars deterministically (keeps correcti
     created_at: i
   }));
   const out = formatProfileBlock(p, { agent: "a", maxChars: 120, usefulnessWarm: false });
-  assert.ok(out.length <= 120, `len ${out.length}`);
-  assert.match(out, /KEEP-CORRECTION/);
+  expect(out.length <= 120, `len ${out.length}`).toBeTruthy();
+  expect(out).toMatch(/KEEP-CORRECTION/);
 });
 
 test("parseProfileConfig defaults to disabled with safe values when memory/profile absent", () => {
   const c = parseProfileConfig(undefined);
-  assert.equal(c.enabled, false);
-  assert.equal(c.topLessons, 10);
-  assert.equal(c.maxTokens, 400);
-  assert.equal(c.minFeedbackSample, 5);
+  expect(c.enabled).toBe(false);
+  expect(c.topLessons).toBe(10);
+  expect(c.maxTokens).toBe(400);
+  expect(c.minFeedbackSample).toBe(5);
 });
 
 test("parseProfileConfig reads memory.profile overrides and coerces types", () => {
   const c = parseProfileConfig({
     profile: { enabled: true, topLessons: 3, maxTokens: 200, minFeedbackSample: 2 }
   });
-  assert.deepEqual(c, { enabled: true, topLessons: 3, maxTokens: 200, minFeedbackSample: 2 });
+  expect(c).toEqual({ enabled: true, topLessons: 3, maxTokens: 200, minFeedbackSample: 2 });
 });
 
 test("parseProfileConfig treats malformed profile block as disabled defaults (never throws)", () => {
   const c = parseProfileConfig({ profile: "nonsense" });
-  assert.equal(c.enabled, false);
+  expect(c.enabled).toBe(false);
 });
 
 async function tmpRepo(p: string) {
@@ -180,8 +178,8 @@ test("buildProfileBlock returns empty block + [] when profile.enabled is false (
       rawConfig: {},
       provider: fakeProvider(warmProfile("crew:reviewer"))
     });
-    assert.equal(r.block, "");
-    assert.deepEqual(r.injectedIds, []);
+    expect(r.block).toBe("");
+    expect(r.injectedIds).toEqual([]);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
@@ -196,8 +194,8 @@ test("buildProfileBlock returns block + injectedIds when enabled and provider yi
       rawConfig: { profile: { enabled: true } },
       provider: fakeProvider(warmProfile("crew:reviewer"))
     });
-    assert.match(r.block, /## Your track record \(crew:reviewer\)/);
-    assert.deepEqual(r.injectedIds.sort(), ["c1", "l1"]);
+    expect(r.block).toMatch(/## Your track record \(crew:reviewer\)/);
+    expect(r.injectedIds.sort()).toEqual(["c1", "l1"]);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
@@ -212,8 +210,8 @@ test("buildProfileBlock is fail-silent: provider without profile() method yields
       rawConfig: { profile: { enabled: true } },
       provider: {}
     });
-    assert.equal(r.block, "");
-    assert.deepEqual(r.injectedIds, []);
+    expect(r.block).toBe("");
+    expect(r.injectedIds).toEqual([]);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
@@ -233,7 +231,7 @@ test("buildProfileBlock is fail-silent: a throwing provider yields empty block, 
       rawConfig: { profile: { enabled: true } },
       provider: throwing
     });
-    assert.equal(r.block, "");
+    expect(r.block).toBe("");
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }
@@ -252,7 +250,7 @@ test("buildProfileBlock labels lessons importance-ranked until minFeedbackSample
       rawConfig: { profile: { enabled: true, minFeedbackSample: 5 } },
       provider: fakeProvider(cold)
     });
-    assert.match(r.block, /importance-ranked/i);
+    expect(r.block).toMatch(/importance-ranked/i);
   } finally {
     await fs.rm(repo, { recursive: true, force: true });
   }

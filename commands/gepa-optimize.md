@@ -11,12 +11,23 @@ When a winner is found (Pareto rank-1, pass=true), the command automatically:
 
 1. Checks branch protection on `main` via `gh api`.
 2. Creates branch `gepa/<agent>/<trial-uuid>` from `main`.
-3. Writes `gepa:` provenance frontmatter to `agents/<agent>.md`.
+3. Writes `gepa_*` provenance fields into `agents/<agent>.md`'s own frontmatter block.
 4. Commits + pushes the branch.
 5. Opens a PR via `gh pr create` with promotion metadata.
 6. Labels the PR: `gepa`, `agent:<agent>`, and `branch_protection_present` or `branch_protection_missing`.
 
 Use `--artifact-only` (default) for dry-run cycles — no branch/PR is created.
+
+## Candidate generation modes
+
+Every cycle runs in one of two modes, gated by the `GEPA_LIVE_GENERATOR` env var. **The default is synthetic — set the env var to get a real rewrite.** Which mode a given run used is recorded in the artifact's `generator_mode` field (see below) and printed as a loud warning at run start when synthetic.
+
+| Mode | Trigger | What happens | Cost |
+| --- | --- | --- | --- |
+| **synthetic** (default) | `GEPA_LIVE_GENERATOR` unset or not `"1"` | Deterministic string mutation of the champion prompt — no LLM call, no reflective rewrite. Useful for exercising the pipeline (budget, Pareto ranking, artifact shape, promotion plumbing) without spending anything or waiting on a real model. | $0 |
+| **live** | `GEPA_LIVE_GENERATOR=1` | Each candidate slot dispatches `aiplugin-dev` via `claude -p` with the champion + failing trials + judge rationale, producing an actual reflective rewrite. | Real LLM spend per candidate (`GENERATOR_ESTIMATE_USD` reserved per slot against the daily budget cap) |
+
+A synthetic-mode run can still produce a "winner" and even open a promotion PR — it is a real pipeline exercise, just not a real prompt improvement. Do not treat a synthetic-mode promotion as evidence the prompt actually got better; check `generator_mode` in the artifact before trusting a promotion.
 
 ## Usage
 
@@ -48,7 +59,7 @@ Flags:
    - Check `gh auth status` — if not authenticated, print manual `git push` + `gh pr create` commands to stdout and exit non-zero. No partial branch is left behind.
    - Call `gh api repos/:owner/:repo/branches/main/protection` — 404 → `branch_protection_missing`, PR opened with `--draft` + label `branch_protection_missing`.
    - Create branch `gepa/<agent>/<trial-uuid>` from main. On collision, append `-retry-<n>` (up to 5). NEVER `git push --force`.
-   - Write `gepa:` YAML frontmatter to `agents/<agent>.md` (idempotent; atomic tmp+rename).
+   - Write `gepa_*` provenance fields into `agents/<agent>.md`'s own frontmatter block, after its existing fields (idempotent; atomic tmp+rename). See `scripts/lib/gepa/champion-provenance-writer.ts` for why this is a single merged block rather than a separate leading one.
    - Commit: `chore(gepa): promote <agent> from cycle <cycle-id>`.
    - Push branch to origin.
    - `gh pr create` with body containing `Pareto rank`, `held-out pass`, `cost delta`, and a link to the opt artifact.
@@ -87,6 +98,7 @@ The `gh` token must have `repo:status` scope for the branch-protection check end
 - `no_op_promotion` — true if winner prompt == current champion (PR skipped).
 - `winner` — `{ candidate_id, pareto_rank, score, pass, cost_usd, latency_ms, prompt_path }` or null.
 - `trials` — full trial list with `pareto_rank` assigned.
+- `generator_mode` — `"synthetic"` or `"live"`. Which candidate generation mode this run actually used (see "Candidate generation modes" above) — check this before trusting a promotion as a real prompt improvement.
 - `auto_pr` — `{ pr_opened, pr_url?, branch?, no_op_promotion?, exit_event? }` (present when auto-PR ran).
 
 ## See also

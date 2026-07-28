@@ -1,9 +1,8 @@
+import { test, expect } from "bun:test";
 // tests/cost-watch.test.ts — FEAT-194 S4: operator burn-watch CLI.
 // Covers the pure summarize/render functions plus an end-to-end
 // buildCostWatch() read over fixture dispatch-timing.jsonl + cost-report
 // artifacts + loop.json.
-import { test } from "node:test";
-import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
@@ -38,10 +37,10 @@ function row(overrides: Partial<DispatchRow>): DispatchRow {
 test("summarizeDispatchBurn sums tokens and flags none under the default cap", () => {
   const rows = [row({ tokenIn: 1000, tokenOut: 200 }), row({ tokenIn: 2000, tokenOut: 300 })];
   const summary = summarizeDispatchBurn(rows);
-  assert.equal(summary.rollingTotalTokens, 3500);
-  assert.equal(summary.flaggedCount, 0);
-  assert.equal(summary.perDispatchTokenCap, DEFAULT_PER_DISPATCH_TOKEN_CAP);
-  assert.equal(summary.rows[0]?.totalTokens, 1200);
+  expect(summary.rollingTotalTokens).toBe(3500);
+  expect(summary.flaggedCount).toBe(0);
+  expect(summary.perDispatchTokenCap).toBe(DEFAULT_PER_DISPATCH_TOKEN_CAP);
+  expect(summary.rows[0]?.totalTokens).toBe(1200);
 });
 
 test("summarizeDispatchBurn flags a dispatch crossing the per-dispatch token cap", () => {
@@ -50,16 +49,16 @@ test("summarizeDispatchBurn flags a dispatch crossing the per-dispatch token cap
     row({ agent: "crew:reviewer", tokenIn: 5000, tokenOut: 1000 })
   ];
   const summary = summarizeDispatchBurn(rows);
-  assert.equal(summary.flaggedCount, 1);
-  assert.equal(summary.rows[0]?.flagged, true);
-  assert.equal(summary.rows[1]?.flagged, false);
+  expect(summary.flaggedCount).toBe(1);
+  expect(summary.rows[0]?.flagged).toBe(true);
+  expect(summary.rows[1]?.flagged).toBe(false);
 });
 
 test("summarizeDispatchBurn respects a custom token cap", () => {
   const rows = [row({ tokenIn: 500, tokenOut: 200 })];
   const summary = summarizeDispatchBurn(rows, 500);
-  assert.equal(summary.rows[0]?.flagged, true);
-  assert.equal(summary.perDispatchTokenCap, 500);
+  expect(summary.rows[0]?.flagged).toBe(true);
+  expect(summary.perDispatchTokenCap).toBe(500);
 });
 
 test("summarizeDispatchBurn defaults missing model to 'unknown'", () => {
@@ -78,14 +77,14 @@ test("summarizeDispatchBurn defaults missing model to 'unknown'", () => {
     }
   ];
   const summary = summarizeDispatchBurn(rows);
-  assert.equal(summary.rows[0]?.model, "unknown");
+  expect(summary.rows[0]?.model).toBe("unknown");
 });
 
 test("summarizeDispatchBurn handles an empty row set", () => {
   const summary = summarizeDispatchBurn([]);
-  assert.equal(summary.rollingTotalTokens, 0);
-  assert.equal(summary.flaggedCount, 0);
-  assert.deepEqual(summary.rows, []);
+  expect(summary.rollingTotalTokens).toBe(0);
+  expect(summary.flaggedCount).toBe(0);
+  expect(summary.rows).toEqual([]);
 });
 
 // ── summarizeSliceBurn ──────────────────────────────────────────────────────
@@ -145,24 +144,24 @@ function costReport(overrides: Partial<CostReport>): CostReport {
 test("summarizeSliceBurn flags a single report whose own usd exceeds the ceiling", () => {
   const reports = [costReport({ path: "/a.md", usd: 80 })];
   const summary = summarizeSliceBurn(reports, 80, 75);
-  assert.equal(summary.ceilingExceeded, true);
-  assert.equal(summary.flaggedPaths.has("/a.md"), true);
-  assert.equal(summary.rollingUsd, 80);
-  assert.equal(summary.ceilingUsd, 75);
+  expect(summary.ceilingExceeded).toBe(true);
+  expect(summary.flaggedPaths.has("/a.md")).toBe(true);
+  expect(summary.rollingUsd).toBe(80);
+  expect(summary.ceilingUsd).toBe(75);
 });
 
 test("summarizeSliceBurn does not flag when every report is within the ceiling", () => {
   const reports = [costReport({ path: "/a.md", usd: 20 })];
   const summary = summarizeSliceBurn(reports, 20, 75);
-  assert.equal(summary.ceilingExceeded, false);
-  assert.equal(summary.flaggedPaths.size, 0);
+  expect(summary.ceilingExceeded).toBe(false);
+  expect(summary.flaggedPaths.size).toBe(0);
 });
 
 test("summarizeSliceBurn treats a null ceiling as no flag possible", () => {
   const reports = [costReport({ usd: 999 })];
   const summary = summarizeSliceBurn(reports, 999, null);
-  assert.equal(summary.ceilingExceeded, false);
-  assert.equal(summary.ceilingUsd, null);
+  expect(summary.ceilingExceeded).toBe(false);
+  expect(summary.ceilingUsd).toBe(null);
 });
 
 test("summarizeSliceBurn does NOT flag on a rolling-sum-only breach — the ceiling is per-report", () => {
@@ -171,9 +170,9 @@ test("summarizeSliceBurn does NOT flag on a rolling-sum-only breach — the ceil
   // redesign guards against (see summarizeSliceBurn's doc comment).
   const reports = [costReport({ path: "/a.md", usd: 70 }), costReport({ path: "/b.md", usd: 70 })];
   const summary = summarizeSliceBurn(reports, 140, 75);
-  assert.equal(summary.rollingUsd, 140);
-  assert.equal(summary.ceilingExceeded, false);
-  assert.equal(summary.flaggedPaths.size, 0);
+  expect(summary.rollingUsd).toBe(140);
+  expect(summary.ceilingExceeded).toBe(false);
+  expect(summary.flaggedPaths.size).toBe(0);
 });
 
 // ── readLoopCostCeiling ──────────────────────────────────────────────────────
@@ -187,7 +186,7 @@ test("readLoopCostCeiling reads loop.cost.ceilingUsd from .claude/loop.json", as
       JSON.stringify({ loop: { cost: { ceilingUsd: 42 } } })
     );
     const ceiling = await readLoopCostCeiling(tmp);
-    assert.equal(ceiling, 42);
+    expect(ceiling).toBe(42);
   } finally {
     await fs.rm(tmp, { recursive: true, force: true });
   }
@@ -197,7 +196,7 @@ test("readLoopCostCeiling returns null when loop.json is missing", async () => {
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "cost-watch-ceiling-missing-"));
   try {
     const ceiling = await readLoopCostCeiling(tmp);
-    assert.equal(ceiling, null);
+    expect(ceiling).toBe(null);
   } finally {
     await fs.rm(tmp, { recursive: true, force: true });
   }
@@ -209,7 +208,7 @@ test("readLoopCostCeiling returns null when ceilingUsd is absent", async () => {
     await fs.mkdir(path.join(tmp, ".claude"), { recursive: true });
     await fs.writeFile(path.join(tmp, ".claude", "loop.json"), JSON.stringify({ loop: {} }));
     const ceiling = await readLoopCostCeiling(tmp);
-    assert.equal(ceiling, null);
+    expect(ceiling).toBe(null);
   } finally {
     await fs.rm(tmp, { recursive: true, force: true });
   }
@@ -228,13 +227,13 @@ test("renderCostWatchReport renders dispatch + slice tables and a cap warning", 
       75
     )
   });
-  assert.match(report, /crew:aiplugin-dev/);
-  assert.match(report, /opus/);
-  assert.match(report, /OVER CAP/);
-  assert.match(report, /SLICE99/);
-  assert.match(report, /OVER CEILING/);
-  assert.match(report, /exceeded loop\.cost\.ceilingUsd/);
-  assert.match(report, /Data-gap notes/);
+  expect(report).toMatch(/crew:aiplugin-dev/);
+  expect(report).toMatch(/opus/);
+  expect(report).toMatch(/OVER CAP/);
+  expect(report).toMatch(/SLICE99/);
+  expect(report).toMatch(/OVER CEILING/);
+  expect(report).toMatch(/exceeded loop\.cost\.ceilingUsd/);
+  expect(report).toMatch(/Data-gap notes/);
 });
 
 test("renderCostWatchReport degrades gracefully with no data", () => {
@@ -242,8 +241,8 @@ test("renderCostWatchReport degrades gracefully with no data", () => {
     dispatch: summarizeDispatchBurn([]),
     slice: summarizeSliceBurn([], 0, null)
   });
-  assert.match(report, /no dispatch-timing data/);
-  assert.match(report, /no cost-report-slice artifacts/);
+  expect(report).toMatch(/no dispatch-timing data/);
+  expect(report).toMatch(/no cost-report-slice artifacts/);
 });
 
 // ── buildCostWatch (end-to-end read) ────────────────────────────────────────
@@ -295,17 +294,17 @@ test("buildCostWatch reads dispatch-timing.jsonl + cost reports + loop.json ceil
       dispatchTimingLogPath: path.join(tmp, ".claude", "logs", "dispatch-timing.jsonl")
     });
 
-    assert.equal(data.dispatch.rows.length, 1);
-    assert.equal(data.dispatch.rows[0]?.agent, "crew:fullstack-dev");
-    assert.equal(data.slice.reports.length, 1);
-    assert.equal(data.slice.reports[0]?.runTitle, "SLICE1");
-    assert.equal(data.slice.ceilingUsd, 1);
-    assert.equal(data.slice.ceilingExceeded, true); // 2.5 > 1
+    expect(data.dispatch.rows.length).toBe(1);
+    expect(data.dispatch.rows[0]?.agent).toBe("crew:fullstack-dev");
+    expect(data.slice.reports.length).toBe(1);
+    expect(data.slice.reports[0]?.runTitle).toBe("SLICE1");
+    expect(data.slice.ceilingUsd).toBe(1);
+    expect(data.slice.ceilingExceeded).toBe(true); // 2.5 > 1
 
     const rendered = renderCostWatchReport(data);
-    assert.match(rendered, /crew:fullstack-dev/);
-    assert.match(rendered, /SLICE1/);
-    assert.match(rendered, /exceeded loop\.cost\.ceilingUsd/);
+    expect(rendered).toMatch(/crew:fullstack-dev/);
+    expect(rendered).toMatch(/SLICE1/);
+    expect(rendered).toMatch(/exceeded loop\.cost\.ceilingUsd/);
   } finally {
     await fs.rm(tmp, { recursive: true, force: true });
   }

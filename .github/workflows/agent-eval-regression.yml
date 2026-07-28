@@ -17,12 +17,17 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
 
+concurrency:
+  group: agent-eval-regression-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   eval-regression:
     if: |
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'run-evals'))
     runs-on: [self-hosted, astragenie, aws]
+    timeout-minutes: 20
     # TODO(2026-07-13): promote to blocking after 2-week stability baseline.
     # Remove continue-on-error when:
     #   - 14+ consecutive PR runs PASS (check evals/runs/ history)
@@ -30,7 +35,7 @@ jobs:
     #   - --candidate-live flag lands (FEAT-171)
     continue-on-error: true # Advisory until 2026-07-13 stability baseline.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # Bun baked into runner image (devops#64) — no setup-bun, no ETXTBSY race.
       - run: bun install --frozen-lockfile
       - name: Eval prompt (dry-run heuristic asserts)

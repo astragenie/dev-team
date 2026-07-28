@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -18,14 +17,14 @@ async function cleanup(dir: string): Promise<void> {
 }
 
 test("parseFeatureOverrides: empty input returns empty array", () => {
-  assert.deepEqual(parseFeatureOverrides(null), []);
-  assert.deepEqual(parseFeatureOverrides(""), []);
-  assert.deepEqual(parseFeatureOverrides(undefined), []);
+  expect(parseFeatureOverrides(null)).toEqual([]);
+  expect(parseFeatureOverrides("")).toEqual([]);
+  expect(parseFeatureOverrides(undefined)).toEqual([]);
 });
 
 test("parseFeatureOverrides: parses on|off|true|false|1|0", () => {
   const out = parseFeatureOverrides("cost-hygiene=on,shell-preflight=off,subagent-inline-warn=1");
-  assert.deepEqual(out, [
+  expect(out).toEqual([
     { feature: "cost-hygiene", enabled: true },
     { feature: "shell-preflight", enabled: false },
     { feature: "subagent-inline-warn", enabled: true }
@@ -33,29 +32,27 @@ test("parseFeatureOverrides: parses on|off|true|false|1|0", () => {
 });
 
 test("parseFeatureOverrides: unknown feature throws", () => {
-  assert.throws(() => parseFeatureOverrides("not-a-real-feature=on"), /Unknown feature/);
+  expect(() => parseFeatureOverrides("not-a-real-feature=on")).toThrow(/Unknown feature/);
 });
 
 test("parseFeatureOverrides: invalid value throws", () => {
-  assert.throws(() => parseFeatureOverrides("cost-hygiene=maybe"), /Invalid value/);
+  expect(() => parseFeatureOverrides("cost-hygiene=maybe")).toThrow(/Invalid value/);
 });
 
 test("parseFeatureOverrides: missing = throws", () => {
-  assert.throws(() => parseFeatureOverrides("cost-hygiene"), /Expected NAME=on\|off/);
+  expect(() => parseFeatureOverrides("cost-hygiene")).toThrow(/Expected NAME=on\|off/);
 });
 
 test("runCostSetup: writes default features block on empty repo", async () => {
   const repo = await makeRepo();
   try {
     const result = await runCostSetup(repo);
-    assert.equal(result.written, true);
+    expect(result.written).toBe(true);
     const config = await readCrewConfigOrEmpty(repo);
-    assert.ok(config.features);
+    expect(config.features).toBeTruthy();
     for (const name of Object.keys(FEATURES)) {
-      assert.equal(
-        config.features![name]?.enabled,
-        FEATURES[name as keyof typeof FEATURES]!.default,
-        `${name} should match registry default`
+      expect(config.features![name]?.enabled, `${name} should match registry default`).toBe(
+        FEATURES[name as keyof typeof FEATURES]!.default
       );
     }
   } finally {
@@ -67,9 +64,9 @@ test("runCostSetup: idempotent — second call writes nothing", async () => {
   const repo = await makeRepo();
   try {
     const first = await runCostSetup(repo);
-    assert.equal(first.written, true);
+    expect(first.written).toBe(true);
     const second = await runCostSetup(repo);
-    assert.equal(second.written, false, "second call should detect no change");
+    expect(second.written, "second call should detect no change").toBe(false);
   } finally {
     await cleanup(repo);
   }
@@ -79,10 +76,10 @@ test("runCostSetup: overrides flip a feature off", async () => {
   const repo = await makeRepo();
   try {
     const result = await runCostSetup(repo, [{ feature: "cost-hygiene", enabled: false }]);
-    assert.equal(result.written, true);
+    expect(result.written).toBe(true);
     const config = await readCrewConfigOrEmpty(repo);
-    assert.equal(config.features!["cost-hygiene"]!.enabled, false);
-    assert.equal(config.features!["shell-preflight"]!.enabled, true);
+    expect(config.features!["cost-hygiene"]!.enabled).toBe(false);
+    expect(config.features!["shell-preflight"]!.enabled).toBe(true);
   } finally {
     await cleanup(repo);
   }
@@ -99,9 +96,9 @@ test("runCostSetup: preserves user-set fields outside features", async () => {
     );
     await runCostSetup(repo);
     const config = await readCrewConfigOrEmpty(repo);
-    assert.equal((config as Record<string, unknown>).customKey, "preserved");
-    assert.deepEqual((config as Record<string, unknown>).nested, { foo: 1 });
-    assert.ok(config.features);
+    expect((config as Record<string, unknown>).customKey).toBe("preserved");
+    expect((config as Record<string, unknown>).nested).toEqual({ foo: 1 });
+    expect(config.features).toBeTruthy();
   } finally {
     await cleanup(repo);
   }
@@ -120,13 +117,9 @@ test("runCostSetup: existing feature override is preserved when not in overrides
     );
     const result = await runCostSetup(repo);
     const config = await readCrewConfigOrEmpty(repo);
-    assert.equal(config.features!["cost-hygiene"]!.enabled, false, "user's off should stick");
-    assert.equal(
-      config.features!["shell-preflight"]!.enabled,
-      true,
-      "missing entries get defaults"
-    );
-    assert.equal(result.written, true, "missing default entries triggered a write");
+    expect(config.features!["cost-hygiene"]!.enabled, "user's off should stick").toBe(false);
+    expect(config.features!["shell-preflight"]!.enabled, "missing entries get defaults").toBe(true);
+    expect(result.written, "missing default entries triggered a write").toBe(true);
   } finally {
     await cleanup(repo);
   }

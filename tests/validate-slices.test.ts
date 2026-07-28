@@ -1,8 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -37,7 +36,7 @@ test("validate-slices: empty pending dir exits 0", async () => {
   const dir = await makeFixture("vs-empty-");
   try {
     const { status } = runValidator(dir);
-    assert.equal(status, 0, "expected exit 0 for empty pending dir");
+    expect(status, "expected exit 0 for empty pending dir").toBe(0);
   } finally {
     await cleanup(dir);
   }
@@ -60,7 +59,7 @@ test("validate-slices: slice with concrete ACs exits 0", async () => {
       body
     );
     const { status, stderr } = runValidator(dir);
-    assert.equal(status, 0, `expected exit 0, got ${status}, stderr: ${stderr}`);
+    expect(status, `expected exit 0, got ${status}, stderr: ${stderr}`).toBe(0);
   } finally {
     await cleanup(dir);
   }
@@ -83,9 +82,9 @@ test("validate-slices: literal AC-N: ... placeholder exits 1", async () => {
       body
     );
     const { status, stderr } = runValidator(dir);
-    assert.equal(status, 1, "expected exit 1 for literal dot placeholder");
-    assert.match(stderr, /SLICE_99_PH\.md/, "stderr must name offending file");
-    assert.match(stderr, /AC-1/, "stderr must name the placeholder AC bullet");
+    expect(status, "expected exit 1 for literal dot placeholder").toBe(1);
+    expect(stderr, "stderr must name offending file").toMatch(/SLICE_99_PH\.md/);
+    expect(stderr, "stderr must name the placeholder AC bullet").toMatch(/AC-1/);
   } finally {
     await cleanup(dir);
   }
@@ -107,8 +106,8 @@ test("validate-slices: angle-bracket template placeholder exits 1", async () => 
       body
     );
     const { status, stderr } = runValidator(dir);
-    assert.equal(status, 1, "expected exit 1 for angle-bracket placeholder");
-    assert.match(stderr, /AC-1/, "stderr must name the placeholder AC bullet");
+    expect(status, "expected exit 1 for angle-bracket placeholder").toBe(1);
+    expect(stderr, "stderr must name the placeholder AC bullet").toMatch(/AC-1/);
   } finally {
     await cleanup(dir);
   }
@@ -130,8 +129,8 @@ test("validate-slices: empty AC bullet exits 1", async () => {
       body
     );
     const { status, stderr } = runValidator(dir);
-    assert.equal(status, 1, "expected exit 1 for empty AC bullet");
-    assert.match(stderr, /AC-1/, "stderr must name the empty AC bullet");
+    expect(status, "expected exit 1 for empty AC bullet").toBe(1);
+    expect(stderr, "stderr must name the empty AC bullet").toMatch(/AC-1/);
   } finally {
     await cleanup(dir);
   }
@@ -147,7 +146,7 @@ test("validate-slices: completed/ slices are NOT scanned", async () => {
       body
     );
     const { status } = runValidator(dir);
-    assert.equal(status, 0, "expected exit 0 — completed slices are immutable history");
+    expect(status, "expected exit 0 — completed slices are immutable history").toBe(0);
   } finally {
     await cleanup(dir);
   }
@@ -157,7 +156,7 @@ test("validate-slices: missing slices dir exits 0", async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "vs-missing-"));
   try {
     const { status } = runValidator(dir);
-    assert.equal(status, 0, "expected exit 0 when docs/ai-loop/slices/pending is absent");
+    expect(status, "expected exit 0 when docs/ai-loop/slices/pending is absent").toBe(0);
   } finally {
     await cleanup(dir);
   }

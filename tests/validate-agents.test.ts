@@ -1,6 +1,5 @@
 // tests/validate-agents.test.mjs — FEAT-035 SLICE-14
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -36,8 +35,8 @@ Write your handoff via write-handoff.
 test("passes on a well-formed agent file", async () => {
   const root = await makeAgentsDir({ "builder.md": WELL_FORMED_BODY });
   const result = await validateAgents(root);
-  assert.equal(result.ok, true, `unexpected errors: ${result.errors.join("; ")}`);
-  assert.equal(result.agentCount, 1);
+  expect(result.ok, `unexpected errors: ${result.errors.join("; ")}`).toBe(true);
+  expect(result.agentCount).toBe(1);
 });
 
 test("fails on missing required frontmatter field", async () => {
@@ -54,11 +53,11 @@ x
 `;
   const root = await makeAgentsDir({ "builder.md": noModel });
   const result = await validateAgents(root);
-  assert.equal(result.ok, false);
-  assert.ok(
+  expect(result.ok).toBe(false);
+  expect(
     result.errors.some((e) => /missing required frontmatter "model"/.test(e)),
     `expected missing-model error, got: ${result.errors.join("; ")}`
-  );
+  ).toBeTruthy();
 });
 
 test("fails on missing or malformed frontmatter block", async () => {
@@ -72,15 +71,15 @@ x
 `;
   const root = await makeAgentsDir({ "builder.md": noFrontmatter });
   const result = await validateAgents(root);
-  assert.equal(result.ok, false);
-  assert.ok(result.errors.some((e) => /missing or malformed frontmatter/.test(e)));
+  expect(result.ok).toBe(false);
+  expect(result.errors.some((e) => /missing or malformed frontmatter/.test(e))).toBeTruthy();
 });
 
 test("fails when filename does not match frontmatter name", async () => {
   const root = await makeAgentsDir({ "wrong-name.md": WELL_FORMED_BODY });
   const result = await validateAgents(root);
-  assert.equal(result.ok, false);
-  assert.ok(result.errors.some((e) => /does not match frontmatter name/.test(e)));
+  expect(result.ok).toBe(false);
+  expect(result.errors.some((e) => /does not match frontmatter name/.test(e))).toBeTruthy();
 });
 
 test("fails on missing required '## Report contract' section (non-lead)", async () => {
@@ -98,8 +97,10 @@ x
 `;
   const root = await makeAgentsDir({ "builder.md": noReportContract });
   const result = await validateAgents(root);
-  assert.equal(result.ok, false);
-  assert.ok(result.errors.some((e) => /missing required section "## Report contract"/.test(e)));
+  expect(result.ok).toBe(false);
+  expect(
+    result.errors.some((e) => /missing required section "## Report contract"/.test(e))
+  ).toBeTruthy();
 });
 
 // lead role removed in v0.41 hard cut — exemption test removed with it. All
@@ -120,8 +121,8 @@ x
 `;
   const root = await makeAgentsDir({ "builder.md": noIdentity });
   const result = await validateAgents(root);
-  assert.equal(result.ok, false);
-  assert.ok(result.errors.some((e) => /missing identity intro/.test(e)));
+  expect(result.ok).toBe(false);
+  expect(result.errors.some((e) => /missing identity intro/.test(e))).toBeTruthy();
 });
 
 test("fails when file exceeds the default 350-line cap", async () => {
@@ -139,11 +140,11 @@ You are the builder.
 ` + "x\n".repeat(351);
   const root = await makeAgentsDir({ "builder.md": padded });
   const result = await validateAgents(root);
-  assert.equal(result.ok, false);
-  assert.ok(
+  expect(result.ok).toBe(false);
+  expect(
     result.errors.some((e) => /exceeds the 350-line agent prompt cap/.test(e)),
     `expected line-cap error, got: ${result.errors.join("; ")}`
-  );
+  ).toBeTruthy();
 });
 
 test("maxLines frontmatter overrides the default cap", async () => {
@@ -162,11 +163,11 @@ You are the builder.
 ` + "x\n".repeat(121);
   const root = await makeAgentsDir({ "builder.md": padded });
   const result = await validateAgents(root);
-  assert.equal(result.ok, false);
-  assert.ok(
+  expect(result.ok).toBe(false);
+  expect(
     result.errors.some((e) => /exceeds the 120-line agent prompt cap/.test(e)),
     `expected override line-cap error, got: ${result.errors.join("; ")}`
-  );
+  ).toBeTruthy();
 });
 
 test("fails on duplicate agent names across the directory", async () => {
@@ -176,14 +177,14 @@ test("fails on duplicate agent names across the directory", async () => {
   const result = await validateAgents(root);
   // dup.md will also fail filename-mismatch; that's fine, but we still need
   // the duplicate-name error to surface.
-  assert.equal(result.ok, false);
-  assert.ok(result.errors.some((e) => /duplicate agent name/.test(e)));
+  expect(result.ok).toBe(false);
+  expect(result.errors.some((e) => /duplicate agent name/.test(e))).toBeTruthy();
 });
 
 test("returns ok and agentCount:0 when agents/ directory is missing", async () => {
   const result = await validateAgents(path.join(os.tmpdir(), "definitely-not-a-real-dir-xyz"));
-  assert.equal(result.ok, true);
-  assert.equal(result.agentCount, 0);
+  expect(result.ok).toBe(true);
+  expect(result.agentCount).toBe(0);
 });
 
 // Backlog-id discipline: agents on the no-backlog-ids allowlist must not
@@ -215,11 +216,11 @@ test("fails when an allowlisted agent embeds FEAT-NNN in its prompt body", async
   );
   const root = await makeAgentsDir({ "backend-dev.md": withFeatRef });
   const result = await validateAgents(root);
-  assert.equal(result.ok, false);
-  assert.ok(
+  expect(result.ok).toBe(false);
+  expect(
     result.errors.some((e) => /backlog ids must not appear/.test(e) && /FEAT-163/.test(e)),
     `expected backlog-id error citing FEAT-163, got: ${result.errors.join("; ")}`
-  );
+  ).toBeTruthy();
 });
 
 test("fails when an allowlisted agent embeds DEC-NNN or SLICE-NN", async () => {
@@ -229,17 +230,17 @@ test("fails when an allowlisted agent embeds DEC-NNN or SLICE-NN", async () => {
   );
   const root = await makeAgentsDir({ "backend-dev.md": withRefs });
   const result = await validateAgents(root);
-  assert.equal(result.ok, false);
-  assert.ok(
+  expect(result.ok).toBe(false);
+  expect(
     result.errors.some((e) => /DEC-023/.test(e) && /SLICE-71/.test(e)),
     `expected backlog-id error citing DEC-023 + SLICE-71, got: ${result.errors.join("; ")}`
-  );
+  ).toBeTruthy();
 });
 
 test("passes on an allowlisted agent with zero backlog ids", async () => {
   const root = await makeAgentsDir({ "backend-dev.md": BACKEND_DEV_BASE });
   const result = await validateAgents(root);
-  assert.equal(result.ok, true, `unexpected errors: ${result.errors.join("; ")}`);
+  expect(result.ok, `unexpected errors: ${result.errors.join("; ")}`).toBe(true);
 });
 
 test("ignores backlog ids on agents NOT in the no-backlog-ids allowlist", async () => {
@@ -250,8 +251,8 @@ test("ignores backlog ids on agents NOT in the no-backlog-ids allowlist", async 
   const root = await makeAgentsDir({ "builder.md": builderWithRef });
   const result = await validateAgents(root);
   // `builder` is not in NO_BACKLOG_IDS_REQUIRED, so the FEAT ref must not error.
-  assert.ok(
+  expect(
     !result.errors.some((e) => /backlog ids must not appear/.test(e)),
     `unexpected backlog-id error for non-allowlisted agent: ${result.errors.join("; ")}`
-  );
+  ).toBeTruthy();
 });

@@ -1,3 +1,4 @@
+import { test, expect } from "bun:test";
 // #163 — chore-branch quick-win lane spawner.
 //
 // Verifies spawnChoreLane's three paths (fresh / reuse-live / re-attach) plus
@@ -7,8 +8,6 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import test from "node:test";
-import assert from "node:assert/strict";
 
 import { spawnChoreLane, choreLaneStatus } from "../scripts/lib/worktree-manager.ts";
 
@@ -48,24 +47,23 @@ test("fresh spawn cuts chore/quickwins-<date> from main into a gitignored worktr
   const repo = await makeRepo("fresh");
 
   const result = await spawnChoreLane(repo, { date: DATE });
-  assert.equal(result.ok, true);
+  expect(result.ok).toBe(true);
   if (!result.ok) return;
 
-  assert.equal(result.value.branch, BRANCH);
-  assert.equal(result.value.reused, false);
-  assert.equal(result.value.base, "main");
-  assert.equal(
-    path.resolve(result.value.worktreePath),
+  expect(result.value.branch).toBe(BRANCH);
+  expect(result.value.reused).toBe(false);
+  expect(result.value.base).toBe("main");
+  expect(path.resolve(result.value.worktreePath)).toBe(
     path.resolve(repo, ".claude", "worktrees", `quickwins-${DATE}`)
   );
 
   // Worktree actually exists on disk and is checked out on the lane branch.
-  await assert.doesNotReject(fs.access(result.value.worktreePath));
+  await fs.access(result.value.worktreePath);
   const head = git(["rev-parse", "--abbrev-ref", "HEAD"], result.value.worktreePath);
-  assert.equal(head, BRANCH);
+  expect(head).toBe(BRANCH);
 
   // Lane branch tip equals main's tip (cut from base, not a stray commit).
-  assert.equal(git(["rev-parse", BRANCH], repo), git(["rev-parse", "main"], repo));
+  expect(git(["rev-parse", BRANCH], repo)).toBe(git(["rev-parse", "main"], repo));
 });
 
 test("second spawn on the same date reuses the live lane (batching: one PR/day)", async () => {
@@ -73,60 +71,60 @@ test("second spawn on the same date reuses the live lane (batching: one PR/day)"
 
   const first = await spawnChoreLane(repo, { date: DATE });
   const second = await spawnChoreLane(repo, { date: DATE });
-  assert.equal(first.ok && second.ok, true);
+  expect(first.ok && second.ok).toBe(true);
   if (!first.ok || !second.ok) return;
 
-  assert.equal(second.value.reused, true);
-  assert.equal(path.resolve(second.value.worktreePath), path.resolve(first.value.worktreePath));
+  expect(second.value.reused).toBe(true);
+  expect(path.resolve(second.value.worktreePath)).toBe(path.resolve(first.value.worktreePath));
   // Exactly one lane worktree registered — no duplicate.
   const list = git(["worktree", "list", "--porcelain"], repo);
   const laneCount = list.split("\n").filter((l) => l === `branch refs/heads/${BRANCH}`).length;
-  assert.equal(laneCount, 1);
+  expect(laneCount).toBe(1);
 });
 
 test("branch survives but worktree pruned → re-attach a worktree at the existing branch", async () => {
   const repo = await makeRepo("reattach");
 
   const first = await spawnChoreLane(repo, { date: DATE });
-  assert.equal(first.ok, true);
+  expect(first.ok).toBe(true);
   if (!first.ok) return;
 
   // Simulate an operator removing the worktree while keeping the branch.
   git(["worktree", "remove", "--force", first.value.worktreePath], repo);
-  assert.equal(git(["rev-parse", "--verify", BRANCH], repo).length > 0, true);
+  expect(git(["rev-parse", "--verify", BRANCH], repo).length > 0).toBe(true);
 
   const again = await spawnChoreLane(repo, { date: DATE });
-  assert.equal(again.ok, true);
+  expect(again.ok).toBe(true);
   if (!again.ok) return;
-  assert.equal(again.value.reused, true);
-  assert.equal(again.value.branch, BRANCH);
-  await assert.doesNotReject(fs.access(again.value.worktreePath));
+  expect(again.value.reused).toBe(true);
+  expect(again.value.branch).toBe(BRANCH);
+  await fs.access(again.value.worktreePath);
 });
 
 test("choreLaneStatus reflects lane presence before and after spawn", async () => {
   const repo = await makeRepo("status");
 
   const before = await choreLaneStatus(repo, { date: DATE });
-  assert.equal(before.ok, true);
+  expect(before.ok).toBe(true);
   if (!before.ok) return;
-  assert.equal(before.value.exists, false);
-  assert.equal(before.value.worktreePath, null);
-  assert.equal(before.value.branch, BRANCH);
+  expect(before.value.exists).toBe(false);
+  expect(before.value.worktreePath).toBe(null);
+  expect(before.value.branch).toBe(BRANCH);
 
   await spawnChoreLane(repo, { date: DATE });
 
   const after = await choreLaneStatus(repo, { date: DATE });
-  assert.equal(after.ok, true);
+  expect(after.ok).toBe(true);
   if (!after.ok) return;
-  assert.equal(after.value.exists, true);
-  assert.notEqual(after.value.worktreePath, null);
+  expect(after.value.exists).toBe(true);
+  expect(after.value.worktreePath).not.toBe(null);
 });
 
 test("spawning against a plain non-git directory returns an error, not a crash", async () => {
   const plain = await fs.mkdtemp(path.join(os.tmpdir(), "wt-mgr-plain-"));
 
   const result = await spawnChoreLane(plain, { date: DATE });
-  assert.equal(result.ok, false);
+  expect(result.ok).toBe(false);
   if (result.ok) return;
-  assert.match(result.error.message, /Not a git repository/);
+  expect(result.error.message).toMatch(/Not a git repository/);
 });

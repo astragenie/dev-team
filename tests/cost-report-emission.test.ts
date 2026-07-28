@@ -5,8 +5,7 @@
 // AC-3: single-source emission does NOT write an aggregate file
 // AC-4: legacy cost-report files continue to parse (no-change test)
 
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
@@ -98,11 +97,11 @@ test("cost-report-slice: single-source emission writes only the slice file", asy
     });
 
     const files = await listCostDir(tmpDir);
-    assert.equal(files.length, 1, `Expected 1 file, got: ${files.join(", ")}`);
-    assert.ok(
+    expect(files.length, `Expected 1 file, got: ${files.join(", ")}`).toBe(1);
+    expect(
       files[0]!.includes("-cost-report-slice-"),
       `Expected filename to include '-cost-report-slice-', got: ${files[0]!}`
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(tmpDir);
   }
@@ -120,11 +119,10 @@ test("cost-report-slice: single-source emission does NOT write an aggregate file
 
     const files = await listCostDir(tmpDir);
     const aggregateFiles = files.filter((f) => f.includes("-cost-report-aggregate-"));
-    assert.equal(
+    expect(
       aggregateFiles.length,
-      0,
       `Expected no aggregate file; found: ${aggregateFiles.join(", ")}`
-    );
+    ).toBe(0);
   } finally {
     await cleanup(tmpDir);
   }
@@ -145,15 +143,15 @@ test("cost-report-slice: slice file has aggregate_all: false in frontmatter", as
     });
 
     const files = await listCostDir(tmpDir);
-    assert.equal(files.length, 1, "Expected 1 file");
+    expect(files.length, "Expected 1 file").toBe(1);
     const content = await fs.readFile(
       path.join(tmpDir, ".claude", "artifacts", "crew", "cost", files[0]!),
       "utf8"
     );
-    assert.ok(
+    expect(
       content.includes("aggregate_all: false"),
       `Expected 'aggregate_all: false' in frontmatter.\nContent:\n${content.slice(0, 400)}`
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(tmpDir);
   }
@@ -174,10 +172,10 @@ test("cost-report-slice: slice file has source_count: 1 in frontmatter", async (
       path.join(tmpDir, ".claude", "artifacts", "crew", "cost", files[0]!),
       "utf8"
     );
-    assert.ok(
+    expect(
       content.includes("source_count: 1"),
       `Expected 'source_count: 1' in frontmatter.\nContent:\n${content.slice(0, 400)}`
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(tmpDir);
   }
@@ -198,11 +196,11 @@ test("cost-report-aggregate: multi-source emission writes aggregate file", async
     });
 
     const files = await listCostDir(tmpDir);
-    assert.equal(files.length, 1, `Expected 1 file, got: ${files.join(", ")}`);
-    assert.ok(
+    expect(files.length, `Expected 1 file, got: ${files.join(", ")}`).toBe(1);
+    expect(
       files[0]!.includes("-cost-report-aggregate-"),
       `Expected filename to include '-cost-report-aggregate-', got: ${files[0]!}`
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(tmpDir);
   }
@@ -223,10 +221,10 @@ test("cost-report-aggregate: aggregate file has aggregate_all: true in frontmatt
       path.join(tmpDir, ".claude", "artifacts", "crew", "cost", files[0]!),
       "utf8"
     );
-    assert.ok(
+    expect(
       content.includes("aggregate_all: true"),
       `Expected 'aggregate_all: true' in frontmatter.\nContent:\n${content.slice(0, 400)}`
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(tmpDir);
   }
@@ -247,10 +245,10 @@ test("cost-report-aggregate: aggregate file has correct source_count in frontmat
       path.join(tmpDir, ".claude", "artifacts", "crew", "cost", files[0]!),
       "utf8"
     );
-    assert.ok(
+    expect(
       content.includes("source_count: 2"),
       `Expected 'source_count: 2' in frontmatter.\nContent:\n${content.slice(0, 400)}`
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(tmpDir);
   }
@@ -271,12 +269,12 @@ test("cost-report: legacy kind still emits a file with -cost-report- in name", a
     });
 
     const files = await listCostDir(tmpDir);
-    assert.equal(files.length, 1, `Expected 1 file, got: ${files.join(", ")}`);
+    expect(files.length, `Expected 1 file, got: ${files.join(", ")}`).toBe(1);
     // Legacy pattern: includes -cost-report- but NOT -cost-report-slice- or -cost-report-aggregate-
-    assert.ok(
+    expect(
       files[0]!.includes("-cost-report-"),
       `Expected '-cost-report-' in filename, got: ${files[0]!}`
-    );
+    ).toBeTruthy();
   } finally {
     await cleanup(tmpDir);
   }
@@ -308,20 +306,20 @@ for (const kind of ["cost-report", "cost-report-slice", "cost-report-aggregate"]
         outcome: null,
         updatePath: historicalPath
       });
-      assert.ok(result.ok, "writeArtifact should still succeed");
+      expect(result.ok, "writeArtifact should still succeed").toBeTruthy();
+      if (!result.ok) throw new Error("unreachable: asserted above");
 
       // Historical file is byte-preserved — not clobbered.
       const after = await fs.readFile(historicalPath, "utf8");
-      assert.equal(after, SENTINEL, "historical cost-report file must be preserved intact");
+      expect(after, "historical cost-report file must be preserved intact").toBe(SENTINEL);
 
       // The emit still landed — as a NEW timestamped file, not at updatePath.
-      assert.notEqual(
+      expect(
         result.value.path,
-        historicalPath,
         "cost-report emit must mint a fresh path, never reuse updatePath"
-      );
+      ).not.toBe(historicalPath);
       const files = await listCostDir(tmpDir);
-      assert.equal(files.length, 2, `Expected historical + fresh file, got: ${files.join(", ")}`);
+      expect(files.length, `Expected historical + fresh file, got: ${files.join(", ")}`).toBe(2);
     } finally {
       await cleanup(tmpDir);
     }
@@ -412,26 +410,29 @@ test("maybeEmitCostReport: stale/wide currentRun does not touch historical cost-
       );
       const result = await maybeEmitCostReport(tmpDir, { runTitle: "stale-currentrun-emit" });
 
-      assert.ok(result, "emitter should return a result for a stale-but-present currentRun");
-      assert.ok(
+      expect(
+        result,
+        "emitter should return a result for a stale-but-present currentRun"
+      ).toBeTruthy();
+      expect(
         !("error" in (result as Record<string, unknown>)),
         `emitter errored: ${JSON.stringify(result)}`
-      );
+      ).toBeTruthy();
 
       // Both historical files are byte-preserved — the stale/wide window
       // never rewrote them, and never rewrote them into lossy stubs.
       for (const [i, p] of historicalPaths.entries()) {
         const after = await fs.readFile(p, "utf8");
-        assert.equal(after, sentinels[i]!, `historical file ${p} must be preserved intact`);
+        expect(after, `historical file ${p} must be preserved intact`).toBe(sentinels[i]!);
       }
 
       // The emit landed as a fresh file alongside the historical set, not by
       // touching it.
       const filesAfter = await listCostDir(tmpDir);
-      assert.ok(
+      expect(
         filesAfter.length > historicalPaths.length,
         `expected at least one fresh file alongside the ${historicalPaths.length} historical files, got: ${filesAfter.join(", ")}`
-      );
+      ).toBeTruthy();
     });
   } finally {
     await cleanup(tmpDir);
@@ -467,21 +468,20 @@ test("maybeEmitCostReport: normal (fresh) currentRun emission preserves historic
       );
       const result = await maybeEmitCostReport(tmpDir, { runTitle: "fresh-currentrun-emit" });
 
-      assert.ok(result, "emitter should return a result for a fresh currentRun");
-      assert.ok(
+      expect(result, "emitter should return a result for a fresh currentRun").toBeTruthy();
+      expect(
         !("error" in (result as Record<string, unknown>)),
         `emitter errored: ${JSON.stringify(result)}`
-      );
+      ).toBeTruthy();
 
       const after = await fs.readFile(historicalPath, "utf8");
-      assert.equal(after, sentinel, "unrelated historical file must be untouched");
+      expect(after, "unrelated historical file must be untouched").toBe(sentinel);
 
       const filesAfter = await listCostDir(tmpDir);
-      assert.equal(
+      expect(
         filesAfter.length,
-        2,
         `expected historical + exactly one fresh report, got: ${filesAfter.join(", ")}`
-      );
+      ).toBe(2);
     });
   } finally {
     await cleanup(tmpDir);

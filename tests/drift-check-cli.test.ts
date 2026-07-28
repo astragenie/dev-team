@@ -10,8 +10,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import {
   parseDriftCheckArgs,
   runDriftCheckCli,
@@ -66,19 +65,19 @@ test("parseDriftCheckArgs reads --repo/--threshold/--window-days", () => {
     "--window-days",
     "30"
   ]);
-  assert.equal(opts.repo, "/some/repo");
-  assert.equal(opts.threshold, 3);
-  assert.equal(opts.windowDays, 30);
+  expect(opts.repo).toBe("/some/repo");
+  expect(opts.threshold).toBe(3);
+  expect(opts.windowDays).toBe(30);
 });
 
 test("parseDriftCheckArgs defaults threshold to 0 and windowDays to undefined", () => {
   const opts = parseDriftCheckArgs(["--repo", "/some/repo"]);
-  assert.equal(opts.threshold, 0);
-  assert.equal(opts.windowDays, undefined);
+  expect(opts.threshold).toBe(0);
+  expect(opts.windowDays).toBe(undefined);
 });
 
 test("parseDriftCheckArgs rejects a non-numeric --threshold", () => {
-  assert.throws(() => parseDriftCheckArgs(["--threshold", "nope"]), /--threshold must be/);
+  expect(() => parseDriftCheckArgs(["--threshold", "nope"])).toThrow(/--threshold must be/);
 });
 
 test("runDriftCheckCli exits 0 and emits no event when drift is within threshold", async () => {
@@ -99,15 +98,14 @@ test("runDriftCheckCli exits 0 and emits no event when drift is within threshold
       { __resolveRemote: async () => remote }
     );
 
-    assert.equal(result.exitCode, 0, "1 missing entry with threshold 5 must not fail the gate");
-    assert.equal(result.report?.missingFromAstramem.length, 1);
+    expect(result.exitCode, "1 missing entry with threshold 5 must not fail the gate").toBe(0);
+    expect(result.report?.missingFromAstramem.length).toBe(1);
 
     const events = await readEvents(repo);
-    assert.equal(
+    expect(
       events.filter((e) => e["event"] === "memory_drift").length,
-      0,
       "no memory_drift event should be emitted when drift is within threshold"
-    );
+    ).toBe(0);
   } finally {
     await cleanup(repo);
   }
@@ -137,20 +135,19 @@ test("runDriftCheckCli exits 1 and emits a memory_drift event carrying count + i
       __resolveRemote: async () => remote
     });
 
-    assert.equal(result.exitCode, 1, "2 missing entries with threshold 0 must fail the gate");
-    assert.equal(result.report?.missingFromAstramem.length, 2);
+    expect(result.exitCode, "2 missing entries with threshold 0 must fail the gate").toBe(1);
+    expect(result.report?.missingFromAstramem.length).toBe(2);
 
     const events = await readEvents(repo);
     const driftEvents = events.filter((e) => e["event"] === "memory_drift");
-    assert.equal(driftEvents.length, 1, "exactly one memory_drift event must be emitted");
+    expect(driftEvents.length, "exactly one memory_drift event must be emitted").toBe(1);
     const event = driftEvents[0] as { count: number; ids: string[]; threshold: number };
-    assert.equal(event.count, 2, "AC-4: event must carry the missing-entry count");
-    assert.equal(event.threshold, 0);
-    assert.deepEqual(
+    expect(event.count, "AC-4: event must carry the missing-entry count").toBe(2);
+    expect(event.threshold).toBe(0);
+    expect(
       [...event.ids].sort(),
-      ["exceeds-threshold-marker-a", "exceeds-threshold-marker-b"],
       "AC-4: event must carry the ids of entries missing from the SoT so they can be reconciled"
-    );
+    ).toEqual(["exceeds-threshold-marker-a", "exceeds-threshold-marker-b"]);
   } finally {
     await cleanup(repo);
   }
@@ -163,16 +160,15 @@ test("runDriftCheckCli exits 2 (inconclusive, no event) when astramem cannot be 
       __resolveRemote: async () => null
     });
 
-    assert.equal(result.exitCode, 2);
-    assert.equal(result.report, null);
-    assert.match(result.reason ?? "", /unreachable|unpaired|not paired/i);
+    expect(result.exitCode).toBe(2);
+    expect(result.report).toBe(null);
+    expect(result.reason ?? "").toMatch(/unreachable|unpaired|not paired/i);
 
     const events = await readEvents(repo);
-    assert.equal(
+    expect(
       events.filter((e) => e["event"] === "memory_drift").length,
-      0,
       "an inconclusive (astramem-unreachable) run must not emit a memory_drift event"
-    );
+    ).toBe(0);
   } finally {
     await cleanup(repo);
   }

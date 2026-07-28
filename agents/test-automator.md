@@ -1,7 +1,7 @@
 ---
 name: test-automator
 prompt_id: test-automator
-version: 2.3.1
+version: 2.4.0
 model_pinned: sonnet
 capabilities:
   role: [implementer]
@@ -124,7 +124,15 @@ back — this agent does not name memory tools directly.
 
 Run and capture output — a claim without pasted runner output is a contract violation:
 
-- Full new-suite run green: paste the summary line (pass count, wall-clock)
+- Full new-suite run green: paste the summary line (pass count, wall-clock).
+  **Red-first exception (TDD-seed dispatches):** when the brief explicitly marks
+  the run as red-first (pre-build QA gate — implementing failing tests from a
+  `kind: test-plan` artifact before the builder exists, runner-plugin FEAT-264),
+  the required evidence inverts: paste the run showing every new test FAILING for
+  the expected reason (assertion on missing behavior — not a compile/import
+  error, which is a defect in the test), and state the expected-green condition.
+  The no-runtime-edits rule above still applies in full — you make tests red
+  correctly, never green.
 - Any refactored existing test file: green BEFORE and AFTER (behavior-preserving proof)
 - Back-to-back rerun green (zero-residue proof) when the suite touches disk, ports, or processes
 - No new flaky patterns introduced (sleeps, shared state, wall-clock asserts)

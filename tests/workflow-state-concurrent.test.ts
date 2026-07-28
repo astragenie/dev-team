@@ -1,6 +1,5 @@
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
-import { test } from "node:test";
-import assert from "node:assert/strict";
 import { runCrew } from "../scripts/crew.ts";
 import { makeTempDir } from "./helpers/cli-fixtures.ts";
 import { loadWorkflowState } from "../scripts/lib/workflow-state.ts";
@@ -33,26 +32,20 @@ test("concurrent markWorkflowBadge calls merge correctly (no lost updates)", asy
       ])
     ]);
 
-    assert.equal(result1.code, 0, "first badge mark should succeed");
-    assert.equal(result2.code, 0, "second badge mark should succeed");
+    expect(result1.code, "first badge mark should succeed").toBe(0);
+    expect(result2.code, "second badge mark should succeed").toBe(0);
 
     // Verify both gates are set in final state
     const final = await loadWorkflowState(repoPath);
-    assert.equal(final.currentRun?.gates.review?.status, "passed", "review gate should be passed");
-    assert.equal(
-      final.currentRun?.gates.validation?.status,
-      "passed",
-      "validation gate should be passed"
+    expect(final.currentRun?.gates.review?.status, "review gate should be passed").toBe("passed");
+    expect(final.currentRun?.gates.validation?.status, "validation gate should be passed").toBe(
+      "passed"
     );
-    assert.equal(
-      final.currentRun?.gates.review?.note,
-      "review OK",
-      "review note should be persisted"
+    expect(final.currentRun?.gates.review?.note, "review note should be persisted").toBe(
+      "review OK"
     );
-    assert.equal(
-      final.currentRun?.gates.validation?.note,
-      "validation OK",
-      "validation note should be persisted"
+    expect(final.currentRun?.gates.validation?.note, "validation note should be persisted").toBe(
+      "validation OK"
     );
   } finally {
     await fs.rm(repoPath, { recursive: true, force: true });
@@ -75,11 +68,11 @@ test("validation_stale badge sets validation gate to stale status", async () => 
       "--note",
       "initial validation passed"
     ]);
-    assert.equal(passResult.code, 0);
+    expect(passResult.code).toBe(0);
 
     // Load state to verify
     let state = await loadWorkflowState(repoPath);
-    assert.equal(state.currentRun?.gates.validation?.status, "passed");
+    expect(state.currentRun?.gates.validation?.status).toBe("passed");
 
     // Now mark as stale
     const staleResult = await runCrew([
@@ -91,19 +84,15 @@ test("validation_stale badge sets validation gate to stale status", async () => 
       "--note",
       "invalidated by review needs_fix"
     ]);
-    assert.equal(staleResult.code, 0, "validation_stale badge should succeed");
+    expect(staleResult.code, "validation_stale badge should succeed").toBe(0);
 
     // Verify state
     state = await loadWorkflowState(repoPath);
-    assert.equal(
-      state.currentRun?.gates.validation?.status,
-      "stale",
-      "validation gate should be stale"
+    expect(state.currentRun?.gates.validation?.status, "validation gate should be stale").toBe(
+      "stale"
     );
-    assert.equal(
-      state.currentRun?.gates.validation?.note,
-      "invalidated by review needs_fix",
-      "stale note should be persisted"
+    expect(state.currentRun?.gates.validation?.note, "stale note should be persisted").toBe(
+      "invalidated by review needs_fix"
     );
   } finally {
     await fs.rm(repoPath, { recursive: true, force: true });

@@ -3,6 +3,52 @@
 All notable changes to the `crew` plugin are documented here. Versions follow
 semver-ish for a pre-1.0 plugin: minor bumps may include behavior changes.
 
+## [Unreleased] — GEPA honesty pass (W5, astragenie/runner-plugin#525 §4.3)
+
+Two fixes closing the gap between what GEPA claims and what it actually does.
+
+- **Champion-provenance writer no longer breaks the frontmatter contract.**
+  `scripts/lib/gepa/champion-provenance-writer.ts` previously prepended a
+  SEPARATE leading `---\ngepa:\n  ...\n---` block above an agent's own
+  frontmatter, producing two adjacent frontmatter blocks. Any consumer that
+  reads only the FIRST block as ground truth — the standard frontmatter
+  contract, and what Claude Code's own agent loader does — would see only
+  `{gepa: {...}}` with no `name`/`description`/`model` and silently mis-load
+  the agent. `validate-agents.ts`'s own field-read was patched around this
+  shape back in FEAT-193 AC-10 (v0.54.0), but that only fixed this repo's CI
+  gate, not the actual runtime contract — so the writer was never actually
+  run against a real agent file: zero `gepa_*`-tagged agents existed
+  repo-wide, and the one real promotion (0.51.1, `aiplugin-dev`) was done by
+  hand with the provenance block omitted entirely. Fixed by merging
+  `gepa_champion_from_trial` / `gepa_prior_prompt_hash` / `gepa_promoted_at`
+  as flat keys into the agent's own SINGLE frontmatter block, appended after
+  every existing field — no separate block, so every consumer (including
+  `validate-agents.ts`, now with no special-casing needed) reads exactly what
+  it already expects. `scripts/lib/gepa/gepa-killswitch-cmds.ts`'s revert
+  path updated to read the same flat-key shape for its `trial_id`
+  correlation. Proven with a unit test running the field-read
+  `validate-agents.ts` uses directly, and a full `validateAgents()` run over
+  a fixture written by the updated writer
+  (`tests/gepa/champion-provenance-validator-compat.test.ts`). The legacy
+  leading-block shape is still recognized and stripped by
+  `stripGepafrontmatter` for backward compatibility (no-op on the new
+  shape). Note: `tests/gepa-provenance-validate.test.ts` (top-level, outside
+  this pass's `tests/gepa/**` scope) still asserts the old shape and needs a
+  follow-up update.
+- **Synthetic-mode honesty.** Default candidate generation is deterministic
+  string mutation — no LLM call, no reflective rewrite — unless
+  `GEPA_LIVE_GENERATOR=1`. That default was silent: nothing in a run's
+  console output or its artifact told an operator which mode a cycle
+  actually used, so a synthetic pipeline-exercise run could be mistaken for
+  a real prompt improvement. `runOptimize` (`scripts/lib/gepa/optimize-runner.ts`)
+  now prints a loud one-line warning at run start whenever
+  `GEPA_LIVE_GENERATOR` is not `"1"`, naming the env var, and records which
+  mode ran in the new `OptimizationResult.generator_mode` field
+  (`"synthetic" | "live"`) so run history shows it after the fact.
+  `commands/gepa-optimize.md` documents both modes (trigger, behavior, cost)
+  and the new artifact field. The default itself is unchanged — this is
+  visibility only.
+
 ## [v0.66.0] — 2026-07-15 — 17 owned agents wired to astramem memory
 
 Wires all 17 owned crew agents to astramem memory via the registered

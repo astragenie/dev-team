@@ -3,8 +3,7 @@
  * heading + bullet format aligned to the real ADR convention, arch-review
  * 2026-07-04 Finding 2.9).
  */
-import test from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { validateAdr } from "../scripts/validate-adr-template.ts";
 
 const WELL_FORMED = `# ADR-001: Example
@@ -101,40 +100,43 @@ Just do it.
 
 test("validateAdr: well-formed ADR yields zero findings", () => {
   const findings = validateAdr("adr-001.md", WELL_FORMED);
-  assert.equal(findings.length, 0, JSON.stringify(findings, null, 2));
+  expect(findings.length, JSON.stringify(findings, null, 2)).toBe(0);
 });
 
 test("validateAdr: a single documented alternative is sufficient (real ADRs have as few as one)", () => {
   const findings = validateAdr("adr-002.md", SINGLE_OPTION);
-  assert.equal(findings.length, 0, JSON.stringify(findings, null, 2));
+  expect(findings.length, JSON.stringify(findings, null, 2)).toBe(0);
 });
 
 test("validateAdr: trivial rejection reasoning fires warnings on rejected options", () => {
   const findings = validateAdr("adr-003.md", TRIVIAL_REJECTIONS);
   const trivials = findings.filter((f) => f.rule === "trivial-rejection-reasoning");
   // Options A and B are rejected with vague one-line reasoning; C is accepted (no check).
-  assert.equal(
+  expect(
     trivials.length,
-    2,
     `expected 2 trivial findings, got ${JSON.stringify(findings, null, 2)}`
-  );
-  assert.ok(trivials.every((t) => t.severity === "warn"));
+  ).toBe(2);
+  expect(trivials.every((t) => t.severity === "warn")).toBeTruthy();
 });
 
 test("validateAdr: a rejected option with no Rejected/Accepted marker errors", () => {
   const findings = validateAdr("adr-004.md", MISSING_REJECTION_REASONING);
   const miss = findings.find((f) => f.rule === "missing-rejection-reasoning");
-  assert.ok(
+  expect(
     miss,
     `must flag missing-rejection-reasoning, got ${JSON.stringify(findings, null, 2)}`
-  );
-  assert.equal(miss.severity, "error");
-  assert.match(miss.detail, /Option 1/);
+  ).toBeTruthy();
+  if (!miss)
+    throw new Error(
+      `must flag missing-rejection-reasoning, got ${JSON.stringify(findings, null, 2)}`
+    );
+  expect(miss.severity).toBe("error");
+  expect(miss.detail).toMatch(/Option 1/);
 });
 
 test("validateAdr: completely absent Alternatives considered section errors fast", () => {
   const findings = validateAdr("adr-005.md", NO_ALTERNATIVES_SECTION);
-  assert.equal(findings.length, 1);
-  assert.equal(findings[0]?.rule, "missing-alternatives-considered");
-  assert.equal(findings[0]?.severity, "error");
+  expect(findings.length).toBe(1);
+  expect(findings[0]?.rule).toBe("missing-alternatives-considered");
+  expect(findings[0]?.severity).toBe("error");
 });

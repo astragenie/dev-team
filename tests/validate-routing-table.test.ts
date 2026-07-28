@@ -1,8 +1,7 @@
+import { test, expect } from "bun:test";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
-import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -86,7 +85,7 @@ test("resolve-pass: all skill IDs found exits 0", async () => {
   const routingContent = `# Routing Table\n\n| Signal | Route to | Notes |\n|---|---|---|\n| **New feature** | crew:foo | some notes |\n| **Ext skill** | fake-plugin:fake-skill | notes |\n`;
   const { pluginsJsonPath } = await makeFixture(tmpDir, routingContent);
   const result = runScript(tmpDir, pluginsJsonPath, { CREW_VALIDATE_ROUTING_TABLE: "1" });
-  assert.equal(result.status, 0, `Expected exit 0, got ${result.status}. stderr: ${result.stderr}`);
+  expect(result.status, `Expected exit 0, got ${result.status}. stderr: ${result.stderr}`).toBe(0);
 });
 
 test("resolve-fail: missing skill ID exits 1 with error message", async () => {
@@ -94,9 +93,9 @@ test("resolve-fail: missing skill ID exits 1 with error message", async () => {
   const routingContent = `# Routing Table\n\n| Signal | Route to | Notes |\n|---|---|---|\n| **New feature** | crew:does-not-exist | notes |\n`;
   const { pluginsJsonPath } = await makeFixture(tmpDir, routingContent);
   const result = runScript(tmpDir, pluginsJsonPath, { CREW_VALIDATE_ROUTING_TABLE: "1" });
-  assert.equal(result.status, 1, `Expected exit 1, got ${result.status}`);
+  expect(result.status, `Expected exit 1, got ${result.status}`).toBe(1);
   const output = result.stdout + result.stderr;
-  assert.match(output, /crew:does-not-exist/, "Error should name the bad skill ID");
+  expect(output, "Error should name the bad skill ID").toMatch(/crew:does-not-exist/);
 });
 
 test("ignore-skip: rows with routing-lint:ignore are skipped", async () => {
@@ -106,7 +105,7 @@ test("ignore-skip: rows with routing-lint:ignore are skipped", async () => {
     `| **Future feature** <!-- routing-lint:ignore --> | crew:nonexistent-skill | notes |\n`;
   const { pluginsJsonPath } = await makeFixture(tmpDir, routingContent);
   const result = runScript(tmpDir, pluginsJsonPath, { CREW_VALIDATE_ROUTING_TABLE: "1" });
-  assert.equal(result.status, 0, `Expected exit 0 for ignored row, got ${result.status}`);
+  expect(result.status, `Expected exit 0 for ignored row, got ${result.status}`).toBe(0);
 });
 
 test("env-skip: no env var set exits 0 with skip message", async () => {
@@ -122,8 +121,8 @@ test("env-skip: no env var set exits 0 with skip message", async () => {
     env: envWithoutFlag,
     encoding: "utf8"
   });
-  assert.equal(result.status, 0, `Expected exit 0 when env not set, got ${result.status}`);
-  assert.match(result.stdout, /skipped/, "Should print skip message");
+  expect(result.status, `Expected exit 0 when env not set, got ${result.status}`).toBe(0);
+  expect(result.stdout, "Should print skip message").toMatch(/skipped/);
 });
 
 // --coverage-only tests (Pass 3: agent-roster coverage, arch-review Finding 2.7).
@@ -138,7 +137,7 @@ test("coverage-only: every agents/*.md basename referenced in the table exits 0"
   await fs.writeFile(path.join(agentsDir, "foo.md"), "---\nname: foo\n---\n");
   await fs.writeFile(path.join(agentsDir, "bar.md"), "---\nname: bar\n---\n");
   const result = runScript(tmpDir, pluginsJsonPath, {}, ["--coverage-only"]);
-  assert.equal(result.status, 0, `Expected exit 0, got ${result.status}. stderr: ${result.stderr}`);
+  expect(result.status, `Expected exit 0, got ${result.status}. stderr: ${result.stderr}`).toBe(0);
 });
 
 test("coverage-only: an agent missing from the table exits 1 and names it", async () => {
@@ -150,8 +149,8 @@ test("coverage-only: an agent missing from the table exits 1 and names it", asyn
   await fs.writeFile(path.join(agentsDir, "foo.md"), "---\nname: foo\n---\n");
   await fs.writeFile(path.join(agentsDir, "orphan-agent.md"), "---\nname: orphan-agent\n---\n");
   const result = runScript(tmpDir, pluginsJsonPath, {}, ["--coverage-only"]);
-  assert.equal(result.status, 1, `Expected exit 1, got ${result.status}`);
-  assert.match(result.stderr, /orphan-agent/, "Error should name the uncovered agent");
+  expect(result.status, `Expected exit 1, got ${result.status}`).toBe(1);
+  expect(result.stderr, "Error should name the uncovered agent").toMatch(/orphan-agent/);
 });
 
 test("coverage-only: no agents/ directory at all exits 0 (nothing to check)", async () => {
@@ -159,7 +158,7 @@ test("coverage-only: no agents/ directory at all exits 0 (nothing to check)", as
   const routingContent = `# Routing Table\n\n| Signal | Route to |\n|---|---|\n| **Feature** | crew:foo |\n`;
   const { pluginsJsonPath } = await makeFixture(tmpDir, routingContent);
   const result = runScript(tmpDir, pluginsJsonPath, {}, ["--coverage-only"]);
-  assert.equal(result.status, 0, `Expected exit 0, got ${result.status}. stderr: ${result.stderr}`);
+  expect(result.status, `Expected exit 0, got ${result.status}. stderr: ${result.stderr}`).toBe(0);
 });
 
 // Fixture-based cross-check tests (consistency validator)
@@ -185,108 +184,96 @@ function runFixture(fixtureDir: string) {
 
 test("consistency-pass: aligned row and agent block exits 0", () => {
   const result = runFixture(path.join(fixturesBase, "consistency-pass"));
-  assert.equal(
+  expect(
     result.status,
-    0,
     `Expected exit 0 for aligned fixture. stdout: ${result.stdout} stderr: ${result.stderr}`
-  );
+  ).toBe(0);
 });
 
 test("consistency-fail: missing skill in agent block exits 1 with actionable error", () => {
   const result = runFixture(path.join(fixturesBase, "consistency-fail"));
-  assert.equal(
+  expect(
     result.status,
-    1,
     `Expected exit 1 for mismatched fixture. stdout: ${result.stdout} stderr: ${result.stderr}`
-  );
+  ).toBe(1);
   const output = result.stdout + result.stderr;
-  assert.match(output, /rust-pro/, "Error should name the missing skill path");
-  assert.match(output, /fullstack-dev/, "Error should name the agent");
+  expect(output, "Error should name the missing skill path").toMatch(/rust-pro/);
+  expect(output, "Error should name the agent").toMatch(/fullstack-dev/);
 });
 
 test("consistency-ignore: routing-lint:ignore row skips cross-check exits 0", () => {
   const result = runFixture(path.join(fixturesBase, "consistency-ignore"));
-  assert.equal(
+  expect(
     result.status,
-    0,
     `Expected exit 0 for ignored row. stdout: ${result.stdout} stderr: ${result.stderr}`
-  );
+  ).toBe(0);
 });
 
 test("consistency-multi: row with 2 skills, agent has 1, exits 1 for missing skill", () => {
   const result = runFixture(path.join(fixturesBase, "consistency-multi"));
-  assert.equal(
+  expect(
     result.status,
-    1,
     `Expected exit 1 for multi-skill mismatch. stdout: ${result.stdout} stderr: ${result.stderr}`
-  );
+  ).toBe(1);
   const output = result.stdout + result.stderr;
-  assert.match(
-    output,
-    /prompt-engineering/,
-    "Error should name the missing prompt-engineering skill"
+  expect(output, "Error should name the missing prompt-engineering skill").toMatch(
+    /prompt-engineering/
   );
 });
 
 test("consistency-non-crew: non-crew route-to is skipped exits 0", () => {
   const result = runFixture(path.join(fixturesBase, "consistency-non-crew"));
-  assert.equal(
+  expect(
     result.status,
-    0,
     `Expected exit 0 for non-crew agent row. stdout: ${result.stdout} stderr: ${result.stderr}`
-  );
+  ).toBe(0);
 });
 
 test("consistency-empty-block: agent missing Skills-you-consult heading exits 1 with skill named", () => {
   const result = runFixture(path.join(fixturesBase, "consistency-empty-block"));
-  assert.equal(
+  expect(
     result.status,
-    1,
     `Expected exit 1 for agent without skill block. stdout: ${result.stdout} stderr: ${result.stderr}`
-  );
+  ).toBe(1);
   const output = result.stdout + result.stderr;
-  assert.match(output, /python-pro/, "Error should name the missing skill");
-  assert.match(output, /fullstack-dev/, "Error should name the agent");
+  expect(output, "Error should name the missing skill").toMatch(/python-pro/);
+  expect(output, "Error should name the agent").toMatch(/fullstack-dev/);
 });
 
 test("consistency-refs-collapse: ref-suffix in notes collapses to dir match exits 0", () => {
   const result = runFixture(path.join(fixturesBase, "consistency-refs-collapse"));
-  assert.equal(
+  expect(
     result.status,
-    0,
     `Expected exit 0 for refs-collapse match. stdout: ${result.stdout} stderr: ${result.stderr}`
-  );
+  ).toBe(0);
 });
 
 test("consistency-multi-role: multi-role row fails if any role missing skill exits 1", () => {
   const result = runFixture(path.join(fixturesBase, "consistency-multi-role"));
-  assert.equal(
+  expect(
     result.status,
-    1,
     `Expected exit 1 for multi-role missing skill. stdout: ${result.stdout} stderr: ${result.stderr}`
-  );
+  ).toBe(1);
   const output = result.stdout + result.stderr;
-  assert.match(output, /typescript-pro/, "Error should name the missing skill");
-  assert.match(output, /reviewer/, "Error should name the reviewer agent");
+  expect(output, "Error should name the missing skill").toMatch(/typescript-pro/);
+  expect(output, "Error should name the reviewer agent").toMatch(/reviewer/);
 });
 
 test("consistency-missing-agent: agent file absent exits 1 with actionable error", () => {
   const result = runFixture(path.join(fixturesBase, "consistency-missing-agent"));
-  assert.equal(
+  expect(
     result.status,
-    1,
     `Expected exit 1 for missing agent file. stdout: ${result.stdout} stderr: ${result.stderr}`
-  );
+  ).toBe(1);
   const output = result.stdout + result.stderr;
   // Should mention the agent role or the skill in error output
-  assert.match(output, /architect/, "Error should reference the architect role");
+  expect(output, "Error should reference the architect role").toMatch(/architect/);
 });
 
 test("consistency-malformed-row: malformed table rows do not crash validator exits 0", () => {
   const result = runFixture(path.join(fixturesBase, "consistency-malformed-row"));
-  assert.equal(
+  expect(
     result.status,
-    0,
     `Expected exit 0 for fixture with malformed rows (well-formed row passes). stdout: ${result.stdout} stderr: ${result.stderr}`
-  );
+  ).toBe(0);
 });

@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { validateUxSpec } from "../scripts/validate-ux-spec.ts";
@@ -16,11 +15,8 @@ test("validateUxSpec accepts a well-formed spec with valid operationIds", async 
     specPath: path.join(FIXTURE_DIR, "valid-ux-spec.md"),
     repoRoot: REPO_ROOT
   });
-  assert.equal(result.ok, true, JSON.stringify(result.errors));
-  assert.deepEqual(
-    result.touchpoints.map((t) => t.operationId),
-    ["createThing"]
-  );
+  expect(result.ok, JSON.stringify(result.errors)).toBe(true);
+  expect(result.touchpoints.map((t) => t.operationId)).toEqual(["createThing"]);
 });
 
 test("validateUxSpec fails when operationId is not in the YAML", async () => {
@@ -28,14 +24,14 @@ test("validateUxSpec fails when operationId is not in the YAML", async () => {
     specPath: path.join(FIXTURE_DIR, "missing-operationid.md"),
     repoRoot: REPO_ROOT
   });
-  assert.equal(result.ok, false);
-  assert.ok(
+  expect(result.ok).toBe(false);
+  expect(
     result.errors.some((e) => /nonExistentOp/.test(e)),
     "expected error mentioning missing operationId"
-  );
+  ).toBeTruthy();
 });
 
-test("validateUxSpec fails when `## API touchpoints` section is absent", async (t) => {
+test("validateUxSpec fails when `## API touchpoints` section is absent", async () => {
   const tmpPath = path.join(FIXTURE_DIR, `no-touchpoints-${process.pid}-${Date.now()}.md`);
   const { writeFile, unlink } = await import("node:fs/promises");
   await writeFile(
@@ -43,18 +39,19 @@ test("validateUxSpec fails when `## API touchpoints` section is absent", async (
     "---\ncontracts: tests/fixtures/openapi/valid-feat.openapi.yaml\n---\n\n# UX Spec\n\nno touchpoints section here.\n",
     "utf8"
   );
-  t.after(() =>
-    unlink(tmpPath).catch(() => {
+  try {
+    const result = await validateUxSpec({
+      specPath: tmpPath,
+      repoRoot: REPO_ROOT
+    });
+    expect(result.ok).toBe(false);
+    expect(
+      result.errors.some((e) => /API touchpoints/.test(e)),
+      "expected error mentioning missing section"
+    ).toBeTruthy();
+  } finally {
+    await unlink(tmpPath).catch(() => {
       /* ignore cleanup errors */
-    })
-  );
-  const result = await validateUxSpec({
-    specPath: tmpPath,
-    repoRoot: REPO_ROOT
-  });
-  assert.equal(result.ok, false);
-  assert.ok(
-    result.errors.some((e) => /API touchpoints/.test(e)),
-    "expected error mentioning missing section"
-  );
+    });
+  }
 });
