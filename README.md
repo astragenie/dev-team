@@ -1,5 +1,14 @@
 # Crew
 
+> [!IMPORTANT]
+> **ARCHIVED (2026-08-19).** This plugin merged with `runner`
+> ([astragenie/runner-plugin](https://github.com/astragenie/runner-plugin)) into the
+> unified **devcrew** plugin: [astragenie/dev-crew](https://github.com/astragenie/dev-crew).
+> Install `devcrew` from the `astra` marketplace instead — the `crew` and
+> `runner` marketplace entries are retired. Full history is preserved in
+> dev-crew (this repo was subtree-imported at prefix `crew/`, tag
+> `pre-devcrew-baseline`). No further releases will be cut here.
+
 [![test](https://github.com/astragenie/dev-team/actions/workflows/test.yml/badge.svg)](https://github.com/astragenie/dev-team/actions/workflows/test.yml)
 [![release](https://img.shields.io/github/v/tag/astragenie/dev-team?label=release&sort=semver)](https://github.com/astragenie/dev-team/releases)
 [![license](https://img.shields.io/github/license/astragenie/dev-team)](LICENSE)
