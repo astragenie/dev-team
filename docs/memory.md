@@ -7,11 +7,21 @@ Volatile, dated facts agents keep rediscovering. **Supersede entries by editing 
 `CLAUDE.md` should change rarely; this file is where the dated "verified on" facts and phase-baseline
 state that used to live in CLAUDE.md's "v0.2.0 baseline addendum" now live.
 
-## Current release (verified 2026-07-21)
+## Current release (verified 2026-11-05)
 
-- `package.json` and `.claude-plugin/plugin.json` both at **v0.67.0** (2026-07-18, "enforcement
-  hooks, repair dedup, GEPA honesty, QA-gate agent modes"). `marketplace.json` is not in this repo —
-  registry lives in `astragenie/astra-marketplace`.
+- **Repo archived 2026-08-19.** Superseded by the unified `devcrew` plugin
+  (`astragenie/dev-crew`; this repo subtree-imported at prefix `crew/`, tag `pre-devcrew-baseline`).
+  No further releases here. `devcrew` 1.1.0 (2026-08-20) is installed in the local plugin cache;
+  no local git checkout of `dev-crew` exists under `C:\work`. File findings against `dev-crew`.
+- Final tag here: `package.json` and `.claude-plugin/plugin.json` both at **v0.67.0** (2026-07-18,
+  "enforcement hooks, repair dedup, GEPA honesty, QA-gate agent modes"). `marketplace.json` is not in
+  this repo — registry lives in `astragenie/astra-marketplace`.
+- **2026-11-05 audit** (`.claude/artifacts/crew/reviews/20261105T130000Z-plugin-audit-and-landscape.md`):
+  47 ranked findings + landscape research, cross-checked against devcrew 1.1.0 (most carried forward;
+  hook fan-out worse there). Corrections to earlier entries in this file: on-disk skill count is
+  **71** SKILL.md (universal 6 / workflow 29 / domain 35 / meta 1), not 49 — the "49" fix recorded
+  below counted top-level domain dirs, not nested skills. `.claude/loop.json` has
+  `loop.modelRouting.enabled: false` in this repo, contradicting the model-routing note below.
 - Companion plugins: `loop` (`astragenie/runner-plugin`, own standalone marketplace),
   `cortex`/memory-plugin (referenced in README install block).
 
