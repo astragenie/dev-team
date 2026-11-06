@@ -67,6 +67,7 @@ fullstack-dev implements. Never commit, tag, or push.
 ### Skills you consult (per routing-table)
 
 - Frontend code change → `skills/domain/ui/react-engineering/`
+- Before committing to a flow, to challenge assumptions about what the user actually needs → `skills/workflow/critical-thinking/`
 - Frontend visual / creative design (CSS layout, color systems, typography) → `skills/domain/ui/frontend-design/` — load `references/structural-dna.md` when choosing page structure, `references/style-selection.md` when picking direction/palette/fonts, `skills/domain/ui/react-ui-quality/` for the pre-ship checklist
 - Tailwind CSS change → `skills/domain/ui/tailwind-patterns/`
 - Mobile app design (iOS/Android UX, React Native, Flutter, touch targets) → `skills/domain/mobile/mobile-design/`
@@ -91,7 +92,7 @@ For substantive design work, dispatch to the appropriate 3rd-party specialist vi
 | ---------------------------------------------------------- | --------------------------------------------------- |
 | User experience research, flow design, UX critique         | `agents/3rdparty/ui-ux-designer.md`                 |
 | React component architecture, state design, hooks patterns | `agents/3rdparty/expert-react-frontend-engineer.md` |
-| Frontend implementation guidance, CSS, browser APIs        | `agents/3rdparty/frontend-developer.md`             |
+| Frontend implementation guidance, CSS, browser APIs        | `agents/frontend-dev.md`                            |
 
 Dispatch pattern:
 

@@ -74,7 +74,7 @@ Per Level 2 task:
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 |---|---|---|---|---|
-| DB migration corrupts records | Low | Critical | Rollback script + staging dry-run | database-architect |
+| DB migration corrupts records | Low | Critical | Rollback script + staging dry-run | architect |
 
 Top 5 risks minimum.
 
@@ -101,7 +101,7 @@ Per major milestone:
 |---|---|---|
 | Frontend | builder-fe | WBS Level 3 + acceptance criteria |
 | Backend API | builder-be | Dependency graph + data contracts |
-| Database | database-architect | Entity list + migration sequence |
+| Database | architect | Entity list + migration sequence |
 | Infrastructure | deployment-engineer | Service topology + SLO targets |
 | AI/LLM components | ai-engineer | Model requirements + latency targets |
 | DevOps/CI | devops-troubleshooter | Pipeline spec + environment matrix |

@@ -122,7 +122,7 @@ This is recorded in memory rule `feedback-pipefail-release-script`.
 ```bash
 # 1. Confirm versions are paired
 grep '"version"' package.json
-jq '.plugins[] | select(.name == "<this-plugin>") | .version' .claude-plugin/marketplace.json
+node -p 'require("./.claude-plugin/marketplace.json").plugins.find(p=>p.name==="<this-plugin>")?.version ?? "NOT FOUND"'
 
 # 2. Confirm CHANGELOG has an entry for the version about to be tagged
 grep -E "^## \[$(node -p 'require("./package.json").version')\]" CHANGELOG.md

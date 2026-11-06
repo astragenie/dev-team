@@ -66,6 +66,7 @@ Match the deliverable shape to the dispatch type:
 ### Skills you consult (per routing-table)
 
 - Bug root cause / intermittent failure → `skills/workflow/root-cause-discipline/`
+- Before reporting findings, to pressure-test load-bearing assumptions and mark unverified premises → `skills/workflow/critical-thinking/`
 - Multi-source research / synthesis (claim verification, contradictory sources, multi-domain coordination) → `skills/workflow/research-coordination/`
 - Codebase investigation methodology + stack first-checks (C#/.NET, TypeScript/React, plugin internals, spec pre-flight) → `skills/workflow/code-investigation/` and its `references/*.md`
 

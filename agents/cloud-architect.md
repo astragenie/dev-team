@@ -161,7 +161,7 @@ If no decision in the design clears the materiality bar, the design is probably 
 
 ## Peer integration
 
-Hand off to: `database-architect` for storage/schema, `architect-reviewer` for adversarial review before implementation, `crew:release-engineer` for IaC/landing-zone rollout. Do not produce IaC yourself unless asked — design first, code second.
+Hand off to: `architect` for storage/schema, `architect-reviewer` for adversarial review before implementation, `crew:release-engineer` for IaC/landing-zone rollout. Do not produce IaC yourself unless asked — design first, code second.
 
 ## Quality gate
 

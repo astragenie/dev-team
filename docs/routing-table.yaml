@@ -247,11 +247,11 @@ rows:
   - section: architecture
     signal: "**Architecture sketch / system design** (ADR drafting, system design, capacity or topology decisions)"
     route_to: "`agents/architect.md`"
-    notes: Load `skills/domain/architecture/architecture-advisory/`. Architect handles backend service architecture inline (see `## Backend architecture` section). Delegates to `agents/cloud-architect.md` and `agents/3rdparty/database-architect.md` via Agent tool for DB/cloud concerns. For API contract work load `skills/domain/architecture/api-architecture/` inline; for diagrams load `skills/domain/architecture/diagram-methodology/` inline.
+    notes: Load `skills/domain/architecture/architecture-advisory/`. Architect handles backend service architecture inline (see `## Backend architecture` section). Delegates to `agents/cloud-architect.md` via Agent tool for cloud concerns; DB concerns handled inline by architect. For API contract work load `skills/domain/architecture/api-architecture/` inline; for diagrams load `skills/domain/architecture/diagram-methodology/` inline.
   - section: architecture
     signal: "**Schema design / migration planning / database performance tuning** (ER modeling, schema evolution, index strategy, technology selection, multi-tenancy, sharding, CQRS, event sourcing)"
     route_to: architect / fullstack-dev
-    notes: Load `skills/domain/backend/database-architecture/`. For PostgreSQL-specific query tuning, hand off to `agents/3rdparty/database-architect.md`.
+    notes: Load `skills/domain/backend/database-architecture/`. PostgreSQL-specific query tuning (EXPLAIN analysis, index strategy, replication) is handled inline with that skill loaded.
   - section: architecture
     signal: "**Cloud infra design** (multi-region, landing zone, IAM, network topology, multi-cloud, disaster recovery, cost optimization, FinOps)"
     route_to: architect / release-engineer
